@@ -628,11 +628,9 @@ class _ExpandableTagsState extends State<ExpandableTags>
         ? widget.tags.length
         : min(widget.tags.length, ExpandableTags.previewCount);
 
-    final extraTags = max(widget.tags.length - ExpandableTags.previewCount, 0);
-    final totalDuration = 250 + extraTags * 30;
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: totalDuration),
+      duration: Duration(milliseconds: _totalDuration()),
     );
 
     if (widget.fullTag) {
@@ -661,6 +659,12 @@ class _ExpandableTagsState extends State<ExpandableTags>
     });
   }
 
+  /// 动画总时长：基础 250ms + 额外标签每个 30ms，与 AnimatedSize 保持一致
+  int _totalDuration() {
+    final extraTags = max(widget.tags.length - ExpandableTags.previewCount, 0);
+    return 250 + extraTags * 30;
+  }
+
   @override
   void didUpdateWidget(covariant ExpandableTags oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -685,8 +689,10 @@ class _ExpandableTagsState extends State<ExpandableTags>
   }
 
   Animation<double> _animationForIndex(int index) {
-    final start = min((index - ExpandableTags.previewCount) * 0.03, 1.0);
-    final end = min(start + 0.25, 1.0);
+    // 交错区间：每个额外标签延迟 5% 出现；start 封顶 0.6，保证所有标签都会出现
+    final stagger = (index - ExpandableTags.previewCount) * 0.05;
+    final start = stagger.clamp(0.0, 0.6);
+    final end = min(start + 0.4, 1.0);
     return CurvedAnimation(
       parent: _controller,
       curve: Interval(start, end, curve: Curves.easeOut),
@@ -738,7 +744,7 @@ class _ExpandableTagsState extends State<ExpandableTags>
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
+      duration: Duration(milliseconds: _totalDuration()),
       curve: Curves.easeInOut,
       alignment: Alignment.topLeft,
       child: Wrap(
@@ -850,6 +856,7 @@ class BangumiBriefCard extends StatelessWidget {
     final style = const TextStyle(fontWeight: FontWeight.w500);
 
     final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+    final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
 
     Widget containerBackground(Widget child) {
       return Container(
@@ -947,48 +954,51 @@ class BangumiBriefCard extends StatelessWidget {
                   child: Stack(
                     children: [
                       Positioned.fill(child: image),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              if (bangumiItem.airDate.isNotEmpty)
+                      if (showOverlay)
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (bangumiItem.airDate.isNotEmpty)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: animeCardUseBlur
+                                        ? backdropFilter(
+                                            Text(
+                                              bangumiItem.airDate,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          )
+                                        : containerBackground(
+                                            Text(
+                                              bangumiItem.airDate,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
+                                const SizedBox(height: 4),
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: animeCardUseBlur
-                                      ? backdropFilter(
-                                          Text(
-                                            bangumiItem.airDate,
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        )
+                                      ? backdropFilter(_buildScore(context))
                                       : containerBackground(
-                                          Text(
-                                            bangumiItem.airDate,
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                                          _buildScore(context),
                                         ),
                                 ),
-                              const SizedBox(height: 4),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: animeCardUseBlur
-                                    ? backdropFilter(_buildScore(context))
-                                    : containerBackground(_buildScore(context)),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -1491,6 +1501,7 @@ class _BangumiCardState extends State<BangumiCard> {
   Widget build(BuildContext context) {
     String? image = widget.bangumiItem.images['large'];
     final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+    final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
     final useMarquee = appdata.settings['tileTitleMarquee'] == true;
     Widget containerBackground(Widget child) {
       return Container(
@@ -1601,48 +1612,53 @@ class _BangumiCardState extends State<BangumiCard> {
                         child: Stack(
                           children: [
                             Positioned.fill(child: foregroundImage),
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    if (bangumiItem.airTime != null)
+                            if (showOverlay)
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      if (bangumiItem.airTime != null)
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: animeCardUseBlur
+                                              ? backdropFilter(
+                                                  Text(
+                                                    bangumiItem.airDate,
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                )
+                                              : containerBackground(
+                                                  Text(
+                                                    bangumiItem.airDate,
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      const SizedBox(height: 4),
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
                                         child: animeCardUseBlur
-                                            ? backdropFilter(
-                                                Text(
-                                                  bangumiItem.airDate,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              )
-                                            : containerBackground(
-                                                Text(
-                                                  bangumiItem.airDate,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
+                                            ? backdropFilter(_score())
+                                            : containerBackground(_score()),
                                       ),
-                                    const SizedBox(height: 4),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: animeCardUseBlur
-                                          ? backdropFilter(_score())
-                                          : containerBackground(_score()),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),

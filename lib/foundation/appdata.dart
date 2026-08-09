@@ -56,7 +56,11 @@ class Appdata with Init {
 
   var implicitData = <String, dynamic>{};
 
+  /// 隐式数据版本号：写入时自增，供界面监听即时刷新（如番剧卡片外观设置）
+  final ValueNotifier<int> implicitVersion = ValueNotifier(0);
+
   void writeImplicitData() async {
+    implicitVersion.value++;
     while (_isSavingData) {
       await Future.delayed(const Duration(milliseconds: 20));
     }

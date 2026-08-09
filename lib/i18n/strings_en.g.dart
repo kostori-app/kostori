@@ -3895,6 +3895,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Anime Card Use Blur Background'
 	String get animeCardUseBlur => 'Anime Card Use Blur Background';
 
+	/// en: 'Show anime card overlay'
+	String get showAnimeCardOverlay => 'Show anime card overlay';
+
 	/// en: 'Card Title Marquee'
 	String get tileTitleMarquee => 'Card Title Marquee';
 
@@ -7578,6 +7581,7 @@ extension on Translations {
 			'invalidClipboardFormat' => 'Invalid clipboard format',
 			'cannotModifySystemPreset' => 'Cannot modify system preset',
 			'animeCardUseBlur' => 'Anime Card Use Blur Background',
+			'showAnimeCardOverlay' => 'Show anime card overlay',
 			'tileTitleMarquee' => 'Card Title Marquee',
 			'horizontalLayout' => 'Horizontal Layout',
 			'bangumiCardPerRow' => 'Anime Card Per Row',
@@ -7786,9 +7790,9 @@ extension on Translations {
 			'tagHint' => 'e.g. #EXT-X-CUE-OUT',
 			'cueAdTag' => 'CUE Ad Tag',
 			'ultraShortSegment' => 'Ultra Short Segment',
-			'commonAdUrlPattern' => 'Common Ad URL Pattern',
 			_ => null,
 		} ?? switch (path) {
+			'commonAdUrlPattern' => 'Common Ad URL Pattern',
 			'keywordMatch' => 'Keyword Match',
 			'keywordHint' => 'Substring, e.g. advert or adservice',
 			'commonAdKeyword' => 'Common Ad Keyword',
@@ -8300,9 +8304,9 @@ extension on Translations {
 			'profileExamples' => 'Example dialogs (few-shot)',
 			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
 			'profileReplyStyle' => 'Reply style',
-			'replyLength' => 'Reply length',
 			_ => null,
 		} ?? switch (path) {
+			'replyLength' => 'Reply length',
 			'replyLengthShort' => 'Concise',
 			'replyLengthNormal' => 'Normal',
 			'replyLengthDetailed' => 'Detailed',

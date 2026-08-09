@@ -1324,6 +1324,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get invalidClipboardFormat => '無效的剪貼簿格式';
 	@override String get cannotModifySystemPreset => '無法修改系統預設';
 	@override String get animeCardUseBlur => '動漫卡片使用模糊背景';
+	@override String get showAnimeCardOverlay => '顯示動漫卡片覆蓋層';
 	@override String get tileTitleMarquee => '卡片標題滾動';
 	@override String get horizontalLayout => '水平佈局';
 	@override String get bangumiCardPerRow => '動漫卡片每行數量';
@@ -3451,6 +3452,7 @@ extension on TranslationsZhTw {
 			'invalidClipboardFormat' => '無效的剪貼簿格式',
 			'cannotModifySystemPreset' => '無法修改系統預設',
 			'animeCardUseBlur' => '動漫卡片使用模糊背景',
+			'showAnimeCardOverlay' => '顯示動漫卡片覆蓋層',
 			'tileTitleMarquee' => '卡片標題滾動',
 			'horizontalLayout' => '水平佈局',
 			'bangumiCardPerRow' => '動漫卡片每行數量',
@@ -3659,9 +3661,9 @@ extension on TranslationsZhTw {
 			'durationHint' => '秒數，如 4.0',
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 廣告標記',
-			'ultraShortSegment' => '極短分片',
 			_ => null,
 		} ?? switch (path) {
+			'ultraShortSegment' => '極短分片',
 			'commonAdUrlPattern' => '常見廣告 URL 特徵',
 			'keywordMatch' => '關鍵字比對',
 			'keywordHint' => '子字串，如 advert 或 adservice',
@@ -4173,9 +4175,9 @@ extension on TranslationsZhTw {
 			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
 			'profileReplyStyle' => '回覆風格',
 			'replyLength' => '回覆長度',
-			'replyLengthShort' => '簡短',
 			_ => null,
 		} ?? switch (path) {
+			'replyLengthShort' => '簡短',
 			'replyLengthNormal' => '適中',
 			'replyLengthDetailed' => '詳細',
 			'replyUseEmoji' => '使用 emoji',

@@ -1323,6 +1323,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get invalidClipboardFormat => '剪贴板格式无效';
 	@override String get cannotModifySystemPreset => '不能修改系统预设';
 	@override String get animeCardUseBlur => '番剧卡片使用模糊背景';
+	@override String get showAnimeCardOverlay => '显示番剧条目卡片覆盖层';
 	@override String get tileTitleMarquee => '卡片标题滚动';
 	@override String get horizontalLayout => '水平布局';
 	@override String get bangumiCardPerRow => '番剧卡片每行数量';
@@ -3451,6 +3452,7 @@ extension on TranslationsZhCn {
 			'invalidClipboardFormat' => '剪贴板格式无效',
 			'cannotModifySystemPreset' => '不能修改系统预设',
 			'animeCardUseBlur' => '番剧卡片使用模糊背景',
+			'showAnimeCardOverlay' => '显示番剧条目卡片覆盖层',
 			'tileTitleMarquee' => '卡片标题滚动',
 			'horizontalLayout' => '水平布局',
 			'bangumiCardPerRow' => '番剧卡片每行数量',
@@ -3660,9 +3662,9 @@ extension on TranslationsZhCn {
 			'domainHint' => '域名，多个用逗号分隔',
 			'durationHint' => '秒数，如 4.0',
 			'tagHint' => '如',
-			'cueAdTag' => 'CUE 广告标记',
 			_ => null,
 		} ?? switch (path) {
+			'cueAdTag' => 'CUE 广告标记',
 			'ultraShortSegment' => '极短分片',
 			'commonAdUrlPattern' => '常见广告 URL 特征',
 			'keywordMatch' => '关键字匹配',
@@ -4174,9 +4176,9 @@ extension on TranslationsZhCn {
 			'profileExamples' => '对话示例（few-shot）',
 			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
 			'profileReplyStyle' => '回复风格',
-			'replyLength' => '回复长度',
 			_ => null,
 		} ?? switch (path) {
+			'replyLength' => '回复长度',
 			'replyLengthShort' => '简短',
 			'replyLengthNormal' => '适中',
 			'replyLengthDetailed' => '详细',

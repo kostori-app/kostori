@@ -1334,6 +1334,7 @@ imported: 已導入
 invalidClipboardFormat: 無效的剪貼簿格式
 cannotModifySystemPreset: 無法修改系統預設
 animeCardUseBlur: 動漫卡片使用模糊背景
+showAnimeCardOverlay: 顯示動漫卡片覆蓋層
 tileTitleMarquee: 卡片標題滾動
 horizontalLayout: 水平佈局
 bangumiCardPerRow: 動漫卡片每行數量

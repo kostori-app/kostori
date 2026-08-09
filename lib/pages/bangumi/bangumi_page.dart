@@ -304,7 +304,11 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
       ),
     );
 
-    return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
+    return ValueListenableBuilder<int>(
+      valueListenable: appdata.implicitVersion,
+      builder: (context, _, _) =>
+          context.width > changePoint ? widget.paddingHorizontal(8) : widget,
+    );
   }
 }
 

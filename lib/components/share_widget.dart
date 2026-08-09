@@ -1467,6 +1467,7 @@ class BangumiGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+    final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
 
     Widget containerBackground(Widget child) {
       return Container(
@@ -1564,48 +1565,49 @@ class BangumiGridCard extends StatelessWidget {
                   height: height,
                 ),
               ),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (bangumiItem.airDate.isNotEmpty)
+              if (showOverlay)
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (bangumiItem.airDate.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: animeCardUseBlur
+                                ? backdropFilter(
+                                    Text(
+                                      bangumiItem.airDate,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                : containerBackground(
+                                    Text(
+                                      bangumiItem.airDate,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        const SizedBox(height: 4),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: animeCardUseBlur
-                              ? backdropFilter(
-                                  Text(
-                                    bangumiItem.airDate,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                )
-                              : containerBackground(
-                                  Text(
-                                    bangumiItem.airDate,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                              ? backdropFilter(scoreWidget())
+                              : containerBackground(scoreWidget()),
                         ),
-                      const SizedBox(height: 4),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: animeCardUseBlur
-                            ? backdropFilter(scoreWidget())
-                            : containerBackground(scoreWidget()),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

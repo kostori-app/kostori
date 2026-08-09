@@ -8,6 +8,9 @@ class BangumiSettings extends StatefulWidget {
 }
 
 class _BangumiSettingsState extends State<BangumiSettings> {
+  bool get _showOverlay =>
+      appdata.implicitData['showAnimeCardOverlay'] != false;
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -25,10 +28,17 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                     icon: Icons.radio_button_unchecked_outlined,
                   ),
                   _SwitchSetting(
-                    title: t.animeCardUseBlur,
-                    settingKey: "animeCardUseBlur",
+                    title: t.showAnimeCardOverlay,
+                    settingKey: "showAnimeCardOverlay",
                     dataSource: SwitchDataSource.implicit,
+                    onChanged: () => setState(() {}),
                   ),
+                  if (_showOverlay)
+                    _SwitchSetting(
+                      title: t.animeCardUseBlur,
+                      settingKey: "animeCardUseBlur",
+                      dataSource: SwitchDataSource.implicit,
+                    ),
                   _IntSliderSetting(
                     title: t.bangumiCardPerRow,
                     settingsIndex: "bangumiCardPerRow",
