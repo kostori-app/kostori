@@ -4384,6 +4384,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Delete failed'
 	String get deleteFailed => 'Delete failed';
 
+	/// en: 'Deleted'
+	String get deleteSuccessful => 'Deleted';
+
+	/// en: 'This cannot be undone'
+	String get confirmDeleteImageHint => 'This cannot be undone';
+
 	/// en: 'Saving image...'
 	String get savingImage => 'Saving image...';
 
@@ -7711,6 +7717,8 @@ extension on Translations {
 			'copySuccess' => 'Copy success',
 			'addToFavoritesSuccess' => 'Add to favorites success',
 			'deleteFailed' => 'Delete failed',
+			'deleteSuccessful' => 'Deleted',
+			'confirmDeleteImageHint' => 'This cannot be undone',
 			'savingImage' => 'Saving image...',
 			'saveFailedPermission' => 'Save failed: permission or directory error',
 			'bangumiDataUpdateFailed' => 'Bangumi data update failed...',
@@ -7755,10 +7763,10 @@ extension on Translations {
 			'currentEpisode' => 'Current Episode',
 			'playbackRoute' => 'Playback Route',
 			'progress' => 'Progress',
-			'playbackSpeed' => 'Playback Speed',
-			'otherSettings' => 'Other Settings',
 			_ => null,
 		} ?? switch (path) {
+			'playbackSpeed' => 'Playback Speed',
+			'otherSettings' => 'Other Settings',
 			'audioLowLatency' => 'Audio: Low Latency',
 			'audioCompatibility' => 'Audio: Compatibility',
 			'videoClipEditor' => 'Video Clip Editor',
@@ -8269,10 +8277,10 @@ extension on Translations {
 			'replyAskBack' => 'Ask back at the end',
 			'mcpConnectionStatus' => 'Connection status',
 			'mcpConnected' => 'Connected',
-			'mcpDisconnected' => 'Disconnected',
-			'mcpToolsImported' => 'tools imported',
 			_ => null,
 		} ?? switch (path) {
+			'mcpDisconnected' => 'Disconnected',
+			'mcpToolsImported' => 'tools imported',
 			'mcpReconnect' => 'Reconnect',
 			'mcpTestConnection' => 'Test connection',
 			'mcpConnecting' => 'Connecting...',

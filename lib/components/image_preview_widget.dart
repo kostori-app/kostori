@@ -12,6 +12,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/utils/volume.dart';
 import 'package:marquee/marquee.dart';
 import 'package:photo_view/photo_view.dart';
@@ -386,6 +387,7 @@ class _TopBar extends ConsumerWidget {
           MenuEntry(
             text: t.delete,
             icon: Icons.delete,
+            color: Colors.red,
             onClick: () => _confirmDelete(context, ref, currentFile, index),
           ),
       ],
@@ -520,7 +522,7 @@ class _TopBar extends ConsumerWidget {
     showConfirmDialog(
       context: context,
       title: t.confirmDeleteImage,
-      content: '删除后将无法恢复',
+      content: t.confirmDeleteImageHint,
       btnColor: Theme.of(context).colorScheme.error,
       onConfirm: () => _deleteFile(context, ref, file, index),
     );
@@ -534,6 +536,11 @@ class _TopBar extends ConsumerWidget {
   ) async {
     try {
       await file.delete();
+
+      context.showMessage(message: t.deleteSuccessful);
+
+      // 同步移除图片操作页列表里对应的图片（磁盘文件已删除）
+      ref.read(imagesProvider.notifier).removeFile(file);
 
       final urls = ref.read(imageListProvider);
       if (urls.isEmpty) {

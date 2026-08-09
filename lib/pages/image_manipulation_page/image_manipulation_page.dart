@@ -48,6 +48,14 @@ class ImagesNotifier extends StateNotifier<List<File>> {
 
   void setImages(List<File> imgs) => state = imgs;
 
+  /// 从图片操作列表移除指定文件（磁盘已删除后调用，立即反馈）
+  void removeFile(File file) {
+    final newList = [...state]..removeWhere((f) => f.path == file.path);
+    if (newList.length != state.length) {
+      state = newList;
+    }
+  }
+
   Future<void> loadImages() async {
     final files = await loadKostoriImages();
     state = files;

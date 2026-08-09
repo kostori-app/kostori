@@ -1489,6 +1489,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get copySuccess => '复制成功';
 	@override String get addToFavoritesSuccess => '添加收藏成功';
 	@override String get deleteFailed => '删除失败';
+	@override String get deleteSuccessful => '删除成功';
+	@override String get confirmDeleteImageHint => '删除后将无法恢复';
 	@override String get savingImage => '正在保存图片...';
 	@override String get saveFailedPermission => '保存失败：权限或目录异常';
 	@override String get bangumiDataUpdateFailed => 'Bangumi数据更新失败';
@@ -3607,6 +3609,8 @@ extension on TranslationsZhCn {
 			'copySuccess' => '复制成功',
 			'addToFavoritesSuccess' => '添加收藏成功',
 			'deleteFailed' => '删除失败',
+			'deleteSuccessful' => '删除成功',
+			'confirmDeleteImageHint' => '删除后将无法恢复',
 			'savingImage' => '正在保存图片...',
 			'saveFailedPermission' => '保存失败：权限或目录异常',
 			'bangumiDataUpdateFailed' => 'Bangumi数据更新失败',
@@ -3649,10 +3653,10 @@ extension on TranslationsZhCn {
 			'videoDetails' => '视频详情',
 			'synopsis' => '简介',
 			'currentEpisode' => '当前集数',
-			'playbackRoute' => '播放线路',
-			'progress' => '进度',
 			_ => null,
 		} ?? switch (path) {
+			'playbackRoute' => '播放线路',
+			'progress' => '进度',
 			'playbackSpeed' => '播放倍率',
 			'otherSettings' => '其他设置',
 			'audioLowLatency' => '音频: 低延迟',
@@ -4163,10 +4167,10 @@ extension on TranslationsZhCn {
 			'replyAskBack' => '结尾反问用户',
 			'mcpConnectionStatus' => '连接状态',
 			'mcpConnected' => '已连接',
-			'mcpDisconnected' => '未连接',
-			'mcpToolsImported' => '个工具',
 			_ => null,
 		} ?? switch (path) {
+			'mcpDisconnected' => '未连接',
+			'mcpToolsImported' => '个工具',
 			'mcpReconnect' => '重连',
 			'mcpTestConnection' => '测试连接',
 			'mcpConnecting' => '连接中...',

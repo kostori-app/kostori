@@ -1497,6 +1497,8 @@ connectionFailed: Connection failed
 copySuccess: Copy success
 addToFavoritesSuccess: Add to favorites success
 deleteFailed: Delete failed
+deleteSuccessful: Deleted
+confirmDeleteImageHint: This cannot be undone
 savingImage: Saving image...
 saveFailedPermission: "Save failed: permission or directory error"
 bangumiDataUpdateFailed: Bangumi data update failed...

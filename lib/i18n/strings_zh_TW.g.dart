@@ -1489,6 +1489,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get copySuccess => '複製成功';
 	@override String get addToFavoritesSuccess => '添加收藏成功';
 	@override String get deleteFailed => '刪除失敗';
+	@override String get deleteSuccessful => '刪除成功';
+	@override String get confirmDeleteImageHint => '刪除後將無法復原';
 	@override String get savingImage => '正在儲存圖片...';
 	@override String get saveFailedPermission => '儲存失敗：權限或目錄異常';
 	@override String get bangumiDataUpdateFailed => 'Bangumi資料更新失敗';
@@ -3606,6 +3608,8 @@ extension on TranslationsZhTw {
 			'copySuccess' => '複製成功',
 			'addToFavoritesSuccess' => '添加收藏成功',
 			'deleteFailed' => '刪除失敗',
+			'deleteSuccessful' => '刪除成功',
+			'confirmDeleteImageHint' => '刪除後將無法復原',
 			'savingImage' => '正在儲存圖片...',
 			'saveFailedPermission' => '儲存失敗：權限或目錄異常',
 			'bangumiDataUpdateFailed' => 'Bangumi資料更新失敗',
@@ -3648,10 +3652,10 @@ extension on TranslationsZhTw {
 			'synopsis' => '簡介',
 			'currentEpisode' => '目前集數',
 			'playbackRoute' => '播放線路',
-			'progress' => '進度',
-			'playbackSpeed' => '播放倍率',
 			_ => null,
 		} ?? switch (path) {
+			'progress' => '進度',
+			'playbackSpeed' => '播放倍率',
 			'otherSettings' => '其他設定',
 			'audioLowLatency' => '音訊: 低延遲',
 			'audioCompatibility' => '音訊: 相容模式',
@@ -4162,10 +4166,10 @@ extension on TranslationsZhTw {
 			'mcpConnectionStatus' => '連線狀態',
 			'mcpConnected' => '已連線',
 			'mcpDisconnected' => '未連線',
-			'mcpToolsImported' => '個工具',
-			'mcpReconnect' => '重新連線',
 			_ => null,
 		} ?? switch (path) {
+			'mcpToolsImported' => '個工具',
+			'mcpReconnect' => '重新連線',
 			'mcpTestConnection' => '測試連線',
 			'mcpConnecting' => '連線中...',
 			'mcpConnectionFailed' => '連線失敗',

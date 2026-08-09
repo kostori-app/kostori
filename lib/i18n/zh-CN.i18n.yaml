@@ -1495,6 +1495,8 @@ connectionFailed: 连接失败
 copySuccess: 复制成功
 addToFavoritesSuccess: 添加收藏成功
 deleteFailed: 删除失败
+deleteSuccessful: 删除成功
+confirmDeleteImageHint: 删除后将无法恢复
 savingImage: 正在保存图片...
 saveFailedPermission: 保存失败：权限或目录异常
 bangumiDataUpdateFailed: Bangumi数据更新失败

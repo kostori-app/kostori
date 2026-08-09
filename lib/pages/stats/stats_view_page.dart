@@ -335,7 +335,7 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
         likedItems,
         minTagCount: 20,
         minItemCount: 2,
-      );
+      ).take(60).toList();
     });
   }
 

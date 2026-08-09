@@ -208,6 +208,7 @@ class _StatsOverviewState extends State<StatsOverview> {
       _sortedTagCounts.take(5).map((e) => e.key).toList();
 
   List<Map<String, Object>> get dataList => _sortedTagCounts
+      .take(60)
       .map(
         (e) => {'word': e.key, 'value': e.value > 0 ? e.value.toDouble() : 1.0},
       )
