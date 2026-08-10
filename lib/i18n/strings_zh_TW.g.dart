@@ -611,6 +611,28 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noSearchResults => '尚無搜尋結果';
 	@override String itemsCount({required Object n}) => '${n} 個條目';
 	@override String get enableSkipBangumiSchedule => '啟用跳過 bangumi 日程';
+	@override String get bangumiClientId => '用戶端 ID';
+	@override String get bangumiClientSecret => '用戶端密鑰';
+	@override String get bangumiRedirectUri => '回呼位址';
+	@override String get bangumiOAuthHint => '在 bgm.tv/dev 註冊應用程式以取得用戶端 ID 與密鑰';
+	@override String get bangumiOAuthLogin => 'Bangumi 登入';
+	@override String get bangumiShowNsfw => '顯示 NSFW 內容';
+	@override String get bangumiLoggingIn => '登入中...';
+	@override String get bangumiOAuthLogout => '登出';
+	@override String get bangumiLoggedIn => '已登入';
+	@override String get bangumiNotLoggedIn => '未登入';
+	@override String get bangumiLoginSuccess => '登入成功';
+	@override String get bangumiLoginFailed => '登入失敗';
+	@override String get bangumiCaptchaOrPasswordError => '驗證碼或密碼錯誤，請重試';
+	@override String get bangumiCaptchaHint => '點擊驗證碼圖片或重新整理按鈕可更換';
+	@override String get bangumiTokenStatus => '令牌狀態';
+	@override String get bangumiRefreshToken => '重新整理令牌';
+	@override String get bangumiUserId => '使用者ID';
+	@override String get bangumiTokenExpires => '過期';
+	@override String get bangumiTokenExpired => '已過期';
+	@override String get bangumiTokenRefreshSuccess => '令牌已重新整理';
+	@override String get bangumiTokenRefreshFailed => '令牌重新整理失敗';
+	@override String get bangumiClientIdSecretRequired => '請先填寫用戶端 ID';
 	@override String get recognizeImageFailed => '圖片讀取失敗，請重試';
 	@override String get recognizeFailed => '辨識失敗';
 	@override String get newChat => '新對話';
@@ -692,6 +714,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get personTabVoice => '聲優資料';
 	@override String get personTabChat => '吐槽箱';
 	@override String get personTabRelation => '角色關聯';
+	@override String get personTabStaffInfo => '製作人資訊';
+	@override String get personTabWorks => '參與作品';
 	@override String get personTabProfile => '角色資料';
 	@override String get personSubtitle => '人物';
 	@override String get lanUdpPortHint => 'UDP 廣播連接埠用於裝置探索，WebSocket 連接埠用於遠端控制連線';
@@ -2695,6 +2719,28 @@ extension on TranslationsZhTw {
 			'noSearchResults' => '尚無搜尋結果',
 			'itemsCount' => ({required Object n}) => '${n} 個條目',
 			'enableSkipBangumiSchedule' => '啟用跳過 bangumi 日程',
+			'bangumiClientId' => '用戶端 ID',
+			'bangumiClientSecret' => '用戶端密鑰',
+			'bangumiRedirectUri' => '回呼位址',
+			'bangumiOAuthHint' => '在 bgm.tv/dev 註冊應用程式以取得用戶端 ID 與密鑰',
+			'bangumiOAuthLogin' => 'Bangumi 登入',
+			'bangumiShowNsfw' => '顯示 NSFW 內容',
+			'bangumiLoggingIn' => '登入中...',
+			'bangumiOAuthLogout' => '登出',
+			'bangumiLoggedIn' => '已登入',
+			'bangumiNotLoggedIn' => '未登入',
+			'bangumiLoginSuccess' => '登入成功',
+			'bangumiLoginFailed' => '登入失敗',
+			'bangumiCaptchaOrPasswordError' => '驗證碼或密碼錯誤，請重試',
+			'bangumiCaptchaHint' => '點擊驗證碼圖片或重新整理按鈕可更換',
+			'bangumiTokenStatus' => '令牌狀態',
+			'bangumiRefreshToken' => '重新整理令牌',
+			'bangumiUserId' => '使用者ID',
+			'bangumiTokenExpires' => '過期',
+			'bangumiTokenExpired' => '已過期',
+			'bangumiTokenRefreshSuccess' => '令牌已重新整理',
+			'bangumiTokenRefreshFailed' => '令牌重新整理失敗',
+			'bangumiClientIdSecretRequired' => '請先填寫用戶端 ID',
 			'recognizeImageFailed' => '圖片讀取失敗，請重試',
 			'recognizeFailed' => '辨識失敗',
 			'newChat' => '新對話',
@@ -2776,6 +2822,8 @@ extension on TranslationsZhTw {
 			'personTabVoice' => '聲優資料',
 			'personTabChat' => '吐槽箱',
 			'personTabRelation' => '角色關聯',
+			'personTabStaffInfo' => '製作人資訊',
+			'personTabWorks' => '參與作品',
 			'personTabProfile' => '角色資料',
 			'personSubtitle' => '人物',
 			'lanUdpPortHint' => 'UDP 廣播連接埠用於裝置探索，WebSocket 連接埠用於遠端控制連線',
@@ -3123,6 +3171,8 @@ extension on TranslationsZhTw {
 			'selectServer' => '選擇一個伺服器',
 			'exportRooms' => '匯出房間',
 			'importRooms' => '匯入房間',
+			_ => null,
+		} ?? switch (path) {
 			'connect' => '連線',
 			'watchTogether' => '一起看',
 			'watchTogetherDesc' => '和朋友一起看番：建立或加入房間，邊看邊聊，分享截圖與字幕。',
@@ -3147,8 +3197,6 @@ extension on TranslationsZhTw {
 			'displayNameInHub' => 'Hub 中的顯示名稱',
 			'myDevice' => '我的設備',
 			'hubToken' => 'Hub 令牌',
-			_ => null,
-		} ?? switch (path) {
 			'tokenFromTheHubServer' => '來自 Hub 服務端的令牌',
 			'pasteHubServerToken' => '貼上 Hub 服務端令牌',
 			'runningOn' => '執行於',
@@ -3637,6 +3685,8 @@ extension on TranslationsZhTw {
 			'noMoreEpisodes' => '沒有更多集數可播放',
 			'routeNotFound' => '線路不存在',
 			'loadingDuplicateEpisode' => '載入重複集數',
+			_ => null,
+		} ?? switch (path) {
 			'getVideoUrlFailed' => '取得影片連結異常',
 			'pleaseEnterEpisodeNumber' => '請輸入集數',
 			'pleaseEnterValidEpisodeNumber' => '請輸入1-999之間的有效集數',
@@ -3661,8 +3711,6 @@ extension on TranslationsZhTw {
 			'durationHint' => '秒數，如 4.0',
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 廣告標記',
-			_ => null,
-		} ?? switch (path) {
 			'ultraShortSegment' => '極短分片',
 			'commonAdUrlPattern' => '常見廣告 URL 特徵',
 			'keywordMatch' => '關鍵字比對',
@@ -4151,6 +4199,8 @@ extension on TranslationsZhTw {
 			'injectionPositionBeforeTools' => '工具清單之前',
 			'injectionSortOrder' => '排序號',
 			'noInjectionsYet' => '暫無提示詞注入',
+			_ => null,
+		} ?? switch (path) {
 			'worldBookName' => '名稱',
 			'worldBookTriggers' => '觸發詞（每行一個）',
 			'worldBookTriggersHint' => '使用者訊息命中任一觸發詞時才注入',
@@ -4175,8 +4225,6 @@ extension on TranslationsZhTw {
 			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
 			'profileReplyStyle' => '回覆風格',
 			'replyLength' => '回覆長度',
-			_ => null,
-		} ?? switch (path) {
 			'replyLengthShort' => '簡短',
 			'replyLengthNormal' => '適中',
 			'replyLengthDetailed' => '詳細',

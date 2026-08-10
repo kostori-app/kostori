@@ -335,24 +335,32 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                                       ? (fromContext.widget as Hero).child
                                       : (toContext.widget as Hero).child;
                                 },
-                            child: Image.network(
-                              img,
-                              fit: BoxFit.contain,
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return const Padding(
-                                  padding: EdgeInsets.all(8.0),
-                                  child: SizedBox(
-                                    width: 40,
-                                    height: 40,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                            // 固定高度，避免图片加载前后高度突变导致
+                            // CustomScrollView maxScrollExtent 变化、滚动条跳动
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 240,
+                              child: Image.network(
+                                img,
+                                fit: BoxFit.contain,
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: SizedBox(
+                                        width: 40,
+                                        height: 40,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.broken_image),
+                                  );
+                                },
+                                errorBuilder: (_, _, _) =>
+                                    const Icon(Icons.broken_image),
+                              ),
                             ),
                           ),
                         ),
@@ -381,21 +389,31 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                       title: '',
                       heroTag: url,
                     ),
-                    child: Image.network(
-                      url,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+                    // 固定尺寸，加载前后高度一致，避免滚动条抖动
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.broken_image),
+                      ),
                     ),
                   ),
                 );
@@ -409,21 +427,31 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                       title: '',
                       heroTag: 'https://bangumi.tv/img/smiles/${e.id}.gif',
                     ),
-                    child: Image.network(
-                      'https://bangumi.tv/img/smiles/${e.id}.gif',
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+                    // 固定尺寸，加载前后高度一致，避免滚动条抖动
+                    child: SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: Image.network(
+                        'https://bangumi.tv/img/smiles/${e.id}.gif',
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.broken_image),
+                      ),
                     ),
                   ),
                 );

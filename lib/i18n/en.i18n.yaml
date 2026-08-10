@@ -311,7 +311,7 @@ sizeOfAnimeTile: Size of anime tile
 sort: Sort
 sourceFolder: Source Folder
 sourceUrl: Source URL
-staffList: StaffList
+staffList: Staff
 start: Start
 storagePathForLocalAnimes: Storage Path for local animes
 submit: Submit
@@ -582,6 +582,28 @@ deleteImagesCount: "Delete ${n} images"
 noSearchResults: No search results
 itemsCount: "${n} items"
 enableSkipBangumiSchedule: Enable skipping Bangumi schedule
+bangumiClientId: Client ID
+bangumiClientSecret: Client Secret
+bangumiRedirectUri: Redirect URI
+bangumiOAuthHint: Register an app on bgm.tv/dev to get the client ID and secret
+bangumiOAuthLogin: Bangumi Login
+bangumiShowNsfw: Show NSFW content
+bangumiLoggingIn: Logging in...
+bangumiOAuthLogout: Logout
+bangumiLoggedIn: Logged in
+bangumiNotLoggedIn: Not logged in
+bangumiLoginSuccess: Login successful
+bangumiLoginFailed: Login failed
+bangumiCaptchaOrPasswordError: Incorrect captcha or password, please retry
+bangumiCaptchaHint: Tap the captcha image or refresh button to change it
+bangumiTokenStatus: Token status
+bangumiRefreshToken: Refresh token
+bangumiUserId: User ID
+bangumiTokenExpires: Expires
+bangumiTokenExpired: Expired
+bangumiTokenRefreshSuccess: Token refreshed
+bangumiTokenRefreshFailed: Token refresh failed
+bangumiClientIdSecretRequired: Please fill in the client ID first
 recognizeImageFailed: Failed to read image, please retry
 recognizeFailed: Recognition failed
 newChat: New chat
@@ -663,6 +685,8 @@ calDateDay: "${month}/${day}"
 personTabVoice: Voice cast
 personTabChat: Comments
 personTabRelation: Character relations
+personTabStaffInfo: Producer info
+personTabWorks: Works
 personTabProfile: Character profile
 personSubtitle: Person
 lanUdpPortHint: UDP broadcast port is used for device discovery, WebSocket port for remote control

@@ -17,7 +17,7 @@ class CustomMarkdownWidget extends StatelessWidget {
     this.selectable = true,
     this.padding = EdgeInsets.zero,
     this.textScaleFactor,
-    this.indentFirstLine = true,
+    this.indentFirstLine = false,
   });
 
   final String data;
@@ -31,7 +31,7 @@ class CustomMarkdownWidget extends StatelessWidget {
   /// 文字缩放比例，默认跟随系统
   final double? textScaleFactor;
 
-  /// 是否对普通段落加首行缩进前缀（AI 聊天等场景设为 false 以保持正常 markdown）
+  /// 是否对普通段落加首行缩进前缀（默认取消，保持正常 markdown 排布）
   final bool indentFirstLine;
 
   @override

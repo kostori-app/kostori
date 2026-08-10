@@ -10,6 +10,16 @@ class AppSettings extends StatefulWidget {
 }
 
 class _AppSettingsState extends State<AppSettings> {
+  final TextEditingController _nicknameCtrl = TextEditingController(
+    text: currentUserNickname,
+  );
+
+  @override
+  void dispose() {
+    _nicknameCtrl.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -115,6 +125,31 @@ class _AppSettingsState extends State<AppSettings> {
             child: _SettingCard(
               children: [
                 _SettingPartTitle(title: t.user, icon: Icons.person_outline),
+                // 用户昵称（注入 {{user_nickname}} 占位符，聊天头部用户名称同源）
+                _CallbackSetting(
+                  title: t.userNickname,
+                  subtitle: _nicknameCtrl.text.trim().isEmpty
+                      ? t.userNicknameHint
+                      : _nicknameCtrl.text.trim(),
+                  callback: () {
+                    showInputDialog(
+                      context: context,
+                      title: t.userNickname,
+                      hintText: t.userNicknameHint,
+                      initialValue: _nicknameCtrl.text,
+                      onConfirm: (value) {
+                        final text = value.toString().trim();
+                        setState(() {
+                          _nicknameCtrl.text = text;
+                          appdata.settings['userNickname'] = text;
+                          appdata.saveData();
+                        });
+                        return null;
+                      },
+                    );
+                  },
+                  actionTitle: t.edit,
+                ),
                 SelectSetting(
                   title: t.language,
                   settingKey: "language",

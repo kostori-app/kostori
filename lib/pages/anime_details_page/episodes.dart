@@ -115,20 +115,6 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Container(
-                width: 120,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.grey.toOpacity(0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16.0,

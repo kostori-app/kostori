@@ -113,8 +113,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get clear => '清除';
 	@override String get clickIfLoginExpired => '如果登录过期请点击';
 	@override String get close => '关闭';
-	@override String get comment => '评论';
-	@override String get comments => '评论';
+	@override String get comment => '集评论';
+	@override String get comments => '吐槽箱';
 	@override String get confirm => '确认';
 	@override String get continueText => '继续';
 	@override String get copied => '已复制';
@@ -341,7 +341,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get sort => '排序';
 	@override String get sourceFolder => '源文件夹';
 	@override String get sourceUrl => '源 URL';
-	@override String get staffList => '演职人员表';
+	@override String get staffList => '制作人员';
 	@override String get start => '开始';
 	@override String get storagePathForLocalAnimes => '本地番剧存储路径';
 	@override String get submit => '提交';
@@ -612,6 +612,28 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noSearchResults => '暂无搜索结果';
 	@override String itemsCount({required Object n}) => '${n} 个条目';
 	@override String get enableSkipBangumiSchedule => '启用跳过bangumi日程';
+	@override String get bangumiClientId => '客户端 ID';
+	@override String get bangumiClientSecret => '客户端密钥';
+	@override String get bangumiRedirectUri => '回调地址';
+	@override String get bangumiOAuthHint => '在 bgm.tv/dev 注册应用获取客户端 ID 与密钥';
+	@override String get bangumiOAuthLogin => 'Bangumi 登录';
+	@override String get bangumiShowNsfw => '显示 NSFW 内容';
+	@override String get bangumiLoggingIn => '登录中...';
+	@override String get bangumiOAuthLogout => '退出登录';
+	@override String get bangumiLoggedIn => '已登录';
+	@override String get bangumiNotLoggedIn => '未登录';
+	@override String get bangumiLoginSuccess => '登录成功';
+	@override String get bangumiLoginFailed => '登录失败';
+	@override String get bangumiCaptchaOrPasswordError => '验证码或密码错误，请重试';
+	@override String get bangumiCaptchaHint => '点击验证码图片或刷新按钮可更换';
+	@override String get bangumiTokenStatus => '令牌状态';
+	@override String get bangumiRefreshToken => '刷新令牌';
+	@override String get bangumiUserId => '用户ID';
+	@override String get bangumiTokenExpires => '过期';
+	@override String get bangumiTokenExpired => '已过期';
+	@override String get bangumiTokenRefreshSuccess => '令牌已刷新';
+	@override String get bangumiTokenRefreshFailed => '令牌刷新失败';
+	@override String get bangumiClientIdSecretRequired => '请先填写客户端 ID';
 	@override String get recognizeImageFailed => '图片读取失败，请重试';
 	@override String get recognizeFailed => '识别失败';
 	@override String get newChat => '新对话';
@@ -693,6 +715,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get personTabVoice => '声优资料';
 	@override String get personTabChat => '吐槽箱';
 	@override String get personTabRelation => '角色关联';
+	@override String get personTabStaffInfo => '制作人信息';
+	@override String get personTabWorks => '参与作品';
 	@override String get personTabProfile => '角色资料';
 	@override String get personSubtitle => '人物';
 	@override String get lanUdpPortHint => 'UDP 广播端口用于设备发现，WebSocket 端口用于远程控制连接';
@@ -2196,8 +2220,8 @@ extension on TranslationsZhCn {
 			'clear' => '清除',
 			'clickIfLoginExpired' => '如果登录过期请点击',
 			'close' => '关闭',
-			'comment' => '评论',
-			'comments' => '评论',
+			'comment' => '集评论',
+			'comments' => '吐槽箱',
 			'confirm' => '确认',
 			'continueText' => '继续',
 			'copied' => '已复制',
@@ -2424,7 +2448,7 @@ extension on TranslationsZhCn {
 			'sort' => '排序',
 			'sourceFolder' => '源文件夹',
 			'sourceUrl' => '源 URL',
-			'staffList' => '演职人员表',
+			'staffList' => '制作人员',
 			'start' => '开始',
 			'storagePathForLocalAnimes' => '本地番剧存储路径',
 			'submit' => '提交',
@@ -2697,6 +2721,28 @@ extension on TranslationsZhCn {
 			'noSearchResults' => '暂无搜索结果',
 			'itemsCount' => ({required Object n}) => '${n} 个条目',
 			'enableSkipBangumiSchedule' => '启用跳过bangumi日程',
+			'bangumiClientId' => '客户端 ID',
+			'bangumiClientSecret' => '客户端密钥',
+			'bangumiRedirectUri' => '回调地址',
+			'bangumiOAuthHint' => '在 bgm.tv/dev 注册应用获取客户端 ID 与密钥',
+			'bangumiOAuthLogin' => 'Bangumi 登录',
+			'bangumiShowNsfw' => '显示 NSFW 内容',
+			'bangumiLoggingIn' => '登录中...',
+			'bangumiOAuthLogout' => '退出登录',
+			'bangumiLoggedIn' => '已登录',
+			'bangumiNotLoggedIn' => '未登录',
+			'bangumiLoginSuccess' => '登录成功',
+			'bangumiLoginFailed' => '登录失败',
+			'bangumiCaptchaOrPasswordError' => '验证码或密码错误，请重试',
+			'bangumiCaptchaHint' => '点击验证码图片或刷新按钮可更换',
+			'bangumiTokenStatus' => '令牌状态',
+			'bangumiRefreshToken' => '刷新令牌',
+			'bangumiUserId' => '用户ID',
+			'bangumiTokenExpires' => '过期',
+			'bangumiTokenExpired' => '已过期',
+			'bangumiTokenRefreshSuccess' => '令牌已刷新',
+			'bangumiTokenRefreshFailed' => '令牌刷新失败',
+			'bangumiClientIdSecretRequired' => '请先填写客户端 ID',
 			'recognizeImageFailed' => '图片读取失败，请重试',
 			'recognizeFailed' => '识别失败',
 			'newChat' => '新对话',
@@ -2778,6 +2824,8 @@ extension on TranslationsZhCn {
 			'personTabVoice' => '声优资料',
 			'personTabChat' => '吐槽箱',
 			'personTabRelation' => '角色关联',
+			'personTabStaffInfo' => '制作人信息',
+			'personTabWorks' => '参与作品',
 			'personTabProfile' => '角色资料',
 			'personSubtitle' => '人物',
 			'lanUdpPortHint' => 'UDP 广播端口用于设备发现，WebSocket 端口用于远程控制连接',
@@ -3124,6 +3172,8 @@ extension on TranslationsZhCn {
 			'exportRooms' => '匯出房間',
 			'importRooms' => '匯入房間',
 			'connect' => '连接',
+			_ => null,
+		} ?? switch (path) {
 			'watchTogether' => '一起看',
 			'watchTogetherDesc' => '和朋友一起看番：创建或加入房间，边看边聊，分享截图与字幕。',
 			'selectRoomToStart' => '选择房间开始一起看',
@@ -3148,8 +3198,6 @@ extension on TranslationsZhCn {
 			'myDevice' => '我的设备',
 			'hubToken' => 'Hub 令牌',
 			'tokenFromTheHubServer' => '来自 Hub 服务端的令牌',
-			_ => null,
-		} ?? switch (path) {
 			'pasteHubServerToken' => '粘贴 Hub 服务端令牌',
 			'runningOn' => '运行在',
 			'online' => '在线',
@@ -3638,6 +3686,8 @@ extension on TranslationsZhCn {
 			'noMoreEpisodes' => '没有更多剧集可播放',
 			'routeNotFound' => '线路不存在',
 			'loadingDuplicateEpisode' => '加载重复集数',
+			_ => null,
+		} ?? switch (path) {
 			'getVideoUrlFailed' => '获取视频链接异常',
 			'startSearch' => '开始搜索',
 			'pleaseEnterEpisodeNumber' => '请输入集数',
@@ -3662,8 +3712,6 @@ extension on TranslationsZhCn {
 			'domainHint' => '域名，多个用逗号分隔',
 			'durationHint' => '秒数，如 4.0',
 			'tagHint' => '如',
-			_ => null,
-		} ?? switch (path) {
 			'cueAdTag' => 'CUE 广告标记',
 			'ultraShortSegment' => '极短分片',
 			'commonAdUrlPattern' => '常见广告 URL 特征',
@@ -4152,6 +4200,8 @@ extension on TranslationsZhCn {
 			'injectionPositionAfterMemory' => '记忆之后',
 			'injectionPositionBeforeTools' => '工具清单之前',
 			'injectionSortOrder' => '排序号',
+			_ => null,
+		} ?? switch (path) {
 			'noInjectionsYet' => '暂无提示词注入',
 			'worldBookName' => '名称',
 			'worldBookTriggers' => '触发词（每行一个）',
@@ -4176,8 +4226,6 @@ extension on TranslationsZhCn {
 			'profileExamples' => '对话示例（few-shot）',
 			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
 			'profileReplyStyle' => '回复风格',
-			_ => null,
-		} ?? switch (path) {
 			'replyLength' => '回复长度',
 			'replyLengthShort' => '简短',
 			'replyLengthNormal' => '适中',

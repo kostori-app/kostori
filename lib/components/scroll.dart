@@ -341,13 +341,11 @@ class _AppScrollBarState extends State<AppScrollBar> {
     maxExtent = outerMax + innerMax;
     position = outerOffset + innerOffset;
 
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      setState(() {
-        showScrollbar = true;
-      });
-      _restartHideTimer();
-    });
+    // 直接在当前帧重建，避免 post-frame 二次 setState 造成 thumb 位置滞后一帧而抖动
+    if (!mounted) return false;
+    showScrollbar = true;
+    _restartHideTimer();
+    setState(() {});
 
     return false;
   }

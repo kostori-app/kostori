@@ -62,6 +62,10 @@ class Api {
   static const String castsByPersonIDNext =
       'https://next.bgm.tv/p1/persons/{0}/casts';
 
+  // 人物参与作品
+  static const String worksByPersonIDNext =
+      'https://next.bgm.tv/p1/persons/{0}/works';
+
   // 人物吐槽箱
   static const String personCommentsByPersonIDNext =
       'https://next.bgm.tv/p1/persons/{0}/comments';

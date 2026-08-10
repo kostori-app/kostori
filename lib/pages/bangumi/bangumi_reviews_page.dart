@@ -79,13 +79,10 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
   }
 
   void scrollListener() {
-    if (scrollController.position.pixels >= 60) {
+    final hide = scrollController.position.pixels >= 60;
+    if (hide != isHide) {
       setState(() {
-        isHide = true;
-      });
-    } else {
-      setState(() {
-        isHide = false;
+        isHide = hide;
       });
     }
   }

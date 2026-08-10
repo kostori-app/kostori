@@ -432,9 +432,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
@@ -461,11 +459,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
                                   : MediaQuery.sizeOf(context).width - 32,
-                              child: Divider(
-                                thickness: 0.5,
-                                indent: 10,
-                                endIndent: 10,
-                              ),
+                              child: const SizedBox.shrink(),
                             ),
                           ),
                         ),
@@ -496,7 +490,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                       bottom: false,
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                           child: SizedBox(
                             width: MediaQuery.sizeOf(context).width > 950
                                 ? 950

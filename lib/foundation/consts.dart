@@ -12,12 +12,17 @@ const changePoint2 = 1300;
 const webUA =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
 
-// Bangumi API 文档要求的UA格式
-Map<String, String> bangumiHTTPHeader = {
-  'user-agent':
-      'axlmly/kostori/${App.version} (Android) (https://github.com/kostori-app/kostori)',
-  'referer': '',
-};
+// Bangumi API 文档要求的UA格式；已 OAuth 登录时附加 Bearer 鉴权头
+Map<String, String> get bangumiHTTPHeader {
+  final token = appdata.implicitData['bangumi_access_token'] as String?;
+  return {
+    'user-agent':
+        'axlmly/kostori/${App.version} (Android) (https://github.com/kostori-app/kostori)',
+    'referer': '',
+    if (token != null && token.trim().isNotEmpty)
+      'Authorization': 'Bearer ${token.trim()}',
+  };
+}
 
 Map<int, String> ratingLabels = {
   1: t.awful,

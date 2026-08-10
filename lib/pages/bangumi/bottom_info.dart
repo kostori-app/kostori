@@ -262,20 +262,6 @@ class BottomInfoState extends State<BottomInfo>
     return KostoriRefreshIndicator();
   }
 
-  /// 区块分隔线（infoBody 中重复出现多次）
-  Widget _sectionDivider() {
-    return Center(
-      child: Container(
-        width: 120,
-        height: 2,
-        decoration: BoxDecoration(
-          color: Colors.grey.toOpacity(0.4),
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-    );
-  }
-
   /// 区块标题 + 计数徽章（infoBody 中多处重复）
   Widget _sectionTitle(BuildContext context, String title, num count) {
     return Row(
@@ -486,8 +472,6 @@ class BottomInfoState extends State<BottomInfo>
               ),
             ),
             const SizedBox(height: 8),
-            _sectionDivider(),
-            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               child: Column(
@@ -556,8 +540,6 @@ class BottomInfoState extends State<BottomInfo>
               ),
             ),
             const SizedBox(height: 8),
-            _sectionDivider(),
-            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               child: Column(
@@ -582,8 +564,6 @@ class BottomInfoState extends State<BottomInfo>
             ),
             if (infoController.bangumiSRI.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _sectionDivider(),
-              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 6,
@@ -712,8 +692,6 @@ class BottomInfoState extends State<BottomInfo>
               ),
             ],
             const SizedBox(height: 8),
-            _sectionDivider(),
-            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               child: _sectionTitle(context, t.ratingChart, bangumiItem.score),
@@ -742,8 +720,6 @@ class BottomInfoState extends State<BottomInfo>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
               child: BangumiBarChartPage(bangumiItem: bangumiItem),
             ),
-            const SizedBox(height: 16),
-            _sectionDivider(),
             const SizedBox(height: 16),
           ],
         ),

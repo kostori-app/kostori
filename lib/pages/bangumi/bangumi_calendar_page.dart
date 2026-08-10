@@ -12,6 +12,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
@@ -759,12 +760,17 @@ Future<Uint8List?> generateBangumiCalendarPng({
   }
 
   final todayIndex = captureTime.weekday - 1;
-  final calendarToCapture = showWeekly
-      ? bangumiCalendar
-      : List.generate(
-          7,
-          (i) => i == todayIndex ? bangumiCalendar[i] : <BangumiItem>[],
-        );
+  // 数据未加载完全时（为空或不足 7 天）补空行，避免越界/空列表崩溃
+  final calendarToCapture = List<List<BangumiItem>>.generate(7, (i) {
+    if (showWeekly) {
+      return i < bangumiCalendar.length
+          ? bangumiCalendar[i]
+          : const <BangumiItem>[];
+    }
+    return i == todayIndex && todayIndex < bangumiCalendar.length
+        ? bangumiCalendar[i]
+        : const <BangumiItem>[];
+  });
 
   final repaintKey = GlobalKey();
   final screenshotWidget = RepaintBoundary(
@@ -789,26 +795,29 @@ Future<Uint8List?> generateBangumiCalendarPng({
   );
   overlayState.addOverlay(renderEntry);
 
-  await Future.delayed(const Duration(milliseconds: 1000));
-  await WidgetsBinding.instance.endOfFrame;
-  await WidgetsBinding.instance.endOfFrame;
-  await WidgetsBinding.instance.endOfFrame;
+  try {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
 
-  final boundary =
-      repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    final boundary =
+        repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
 
-  if (boundary == null) {
-    overlayState.remove(renderEntry);
-    Log.error('截图失败', 'RenderRepaintBoundary 为空');
+    if (boundary == null) {
+      Log.error('截图失败', 'RenderRepaintBoundary 为空');
+      return null;
+    }
+
+    final image = await boundary.toImage(pixelRatio: 2.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  } catch (e, s) {
+    Log.error('截图失败', '$e\n$s');
     return null;
+  } finally {
+    overlayState.remove(renderEntry);
   }
-
-  final image = await boundary.toImage(pixelRatio: 2.0);
-  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-  final bytes = byteData!.buffer.asUint8List();
-
-  overlayState.remove(renderEntry);
-  return bytes;
 }
 
 Future<void> captureBangumiCalendarScreenshot(
@@ -907,6 +916,8 @@ Future<void> captureBangumiCalendarScreenshot(
             ? 'timetable_weekly_$timestamp.png'
             : 'timetable_today_$timestamp.png',
       );
+      // 保存后刷新图片操作页列表，让截图出现在其中
+      providerContainer.read(imagesProvider.notifier).loadImages();
     }
   } catch (e) {
     removeLoading();

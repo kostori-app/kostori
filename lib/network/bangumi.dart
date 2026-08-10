@@ -11,6 +11,7 @@ import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_response.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_response.dart';
+import 'package:kostori/foundation/bangumi/person_work_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
@@ -23,12 +24,15 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/network/bangumi_token_interceptor.dart';
 import 'package:kostori/utils/utils.dart';
 
 class Bangumi {
   static final instance = Bangumi._();
 
-  Bangumi._();
+  Bangumi._() {
+    _dio.interceptors.add(BangumiTokenInterceptor(_dio));
+  }
 
   BangumiManager get manager => providerContainer.read(bangumiManagerProvider);
 
@@ -37,13 +41,17 @@ class Bangumi {
   Future<List<BangumiItem>> bangumiPostSearch(
     String keyword, {
     List<String> tags = const [],
-    bool nsfw = false,
+    bool? nsfw,
     String sort = 'rank',
     int offset = 0,
     String airDate = '',
     String endDate = '',
   }) async {
     List<BangumiItem> bangumiList = [];
+
+    // 未显式指定时读取设置（bangumiShowNsfw，默认开启）
+    final effectiveNsfw =
+        nsfw ?? (appdata.implicitData['bangumiShowNsfw'] as bool? ?? true);
 
     var data = <String, dynamic>{
       'keyword': keyword,
@@ -56,7 +64,7 @@ class Bangumi {
           if (airDate.isNotEmpty) '>=$airDate',
           if (endDate.isNotEmpty) '<$endDate',
         ],
-        "nsfw": nsfw,
+        "nsfw": effectiveNsfw,
       },
     };
 
@@ -948,6 +956,33 @@ class Bangumi {
       NetLog.error('getCastsByPersonId', '$e\n$s');
     }
     return characterPersonCastsItem;
+  }
+
+  Future<List<PersonWorkItem>> getPersonWorks(
+    int id, {
+    int offset = 0,
+    int subjectType = 2,
+  }) async {
+    List<PersonWorkItem> works = [];
+    final params = <String, dynamic>{
+      'subjectType': subjectType,
+      'limit': 20,
+      'offset': offset,
+    };
+    try {
+      final res = await _dio.request(
+        Api.formatUrl(Api.worksByPersonIDNext, [id]),
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
+      final jsonData = res.data['data'];
+      for (dynamic jsonItem in jsonData) {
+        works.add(PersonWorkItem.fromJson(jsonItem));
+      }
+    } catch (e, s) {
+      NetLog.error('getPersonWorks', '$e\n$s');
+    }
+    return works;
   }
 
   Future<Map<bool, BangumiItem?>> isBangumiExists(int id) async {

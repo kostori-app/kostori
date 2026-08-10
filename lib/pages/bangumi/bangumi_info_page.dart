@@ -240,7 +240,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                   handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
                     context,
                   ),
-                  sliver: SliverAppBar.medium(
+                  sliver: SliverAppBar.large(
                     title: Text(displayName),
                     automaticallyImplyLeading: false,
                     scrolledUnderElevation: 0.0,

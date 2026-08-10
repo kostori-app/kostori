@@ -425,8 +425,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   Iterable<Widget> buildTitle() sync* {
     yield SliverLazyToBoxAdapter(
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final bindAll = ref
@@ -450,20 +450,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: Container(
-                        width: 120,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.toOpacity(0.4),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
                   Padding(
                     padding: const EdgeInsets.only(
                       top: 16,
@@ -845,24 +831,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       return const SliverPadding(padding: EdgeInsets.zero);
     }
     return SliverToBoxAdapter(
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-            const Divider(height: 1, indent: 16, endIndent: 16),
             ListTile(title: Text(t.myRating)),
             Padding(
               padding: const EdgeInsets.all(16),
@@ -881,24 +853,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       return const SliverPadding(padding: EdgeInsets.zero);
     }
     return SliverToBoxAdapter(
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-            const Divider(height: 1, indent: 16, endIndent: 16),
             TranslationWidget(
               data: anime.description!,
               title: ListTile(title: Text(t.description)),
@@ -986,25 +944,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
 
     return SliverToBoxAdapter(
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-            const Divider(height: 1, indent: 16, endIndent: 16),
             ListTile(title: Text(t.information)),
             for (var e in anime.tags.entries)
               buildWrap(
@@ -1047,8 +991,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         physics: _tabPhysics,
         controller: recommendScrollCtrl,
         children: [
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ScrollConfiguration(
               behavior: ScrollConfiguration.of(
                 context,
@@ -1056,20 +1000,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: Container(
-                        width: 120,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.toOpacity(0.4),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
                   ListTile(title: Text(t.related)),
                   Padding(
                     padding: const EdgeInsets.symmetric(

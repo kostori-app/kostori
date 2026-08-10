@@ -570,6 +570,28 @@ deleteImagesCount: "刪除${n}張圖片"
 noSearchResults: 尚無搜尋結果
 itemsCount: "${n} 個條目"
 enableSkipBangumiSchedule: 啟用跳過 bangumi 日程
+bangumiClientId: 用戶端 ID
+bangumiClientSecret: 用戶端密鑰
+bangumiRedirectUri: 回呼位址
+bangumiOAuthHint: 在 bgm.tv/dev 註冊應用程式以取得用戶端 ID 與密鑰
+bangumiOAuthLogin: Bangumi 登入
+bangumiShowNsfw: 顯示 NSFW 內容
+bangumiLoggingIn: 登入中...
+bangumiOAuthLogout: 登出
+bangumiLoggedIn: 已登入
+bangumiNotLoggedIn: 未登入
+bangumiLoginSuccess: 登入成功
+bangumiLoginFailed: 登入失敗
+bangumiCaptchaOrPasswordError: 驗證碼或密碼錯誤，請重試
+bangumiCaptchaHint: 點擊驗證碼圖片或重新整理按鈕可更換
+bangumiTokenStatus: 令牌狀態
+bangumiRefreshToken: 重新整理令牌
+bangumiUserId: 使用者ID
+bangumiTokenExpires: 過期
+bangumiTokenExpired: 已過期
+bangumiTokenRefreshSuccess: 令牌已重新整理
+bangumiTokenRefreshFailed: 令牌重新整理失敗
+bangumiClientIdSecretRequired: 請先填寫用戶端 ID
 recognizeImageFailed: 圖片讀取失敗，請重試
 recognizeFailed: 辨識失敗
 newChat: 新對話
@@ -651,6 +673,8 @@ calDateDay: "${month}月${day}日"
 personTabVoice: 聲優資料
 personTabChat: 吐槽箱
 personTabRelation: 角色關聯
+personTabStaffInfo: 製作人資訊
+personTabWorks: 參與作品
 personTabProfile: 角色資料
 personSubtitle: 人物
 lanUdpPortHint: UDP 廣播連接埠用於裝置探索，WebSocket 連接埠用於遠端控制連線

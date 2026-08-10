@@ -14,15 +14,19 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
+import 'package:kostori/foundation/bangumi/person_work_item.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class PersonPage extends ConsumerStatefulWidget {
-  const PersonPage({super.key, required this.personID});
+  const PersonPage({super.key, required this.personID, this.fromStaff = false});
 
   final int personID;
+
+  /// 从制作人员进入时，关联 tab 加载「参与作品」而非「出演角色」
+  final bool fromStaff;
 
   @override
   ConsumerState<PersonPage> createState() => _PersonPageState();
@@ -37,8 +41,10 @@ class _PersonPageState extends ConsumerState<PersonPage>
   bool loadingComments = false;
   List<CharacterCommentItem> commentsList = [];
   List<CharacterPersonCastsItem> characterPersonCastsList = [];
+  List<PersonWorkItem> personWorksList = [];
   bool commentsQueryTimeout = false;
   bool characterPersonCastsQueryTimeout = false;
+  bool personWorksQueryTimeout = false;
   int currentType = 0;
 
   @override
@@ -55,11 +61,20 @@ class _PersonPageState extends ConsumerState<PersonPage>
         loadComments();
       }
 
-      if (index == 2 &&
-          characterPersonCastsList.isEmpty &&
-          !loadingPersonCasts &&
-          !characterPersonCastsQueryTimeout) {
-        loadPersonCasts();
+      if (index == 2) {
+        if (widget.fromStaff) {
+          if (personWorksList.isEmpty &&
+              !loadingPersonCasts &&
+              !personWorksQueryTimeout) {
+            loadPersonWorks();
+          }
+        } else {
+          if (characterPersonCastsList.isEmpty &&
+              !loadingPersonCasts &&
+              !characterPersonCastsQueryTimeout) {
+            loadPersonCasts();
+          }
+        }
       }
     });
   }
@@ -128,6 +143,27 @@ class _PersonPageState extends ConsumerState<PersonPage>
     }
   }
 
+  Future<void> loadPersonWorks({int offset = 0}) async {
+    setState(() {
+      loadingPersonCasts = true;
+    });
+    await Bangumi.instance.getPersonWorks(widget.personID, offset: offset).then(
+      (value) {
+        personWorksList.addAll(value);
+        if (personWorksList.isEmpty && mounted) {
+          setState(() {
+            personWorksQueryTimeout = true;
+          });
+        }
+      },
+    );
+    if (mounted) {
+      setState(() {
+        loadingPersonCasts = false;
+      });
+    }
+  }
+
   Map<String, int> relationValue = {
     t.mainCharacter: 1,
     t.supportingCharacter: 2,
@@ -155,9 +191,17 @@ class _PersonPageState extends ConsumerState<PersonPage>
               child: TabBar(
                 controller: _tabController,
                 tabs: [
-                  Tab(text: t.personTabVoice),
+                  Tab(
+                    text: widget.fromStaff
+                        ? t.personTabStaffInfo
+                        : t.personTabVoice,
+                  ),
                   Tab(text: t.personTabChat),
-                  Tab(text: t.personTabRelation),
+                  Tab(
+                    text: widget.fromStaff
+                        ? t.personTabWorks
+                        : t.personTabRelation,
+                  ),
                 ],
               ),
             ),
@@ -168,7 +212,9 @@ class _PersonPageState extends ConsumerState<PersonPage>
               children: [
                 personInfoBody,
                 KeepAliveWrapper(child: personCommentsBody),
-                KeepAliveWrapper(child: personCastsBody),
+                KeepAliveWrapper(
+                  child: widget.fromStaff ? personWorksBody : personCastsBody,
+                ),
               ],
             ),
           ),
@@ -453,9 +499,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
@@ -482,11 +526,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
                                   : MediaQuery.sizeOf(context).width - 32,
-                              child: Divider(
-                                thickness: 0.5,
-                                indent: 10,
-                                endIndent: 10,
-                              ),
+                              child: const SizedBox.shrink(),
                             ),
                           ),
                         ),
@@ -517,7 +557,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       bottom: false,
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                           child: SizedBox(
                             width: MediaQuery.sizeOf(context).width > 950
                                 ? 950
@@ -1008,6 +1048,134 @@ class _PersonPageState extends ConsumerState<PersonPage>
           ),
         ),
       ),
+    );
+  }
+
+  /// 制作人员「参与作品」列表
+  Widget get personWorksBody {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Builder(
+            builder: (BuildContext context) {
+              return NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.metrics.axis != Axis.vertical) {
+                    return false;
+                  }
+                  if (notification is ScrollUpdateNotification) {
+                    final metrics = notification.metrics;
+                    if (metrics.maxScrollExtent > 0 &&
+                        metrics.pixels >= metrics.maxScrollExtent - 20 &&
+                        !loadingPersonCasts &&
+                        personWorksList.length >= 20) {
+                      loadPersonWorks(offset: personWorksList.length);
+                    }
+                  }
+                  return false;
+                },
+                child: CustomScrollView(
+                  scrollBehavior: const ScrollBehavior().copyWith(
+                    scrollbars: false,
+                    dragDevices: {
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.trackpad,
+                    },
+                  ),
+                  key: const PageStorageKey<String>('人物参与作品'),
+                  slivers: [
+                    if (personWorksList.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 240,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: personWorksList.length,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            itemBuilder: (context, index) {
+                              final work = personWorksList[index];
+                              return SizedBox(
+                                width: 240 * 0.68,
+                                height: 240,
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: BangumiBriefCard(
+                                        bangumiItem: work.subject,
+                                        heroTag: 'PersonWork',
+                                      ),
+                                    ),
+                                    if (work.positions.isNotEmpty)
+                                      Positioned(
+                                        left: 8,
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.secondaryContainer,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            work.positions.first.type.cn.isEmpty
+                                                ? work.positions.first.type.jp
+                                                : work.positions.first.type.cn,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      )
+                    else if (personWorksQueryTimeout)
+                      SliverFillRemaining(
+                        child: GeneralErrorWidget(
+                          errMsg: t.failedToLoadPleaseTryAgain,
+                          actions: [
+                            GeneralErrorButton(
+                              onPressed: () {
+                                loadPersonWorks();
+                              },
+                              text: t.reload,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      BangumiWidget.bangumiSkeletonSliverBrief(),
+                    if (loadingPersonCasts)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Center(
+                            child: PolygonRefreshIndicator(size: 40),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

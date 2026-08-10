@@ -196,7 +196,7 @@ class AppDio with DioMixin {
 }
 
 class RHttpAdapter implements HttpClientAdapter {
-  Future<rhttp.ClientSettings> settings(Uri uri) async {
+  Future<rhttp.ClientSettings> settings(RequestOptions options) async {
     final proxy = await getProxy();
 
     final noProxyOverrides =
@@ -210,11 +210,18 @@ class RHttpAdapter implements HttpClientAdapter {
             if (entry is Map) {
               final domain = entry['domain']?.toString() ?? '';
               final enabled = entry['enabled'] as bool? ?? true;
-              return enabled && uri.host.startsWith(domain);
+              return enabled && options.uri.host.startsWith(domain);
             }
             return false;
           })
         : false;
+
+    // 尊重 dio 的重定向设置：maxRedirects:0 / followRedirects:false 时不跟随，
+    // 便于登录/授权等流程拦截 302（chii_auth、location 等关键信息在 302 响应里）
+    final redirectSettings =
+        options.followRedirects == false || options.maxRedirects <= 0
+        ? const rhttp.RedirectSettings.none()
+        : rhttp.RedirectSettings.limited(options.maxRedirects);
 
     return rhttp.ClientSettings(
       proxySettings: isNoProxy
@@ -222,7 +229,7 @@ class RHttpAdapter implements HttpClientAdapter {
           : (proxy == null
                 ? const rhttp.ProxySettings.noProxy()
                 : rhttp.ProxySettings.proxy(proxy)),
-      redirectSettings: const rhttp.RedirectSettings.limited(5),
+      redirectSettings: redirectSettings,
       timeoutSettings: const rhttp.TimeoutSettings(
         connectTimeout: Duration(seconds: 15),
         keepAliveTimeout: Duration(seconds: 60),
@@ -286,7 +293,7 @@ class RHttpAdapter implements HttpClientAdapter {
     var res = await rhttp.Rhttp.request(
       method: rhttp.HttpMethod(options.method),
       url: options.uri.toString(),
-      settings: await settings(options.uri),
+      settings: await settings(options),
       expectBody: rhttp.HttpExpectBody.stream,
       body: requestStream == null ? null : rhttp.HttpBody.stream(requestStream),
       headers: rhttp.HttpHeaders.rawMap(

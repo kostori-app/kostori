@@ -968,8 +968,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Source URL'
 	String get sourceUrl => 'Source URL';
 
-	/// en: 'StaffList'
-	String get staffList => 'StaffList';
+	/// en: 'Staff'
+	String get staffList => 'Staff';
 
 	/// en: 'Start'
 	String get start => 'Start';
@@ -1781,6 +1781,72 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Enable skipping Bangumi schedule'
 	String get enableSkipBangumiSchedule => 'Enable skipping Bangumi schedule';
 
+	/// en: 'Client ID'
+	String get bangumiClientId => 'Client ID';
+
+	/// en: 'Client Secret'
+	String get bangumiClientSecret => 'Client Secret';
+
+	/// en: 'Redirect URI'
+	String get bangumiRedirectUri => 'Redirect URI';
+
+	/// en: 'Register an app on bgm.tv/dev to get the client ID and secret'
+	String get bangumiOAuthHint => 'Register an app on bgm.tv/dev to get the client ID and secret';
+
+	/// en: 'Bangumi Login'
+	String get bangumiOAuthLogin => 'Bangumi Login';
+
+	/// en: 'Show NSFW content'
+	String get bangumiShowNsfw => 'Show NSFW content';
+
+	/// en: 'Logging in...'
+	String get bangumiLoggingIn => 'Logging in...';
+
+	/// en: 'Logout'
+	String get bangumiOAuthLogout => 'Logout';
+
+	/// en: 'Logged in'
+	String get bangumiLoggedIn => 'Logged in';
+
+	/// en: 'Not logged in'
+	String get bangumiNotLoggedIn => 'Not logged in';
+
+	/// en: 'Login successful'
+	String get bangumiLoginSuccess => 'Login successful';
+
+	/// en: 'Login failed'
+	String get bangumiLoginFailed => 'Login failed';
+
+	/// en: 'Incorrect captcha or password, please retry'
+	String get bangumiCaptchaOrPasswordError => 'Incorrect captcha or password, please retry';
+
+	/// en: 'Tap the captcha image or refresh button to change it'
+	String get bangumiCaptchaHint => 'Tap the captcha image or refresh button to change it';
+
+	/// en: 'Token status'
+	String get bangumiTokenStatus => 'Token status';
+
+	/// en: 'Refresh token'
+	String get bangumiRefreshToken => 'Refresh token';
+
+	/// en: 'User ID'
+	String get bangumiUserId => 'User ID';
+
+	/// en: 'Expires'
+	String get bangumiTokenExpires => 'Expires';
+
+	/// en: 'Expired'
+	String get bangumiTokenExpired => 'Expired';
+
+	/// en: 'Token refreshed'
+	String get bangumiTokenRefreshSuccess => 'Token refreshed';
+
+	/// en: 'Token refresh failed'
+	String get bangumiTokenRefreshFailed => 'Token refresh failed';
+
+	/// en: 'Please fill in the client ID first'
+	String get bangumiClientIdSecretRequired => 'Please fill in the client ID first';
+
 	/// en: 'Failed to read image, please retry'
 	String get recognizeImageFailed => 'Failed to read image, please retry';
 
@@ -2023,6 +2089,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Character relations'
 	String get personTabRelation => 'Character relations';
+
+	/// en: 'Producer info'
+	String get personTabStaffInfo => 'Producer info';
+
+	/// en: 'Works'
+	String get personTabWorks => 'Works';
 
 	/// en: 'Character profile'
 	String get personTabProfile => 'Character profile';
@@ -6559,7 +6631,7 @@ extension on Translations {
 			'sort' => 'Sort',
 			'sourceFolder' => 'Source Folder',
 			'sourceUrl' => 'Source URL',
-			'staffList' => 'StaffList',
+			'staffList' => 'Staff',
 			'start' => 'Start',
 			'storagePathForLocalAnimes' => 'Storage Path for local animes',
 			'submit' => 'Submit',
@@ -6832,6 +6904,28 @@ extension on Translations {
 			'noSearchResults' => 'No search results',
 			'itemsCount' => ({required Object n}) => '${n} items',
 			'enableSkipBangumiSchedule' => 'Enable skipping Bangumi schedule',
+			'bangumiClientId' => 'Client ID',
+			'bangumiClientSecret' => 'Client Secret',
+			'bangumiRedirectUri' => 'Redirect URI',
+			'bangumiOAuthHint' => 'Register an app on bgm.tv/dev to get the client ID and secret',
+			'bangumiOAuthLogin' => 'Bangumi Login',
+			'bangumiShowNsfw' => 'Show NSFW content',
+			'bangumiLoggingIn' => 'Logging in...',
+			'bangumiOAuthLogout' => 'Logout',
+			'bangumiLoggedIn' => 'Logged in',
+			'bangumiNotLoggedIn' => 'Not logged in',
+			'bangumiLoginSuccess' => 'Login successful',
+			'bangumiLoginFailed' => 'Login failed',
+			'bangumiCaptchaOrPasswordError' => 'Incorrect captcha or password, please retry',
+			'bangumiCaptchaHint' => 'Tap the captcha image or refresh button to change it',
+			'bangumiTokenStatus' => 'Token status',
+			'bangumiRefreshToken' => 'Refresh token',
+			'bangumiUserId' => 'User ID',
+			'bangumiTokenExpires' => 'Expires',
+			'bangumiTokenExpired' => 'Expired',
+			'bangumiTokenRefreshSuccess' => 'Token refreshed',
+			'bangumiTokenRefreshFailed' => 'Token refresh failed',
+			'bangumiClientIdSecretRequired' => 'Please fill in the client ID first',
 			'recognizeImageFailed' => 'Failed to read image, please retry',
 			'recognizeFailed' => 'Recognition failed',
 			'newChat' => 'New chat',
@@ -6913,6 +7007,8 @@ extension on Translations {
 			'personTabVoice' => 'Voice cast',
 			'personTabChat' => 'Comments',
 			'personTabRelation' => 'Character relations',
+			'personTabStaffInfo' => 'Producer info',
+			'personTabWorks' => 'Works',
 			'personTabProfile' => 'Character profile',
 			'personSubtitle' => 'Person',
 			'lanUdpPortHint' => 'UDP broadcast port is used for device discovery, WebSocket port for remote control',
@@ -7252,6 +7348,8 @@ extension on Translations {
 			'serverName' => 'Server Name',
 			'selectServer' => 'Select a server',
 			'exportRooms' => 'Export Rooms',
+			_ => null,
+		} ?? switch (path) {
 			'importRooms' => 'Import Rooms',
 			'watchTogether' => 'Watch Together',
 			'watchTogetherDesc' => 'Watch anime with friends, create or join a room to chat and share screenshots and subtitles.',
@@ -7276,8 +7374,6 @@ extension on Translations {
 			'displayNameInHub' => 'Display name in hub',
 			'myDevice' => 'My Device',
 			'hubToken' => 'Hub Token',
-			_ => null,
-		} ?? switch (path) {
 			'tokenFromTheHubServer' => 'Token from the hub server',
 			'pasteHubServerToken' => 'Paste hub server token',
 			'runningOn' => 'Running on',
@@ -7766,6 +7862,8 @@ extension on Translations {
 			'loadingDuplicateEpisode' => 'Loading duplicate episode',
 			'getVideoUrlFailed' => 'Failed to get video URL',
 			'startSearch' => 'Start search',
+			_ => null,
+		} ?? switch (path) {
 			'pleaseEnterEpisodeNumber' => 'Please enter episode number',
 			'pleaseEnterValidEpisodeNumber' => 'Please enter a valid episode number between 1-999',
 			'imageTitle' => 'Title',
@@ -7790,8 +7888,6 @@ extension on Translations {
 			'tagHint' => 'e.g. #EXT-X-CUE-OUT',
 			'cueAdTag' => 'CUE Ad Tag',
 			'ultraShortSegment' => 'Ultra Short Segment',
-			_ => null,
-		} ?? switch (path) {
 			'commonAdUrlPattern' => 'Common Ad URL Pattern',
 			'keywordMatch' => 'Keyword Match',
 			'keywordHint' => 'Substring, e.g. advert or adservice',
@@ -8280,6 +8376,8 @@ extension on Translations {
 			'injectionPositionAfterMemory' => 'After memory',
 			'injectionPositionBeforeTools' => 'Before tool list',
 			'injectionSortOrder' => 'Sort order',
+			_ => null,
+		} ?? switch (path) {
 			'noInjectionsYet' => 'No prompt injections yet',
 			'worldBookName' => 'Name',
 			'worldBookTriggers' => 'Trigger words (one per line)',
@@ -8304,8 +8402,6 @@ extension on Translations {
 			'profileExamples' => 'Example dialogs (few-shot)',
 			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
 			'profileReplyStyle' => 'Reply style',
-			_ => null,
-		} ?? switch (path) {
 			'replyLength' => 'Reply length',
 			'replyLengthShort' => 'Concise',
 			'replyLengthNormal' => 'Normal',

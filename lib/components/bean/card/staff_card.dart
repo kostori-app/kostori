@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
+import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class StaffCard extends StatelessWidget {
@@ -32,9 +33,10 @@ class StaffCard extends StatelessWidget {
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () {
-              // 可以拓展点击跳转，例如跳转到 StaffDetailPage
-            },
+            onTap: () => BangumiWidget.showBottomPage(
+              context,
+              PersonPage(personID: staffFullItem!.staff.id, fromStaff: true),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(

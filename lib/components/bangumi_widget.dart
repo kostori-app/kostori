@@ -330,6 +330,16 @@ class BangumiWidget {
           ? FileImage(File(url)) as ImageProvider
           : CachedImageProvider(url);
 
+      if (!isLocal) {
+        // 预加载图片，确保首次进入预览页时 hero 目标立即有图，
+        // 否则图片未缓存时 hero flight 不触发（二次进入才正常）
+        try {
+          await precacheImage(img, context);
+        } catch (e, s) {
+          Log.error('precacheImage', '$e\n$s');
+        }
+      }
+
       await App.rootContext.toBlurFade(
         () => ProviderScope(
           overrides: [

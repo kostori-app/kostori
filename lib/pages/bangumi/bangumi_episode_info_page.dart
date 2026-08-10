@@ -112,18 +112,6 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: BBCodeWidget(bbcode: episode.desc),
                         ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Container(
-                            width: 120,
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.toOpacity(0.4),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         Row(
                           children: [
                             Text(

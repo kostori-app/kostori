@@ -518,10 +518,6 @@ Future<void> showInputDialog({
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => context.pop(),
-                child: Text(cancelText),
-              ),
               Button.filled(
                 isLoading: isLoading,
                 onPressed: () async {

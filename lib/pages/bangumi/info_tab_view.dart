@@ -128,18 +128,6 @@ class _InfoTabViewState extends State<InfoTabView>
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
               Row(
                 children: [
                   Text(
@@ -163,7 +151,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               ExpandableTags(
                 tags: widget.bangumiItem.tags,
                 fullTag: fullTag,
@@ -177,18 +165,6 @@ class _InfoTabViewState extends State<InfoTabView>
                 },
               ),
               if (widget.allEpisodes.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.toOpacity(0.4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Row(
                   children: [
                     Text(
@@ -227,7 +203,7 @@ class _InfoTabViewState extends State<InfoTabView>
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Wrap(
                   children: [
                     // 显示最多15个
@@ -376,18 +352,6 @@ class _InfoTabViewState extends State<InfoTabView>
                 ),
               ],
               if (widget.bangumiSRI.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.toOpacity(0.4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Row(
                   children: [
                     Text(
@@ -411,7 +375,7 @@ class _InfoTabViewState extends State<InfoTabView>
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 SizedBox(
                   height: 220,
                   child: ListView.builder(
@@ -551,18 +515,6 @@ class _InfoTabViewState extends State<InfoTabView>
               if (MediaQuery.sizeOf(context).width <= 1200 &&
                   !widget.isLoading &&
                   widget.bangumiItem.total > 20) ...[
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.toOpacity(0.4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Row(
                   children: [
                     Text(
@@ -586,7 +538,7 @@ class _InfoTabViewState extends State<InfoTabView>
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -688,9 +640,7 @@ class _InfoTabViewState extends State<InfoTabView>
                           bottom: false,
                           child: Center(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
+                              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                               child: SizedBox(
                                 width:
                                     MediaQuery.sizeOf(context).width > maxWidth
@@ -718,11 +668,7 @@ class _InfoTabViewState extends State<InfoTabView>
                                     MediaQuery.sizeOf(context).width > maxWidth
                                     ? maxWidth
                                     : MediaQuery.sizeOf(context).width - 32,
-                                child: Divider(
-                                  thickness: 0.5,
-                                  indent: 10,
-                                  endIndent: 10,
-                                ),
+                                child: const SizedBox.shrink(),
                               ),
                             ),
                           ),

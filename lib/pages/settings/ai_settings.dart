@@ -9,9 +9,6 @@ class AiSettings extends StatefulWidget {
 
 class _AiSettingsState extends State<AiSettings> {
   late List<(String, String, String, String)> _providers;
-  final TextEditingController _nicknameCtrl = TextEditingController(
-    text: currentUserNickname,
-  );
 
   @override
   void initState() {
@@ -24,7 +21,6 @@ class _AiSettingsState extends State<AiSettings> {
 
   @override
   void dispose() {
-    _nicknameCtrl.dispose();
     super.dispose();
   }
 
@@ -76,32 +72,6 @@ class _AiSettingsState extends State<AiSettings> {
                         .toList(),
                   );
                 },
-              ),
-            ],
-          ),
-        ),
-
-        // ── 用户昵称（注入 {{user_nickname}} 占位符，聊天头部用户名称同源）──
-        _BuildSectionPadding(
-          _SettingCard(
-            children: [
-              _SettingPartTitle(
-                title: t.userNickname,
-                icon: Icons.person_outline,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: _nicknameCtrl,
-                  onChanged: (v) {
-                    appdata.settings['userNickname'] = v.trim();
-                    appdata.saveData();
-                  },
-                  decoration: InputDecoration(
-                    hintText: t.userNicknameHint,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
               ),
             ],
           ),

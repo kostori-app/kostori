@@ -11,6 +11,7 @@ class _SwitchSetting extends StatefulWidget {
     this.dataSource = SwitchDataSource.settings,
     this.onChanged,
     this.subtitle,
+    this.defaultValue = false,
     super.key,
   });
 
@@ -19,6 +20,9 @@ class _SwitchSetting extends StatefulWidget {
   final SwitchDataSource dataSource;
   final VoidCallback? onChanged;
   final String? subtitle;
+
+  /// 设置项不存在时的默认值（默认 false）
+  final bool defaultValue;
 
   @override
   State<_SwitchSetting> createState() => _SwitchSettingState();
@@ -29,11 +33,11 @@ class _SwitchSettingState extends State<_SwitchSetting> {
     if (widget.dataSource == SwitchDataSource.settings) {
       final value = appdata.settings[widget.settingKey];
       if (value is bool) return value;
-      return false;
+      return widget.defaultValue;
     } else {
       final value = appdata.implicitData[widget.settingKey];
       if (value is bool) return value;
-      return false;
+      return widget.defaultValue;
     }
   }
 

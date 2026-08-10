@@ -25,9 +25,20 @@ class CharacterCommentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isBone) {
-      return Skeletonizer.zone(
-        enabled: true,
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: isBone ? _buildBone(context) : _buildContent(context),
+    );
+  }
+
+  Widget _buildBone(BuildContext context) {
+    return Skeletonizer.zone(
+      enabled: true,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -51,14 +62,16 @@ class CharacterCommentsCard extends StatelessWidget {
             const Divider(thickness: 0.5, indent: 10, endIndent: 10),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
+  Widget _buildContent(BuildContext context) {
     final id = commentItem!.comment.user.id;
 
     return SelectionArea(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

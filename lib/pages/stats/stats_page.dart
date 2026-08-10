@@ -3,6 +3,7 @@ library;
 import 'dart:math';
 
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';

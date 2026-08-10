@@ -313,7 +313,11 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       heroAttributes: PhotoViewHeroAttributes(tag: widget.heroTag),
       backgroundDecoration: const BoxDecoration(color: Colors.transparent),
       onTapUp: (ctx, details, _) => _handleTap(0, details),
-      child: AnimatedImage(image: widget.img, fit: BoxFit.contain),
+      // SizedBox.expand 保证图片加载完成前 hero 目标也有固定尺寸，
+      // 否则首次进入（图片未缓存）时 target hero 尺寸为 0，hero flight 不触发
+      child: SizedBox.expand(
+        child: AnimatedImage(image: widget.img, fit: BoxFit.contain),
+      ),
     );
   }
 }
