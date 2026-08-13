@@ -73,6 +73,24 @@ class History implements Anime {
        watchEpisode = watchEpisode ?? <int>{},
        time = time ?? DateTime.now();
 
+  /// 直接构造（用于后台 isolate 反序列化重建）
+  History({
+    required this.id,
+    required this.type,
+    DateTime? time,
+    required this.title,
+    required this.subtitle,
+    required this.cover,
+    this.lastWatchEpisode,
+    this.lastWatchTime,
+    this.lastRoad,
+    this.allEpisode,
+    this.bangumiId,
+    Set<int>? watchEpisode,
+    this.viewMore,
+  }) : time = time ?? DateTime.now(),
+       watchEpisode = watchEpisode ?? <int>{};
+
   History.fromDrift(HistoryTableData r)
     : type = HistoryType(r.type),
       time = DateTime.fromMillisecondsSinceEpoch(r.time),
@@ -115,6 +133,51 @@ class History implements Anime {
   @override
   String toString() =>
       'History{type: $type, time: $time, title: $title, id: $id, bangumiId: $bangumiId}';
+
+  /// 序列化为 JSON（用于 WebDAV 多端字段级合并）
+  @override
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type.value,
+    'title': title,
+    'subtitle': subtitle,
+    'cover': cover,
+    'time': time.millisecondsSinceEpoch,
+    'lastWatchEpisode': lastWatchEpisode,
+    'lastWatchTime': lastWatchTime,
+    'lastRoad': lastRoad,
+    'allEpisode': allEpisode,
+    'bangumiId': bangumiId,
+    'watchEpisode': watchEpisode.join(','),
+    'viewMore': viewMore is PageJumpTarget
+        ? (viewMore as PageJumpTarget).toJsonString()
+        : null,
+  };
+
+  /// 从 JSON 反序列化（配合 WebDAV 多端字段级合并）
+  factory History.fromJson(Map<String, dynamic> json) => History(
+    id: json['id'] as String,
+    type: AnimeType(json['type'] as int),
+    time: DateTime.fromMillisecondsSinceEpoch(json['time'] as int),
+    title: json['title'] as String? ?? '',
+    subtitle: json['subtitle'] as String? ?? '',
+    cover: json['cover'] as String? ?? '',
+    lastWatchEpisode: json['lastWatchEpisode'] as int?,
+    lastWatchTime: json['lastWatchTime'] as int?,
+    lastRoad: json['lastRoad'] as int?,
+    allEpisode: json['allEpisode'] as int?,
+    bangumiId: json['bangumiId'] as int?,
+    watchEpisode: Set<int>.from(
+      (json['watchEpisode'] as String? ?? '')
+          .split(',')
+          .where((e) => e.isNotEmpty)
+          .map(int.parse),
+    ),
+    viewMore:
+        json['viewMore'] is String && (json['viewMore'] as String).isNotEmpty
+        ? PageJumpTarget.fromJsonString(json['viewMore'] as String)
+        : null,
+  );
 
   @override
   int get hashCode => Object.hash(id, type);
@@ -166,9 +229,6 @@ class History implements Anime {
 
   @override
   List<String>? get tags => null;
-
-  @override
-  Map<String, dynamic> toJson() => throw UnimplementedError();
 }
 
 enum HistoryTimeGroup {
@@ -378,15 +438,45 @@ class HistoryManager with ChangeNotifier {
 
   // 内存缓存（保持原有性能优化）
   Map<String, bool>? _cachedHistoryIds;
+  // 缓存全部历史（初始从数据库加载，之后增量更新）
   final cachedHistories = <String, History>{};
 
-  /// cachedHistories 的上限，超出时淘汰最久未更新的条目
-  static const _historyCacheCap = 200;
+  // 上次时间变化通知的时间（时间变化每 30 秒通知一次，避免每秒重建卡顿）
+  int _lastTimeNotify = 0;
+
+  /// 更新内存缓存并通知。
+  /// 集数变化立即通知（切集实时刷新）；时间变化每 30 秒通知一次，
+  /// 避免每秒 notifyListeners 导致播放器/列表重建卡顿。
+  void cacheHistory(History item) {
+    final prev = cachedHistories[item.id];
+    _cachedHistoryIds ??= {};
+    _cachedHistoryIds![item.id] = true;
+    cachedHistories.remove(item.id);
+    cachedHistories[item.id] = item;
+    if (prev == null) {
+      notifyListeners();
+      return;
+    }
+    final episodeChanged = prev.lastWatchEpisode != item.lastWatchEpisode;
+    final timeChanged = prev.lastWatchTime != item.lastWatchTime;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (episodeChanged) {
+      notifyListeners();
+    } else if (timeChanged && now - _lastTimeNotify > 30000) {
+      _lastTimeNotify = now;
+      notifyListeners();
+    }
+  }
 
   Future<void> init() async {
     if (isInitialized) return;
     _db = _HistoryDb();
     isInitialized = true;
+    // busy_timeout：多连接偶发写锁等待，避免立即 SQLITE_BUSY
+    // （不使用 WAL，保持只在 history.db 单文件）
+    try {
+      await _db.customStatement('PRAGMA busy_timeout = 10000;');
+    } catch (_) {}
     await _updateCache();
   }
 
@@ -438,10 +528,6 @@ class HistoryManager with ChangeNotifier {
     // 更新缓存条目并把它移到最新（LinkedHashMap 保持插入顺序）
     cachedHistories.remove(item.id);
     cachedHistories[item.id] = item;
-    // 达到上限时淘汰最旧的条目
-    while (cachedHistories.length > _historyCacheCap) {
-      cachedHistories.remove(cachedHistories.keys.first);
-    }
     notifyListeners();
   }
 
@@ -515,11 +601,16 @@ class HistoryManager with ChangeNotifier {
   }
 
   Future<History?> findAsync(String id, AnimeType type) async {
-    final row =
-        await (_db.select(_db.historyTable)
-              ..where((t) => t.id.equals(id) & t.type.equals(type.value)))
-            .getSingleOrNull();
-    return row != null ? History.fromDrift(row) : null;
+    try {
+      final row =
+          await (_db.select(_db.historyTable)
+                ..where((t) => t.id.equals(id) & t.type.equals(type.value)))
+              .getSingleOrNull();
+      return row != null ? History.fromDrift(row) : null;
+    } catch (_) {
+      // 连接可能正在重开（WebDAV 导入等），忽略该次查询
+      return null;
+    }
   }
 
   Future<List<History>> getAll() async {
@@ -557,6 +648,42 @@ class HistoryManager with ChangeNotifier {
       _db.historyTable,
     )..where((t) => t.bangumiId.equals(id))).get();
     return rows.map(History.fromDrift).toList();
+  }
+
+  /// 字段级合并：逐条与本地比对，`lastWatchTime` 较新者胜，其余字段一并采用。
+  /// 用于 WebDAV 多端同步（不整库覆盖，避免各端改动互相丢失）。
+  /// 性能：批量 insert，合并结束后仅通知一次，避免逐条 notify 导致 UI 反复重建。
+  Future<void> mergeHistoryList(List<History> remote) async {
+    if (remote.isEmpty) return;
+    final local = await getAll();
+    final localMap = {for (final h in local) h.id: h};
+
+    // 先筛出需要写入的条目（远端较新或本地没有）
+    final toWrite = <History>[];
+    for (final r in remote) {
+      final l = localMap[r.id];
+      if (l == null || (r.lastWatchTime ?? 0) > (l.lastWatchTime ?? 0)) {
+        toWrite.add(r);
+      }
+      // 本地较新或相等：保持本地
+    }
+    if (toWrite.isEmpty) return;
+
+    // 批量写入（单事务，避免逐条 SQL）
+    await _db.transaction(() async {
+      await _db.batch((batch) {
+        for (final h in toWrite) {
+          batch.insert(
+            _db.historyTable,
+            h.toCompanion(),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
+      });
+    });
+    // 合并后统一刷新缓存并通知一次
+    await _updateCache();
+    notifyListeners();
   }
 }
 
@@ -678,6 +805,21 @@ class HistoryAllNotifier extends StreamNotifier<List<History>> {
   Stream<List<History>> build() async* {
     final manager = HistoryManager();
     if (!manager.isInitialized) await manager.init();
-    yield* manager.watchAll();
+    // 读缓存（不查库）：避免每次查询与后台写入锁冲突导致卡顿
+    yield _fromCache(manager);
+    yield* Stream<void>.multi((controller) {
+      void notify() {
+        if (!controller.isClosed) controller.add(null);
+      }
+
+      manager.addListener(notify);
+      controller.onCancel = () => manager.removeListener(notify);
+    }).map((_) => _fromCache(manager));
+  }
+
+  List<History> _fromCache(HistoryManager manager) {
+    final list = manager.cachedHistories.values.toList()
+      ..sort((a, b) => b.time.compareTo(a.time));
+    return list;
   }
 }

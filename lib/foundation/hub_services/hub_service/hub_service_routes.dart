@@ -193,12 +193,17 @@ extension HubServiceRoutes on HubService {
           'clientName': clientName,
           'client': {'userId': clientId, 'displayName': clientName ?? clientId},
           'roomId': roomId,
+          'leavingServer': true,
         });
 
         _broadcastSystem(HubSystemEvent.clientLeft, {
           'clientId': clientId,
           'clientName': clientName,
         });
+
+        // 断连的可能是房主：转移所有权；房间空人则自动删除
+        _transferRoomOwnershipIfNeeded(roomId, clientId);
+        _cleanupEmptyWatchRoom(roomId);
       }
     });
 

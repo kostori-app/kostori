@@ -31,6 +31,21 @@ class HubService extends BaseHttpService {
   VoidCallback? onClientsChanged;
   VoidCallback? onRoomsChanged;
 
+  /// 房间消息广播钩子（Satori 适配层等外部观察者使用）
+  void Function(HubRoom room, HubMessage msg)? onMessageBroadcast;
+
+  /// 私聊（单播）钩子：Satori 适配层据此把消息推给目标 bot 连接
+  void Function(HubRoom room, HubMessage msg, String targetUserId)?
+  onDmBroadcast;
+
+  /// 系统事件广播钩子（roomId 为 null 表示全服事件）
+  void Function(
+    HubSystemEvent event,
+    Map<String, dynamic> data,
+    String? roomId,
+  )?
+  onSystemBroadcast;
+
   Timer? _heartbeatTimer;
 
   final DateTime startedAt = DateTime.now();
@@ -61,6 +76,70 @@ class HubService extends BaseHttpService {
     currentRoomId: roomId,
     isBot: true,
   );
+
+  /// 注册一个机器人客户端（Satori bot / 内置 AI bot）为全局可见成员。
+  /// 机器人不加入任何房间成员（无需参与即可收到广播），但注册进 _clients，
+  /// 使任何房间的 @ 列表都能看到并触发。返回已注册的成员。
+  HubClientInfo registerBotMember({
+    required String userId,
+    required String displayName,
+    String? avatarUrl,
+  }) {
+    final existing = _clients[userId];
+    if (existing != null && existing.isBot) {
+      existing.displayName = displayName;
+      if (avatarUrl != null) existing.avatarUrl = avatarUrl;
+      onClientsChanged?.call();
+      return existing;
+    }
+    final bot = HubClientInfo(
+      userId: userId,
+      displayName: displayName,
+      connection: null,
+      isBot: true,
+      avatarUrl: avatarUrl,
+      currentRoomId: _lobbyId,
+    );
+    _clients[userId] = bot;
+    onClientsChanged?.call();
+    _logEvent('🤖 Bot registered: $displayName ($userId)');
+    _broadcastSystem(HubSystemEvent.clientJoined, {
+      'client': bot.toJson(),
+    }, exclude: userId);
+    return bot;
+  }
+
+  /// Satori bot 注册（内部复用通用注册）
+  HubClientInfo registerSatoriBotMember({
+    required String userId,
+    required String displayName,
+  }) => registerBotMember(userId: userId, displayName: displayName);
+
+  /// 注销机器人成员（断开连接/停用时）
+  void unregisterBotMember(String userId) {
+    final bot = _clients[userId];
+    if (bot == null) return;
+    _clients.remove(userId);
+    onClientsChanged?.call();
+    _logEvent('👋 Bot unregistered: $userId');
+    _broadcastSystem(HubSystemEvent.clientLeft, {
+      'clientId': userId,
+      'clientName': bot.displayName ?? userId,
+    });
+  }
+
+  /// Satori bot 注销（内部复用通用注销）
+  void unregisterSatoriBotMember(String userId) => unregisterBotMember(userId);
+
+  /// 按当前 AI bot 配置注册/注销内置 AI 机器人成员（启用时注册，禁用时注销）
+  void syncAiBotMember() {
+    final config = aiBotConfig;
+    if (config.enabled) {
+      registerBotMember(userId: HubAiBot.userId, displayName: config.name);
+    } else {
+      unregisterBotMember(HubAiBot.userId);
+    }
+  }
 
   /// 管理员删除任意房间（不可删大厅）
   bool deleteRoomByAdmin(String roomId) {
@@ -260,6 +339,17 @@ class HubService extends BaseHttpService {
       final file = await _roomsFile();
       if (!file.existsSync()) return;
       importRoomsJson(await file.readAsString());
+      // 一起看房间不跨会话持久化：清除恢复的 watch 房间（崩溃残留也不恢复）
+      final watchRoomIds = _rooms.values
+          .where((r) => r.roomId != _lobbyId && r.roomType == HubRoomType.watch)
+          .map((r) => r.roomId)
+          .toList();
+      for (final id in watchRoomIds) {
+        _rooms.remove(id);
+      }
+      if (watchRoomIds.isNotEmpty) {
+        HubLog.info('HubService', '清理 ${watchRoomIds.length} 个持久化的过期一起看房间');
+      }
     } catch (e) {
       HubLog.error('HubService', '加载房间失败: $e');
     }
@@ -298,6 +388,7 @@ class HubService extends BaseHttpService {
     if (room == null) return;
     room.addMessage(msg);
     onMessageReceived?.call();
+    onMessageBroadcast?.call(room, msg);
     unawaited(_dispatchOutboundMessage(room, msg));
     // AI 陪聊：房间内 @提及机器人时生成回复
     maybeAiBotReply(msg, room);
@@ -461,6 +552,7 @@ class HubService extends BaseHttpService {
     final room = _rooms[roomId];
     if (room == null) return;
     final payload = {'type': 'system', 'event': event.value, ...data};
+    onSystemBroadcast?.call(event, data, roomId);
     unawaited(_dispatchOutboundSystem(event.value, data));
     for (final member in room.participants.values) {
       if (member.userId == exclude) continue;
@@ -474,6 +566,7 @@ class HubService extends BaseHttpService {
     String? exclude,
   }) {
     final payload = {'type': 'system', 'event': event.value, ...data};
+    onSystemBroadcast?.call(event, data, null);
     unawaited(_dispatchOutboundSystem(event.value, data));
     for (final client in _clients.values) {
       if (client.userId != exclude) client.send(payload);
@@ -497,8 +590,10 @@ class HubService extends BaseHttpService {
     }
     _rooms[roomId]?.addMessage(msg);
     onMessageReceived?.call();
-    // AI 陪聊：收到私聊时机器人回复（若启用）
+    // 私聊钩子（Satori 适配层推送）
     final room = _rooms[roomId];
+    if (room != null) onDmBroadcast?.call(room, msg, targetUserId);
+    // AI 陪聊：收到私聊时机器人回复（若启用）
     if (room != null) maybeAiBotReply(msg, room, dmTargetUserId: targetUserId);
     Map<String, dynamic> buildJson() {
       final json = {'type': 'unicast', ...msg.toJson()};
@@ -583,12 +678,16 @@ class HubService extends BaseHttpService {
       _broadcastSystem(HubSystemEvent.clientLeftRoom, {
         'client': targetDto.toJson(),
         'roomId': roomId,
+        'leavingServer': true,
       });
     }
     _broadcastSystem(HubSystemEvent.clientLeft, {
       'clientId': id,
       'clientName': targetName,
     });
+    // 被移出的可能是房主：转移所有权；房间空人则自动删除
+    _transferRoomOwnershipIfNeeded(roomId, id);
+    _cleanupEmptyWatchRoom(roomId);
     final op = operatorName ?? 'server';
     final reasonLabel = switch (reason) {
       KickReason.kicked => '⚡ kicked',
@@ -734,8 +833,11 @@ class HubService extends BaseHttpService {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(pingInterval, (_) {
       final now = DateTime.now();
+      // 机器人（无真实 WS 连接，如 Satori bot）不参与心跳踢出
       final timedOut = _clients.values
-          .where((c) => now.difference(c.lastHeartbeat) > pingInterval)
+          .where(
+            (c) => !c.isBot && now.difference(c.lastHeartbeat) > pingInterval,
+          )
           .map((c) => c.userId)
           .toList();
       for (final id in timedOut) {
@@ -761,6 +863,8 @@ class HubService extends BaseHttpService {
   void registerRoutes() {
     registerHubRoutes();
     registerUploadRoutes();
+    // Satori 协议适配层
+    SatoriServer.instance.registerRoutes(this);
   }
 
   @override
@@ -770,21 +874,48 @@ class HubService extends BaseHttpService {
     _ensureLobby();
     await _loadRooms(); // 恢复上次持久化的房间（名称/公告/密码等）
     _startHeartbeatCheck();
-    await startServer(
-      preferredPort: preferredPort ?? savedHubPort,
-      mode: mode ?? savedHubBindMode,
-    );
+    if (tlsEnabled && tlsConfigured) {
+      await startServerSecure(
+        preferredPort: preferredPort ?? savedHubPort,
+        mode: mode ?? savedHubBindMode,
+        certificatePath: tlsCertificatePath!,
+        privateKeyPath: tlsPrivateKeyPath!,
+        password: tlsPassword ?? '',
+      );
+    } else {
+      await startServer(
+        preferredPort: preferredPort ?? savedHubPort,
+        mode: mode ?? savedHubBindMode,
+      );
+    }
     await startWebAdmin(); // 独立端口的管理网页
+    SatoriServer.instance.attach(this); // Satori 协议适配层
+    syncAiBotMember(); // 内置 AI bot 启用时注册为成员（@ 列表可见）
     HubSubscriptionManager.instance.migrateLegacy();
     await HubSubscriptionService.instance.startAll();
   }
 
   @override
   Future<void> dispose() async {
+    SatoriServer.instance.detach(); // Satori 协议适配层
     _heartbeatTimer?.cancel();
     await stopWebAdmin();
     _closeWsBots();
     await HubSubscriptionService.instance.stopAll();
+    // 服务器关闭：删除所有一起看房间（其生命周期跟随运行中的会话，不持久化），
+    // 避免重启后残留 0 人房间
+    final watchRoomIds = _rooms.values
+        .where((r) => r.roomId != _lobbyId && r.roomType == HubRoomType.watch)
+        .map((r) => r.roomId)
+        .toList();
+    for (final id in watchRoomIds) {
+      _rooms.remove(id);
+      _broadcastSystem(HubSystemEvent.roomDeleted, {'roomId': id});
+    }
+    if (watchRoomIds.isNotEmpty) {
+      onRoomsChanged?.call();
+      _logEvent('🗑 服务器关闭，删除 ${watchRoomIds.length} 个一起看房间');
+    }
     await _saveRooms(); // 停止服务前持久化当前房间状态
     for (final client in _clients.values.toList()) {
       try {

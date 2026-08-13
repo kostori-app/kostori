@@ -50,6 +50,7 @@ authorizationRequired: Authorization Required
 autoPageTurning: Auto Page Turning
 back: Back
 bangumi: Bangumi
+bangumiInfo: Anime Details
 block: Block
 
 # Super resolution settings
@@ -76,6 +77,14 @@ checkForUpdates: Check for updates
 checkUpdates: Check updates
 check: Check
 clearCache: Clear Cache
+hubUploadedImages: Hub Uploaded Images
+hubUploadedImagesHint: image(s) stored on this device
+noHubUploads: No uploaded images
+clearHubUploadsConfirm: Delete all Hub uploaded images?
+hubStickers: Hub Stickers
+hubStickersHint: sticker(s)
+noHubStickers: No stickers
+clearHubStickersConfirm: Delete all Hub stickers?
 clearHistory: Clear History
 clearProgress: Clear Progress
 clearSearchHistory: Clear Search History
@@ -190,6 +199,7 @@ localFavorites: Local Favorites
 local: Local
 logIn: Log in
 logOut: Log out
+account: Account
 log: Log
 manualTranslation: Manual Translation
 manualTranslationHint: Translate text into your preferred language
@@ -584,7 +594,6 @@ itemsCount: "${n} items"
 enableSkipBangumiSchedule: Enable skipping Bangumi schedule
 bangumiClientId: Client ID
 bangumiClientSecret: Client Secret
-bangumiRedirectUri: Redirect URI
 bangumiOAuthHint: Register an app on bgm.tv/dev to get the client ID and secret
 bangumiOAuthLogin: Bangumi Login
 bangumiShowNsfw: Show NSFW content
@@ -717,6 +726,10 @@ audioOptionLowLatency: |-
 audioOptionCompatibility: |-
   Audio Option: 
    Compatibility
+audioOutputDevice: Audio Output Device
+noAudioDevice: No audio device detected
+volumeBoostEnabled: "Volume Boost: On"
+volumeBoostDisabled: "Volume Boost: Off"
 switchSuccessful: Switch Successful
 switchFailed: Switch Failed
 remoteCast: Remote Cast
@@ -1015,6 +1028,17 @@ bindMode: Bind Mode
 chooseIpVersionToListenOn: Choose IP version to listen on
 hubServer: Hub Server
 enableHub: Enable Hub
+hubServerStartFailed: Failed to start Hub server
+enableTls: Enable HTTPS/WSS
+tlsEnabledDesc: Hub will serve over HTTPS/WSS (requires certificate)
+tlsDisabledDesc: Hub serves over HTTP/WS
+tlsCertificate: TLS Certificate
+tlsCertificateHint: "PEM certificate chain (Let's Encrypt: fullchain.pem)"
+tlsPrivateKey: TLS Private Key
+tlsPrivateKeyHint: PEM private key file path
+tlsPassword: TLS Key Password
+tlsPasswordHint: Leave empty if the key is not encrypted
+browse: Browse
 hubServerIsStopped: Hub server is stopped
 clientsCount: clients
 hubPort: Hub Port
@@ -1032,7 +1056,16 @@ serverName: Server Name
 selectServer: Select a server
 exportRooms: Export Rooms
 importRooms: Import Rooms
+danmakuSettings: Danmaku Settings
+danmakuColor: Color
+danmakuFontSize: Font Size
+danmakuOpacity: Opacity
+danmakuArea: Display Area
+danmakuDuration: Duration
+danmakuLineHeight: Line Height
+danmaku: Danmaku
 watchTogether: Watch Together
+watchTogetherRoomHasNoAnime: The watch-together room is not bound to an anime
 watchTogetherDesc: Watch anime with friends, create or join a room to chat and share screenshots and subtitles.
 selectRoomToStart: Select a room to start watching together
 syncToOwner: Sync to Owner
@@ -1148,6 +1181,23 @@ hubAiBotTriggerPattern: Trigger pattern
 hubAiBotKeywordHint: e.g. #bot
 hubAiBotMinInterval: Min reply interval (s)
 hubAiBotReplyDm: Reply to private messages
+satoriBotManage: Satori Bot Management
+satoriBotManageDesc: Third-party Satori bots
+satoriBotCountUnit: bot(s)
+satoriBotAdd: Add Bot
+satoriBotEdit: Edit Bot
+satoriBotDelete: Delete Bot
+satoriBotName: Bot Name
+satoriBotNameHint: Display name shown in the room member list and @ mentions
+satoriBotAvatar: Avatar
+satoriBotBio: Biography
+satoriBotToken: Connection Token
+satoriBotTokenHint: The token used by the Satori client to connect and bind to this bot
+satoriBotTokenRegen: Regenerate
+satoriBotEnabled: Enabled
+satoriBotDeleteConfirm: Delete this bot? Connected clients will be disconnected.
+satoriBotTokenCopied: Token copied
+satoriBotConfigTitle: Satori Bot
 webAdminSettings: Web Admin Settings
 webAdminWhatIs: What is Web Admin?
 webAdminDescription: The Web Admin provides a browser-based dashboard for managing the Hub. Open the address in any device browser to view server status, manage rooms & clients, browse logs, edit config, control the AI bot & webhooks, and restart the Hub. It uses the existing Hub API Key for authentication.
@@ -1172,6 +1222,7 @@ hubDetails: Hub Details
 connectionSettings: Connection Settings
 serverAddress: Server Address
 host: Host
+protocol: Protocol
 authentication: Authentication
 paste: Paste
 unblock: Unblock
@@ -1224,6 +1275,11 @@ members: members
 notSet: Not set
 currentRoom: Current Room
 editProfile: Edit Profile
+uploadAvatar: Upload avatar
+avatar: Avatar
+connectFirstToUploadAvatar: Connect to a server first to upload an avatar
+avatarUploaded: Avatar uploaded
+uploadFailed: Upload failed
 noBlockedUsers: No blocked users
 createRoom: Create Room
 chat: Chat
@@ -1255,6 +1311,10 @@ clientUploadsDirectlyToOss: Client uploads directly to OSS. Server only gets the
 maxSizeMb: Max Upload Size (MB)
 storePath: Store Path
 leaveEmptyForDefault: Leave empty for default
+publicBaseUrl: Public Base URL
+publicBaseUrlHint: External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address
+publicIpDetected: Public IP detected
+publicIpDetectFailed: Failed to detect public IP
 notConfiguredWillUseServerOrBase64: Not configured · will use server or base64
 imageTooLargeToSend: Image too large to send
 pleaseConfigureServerUploadOrClientOss: Please configure server upload or client OSS.
@@ -1276,8 +1336,11 @@ peopleLabel: people
 noLimit: No limit
 optional: optional
 enterDisplayName: Enter display name
+displayNameRequired: Display name is required
 enterBio: Enter bio
 autoReconnect: Auto Reconnect
+allowSelfSignedCert: Allow Self-signed Certificate
+allowSelfSignedCertHint: Trust self-signed certificates when connecting over WSS
 directMessage: Direct Message
 noAnnouncementsYet: No announcements yet
 enterAnnouncementText: Enter announcement text...
@@ -1974,6 +2037,7 @@ unknownEpisode: Unknown episode
 openVideoPreview: Video preview
 discussInAi: Discuss in AI
 dropImageToRecognize: Drop an image to recognize
+dropFileToImport: Drop a .js file to import
 viewOnBangumi: View on Bangumi
 templateVarHint: "Available variables: "
 profilePersonaRequired: Please select a persona first
@@ -2108,3 +2172,46 @@ mcpReconnect: Reconnect
 mcpTestConnection: Test connection
 mcpConnecting: Connecting...
 mcpConnectionFailed: Connection failed
+
+builderTitle: Source Builder
+builderEntry: Build source
+builderBasic: Basic Info
+builderName: Name
+builderKey: Key
+builderVersion: Version
+builderBaseUrl: Base URL
+builderSearch: Search
+builderSearchUrl: Search URL template
+builderListSelector: List item selector
+builderTitleSelector: Title selector
+builderCoverSelector: Cover selector
+builderCoverAttr: Cover attribute
+builderLinkSelector: Link selector
+builderPageParam: Page parameter
+builderDetail: Anime Detail
+builderDetailUrl: Detail URL template
+builderDescSelector: Description selector
+builderEpisodeSelector: Episode list selector
+builderEpisodeTitleSelector: Episode title selector
+builderEpisodeLinkSelector: Episode link selector
+builderPlay: Playback
+builderPlayUrl: Play page URL template
+builderExtractRegex: Playback URL regex
+builderMaxPageSelector: Max page selector
+builderUserAgent: User-Agent
+builderPlayDirect: Directly return episode link
+builderPlayDirectDesc: The episode link itself is the playable URL (no extra request)
+builderPlayRegexDesc: Fetch the play page and extract the URL via regex
+builderExplore: Explore
+builderExploreTitle: Page title
+builderExploreUrl: List URL template ({page})
+builderCategory: Category
+builderCategoryTitle: Category title
+builderCategoryNames: Category names (one per line, "value-name")
+builderCategoryUrl: Category list URL ({category} {page})
+builderGenerate: Generate & Import
+builderNameRequired: Name is required
+builderKeyRequired: Key is required
+builderKeyInvalid: Key must contain only letters, digits and underscore
+builderImported: Source imported
+builderGenerateFailed: Generate failed

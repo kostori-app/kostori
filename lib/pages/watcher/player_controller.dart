@@ -1,6 +1,8 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:ui' show ImageFilter;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:floating/floating.dart';
@@ -158,12 +160,28 @@ abstract class _PlayerController with Store {
   @observable
   double brightness = 0;
 
+  /// 音量增益开关（桌面端）：开启后音量上限提升至 200%，实现增益
+  @observable
+  bool volumeBoost = false;
+
   // 播放器倍速
   @observable
   double playerSpeed = 1.0;
 
   @observable
   double playbackSpeed = 1;
+
+  /// 一起看成员锁定：禁止手动拖动进度 / 调整倍速 / 长按快进，只能跟随房主
+  @observable
+  bool syncLocked = false;
+
+  /// 一起看房间（含房主）锁定倍速：强制 1 倍速
+  @observable
+  bool speedLocked = false;
+
+  /// 是否处于一起看房间（用于全屏弹幕设置/聊天按钮的显示）
+  @observable
+  bool inRoom = false;
 
   @observable
   bool showSeekTime = false;
@@ -181,6 +199,8 @@ abstract class _PlayerController with Store {
   bool brightnessSeeking = false;
   @observable
   bool canHidePlayerPanel = true;
+  @observable
+  bool chatOverlayOpen = false;
   @observable
   String animeImg = '';
   @observable
@@ -320,6 +340,59 @@ abstract class _PlayerController with Store {
     appdata.saveData();
   }
 
+  /// 读取 libmpv 可用的音频输出设备列表（桌面端）。
+  /// 返回的设备名可直接传给 [setAudioDevice]。
+  Future<List<String>> getAudioDevices() async {
+    try {
+      final pp = player.platform as NativePlayer;
+      final raw = await pp.getProperty("audio-device-list");
+      final decoded = jsonDecode(raw.toString());
+      if (decoded is List) {
+        final names = <String>[];
+        for (final e in decoded) {
+          if (e is Map && e['name'] != null) {
+            names.add(e['name'] as String);
+          }
+        }
+        return names;
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// 设置音频输出设备（桌面端）。传空字符串恢复自动选择。
+  Future<void> setAudioDevice(String deviceName) async {
+    final pp = player.platform as NativePlayer;
+    if (deviceName.isEmpty) {
+      await pp.setProperty('audio-device', 'auto');
+    } else {
+      await pp.setProperty('audio-device', deviceName);
+    }
+    // 记住选择
+    appdata.settings['audioDevice'] = deviceName;
+    appdata.saveData();
+  }
+
+  /// 当前已选音频设备（空 = 自动）
+  String get currentAudioDevice =>
+      (appdata.settings['audioDevice'] as String?) ?? '';
+
+  /// 音量增益开关切换
+  Future<void> toggleVolumeBoost() async {
+    volumeBoost = !volumeBoost;
+    appdata.settings['volumeBoost'] = volumeBoost;
+    appdata.saveData();
+    // 增益关闭时若当前音量超 100，钳回 100
+    if (!volumeBoost && volume > 100) {
+      await setVolume(100);
+    }
+  }
+
+  /// 当前音量上限（桌面端开启增益后为 200）
+  double get volumeUpperBound => volumeBoost ? 200.0 : 100.0;
+
   String formatNow() {
     final now = DateTime.now();
     currentTime = DateTime.now();
@@ -335,6 +408,7 @@ abstract class _PlayerController with Store {
     hAenable = appdata.settings.s.haEnable;
     hardwareDecoder = appdata.settings.s.hardwareDecoder;
     videoSync = appdata.settings.s.videoSynchronizationMode;
+    volumeBoost = appdata.settings['volumeBoost'] ?? false;
 
     if (App.isAndroid) {
       final info = await DeviceInfo.getDeviceInfo();
@@ -505,11 +579,12 @@ abstract class _PlayerController with Store {
   }
 
   void setPlaybackSpeed(double rate) {
-    playbackSpeed = rate;
-    player.setRate(rate);
+    playbackSpeed = speedLocked ? 1 : rate;
+    player.setRate(playbackSpeed);
   }
 
   void longPressFastForwardStart() {
+    if (speedLocked) return;
     player.setRate(playbackSpeed * 2);
   }
 
@@ -606,7 +681,8 @@ abstract class _PlayerController with Store {
     if (isFullScreen) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       App.pop();
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      // 恢复全部方向，避免残留"仅竖屏"导致 MIUI 禁用分屏/自由窗口
+      SystemChrome.setPreferredOrientations([]);
       isPortraitFullscreen = false;
       WakelockPlus.disable();
     } else {
@@ -637,7 +713,7 @@ abstract class _PlayerController with Store {
 
   @action
   Future<void> setVolume(double value) async {
-    value = value.clamp(0.0, 100.0);
+    value = value.clamp(0.0, volumeUpperBound);
     volume = value;
     try {
       if (App.isDesktop) {
@@ -657,16 +733,47 @@ abstract class _PlayerController with Store {
     }
   }
 
+  // 播放/暂停渐隐覆盖层（中上方、半透明磨砂、停留约 0.6s）
+  Timer? _playPauseIndicatorTimer;
+  OverlayEntry? _playPauseIndicatorEntry;
+
+  void _showPlayPauseIndicator(bool isPlaying) {
+    final overlayState = overlayKey?.currentState;
+    if (overlayState == null) return;
+    // 刷新停留：每次播放/暂停都重建覆盖层并重置渐隐计时
+    _playPauseIndicatorTimer?.cancel();
+    _playPauseIndicatorTimer = null;
+    _playPauseIndicatorEntry?.remove();
+    _playPauseIndicatorEntry = null;
+    final entry = OverlayEntry(
+      builder: (context) => _PlayPauseIndicator(
+        isPlaying: isPlaying,
+        onFadeOutComplete: () {
+          _playPauseIndicatorEntry?.remove();
+          _playPauseIndicatorEntry = null;
+        },
+      ),
+    );
+    _playPauseIndicatorEntry = entry;
+    overlayState.insert(entry);
+  }
+
   Future<void> seek(Duration duration) async {
+    // 一起看成员：禁止手动拖动进度，只能跟随房主同步
+    if (syncLocked) return;
     await player.seek(duration);
   }
 
-  Future<void> pause() async {
+  Future<void> pause({bool showIndicator = true}) async {
     await player.pause();
     playing = false;
+    if (showIndicator) _showPlayPauseIndicator(false);
   }
 
-  Future<void> play({bool isAudioHandler = true}) async {
+  Future<void> play({
+    bool isAudioHandler = true,
+    bool showIndicator = true,
+  }) async {
     if (isAudioHandler) {
       if (App.isAndroid) {
         final audioHandler = AudioServiceManager().handler;
@@ -675,6 +782,7 @@ abstract class _PlayerController with Store {
     }
     await player.play();
     playing = true;
+    if (showIndicator) _showPlayPauseIndicator(true);
   }
 
   void showScreenshotPopup(BuildContext context, String image, String name) {
@@ -862,6 +970,88 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
               )
             : VideoPage(playerController: playerController);
       },
+    );
+  }
+}
+
+/// 播放/暂停渐隐覆盖层：屏幕中上方，半透明磨砂，停留约 0.6s 后渐隐消失
+class _PlayPauseIndicator extends StatefulWidget {
+  const _PlayPauseIndicator({
+    required this.isPlaying,
+    required this.onFadeOutComplete,
+  });
+
+  final bool isPlaying;
+  final VoidCallback onFadeOutComplete;
+
+  @override
+  State<_PlayPauseIndicator> createState() => _PlayPauseIndicatorState();
+}
+
+class _PlayPauseIndicatorState extends State<_PlayPauseIndicator> {
+  double _opacity = 1;
+  Timer? _timer;
+
+  static const _hold = Duration(milliseconds: 600);
+  static const _fade = Duration(milliseconds: 300);
+
+  @override
+  void initState() {
+    super.initState();
+    // 停留约 0.6s 后开始渐隐，渐隐完成移除覆盖层
+    _timer = Timer(_hold, () {
+      if (!mounted) return;
+      setState(() => _opacity = 0);
+      Future.delayed(_fade, () {
+        if (mounted) widget.onFadeOutComplete();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Align(
+          alignment: const Alignment(0, -0.35),
+          child: AnimatedOpacity(
+            opacity: _opacity,
+            duration: _fade,
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      widget.isPlaying
+                          ? Icons.play_arrow_rounded
+                          : Icons.pause_rounded,
+                      color: Colors.white,
+                      size: 34,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

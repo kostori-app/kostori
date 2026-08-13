@@ -52,12 +52,41 @@ extension HubServiceUploadHandler on HubService {
     );
     // 文件读取保持公开：文件名是内容哈希（不可枚举、不可猜测），
     // 且聊天图片由 <img> 加载无法携带 Authorization 头
-    addGet('/hub/files/<filename>', _handleServeFile);
+    addGet('/hub/files/:filename', _handleServeFile);
     addGet(
       '/hub/upload/config',
       _handleGetUploadConfig,
       middlewares: _hubAuthMiddleware,
     );
+  }
+
+  /// Satori 适配层使用：解析 multipart 请求体中的首个文件
+  _MultipartFile? parseMultipartFile(Uint8List body, String boundary) =>
+      _parseMultipart(body, boundary);
+
+  /// Satori 适配层使用：收集请求体原始字节
+  Future<Uint8List> collectRequestBodyBytes(HttpRequest request) async {
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in request) {
+      builder.add(chunk);
+    }
+    return builder.takeBytes();
+  }
+
+  /// Satori 适配层使用：按当前上传配置存储文件并返回可访问 URL
+  Future<String> storeUploadedFile(_MultipartFile parsed) async {
+    switch (uploadConfig.mode) {
+      case HubUploadMode.serverLocal:
+        return _storeLocal(parsed.filename, parsed.bytes);
+      case HubUploadMode.serverOss:
+        final oss = uploadConfig.ossConfig;
+        if (oss == null || !oss.isValid) {
+          throw StateError('Server OSS not configured');
+        }
+        return _storeOss(oss, parsed.filename, parsed.bytes, parsed.mimeType);
+      case HubUploadMode.clientOss:
+        throw StateError('Server does not accept uploads in clientOss mode');
+    }
   }
 
   // ═══════════════════════════════════════════════════════
@@ -268,6 +297,15 @@ extension HubServiceUploadHandler on HubService {
     final file = File(p.join(_uploadDir, name));
     if (!await file.exists()) {
       await file.writeAsBytes(bytes);
+    }
+    // 配置了公网基础地址 → 返回绝对 URL（外网可访问）；
+    // 否则返回相对路径，由客户端按连接地址补全
+    final base = uploadConfig.publicBaseUrl;
+    if (base != null && base.isNotEmpty) {
+      final trimmed = base.endsWith('/')
+          ? base.substring(0, base.length - 1)
+          : base;
+      return '$trimmed/hub/files/$name';
     }
     return '/hub/files/$name';
   }

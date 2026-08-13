@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/bbcode/bbcode_precache.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/topics_info_comments_card.dart';
@@ -7,6 +8,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
@@ -25,11 +27,23 @@ class BangumiTopicsPage extends ConsumerStatefulWidget {
 class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
   final ScrollController scrollController = ScrollController();
   final Map<int, GlobalKey> _replyKeys = {};
+  final BangumiPageImageCache _imageCache = BangumiPageImageCache();
 
   int get id => widget.id;
   TopicsInfoItem? topicsInfoItem;
   bool isLoading = true;
   bool isHide = false;
+
+  /// 提取话题正文 + 全部回复中的图片 URL 并预加载
+  void _precacheTopicImages() {
+    if (!mounted) return;
+    final item = topicsInfoItem;
+    if (item == null) return;
+    final bbcodeList = [item.title, ...item.replies.map((r) => r.content)];
+    for (final bbcode in bbcodeList) {
+      _imageCache.precacheAll(context, extractBangumiImageUrls(bbcode));
+    }
+  }
 
   void _buildReplyKeys() {
     if (topicsInfoItem == null) return;
@@ -65,7 +79,10 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
       isLoading = false;
       _buildReplyKeys();
     }
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      _precacheTopicImages();
+    }
   }
 
   @override
@@ -77,6 +94,7 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
 
   @override
   void dispose() {
+    _imageCache.dispose();
     scrollController.removeListener(scrollListener);
     super.dispose();
   }
@@ -232,11 +250,13 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                                               ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(4),
-                                                child: Image.network(
-                                                  topicsInfoItem!
-                                                      .subject
-                                                      .images
-                                                      .large,
+                                                child: Image(
+                                                  image: CachedImageProvider(
+                                                    topicsInfoItem!
+                                                        .subject
+                                                        .images
+                                                        .large,
+                                                  ),
                                                   width: 22,
                                                   height: 22,
                                                   fit: BoxFit.cover,

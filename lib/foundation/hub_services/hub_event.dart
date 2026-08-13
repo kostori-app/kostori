@@ -487,10 +487,15 @@ class HubSystemClientRoomChanged extends HubEventSystem {
   final String roomId;
   final bool joined;
 
+  /// 是否同时离开服务器（完整断连：房间离开 + 服务器离开两条事件一起发）。
+  /// 客户端用于抑制重复的"离开房间"toast，仅保留"离开服务器"提示。
+  final bool leavingServer;
+
   const HubSystemClientRoomChanged({
     required this.client,
     required this.roomId,
     required this.joined,
+    this.leavingServer = false,
   });
 
   factory HubSystemClientRoomChanged.fromJson(
@@ -500,6 +505,7 @@ class HubSystemClientRoomChanged extends HubEventSystem {
     client: HubClientDto.fromJson(p['client'] as Map<String, dynamic>),
     roomId: p['roomId'] as String? ?? '',
     joined: joined,
+    leavingServer: p['leavingServer'] as bool? ?? false,
   );
 }
 

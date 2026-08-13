@@ -59,17 +59,22 @@ class Appdata with Init {
   /// 隐式数据版本号：写入时自增，供界面监听即时刷新（如番剧卡片外观设置）
   final ValueNotifier<int> implicitVersion = ValueNotifier(0);
 
-  void writeImplicitData() async {
+  /// 同步原子写入 implicitData.json（先写临时文件再 rename）。
+  /// 同步写盘保证设置（如 API Key 固定、服务器地址等）立即落盘，
+  /// 原子写避免闪退/强杀时留下损坏的半截 JSON 导致下次启动数据被整体重置。
+  void writeImplicitData() {
     implicitVersion.value++;
-    while (_isSavingData) {
-      await Future.delayed(const Duration(milliseconds: 20));
-    }
-    _isSavingData = true;
     try {
       var file = File(FilePath.join(App.dataPath, 'implicitData.json'));
-      await file.writeAsString(jsonEncode(implicitData));
-    } finally {
-      _isSavingData = false;
+      var tmp = File('${file.path}.tmp');
+      tmp.writeAsStringSync(jsonEncode(implicitData));
+      if (file.existsSync()) {
+        tmp.renameSync(file.path);
+      } else {
+        tmp.copySync(file.path);
+      }
+    } catch (e) {
+      Log.error('Appdata', 'writeImplicitData failed: $e');
     }
   }
 
@@ -145,9 +150,15 @@ class Appdata with Init {
       }
     } catch (e) {
       Log.error("Appdata", "Failed to load implicit data", e);
-      Log.info("Appdata", "Resetting implicit data");
+      // 损坏文件备份而非删除，方便排查；原子写已避免此情况发生
       var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
-      implicitDataFile.deleteIgnoreError();
+      try {
+        implicitDataFile.renameSync(
+          FilePath.join(dataPath, 'implicitData.corrupt.json'),
+        );
+      } catch (_) {
+        implicitDataFile.deleteIgnoreError();
+      }
     }
   }
 }

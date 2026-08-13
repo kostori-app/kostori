@@ -11,6 +11,7 @@
                 android:name=".MainActivity"
                 android:exported="true"
                 android:launchMode="singleTop"
+                android:resizeableActivity="true"
                 android:theme="@style/LaunchTheme"
                 android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
                 android:enableOnBackInvokedCallback="true"
@@ -50,7 +51,7 @@
         </service>
         <!-- Hub 连接保活前台服务 -->
         <service android:name=".HubKeepAliveService"
-                 android:foregroundServiceType="dataSync"
+                 android:foregroundServiceType="dataSync|remoteMessaging"
                  android:exported="false"/>
         <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
                   android:exported="true" ignore="Instantiatable">
@@ -94,5 +95,6 @@
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 </manifest>

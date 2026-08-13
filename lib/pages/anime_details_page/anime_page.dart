@@ -27,6 +27,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
@@ -95,24 +96,16 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   final ScrollController episodesScrollCtrl = ScrollController();
   final ScrollController recommendScrollCtrl = ScrollController();
 
-  void updateHistory() async {
-    var newHistory = await HistoryManager().findAsync(
-      widget.id,
-      AnimeType(widget.sourceKey.hashCode),
-    );
-    if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||
-        newHistory?.lastWatchTime != history?.lastWatchTime) {
-      history = newHistory;
+  void updateHistory() {
+    // 读缓存而非查库：避免每秒查库与后台写入锁冲突导致卡顿
+    final cached = HistoryManager().cachedHistories[widget.id];
+    if (cached == null) return;
+    // 只在集数变化时刷新 UI（lastWatchTime 每秒变，无需每秒 rebuild）
+    if (cached.lastWatchEpisode != history?.lastWatchEpisode) {
+      history = cached;
       if (mounted) update();
-    }
-  }
-
-  void updateBangumiBind() async {
-    if (history?.bangumiId != null) {
-      bangumiBindInfo = await Bangumi.instance.bindFind(
-        history!.bangumiId as int,
-      );
-      update();
+    } else {
+      history = cached;
     }
   }
 
@@ -241,7 +234,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       type: data!.sourceKey.hashCode,
     );
     if (history!.bangumiId != null) {
-      Bangumi.instance.getBangumiInfoBind(history!.bangumiId as int);
+      // 拉取绑定番剧信息并刷新（updateBangumiBind 内含 bindFind → 本地库/网络）
+      await updateBangumiBind();
     }
     await stats.updateStats(
       id: widget.id,
@@ -305,6 +299,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     history?.bangumiId = res.first.id;
     await HistoryManager().addHistory(history!);
+    // 绑定后立即刷新当前页的番剧信息，否则要重新点开详情页才显示
+    if (mounted) {
+      await updateBangumiBind();
+    }
   }
 
   var isFirst = true;
@@ -316,6 +314,49 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   Widget buildContent(BuildContext context, AnimeDetails data) {
+    // 一起看成员锁定：强制 1 倍速 / 禁拖动进度 / 禁切集。
+    // 放在始终激活的 AnimePage 层，避免依赖"一起看"tab 是否被构建。
+    ref.listen(hubProvider, (prev, next) {
+      final room = next.currentRoom;
+      final anime = watcherController.anime;
+      final roomMatchesAnime =
+          room == null ||
+          room.animeId == null ||
+          room.animeSourceKey == null ||
+          (anime != null &&
+              room.animeId == anime.id &&
+              room.animeSourceKey == anime.sourceKey);
+      final isWatchMember =
+          next.isConnected &&
+          room != null &&
+          room.roomId != next.lobbyRoomId &&
+          room.isWatchRoom &&
+          room.ownerUserId != next.myId &&
+          roomMatchesAnime;
+      // 在房间（含房主）都锁定倍速；成员再额外锁定进度/切集
+      final inWatchRoom =
+          next.isConnected &&
+          room != null &&
+          room.roomId != next.lobbyRoomId &&
+          room.isWatchRoom &&
+          roomMatchesAnime;
+      DebugLog.info(
+        'AnimePage',
+        'watchLock: member=$isWatchMember inRoom=$inWatchRoom '
+            'connected=${next.isConnected} roomId=${room?.roomId} '
+            'type=${room?.roomType} owner=${room?.ownerUserId} '
+            'myId=${next.myId} '
+            'roomAnime=${room?.animeId}/${room?.animeSourceKey} '
+            'cur=${anime?.id}/${anime?.sourceKey}',
+      );
+      playerController.speedLocked = inWatchRoom;
+      playerController.syncLocked = isWatchMember;
+      playerController.inRoom = inWatchRoom;
+      if (inWatchRoom) {
+        playerController.setPlaybackSpeed(1);
+      }
+    });
+
     final screenWidth = MediaQuery.of(context).size.width;
     final topPadding = MediaQuery.of(context).padding.top;
     final isDesktop = screenWidth > 800;
@@ -420,6 +461,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       animeTitle: anime.title,
       playerController: playerController,
       watcherController: watcherController,
+      onOpenBangumiInfo: () => bangumiBottomInfo(context),
     );
   }
 
@@ -984,6 +1026,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (anime.recommend == null || anime.recommend!.isEmpty) {
       return const SizedBox.shrink();
     }
+    // 过滤掉当前番剧自己，避免推荐列表与顶部封面产生重复 Hero tag
+    final recommend = anime.recommend!
+        .where((a) => !(a.id == widget.id && a.sourceKey == widget.sourceKey))
+        .toList();
+    if (recommend.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return AppScrollBar(
       controller: recommendScrollCtrl,
       child: ListView(
@@ -1011,7 +1060,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                         final screenWidth = MediaQuery.of(context).size.width;
                         final crossAxisCount = screenWidth < 800 ? 3 : 8;
                         return SliverGridAnimes(
-                          animes: anime.recommend!,
+                          animes: recommend,
                           isRecommend: true,
                           asSliver: false,
                           shrinkWrap: true,
@@ -1228,25 +1277,24 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
       child = const SizedBox();
     }
 
-    return Hero(
-      tag: "cover$heroID",
-      child: Container(
-        decoration: BoxDecoration(
-          color: context.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: context.colorScheme.outlineVariant,
-              blurRadius: 1,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        height: 144,
-        width: 144 * 0.72,
-        clipBehavior: Clip.antiAlias,
-        child: child,
+    // 骨架屏不参与 Hero 转场（避免与真实内容的 Hero tag 冲突导致
+    // "multiple heroes share the same tag"），加载完成后由真实 Hero 接管
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.outlineVariant,
+            blurRadius: 1,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
+      height: 144,
+      width: 144 * 0.72,
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 }

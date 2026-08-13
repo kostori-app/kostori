@@ -124,6 +124,13 @@ class HubWebAdminService extends BaseHttpService {
       middlewares: [adminAuthMiddleware],
     );
 
+    // ── 公网 IP 探测（后端代理，避免浏览器 CORS）──
+    addGet(
+      '/api/admin/public-ip',
+      _detectPublicIp,
+      middlewares: [adminAuthMiddleware],
+    );
+
     // ── 机器人配置 ──
     addGet('/api/admin/ai', _getAiConfig, middlewares: [adminAuthMiddleware]);
     addPost('/api/admin/ai', _setAiConfig, middlewares: [adminAuthMiddleware]);
@@ -518,6 +525,12 @@ class HubWebAdminService extends BaseHttpService {
         'mode': _hub.uploadConfig.mode.name,
         'maxSizeBytes': _hub.uploadConfig.maxSizeBytes,
         'localStorePath': _hub.uploadConfig.localStorePath,
+        'publicBaseUrl': _hub.uploadConfig.publicBaseUrl,
+      },
+      'tls': {
+        'enabled': tlsEnabled,
+        'certificatePath': tlsCertificatePath,
+        'privateKeyPath': tlsPrivateKeyPath,
       },
     });
   }
@@ -554,6 +567,32 @@ class HubWebAdminService extends BaseHttpService {
           ) ??
           BindMode.ipv4;
       changed.add('webAdminBindMode');
+    }
+    // 上传配置：公网基础地址
+    if (body['publicBaseUrl'] != null) {
+      final pb = body['publicBaseUrl'].toString().trim();
+      _hub.uploadConfig = _hub.uploadConfig.copyWith(
+        publicBaseUrl: pb.isEmpty ? null : pb,
+        clearPublicBaseUrl: pb.isEmpty,
+      );
+      changed.add('publicBaseUrl');
+    }
+    // TLS 配置
+    if (body['tlsEnabled'] is bool) {
+      setTlsEnabled(body['tlsEnabled'] as bool);
+      changed.add('tlsEnabled');
+    }
+    if (body['tlsCertificatePath'] != null) {
+      setTlsCertificatePath(body['tlsCertificatePath'].toString().trim());
+      changed.add('tlsCertificatePath');
+    }
+    if (body['tlsPrivateKeyPath'] != null) {
+      setTlsPrivateKeyPath(body['tlsPrivateKeyPath'].toString().trim());
+      changed.add('tlsPrivateKeyPath');
+    }
+    if (body['tlsPassword'] != null) {
+      setTlsPassword(body['tlsPassword'].toString());
+      changed.add('tlsPassword');
     }
     await sendJson(req, {'saved': true, 'changed': changed});
   }
@@ -668,5 +707,67 @@ class HubWebAdminService extends BaseHttpService {
   Future<void> _restartHub(HttpRequest req) async {
     await sendJson(req, {'restarting': true});
     unawaited(_hub.restart());
+  }
+
+  // ── 公网 IP 探测 ─────────────────────────────────────────────────────────
+
+  Future<void> _detectPublicIp(HttpRequest req) async {
+    String? ip;
+    // IPv4 优先
+    for (final api in const [
+      'https://api.ipify.org',
+      'https://ipv4.icanhazip.com',
+      'https://v4.ident.me',
+    ]) {
+      try {
+        final r = await AppDio().request(
+          api,
+          options: Options(
+            method: 'GET',
+            responseType: ResponseType.plain,
+            sendTimeout: const Duration(seconds: 4),
+            receiveTimeout: const Duration(seconds: 4),
+          ),
+        );
+        final s = (r.data ?? '').toString().trim();
+        if (RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(s)) {
+          ip = s;
+          break;
+        }
+      } catch (_) {}
+    }
+    // IPv6 回退
+    if (ip == null) {
+      for (final api in const [
+        'https://api64.ipify.org',
+        'https://ipv6.icanhazip.com',
+      ]) {
+        try {
+          final r = await AppDio().request(
+            api,
+            options: Options(
+              method: 'GET',
+              responseType: ResponseType.plain,
+              sendTimeout: const Duration(seconds: 4),
+              receiveTimeout: const Duration(seconds: 4),
+            ),
+          );
+          final s = (r.data ?? '').toString().trim();
+          if (RegExp(r'^[0-9a-fA-F:]+$').hasMatch(s) && s.contains(':')) {
+            ip = s;
+            break;
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (ip == null) {
+      await sendJson(req, {'error': 'Failed to detect public IP'}, status: 502);
+      return;
+    }
+
+    final isV6 = ip.contains(':');
+    final url = isV6 ? 'http://[$ip]:${_hub.port}' : 'http://$ip:${_hub.port}';
+    await sendJson(req, {'ip': ip, 'url': url});
   }
 }

@@ -107,6 +107,10 @@ part 'lan_discovery/lan_discovery_service.dart';
 
 part 'peer_sync/peer_sync.dart';
 
+part 'satori/satori_adapter.dart';
+
+part 'satori/satori_bot_profiles.dart';
+
 part 'webhook/hub_webhook.dart';
 
 part 'subscription/hub_subscription.dart';

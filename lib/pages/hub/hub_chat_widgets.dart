@@ -8,7 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -35,6 +37,46 @@ Color hubAvatarColor(String? id) {
 
 String hubInitials(String name) =>
     name.isEmpty ? '?' : name.characters.first.toUpperCase();
+
+/// 解析 Hub 相对路径（如 /hub/files/xxx.png）为绝对 URL。
+/// 绝对 URL / data: 原样返回。
+String hubFileUrlOf(String? url) {
+  if (url == null || url.isEmpty) return '';
+  if (url.startsWith('http://') ||
+      url.startsWith('https://') ||
+      url.startsWith('data:')) {
+    return url;
+  }
+  if (url.startsWith('/hub/')) {
+    // 优先用上传配置里的公网基础地址（外网可访问），否则按连接地址补全
+    final cfg = HubUploadConfig.load();
+    final publicBase = cfg.publicBaseUrl;
+    if (publicBase != null && publicBase.isNotEmpty) {
+      final trimmed = publicBase.endsWith('/')
+          ? publicBase.substring(0, publicBase.length - 1)
+          : publicBase;
+      return '$trimmed$url';
+    }
+    final saved = appdata.implicitData['hub_client_address'] as String?;
+    if (saved != null && saved.isNotEmpty) {
+      // saved 形如 ws://host:port/hub 或 ws://host:port；统一为 http(s)://host:port
+      var base = HubImageUploader.httpUrlOf(saved);
+      final parsed = Uri.tryParse(base);
+      if (parsed != null) {
+        // 仅当路径确为 /hub 时剥离，避免误删主机名（如 host 就叫 hub）
+        final seg = parsed.pathSegments.toList();
+        if (seg.length == 1 && seg.first.toLowerCase() == 'hub') {
+          base = parsed
+              .replace(path: '')
+              .toString()
+              .replaceAll(RegExp(r'/$'), '');
+        }
+      }
+      return '$base$url';
+    }
+  }
+  return url;
+}
 
 bool hubNeedTimeDivider(DateTime? prev, DateTime curr) {
   if (prev == null) return true;
@@ -544,7 +586,10 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
               child: avatarUrl != null && avatarUrl.isNotEmpty
                   ? ClipOval(
                       child: AnimatedImage(
-                        image: CachedImageProvider(avatarUrl, sourceKey: 'hub'),
+                        image: CachedImageProvider(
+                          hubFileUrlOf(avatarUrl),
+                          sourceKey: 'hub',
+                        ),
                         width: avatarDiam,
                         height: avatarDiam,
                         fit: BoxFit.cover,
@@ -721,7 +766,12 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                 Text.rich(
                   TextSpan(
                     children: widget.entry.segments
-                        .where((s) => s is TextSegment || s is MentionSegment)
+                        .where(
+                          (s) =>
+                              s is TextSegment ||
+                              s is MentionSegment ||
+                              s is QuoteSegment,
+                        )
                         .map((s) {
                           if (s is MentionSegment) {
                             return TextSpan(
@@ -731,6 +781,24 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                 height: 1.4,
                                 color: widget.isMe ? cs.onPrimary : cs.primary,
                                 fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          }
+                          if (s is QuoteSegment) {
+                            // 回复引用：斜体 + 引用色
+                            final preview = s.preview.trim();
+                            final label = s.fromName.isNotEmpty
+                                ? '${s.fromName}: '
+                                : '';
+                            return TextSpan(
+                              text: preview.isEmpty ? '[回复]' : '$label$preview',
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.4,
+                                fontStyle: FontStyle.italic,
+                                color: widget.isMe
+                                    ? cs.onPrimary.toOpacity(0.7)
+                                    : textColor.toOpacity(0.6),
                               ),
                             );
                           }
@@ -980,6 +1048,10 @@ class _BubbleImage extends StatelessWidget {
 
   bool get _isBase64 => url.startsWith('data:');
 
+  bool get _isLocalFile =>
+      url.startsWith('file://') ||
+      (url.startsWith('/') && !url.startsWith('/hub/'));
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -990,18 +1062,42 @@ class _BubbleImage extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: _maxWidth),
           child: SizedBox(
             height: _fixedHeight,
-            child: _isBase64 ? _buildBase64() : _buildNetwork(),
+            child: _isBase64
+                ? _buildBase64()
+                : _isLocalFile
+                ? _buildLocalFile()
+                : _buildNetwork(),
           ),
         ),
       ),
     );
   }
 
+  /// 读取本地文件图片（Koishi 与 Hub 同机时，file:// 路径可直接读）
+  Widget _buildLocalFile() {
+    try {
+      final raw = url.replaceFirst('file://', '');
+      final path = Uri.tryParse(raw)?.toFilePath() ?? raw;
+      if (!File(path).existsSync()) return _placeholder();
+      return Hero(
+        tag: messageId,
+        child: Image.file(
+          File(path),
+          height: _fixedHeight,
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => _placeholder(),
+        ),
+      );
+    } catch (_) {
+      return _placeholder();
+    }
+  }
+
   Widget _buildNetwork() {
     return Hero(
       tag: messageId,
       child: AnimatedImage(
-        image: CachedImageProvider(url, sourceKey: 'hub'),
+        image: CachedImageProvider(hubFileUrlOf(url), sourceKey: 'hub'),
         height: _fixedHeight,
         fit: BoxFit.contain,
       ),
@@ -1010,14 +1106,13 @@ class _BubbleImage extends StatelessWidget {
 
   Widget _buildBase64() {
     try {
-      final data = base64Decode(url.split(',').last);
       return Hero(
         tag: messageId,
-        child: Image.memory(
-          data,
+        child: AnimatedImage(
+          // Base64ImageProvider key 稳定（按 base64 前缀），避免每次 build 重解码闪烁
+          image: Base64ImageProvider(url),
           height: _fixedHeight,
           fit: BoxFit.contain,
-          errorBuilder: (_, _, _) => _placeholder(),
         ),
       );
     } catch (_) {
@@ -1038,6 +1133,19 @@ class _BubbleImage extends StatelessWidget {
         await BangumiWidget.showImagePreview(
           context: App.rootContext,
           url: tmp.path,
+          title: '',
+          heroTag: messageId,
+        );
+      } catch (e) {
+        HubLog.error('HubBubbleImage', '$e');
+      }
+    } else if (_isLocalFile) {
+      try {
+        final raw = url.replaceFirst('file://', '');
+        final path = Uri.tryParse(raw)?.toFilePath() ?? raw;
+        await BangumiWidget.showImagePreview(
+          context: App.rootContext,
+          url: path,
           title: '',
           heroTag: messageId,
         );
@@ -1127,6 +1235,11 @@ class HubInputBar extends ConsumerWidget {
   final void Function(int index) onRemovePending;
   final HubRoomDto? room;
 
+  /// 是否需要手动补偿软键盘高度。
+  /// 播放器全屏聊天面板（embedded，无 PopUpWidgetScaffold）需要；
+  /// 弹层内（PopUpWidgetScaffold 已通过 keyboardOffset 统一处理）不需要，避免双重顶起。
+  final bool applyKeyboardPadding;
+
   const HubInputBar({
     super.key,
     required this.controller,
@@ -1139,234 +1252,250 @@ class HubInputBar extends ConsumerWidget {
     required this.pendingImages,
     required this.onRemovePending,
     required this.room,
+    this.applyKeyboardPadding = true,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border(
-          top: BorderSide(color: cs.outlineVariant.toOpacity(0.4), width: 0.5),
+    // 跟随软键盘：弹出时输入框上移（嵌入式/无 Scaffold 调整时也生效）。
+    // 仅当需要手动补偿时启用；弹层内 PopUpWidgetScaffold 已统一处理，避免双重叠加
+    final keyboardBottom = applyKeyboardPadding
+        ? (MediaQuery.of(context).viewInsets.bottom -
+                  MediaQuery.of(context).padding.bottom)
+              .clamp(0.0, double.infinity)
+        : 0.0;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboardBottom),
+      child: Container(
+        padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          border: Border(
+            top: BorderSide(
+              color: cs.outlineVariant.toOpacity(0.4),
+              width: 0.5,
+            ),
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (pendingImages.isNotEmpty)
-            SizedBox(
-              height: 72,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-                itemCount: pendingImages.length,
-                itemBuilder: (_, i) {
-                  final img = pendingImages[i];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: img.isNetwork
-                              ? Image.network(
-                                  img.networkUrl!,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => Container(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (pendingImages.isNotEmpty)
+              SizedBox(
+                height: 72,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+                  itemCount: pendingImages.length,
+                  itemBuilder: (_, i) {
+                    final img = pendingImages[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: img.isNetwork
+                                ? Image.network(
+                                    img.networkUrl!,
                                     width: 60,
                                     height: 60,
-                                    color: Colors.black12,
-                                    child: const Icon(
-                                      Icons.broken_image_outlined,
-                                      size: 20,
-                                      color: Colors.grey,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: Colors.black12,
+                                      child: const Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 20,
+                                        color: Colors.grey,
+                                      ),
                                     ),
+                                  )
+                                : Image.memory(
+                                    img.bytes!,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
                                   ),
-                                )
-                              : Image.memory(
-                                  img.bytes!,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: GestureDetector(
+                              onTap: () => onRemovePending(i),
+                              child: Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(9),
                                 ),
-                        ),
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: GestureDetector(
-                            onTap: () => onRemovePending(i),
-                            child: Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                size: 12,
-                                color: Colors.white,
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          // ── 输入框 + 发送按钮 ───────────────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Focus(
-                  onKeyEvent: (_, event) {
-                    if (event is! KeyDownEvent || !isDesktop) {
-                      return KeyEventResult.ignored;
-                    }
-                    if (event.logicalKey == LogicalKeyboardKey.enter) {
-                      if (HardwareKeyboard.instance.isControlPressed) {
-                        final t = controller.text;
-                        final s = controller.selection;
-                        controller.value = TextEditingValue(
-                          text: t.replaceRange(s.start, s.end, '\n'),
-                          selection: TextSelection.collapsed(
-                            offset: s.start + 1,
-                          ),
-                        );
+            // ── 输入框 + 发送按钮 ───────────────────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Focus(
+                    onKeyEvent: (_, event) {
+                      if (event is! KeyDownEvent || !isDesktop) {
+                        return KeyEventResult.ignored;
+                      }
+                      if (event.logicalKey == LogicalKeyboardKey.enter) {
+                        if (HardwareKeyboard.instance.isControlPressed) {
+                          final t = controller.text;
+                          final s = controller.selection;
+                          controller.value = TextEditingValue(
+                            text: t.replaceRange(s.start, s.end, '\n'),
+                            selection: TextSelection.collapsed(
+                              offset: s.start + 1,
+                            ),
+                          );
+                          return KeyEventResult.handled;
+                        }
+                        onSend();
                         return KeyEventResult.handled;
                       }
-                      onSend();
-                      return KeyEventResult.handled;
-                    }
-                    return KeyEventResult.ignored;
-                  },
-                  child: TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    maxLines: 4,
-                    minLines: 1,
-                    style: TextStyle(fontSize: 14, color: cs.onSurface),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      hintText: isDesktop
-                          ? t.enterToSendCtrlEnterForNewline
-                          : t.message,
-                      hintStyle: TextStyle(
-                        fontSize: 13,
-                        color: cs.onSurface.toOpacity(0.35),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      filled: true,
-                      fillColor: cs.surfaceContainerHighest.toOpacity(0.6),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: cs.primary.toOpacity(0.6),
-                          width: 1.5,
+                      return KeyEventResult.ignored;
+                    },
+                    child: TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      maxLines: 4,
+                      minLines: 1,
+                      style: TextStyle(fontSize: 14, color: cs.onSurface),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: isDesktop
+                            ? t.enterToSendCtrlEnterForNewline
+                            : t.message,
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: cs.onSurface.toOpacity(0.35),
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // ── 发送按钮 ──────────────────────────────────────────────
-              Material(
-                color: cs.primary,
-                borderRadius: BorderRadius.circular(8),
-                child: InkWell(
-                  onTap: onSend,
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 38,
-                    height: 38,
-                    child: Icon(
-                      Icons.send_rounded,
-                      size: 17,
-                      color: cs.onPrimary,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // ── 工具栏（图片 + 表情包）─────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: uploading
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: cs.primary,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        filled: true,
+                        fillColor: cs.surfaceContainerHighest.toOpacity(0.6),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: cs.primary.toOpacity(0.6),
+                            width: 1.5,
                           ),
-                        )
-                      : Icon(
-                          Icons.image_outlined,
-                          size: 20,
-                          color: cs.onSurface.toOpacity(0.5),
                         ),
-                  onPressed: uploading ? null : onPickImage,
-                  tooltip: t.image,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(32, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.emoji_emotions_outlined,
-                    size: 20,
-                    color: cs.onSurface.toOpacity(0.5),
-                  ),
-                  onPressed: onOpenStickers,
-                  tooltip: t.memes,
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(32, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-                const Spacer(),
-                if (room != null)
-                  IconButton(
-                    onPressed: () => showHubRoomSettingsSheet(context, room!),
-                    icon: Icon(
-                      Icons.settings_outlined,
-                      size: 20,
-                      color: cs.onSurface.toOpacity(0.5),
+                      ),
                     ),
-                    tooltip: t.roomSettings,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // ── 发送按钮 ──────────────────────────────────────────────
+                Material(
+                  color: cs.primary,
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    onTap: onSend,
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: Icon(
+                        Icons.send_rounded,
+                        size: 17,
+                        color: cs.onPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // ── 工具栏（图片 + 表情包）─────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: uploading
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: cs.primary,
+                            ),
+                          )
+                        : Icon(
+                            Icons.image_outlined,
+                            size: 20,
+                            color: cs.onSurface.toOpacity(0.5),
+                          ),
+                    onPressed: uploading ? null : onPickImage,
+                    tooltip: t.image,
                     style: IconButton.styleFrom(
                       minimumSize: const Size(32, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
-              ],
+                  IconButton(
+                    icon: Icon(
+                      Icons.emoji_emotions_outlined,
+                      size: 20,
+                      color: cs.onSurface.toOpacity(0.5),
+                    ),
+                    onPressed: onOpenStickers,
+                    tooltip: t.memes,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (room != null)
+                    IconButton(
+                      onPressed: () => showHubRoomSettingsSheet(context, room!),
+                      icon: Icon(
+                        Icons.settings_outlined,
+                        size: 20,
+                        color: cs.onSurface.toOpacity(0.5),
+                      ),
+                      tooltip: t.roomSettings,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

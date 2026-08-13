@@ -90,11 +90,14 @@ class HubKeepAliveService : Service() {
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
+            // Android 15+ (targetSdk 36) 禁止 dataSync 前台服务类型，
+            // Hub 长连接属远程消息传递，改用 remoteMessaging。
+            val type = if (Build.VERSION.SDK_INT >= 35) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
+            } else {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            }
+            startForeground(NOTIFICATION_ID, notification, type)
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }

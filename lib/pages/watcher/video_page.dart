@@ -1,14 +1,21 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/hub/hub_chat_page.dart';
+import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
+import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -34,8 +41,16 @@ class _VideoPageState extends State<VideoPage>
   late Animation<double> panelFade;
   late Animation<double> backgroundFade;
 
+  // 聊天面板动画（与 _buildPanel 同款 Fade + Slide）
+  late AnimationController _chatAnimation;
+  late Animation<double> _chatFade;
+  late Animation<Offset> _chatSlide;
+
   late GridObserverController observerController;
   final GlobalKey<OverlayState> _overlayKey = GlobalKey<OverlayState>();
+
+  // 全屏时一起看聊天浮层开关
+  bool _showChatOverlay = false;
 
   ScrollController scrollController = ScrollController();
 
@@ -117,6 +132,24 @@ class _VideoPageState extends State<VideoPage>
     playerController.currentRoad = 0;
     currentRoad = 0;
 
+    // 聊天面板动画：从右侧滑入 + 淡入
+    _chatAnimation = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _chatSlide = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _chatAnimation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          ),
+        );
+    _chatFade = CurvedAnimation(
+      parent: _chatAnimation,
+      curve: Curves.easeInOut,
+    );
+
     // Initialize panel tab controller with 3 tabs
     _panelTabController = TabController(length: 3, vsync: this);
   }
@@ -127,8 +160,112 @@ class _VideoPageState extends State<VideoPage>
       playerController.overlayKey = null;
     }
     observerController.controller?.dispose();
+    _chatAnimation.dispose();
     _panelTabController.dispose();
     super.dispose();
+  }
+
+  /// 关闭聊天面板（触发滑出动画）
+  void _closeChatOverlay() {
+    if (!_showChatOverlay) return;
+    setState(() => _showChatOverlay = false);
+    _chatAnimation.reverse();
+    // 恢复控制栏自动隐藏
+    playerController.chatOverlayOpen = false;
+    playerController.canHidePlayerPanel = true;
+  }
+
+  /// 全屏时一起看聊天浮层（在房间时显示）
+  Widget _buildChatOverlay(BuildContext context) {
+    // 用当前 ProviderScope 容器读取，与 ref/ConsumerState 一致
+    final hub = ProviderScope.containerOf(context).read(hubProvider);
+    final roomId = hub.currentRoomId;
+    final inRoom =
+        hub.isConnected && roomId != null && roomId != hub.lobbyRoomId;
+    DebugLog.info(
+      'VideoPage',
+      'chatOverlay: fs=${playerController.isFullScreen} '
+          'inRoom=$inRoom connected=${hub.isConnected} '
+          'roomId=$roomId lobby=${hub.lobbyRoomId}',
+    );
+    if (!inRoom) return const SizedBox.shrink();
+    return Stack(
+      children: [
+        // 点击面板外区域关闭聊天面板（类似 _buildPanel 点击外部消失）
+        if (_showChatOverlay)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => _closeChatOverlay(),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+        // 聊天面板：与 _buildPanel 同款 Fade + Slide 动画，约四分之一屏宽半透明
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            // 键盘弹出时面板底部上移，输入框不被遮挡
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: FadeTransition(
+              opacity: _chatFade,
+              child: SlideTransition(
+                position: _chatSlide,
+                child: GestureDetector(
+                  // 手机边缘右滑退出窗口
+                  onHorizontalDragEnd: (details) {
+                    if ((details.primaryVelocity ?? 0) > 300) {
+                      _closeChatOverlay();
+                    }
+                  },
+                  child: IgnorePointer(
+                    ignoring: !_showChatOverlay,
+                    child: Container(
+                      width: (MediaQuery.sizeOf(context).width / 4).clamp(
+                        260,
+                        420,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.85),
+                          ],
+                          stops: const [0.0, 1.0],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: RepaintBoundary(
+                        child: HubChatPage(
+                          roomId: roomId,
+                          roomName: hub.currentRoomName ?? '',
+                          embedded: true,
+                          showWatchCard: false,
+                          // 播放器全屏聊天面板是 Stack 覆盖层（无 Scaffold 调整），需手动补偿键盘
+                          manualKeyboardPadding: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -209,6 +346,12 @@ class _VideoPageState extends State<VideoPage>
                 ),
               ),
               Overlay(key: _overlayKey),
+              // 全屏时一起看聊天浮层（Positioned.fill 覆盖全屏，供点击层/面板定位）
+              if (playerController.isFullScreen)
+                Positioned.fill(child: _buildChatOverlay(context)),
+              // 全屏弹幕层（独立 State，父级 rebuild 不影响弹幕动画）
+              if (playerController.isFullScreen)
+                const Positioned.fill(child: _DanmakuOverlay()),
             ],
           ),
         ),
@@ -771,9 +914,318 @@ class _VideoPageState extends State<VideoPage>
   Widget get playerBody {
     return PlayerItem(
       openMenu: openTabBodyAnimated,
+      onChatToggle: () {
+        setState(() => _showChatOverlay = !_showChatOverlay);
+        if (_showChatOverlay) {
+          _chatAnimation.forward();
+          // 聊天面板打开时禁用控制栏自动隐藏，避免打字过程中面板收起/失焦
+          playerController.chatOverlayOpen = true;
+          playerController.canHidePlayerPanel = false;
+          playerController.showVideoController = true;
+        } else {
+          _chatAnimation.reverse();
+          playerController.chatOverlayOpen = false;
+          playerController.canHidePlayerPanel = true;
+        }
+      },
       locateEpisode: menuJumpToCurrentEpisode,
       keyboardFocus: playerController.keyboardFocus,
       playerController: playerController,
     );
   }
+}
+
+/// 全屏弹幕层：独立 State 管理弹幕列表与消息监听，
+/// 父级（VideoPage）rebuild 不影响弹幕动画
+class _DanmakuOverlay extends StatefulWidget {
+  const _DanmakuOverlay();
+
+  @override
+  State<_DanmakuOverlay> createState() => _DanmakuOverlayState();
+}
+
+class _DanmakuOverlayState extends State<_DanmakuOverlay>
+    with SingleTickerProviderStateMixin {
+  final List<_DanmakuData> _danmaku = [];
+  HubClient? _chatClient;
+  ProviderContainer? _container;
+  late final AnimationController _ticker;
+  Timer? _cleanupTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // 统一 vsync 时钟驱动弹幕每帧重绘，与视频帧调度同步
+    _ticker = AnimationController(
+      vsync: this,
+      duration: const Duration(minutes: 5),
+    );
+    _ticker.addListener(_checkExpired);
+    // 低频清理超时弹幕（避免频繁 setState 导致动画卡顿）
+    _cleanupTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _cleanup();
+    });
+    // 弹幕样式配置变化时刷新（字号/行高/区域/时长）
+    appdata.implicitVersion.addListener(_onStyleChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_container == null) {
+      _container = ProviderScope.containerOf(context);
+      _chatClient = _container!.read(hubClientProvider);
+      _chatClient?.addMessageListener(_onChatMessage);
+    }
+  }
+
+  @override
+  void dispose() {
+    appdata.implicitVersion.removeListener(_onStyleChanged);
+    _cleanupTimer?.cancel();
+    _ticker.dispose();
+    _chatClient?.removeMessageListener(_onChatMessage);
+    for (final d in _danmaku) {
+      d.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onStyleChanged() {
+    if (!mounted) return;
+    // 样式变更后旧弹幕仍按旧参数绘制会错位，直接清空重来
+    for (final d in _danmaku) {
+      d.dispose();
+    }
+    setState(_danmaku.clear);
+  }
+
+  /// 依据「显示区域 + 行高」计算可用的弹幕轨道数
+  int _trackCount(double screenHeight) {
+    final usable = screenHeight * DanmakuSettings.area - 44;
+    final count = (usable / DanmakuSettings.lineHeight).floor();
+    return count.clamp(1, 60);
+  }
+
+  void _checkExpired() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bool changed = false;
+    for (final d in List.of(_danmaku)) {
+      if (now - d.spawnMs >= d.durationMs) {
+        _danmaku.remove(d);
+        d.dispose();
+        changed = true;
+      }
+    }
+    if (changed && mounted) setState(() {});
+    // 弹幕清空后停止时钟
+    if (_danmaku.isEmpty && _ticker.isAnimating) {
+      _ticker.stop();
+    }
+  }
+
+  void _cleanup() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    bool changed = false;
+    for (final d in List.of(_danmaku)) {
+      if (now - d.spawnMs >= d.durationMs) {
+        _danmaku.remove(d);
+        d.dispose();
+        changed = true;
+      }
+    }
+    if (changed && mounted) setState(() {});
+    if (_danmaku.isEmpty && _ticker.isAnimating) {
+      _ticker.stop();
+    }
+  }
+
+  void _onChatMessage(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final event = HubEvent.fromJson(data);
+    if (event is! HubEventMessage) return;
+    if (event.isUnicast) return;
+    final msg = event.message;
+    if (isHubSyncMessage(msg)) return;
+    // 自己的消息也显示弹幕，便于确认发送成功
+    final text = msg.plainText.trim();
+    if (text.isEmpty) return;
+    if (!_ticker.isAnimating) _ticker.repeat();
+    final size = MediaQuery.sizeOf(context);
+    setState(() {
+      _danmaku.add(
+        _DanmakuData.create(
+          name: msg.sender.displayName,
+          text: text,
+          nameColor: _nameColor(msg.sender.userId),
+          track: _danmaku.length % _trackCount(size.height),
+          screenWidth: size.width,
+          fontSize: DanmakuSettings.fontSize,
+          textColor: DanmakuSettings.color,
+          opacity: DanmakuSettings.opacity,
+          durationSec: DanmakuSettings.duration,
+        ),
+      );
+      if (_danmaku.length > 30) _danmaku.removeAt(0);
+    });
+  }
+
+  /// 依据 userId 生成稳定的发言人颜色（按色相分散，便于区分）
+  Color _nameColor(String userId) {
+    final hue = (userId.hashCode % 360).abs().toDouble();
+    return HSVColor.fromAHSV(1, hue, 0.55, 1.0).toColor();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    return IgnorePointer(
+      // RepaintBoundary 隔离弹幕重绘，不影响上层视频画面
+      child: RepaintBoundary(
+        child: CustomPaint(
+          size: Size(size.width, size.height),
+          painter: _DanmakuPainter(
+            danmaku: _danmaku,
+            screenWidth: size.width,
+            lineHeight: DanmakuSettings.lineHeight,
+            trackCount: _trackCount(size.height),
+            repaint: _ticker,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 弹幕数据（含绘制缓存：描边层 + 填充层合成一张 ui.Picture，每帧仅 drawPicture）
+class _DanmakuData {
+  final int id;
+  final String text;
+  final int track;
+  final int spawnMs;
+  final int durationMs;
+  final Picture picture;
+  final double width;
+
+  _DanmakuData._({
+    required this.id,
+    required this.text,
+    required this.track,
+    required this.spawnMs,
+    required this.durationMs,
+    required this.picture,
+    required this.width,
+  });
+
+  factory _DanmakuData.create({
+    required String name,
+    required String text,
+    required Color nameColor,
+    required Color textColor,
+    required int track,
+    required double screenWidth,
+    required double fontSize,
+    required double opacity,
+    required double durationSec,
+  }) {
+    const strokeColor = Colors.black;
+    final strokeWidth = (fontSize / 12).clamp(1.5, 3.5);
+    final baseStyle = TextStyle(
+      fontSize: fontSize,
+      height: 1.2,
+      fontWeight: FontWeight.w600,
+    );
+
+    // 外层描边：文本 + 名字分别描边，再叠加填充
+    final strokeStyle = baseStyle.copyWith(
+      foreground: Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..color = strokeColor.withValues(alpha: opacity),
+    );
+    final nameStroke = strokeStyle.copyWith(fontWeight: FontWeight.w800);
+    final fillStyle = baseStyle.copyWith(
+      color: textColor.withValues(alpha: opacity),
+      shadows: const [Shadow(color: Colors.black54, blurRadius: 2)],
+    );
+    final nameFill = baseStyle.copyWith(
+      color: nameColor.withValues(alpha: opacity),
+      fontWeight: FontWeight.w800,
+      shadows: const [Shadow(color: Colors.black54, blurRadius: 2)],
+    );
+
+    final tp = TextPainter(
+      text: TextSpan(
+        children: [
+          TextSpan(text: '$name: ', style: nameFill),
+          TextSpan(text: text, style: fillStyle),
+        ],
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: screenWidth * 0.6);
+    final strokeTp = TextPainter(
+      text: TextSpan(
+        children: [
+          TextSpan(text: '$name: ', style: nameStroke),
+          TextSpan(text: text, style: strokeStyle),
+        ],
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: screenWidth * 0.6);
+
+    // 一次合成：先画描边层，再画填充层，整张缓存为 Picture
+    final recorder = PictureRecorder();
+    final canvas = Canvas(recorder);
+    strokeTp.paint(canvas, Offset.zero);
+    tp.paint(canvas, Offset.zero);
+    final picture = recorder.endRecording();
+
+    return _DanmakuData._(
+      id: DateTime.now().microsecondsSinceEpoch,
+      text: '$name: $text',
+      track: track,
+      spawnMs: DateTime.now().millisecondsSinceEpoch,
+      durationMs: (durationSec * 1000).round(),
+      picture: picture,
+      width: tp.width,
+    );
+  }
+
+  void dispose() => picture.dispose();
+}
+
+/// 弹幕绘制器：一次绘制所有弹幕，由统一 vsync ticker 每帧重绘
+class _DanmakuPainter extends CustomPainter {
+  final List<_DanmakuData> danmaku;
+  final double screenWidth;
+  final double lineHeight;
+  final int trackCount;
+
+  _DanmakuPainter({
+    required this.danmaku,
+    required this.screenWidth,
+    required this.lineHeight,
+    required this.trackCount,
+    required Listenable repaint,
+  }) : super(repaint: repaint);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final d in danmaku) {
+      final t = ((now - d.spawnMs) / d.durationMs).clamp(0.0, 1.0);
+      final x = screenWidth - (screenWidth + d.width) * t;
+      if (x + d.width < 0) continue;
+      canvas.save();
+      canvas.translate(x, 44.0 + (d.track % trackCount) * lineHeight);
+      canvas.drawPicture(d.picture);
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DanmakuPainter oldDelegate) =>
+      oldDelegate.danmaku != danmaku ||
+      oldDelegate.lineHeight != lineHeight ||
+      oldDelegate.trackCount != trackCount;
 }

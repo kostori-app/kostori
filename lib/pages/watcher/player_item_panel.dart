@@ -2,10 +2,14 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/utils.dart';
@@ -16,6 +20,7 @@ class PlayerItemPanel extends StatefulWidget {
     super.key,
     required this.playerController,
     required this.openMenu,
+    this.onChatToggle,
     required this.handleProgressBarDragStart,
     required this.handleProgressBarDragEnd,
     required this.animationController,
@@ -27,6 +32,7 @@ class PlayerItemPanel extends StatefulWidget {
 
   final PlayerController playerController;
   final void Function() openMenu;
+  final VoidCallback? onChatToggle;
   final void Function(ThumbDragDetails details) handleProgressBarDragStart;
   final void Function() handleProgressBarDragEnd;
   final AnimationController animationController;
@@ -370,7 +376,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 ),
                               ),
                             ),
-                            Spacer(),
+                            if (playerController.isFullScreen &&
+                                widget.onChatToggle != null &&
+                                !playerController.chatOverlayOpen)
+                              const Expanded(child: _QuickChatInput())
+                            else
+                              const Spacer(),
                             Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: playerController.isFullScreen
@@ -461,6 +472,25 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 },
                               ),
                             ),
+                            (playerController.isFullScreen &&
+                                    playerController.inRoom)
+                                ? IconButton(
+                                    color: Colors.white,
+                                    icon: const Icon(Icons.subtitles_outlined),
+                                    tooltip: t.danmaku,
+                                    onPressed: () {
+                                      showDanmakuSettingsDialog(context);
+                                    },
+                                  )
+                                : Container(),
+                            (playerController.isFullScreen &&
+                                    playerController.inRoom)
+                                ? IconButton(
+                                    color: Colors.white,
+                                    icon: const Icon(Icons.chat_bubble_outline),
+                                    onPressed: widget.onChatToggle,
+                                  )
+                                : Container(),
                             (playerController.isFullScreen)
                                 ? IconButton(
                                     color: Colors.white,
@@ -514,6 +544,97 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           ],
         );
       },
+    );
+  }
+}
+
+/// 全屏一起看底部快捷输入框：发送消息到当前房间
+class _QuickChatInput extends ConsumerStatefulWidget {
+  const _QuickChatInput();
+
+  @override
+  ConsumerState<_QuickChatInput> createState() => _QuickChatInputState();
+}
+
+class _QuickChatInputState extends ConsumerState<_QuickChatInput> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    final hub = ref.read(hubProvider);
+    final roomId = hub.currentRoomId;
+    final inRoom =
+        hub.isConnected && roomId != null && roomId != hub.lobbyRoomId;
+    if (!inRoom) return;
+    ref.read(hubClientProvider).broadcast([TextSegment(text)]);
+    _controller.clear();
+    _focusNode.unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    // 仅在已连接且位于非大厅房间时可用（发送到当前一起看房间）
+    final hub = ref.watch(hubProvider);
+    final roomId = hub.currentRoomId;
+    final inRoom =
+        hub.isConnected && roomId != null && roomId != hub.lobbyRoomId;
+    if (!inRoom) return const SizedBox.shrink();
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      // 跟随软键盘上移，避免输入法遮挡输入框
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.only(left: 12, right: 2),
+        decoration: BoxDecoration(
+          color: Colors.black26,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cs.primary.toOpacity(0.4), width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: t.message,
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.toOpacity(0.5),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _send(),
+              ),
+            ),
+            IconButton(
+              color: Colors.white,
+              visualDensity: VisualDensity.compact,
+              tooltip: t.sendMessage,
+              icon: const Icon(Icons.send_rounded, size: 18),
+              onPressed: _send,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

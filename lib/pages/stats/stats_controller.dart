@@ -87,14 +87,14 @@ abstract class _StatsController with Store {
   }
 
   Future<void> showAnimeSourlList() async {
-    final baseList = AnimeSource.all().map((a) => a.name).toList();
+    final baseList = AnimeSource.allSources().map((a) => a.name).toList();
 
     final selectors = appdata.settings['statsSelectors'] ?? [];
     final selectorList = List<int>.from(
       selectors,
     ).map((i) => AnimeType(i)).toList();
 
-    final activeList = AnimeSource.all()
+    final activeList = AnimeSource.allSources()
         .where(
           (a) => selectorList.any(
             (t) => t.value == AnimeType.fromKey(a.name).value,

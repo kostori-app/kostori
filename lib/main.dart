@@ -401,4 +401,14 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
     PointerDeviceKind.stylus,
     PointerDeviceKind.trackpad,
   };
+
+  /// 全局禁用原生滚动条：项目统一使用自定义 AppScrollBar 滚动条
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
+  }
 }

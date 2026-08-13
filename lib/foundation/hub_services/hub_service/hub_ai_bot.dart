@@ -220,9 +220,9 @@ extension HubAiBotExtension on HubService {
       return;
     }
 
-    // 私聊直接回复；房间内按触发模式判断（先判触发，再节流，
-    // 避免非触发消息消耗限流预算导致真触发时被跳过）
+    // 私聊只回复「发给内置 AI bot」的消息；发给其他 bot（如 Satori bot）不触发
     final isDm = dmTargetUserId != null;
+    if (isDm && dmTargetUserId != HubAiBot.userId) return;
     if (!isDm &&
         !HubAiBot.matchesTrigger(
           incoming,

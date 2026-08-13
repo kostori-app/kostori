@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/bbcode/bbcode_precache.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/reviews_comments_card.dart';
@@ -27,6 +28,7 @@ class BangumiReviewsPage extends ConsumerStatefulWidget {
 class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
   final ScrollController scrollController = ScrollController();
   final Map<int, GlobalKey> _replyKeys = {};
+  final BangumiPageImageCache _imageCache = BangumiPageImageCache();
 
   ReviewsItem get reviewsItem => widget.reviewsItem;
   ReviewsInfoItem? reviewsInfoItem;
@@ -34,6 +36,18 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
   List<BangumiItem> bangumiReviewsSubjects = [];
   bool isLoading = true;
   bool isHide = false;
+
+  /// 提取日记正文 + 全部评论中的图片 URL 并预加载
+  void _precacheReviewImages() {
+    if (!mounted) return;
+    final bbcodeList = <String>[
+      if (reviewsInfoItem != null) reviewsInfoItem!.content,
+      ...reviewsCommentsItem.map((c) => c.content),
+    ];
+    for (final bbcode in bbcodeList) {
+      _imageCache.precacheAll(context, extractBangumiImageUrls(bbcode));
+    }
+  }
 
   Future<void> queryBangumiReviewsByID(int id) async {
     reviewsInfoItem = await Bangumi.instance.getReviewsInfoByID(id);
@@ -45,7 +59,10 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
     for (final item in reviewsCommentsItem) {
       _replyKeys[item.id] = GlobalKey();
     }
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      _precacheReviewImages();
+    }
   }
 
   void _scrollToAuthor(String authorName) {
@@ -74,6 +91,7 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
 
   @override
   void dispose() {
+    _imageCache.dispose();
     scrollController.removeListener(scrollListener);
     super.dispose();
   }

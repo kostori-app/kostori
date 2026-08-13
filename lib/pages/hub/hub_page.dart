@@ -337,7 +337,8 @@ class _RoomsTab extends ConsumerWidget {
     BuildContext context,
     HubClient client,
   ) async {
-    final result = await showCreateRoomDialog();
+    // 聊天室/大厅创建只能普通房间，一起看房间只在播放页创建
+    final result = await showCreateRoomDialog(allowWatch: false);
     if (result == null) return;
     client.createRoom(
       result.name,

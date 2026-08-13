@@ -49,6 +49,7 @@ authorizationRequired: 需要身分驗證
 autoPageTurning: 自動翻頁
 back: 返回
 bangumi: 番組計劃
+bangumiInfo: 番劇詳情
 block: 封鎖
 blue: 藍色
 brief: 簡介
@@ -64,6 +65,14 @@ checkForUpdates: 檢查更新
 checkUpdates: 檢查更新
 check: 檢查
 clearCache: 清除快取
+hubUploadedImages: Hub 上傳圖片
+hubUploadedImagesHint: 張圖片儲存在本機
+noHubUploads: 暫無上傳圖片
+clearHubUploadsConfirm: 刪除全部 Hub 上傳圖片？
+hubStickers: Hub 表情包
+hubStickersHint: 個表情包
+noHubStickers: 暫無表情包
+clearHubStickersConfirm: 刪除全部 Hub 表情包？
 clearHistory: 清除歷史記錄
 clearProgress: 清除進度
 clearSearchHistory: 清除搜尋歷史
@@ -178,6 +187,7 @@ localFavorites: 本地收藏
 local: 本地
 logIn: 登入
 logOut: 登出
+account: 帳號
 log: 日誌
 manualTranslation: 手動翻譯
 manualTranslationHint: 輸入文字，翻譯為你偏好的語言
@@ -572,7 +582,6 @@ itemsCount: "${n} 個條目"
 enableSkipBangumiSchedule: 啟用跳過 bangumi 日程
 bangumiClientId: 用戶端 ID
 bangumiClientSecret: 用戶端密鑰
-bangumiRedirectUri: 回呼位址
 bangumiOAuthHint: 在 bgm.tv/dev 註冊應用程式以取得用戶端 ID 與密鑰
 bangumiOAuthLogin: Bangumi 登入
 bangumiShowNsfw: 顯示 NSFW 內容
@@ -699,6 +708,10 @@ audioOptionLowLatency: |-
 audioOptionCompatibility: |-
   音訊選項：
    相容性
+audioOutputDevice: 音訊輸出裝置
+noAudioDevice: 未偵測到音訊裝置
+volumeBoostEnabled: "音量增益: 開"
+volumeBoostDisabled: "音量增益: 關"
 switchSuccessful: 切換成功
 switchFailed: 切換失敗
 remoteCast: 遠端投屏
@@ -1015,6 +1028,17 @@ bindMode: 綁定模式
 chooseIpVersionToListenOn: 選擇要監聽的 IP 版本
 hubServer: Hub 服務端
 enableHub: 啟用 Hub
+hubServerStartFailed: Hub 伺服器啟動失敗
+enableTls: 啟用 HTTPS/WSS
+tlsEnabledDesc: Hub 將透過 HTTPS/WSS 提供（需憑證）
+tlsDisabledDesc: Hub 透過 HTTP/WS 提供
+tlsCertificate: TLS 憑證
+tlsCertificateHint: PEM 憑證鏈（Let's Encrypt 請用 fullchain.pem）
+tlsPrivateKey: TLS 私鑰
+tlsPrivateKeyHint: PEM 私鑰檔案路徑
+tlsPassword: TLS 私鑰密碼
+tlsPasswordHint: 私鑰未加密則留空
+browse: 瀏覽
 hubServerIsStopped: Hub 服務端已停止
 clientsCount: 個用戶端
 hubPort: Hub 連接埠
@@ -1032,7 +1056,16 @@ selectServer: 選擇一個伺服器
 exportRooms: 匯出房間
 importRooms: 匯入房間
 connect: 連線
+danmakuSettings: 彈幕設定
+danmakuColor: 顏色
+danmakuFontSize: 字號
+danmakuOpacity: 不透明度
+danmakuArea: 顯示區域
+danmakuDuration: 持續時間
+danmakuLineHeight: 行高
+danmaku: 彈幕
 watchTogether: 一起看
+watchTogetherRoomHasNoAnime: 一起看房間未綁定番劇
 watchTogetherDesc: 和朋友一起看番：建立或加入房間，邊看邊聊，分享截圖與字幕。
 selectRoomToStart: 選擇房間開始一起看
 syncToOwner: 同步到房主
@@ -1148,6 +1181,23 @@ hubAiBotTriggerPattern: 觸發前綴 / 關鍵字
 hubAiBotKeywordHint: 例如 #bot
 hubAiBotMinInterval: 最小回覆間隔（秒）
 hubAiBotReplyDm: 回覆私聊訊息
+satoriBotManage: Satori 接入機器人管理
+satoriBotManageDesc: 第三方 Satori 機器人
+satoriBotCountUnit: 個機器人
+satoriBotAdd: 新增機器人
+satoriBotEdit: 編輯機器人
+satoriBotDelete: 刪除機器人
+satoriBotName: 機器人名稱
+satoriBotNameHint: 顯示在房間成員清單和 @ 提及中的名稱
+satoriBotAvatar: 頭像
+satoriBotBio: 簡介
+satoriBotToken: 連線令牌
+satoriBotTokenHint: Satori 用戶端用它連線並綁定到該機器人
+satoriBotTokenRegen: 重新產生
+satoriBotEnabled: 啟用
+satoriBotDeleteConfirm: 刪除該機器人？已連線的用戶端將中斷。
+satoriBotTokenCopied: 令牌已複製
+satoriBotConfigTitle: Satori 機器人
 webAdminSettings: Web 管理設定
 webAdminWhatIs: 什麼是 Web 管理？
 webAdminDescription: Web 管理提供基於瀏覽器的 Hub 管理面板。在任意裝置瀏覽器開啟位址，可查看伺服器狀態、管理房間與用戶端、瀏覽日誌、修改設定、控制 AI 機器人與 Webhook、重啟 Hub。使用現有的 Hub API Key 進行鑑權。
@@ -1172,6 +1222,7 @@ hubDetails: Hub 詳情
 connectionSettings: 連接設定
 serverAddress: 伺服器地址
 host: 主機
+protocol: 協定
 authentication: 身分驗證
 paste: 貼上
 unblock: 取消封鎖
@@ -1224,6 +1275,11 @@ members: 成員
 notSet: 未設定
 currentRoom: 目前房間
 editProfile: 編輯資料
+uploadAvatar: 上傳頭像
+avatar: 頭像
+connectFirstToUploadAvatar: 請先連線伺服器再上傳頭像
+avatarUploaded: 頭像已上傳
+uploadFailed: 上傳失敗
 noBlockedUsers: 沒有阻擋的使用者
 createRoom: 建立房間
 chat: 聊天
@@ -1255,6 +1311,10 @@ clientUploadsDirectlyToOss: 用戶端直接上傳到 OSS。伺服器僅獲取最
 maxSizeMb: 單檔上傳大小上限 (MB)
 storePath: 儲存路徑
 leaveEmptyForDefault: 留空則使用預設值
+publicBaseUrl: 公網基礎網址
+publicBaseUrlHint: 上傳圖片的外網可存取網址（公網 IPv4/IPv6 或網域時填寫）；留空則使用連線網址
+publicIpDetected: 已偵測到公網 IP
+publicIpDetectFailed: 公網 IP 偵測失敗
 notConfiguredWillUseServerOrBase64: 未配置 · 將使用伺服器或 Base64
 imageTooLargeToSend: 圖片太大，無法發送
 pleaseConfigureServerUploadOrClientOss: 請設定伺服器上傳或用戶端 OSS。
@@ -1276,8 +1336,11 @@ peopleLabel: 人
 noLimit: 無限制
 optional: 選填
 enterDisplayName: 輸入顯示名稱
+displayNameRequired: 請填寫顯示名稱
 enterBio: 輸入個人簡介
 autoReconnect: 自動重連
+allowSelfSignedCert: 允許自簽憑證
+allowSelfSignedCertHint: 透過 WSS 連線時信任自簽憑證
 directMessage: 私聊訊息
 noAnnouncementsYet: 暫無公告
 enterAnnouncementText: 輸入公告內容...
@@ -1975,6 +2038,7 @@ unknownEpisode: 未知集數
 openVideoPreview: 影片預覽
 discussInAi: AI 討論
 dropImageToRecognize: 放開即可識別圖片
+dropFileToImport: 放開即可匯入 .js 來源檔
 viewOnBangumi: 查看 Bangumi
 templateVarHint: "可用變數："
 profilePersonaRequired: 請先選擇人格
@@ -2109,3 +2173,46 @@ mcpReconnect: 重新連線
 mcpTestConnection: 測試連線
 mcpConnecting: 連線中...
 mcpConnectionFailed: 連線失敗
+
+builderTitle: 來源建構器
+builderEntry: 建構來源
+builderBasic: 基本資訊
+builderName: 名稱
+builderKey: 鍵
+builderVersion: 版本
+builderBaseUrl: 基礎位址
+builderSearch: 搜尋
+builderSearchUrl: 搜尋 URL 模板
+builderListSelector: 列表項選擇器
+builderTitleSelector: 標題選擇器
+builderCoverSelector: 封面選擇器
+builderCoverAttr: 封面屬性
+builderLinkSelector: 連結選擇器
+builderPageParam: 翻頁參數
+builderDetail: 番劇詳情
+builderDetailUrl: 詳情 URL 模板
+builderDescSelector: 簡介選擇器
+builderEpisodeSelector: 劇集列表選擇器
+builderEpisodeTitleSelector: 劇集標題選擇器
+builderEpisodeLinkSelector: 劇集連結選擇器
+builderPlay: 播放
+builderPlayUrl: 播放頁 URL 模板
+builderExtractRegex: 播放位址正則
+builderMaxPageSelector: 總頁數選擇器
+builderUserAgent: User-Agent
+builderPlayDirect: 直接回傳劇集連結
+builderPlayDirectDesc: 劇集連結本身就是播放位址（無需二次請求）
+builderPlayRegexDesc: 請求播放頁並透過正則提取播放位址
+builderExplore: 探索
+builderExploreTitle: 頁面標題
+builderExploreUrl: 列表 URL 模板（{page}）
+builderCategory: 分類
+builderCategoryTitle: 分類標題
+builderCategoryNames: 分類名（每行一個，"值-名稱"）
+builderCategoryUrl: 分類列表 URL（{category} {page}）
+builderGenerate: 生成並匯入
+builderNameRequired: 請填寫名稱
+builderKeyRequired: 請填寫鍵
+builderKeyInvalid: 鍵只能包含字母、數字和底線
+builderImported: 來源已匯入
+builderGenerateFailed: 生成失敗

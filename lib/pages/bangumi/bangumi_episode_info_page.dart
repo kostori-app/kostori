@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/bbcode/bbcode_precache.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bean/card/episode_comments_card.dart';
 import 'package:kostori/components/components.dart';
@@ -25,11 +26,25 @@ class BangumiEpisodeInfoPage extends StatefulWidget {
 
 class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
   final ScrollController scrollController = ScrollController();
+  final BangumiPageImageCache _imageCache = BangumiPageImageCache();
 
   EpisodeInfo get episode => widget.episode;
 
   InfoController get infoController => widget.infoController;
   bool commentsQueryTimeout = false;
+
+  /// 从已加载的集评论中提取图片 URL 并预加载（页面内保持缓存）
+  void _precacheCommentImages() {
+    if (!mounted) return;
+    for (final item in infoController.episodeCommentsList) {
+      for (final bbcode in [
+        item.comment.comment,
+        ...item.replies.map((r) => r.comment),
+      ]) {
+        _imageCache.precacheAll(context, extractBangumiImageUrls(bbcode));
+      }
+    }
+  }
 
   Future<void> loadComments(int episode, {int offset = 0}) async {
     commentsQueryTimeout = false;
@@ -46,6 +61,7 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
     await infoController.queryBangumiEpisodeCommentsByEpID(id, offset: offset);
     if (mounted) {
       setState(() {});
+      _precacheCommentImages();
     }
   }
 
@@ -53,6 +69,13 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
   void initState() {
     super.initState();
     loadComments(episode.id);
+  }
+
+  @override
+  void dispose() {
+    _imageCache.dispose();
+    scrollController.dispose();
+    super.dispose();
   }
 
   @override

@@ -58,6 +58,8 @@ Future<HubCreateRoomResult?> showCreateRoomDialog({
   String? initialName,
   HubRoomType initialRoomType = HubRoomType.chat,
   AnimeDetails? watchAnime,
+  // 是否允许创建一起看房间（聊天室/大厅等场景设为 false，只允许普通房间）
+  bool allowWatch = true,
 }) async {
   final notifier = _CreateRoomNotifier();
 
@@ -69,6 +71,7 @@ Future<HubCreateRoomResult?> showCreateRoomDialog({
       initialName: initialName,
       initialRoomType: initialRoomType,
       watchAnime: watchAnime,
+      allowWatch: allowWatch,
     ),
   );
 
@@ -119,12 +122,14 @@ class _CreateRoomDialog extends StatefulWidget {
   final String? initialName;
   final HubRoomType initialRoomType;
   final AnimeDetails? watchAnime;
+  final bool allowWatch;
 
   const _CreateRoomDialog({
     required this.notifier,
     this.initialName,
     this.initialRoomType = HubRoomType.chat,
     this.watchAnime,
+    this.allowWatch = true,
   });
 
   @override
@@ -143,7 +148,12 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
   void initState() {
     super.initState();
     _n = widget.notifier;
-    _roomType = widget.initialRoomType;
+    // 播放页创建（watchAnime 非空）固定一起看；不允许一起看时固定普通房间
+    _roomType = widget.watchAnime != null
+        ? HubRoomType.watch
+        : widget.allowWatch
+        ? widget.initialRoomType
+        : HubRoomType.chat;
     _nameCtrl = TextEditingController(text: widget.initialName ?? '');
     _passwordCtrl = TextEditingController();
     _announcementCtrl = TextEditingController();
@@ -159,6 +169,27 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
     _announcementCtrl.dispose();
     _n.dispose();
     super.dispose();
+  }
+
+  Widget _roomTypeChip(ColorScheme cs, HubRoomType type, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.toOpacity(0.35),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: cs.primary),
+          const SizedBox(width: 6),
+          Text(
+            type == HubRoomType.watch ? t.watchTogether : t.chatRoom,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
   }
 
   void _confirm() {
@@ -189,23 +220,30 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
           // ── 房间类型 ────────────────────────────────────────────────
           _FieldLabel(t.roomType),
           const SizedBox(height: 6),
-          SegmentedButton<HubRoomType>(
-            segments: [
-              ButtonSegment<HubRoomType>(
-                value: HubRoomType.chat,
-                label: Text(t.chatRoom),
-                icon: const Icon(Icons.chat_bubble_outline, size: 15),
-              ),
-              ButtonSegment<HubRoomType>(
-                value: HubRoomType.watch,
-                label: Text(t.watchTogether),
-                icon: const Icon(Icons.play_circle_outline, size: 15),
-              ),
-            ],
-            selected: {_roomType},
-            onSelectionChanged: (s) => setState(() => _roomType = s.first),
-            style: const ButtonStyle(visualDensity: VisualDensity.compact),
-          ),
+          if (widget.watchAnime != null)
+            // 播放页创建：固定为一起看房间，不提供普通房间选项
+            _roomTypeChip(cs, HubRoomType.watch, Icons.play_circle_outline)
+          else if (!widget.allowWatch)
+            // 聊天室创建：固定为普通房间，不提供一起看选项
+            _roomTypeChip(cs, HubRoomType.chat, Icons.chat_bubble_outline)
+          else
+            SegmentedButton<HubRoomType>(
+              segments: [
+                ButtonSegment<HubRoomType>(
+                  value: HubRoomType.chat,
+                  label: Text(t.chatRoom),
+                  icon: const Icon(Icons.chat_bubble_outline, size: 15),
+                ),
+                ButtonSegment<HubRoomType>(
+                  value: HubRoomType.watch,
+                  label: Text(t.watchTogether),
+                  icon: const Icon(Icons.play_circle_outline, size: 15),
+                ),
+              ],
+              selected: {_roomType},
+              onSelectionChanged: (s) => setState(() => _roomType = s.first),
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
+            ),
           const SizedBox(height: 12),
 
           // ── 一起看房间：显示当前番剧 ─────────────────────────────────

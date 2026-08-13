@@ -63,7 +63,7 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                       '_aggregated_': t.aggregated,
                       ...(() {
                         var map = <String, String>{};
-                        for (var c in AnimeSource.all()) {
+                        for (var c in AnimeSource.allSources()) {
                           map[c.key] = c.name;
                         }
                         return map;
@@ -232,7 +232,7 @@ class _SourcesListState extends State<_SourcesList> {
       }
     }
 
-    for (var source in AnimeSource.all()) {
+    for (var source in AnimeSource.allSources()) {
       if (!sourceKeys.contains(source.key)) {
         var allPagesForSource = source.explorePages
             .map((e) => e.title)
@@ -450,7 +450,7 @@ class _SourcePagesListState extends State<_SourcePagesList> {
 
 Widget setCategoryPagesWidget() {
   var pages = <String, String>{};
-  for (var c in AnimeSource.all()) {
+  for (var c in AnimeSource.allSources()) {
     if (c.categoryData != null) {
       pages[c.categoryData!.key] = c.categoryData!.title;
     }
@@ -464,7 +464,7 @@ Widget setCategoryPagesWidget() {
 
 Widget setSearchSourcesWidget() {
   var pages = <String, String>{};
-  for (var c in AnimeSource.all()) {
+  for (var c in AnimeSource.allSources()) {
     if (c.searchPageData != null) {
       pages[c.key] = c.name;
     }

@@ -1,18 +1,17 @@
 part of 'settings_page.dart';
 
-// ── 服务端上传配置 ─────────────────────────────────────────────────────────────
+// ── 服务端上传配置（二级页面） ─────────────────────────────────────────────────
 
-class _UploadConfigSetting extends StatefulWidget {
+class _HubUploadPage extends StatefulWidget {
   final HubService hub;
-  final bool serverRunning;
 
-  const _UploadConfigSetting({required this.hub, required this.serverRunning});
+  const _HubUploadPage({required this.hub});
 
   @override
-  State<_UploadConfigSetting> createState() => _UploadConfigSettingState();
+  State<_HubUploadPage> createState() => _HubUploadPageState();
 }
 
-class _UploadConfigSettingState extends State<_UploadConfigSetting> {
+class _HubUploadPageState extends State<_HubUploadPage> {
   late HubUploadConfig _cfg;
   final _endpointCtrl = TextEditingController();
   final _bucketCtrl = TextEditingController();
@@ -21,6 +20,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
   final _cdnCtrl = TextEditingController();
   final _maxSizeCtrl = TextEditingController();
   final _localPathCtrl = TextEditingController();
+  final _publicBaseUrlCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -38,6 +38,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
     _cdnCtrl.text = o?.cdnDomain ?? '';
     _maxSizeCtrl.text = (_cfg.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
     _localPathCtrl.text = _cfg.localStorePath ?? '';
+    _publicBaseUrlCtrl.text = _cfg.publicBaseUrl ?? '';
   }
 
   @override
@@ -49,11 +50,86 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
     _cdnCtrl.dispose();
     _maxSizeCtrl.dispose();
     _localPathCtrl.dispose();
+    _publicBaseUrlCtrl.dispose();
     super.dispose();
   }
 
   void _err(String msg) =>
       App.rootContext.showMessage(message: msg, level: LogLevel.warning);
+
+  /// 自动探测公网 IP（IPv4 优先，失败回退 IPv6），拼上当前端口填入输入框。
+  Future<void> _autoDetectPublicIp() async {
+    try {
+      final port = widget.hub.port;
+      String? ip;
+      // IPv4 探测
+      for (final api in const [
+        'https://api.ipify.org',
+        'https://ipv4.icanhazip.com',
+        'https://v4.ident.me',
+      ]) {
+        try {
+          final r = await AppDio().request(
+            api,
+            options: Options(
+              method: 'GET',
+              responseType: ResponseType.plain,
+              sendTimeout: const Duration(seconds: 4),
+              receiveTimeout: const Duration(seconds: 4),
+            ),
+          );
+          final s = (r.data ?? '').toString().trim();
+          if (_looksLikeIp(s, ipv6: false)) {
+            ip = s;
+            break;
+          }
+        } catch (_) {}
+      }
+      // IPv6 探测（IPv4 失败时）
+      if (ip == null) {
+        for (final api in const [
+          'https://api64.ipify.org',
+          'https://ipv6.icanhazip.com',
+        ]) {
+          try {
+            final r = await AppDio().request(
+              api,
+              options: Options(
+                method: 'GET',
+                responseType: ResponseType.plain,
+                sendTimeout: const Duration(seconds: 4),
+                receiveTimeout: const Duration(seconds: 4),
+              ),
+            );
+            final s = (r.data ?? '').toString().trim();
+            if (_looksLikeIp(s, ipv6: true)) {
+              ip = s;
+              break;
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (ip == null) {
+        _err(t.publicIpDetectFailed);
+        return;
+      }
+
+      final isV6 = ip.contains(':');
+      final url = isV6 ? 'http://[$ip]:$port' : 'http://$ip:$port';
+      setState(() => _publicBaseUrlCtrl.text = url);
+      App.rootContext.showMessage(message: t.publicIpDetected);
+    } catch (e) {
+      _err(t.publicIpDetectFailed);
+    }
+  }
+
+  bool _looksLikeIp(String s, {required bool ipv6}) {
+    if (ipv6) {
+      return RegExp(r'^[0-9a-fA-F:]+$').hasMatch(s) && s.contains(':');
+    }
+    return RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(s);
+  }
 
   void _save() {
     final needOss = _cfg.mode == HubUploadMode.serverOss;
@@ -109,12 +185,15 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
     }
 
     final lp = _localPathCtrl.text.trim();
+    final pb = _publicBaseUrlCtrl.text.trim();
     final newCfg = _cfg.copyWith(
       ossConfig: oss,
       clearOssConfig: oss == null,
       maxSizeBytes: maxMb * 1024 * 1024,
       localStorePath: lp.isEmpty ? null : lp,
       clearLocalStorePath: lp.isEmpty,
+      publicBaseUrl: pb.isEmpty ? null : pb,
+      clearPublicBaseUrl: pb.isEmpty,
     );
 
     widget.hub.uploadConfig = newCfg;
@@ -126,131 +205,224 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final needOss = _cfg.mode == HubUploadMode.serverOss;
-    final locked = widget.serverRunning;
+    final locked = widget.hub.isRunning;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SettingPartTitle(
-          title: t.imageUpload,
-          icon: Icons.cloud_upload_outlined,
-        ),
+    return PopUpWidgetScaffold(
+      title: t.imageUpload,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Material(
+              color: cs.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: cs.outlineVariant, width: 0.6),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── 运行中锁定提示 ──────────────────────────────────────
+                    if (locked)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.lock_outline,
+                              size: 13,
+                              color: cs.onSurface.toOpacity(0.4),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              t.stopTheServerToChangeUploadMode,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: cs.onSurface.toOpacity(0.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-        // ── 运行中锁定提示 ────────────────────────────────────────────────
-        if (locked)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.lock_outline,
-                  size: 13,
-                  color: cs.onSurface.toOpacity(0.4),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  t.stopTheServerToChangeUploadMode,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: cs.onSurface.toOpacity(0.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
+                    // ── 模式选择（运行中不可操作）──────────────────────────
+                    Opacity(
+                      opacity: locked ? 0.45 : 1.0,
+                      child: IgnorePointer(
+                        ignoring: locked,
+                        child: SegmentedButton<HubUploadMode>(
+                          segments: [
+                            ButtonSegment(
+                              value: HubUploadMode.serverLocal,
+                              label: Text(t.local),
+                              icon: const Icon(
+                                Icons.storage_outlined,
+                                size: 15,
+                              ),
+                            ),
+                            ButtonSegment(
+                              value: HubUploadMode.serverOss,
+                              label: Text(t.serverOss),
+                              icon: const Icon(Icons.cloud_outlined, size: 15),
+                            ),
+                            ButtonSegment(
+                              value: HubUploadMode.clientOss,
+                              label: Text(t.clientOss),
+                              icon: const Icon(Icons.upload_outlined, size: 15),
+                            ),
+                          ],
+                          selected: {_cfg.mode},
+                          onSelectionChanged: (s) => setState(
+                            () => _cfg = _cfg.copyWith(mode: s.first),
+                          ),
+                          style: ButtonStyle(
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ),
+                    ),
 
-        // ── 模式选择（运行中不可操作）────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-          child: Opacity(
-            opacity: locked ? 0.45 : 1.0,
-            child: IgnorePointer(
-              ignoring: locked,
-              child: SegmentedButton<HubUploadMode>(
-                segments: [
-                  ButtonSegment(
-                    value: HubUploadMode.serverLocal,
-                    label: Text(t.local),
-                    icon: const Icon(Icons.storage_outlined, size: 15),
-                  ),
-                  ButtonSegment(
-                    value: HubUploadMode.serverOss,
-                    label: Text(t.serverOss),
-                    icon: const Icon(Icons.cloud_outlined, size: 15),
-                  ),
-                  ButtonSegment(
-                    value: HubUploadMode.clientOss,
-                    label: Text(t.clientOss),
-                    icon: const Icon(Icons.upload_outlined, size: 15),
-                  ),
-                ],
-                selected: {_cfg.mode},
-                onSelectionChanged: (s) =>
-                    setState(() => _cfg = _cfg.copyWith(mode: s.first)),
-                style: ButtonStyle(
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
+                    // ── 模式说明 ────────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        switch (_cfg.mode) {
+                          HubUploadMode.serverLocal =>
+                            t.imagesStoredOnServerDisk,
+                          HubUploadMode.serverOss =>
+                            t.serverReceivesAndProxiesImageToOss,
+                          HubUploadMode.clientOss =>
+                            t.clientUploadsDirectlyToOss,
+                        },
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurface.toOpacity(0.45),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-        ),
-
-        // ── 模式说明 ──────────────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-          child: Text(
-            switch (_cfg.mode) {
-              HubUploadMode.serverLocal => t.imagesStoredOnServerDisk,
-              HubUploadMode.serverOss => t.serverReceivesAndProxiesImageToOss,
-              HubUploadMode.clientOss => t.clientUploadsDirectlyToOss,
-            },
-            style: TextStyle(
-              fontSize: 11,
-              color: cs.onSurface.toOpacity(0.45),
-              height: 1.5,
+            const SizedBox(height: 16),
+            if (_cfg.mode != HubUploadMode.clientOss)
+              _FormCard(
+                children: [
+                  _FormSectionTitle(
+                    title: t.maxSizeMb,
+                    icon: Icons.data_usage_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _maxSizeCtrl,
+                    decoration: _formFieldDecoration(
+                      labelText: t.maxSizeMb,
+                      hintText: t.defaultValue(v: '5'),
+                    ),
+                  ),
+                ],
+              ),
+            if (_cfg.mode == HubUploadMode.serverLocal)
+              _FormCard(
+                children: [
+                  _FormSectionTitle(
+                    title: t.storePath,
+                    icon: Icons.folder_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _localPathCtrl,
+                    decoration: _formFieldDecoration(
+                      labelText: t.storePath,
+                      hintText: '/data/hub_uploads',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _FormSectionTitle(
+                    title: t.publicBaseUrl,
+                    icon: Icons.public_outlined,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    t.publicBaseUrlHint,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _publicBaseUrlCtrl,
+                          decoration: _formFieldDecoration(
+                            labelText: t.publicBaseUrl,
+                            hintText: 'http://[2001:db8::1]:9100',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.auto_fix_high_outlined,
+                          size: 18,
+                        ),
+                        tooltip: t.publicIpDetected,
+                        onPressed: _autoDetectPublicIp,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            if (needOss) ...[
+              const SizedBox(height: 16),
+              _FormCard(
+                children: [
+                  _FormSectionTitle(
+                    title: 'OSS / S3',
+                    icon: Icons.cloud_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  _HubOssField(
+                    label: 'Endpoint',
+                    hint: 'https://oss-cn-hangzhou.aliyuncs.com',
+                    ctrl: _endpointCtrl,
+                  ),
+                  _HubOssField(
+                    label: 'Bucket',
+                    hint: 'my-bucket',
+                    ctrl: _bucketCtrl,
+                  ),
+                  _HubOssField(
+                    label: 'Key ID',
+                    hint: 'Access Key ID',
+                    ctrl: _keyIdCtrl,
+                  ),
+                  _HubOssField(
+                    label: 'Secret',
+                    hint: 'Access Key Secret',
+                    ctrl: _secretCtrl,
+                    obscure: true,
+                  ),
+                  _HubOssField(
+                    label: 'CDN',
+                    hint: 'https://cdn.example.com  (optional)',
+                    ctrl: _cdnCtrl,
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 48,
+              child: Button.filled(onPressed: _save, child: Text(t.save)),
             ),
-          ),
+          ],
         ),
-
-        if (_cfg.mode != HubUploadMode.clientOss)
-          _SettingRow(
-            title: t.maxSizeMb,
-            subtitle: t.defaultValue(v: '5'),
-            trailing: _NumberInput(
-              controller: _maxSizeCtrl,
-              enabled: true,
-              onChanged: (_) {},
-            ),
-          ),
-
-        if (_cfg.mode == HubUploadMode.serverLocal)
-          _SettingRow(
-            title: t.storePath,
-            subtitle: t.leaveEmptyForDefault,
-            trailing: _HubTextField(
-              controller: _localPathCtrl,
-              hint: '/data/hub_uploads',
-              width: 200,
-            ),
-          ),
-
-        if (needOss) ...[
-          const SizedBox(height: 4),
-          _HubOssForm(
-            endpointCtrl: _endpointCtrl,
-            bucketCtrl: _bucketCtrl,
-            keyIdCtrl: _keyIdCtrl,
-            secretCtrl: _secretCtrl,
-            cdnCtrl: _cdnCtrl,
-          ),
-        ],
-
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: FilledButton.tonal(onPressed: _save, child: Text(t.save)),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -601,54 +773,6 @@ class _HubOssField extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── 通用内联文本框 ─────────────────────────────────────────────────────────────
-
-class _HubTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final double width;
-
-  const _HubTextField({
-    required this.controller,
-    required this.hint,
-    this.width = 180,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: width,
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(fontSize: 13),
-        decoration: InputDecoration(
-          isDense: true,
-          hintText: hint,
-          hintStyle: TextStyle(
-            fontSize: 12,
-            color: cs.onSurface.toOpacity(0.3),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 7,
-          ),
-          filled: true,
-          fillColor: cs.surfaceContainerHighest.toOpacity(0.5),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: cs.primary, width: 1.5),
-          ),
-        ),
       ),
     );
   }

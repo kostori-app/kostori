@@ -17,9 +17,6 @@ class _BangumiSettingsState extends State<BangumiSettings> {
   DateTime? _expires;
   bool _loadingToken = false;
 
-  String _valueOf(String key, [String fallback = '']) =>
-      (appdata.implicitData[key] as String?)?.trim() ?? fallback;
-
   @override
   void initState() {
     super.initState();
@@ -70,21 +67,6 @@ class _BangumiSettingsState extends State<BangumiSettings> {
     return parts.isEmpty ? t.bangumiOAuthHint : parts.join('  ·  ');
   }
 
-  void _editSetting(String key, String title, {String? hint}) {
-    showInputDialog(
-      context: context,
-      title: title,
-      hintText: hint,
-      initialValue: _valueOf(key),
-      onConfirm: (value) {
-        appdata.implicitData[key] = value.toString().trim();
-        appdata.writeImplicitData();
-        setState(() {});
-        return null;
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -93,121 +75,118 @@ class _BangumiSettingsState extends State<BangumiSettings> {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: _SettingCard(
-                children: [
-                  _SettingPartTitle(
-                    title: t.bangumi,
-                    icon: Icons.radio_button_unchecked_outlined,
-                  ),
-                  _SwitchSetting(
-                    title: t.showAnimeCardOverlay,
-                    settingKey: "showAnimeCardOverlay",
-                    dataSource: SwitchDataSource.implicit,
-                    onChanged: () => setState(() {}),
-                  ),
-                  if (_showOverlay)
+            child: Column(
+              children: [
+                _SettingCard(
+                  children: [
+                    _SettingPartTitle(
+                      title: t.bangumi,
+                      icon: Icons.radio_button_unchecked_outlined,
+                    ),
                     _SwitchSetting(
-                      title: t.animeCardUseBlur,
-                      settingKey: "animeCardUseBlur",
+                      title: t.showAnimeCardOverlay,
+                      settingKey: "showAnimeCardOverlay",
+                      dataSource: SwitchDataSource.implicit,
+                      onChanged: () => setState(() {}),
+                    ),
+                    if (_showOverlay)
+                      _SwitchSetting(
+                        title: t.animeCardUseBlur,
+                        settingKey: "animeCardUseBlur",
+                        dataSource: SwitchDataSource.implicit,
+                      ),
+                    _IntSliderSetting(
+                      title: t.bangumiCardPerRow,
+                      settingsIndex: "bangumiCardPerRow",
+                      options: [0, 2, 3],
                       dataSource: SwitchDataSource.implicit,
                     ),
-                  _IntSliderSetting(
-                    title: t.bangumiCardPerRow,
-                    settingsIndex: "bangumiCardPerRow",
-                    options: [0, 2, 3],
-                    dataSource: SwitchDataSource.implicit,
-                  ),
-                  _SwitchSetting(
-                    title: t.calendarFetchEpisodes,
-                    settingKey: "calendarFetchEpisodes",
-                  ),
-                  _SwitchSetting(
-                    title: t.enableSkipBangumiSchedule,
-                    settingKey: "enableSkipUpdate",
-                  ),
-                  _SwitchSetting(
-                    title: t.bangumiShowNsfw,
-                    settingKey: "bangumiShowNsfw",
-                    dataSource: SwitchDataSource.implicit,
-                    defaultValue: true,
-                    onChanged: () => setState(() {}),
-                  ),
-                  // ── Bangumi OAuth2 登录 ─────────────────
-                  _SettingPartTitle(
-                    title: 'Bangumi OAuth',
-                    icon: Icons.key_outlined,
-                  ),
-                  _CallbackSetting(
-                    title: t.bangumiRedirectUri,
-                    subtitle: _valueOf(
-                      'bangumi_redirect_uri',
-                      'http://127.0.0.1:$bangumiCallbackPort/callback',
+                    _SwitchSetting(
+                      title: t.calendarFetchEpisodes,
+                      settingKey: "calendarFetchEpisodes",
                     ),
-                    callback: () => _editSetting(
-                      'bangumi_redirect_uri',
-                      t.bangumiRedirectUri,
+                    _SwitchSetting(
+                      title: t.enableSkipBangumiSchedule,
+                      settingKey: "enableSkipUpdate",
                     ),
-                    actionTitle: t.edit,
-                  ),
-                  ListTile(
-                    title: Text(
-                      _loggedIn ? t.bangumiLoggedIn : t.bangumiNotLoggedIn,
-                      style: const TextStyle(fontSize: 13),
+                    _SwitchSetting(
+                      title: t.bangumiShowNsfw,
+                      settingKey: "bangumiShowNsfw",
+                      dataSource: SwitchDataSource.implicit,
+                      defaultValue: true,
+                      onChanged: () => setState(() {}),
                     ),
-                    subtitle: Text(
-                      _loggedIn ? _tokenInfoText : t.bangumiOAuthHint,
-                      style: const TextStyle(fontSize: 11),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // ── Bangumi OAuth2 登录（独立卡片，回调地址写死）──
+                _SettingCard(
+                  children: [
+                    _SettingPartTitle(
+                      title: 'Bangumi OAuth',
+                      icon: Icons.key_outlined,
                     ),
-                    trailing: _loggedIn
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _loadingToken
-                                  ? const SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: Center(
-                                        child: SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                    ListTile(
+                      title: Text(
+                        _loggedIn ? t.bangumiLoggedIn : t.bangumiNotLoggedIn,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        _loggedIn ? _tokenInfoText : t.bangumiOAuthHint,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      trailing: _loggedIn
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _loadingToken
+                                    ? const SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: Center(
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
                                           ),
                                         ),
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(
+                                          Icons.refresh,
+                                          size: 20,
+                                        ),
+                                        tooltip: t.bangumiRefreshToken,
+                                        onPressed: _refreshToken,
                                       ),
-                                    )
-                                  : IconButton(
-                                      icon: const Icon(Icons.refresh, size: 20),
-                                      tooltip: t.bangumiRefreshToken,
-                                      onPressed: _refreshToken,
-                                    ),
-                              OutlinedButton(
-                                onPressed: () {
-                                  bangumiOAuthLogout();
-                                  setState(() {
-                                    _userId = null;
-                                    _expires = null;
-                                  });
-                                },
-                                child: Text(t.bangumiOAuthLogout),
-                              ),
-                            ],
-                          )
-                        : FilledButton(
-                            onPressed: () async {
-                              await bangumiOAuthLogin(context);
-                              if (mounted) {
-                                setState(() {});
-                                _loadTokenStatus();
-                              }
-                            },
-                            child: Text(t.bangumiOAuthLogin),
-                          ),
-                  ),
-                ],
-              ),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    bangumiOAuthLogout();
+                                    setState(() {
+                                      _userId = null;
+                                      _expires = null;
+                                    });
+                                  },
+                                  child: Text(t.bangumiOAuthLogout),
+                                ),
+                              ],
+                            )
+                          : FilledButton(
+                              onPressed: () async {
+                                await bangumiOAuthLogin(context);
+                                if (mounted) {
+                                  setState(() {});
+                                  _loadTokenStatus();
+                                }
+                              },
+                              child: Text(t.bangumiOAuthLogin),
+                            ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

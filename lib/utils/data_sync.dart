@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:uuid/uuid.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/database/favorites.dart';
@@ -14,7 +15,6 @@ import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/data.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
 
@@ -137,6 +137,39 @@ class DataSync with ChangeNotifier {
     return List.from(config);
   }
 
+  /// 从 .kostori 文件名中解析版本号（格式：$date-$version-$deviceTag.kostori）
+  int _versionOf(String name) {
+    final base = name.endsWith('.kostori')
+        ? name.substring(0, name.length - '.kostori'.length)
+        : name;
+    final parts = base.split('-');
+    // 兼容旧格式 $date-$version.kostori（2 段）与新格式（3 段）
+    if (parts.length >= 2) {
+      final v = int.tryParse(parts[1]);
+      if (v != null) return v;
+    }
+    return 0;
+  }
+
+  int _maxVersionOf(List files) {
+    var max = 0;
+    for (final f in files) {
+      final v = _versionOf(f.name ?? '');
+      if (v > max) max = v;
+    }
+    return max;
+  }
+
+  /// 稳定的设备标识（持久化，用于多端同步时区分文件名，避免互相覆盖删除）
+  String _deviceTag() {
+    final existing = appdata.implicitData['sync_device_tag'];
+    if (existing is String && existing.isNotEmpty) return existing;
+    final tag = const Uuid().v4().replaceAll('-', '').substring(0, 6);
+    appdata.implicitData['sync_device_tag'] = tag;
+    appdata.writeImplicitData();
+    return tag;
+  }
+
   Future<Res<bool>> uploadData() async {
     if (isDownloading) return const Res(true);
     if (_haveWaitingTask) return const Res(true);
@@ -164,16 +197,29 @@ class DataSync with ChangeNotifier {
       );
 
       try {
-        appdata.settings['dataVersion']++;
-        await appdata.saveData(false);
-        var data = await exportAppData();
-        var time = (DateTime.now().millisecondsSinceEpoch ~/ 86400000)
-            .toString();
-        var filename = '$time-${appdata.settings['dataVersion']}.kostori';
+        // 读取服务端现有文件，以服务端为准确定新版本号与清理策略，
+        // 避免多端本地各自递增导致版本号冲突 / 互相覆盖删除
         var files = await client.readDir('/');
         files = files.where((e) => e.name!.endsWith('.kostori')).toList();
-        var old = files.firstWhereOrNull((e) => e.name!.startsWith("$time-"));
-        if (old != null) await client.remove(old.name!);
+        files.sort((a, b) => a.name!.compareTo(b.name!));
+
+        // 计算全局最新版本号（取所有文件中版本号最大者）
+        var maxVersion = _maxVersionOf(files);
+        if (maxVersion < (appdata.settings['dataVersion'] as int? ?? 0)) {
+          maxVersion = appdata.settings['dataVersion'] as int? ?? 0;
+        }
+        final newVersion = maxVersion + 1;
+        appdata.settings['dataVersion'] = newVersion;
+        await appdata.saveData(false);
+
+        var data = await exportAppData();
+        var date = (DateTime.now().millisecondsSinceEpoch ~/ 86400000)
+            .toString();
+        // 文件名带设备标识，避免多端同一天互相删除
+        final deviceTag = _deviceTag();
+        var filename = '$date-$newVersion-$deviceTag.kostori';
+
+        // 清理旧文件：仅当文件数超过保留上限时删除最旧的（不删当天其他设备的）
         if (files.length >= 10) {
           files.sort((a, b) => a.name!.compareTo(b.name!));
           await client.remove(files.first.name!);
@@ -187,7 +233,7 @@ class DataSync with ChangeNotifier {
           },
         );
         data.deleteIgnoreError();
-        Log.info("Upload Data", "Data uploaded successfully");
+        Log.info("Upload Data", "Data uploaded successfully ($filename)");
         return const Res(true);
       } catch (e, s) {
         Log.error("Upload Data", e, s);
@@ -229,20 +275,18 @@ class DataSync with ChangeNotifier {
 
       try {
         var files = await client.readDir('/');
-        files.sort((a, b) => b.name!.compareTo(a.name!));
-        var file = files.firstWhereOrNull((e) => e.name!.endsWith('.kostori'));
-        if (file == null) throw 'No data file found';
-        var version = file.name!
-            .split('-')
-            .elementAtOrNull(1)
-            ?.split('.')
-            .first;
-        if (version != null && int.tryParse(version) != null) {
-          var currentVersion = appdata.settings['dataVersion'];
-          if (currentVersion != null && int.parse(version) <= currentVersion) {
-            Log.info("Data Sync", 'No new data to download');
-            return const Res(true);
-          }
+        files = files.where((e) => e.name!.endsWith('.kostori')).toList();
+        if (files.isEmpty) throw 'No data file found';
+        // 按版本号取最新（而非文件名排序，避免旧格式与新格式混排导致取错）
+        files.sort(
+          (a, b) => _versionOf(b.name!).compareTo(_versionOf(a.name!)),
+        );
+        var file = files.first;
+        var version = _versionOf(file.name!);
+        var currentVersion = appdata.settings['dataVersion'] as int? ?? 0;
+        if (version > 0 && version <= currentVersion) {
+          Log.info("Data Sync", 'No new data to download');
+          return const Res(true);
         }
         Log.info("Data Sync", "Downloading data from WebDAV server");
         var localFile = File(FilePath.join(App.cachePath, file.name!));
@@ -255,6 +299,9 @@ class DataSync with ChangeNotifier {
           },
         );
         await importAppData(localFile, true);
+        // 同步本地版本号为下载到的服务端版本
+        appdata.settings['dataVersion'] = version;
+        await appdata.saveData(false);
         await localFile.delete();
         Log.info("Data Sync", "Data downloaded successfully");
         return const Res(true);

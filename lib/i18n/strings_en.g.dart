@@ -197,6 +197,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Bangumi'
 	String get bangumi => 'Bangumi';
 
+	/// en: 'Anime Details'
+	String get bangumiInfo => 'Anime Details';
+
 	/// en: 'Block'
 	String get block => 'Block';
 
@@ -262,6 +265,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Clear Cache'
 	String get clearCache => 'Clear Cache';
+
+	/// en: 'Hub Uploaded Images'
+	String get hubUploadedImages => 'Hub Uploaded Images';
+
+	/// en: 'image(s) stored on this device'
+	String get hubUploadedImagesHint => 'image(s) stored on this device';
+
+	/// en: 'No uploaded images'
+	String get noHubUploads => 'No uploaded images';
+
+	/// en: 'Delete all Hub uploaded images?'
+	String get clearHubUploadsConfirm => 'Delete all Hub uploaded images?';
+
+	/// en: 'Hub Stickers'
+	String get hubStickers => 'Hub Stickers';
+
+	/// en: 'sticker(s)'
+	String get hubStickersHint => 'sticker(s)';
+
+	/// en: 'No stickers'
+	String get noHubStickers => 'No stickers';
+
+	/// en: 'Delete all Hub stickers?'
+	String get clearHubStickersConfirm => 'Delete all Hub stickers?';
 
 	/// en: 'Clear History'
 	String get clearHistory => 'Clear History';
@@ -604,6 +631,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Log out'
 	String get logOut => 'Log out';
+
+	/// en: 'Account'
+	String get account => 'Account';
 
 	/// en: 'Log'
 	String get log => 'Log';
@@ -1787,9 +1817,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Client Secret'
 	String get bangumiClientSecret => 'Client Secret';
 
-	/// en: 'Redirect URI'
-	String get bangumiRedirectUri => 'Redirect URI';
-
 	/// en: 'Register an app on bgm.tv/dev to get the client ID and secret'
 	String get bangumiOAuthHint => 'Register an app on bgm.tv/dev to get the client ID and secret';
 
@@ -2173,6 +2200,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Audio Option: Compatibility'
 	String get audioOptionCompatibility => 'Audio Option: \n Compatibility';
+
+	/// en: 'Audio Output Device'
+	String get audioOutputDevice => 'Audio Output Device';
+
+	/// en: 'No audio device detected'
+	String get noAudioDevice => 'No audio device detected';
+
+	/// en: 'Volume Boost: On'
+	String get volumeBoostEnabled => 'Volume Boost: On';
+
+	/// en: 'Volume Boost: Off'
+	String get volumeBoostDisabled => 'Volume Boost: Off';
 
 	/// en: 'Switch Successful'
 	String get switchSuccessful => 'Switch Successful';
@@ -2938,6 +2977,39 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Enable Hub'
 	String get enableHub => 'Enable Hub';
 
+	/// en: 'Failed to start Hub server'
+	String get hubServerStartFailed => 'Failed to start Hub server';
+
+	/// en: 'Enable HTTPS/WSS'
+	String get enableTls => 'Enable HTTPS/WSS';
+
+	/// en: 'Hub will serve over HTTPS/WSS (requires certificate)'
+	String get tlsEnabledDesc => 'Hub will serve over HTTPS/WSS (requires certificate)';
+
+	/// en: 'Hub serves over HTTP/WS'
+	String get tlsDisabledDesc => 'Hub serves over HTTP/WS';
+
+	/// en: 'TLS Certificate'
+	String get tlsCertificate => 'TLS Certificate';
+
+	/// en: 'PEM certificate chain (Let's Encrypt: fullchain.pem)'
+	String get tlsCertificateHint => 'PEM certificate chain (Let\'s Encrypt: fullchain.pem)';
+
+	/// en: 'TLS Private Key'
+	String get tlsPrivateKey => 'TLS Private Key';
+
+	/// en: 'PEM private key file path'
+	String get tlsPrivateKeyHint => 'PEM private key file path';
+
+	/// en: 'TLS Key Password'
+	String get tlsPassword => 'TLS Key Password';
+
+	/// en: 'Leave empty if the key is not encrypted'
+	String get tlsPasswordHint => 'Leave empty if the key is not encrypted';
+
+	/// en: 'Browse'
+	String get browse => 'Browse';
+
 	/// en: 'Hub server is stopped'
 	String get hubServerIsStopped => 'Hub server is stopped';
 
@@ -2989,8 +3061,35 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Import Rooms'
 	String get importRooms => 'Import Rooms';
 
+	/// en: 'Danmaku Settings'
+	String get danmakuSettings => 'Danmaku Settings';
+
+	/// en: 'Color'
+	String get danmakuColor => 'Color';
+
+	/// en: 'Font Size'
+	String get danmakuFontSize => 'Font Size';
+
+	/// en: 'Opacity'
+	String get danmakuOpacity => 'Opacity';
+
+	/// en: 'Display Area'
+	String get danmakuArea => 'Display Area';
+
+	/// en: 'Duration'
+	String get danmakuDuration => 'Duration';
+
+	/// en: 'Line Height'
+	String get danmakuLineHeight => 'Line Height';
+
+	/// en: 'Danmaku'
+	String get danmaku => 'Danmaku';
+
 	/// en: 'Watch Together'
 	String get watchTogether => 'Watch Together';
+
+	/// en: 'The watch-together room is not bound to an anime'
+	String get watchTogetherRoomHasNoAnime => 'The watch-together room is not bound to an anime';
 
 	/// en: 'Watch anime with friends, create or join a room to chat and share screenshots and subtitles.'
 	String get watchTogetherDesc => 'Watch anime with friends, create or join a room to chat and share screenshots and subtitles.';
@@ -3337,6 +3436,57 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Reply to private messages'
 	String get hubAiBotReplyDm => 'Reply to private messages';
 
+	/// en: 'Satori Bot Management'
+	String get satoriBotManage => 'Satori Bot Management';
+
+	/// en: 'Third-party Satori bots'
+	String get satoriBotManageDesc => 'Third-party Satori bots';
+
+	/// en: 'bot(s)'
+	String get satoriBotCountUnit => 'bot(s)';
+
+	/// en: 'Add Bot'
+	String get satoriBotAdd => 'Add Bot';
+
+	/// en: 'Edit Bot'
+	String get satoriBotEdit => 'Edit Bot';
+
+	/// en: 'Delete Bot'
+	String get satoriBotDelete => 'Delete Bot';
+
+	/// en: 'Bot Name'
+	String get satoriBotName => 'Bot Name';
+
+	/// en: 'Display name shown in the room member list and @ mentions'
+	String get satoriBotNameHint => 'Display name shown in the room member list and @ mentions';
+
+	/// en: 'Avatar'
+	String get satoriBotAvatar => 'Avatar';
+
+	/// en: 'Biography'
+	String get satoriBotBio => 'Biography';
+
+	/// en: 'Connection Token'
+	String get satoriBotToken => 'Connection Token';
+
+	/// en: 'The token used by the Satori client to connect and bind to this bot'
+	String get satoriBotTokenHint => 'The token used by the Satori client to connect and bind to this bot';
+
+	/// en: 'Regenerate'
+	String get satoriBotTokenRegen => 'Regenerate';
+
+	/// en: 'Enabled'
+	String get satoriBotEnabled => 'Enabled';
+
+	/// en: 'Delete this bot? Connected clients will be disconnected.'
+	String get satoriBotDeleteConfirm => 'Delete this bot? Connected clients will be disconnected.';
+
+	/// en: 'Token copied'
+	String get satoriBotTokenCopied => 'Token copied';
+
+	/// en: 'Satori Bot'
+	String get satoriBotConfigTitle => 'Satori Bot';
+
 	/// en: 'Web Admin Settings'
 	String get webAdminSettings => 'Web Admin Settings';
 
@@ -3408,6 +3558,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Host'
 	String get host => 'Host';
+
+	/// en: 'Protocol'
+	String get protocol => 'Protocol';
 
 	/// en: 'Authentication'
 	String get authentication => 'Authentication';
@@ -3565,6 +3718,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Edit Profile'
 	String get editProfile => 'Edit Profile';
 
+	/// en: 'Upload avatar'
+	String get uploadAvatar => 'Upload avatar';
+
+	/// en: 'Avatar'
+	String get avatar => 'Avatar';
+
+	/// en: 'Connect to a server first to upload an avatar'
+	String get connectFirstToUploadAvatar => 'Connect to a server first to upload an avatar';
+
+	/// en: 'Avatar uploaded'
+	String get avatarUploaded => 'Avatar uploaded';
+
+	/// en: 'Upload failed'
+	String get uploadFailed => 'Upload failed';
+
 	/// en: 'No blocked users'
 	String get noBlockedUsers => 'No blocked users';
 
@@ -3658,6 +3826,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Leave empty for default'
 	String get leaveEmptyForDefault => 'Leave empty for default';
 
+	/// en: 'Public Base URL'
+	String get publicBaseUrl => 'Public Base URL';
+
+	/// en: 'External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address'
+	String get publicBaseUrlHint => 'External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address';
+
+	/// en: 'Public IP detected'
+	String get publicIpDetected => 'Public IP detected';
+
+	/// en: 'Failed to detect public IP'
+	String get publicIpDetectFailed => 'Failed to detect public IP';
+
 	/// en: 'Not configured · will use server or base64'
 	String get notConfiguredWillUseServerOrBase64 => 'Not configured · will use server or base64';
 
@@ -3721,11 +3901,20 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Enter display name'
 	String get enterDisplayName => 'Enter display name';
 
+	/// en: 'Display name is required'
+	String get displayNameRequired => 'Display name is required';
+
 	/// en: 'Enter bio'
 	String get enterBio => 'Enter bio';
 
 	/// en: 'Auto Reconnect'
 	String get autoReconnect => 'Auto Reconnect';
+
+	/// en: 'Allow Self-signed Certificate'
+	String get allowSelfSignedCert => 'Allow Self-signed Certificate';
+
+	/// en: 'Trust self-signed certificates when connecting over WSS'
+	String get allowSelfSignedCertHint => 'Trust self-signed certificates when connecting over WSS';
 
 	/// en: 'Direct Message'
 	String get directMessage => 'Direct Message';
@@ -5779,6 +5968,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Drop an image to recognize'
 	String get dropImageToRecognize => 'Drop an image to recognize';
 
+	/// en: 'Drop a .js file to import'
+	String get dropFileToImport => 'Drop a .js file to import';
+
 	/// en: 'View on Bangumi'
 	String get viewOnBangumi => 'View on Bangumi';
 
@@ -6174,6 +6366,132 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Connection failed'
 	String get mcpConnectionFailed => 'Connection failed';
+
+	/// en: 'Source Builder'
+	String get builderTitle => 'Source Builder';
+
+	/// en: 'Build source'
+	String get builderEntry => 'Build source';
+
+	/// en: 'Basic Info'
+	String get builderBasic => 'Basic Info';
+
+	/// en: 'Name'
+	String get builderName => 'Name';
+
+	/// en: 'Key'
+	String get builderKey => 'Key';
+
+	/// en: 'Version'
+	String get builderVersion => 'Version';
+
+	/// en: 'Base URL'
+	String get builderBaseUrl => 'Base URL';
+
+	/// en: 'Search'
+	String get builderSearch => 'Search';
+
+	/// en: 'Search URL template'
+	String get builderSearchUrl => 'Search URL template';
+
+	/// en: 'List item selector'
+	String get builderListSelector => 'List item selector';
+
+	/// en: 'Title selector'
+	String get builderTitleSelector => 'Title selector';
+
+	/// en: 'Cover selector'
+	String get builderCoverSelector => 'Cover selector';
+
+	/// en: 'Cover attribute'
+	String get builderCoverAttr => 'Cover attribute';
+
+	/// en: 'Link selector'
+	String get builderLinkSelector => 'Link selector';
+
+	/// en: 'Page parameter'
+	String get builderPageParam => 'Page parameter';
+
+	/// en: 'Anime Detail'
+	String get builderDetail => 'Anime Detail';
+
+	/// en: 'Detail URL template'
+	String get builderDetailUrl => 'Detail URL template';
+
+	/// en: 'Description selector'
+	String get builderDescSelector => 'Description selector';
+
+	/// en: 'Episode list selector'
+	String get builderEpisodeSelector => 'Episode list selector';
+
+	/// en: 'Episode title selector'
+	String get builderEpisodeTitleSelector => 'Episode title selector';
+
+	/// en: 'Episode link selector'
+	String get builderEpisodeLinkSelector => 'Episode link selector';
+
+	/// en: 'Playback'
+	String get builderPlay => 'Playback';
+
+	/// en: 'Play page URL template'
+	String get builderPlayUrl => 'Play page URL template';
+
+	/// en: 'Playback URL regex'
+	String get builderExtractRegex => 'Playback URL regex';
+
+	/// en: 'Max page selector'
+	String get builderMaxPageSelector => 'Max page selector';
+
+	/// en: 'User-Agent'
+	String get builderUserAgent => 'User-Agent';
+
+	/// en: 'Directly return episode link'
+	String get builderPlayDirect => 'Directly return episode link';
+
+	/// en: 'The episode link itself is the playable URL (no extra request)'
+	String get builderPlayDirectDesc => 'The episode link itself is the playable URL (no extra request)';
+
+	/// en: 'Fetch the play page and extract the URL via regex'
+	String get builderPlayRegexDesc => 'Fetch the play page and extract the URL via regex';
+
+	/// en: 'Explore'
+	String get builderExplore => 'Explore';
+
+	/// en: 'Page title'
+	String get builderExploreTitle => 'Page title';
+
+	/// en: 'List URL template ({page})'
+	String get builderExploreUrl => 'List URL template ({page})';
+
+	/// en: 'Category'
+	String get builderCategory => 'Category';
+
+	/// en: 'Category title'
+	String get builderCategoryTitle => 'Category title';
+
+	/// en: 'Category names (one per line, "value-name")'
+	String get builderCategoryNames => 'Category names (one per line, "value-name")';
+
+	/// en: 'Category list URL ({category} {page})'
+	String get builderCategoryUrl => 'Category list URL ({category} {page})';
+
+	/// en: 'Generate & Import'
+	String get builderGenerate => 'Generate & Import';
+
+	/// en: 'Name is required'
+	String get builderNameRequired => 'Name is required';
+
+	/// en: 'Key is required'
+	String get builderKeyRequired => 'Key is required';
+
+	/// en: 'Key must contain only letters, digits and underscore'
+	String get builderKeyInvalid => 'Key must contain only letters, digits and underscore';
+
+	/// en: 'Source imported'
+	String get builderImported => 'Source imported';
+
+	/// en: 'Generate failed'
+	String get builderGenerateFailed => 'Generate failed';
 }
 
 // Path: colors
@@ -6374,6 +6692,7 @@ extension on Translations {
 			'autoPageTurning' => 'Auto Page Turning',
 			'back' => 'Back',
 			'bangumi' => 'Bangumi',
+			'bangumiInfo' => 'Anime Details',
 			'block' => 'Block',
 			'superResolution' => 'Super Resolution',
 			'superResolutionOff' => 'Off',
@@ -6396,6 +6715,14 @@ extension on Translations {
 			'checkUpdates' => 'Check updates',
 			'check' => 'Check',
 			'clearCache' => 'Clear Cache',
+			'hubUploadedImages' => 'Hub Uploaded Images',
+			'hubUploadedImagesHint' => 'image(s) stored on this device',
+			'noHubUploads' => 'No uploaded images',
+			'clearHubUploadsConfirm' => 'Delete all Hub uploaded images?',
+			'hubStickers' => 'Hub Stickers',
+			'hubStickersHint' => 'sticker(s)',
+			'noHubStickers' => 'No stickers',
+			'clearHubStickersConfirm' => 'Delete all Hub stickers?',
 			'clearHistory' => 'Clear History',
 			'clearProgress' => 'Clear Progress',
 			'clearSearchHistory' => 'Clear Search History',
@@ -6510,6 +6837,7 @@ extension on Translations {
 			'local' => 'Local',
 			'logIn' => 'Log in',
 			'logOut' => 'Log out',
+			'account' => 'Account',
 			'log' => 'Log',
 			'manualTranslation' => 'Manual Translation',
 			'manualTranslationHint' => 'Translate text into your preferred language',
@@ -6824,6 +7152,8 @@ extension on Translations {
 			'logs' => 'Logs',
 			'playerDetails' => 'Player Details',
 			'watcherPlayingNext' => 'Playing next episode',
+			_ => null,
+		} ?? switch (path) {
 			'watcherEpisodeLoadError' => ({required Object error}) => 'Failed to load episode: ${error}',
 			'watcherNoMoreEpisodes' => 'No more episodes to play',
 			'watcherRouteNotFound' => 'Route not found',
@@ -6834,8 +7164,6 @@ extension on Translations {
 			'vceTimelineThumbnails' => 'Video timeline thumbnails',
 			'vceStart' => 'Start',
 			'vceEnd' => 'End',
-			_ => null,
-		} ?? switch (path) {
 			'vceModifyStart' => 'Modify start',
 			'vceModifyEnd' => 'Modify end',
 			'vceTimeFormatHint' => 'Supported formats: 90, 01:30, 1.5...',
@@ -6906,7 +7234,6 @@ extension on Translations {
 			'enableSkipBangumiSchedule' => 'Enable skipping Bangumi schedule',
 			'bangumiClientId' => 'Client ID',
 			'bangumiClientSecret' => 'Client Secret',
-			'bangumiRedirectUri' => 'Redirect URI',
 			'bangumiOAuthHint' => 'Register an app on bgm.tv/dev to get the client ID and secret',
 			'bangumiOAuthLogin' => 'Bangumi Login',
 			'bangumiShowNsfw' => 'Show NSFW content',
@@ -7035,6 +7362,10 @@ extension on Translations {
 			'dlnaException' => 'DLNA exception',
 			'audioOptionLowLatency' => 'Audio Option: \n Low Latency',
 			'audioOptionCompatibility' => 'Audio Option: \n Compatibility',
+			'audioOutputDevice' => 'Audio Output Device',
+			'noAudioDevice' => 'No audio device detected',
+			'volumeBoostEnabled' => 'Volume Boost: On',
+			'volumeBoostDisabled' => 'Volume Boost: Off',
 			'switchSuccessful' => 'Switch Successful',
 			'switchFailed' => 'Switch Failed',
 			'remoteCast' => 'Remote Cast',
@@ -7332,6 +7663,19 @@ extension on Translations {
 			'chooseIpVersionToListenOn' => 'Choose IP version to listen on',
 			'hubServer' => 'Hub Server',
 			'enableHub' => 'Enable Hub',
+			'hubServerStartFailed' => 'Failed to start Hub server',
+			'enableTls' => 'Enable HTTPS/WSS',
+			'tlsEnabledDesc' => 'Hub will serve over HTTPS/WSS (requires certificate)',
+			_ => null,
+		} ?? switch (path) {
+			'tlsDisabledDesc' => 'Hub serves over HTTP/WS',
+			'tlsCertificate' => 'TLS Certificate',
+			'tlsCertificateHint' => 'PEM certificate chain (Let\'s Encrypt: fullchain.pem)',
+			'tlsPrivateKey' => 'TLS Private Key',
+			'tlsPrivateKeyHint' => 'PEM private key file path',
+			'tlsPassword' => 'TLS Key Password',
+			'tlsPasswordHint' => 'Leave empty if the key is not encrypted',
+			'browse' => 'Browse',
 			'hubServerIsStopped' => 'Hub server is stopped',
 			'clientsCount' => 'clients',
 			'hubPort' => 'Hub Port',
@@ -7348,10 +7692,17 @@ extension on Translations {
 			'serverName' => 'Server Name',
 			'selectServer' => 'Select a server',
 			'exportRooms' => 'Export Rooms',
-			_ => null,
-		} ?? switch (path) {
 			'importRooms' => 'Import Rooms',
+			'danmakuSettings' => 'Danmaku Settings',
+			'danmakuColor' => 'Color',
+			'danmakuFontSize' => 'Font Size',
+			'danmakuOpacity' => 'Opacity',
+			'danmakuArea' => 'Display Area',
+			'danmakuDuration' => 'Duration',
+			'danmakuLineHeight' => 'Line Height',
+			'danmaku' => 'Danmaku',
 			'watchTogether' => 'Watch Together',
+			'watchTogetherRoomHasNoAnime' => 'The watch-together room is not bound to an anime',
 			'watchTogetherDesc' => 'Watch anime with friends, create or join a room to chat and share screenshots and subtitles.',
 			'selectRoomToStart' => 'Select a room to start watching together',
 			'syncToOwner' => 'Sync to Owner',
@@ -7467,6 +7818,23 @@ extension on Translations {
 			'hubAiBotKeywordHint' => 'e.g.',
 			'hubAiBotMinInterval' => 'Min reply interval (s)',
 			'hubAiBotReplyDm' => 'Reply to private messages',
+			'satoriBotManage' => 'Satori Bot Management',
+			'satoriBotManageDesc' => 'Third-party Satori bots',
+			'satoriBotCountUnit' => 'bot(s)',
+			'satoriBotAdd' => 'Add Bot',
+			'satoriBotEdit' => 'Edit Bot',
+			'satoriBotDelete' => 'Delete Bot',
+			'satoriBotName' => 'Bot Name',
+			'satoriBotNameHint' => 'Display name shown in the room member list and @ mentions',
+			'satoriBotAvatar' => 'Avatar',
+			'satoriBotBio' => 'Biography',
+			'satoriBotToken' => 'Connection Token',
+			'satoriBotTokenHint' => 'The token used by the Satori client to connect and bind to this bot',
+			'satoriBotTokenRegen' => 'Regenerate',
+			'satoriBotEnabled' => 'Enabled',
+			'satoriBotDeleteConfirm' => 'Delete this bot? Connected clients will be disconnected.',
+			'satoriBotTokenCopied' => 'Token copied',
+			'satoriBotConfigTitle' => 'Satori Bot',
 			'webAdminSettings' => 'Web Admin Settings',
 			'webAdminWhatIs' => 'What is Web Admin?',
 			'webAdminDescription' => 'The Web Admin provides a browser-based dashboard for managing the Hub. Open the address in any device browser to view server status, manage rooms & clients, browse logs, edit config, control the AI bot & webhooks, and restart the Hub. It uses the existing Hub API Key for authentication.',
@@ -7491,6 +7859,7 @@ extension on Translations {
 			'connectionSettings' => 'Connection Settings',
 			'serverAddress' => 'Server Address',
 			'host' => 'Host',
+			'protocol' => 'Protocol',
 			'authentication' => 'Authentication',
 			'paste' => 'Paste',
 			'unblock' => 'Unblock',
@@ -7543,6 +7912,11 @@ extension on Translations {
 			'notSet' => 'Not set',
 			'currentRoom' => 'Current Room',
 			'editProfile' => 'Edit Profile',
+			'uploadAvatar' => 'Upload avatar',
+			'avatar' => 'Avatar',
+			'connectFirstToUploadAvatar' => 'Connect to a server first to upload an avatar',
+			'avatarUploaded' => 'Avatar uploaded',
+			'uploadFailed' => 'Upload failed',
 			'noBlockedUsers' => 'No blocked users',
 			'createRoom' => 'Create Room',
 			'chat' => 'Chat',
@@ -7574,6 +7948,10 @@ extension on Translations {
 			'maxSizeMb' => 'Max Upload Size (MB)',
 			'storePath' => 'Store Path',
 			'leaveEmptyForDefault' => 'Leave empty for default',
+			'publicBaseUrl' => 'Public Base URL',
+			'publicBaseUrlHint' => 'External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address',
+			'publicIpDetected' => 'Public IP detected',
+			'publicIpDetectFailed' => 'Failed to detect public IP',
 			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
 			'imageTooLargeToSend' => 'Image too large to send',
 			'pleaseConfigureServerUploadOrClientOss' => 'Please configure server upload or client OSS.',
@@ -7595,8 +7973,11 @@ extension on Translations {
 			'noLimit' => 'No limit',
 			'optional' => 'optional',
 			'enterDisplayName' => 'Enter display name',
+			'displayNameRequired' => 'Display name is required',
 			'enterBio' => 'Enter bio',
 			'autoReconnect' => 'Auto Reconnect',
+			'allowSelfSignedCert' => 'Allow Self-signed Certificate',
+			'allowSelfSignedCertHint' => 'Trust self-signed certificates when connecting over WSS',
 			'directMessage' => 'Direct Message',
 			'noAnnouncementsYet' => 'No announcements yet',
 			'enterAnnouncementText' => 'Enter announcement text...',
@@ -7799,6 +8180,8 @@ extension on Translations {
 			'verifyingCharacterInfo' => 'Verifying character info...',
 			'characterNotFound' => 'Character not found',
 			'failedToFetchCharacterInfo' => 'Failed to fetch character info',
+			_ => null,
+		} ?? switch (path) {
 			'linkFormatErrorCannotParsePersonId' => 'Link format error, cannot parse person ID',
 			'verifyingPersonInfo' => 'Verifying person info...',
 			'personNotFound' => 'Person not found',
@@ -7862,8 +8245,6 @@ extension on Translations {
 			'loadingDuplicateEpisode' => 'Loading duplicate episode',
 			'getVideoUrlFailed' => 'Failed to get video URL',
 			'startSearch' => 'Start search',
-			_ => null,
-		} ?? switch (path) {
 			'pleaseEnterEpisodeNumber' => 'Please enter episode number',
 			'pleaseEnterValidEpisodeNumber' => 'Please enter a valid episode number between 1-999',
 			'imageTitle' => 'Title',
@@ -8283,6 +8664,7 @@ extension on Translations {
 			'openVideoPreview' => 'Video preview',
 			'discussInAi' => 'Discuss in AI',
 			'dropImageToRecognize' => 'Drop an image to recognize',
+			'dropFileToImport' => 'Drop a .js file to import',
 			'viewOnBangumi' => 'View on Bangumi',
 			'templateVarHint' => 'Available variables: ',
 			'profilePersonaRequired' => 'Please select a persona first',
@@ -8312,6 +8694,8 @@ extension on Translations {
 			'apiFormatClaude' => 'Claude (Anthropic)',
 			'testConnection' => 'Test connection',
 			'testApiKey' => 'Test API key',
+			_ => null,
+		} ?? switch (path) {
 			'enabledByApiKey' => 'Enabled automatically when an API key is filled in',
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
@@ -8376,8 +8760,6 @@ extension on Translations {
 			'injectionPositionAfterMemory' => 'After memory',
 			'injectionPositionBeforeTools' => 'Before tool list',
 			'injectionSortOrder' => 'Sort order',
-			_ => null,
-		} ?? switch (path) {
 			'noInjectionsYet' => 'No prompt injections yet',
 			'worldBookName' => 'Name',
 			'worldBookTriggers' => 'Trigger words (one per line)',
@@ -8417,6 +8799,48 @@ extension on Translations {
 			'mcpTestConnection' => 'Test connection',
 			'mcpConnecting' => 'Connecting...',
 			'mcpConnectionFailed' => 'Connection failed',
+			'builderTitle' => 'Source Builder',
+			'builderEntry' => 'Build source',
+			'builderBasic' => 'Basic Info',
+			'builderName' => 'Name',
+			'builderKey' => 'Key',
+			'builderVersion' => 'Version',
+			'builderBaseUrl' => 'Base URL',
+			'builderSearch' => 'Search',
+			'builderSearchUrl' => 'Search URL template',
+			'builderListSelector' => 'List item selector',
+			'builderTitleSelector' => 'Title selector',
+			'builderCoverSelector' => 'Cover selector',
+			'builderCoverAttr' => 'Cover attribute',
+			'builderLinkSelector' => 'Link selector',
+			'builderPageParam' => 'Page parameter',
+			'builderDetail' => 'Anime Detail',
+			'builderDetailUrl' => 'Detail URL template',
+			'builderDescSelector' => 'Description selector',
+			'builderEpisodeSelector' => 'Episode list selector',
+			'builderEpisodeTitleSelector' => 'Episode title selector',
+			'builderEpisodeLinkSelector' => 'Episode link selector',
+			'builderPlay' => 'Playback',
+			'builderPlayUrl' => 'Play page URL template',
+			'builderExtractRegex' => 'Playback URL regex',
+			'builderMaxPageSelector' => 'Max page selector',
+			'builderUserAgent' => 'User-Agent',
+			'builderPlayDirect' => 'Directly return episode link',
+			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
+			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
+			'builderExplore' => 'Explore',
+			'builderExploreTitle' => 'Page title',
+			'builderExploreUrl' => 'List URL template ({page})',
+			'builderCategory' => 'Category',
+			'builderCategoryTitle' => 'Category title',
+			'builderCategoryNames' => 'Category names (one per line, "value-name")',
+			'builderCategoryUrl' => 'Category list URL ({category} {page})',
+			'builderGenerate' => 'Generate & Import',
+			'builderNameRequired' => 'Name is required',
+			'builderKeyRequired' => 'Key is required',
+			'builderKeyInvalid' => 'Key must contain only letters, digits and underscore',
+			'builderImported' => 'Source imported',
+			'builderGenerateFailed' => 'Generate failed',
 			_ => null,
 		};
 	}

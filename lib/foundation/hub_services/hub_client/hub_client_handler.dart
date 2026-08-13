@@ -94,7 +94,11 @@ extension HubClientHandler on HubClient {
             }
           }
         } else {
-          _addMessageToRoom(event.message);
+          // 同步消息（KOSTORI_SYNC）每秒广播，不加入消息历史，
+          // 否则聊天列表每秒重建导致图片闪烁
+          if (!event.message.plainText.startsWith('KOSTORI_SYNC')) {
+            _addMessageToRoom(event.message);
+          }
         }
         for (final fn in List.of(_messageListeners)) {
           fn(data);
@@ -278,16 +282,23 @@ extension HubClientHandler on HubClient {
 
       case HubSystemClientJoined():
         final newRooms = [..._s.roomList];
-        final lobbyIdx = newRooms.indexWhere((r) => r.roomId == _s.lobbyRoomId);
-        if (lobbyIdx != -1) {
-          final lobby = newRooms[lobbyIdx];
-          final already = lobby.participants.any(
-            (p) => p.userId == event.client.userId,
+        // 机器人不加入任何房间（大厅/房间参与者列表均不含 bot），
+        // 但加入 onlineClients 使其在 @ 列表可见
+        final isBot = event.client.isBot;
+        if (!isBot) {
+          final lobbyIdx = newRooms.indexWhere(
+            (r) => r.roomId == _s.lobbyRoomId,
           );
-          if (!already) {
-            newRooms[lobbyIdx] = lobby.copyWith(
-              participants: [...lobby.participants, event.client],
+          if (lobbyIdx != -1) {
+            final lobby = newRooms[lobbyIdx];
+            final already = lobby.participants.any(
+              (p) => p.userId == event.client.userId,
             );
+            if (!already) {
+              newRooms[lobbyIdx] = lobby.copyWith(
+                participants: [...lobby.participants, event.client],
+              );
+            }
           }
         }
         _setState(
@@ -299,12 +310,14 @@ extension HubClientHandler on HubClient {
             roomList: newRooms,
           ),
         );
-        App.rootContext.showMessage(
-          message: '${event.client.displayName} ${t.joinedTheServer}',
-          level: LogLevel.info,
-          style: ToastStyle.topLeft,
-          icon: const Icon(Icons.login_outlined, size: 16),
-        );
+        if (!isBot) {
+          App.rootContext.showMessage(
+            message: '${event.client.displayName} ${t.joinedTheServer}',
+            level: LogLevel.info,
+            style: ToastStyle.topLeft,
+            icon: const Icon(Icons.login_outlined, size: 16),
+          );
+        }
         onClientsChanged?.call();
         onRoomListChanged?.call();
 
@@ -377,14 +390,15 @@ extension HubClientHandler on HubClient {
           (s) => s.copyWith(roomList: newRooms, onlineClients: updatedClients),
         );
         if (event.roomId == currentRoomId && event.client.userId != myId) {
-          if (event.joined) {
+          // 完整断连时（离开服务器）只提示"离开服务器"，抑制重复的"离开房间"
+          if (event.joined && !event.leavingServer) {
             App.rootContext.showMessage(
               message: '${event.client.displayName} ${t.joinedTheRoom}',
               level: LogLevel.info,
               style: ToastStyle.topLeft,
               icon: const Icon(Icons.meeting_room_outlined, size: 16),
             );
-          } else {
+          } else if (!event.joined && !event.leavingServer) {
             App.rootContext.showMessage(
               message: '${event.client.displayName} ${t.leftTheRoom}',
               level: LogLevel.info,

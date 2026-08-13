@@ -6,14 +6,17 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/database/history.dart';
+import 'package:kostori/database/history_write_service.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/m3u8_proxy_server.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -52,6 +55,22 @@ class WatcherState extends State<Watcher>
 
   History get history => widget.watcherController.history!;
 
+  /// 是否已加入一起看房间且为成员（此时进入播放页先跟房主同步，
+  /// 而不是恢复本地历史进度）
+  bool get _isWatchMember {
+    final hub = ProviderScope.containerOf(context).read(hubProvider);
+    final room = hub.currentRoom;
+    final currentAnime = watcherController.anime;
+    return hub.isConnected &&
+        room != null &&
+        room.roomId != hub.lobbyRoomId &&
+        room.isWatchRoom &&
+        room.ownerUserId != hub.myId &&
+        currentAnime != null &&
+        room.animeId == currentAnime.id &&
+        room.animeSourceKey == currentAnime.sourceKey;
+  }
+
   AnimeDetails get anime => widget.watcherController.anime!;
 
   AnimeSource get animeSource => AnimeSource.find(anime.sourceKey)!;
@@ -59,6 +78,7 @@ class WatcherState extends State<Watcher>
   final stats = StatsManager();
 
   StreamSubscription<bool>? _completedSub;
+
   // 当前播放列表
   late int currentRoad;
 
@@ -99,8 +119,18 @@ class WatcherState extends State<Watcher>
     });
     Future.microtask(() async {
       headers = animeSource.httpHeaders;
-      if (history.lastWatchEpisode != 0) {
+      if (!_isWatchMember && history.lastWatchEpisode != 0) {
         loadInfo(history.lastWatchEpisode!, history.lastRoad!.toInt());
+      } else if (_isWatchMember) {
+        // 一起看成员：先加载默认集数（临时解锁，否则初始加载会被 syncLocked 拦截），
+        // 之后房主 sync 到达再对齐集数与进度
+        final prev = playerController.syncLocked;
+        playerController.syncLocked = false;
+        try {
+          await loadInfo(1, 0);
+        } finally {
+          playerController.syncLocked = prev;
+        }
       }
       await updateHistory();
     });
@@ -198,6 +228,8 @@ class WatcherState extends State<Watcher>
     required int episodeIndex,
     required int road,
   }) async {
+    // 一起看成员：禁止手动切换集数，只能跟随房主（房主同步会临时解锁放行）
+    if (playerController.syncLocked) return;
     if (anime.episode == null || road >= anime.episode!.length) {
       App.rootContext.showMessage(message: t.watcherRouteNotFound);
       return;
@@ -343,8 +375,9 @@ class WatcherState extends State<Watcher>
           history.bangumiId = bangumiId;
         }
 
-        await HistoryManager().addHistory(history);
-        HistoryManager().updateProgress(
+        // 数据库写入走后台 isolate，不阻塞主线程
+        HistoryWriteService.addHistory(history);
+        HistoryWriteService.updateProgress(
           historyId: anime.id,
           type: anime.animeType,
           episode: epIndex - 1,
@@ -352,6 +385,9 @@ class WatcherState extends State<Watcher>
           progressInMilli:
               playerController.player.state.position.inMilliseconds,
         );
+        // 更新主 isolate 缓存（集数变化立即通知、时间每 30 秒通知，
+        // 不每秒重建播放器）
+        HistoryManager().cacheHistory(history);
         updateTotalWatchDurations();
 
         // 只在未完成时检查

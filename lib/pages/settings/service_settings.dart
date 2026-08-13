@@ -91,11 +91,28 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
   Future<void> _toggleHub(bool value) async {
     if (value) {
       final port = int.tryParse(_hubPortController.text) ?? 9100;
-      await _hub.init(preferredPort: port, mode: _bindMode);
+      try {
+        await _hub.init(preferredPort: port, mode: _hubBindMode);
+      } catch (e) {
+        App.rootContext.showMessage(
+          message: '${t.hubServerStartFailed}: $e',
+          level: LogLevel.warning,
+        );
+      }
     } else {
       await _hub.dispose();
     }
     setState(() => _hubEnabled = _hub.isRunning);
+  }
+
+  String get _currentProfileLabel {
+    final addr = _hubClient.savedAddress ?? '';
+    if (addr.isEmpty) return t.select;
+    final nameObj = _hubClient.getProfiles().firstWhereOrNull(
+      (p) => p['address'] == addr,
+    )?['name'];
+    final name = nameObj is String ? nameObj : null;
+    return (name?.isNotEmpty == true ? name : addr)!;
   }
 
   Future<void> _toggleHubClient(bool value) async {
@@ -105,6 +122,9 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
         App.rootContext.showMessage(message: t.enterServerAddress);
         return;
       }
+      // 连接前确保已填写显示名
+      final nameOk = await ensureHubNameSet(context);
+      if (!nameOk) return;
       try {
         await _hubClient.connect(
           savedAddress,
@@ -129,6 +149,74 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
     } else {
       await _hubClient.disconnect();
     }
+  }
+
+  /// 已保存服务器选择（底部弹窗）
+  Future<void> _showHubProfilePicker() async {
+    final profiles = _hubClient.getProfiles();
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Sheet(
+        title: t.savedServers,
+        icon: Icons.history_outlined,
+        builder: (context, sc) {
+          if (profiles.isEmpty) {
+            return Center(child: HubEmptyHint(t.noSavedServers));
+          }
+          return ListView.builder(
+            controller: sc,
+            itemCount: profiles.length,
+            itemBuilder: (context, i) {
+              final p = profiles[i];
+              final isCurrent = p['address'] == _hubClient.savedAddress;
+              return ListTile(
+                leading: Icon(
+                  isCurrent
+                      ? Icons.radio_button_checked
+                      : Icons.circle_outlined,
+                  size: 18,
+                  color: isCurrent
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                title: Text(
+                  (p['name'] as String?)?.isNotEmpty == true
+                      ? p['name'] as String
+                      : p['address'] as String,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  p['address'] as String,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                ),
+                trailing: isCurrent
+                    ? Text(
+                        t.current,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 12,
+                        ),
+                      )
+                    : null,
+                onTap: () => Navigator.pop(context, p),
+              );
+            },
+          );
+        },
+      ),
+    );
+    if (result == null || !mounted) return;
+    final addr = result['address'] as String? ?? '';
+    if (addr.isEmpty || addr == _hubClient.savedAddress) return;
+    if (ref.read(hubProvider).isConnected) await _hubClient.disconnect();
+    _hubClient.activateProfile(addr);
+    setState(() {});
+    await _toggleHubClient(true);
   }
 
   @override
@@ -310,12 +398,25 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                     },
                   ),
                 ),
+                _PopupWindowSetting(
+                  title: t.enableTls,
+                  builder: () => _HubTlsPage(hub: _hub),
+                  onClosed: () {
+                    if (mounted) setState(() {});
+                  },
+                ),
                 if (_hubEnabled)
                   _PopupWindowSetting(
                     title: t.hubManagement,
                     builder: () => _HubManagementPage(),
                   ),
-                _UploadConfigSetting(hub: _hub, serverRunning: _hubEnabled),
+                _PopupWindowSetting(
+                  title: t.imageUpload,
+                  builder: () => _HubUploadPage(hub: _hub),
+                  onClosed: () {
+                    if (mounted) setState(() {});
+                  },
+                ),
               ],
             ),
           ),
@@ -348,39 +449,14 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                   _SettingRow(
                     title: t.savedServers,
                     subtitle: _hubClient.savedAddress ?? t.selectServer,
-                    trailing: DropdownButton<String>(
-                      underline: const SizedBox.shrink(),
-                      borderRadius: BorderRadius.circular(12),
-                      value:
-                          _hubClient.getProfiles().any(
-                            (p) => p['address'] == _hubClient.savedAddress,
-                          )
-                          ? _hubClient.savedAddress
-                          : null,
-                      hint: const Text('—'),
-                      items: [
-                        for (final p in _hubClient.getProfiles())
-                          DropdownMenuItem(
-                            value: p['address'] as String,
-                            child: Text(
-                              (p['name'] as String?)?.isNotEmpty == true
-                                  ? p['name'] as String
-                                  : p['address'] as String,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                      ],
-                      onChanged: (addr) async {
-                        if (addr == null || addr == _hubClient.savedAddress) {
-                          return;
-                        }
-                        if (hubClientEnabled) {
-                          await _hubClient.disconnect();
-                        }
-                        _hubClient.activateProfile(addr);
-                        setState(() {});
-                        await _toggleHubClient(true);
-                      },
+                    trailing: OutlinedButton.icon(
+                      icon: const Icon(Icons.expand_more, size: 16),
+                      label: Text(
+                        _currentProfileLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onPressed: _showHubProfilePicker,
                     ),
                   ),
                 _SettingRow(
@@ -392,9 +468,37 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                     },
                   ),
                 ),
+                _SettingRow(
+                  title: t.allowSelfSignedCert,
+                  subtitle: t.allowSelfSignedCertHint,
+                  trailing: CustomSwitch(
+                    value: _hubClient.allowSelfSignedCert,
+                    onChanged: (v) {
+                      setState(() => _hubClient.allowSelfSignedCert = v);
+                    },
+                  ),
+                ),
+                _SettingRow(
+                  title: t.editProfile,
+                  subtitle: () {
+                    final n = _hubClient.savedName;
+                    return (n == null || n.trim().isEmpty) ? t.notSet : n;
+                  }(),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    tooltip: t.editProfile,
+                    onPressed: () async {
+                      await showHubProfileEditDialog(_hubClient);
+                      if (mounted) setState(() {});
+                    },
+                  ),
+                ),
                 _PopupWindowSetting(
                   title: t.hubDetails,
-                  builder: () => const _HubClientDetailPage(),
+                  builder: () => const HubClientDetailPage(),
+                  onClosed: () {
+                    if (mounted) setState(() {});
+                  },
                 ),
                 if (hubClientEnabled)
                   _SettingRow(
@@ -410,6 +514,213 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Hub 服务端 HTTPS/WSS 二级设置页
+class _HubTlsPage extends ConsumerStatefulWidget {
+  const _HubTlsPage({required this.hub});
+
+  final HubService hub;
+
+  @override
+  ConsumerState<_HubTlsPage> createState() => _HubTlsPageState();
+}
+
+class _HubTlsPageState extends ConsumerState<_HubTlsPage> {
+  late final TextEditingController _certCtrl;
+  late final TextEditingController _keyCtrl;
+  late final TextEditingController _passwordCtrl;
+
+  HubService get _hub => widget.hub;
+
+  @override
+  void initState() {
+    super.initState();
+    _certCtrl = TextEditingController(text: _hub.tlsCertificatePath ?? '');
+    _keyCtrl = TextEditingController(text: _hub.tlsPrivateKeyPath ?? '');
+    _passwordCtrl = TextEditingController(text: _hub.tlsPassword ?? '');
+  }
+
+  @override
+  void dispose() {
+    _certCtrl.dispose();
+    _keyCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFile(
+    TextEditingController ctrl,
+    void Function(String) save,
+  ) async {
+    final r = await FilePicker.pickFiles();
+    if (r != null && r.files.isNotEmpty && r.files.first.path != null) {
+      ctrl.text = r.files.first.path!;
+      save(r.files.first.path!);
+      if (mounted) setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: t.enableTls,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Material(
+              color: cs.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: cs.outlineVariant, width: 0.6),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        t.enableTls,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        _hub.tlsEnabled ? t.tlsEnabledDesc : t.tlsDisabledDesc,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: CustomSwitch(
+                        value: _hub.tlsEnabled,
+                        onChanged: (val) {
+                          _hub.setTlsEnabled(val);
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                    if (_hub.tlsEnabled) ...[
+                      const Divider(height: 24),
+                      const SizedBox(height: 8),
+                      Text(
+                        t.tlsCertificate,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        t.tlsCertificateHint,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _certCtrl,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (v) {
+                                _hub.setTlsCertificatePath(v.trim());
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.folder_open, size: 18),
+                            tooltip: t.browse,
+                            onPressed: () => _pickFile(
+                              _certCtrl,
+                              _hub.setTlsCertificatePath,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        t.tlsPrivateKey,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        t.tlsPrivateKeyHint,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _keyCtrl,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (v) {
+                                _hub.setTlsPrivateKeyPath(v.trim());
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.folder_open, size: 18),
+                            tooltip: t.browse,
+                            onPressed: () =>
+                                _pickFile(_keyCtrl, _hub.setTlsPrivateKeyPath),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        t.tlsPassword,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        t.tlsPasswordHint,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _passwordCtrl,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (v) {
+                          _hub.setTlsPassword(v);
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

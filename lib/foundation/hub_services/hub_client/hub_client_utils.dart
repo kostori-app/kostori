@@ -33,6 +33,12 @@ extension HubClientUtils on HubClient {
       pinnedMessages: incoming.pinnedMessages,
       messageHistory: history,
       welcomeMessage: incoming.welcomeMessage,
+      // 必须透传房间类型与番剧信息，否则一起看房间会被重构为普通房间
+      roomType: incoming.roomType,
+      animeId: incoming.animeId,
+      animeTitle: incoming.animeTitle,
+      animeSourceKey: incoming.animeSourceKey,
+      animeCover: incoming.animeCover,
     );
     final newRooms = [..._s.roomList];
     if (idx != -1) {

@@ -60,7 +60,10 @@ class _ClientTile extends StatelessWidget {
               backgroundColor: cs.primaryContainer,
               child: ClipOval(
                 child: AnimatedImage(
-                  image: CachedImageProvider(avatarUrl!, sourceKey: 'hub'),
+                  image: CachedImageProvider(
+                    hubFileUrlOf(avatarUrl),
+                    sourceKey: 'hub',
+                  ),
                   width: 40,
                   height: 40,
                   fit: BoxFit.cover,
@@ -115,6 +118,9 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   late final HubService _hub;
   HubAiBotConfig _aiBotConfig = HubAiBotConfig.load();
 
+  List<SatoriBotProfile> get _satoriProfiles =>
+      SatoriBotProfileStore.instance.load();
+
   bool get _webAdminEnabled =>
       appdata.implicitData['hub_web_admin_enabled'] as bool? ?? false;
 
@@ -146,6 +152,8 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
 
   List<Widget> _subscriptionSection() {
     final subs = HubSubscriptionManager.instance.load();
+    final bots = _satoriProfiles;
+    final total = subs.length + bots.length;
     final scheme = Theme.of(context).colorScheme;
     return [
       // ── 标题 + 数量 + 加号 ─────────────────────────
@@ -161,7 +169,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
             ),
             const SizedBox(width: 6),
             Text(
-              '${subs.length}',
+              '$total',
               style: TextStyle(fontSize: 12, color: scheme.outline),
             ),
             const Spacer(),
@@ -169,16 +177,180 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
               icon: const Icon(Icons.add, size: 18),
               tooltip: t.addSubscription,
               visualDensity: VisualDensity.compact,
-              onPressed: () => _showAddSubscriptionMenu(context),
+              onPressed: () => _showAddProtocolMenu(context),
             ),
           ],
         ),
       ),
-      if (subs.isEmpty)
+      if (subs.isEmpty && bots.isEmpty)
         _EmptyHint(t.noSubscriptions)
-      else
-        for (final s in subs) _subscriptionCard(context, s),
+      else ...[
+        if (subs.isNotEmpty) ...[
+          _protocolGroupHeader(
+            context,
+            'kostori',
+            Icons.hub_outlined,
+            subs.length,
+          ),
+          for (final s in subs) _subscriptionCard(context, s),
+        ],
+        if (bots.isNotEmpty) ...[
+          _protocolGroupHeader(
+            context,
+            'Satori',
+            Icons.smart_toy_outlined,
+            bots.length,
+          ),
+          for (final p in bots) _satoriBotCard(context, p),
+        ],
+      ],
     ];
+  }
+
+  /// 协议分组小标题（kostori / satori）
+  Widget _protocolGroupHeader(
+    BuildContext context,
+    String label,
+    IconData icon,
+    int count,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: scheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text('$count', style: TextStyle(fontSize: 11, color: scheme.outline)),
+        ],
+      ),
+    );
+  }
+
+  /// Satori 接入机器人卡片
+  Widget _satoriBotCard(BuildContext context, SatoriBotProfile p) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Material(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        child: GestureDetector(
+          onSecondaryTap: () => _showSatoriBotActions(context, p),
+          child: ListTile(
+            dense: true,
+            leading: CircleAvatar(
+              radius: 15,
+              backgroundColor: hubAvatarColor(p.id),
+              backgroundImage: p.avatarUrl != null && p.avatarUrl!.isNotEmpty
+                  ? CachedImageProvider(
+                      hubFileUrlOf(p.avatarUrl),
+                      sourceKey: 'hub',
+                    )
+                  : null,
+              child: p.avatarUrl == null || p.avatarUrl!.isEmpty
+                  ? Text(
+                      hubInitials(p.name),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
+            ),
+            title: Text(
+              p.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(
+              p.enabled ? t.hubAiBotStatus : t.hubAiBotStatusDisabled,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (p.enabled ? Colors.green : scheme.outline)
+                        .toOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    p.enabled ? t.running : t.stopped,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: p.enabled ? Colors.green : scheme.outline,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.chevron_right, size: 18),
+              ],
+            ),
+            onTap: () => _showSatoriBotEditSheet(context, p),
+            onLongPress: () => _showSatoriBotActions(context, p),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSatoriBotActions(
+    BuildContext context,
+    SatoriBotProfile p,
+  ) async {
+    final scheme = Theme.of(context).colorScheme;
+    showMenuX(context, const Offset(0, 0), [
+      MenuEntry(
+        icon: Icons.edit_outlined,
+        text: t.edit,
+        onClick: () => _showSatoriBotEditSheet(context, p),
+      ),
+      MenuEntry(
+        icon: Icons.copy_outlined,
+        text: t.satoriBotToken,
+        onClick: () {
+          Clipboard.setData(ClipboardData(text: p.token));
+          App.rootContext.showMessage(message: t.satoriBotTokenCopied);
+        },
+      ),
+      MenuEntry(
+        icon: Icons.delete_outline,
+        text: t.delete,
+        color: scheme.error,
+        onClick: () {
+          showConfirmDialog(
+            context: context,
+            title: t.satoriBotDelete,
+            content: t.satoriBotDeleteConfirm,
+            onConfirm: () {
+              SatoriBotProfileStore.instance.save(
+                _satoriProfiles.where((x) => x.id != p.id).toList(),
+              );
+              _hub.unregisterBotMember(p.id);
+              if (mounted) setState(() {});
+            },
+          );
+        },
+      ),
+    ]);
   }
 
   String _subscriptionTypeLabel(HubSubscription s) => switch (s.type) {
@@ -288,7 +460,48 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
     );
   }
 
-  /// 加号 → 二级菜单（三种连接方式选项卡）
+  /// 加号 → 协议选择（kostori / satori）
+  Future<void> _showAddProtocolMenu(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.addSubscription,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.hub_outlined, size: 20),
+              title: Text('kostori'),
+              subtitle: Text(
+                '${t.wsForward} / ${t.wsReverse} / ${t.webhookConnection} / ${t.httpServer}',
+                style: const TextStyle(fontSize: 11),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showAddSubscriptionMenu(context);
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.smart_toy_outlined, size: 20),
+              title: Text('Satori'),
+              subtitle: Text(
+                t.satoriBotManageDesc,
+                style: const TextStyle(fontSize: 11),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showSatoriBotEditSheet(context, null);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// kostori 协议 → 二级菜单（三种连接方式选项卡）
   Future<void> _showAddSubscriptionMenu(BuildContext context) async {
     await showDialog(
       context: context,
@@ -473,9 +686,27 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: tokenCtrl,
-                    decoration: InputDecoration(labelText: t.token),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: tokenCtrl,
+                          decoration: InputDecoration(labelText: t.token),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.auto_fix_high_outlined,
+                          size: 18,
+                        ),
+                        tooltip: t.satoriBotTokenRegen,
+                        onPressed: () {
+                          tokenCtrl.text = SatoriBotProfileStore.instance
+                              .generateToken();
+                          setSS(() {});
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -576,7 +807,6 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   // ── AI 陪聊机器人配置 ─────────────────────────────────────────────────────
 
   Future<void> _showAiBotConfigSheet(BuildContext context) async {
-    final cs = Theme.of(context).colorScheme;
     var provider =
         OpenAiProviderRegistry.allProviders.containsKey(_aiBotConfig.provider)
         ? _aiBotConfig.provider
@@ -585,249 +815,58 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
     var models = await AiDatabase.instance.aiModelDao.getModelsByProvider(
       provider,
     );
-    final nameCtrl = TextEditingController(text: _aiBotConfig.name);
-    final promptCtrl = TextEditingController(text: _aiBotConfig.systemPrompt);
-    var minInterval = _aiBotConfig.minIntervalSec;
-    var replyDm = _aiBotConfig.replyDm;
-    var triggerMode = _aiBotConfig.triggerMode;
-    final triggerPatternCtrl = TextEditingController(
-      text: _aiBotConfig.triggerPattern,
-    );
 
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setSS) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.65,
-              child: Material(
-                color: cs.surface,
-                child: Column(
-                  children: [
-                    _SheetHeader(
-                      title: t.hubAiBotConfigTitle,
-                      icon: Icons.smart_toy_outlined,
-                    ),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        children: [
-                          TextField(
-                            controller: nameCtrl,
-                            decoration: InputDecoration(
-                              labelText: t.hubAiBotName,
-                              isDense: true,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // ── AI 服务商（关联 AI 设置）──
-                          InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: t.hubAiBotProvider,
-                              helperText: t.hubAiBotProviderHelper,
-                              isDense: true,
-                            ),
-                            child: DropdownButton<String>(
-                              value: provider,
-                              isExpanded: true,
-                              isDense: true,
-                              underline: const SizedBox.shrink(),
-                              items: [
-                                for (final e
-                                    in OpenAiProviderRegistry
-                                        .allProviders
-                                        .entries)
-                                  DropdownMenuItem(
-                                    value: e.key,
-                                    child: Text(e.value.name),
-                                  ),
-                              ],
-                              onChanged: (v) async {
-                                if (v == null || v == provider) return;
-                                setSS(() {
-                                  provider = v;
-                                  model = '';
-                                });
-                                final m = await AiDatabase.instance.aiModelDao
-                                    .getModelsByProvider(v);
-                                if (context.mounted) {
-                                  setSS(() => models = m);
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // ── 模型（关联 AI 设置里该服务商配置的模型）──
-                          InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: t.hubAiBotModel,
-                              helperText: t.hubAiBotModelHint,
-                              isDense: true,
-                            ),
-                            child: DropdownButton<String>(
-                              value: models.any((m) => m.modelId == model)
-                                  ? model
-                                  : null,
-                              isExpanded: true,
-                              isDense: true,
-                              underline: const SizedBox.shrink(),
-                              hint: Text(t.hubAiBotModelHint),
-                              items: [
-                                DropdownMenuItem(
-                                  value: '',
-                                  child: Text(t.hubAiBotModelDefault),
-                                ),
-                                for (final m in models)
-                                  DropdownMenuItem(
-                                    value: m.modelId,
-                                    child: Text(
-                                      m.label,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                              ],
-                              onChanged: (v) => setSS(() => model = v ?? ''),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: promptCtrl,
-                            maxLines: 5,
-                            decoration: InputDecoration(
-                              labelText: t.hubAiBotSystemPrompt,
-                              alignLabelWithHint: true,
-                              isDense: true,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  t.hubAiBotTriggerMode,
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ),
-                              DropdownButton<String>(
-                                value: triggerMode,
-                                items: [
-                                  DropdownMenuItem(
-                                    value: 'mention',
-                                    child: Text(t.hubAiBotTriggerMention),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'prefix',
-                                    child: Text(t.hubAiBotTriggerPrefix),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'keyword',
-                                    child: Text(t.hubAiBotTriggerKeyword),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'all',
-                                    child: Text(t.hubAiBotTriggerAll),
-                                  ),
-                                ],
-                                onChanged: (v) =>
-                                    setSS(() => triggerMode = v ?? 'mention'),
-                              ),
-                            ],
-                          ),
-                          if (triggerMode == 'prefix' ||
-                              triggerMode == 'keyword') ...[
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: triggerPatternCtrl,
-                              decoration: InputDecoration(
-                                labelText: t.hubAiBotTriggerPattern,
-                                hintText: triggerMode == 'prefix'
-                                    ? './'
-                                    : t.hubAiBotKeywordHint,
-                                isDense: true,
-                              ),
-                            ),
-                          ],
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  t.hubAiBotMinInterval,
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ),
-                              DropdownButton<int>(
-                                value: minInterval.clamp(1, 30),
-                                items: [
-                                  for (var s = 1; s <= 30; s++)
-                                    DropdownMenuItem(
-                                      value: s,
-                                      child: Text('$s s'),
-                                    ),
-                                ],
-                                onChanged: (v) =>
-                                    setSS(() => minInterval = v ?? minInterval),
-                              ),
-                            ],
-                          ),
-                          ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              t.hubAiBotReplyDm,
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                            trailing: CustomSwitch(
-                              value: replyDm,
-                              onChanged: (v) => setSS(() => replyDm = v),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          FilledButton.icon(
-                            icon: const Icon(Icons.save_outlined, size: 18),
-                            label: Text(t.save),
-                            onPressed: () {
-                              setState(() {
-                                _aiBotConfig = _aiBotConfig.copyWith(
-                                  name: nameCtrl.text.trim().isEmpty
-                                      ? t.hubAiBotDefaultName
-                                      : nameCtrl.text.trim(),
-                                  provider: provider,
-                                  model: model,
-                                  systemPrompt: promptCtrl.text,
-                                  minIntervalSec: minInterval,
-                                  replyDm: replyDm,
-                                  triggerMode: triggerMode,
-                                  triggerPattern: triggerPatternCtrl.text,
-                                )..save();
-                              });
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+    await showPopUpWidget(
+      context,
+      _AiBotConfigPage(
+        initialName: _aiBotConfig.name,
+        initialProvider: provider,
+        initialModel: model,
+        initialModels: models,
+        initialMinInterval: _aiBotConfig.minIntervalSec,
+        initialReplyDm: _aiBotConfig.replyDm,
+        initialTriggerMode: _aiBotConfig.triggerMode,
+        initialTriggerPattern: _aiBotConfig.triggerPattern,
+        onSave:
+            (
+              name,
+              provider,
+              model,
+              prompt,
+              minInterval,
+              replyDm,
+              triggerMode,
+              triggerPattern,
+            ) {
+              setState(() {
+                _aiBotConfig = _aiBotConfig.copyWith(
+                  name: name.trim().isEmpty
+                      ? t.hubAiBotDefaultName
+                      : name.trim(),
+                  provider: provider,
+                  model: model,
+                  systemPrompt: prompt,
+                  minIntervalSec: minInterval,
+                  replyDm: replyDm,
+                  triggerMode: triggerMode,
+                  triggerPattern: triggerPattern,
+                )..save();
+              });
+              _hub.syncAiBotMember();
+            },
       ),
     );
-
-    nameCtrl.dispose();
-    promptCtrl.dispose();
-    triggerPatternCtrl.dispose();
   }
 
+  Future<void> _showSatoriBotEditSheet(
+    BuildContext context,
+    SatoriBotProfile? existing,
+  ) async {
+    await showPopUpWidget(context, _SatoriBotEditPage(existing: existing));
+    if (mounted) setState(() {});
+  }
+
+  /// 上传 bot 头像，返回访问 URL
   void _showBlacklistSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -1048,6 +1087,8 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                             _aiBotConfig = _aiBotConfig.copyWith(enabled: v)
                               ..save(),
                       );
+                      // 启用/禁用时同步注册/注销 AI 机器人成员（@ 列表可见）
+                      _hub.syncAiBotMember();
                     },
                   ),
                 ),
@@ -1286,7 +1327,7 @@ class _OnlineClientTile extends StatelessWidget {
               child: ClipOval(
                 child: AnimatedImage(
                   image: CachedImageProvider(
-                    client.avatarUrl!,
+                    hubFileUrlOf(client.avatarUrl),
                     sourceKey: 'hub',
                   ),
                   width: 32,
@@ -1372,6 +1413,362 @@ class _OnlineClientTile extends StatelessWidget {
                   ),
               ],
             ),
+    );
+  }
+}
+
+/// Satori 接入机器人编辑页（数据同步设置风格）
+class _SatoriBotEditPage extends ConsumerStatefulWidget {
+  final SatoriBotProfile? existing;
+  const _SatoriBotEditPage({this.existing});
+
+  @override
+  ConsumerState<_SatoriBotEditPage> createState() => _SatoriBotEditPageState();
+}
+
+class _SatoriBotEditPageState extends ConsumerState<_SatoriBotEditPage> {
+  late HubService _hub;
+  late HubClient _hubClient;
+  late SatoriBotProfile _profile;
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _bioCtrl;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _hub = ref.read(hubServiceProvider);
+    _hubClient = ref.read(hubClientProvider);
+    final store = SatoriBotProfileStore.instance;
+    _profile =
+        widget.existing ??
+        SatoriBotProfile(
+          id: store.generateId(),
+          name: '',
+          token: store.generateToken(),
+          enabled: true,
+        );
+    _nameCtrl = TextEditingController(text: _profile.name);
+    _bioCtrl = TextEditingController(text: _profile.biography ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _bioCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _uploadAvatar(BuildContext context) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final savedAddress = _hubClient.savedAddress;
+      if (savedAddress == null || savedAddress.isEmpty) return;
+      final httpBase = HubImageUploader.httpUrlOf(
+        savedAddress,
+      ).replaceAll(RegExp(r'/hub/?$'), '');
+      final resp = await AppDio().request(
+        '$httpBase/hub/upload/config',
+        options: Options(
+          method: 'GET',
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      );
+      if (resp.statusCode != 200 || resp.data is! Map) return;
+      final config = HubUploadConfig.fromJson(
+        Map<String, dynamic>.from(resp.data as Map),
+      );
+      final url = await HubImageUploader(
+        config: config,
+        serverBaseUrl: httpBase,
+        authToken: _hubClient.savedToken,
+      ).upload(bytes, picked.name);
+      if (mounted) {
+        setState(() => _profile = _profile.copyWith(avatarUrl: url));
+      }
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: '${t.uploadFailed}: $e',
+        level: LogLevel.warning,
+      );
+    }
+  }
+
+  void _save() {
+    final avatarResolved = hubFileUrlOf(_profile.avatarUrl);
+    final finalProfile = SatoriBotProfile(
+      id: _profile.id,
+      name: _nameCtrl.text.trim().isEmpty
+          ? _profile.name
+          : _nameCtrl.text.trim(),
+      avatarUrl: avatarResolved.isEmpty ? null : avatarResolved,
+      biography: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
+      token: _profile.token,
+      enabled: _profile.enabled,
+    );
+    final store = SatoriBotProfileStore.instance;
+    store.save([
+      ...store.load().where((x) => x.id != _profile.id),
+      finalProfile,
+    ]);
+    if (finalProfile.enabled) {
+      _hub.registerBotMember(
+        userId: finalProfile.id,
+        displayName: finalProfile.name,
+        avatarUrl: finalProfile.avatarUrl,
+      );
+    } else {
+      _hub.unregisterBotMember(finalProfile.id);
+    }
+    App.rootPop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: _isEdit ? t.satoriBotEdit : t.satoriBotAdd,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _FormCard(
+              children: [
+                _FormSectionTitle(
+                  title: t.satoriBotName,
+                  icon: Icons.badge_outlined,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _nameCtrl,
+                  decoration: _formFieldDecoration(
+                    labelText: t.satoriBotName,
+                    hintText: t.satoriBotNameHint,
+                  ),
+                ),
+                const Divider(height: 24),
+                _FormSectionTitle(
+                  title: t.satoriBotAvatar,
+                  icon: Icons.account_circle_outlined,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: hubAvatarColor(_profile.id),
+                      backgroundImage:
+                          _profile.avatarUrl != null &&
+                              _profile.avatarUrl!.isNotEmpty
+                          ? CachedImageProvider(
+                              hubFileUrlOf(_profile.avatarUrl),
+                              sourceKey: 'hub',
+                            )
+                          : null,
+                      child:
+                          _profile.avatarUrl == null ||
+                              _profile.avatarUrl!.isEmpty
+                          ? Text(
+                              hubInitials(_profile.name),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.upload_outlined, size: 16),
+                        label: Text(t.upload),
+                        onPressed: () => _uploadAvatar(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                _FormSectionTitle(
+                  title: t.satoriBotBio,
+                  icon: Icons.notes_outlined,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _bioCtrl,
+                  maxLines: 3,
+                  decoration: _formFieldDecoration(labelText: t.satoriBotBio),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _FormCard(
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    t.satoriBotEnabled,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  subtitle: Text(
+                    t.satoriBotEnabled,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                  trailing: CustomSwitch(
+                    value: _profile.enabled,
+                    onChanged: (v) => setState(
+                      () => _profile = _profile.copyWith(enabled: v),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _FormCard(
+              children: [
+                _FormSectionTitle(
+                  title: t.satoriBotToken,
+                  icon: Icons.key_outlined,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  t.satoriBotTokenHint,
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SelectableText(
+                        _profile.token,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy_outlined, size: 18),
+                      tooltip: t.copy,
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: _profile.token));
+                        App.rootContext.showMessage(
+                          message: t.satoriBotTokenCopied,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, size: 18),
+                      tooltip: t.satoriBotTokenRegen,
+                      onPressed: () {
+                        setState(
+                          () => _profile = SatoriBotProfile(
+                            id: _profile.id,
+                            name: _profile.name,
+                            avatarUrl: _profile.avatarUrl,
+                            biography: _profile.biography,
+                            token: SatoriBotProfileStore.instance
+                                .generateToken(),
+                            enabled: _profile.enabled,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _FormSaveButton(onPressed: _save),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 数据同步风格的表单卡片（Kostori/Satori bot 设置页复用）
+class _FormCard extends StatelessWidget {
+  final List<Widget> children;
+  const _FormCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant, width: 0.6),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+/// 表单卡片标题（icon + 粗体文字）
+class _FormSectionTitle extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const _FormSectionTitle({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: cs.primary),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+}
+
+/// 表单输入框装饰（数据同步风格）
+InputDecoration _formFieldDecoration({
+  required String labelText,
+  String? hintText,
+  Widget? suffix,
+}) {
+  return InputDecoration(
+    labelText: labelText,
+    hintText: hintText,
+    suffixIcon: suffix,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+  );
+}
+
+/// 表单底部全宽保存按钮
+class _FormSaveButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _FormSaveButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: Button.filled(
+        onPressed: onPressed,
+        child: Text(t.save, style: const TextStyle(fontSize: 16)),
+      ),
     );
   }
 }
@@ -1934,6 +2331,288 @@ class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// AI 陪聊机器人配置页（数据同步设置风格）
+class _AiBotConfigPage extends ConsumerStatefulWidget {
+  final String initialName;
+  final String initialProvider;
+  final String initialModel;
+  final List<AiModel> initialModels;
+  final int initialMinInterval;
+  final bool initialReplyDm;
+  final String initialTriggerMode;
+  final String initialTriggerPattern;
+  final void Function(
+    String name,
+    String provider,
+    String model,
+    String prompt,
+    int minInterval,
+    bool replyDm,
+    String triggerMode,
+    String triggerPattern,
+  )
+  onSave;
+
+  const _AiBotConfigPage({
+    required this.initialName,
+    required this.initialProvider,
+    required this.initialModel,
+    required this.initialModels,
+    required this.initialMinInterval,
+    required this.initialReplyDm,
+    required this.initialTriggerMode,
+    required this.initialTriggerPattern,
+    required this.onSave,
+  });
+
+  @override
+  ConsumerState<_AiBotConfigPage> createState() => _AiBotConfigPageState();
+}
+
+class _AiBotConfigPageState extends ConsumerState<_AiBotConfigPage> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _promptCtrl;
+  late final TextEditingController _triggerPatternCtrl;
+  late String _provider;
+  late String _model;
+  late List<AiModel> _models;
+  late int _minInterval;
+  late bool _replyDm;
+  late String _triggerMode;
+  late final HubAiBotConfig _config;
+
+  @override
+  void initState() {
+    super.initState();
+    _config = HubAiBotConfig.load();
+    _nameCtrl = TextEditingController(text: widget.initialName);
+    _promptCtrl = TextEditingController(text: _config.systemPrompt);
+    _triggerPatternCtrl = TextEditingController(
+      text: widget.initialTriggerPattern,
+    );
+    _provider = widget.initialProvider;
+    _model = widget.initialModel;
+    _models = widget.initialModels;
+    _minInterval = widget.initialMinInterval;
+    _replyDm = widget.initialReplyDm;
+    _triggerMode = widget.initialTriggerMode;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _promptCtrl.dispose();
+    _triggerPatternCtrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    widget.onSave(
+      _nameCtrl.text,
+      _provider,
+      _model,
+      _promptCtrl.text,
+      _minInterval,
+      _replyDm,
+      _triggerMode,
+      _triggerPatternCtrl.text,
+    );
+    App.rootPop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: t.hubAiBotConfigTitle,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _FormCard(
+              children: [
+                _FormSectionTitle(
+                  title: t.hubAiBot,
+                  icon: Icons.smart_toy_outlined,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _nameCtrl,
+                  decoration: _formFieldDecoration(labelText: t.hubAiBotName),
+                ),
+                const SizedBox(height: 12),
+                InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: t.hubAiBotProvider,
+                    helperText: t.hubAiBotProviderHelper,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _provider,
+                    isExpanded: true,
+                    underline: const SizedBox.shrink(),
+                    items: [
+                      for (final e
+                          in OpenAiProviderRegistry.allProviders.entries)
+                        DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value.name),
+                        ),
+                    ],
+                    onChanged: (v) async {
+                      if (v == null || v == _provider) return;
+                      setState(() {
+                        _provider = v;
+                        _model = '';
+                      });
+                      final m = await AiDatabase.instance.aiModelDao
+                          .getModelsByProvider(v);
+                      if (mounted) setState(() => _models = m);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: t.hubAiBotModel,
+                    helperText: t.hubAiBotModelHint,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _models.any((m) => m.modelId == _model)
+                        ? _model
+                        : null,
+                    isExpanded: true,
+                    underline: const SizedBox.shrink(),
+                    hint: Text(t.hubAiBotModelHint),
+                    items: [
+                      DropdownMenuItem(
+                        value: '',
+                        child: Text(t.hubAiBotModelDefault),
+                      ),
+                      for (final m in _models)
+                        DropdownMenuItem(
+                          value: m.modelId,
+                          child: Text(
+                            m.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _model = v ?? ''),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _FormCard(
+              children: [
+                _FormSectionTitle(
+                  title: t.hubAiBotSystemPrompt,
+                  icon: Icons.notes_outlined,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _promptCtrl,
+                  maxLines: 5,
+                  decoration: _formFieldDecoration(
+                    labelText: t.hubAiBotSystemPrompt,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _FormCard(
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    t.hubAiBotTriggerMode,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  trailing: DropdownButton<String>(
+                    value: _triggerMode,
+                    underline: const SizedBox.shrink(),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'mention',
+                        child: Text(t.hubAiBotTriggerMention),
+                      ),
+                      DropdownMenuItem(
+                        value: 'prefix',
+                        child: Text(t.hubAiBotTriggerPrefix),
+                      ),
+                      DropdownMenuItem(
+                        value: 'keyword',
+                        child: Text(t.hubAiBotTriggerKeyword),
+                      ),
+                      DropdownMenuItem(
+                        value: 'all',
+                        child: Text(t.hubAiBotTriggerAll),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _triggerMode = v ?? 'mention'),
+                  ),
+                ),
+                if (_triggerMode == 'prefix' || _triggerMode == 'keyword') ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _triggerPatternCtrl,
+                    decoration: _formFieldDecoration(
+                      labelText: t.hubAiBotTriggerPattern,
+                      hintText: _triggerMode == 'prefix'
+                          ? './'
+                          : t.hubAiBotKeywordHint,
+                    ),
+                  ),
+                ],
+                const Divider(height: 24),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    t.hubAiBotMinInterval,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  trailing: DropdownButton<int>(
+                    value: _minInterval.clamp(1, 30),
+                    underline: const SizedBox.shrink(),
+                    items: [
+                      for (var s = 1; s <= 30; s++)
+                        DropdownMenuItem(value: s, child: Text('$s s')),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _minInterval = v ?? _minInterval),
+                  ),
+                ),
+                const Divider(height: 24),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    t.hubAiBotReplyDm,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  trailing: CustomSwitch(
+                    value: _replyDm,
+                    onChanged: (v) => setState(() => _replyDm = v),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _FormSaveButton(onPressed: _save),
+          ],
+        ),
       ),
     );
   }

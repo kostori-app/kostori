@@ -344,9 +344,12 @@ class AnimeTile extends ConsumerWidget {
 
     final history = appdata.settings['showHistoryStatusOnTile']
         ? ref.watch(
-            historyAllProvider.select(
-              (_) => HistoryManager().find(anime.id, _animeType),
-            ),
+            historyAllProvider.select((_) {
+              // 只监听集数（稳定字符串）；lastWatchTime 每秒变但无需每秒刷新卡片
+              final h = HistoryManager().find(anime.id, _animeType);
+              if (h == null) return null;
+              return '${h.lastWatchEpisode} / ${h.allEpisode}';
+            }),
           )
         : null;
 
@@ -392,7 +395,7 @@ class AnimeTile extends ConsumerWidget {
                       constraints: const BoxConstraints(minWidth: 24),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        '${history.lastWatchEpisode} / ${history.allEpisode}',
+                        history,
                         style: const TextStyle(
                           fontWeight: FontWeight.w500,
                           color: Colors.white,
@@ -425,7 +428,7 @@ class AnimeTile extends ConsumerWidget {
                         constraints: const BoxConstraints(minWidth: 24),
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          '${history.lastWatchEpisode} / ${history.allEpisode}',
+                          history,
                           style: const TextStyle(
                             fontWeight: FontWeight.w500,
                             color: Colors.white,
@@ -970,45 +973,44 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
 class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   List<Anime> animes = [];
 
+  /// 过滤屏蔽项并按 Hero 标识去重（同 id@sourceKey 只保留首个），
+  /// 避免同一路由出现重复 Hero tag 导致 "multiple heroes share the same tag"
+  List<Anime> _buildAnimes() {
+    final seen = <int>{};
+    final result = <Anime>[];
+    for (var anime in widget.animes) {
+      if (isBlocked(anime) != null) continue;
+      final hero = _SliverGridAnimes.heroIDOf(anime);
+      if (!seen.add(hero)) continue;
+      result.add(anime);
+    }
+    return result;
+  }
+
   @override
   void didUpdateWidget(covariant SliverGridAnimes oldWidget) {
     if (!oldWidget.animes.isEqualTo(widget.animes)) {
-      animes.clear();
-      for (var anime in widget.animes) {
-        if (isBlocked(anime) == null) {
-          animes.add(anime);
-        }
-      }
+      animes = _buildAnimes();
     }
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void initState() {
-    for (var anime in widget.animes) {
-      if (isBlocked(anime) == null) {
-        animes.add(anime);
-      }
-    }
-    HistoryManager().addListener(update);
+    animes = _buildAnimes();
     super.initState();
+  }
+
+  /// 仅由"屏蔽"等低频操作调用刷新列表；不再监听 HistoryManager
+  void update() {
+    setState(() {
+      animes = _buildAnimes();
+    });
   }
 
   @override
   void dispose() {
-    HistoryManager().removeListener(update);
     super.dispose();
-  }
-
-  void update() {
-    setState(() {
-      animes.clear();
-      for (var anime in widget.animes) {
-        if (isBlocked(anime) == null) {
-          animes.add(anime);
-        }
-      }
-    });
   }
 
   @override

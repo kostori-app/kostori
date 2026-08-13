@@ -14,7 +14,7 @@ import 'package:kostori/skills/skill.dart';
 /// 依据 appdata 的 statsSelectors 判定该类型是否在统计/历史筛选范围内：
 /// Bangumi 始终包含；其余需在可选来源中，且未被筛选器排除。
 bool _isIncludedType(AnimeType type) {
-  final existingTypes = AnimeSource.all()
+  final existingTypes = AnimeSource.allSources()
       .map((a) => AnimeType.fromKey(a.name).value)
       .toSet();
   if (type.value == AnimeType.fromKey('bangumi').value) return true;

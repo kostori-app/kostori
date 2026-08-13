@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/foundation/app.dart';
@@ -16,10 +17,11 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/i18n/strings.g.dart';
 
 part 'hub_chat_page_upload.dart';
 
@@ -34,6 +36,9 @@ class HubChatPage extends ConsumerStatefulWidget {
   /// 嵌入模式：不渲染标题栏 / 滚动容器，直接输出聊天主体，供页面 Tab 内嵌使用
   final bool embedded;
 
+  /// 是否显示"打开番剧"卡片（播放页内嵌一起看时置 false，避免重复跳转）
+  final bool showWatchCard;
+
   const HubChatPage({
     super.key,
     this.roomId,
@@ -41,9 +46,14 @@ class HubChatPage extends ConsumerStatefulWidget {
     this.dmUserId,
     this.dmUserName,
     this.embedded = false,
+    this.showWatchCard = true,
+    this.manualKeyboardPadding = false,
   }) : assert(roomId != null || dmUserId != null);
 
   bool get isDm => dmUserId != null;
+
+  /// 是否由调用方负责手动补偿软键盘高度（仅在无 Scaffold 调整的全屏覆盖层中需要）
+  final bool manualKeyboardPadding;
 
   @override
   ConsumerState<HubChatPage> createState() => _HubChatPageState();
@@ -494,6 +504,8 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           Column(
             children: [
               if (!widget.isDm) _buildRoomSubtitle(cs, hubState),
+              if (!widget.isDm && widget.showWatchCard)
+                _buildWatchRoomCard(cs, hubState),
               if (!widget.isDm) _buildAnnouncementBar(cs, hubState),
               Expanded(child: _buildList(cs, hubState)),
               if (_replyToId != null) _buildReplyBanner(cs),
@@ -510,6 +522,9 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                 onRemovePending: (i) =>
                     setState(() => _pendingImages.removeAt(i)),
                 room: room,
+                // 弹层内 PopUpWidgetScaffold 已统一处理键盘偏移，避免双重顶起；
+                // 仅无 Scaffold 的全屏覆盖层（播放器面板）才手动补偿
+                applyKeyboardPadding: widget.manualKeyboardPadding,
               ),
             ],
           ),
@@ -598,21 +613,141 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           ),
           if (isWatch && watchTitle != null && watchTitle.isNotEmpty) ...[
             const SizedBox(width: 10),
-            Icon(Icons.play_circle_outline, size: 13, color: cs.primary),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                t.watchingAnime(a: watchTitle),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: cs.primary.toOpacity(0.85),
+            // 一起看房间：点击跳转到绑定的番剧播放页（播放页内嵌时仅文本不可跳转）
+            InkWell(
+              onTap: widget.showWatchCard ? _openRoomAnime : null,
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.play_circle_outline,
+                      size: 13,
+                      color: cs.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        t.watchingAnime(a: watchTitle),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.primary.toOpacity(0.85),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.open_in_new, size: 12, color: cs.primary),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// 一起看房间：明显的"打开番剧"卡片（封面 + 标题 + 按钮）
+  Widget _buildWatchRoomCard(ColorScheme cs, HubState hubState) {
+    final room = hubState.currentRoom;
+    HubLog.info(
+      'HubChatPage',
+      'watchCard: roomId=${room?.roomId} '
+          'roomType=${room?.roomType} '
+          'isWatch=${room?.isWatchRoom} '
+          'animeId=${room?.animeId} '
+          'animeSourceKey=${room?.animeSourceKey}',
+    );
+    // 只要房间携带番剧信息就显示卡片（不依赖 roomType 解析）
+    if (room?.animeId == null && room?.animeSourceKey == null) {
+      return const SizedBox.shrink();
+    }
+    final title = room?.animeTitle;
+    final cover = room?.animeCover;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.secondaryContainer.toOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.toOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          if (cover != null && cover.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: BangumiWidget.kostoriImage(
+                context,
+                cover,
+                width: 48,
+                height: 64,
+              ),
+            )
+          else
+            Container(
+              width: 48,
+              height: 64,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.play_circle_outline, color: cs.primary),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t.watchTogether,
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  (title?.isNotEmpty == true) ? title! : '?',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.tonal(
+            onPressed: _openRoomAnime,
+            child: Text(t.openAnime),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 跳转到当前一起看房间绑定的番剧播放页
+  void _openRoomAnime() {
+    final room = ref.read(hubProvider).currentRoom;
+    final animeId = room?.animeId;
+    final sourceKey = room?.animeSourceKey;
+    if (room == null || animeId == null || sourceKey == null) {
+      App.rootContext.showMessage(
+        message: t.watchTogetherRoomHasNoAnime,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    // 关闭所有 pop up 层（HubPage/聊天页等可能叠加多层），再在主导航跳转番剧页
+    final navigator = Navigator.of(context, rootNavigator: true);
+    navigator.popUntil((route) => route.isFirst);
+    App.mainNavigatorKey?.currentContext?.to(
+      () => AnimePage(
+        id: animeId,
+        sourceKey: sourceKey,
+        cover: room.animeCover,
+        title: room.animeTitle,
       ),
     );
   }
@@ -760,60 +895,88 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
   }
 
   Widget _buildMentionPopup(ColorScheme cs) {
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 200),
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
+    return Material(
+      color: cs.surfaceContainerHigh,
+      elevation: 8,
+      shadowColor: Colors.black.toOpacity(0.2),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.toOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.toOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        side: BorderSide(color: cs.outlineVariant.toOpacity(0.3)),
       ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        itemCount: _mentionCandidates.length,
-        itemBuilder: (_, i) {
-          final user = _mentionCandidates[i];
-          return ListTile(
-            dense: true,
-            leading: CircleAvatar(
-              radius: 14,
-              backgroundColor: hubAvatarColor(user.userId),
-              child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                  ? ClipOval(
-                      child: AnimatedImage(
-                        image: CachedImageProvider(
-                          user.avatarUrl!,
-                          sourceKey: 'hub',
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 200),
+        child: ListView.builder(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          itemCount: _mentionCandidates.length,
+          itemBuilder: (_, i) {
+            final user = _mentionCandidates[i];
+            return ListTile(
+              dense: true,
+              leading: CircleAvatar(
+                radius: 14,
+                backgroundColor: hubAvatarColor(user.userId),
+                child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                    ? ClipOval(
+                        child: AnimatedImage(
+                          image: CachedImageProvider(
+                            hubFileUrlOf(user.avatarUrl),
+                            sourceKey: 'hub',
+                          ),
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.cover,
                         ),
-                        width: 28,
-                        height: 28,
-                        fit: BoxFit.cover,
+                      )
+                    : Text(
+                        hubInitials(user.displayName),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
-                    )
-                  : Text(
-                      hubInitials(user.displayName),
+              ),
+              title: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      user.displayName,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-            ),
-            title: Text(
-              user.displayName,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-            onTap: () => _onMentionSelect(user),
-          );
-        },
+                  ),
+                  if (user.isBot) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.tertiaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'BOT',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onTertiaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              onTap: () => _onMentionSelect(user),
+            );
+          },
+        ),
       ),
     );
   }

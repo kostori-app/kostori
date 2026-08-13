@@ -115,6 +115,21 @@ class _AppSettingsState extends State<AppSettings> {
                     showPopUpWidget(context, const _WebdavSetting());
                   },
                 ),
+                _CallbackSetting(
+                  title: t.hubUploadedImages,
+                  subtitle: t.hubUploadedImagesHint,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(context, const _HubUploadedImagesPage());
+                  },
+                ),
+                _CallbackSetting(
+                  title: t.hubStickers,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(context, const _HubStickersPage());
+                  },
+                ),
               ],
             ),
           ),
@@ -205,7 +220,13 @@ class _AppSettingsState extends State<AppSettings> {
                   _SettingPartTitle(title: 'FFmpeg', icon: Icons.video_file),
                   _CallbackSetting(
                     title: t.selectFile,
-                    subtitle: appdata.settings['ffmpegPath'] ?? 'ffmpeg',
+                    subtitle: () {
+                      final p = appdata.settings['ffmpegPath'] as String?;
+                      if (p == null || p.trim().isEmpty) {
+                        return t.notSet;
+                      }
+                      return p;
+                    }(),
                     callback: () async {
                       final file = await selectFile(
                         ext: App.isWindows ? ['exe'] : [],
@@ -651,5 +672,287 @@ class _WebdavSettingState extends State<_WebdavSetting> {
       context.showMessage(message: t.saved);
       App.rootPop();
     }
+  }
+}
+
+/// Hub 上传目录
+String get _hubUploadDir =>
+    '${App.dataPath}${Platform.pathSeparator}hub_uploads';
+
+/// Hub 上传图片管理页
+class _HubUploadedImagesPage extends StatefulWidget {
+  const _HubUploadedImagesPage();
+
+  @override
+  State<_HubUploadedImagesPage> createState() => _HubUploadedImagesPageState();
+}
+
+class _HubUploadedImagesPageState extends State<_HubUploadedImagesPage> {
+  List<File> _files = [];
+  int _totalBytes = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    final dir = Directory(_hubUploadDir);
+    final files = <File>[];
+    var total = 0;
+    if (await dir.exists()) {
+      await for (final e in dir.list()) {
+        if (e is File) {
+          files.add(e);
+          try {
+            total += await e.length();
+          } catch (_) {}
+        }
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _files = files..sort((a, b) => b.path.compareTo(a.path));
+        _totalBytes = total;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _delete(File e) async {
+    try {
+      await e.delete();
+    } catch (_) {}
+    await _reload();
+  }
+
+  Future<void> _clearAll() async {
+    showConfirmDialog(
+      context: context,
+      title: t.clear,
+      content: t.clearHubUploadsConfirm,
+      onConfirm: () async {
+        for (final e in _files) {
+          try {
+            await e.delete();
+          } catch (_) {}
+        }
+        await _reload();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: t.hubUploadedImages,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${_files.length} ${t.hubUploadedImagesHint}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        bytesToReadableString(_totalBytes),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: _files.isEmpty ? null : _clearAll,
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        label: Text(t.clear),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _files.isEmpty
+                      ? Center(
+                          child: Text(
+                            t.noHubUploads,
+                            style: TextStyle(color: cs.onSurfaceVariant),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _files.length,
+                          itemBuilder: (_, i) {
+                            final e = _files[i];
+                            final name = e.uri.pathSegments.isNotEmpty
+                                ? e.uri.pathSegments.last
+                                : e.path;
+                            return ListTile(
+                              dense: true,
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.file(
+                                  e,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) =>
+                                      const Icon(Icons.image_outlined),
+                                ),
+                              ),
+                              title: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: FutureBuilder<int>(
+                                future: e.length(),
+                                builder: (_, snap) => Text(
+                                  bytesToReadableString(snap.data ?? 0),
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => _delete(e),
+                              ),
+                              onTap: () {
+                                BangumiWidget.showImagePreview(
+                                  context: context,
+                                  url: e.path,
+                                  title: name,
+                                  heroTag: name,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+/// Hub 表情包管理页
+class _HubStickersPage extends StatefulWidget {
+  const _HubStickersPage();
+
+  @override
+  State<_HubStickersPage> createState() => _HubStickersPageState();
+}
+
+class _HubStickersPageState extends State<_HubStickersPage> {
+  List<HubSticker> _stickers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() {
+    setState(() => _stickers = HubStickerManager.load());
+  }
+
+  Future<void> _clearAll() async {
+    showConfirmDialog(
+      context: context,
+      title: t.clear,
+      content: t.clearHubStickersConfirm,
+      onConfirm: () {
+        HubStickerManager.clear();
+        _reload();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: t.hubStickers,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                Text(
+                  '${_stickers.length} ${t.hubStickersHint}',
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _stickers.isEmpty ? null : _clearAll,
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: Text(t.clear),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _stickers.isEmpty
+                ? Center(
+                    child: Text(
+                      t.noHubStickers,
+                      style: TextStyle(color: cs.onSurfaceVariant),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _stickers.length,
+                    itemBuilder: (_, i) {
+                      final s = _stickers[i];
+                      return ListTile(
+                        dense: true,
+                        leading: s.isBase64
+                            ? const Icon(Icons.emoji_emotions_outlined)
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(
+                                  s.url,
+                                  width: 36,
+                                  height: 36,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) =>
+                                      const Icon(Icons.emoji_emotions_outlined),
+                                ),
+                              ),
+                        title: Text(
+                          s.label ?? s.url,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          s.isBase64
+                              ? '${bytesToReadableString(utf8.encode(s.url).length)} · base64'
+                              : 'URL',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () {
+                            HubStickerManager.remove(s.url);
+                            _reload();
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }

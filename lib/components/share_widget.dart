@@ -181,11 +181,47 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
     } catch (e) {
       Log.error('ShareWidget.queryBangumi', '$e');
     }
+    // Bangumi 账号头像兜底：已登录但未缓存头像时，按用户名抓取
+    if ((appdata.implicitData['nameAvatar'] as String?)?.isEmpty ?? true) {
+      final bangumiName = appdata.implicitData['bangumiUserName']?.toString();
+      if (bangumiName != null && bangumiName.isNotEmpty) {
+        try {
+          final url = await Bangumi.instance.getBangumiUserAvatarByName(
+            bangumiName,
+          );
+          if (url.isNotEmpty) {
+            appdata.implicitData['nameAvatar'] = url;
+            appdata.writeImplicitData();
+          }
+        } catch (e) {
+          Log.error('ShareWidget.fetchAvatar', '$e');
+        }
+      }
+    }
     try {
-      stats = (await StatsManager().getStatsByIdAndType(
+      final bangumiType = 'bangumi'.hashCode;
+      var found = await StatsManager().getStatsByIdAndType(
         id: bangumiItem.id.toString(),
-        type: 'bangumi'.hashCode,
-      ))!;
+        type: bangumiType,
+      );
+      // 该番剧从未建过统计行（如未通过评分弹窗初始化）时，创建空行再读取
+      if (found == null) {
+        await StatsManager().addStats(
+          StatsManager().createStatsData(
+            id: bangumiItem.id.toString(),
+            type: bangumiType,
+          ),
+        );
+        found = await StatsManager().getStatsByIdAndType(
+          id: bangumiItem.id.toString(),
+          type: bangumiType,
+        );
+      }
+      if (found == null) {
+        if (mounted) setState(() => isLoding = false);
+        return;
+      }
+      stats = found;
       latestRating =
           stats.rating.lastOrNull?.platformEventRecords.lastOrNull?.rating;
       latestComment =
@@ -832,7 +868,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                         _sectionTitle(
                           context,
                           t.latestComments,
-                          '${commentsList.length >= 5 ? 5 : commentsList.length}',
+                          '${commentsList.length >= 10 ? 10 : commentsList.length}',
                         ),
                       ],
                     ),
@@ -842,10 +878,12 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                       vertical: 16,
                       horizontal: 16,
                     ),
-                    child: ListView.builder(
+                    child: ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: 5,
+                      itemCount: 10,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final commentItem = commentsList[index];
                         return CommentsCard(commentItem: commentItem);
@@ -883,17 +921,34 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              CircleAvatar(
-                                child: Image(
-                                  image: AssetImage("images/app_icon.png"),
-                                  filterQuality: FilterQuality.medium,
-                                ),
+                              // 优先显示 Bangumi 账号头像，未设置时兜底应用图标
+                              Builder(
+                                builder: (ctx) {
+                                  final avatar =
+                                      appdata.implicitData['nameAvatar']
+                                          as String?;
+                                  if (avatar == null || avatar.isEmpty) {
+                                    return CircleAvatar(
+                                      child: Image(
+                                        image: const AssetImage(
+                                          "images/app_icon.png",
+                                        ),
+                                        filterQuality: FilterQuality.medium,
+                                      ),
+                                    );
+                                  }
+                                  return BangumiAvatar(url: avatar, radius: 18);
+                                },
                               ),
                               const SizedBox(width: 8),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Kostori'),
+                                  Text(
+                                    appdata.implicitData['bangumiUserName']
+                                            ?.toString() ??
+                                        'Kostori',
+                                  ),
                                   Text(
                                     '评价时 ${Utils.formatHMS(watchDuration ?? 0)}',
                                   ),

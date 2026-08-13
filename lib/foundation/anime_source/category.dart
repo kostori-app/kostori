@@ -127,7 +127,7 @@ class DynamicCategoryPart extends BaseCategoryPart {
 }
 
 CategoryData getCategoryDataWithKey(String key) {
-  for (var source in AnimeSource.all()) {
+  for (var source in AnimeSource.allSources()) {
     if (source.categoryData?.key == key) {
       return source.categoryData!;
     }

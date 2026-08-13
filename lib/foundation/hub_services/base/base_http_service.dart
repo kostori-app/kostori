@@ -13,7 +13,11 @@ abstract class BaseHttpService implements BaseService {
 
   bool get isRunning => _binder.isRunning;
 
+  bool get isSecure => _binder.isSecure;
+
   List<String> get boundAddresses => _binder.boundAddresses;
+
+  List<String> get boundWsAddresses => _binder.boundWsAddresses;
 
   bool get hubNoAuth => _hubNoAuth;
 
@@ -28,6 +32,59 @@ abstract class BaseHttpService implements BaseService {
   static const _pingIntervalKey = 'hub_service_ping_interval';
 
   static const _hubNoAuthKey = 'hub_no_auth';
+
+  // ── TLS 配置键（Hub 服务端）───────────────────────────────
+  static const _tlsEnabledKey = 'hub_tls_enabled';
+  static const _tlsCertKey = 'hub_tls_cert_path';
+  static const _tlsKeyKey = 'hub_tls_key_path';
+  static const _tlsPasswordKey = 'hub_tls_password';
+
+  /// Hub 是否启用 HTTPS/WSS
+  bool get tlsEnabled => appdata.implicitData[_tlsEnabledKey] as bool? ?? false;
+
+  String? get tlsCertificatePath =>
+      appdata.implicitData[_tlsCertKey] as String?;
+
+  String? get tlsPrivateKeyPath => appdata.implicitData[_tlsKeyKey] as String?;
+
+  String? get tlsPassword => appdata.implicitData[_tlsPasswordKey] as String?;
+
+  void setTlsEnabled(bool v) {
+    appdata.implicitData[_tlsEnabledKey] = v;
+    appdata.writeImplicitData();
+  }
+
+  void setTlsCertificatePath(String? p) {
+    if (p == null || p.isEmpty) {
+      appdata.implicitData.remove(_tlsCertKey);
+    } else {
+      appdata.implicitData[_tlsCertKey] = p;
+    }
+    appdata.writeImplicitData();
+  }
+
+  void setTlsPrivateKeyPath(String? p) {
+    if (p == null || p.isEmpty) {
+      appdata.implicitData.remove(_tlsKeyKey);
+    } else {
+      appdata.implicitData[_tlsKeyKey] = p;
+    }
+    appdata.writeImplicitData();
+  }
+
+  void setTlsPassword(String? p) {
+    if (p == null || p.isEmpty) {
+      appdata.implicitData.remove(_tlsPasswordKey);
+    } else {
+      appdata.implicitData[_tlsPasswordKey] = p;
+    }
+    appdata.writeImplicitData();
+  }
+
+  /// 当前 TLS 配置是否完整（证书+私钥已填）
+  bool get tlsConfigured =>
+      (tlsCertificatePath?.isNotEmpty ?? false) &&
+      (tlsPrivateKeyPath?.isNotEmpty ?? false);
 
   Duration get pingInterval => Duration(
     milliseconds:

@@ -412,6 +412,55 @@ class StatsDataImpl implements StatsData {
   String toString() =>
       'StatsDataImpl(id: $id, title: $title, type: $type, '
       'liked: $liked, isBangumi: $isBangumi)';
+
+  /// 字段级合并专用序列化（保留 DailyEvent 结构，跨端 JSON 传输）
+  Map<String, dynamic> toMergeJson() => {
+    'id': id,
+    'title': title,
+    'cover': cover,
+    'bangumiId': bangumiId,
+    'type': type,
+    'liked': liked,
+    'isBangumi': isBangumi,
+    'comment': comment.map((e) => e.toJson()).toList(),
+    'totalClickCount': totalClickCount.map((e) => e.toJson()).toList(),
+    'totalWatchDurations': totalWatchDurations.map((e) => e.toJson()).toList(),
+    'rating': rating.map((e) => e.toJson()).toList(),
+    'favorite': favorite.map((e) => e.toJson()).toList(),
+    'firstClickTime': firstClickTime?.toIso8601String(),
+    'lastClickTime': lastClickTime?.toIso8601String(),
+  };
+
+  factory StatsDataImpl.fromMergeJson(Map<String, dynamic> json) {
+    List<DailyEvent> parseList(dynamic v) {
+      if (v is! List) return [];
+      return v
+          .whereType<Map>()
+          .map((e) => DailyEvent.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    return StatsDataImpl(
+      id: json['id'] as String,
+      title: json['title'] as String?,
+      cover: json['cover'] as String?,
+      bangumiId: json['bangumiId'] as int?,
+      type: json['type'] as int,
+      liked: json['liked'] as bool? ?? false,
+      isBangumi: json['isBangumi'] as bool? ?? false,
+      comment: parseList(json['comment']),
+      totalClickCount: parseList(json['totalClickCount']),
+      totalWatchDurations: parseList(json['totalWatchDurations']),
+      rating: parseList(json['rating']),
+      favorite: parseList(json['favorite']),
+      firstClickTime: json['firstClickTime'] != null
+          ? DateTime.parse(json['firstClickTime'] as String)
+          : null,
+      lastClickTime: json['lastClickTime'] != null
+          ? DateTime.parse(json['lastClickTime'] as String)
+          : null,
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -713,7 +762,7 @@ class StatsManager with ChangeNotifier {
 
     bool isBangumi(StatsDataImpl s) => s.type == bangumiType;
 
-    final existingTypes = AnimeSource.all()
+    final existingTypes = AnimeSource.allSources()
         .map((a) => AnimeType.fromKey(a.name).value)
         .toSet();
 
@@ -732,6 +781,91 @@ class StatsManager with ChangeNotifier {
         )
         .toList();
   });
+
+  /// 合并两个 DailyEvent 列表：按日期分组，同日期合并 platformEventRecords 并去重，
+  /// 不同日期都保留。返回按日期升序的结果。
+  static List<DailyEvent> _mergeDailyEvents(
+    List<DailyEvent> a,
+    List<DailyEvent> b,
+  ) {
+    final map = <String, DailyEvent>{};
+    for (final e in [...a, ...b]) {
+      final key = e.toJson()['date'] as String;
+      if (map.containsKey(key)) {
+        // 同日期合并 records 并去重（按 toJson 字符串）
+        final existing = map[key]!;
+        final seen = <String>{};
+        final merged = <PlatformEventRecord>[];
+        for (final r in [
+          ...existing.platformEventRecords,
+          ...e.platformEventRecords,
+        ]) {
+          final sig = jsonEncode(r.toJson());
+          if (seen.add(sig)) merged.add(r);
+        }
+        map[key] = DailyEvent(dateStr: key, platformEventRecords: merged);
+      } else {
+        map[key] = e;
+      }
+    }
+    final keys = map.keys.toList()..sort();
+    return keys.map((k) => map[k]!).toList();
+  }
+
+  /// 字段级合并：逐条按 id+type 合并，DailyEvent 列表并集，标量取 OR/较新。
+  /// 用于 WebDAV 多端同步。
+  Future<void> mergeStatsList(List<StatsDataImpl> remote) async {
+    if (remote.isEmpty) return;
+    final local = await getStatsAll();
+    final localMap = {for (final s in local) '${s.id}\u0000${s.type}': s};
+
+    for (final r in remote) {
+      final key = '${r.id}\u0000${r.type}';
+      final l = localMap[key];
+      if (l == null) {
+        // 本地没有：直接写入
+        await addStats(r);
+        continue;
+      }
+      // 合并：DailyEvent 列表并集，liked/isBangumi 取 OR，时间取较新
+      final merged = StatsDataImpl(
+        id: r.id,
+        title: r.title ?? l.title,
+        cover: r.cover ?? l.cover,
+        bangumiId: r.bangumiId ?? l.bangumiId,
+        type: r.type,
+        liked: r.liked || l.liked,
+        isBangumi: r.isBangumi || l.isBangumi,
+        comment: _mergeDailyEvents(l.comment, r.comment),
+        totalClickCount: _mergeDailyEvents(
+          l.totalClickCount,
+          r.totalClickCount,
+        ),
+        totalWatchDurations: _mergeDailyEvents(
+          l.totalWatchDurations,
+          r.totalWatchDurations,
+        ),
+        rating: _mergeDailyEvents(l.rating, r.rating),
+        favorite: _mergeDailyEvents(l.favorite, r.favorite),
+        firstClickTime: _earlier(l.firstClickTime, r.firstClickTime),
+        lastClickTime: _later(l.lastClickTime, r.lastClickTime),
+      );
+      await addStats(merged);
+    }
+    notifyListeners();
+  }
+
+  static DateTime? _earlier(DateTime? a, DateTime? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    return a.isBefore(b) ? a : b;
+  }
+
+  static DateTime? _later(DateTime? a, DateTime? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    return a.isAfter(b) ? a : b;
+  }
 
   Stream<List<StatsDataImpl>> watchAll() {
     return _db

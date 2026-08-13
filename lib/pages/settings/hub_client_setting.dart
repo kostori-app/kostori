@@ -1,19 +1,44 @@
 part of 'settings_page.dart';
 
-class _HubClientDetailPage extends ConsumerStatefulWidget {
-  const _HubClientDetailPage();
+/// 连接 Hub 前确保已填写显示名；未填写则弹框强制填写。
+/// 返回 false 表示用户取消（不应连接）。
+Future<bool> ensureHubNameSet(BuildContext context) async {
+  final client = ProviderScope.containerOf(context).read(hubClientProvider);
+  final saved = client.savedName;
+  if (saved != null && saved.trim().isNotEmpty) return true;
 
-  @override
-  ConsumerState<_HubClientDetailPage> createState() =>
-      _HubClientDetailPageState();
+  var confirmed = false;
+  await showInputDialog(
+    context: context,
+    title: t.enterDisplayName,
+    hintText: t.enterDisplayName,
+    inputValidator: RegExp(r'\S'),
+    onConfirm: (value) {
+      final name = value.trim();
+      if (name.isEmpty) return t.displayNameRequired;
+      client.saveName(name);
+      confirmed = true;
+      return null;
+    },
+  );
+  return confirmed;
 }
 
-class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
+class HubClientDetailPage extends ConsumerStatefulWidget {
+  const HubClientDetailPage({super.key});
+
+  @override
+  ConsumerState<HubClientDetailPage> createState() =>
+      HubClientDetailPageState();
+}
+
+class HubClientDetailPageState extends ConsumerState<HubClientDetailPage> {
   late final TextEditingController _hostController;
   late final TextEditingController _portController;
   late final TextEditingController _tokenController;
   late final HubClient _hubClient;
   bool _tokenObscured = true;
+  bool _useWss = false;
 
   @override
   void initState() {
@@ -27,6 +52,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
         final uri = Uri.parse(saved);
         host = uri.host;
         port = uri.hasPort ? uri.port.toString() : '9100';
+        _useWss = uri.scheme == 'wss' || uri.scheme == 'https';
       } catch (_) {
         host = saved;
       }
@@ -83,6 +109,9 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
   Future<void> _connectProfile(Map<String, dynamic> p) async {
     final address = p['address'] as String? ?? '';
     if (address.isEmpty) return;
+    // 连接前确保已填写显示名
+    final nameOk = await ensureHubNameSet(context);
+    if (!nameOk) return;
     if (_hubClient.isConnected) await _hubClient.disconnect();
     _hubClient.activateProfile(address);
     _hostController.text = Uri.tryParse(address)?.host ?? address;
@@ -222,6 +251,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     Map<String, dynamic> profile,
   ) async {
     final uri = Uri.tryParse(profile['address'] as String? ?? '');
+    final oldScheme = uri?.scheme ?? 'ws';
     final nameCtrl = TextEditingController(text: profile['name'] ?? '');
     final hostCtrl = TextEditingController(text: uri?.host ?? '');
     final portCtrl = TextEditingController(
@@ -229,7 +259,9 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     );
     final tokenCtrl = TextEditingController(text: profile['token'] ?? '');
 
-    await showHubFormDialog(
+    var useWss = oldScheme == 'wss' || oldScheme == 'https';
+
+    final result = await showHubFormDialog<Map<String, String>>(
       title: t.edit,
       confirmLabel: t.save,
       fields: [
@@ -248,15 +280,40 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
           hint: t.port,
           icon: Icons.numbers_outlined,
         ),
+        // 协议选择
+        StatefulBuilder(
+          builder: (context, setSS) => Row(
+            children: [
+              Text(
+                t.protocol,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _ProtoSelector(
+                useWss: useWss,
+                enabled: true,
+                onChanged: (wss) => setSS(() => useWss = wss),
+              ),
+            ],
+          ),
+        ),
         InputField(
           controller: tokenCtrl,
           hint: t.hubToken,
           icon: Icons.key_outlined,
         ),
       ],
+      // 只做数据保存；避免在 dialog 关闭动画期间直接操作下层页面的
+      // controller / setState（会导致 overlay GlobalKey 冲突与
+      // TextEditingController used after disposed 报错）
       onConfirm: () async {
         final oldAddress = profile['address'] as String? ?? '';
-        final address = 'ws://${hostCtrl.text.trim()}:${portCtrl.text.trim()}';
+        final scheme = useWss ? 'wss' : 'ws';
+        final address =
+            '$scheme://${hostCtrl.text.trim()}:${portCtrl.text.trim()}';
         _hubClient.saveProfile(
           name: nameCtrl.text.trim(),
           address: address,
@@ -265,14 +322,18 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
         if (oldAddress.isNotEmpty && oldAddress != address) {
           _hubClient.deleteProfile(oldAddress);
         }
-        if (_hubClient.savedAddress == oldAddress) {
-          _hubClient.saveToken(tokenCtrl.text.trim());
-          _tokenController.text = tokenCtrl.text.trim();
-        }
-        if (mounted) setState(() {});
-        return null;
+        return {'oldAddress': oldAddress, 'token': tokenCtrl.text.trim()};
       },
     );
+
+    // dialog 完全关闭后再更新页面状态，避免与关闭动画竞争
+    if (result != null && mounted) {
+      if (_hubClient.savedAddress == result['oldAddress']) {
+        _hubClient.saveToken(result['token'] ?? '');
+        _tokenController.text = result['token'] ?? '';
+      }
+      setState(() {});
+    }
 
     nameCtrl.dispose();
     hostCtrl.dispose();
@@ -283,221 +344,32 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
   void _saveAddress() {
     final host = _hostController.text.trim();
     final port = _portController.text.trim();
-    if (host.isNotEmpty) _hubClient.saveAddress('ws://$host:$port');
+    if (host.isNotEmpty) {
+      _hubClient.saveAddress('${_useWss ? 'wss' : 'ws'}://$host:$port');
+    }
   }
 
-  // ── 编辑资料 ──────────────────────────────────────────────────────────────
-
-  Future<void> _showEditProfileDialog(BuildContext context) async {
-    final nameCtrl = TextEditingController(text: _hubClient.savedName);
-    final bioCtrl = TextEditingController(text: _hubClient.savedBio);
-    final avatarCtrl = TextEditingController(text: _hubClient.savedAvatar);
-
-    await showHubFormDialog(
-      title: t.editProfile,
-      confirmLabel: t.save,
-      fields: [
-        InputField(
-          controller: nameCtrl,
-          hint: t.enterDisplayName,
-          icon: Icons.person_outline,
-        ),
-        InputField(
-          controller: avatarCtrl,
-          hint: 'https://...',
-          icon: Icons.image_outlined,
-        ),
-        InputField(
-          controller: bioCtrl,
-          hint: t.enterBio,
-          icon: Icons.info_outline,
-        ),
-      ],
-      onConfirm: () async {
-        final name = nameCtrl.text.trim();
-        final bio = bioCtrl.text.trim();
-        final avatar = avatarCtrl.text.trim();
-
-        if (name.isNotEmpty) _hubClient.saveName(name);
-        if (bio.isNotEmpty) _hubClient.saveBio(bio);
-        if (avatar.isNotEmpty) {
-          final uri = Uri.tryParse(avatar);
-          if (uri == null || !uri.hasScheme) {
-            App.rootContext.showMessage(
-              message: t.pleaseEnterAValidUrl,
-              level: LogLevel.warning,
-            );
-            return null;
-          }
-          _hubClient.saveAvatar(avatar);
-        }
-
-        if (_hubClient.isConnected) {
-          _hubClient.updateProfile(
-            displayName: name.isNotEmpty ? name : null,
-            biography: bio.isNotEmpty ? bio : null,
-            avatarUrl: avatar.isNotEmpty ? avatar : null,
-          );
-        }
-        return null;
-      },
-    );
-
-    nameCtrl.dispose();
-    bioCtrl.dispose();
-    avatarCtrl.dispose();
-  }
-
-  // ── 房间列表 ──────────────────────────────────────────────────────────────
-
-  void _showJoinRoomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSS) {
-          _hubClient.onRoomListChanged = () {
-            if (context.mounted) setSS(() {});
-          };
-
-          final hubState = ref.read(hubProvider);
-          final rooms = hubState.roomList;
-          final myId = hubState.myId;
-          final canCreate =
-              _hubClient.isGlobalAdmin ||
-              !rooms.any((r) => r.ownerUserId == myId);
-
-          return Sheet(
-            title: t.rooms,
-            icon: Icons.meeting_room_outlined,
-            headerTrailing: canCreate
-                ? TextButton.icon(
-                    icon: const Icon(Icons.add, size: 16),
-                    label: Text(t.create),
-                    onPressed: () async {
-                      await _showClientCreateRoomDialog(context);
-                      setSS(() {});
-                    },
-                  )
-                : null,
-            footer:
-                hubState.currentRoomId != null &&
-                    hubState.currentRoomId != hubState.lobbyRoomId
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.logout, size: 16),
-                      label: Text(t.leaveRoom),
-                      onPressed: () {
-                        _hubClient.leaveRoom();
-                        Navigator.pop(context);
-                      },
-                    ),
-                  )
-                : null,
-            builder: (context, sc) {
-              if (rooms.isEmpty) {
-                return Center(child: HubEmptyHint(t.noRooms));
-              }
-              return ListView.builder(
-                controller: sc,
-                itemCount: rooms.length,
-                itemBuilder: (context, i) {
-                  final room = rooms[i];
-                  final isCurrent = room.roomId == hubState.currentRoomId;
-                  final isLobby = room.roomId == hubState.lobbyRoomId;
-                  final canManage =
-                      !isLobby &&
-                      (_hubClient.isGlobalAdmin ||
-                          _hubClient.isRoomAdminOf(room.roomId));
-
-                  return ListTile(
-                    leading: Icon(
-                      room.isLocked
-                          ? Icons.lock_outlined
-                          : Icons.meeting_room_outlined,
-                    ),
-                    title: Text(isLobby ? t.lobby : room.roomName),
-                    subtitle: Text('${room.participantCount} ${t.members}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (canManage)
-                          IconButton(
-                            icon: const Icon(Icons.settings_outlined, size: 18),
-                            tooltip: t.roomSettings,
-                            onPressed: () =>
-                                showHubRoomSettingsSheet(context, room),
-                          ),
-                        if (isCurrent)
-                          Text(
-                            t.current,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 12,
-                            ),
-                          )
-                        else ...[
-                          TextButton(
-                            child: Text(t.join),
-                            onPressed: () async {
-                              if (room.isLocked) {
-                                final pwd = await _showPasswordDialog(context);
-                                if (pwd == null) return;
-                                _hubClient.joinRoom(room.roomId, password: pwd);
-                              } else {
-                                _hubClient.joinRoom(room.roomId);
-                              }
-                              if (context.mounted) Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-    ).whenComplete(() => _hubClient.onRoomListChanged = null);
-  }
-
-  Future<void> _showClientCreateRoomDialog(BuildContext context) async {
-    final result = await showCreateRoomDialog();
-    if (result == null) return;
-    _hubClient.createRoom(
-      result.name,
-      password: result.password,
-      announcement: result.announcement,
-      maxParticipants: result.maxParticipants,
-    );
-  }
-
-  Future<String?> _showPasswordDialog(BuildContext context) {
-    final ctrl = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.roomPassword),
-        content: TextField(
-          controller: ctrl,
-          obscureText: true,
-          autofocus: true,
-          decoration: InputDecoration(labelText: t.password),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, ctrl.text),
-            child: Text(t.ok),
-          ),
-        ],
+  /// 跳到当前一起看房间绑定的番剧播放页
+  void _openRoomAnime() {
+    final room = ref.read(hubProvider).currentRoom;
+    final animeId = room?.animeId;
+    final sourceKey = room?.animeSourceKey;
+    if (room == null || animeId == null || sourceKey == null) {
+      App.rootContext.showMessage(
+        message: t.watchTogetherRoomHasNoAnime,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    // 关闭所有 pop up 层，再在主导航跳转番剧页
+    final navigator = Navigator.of(context, rootNavigator: true);
+    navigator.popUntil((route) => route.isFirst);
+    App.mainNavigatorKey?.currentContext?.to(
+      () => AnimePage(
+        id: animeId,
+        sourceKey: sourceKey,
+        cover: room.animeCover,
+        title: room.animeTitle,
       ),
     );
   }
@@ -587,7 +459,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'ws://'
+                          '${_useWss ? 'wss' : 'ws'}://'
                           '${_hostController.text.isEmpty ? '192.168.x.x' : _hostController.text}'
                           ':${_portController.text}',
                           style: TextStyle(
@@ -632,154 +504,178 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      // 协议选择：ws / wss
+                      Row(
+                        children: [
+                          Text(
+                            t.protocol,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _ProtoSelector(
+                            useWss: _useWss,
+                            enabled: !isConnected,
+                            onChanged: (wss) {
+                              setState(() => _useWss = wss);
+                              _saveAddress();
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Text(
+                            t.hubToken,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (_tokenController.text.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.copy, size: 16),
+                              tooltip: t.copy,
+                              onPressed: () {
+                                Clipboard.setData(
+                                  ClipboardData(text: _tokenController.text),
+                                );
+                                App.rootContext.showMessage(message: t.copied);
+                              },
+                            ),
+                          if (!isConnected)
+                            _tokenController.text.isEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.content_paste,
+                                      size: 16,
+                                    ),
+                                    tooltip: t.paste,
+                                    onPressed: () async {
+                                      final data = await Clipboard.getData(
+                                        Clipboard.kTextPlain,
+                                      );
+                                      final text = data?.text?.trim() ?? '';
+                                      if (text.isNotEmpty) {
+                                        _tokenController.text = text;
+                                        _hubClient.saveToken(text);
+                                        setState(() {});
+                                      }
+                                    },
+                                  )
+                                : IconButton(
+                                    icon: const Icon(Icons.clear, size: 16),
+                                    tooltip: t.clear,
+                                    onPressed: () {
+                                      _tokenController.clear();
+                                      _hubClient.saveToken('');
+                                      setState(() {});
+                                    },
+                                  ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _tokenController,
+                        enabled: !isConnected,
+                        obscureText: _tokenObscured,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'monospace',
+                        ),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: t.pasteHubServerToken,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: cs.surfaceContainerHighest.toOpacity(0.5),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _tokenObscured
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              size: 18,
+                            ),
+                            tooltip: _tokenObscured ? t.show : t.hide,
+                            onPressed: () => setState(
+                              () => _tokenObscured = !_tokenObscured,
+                            ),
+                          ),
+                        ),
+                        onChanged: (v) {
+                          _hubClient.saveToken(v.trim());
+                          setState(() {});
+                        },
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
           ),
+
+          // ── 当前一起看房间 ──
+          if (hubState.isConnected &&
+              hubState.currentRoomId != null &&
+              hubState.currentRoomId != hubState.lobbyRoomId &&
+              hubState.currentRoom?.isWatchRoom == true)
+            _BuildSectionPadding(
+              _SettingCard(
+                children: [
+                  _SettingPartTitle(
+                    title: t.watchTogether,
+                    icon: Icons.groups_2_outlined,
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.play_circle_outline, color: cs.primary),
+                    title: Text(
+                      hubState.currentRoomName ?? hubState.currentRoomId ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      hubState.currentRoom?.animeTitle?.isNotEmpty == true
+                          ? hubState.currentRoom!.animeTitle!
+                          : t.watchTogether,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing:
+                        (hubState.currentRoom?.animeId != null &&
+                            hubState.currentRoom?.animeSourceKey != null)
+                        ? TextButton.icon(
+                            icon: const Icon(Icons.open_in_new, size: 15),
+                            label: Text(t.openAnime),
+                            onPressed: _openRoomAnime,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+            ),
 
           // ── 已保存的服务器配置 ──
           _buildProfilesCard(context),
-
-          // ── Token ──
-          _BuildSectionPadding(
-            _SettingCard(
-              children: [
-                _SettingPartTitle(
-                  title: t.authentication,
-                  icon: Icons.key_outlined,
-                ),
-                _SettingRow(
-                  title: t.hubToken,
-                  subtitle: t.tokenFromTheHubServer,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          _tokenObscured
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          size: 18,
-                        ),
-                        tooltip: _tokenObscured ? t.show : t.hide,
-                        onPressed: () =>
-                            setState(() => _tokenObscured = !_tokenObscured),
-                      ),
-                      if (_tokenController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.copy, size: 18),
-                          tooltip: t.copy,
-                          onPressed: () {
-                            Clipboard.setData(
-                              ClipboardData(text: _tokenController.text),
-                            );
-                            App.rootContext.showMessage(message: t.copied);
-                          },
-                        ),
-                      if (!isConnected)
-                        _tokenController.text.isEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.content_paste, size: 18),
-                                tooltip: t.paste,
-                                onPressed: () async {
-                                  final data = await Clipboard.getData(
-                                    Clipboard.kTextPlain,
-                                  );
-                                  final text = data?.text?.trim() ?? '';
-                                  if (text.isNotEmpty) {
-                                    _tokenController.text = text;
-                                    _hubClient.saveToken(text);
-                                    setState(() {});
-                                  }
-                                },
-                              )
-                            : IconButton(
-                                icon: const Icon(Icons.clear, size: 18),
-                                tooltip: t.clear,
-                                onPressed: () {
-                                  _tokenController.clear();
-                                  _hubClient.saveToken('');
-                                  setState(() {});
-                                },
-                              ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: TextField(
-                    controller: _tokenController,
-                    enabled: !isConnected,
-                    obscureText: _tokenObscured,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'monospace',
-                    ),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      hintText: t.pasteHubServerToken,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: cs.surfaceContainerHighest.toOpacity(0.5),
-                    ),
-                    onChanged: (v) {
-                      _hubClient.saveToken(v.trim());
-                      setState(() {});
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
 
           _BuildSectionPadding(
             _SettingCard(
               children: [_ClientUploadConfigSetting(client: _hubClient)],
             ),
           ),
-
-          // ── 资料 & 房间 ──
-          if (isConnected)
-            _BuildSectionPadding(
-              _SettingCard(
-                children: [
-                  _SettingPartTitle(
-                    title: t.profileAndRoom,
-                    icon: Icons.person_outline,
-                  ),
-                  _SettingRow(
-                    title: t.displayName,
-                    subtitle: _hubClient.savedName ?? t.notSet,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      onPressed: () => _showEditProfileDialog(context),
-                    ),
-                  ),
-                  _SettingRow(
-                    title: t.currentRoom,
-                    subtitle: () {
-                      final name = hubState.currentRoomName;
-                      return (name == null || name.toLowerCase() == 'lobby')
-                          ? t.lobby
-                          : name;
-                    }(),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.meeting_room_outlined, size: 18),
-                      onPressed: () => _showJoinRoomSheet(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
           // ── 本地屏蔽 ──
           if (isConnected)
@@ -895,5 +791,163 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
         ],
       ),
     );
+  }
+}
+
+/// 编辑 Hub 个人资料（名字/头像/简介）。可复用于「Hub 客户端」卡片与「Hub 详情」页。
+Future<void> showHubProfileEditDialog(HubClient client) async {
+  final nameCtrl = TextEditingController(text: client.savedName);
+  final bioCtrl = TextEditingController(text: client.savedBio);
+  final avatarCtrl = TextEditingController(text: client.savedAvatar);
+
+  await showHubFormDialog(
+    title: t.editProfile,
+    confirmLabel: t.save,
+    fields: [
+      InputField(
+        controller: nameCtrl,
+        hint: t.enterDisplayName,
+        icon: Icons.person_outline,
+      ),
+      InputField(
+        controller: avatarCtrl,
+        hint: 'https://...',
+        icon: Icons.image_outlined,
+      ),
+      // 上传图片作为头像
+      Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: OutlinedButton.icon(
+          icon: const Icon(Icons.upload_file, size: 16),
+          label: Text(t.uploadAvatar),
+          onPressed: () => _uploadAvatarForClient(client, avatarCtrl),
+        ),
+      ),
+      InputField(
+        controller: bioCtrl,
+        hint: t.enterBio,
+        icon: Icons.info_outline,
+      ),
+    ],
+    onConfirm: () async {
+      final name = nameCtrl.text.trim();
+      final bio = bioCtrl.text.trim();
+      final avatar = avatarCtrl.text.trim();
+
+      if (name.isNotEmpty) client.saveName(name);
+      if (bio.isNotEmpty) client.saveBio(bio);
+      // 头像允许清空；非空时校验 URL
+      if (avatar.isNotEmpty) {
+        final uri = Uri.tryParse(avatar);
+        if (uri == null || !uri.hasScheme) {
+          App.rootContext.showMessage(
+            message: t.pleaseEnterAValidUrl,
+            level: LogLevel.warning,
+          );
+          return null;
+        }
+      }
+      client.saveAvatar(avatar);
+
+      if (client.isConnected) {
+        client.updateProfile(
+          displayName: name.isNotEmpty ? name : null,
+          biography: bio.isNotEmpty ? bio : null,
+          avatarUrl: avatar.isNotEmpty ? avatar : null,
+        );
+      }
+      return null;
+    },
+  );
+
+  nameCtrl.dispose();
+  bioCtrl.dispose();
+  avatarCtrl.dispose();
+}
+
+/// 选择本地图片上传到 hub 服务器作为头像，成功后把 URL 填入输入框
+Future<void> _uploadAvatarForClient(
+  HubClient client,
+  TextEditingController ctrl,
+) async {
+  // 上传需要连接到服务器（图片会存到该服务器）
+  if (!client.isConnected) {
+    App.rootContext.showMessage(
+      message: t.connectFirstToUploadAvatar,
+      level: LogLevel.warning,
+    );
+    return;
+  }
+  try {
+    Uint8List bytes;
+    String fileName;
+    if (App.isDesktop) {
+      final result = await FilePicker.pickFiles(type: FileType.image);
+      if (result == null || result.files.isEmpty) return;
+      final f = result.files.first;
+      bytes = await f.readAsBytes();
+      fileName = f.name;
+    } else {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      bytes = await picked.readAsBytes();
+      fileName = picked.name;
+    }
+    final url = await _uploadHubImageForClient(client, bytes, fileName);
+    if (url != null) {
+      // 上传返回的可能是相对路径 /hub/files/xxx，转成绝对 URL，
+      // 这样即使之后连接别的服务器，头像仍指向图片实际所在的服务器
+      ctrl.text = hubFileUrlOf(url);
+      App.rootContext.showMessage(message: t.avatarUploaded);
+    } else {
+      App.rootContext.showMessage(
+        message: t.uploadFailed,
+        level: LogLevel.warning,
+      );
+    }
+  } catch (e) {
+    App.rootContext.showMessage(
+      message: '${t.uploadFailed}: $e',
+      level: LogLevel.warning,
+    );
+  }
+}
+
+/// 经 hub 服务器上传图片，返回访问 URL
+Future<String?> _uploadHubImageForClient(
+  HubClient client,
+  Uint8List bytes,
+  String fileName,
+) async {
+  final savedAddress = client.savedAddress;
+  if (savedAddress == null || savedAddress.isEmpty) return null;
+  final httpBase = HubImageUploader.httpUrlOf(
+    savedAddress,
+  ).replaceAll(RegExp(r'/hub/?$'), '');
+  try {
+    final resp = await AppDio().request(
+      '$httpBase/hub/upload/config',
+      options: Options(
+        method: 'GET',
+        sendTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ),
+    );
+    if (resp.statusCode != 200 || resp.data is! Map) return null;
+    final config = HubUploadConfig.fromJson(
+      Map<String, dynamic>.from(resp.data as Map),
+    );
+    return await HubImageUploader(
+      config: config,
+      serverBaseUrl: httpBase,
+      authToken: client.savedToken,
+    ).upload(bytes, fileName);
+  } catch (e) {
+    Log.warning('HubUploader', 'uploadHubImage failed: $e');
+    return null;
   }
 }

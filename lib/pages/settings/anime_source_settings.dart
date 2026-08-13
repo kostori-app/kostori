@@ -6,7 +6,7 @@ class AnimeSourceSettings extends StatelessWidget {
 
   static Future<int> checkAnimeSourceUpdate() async {
     try {
-      if (AnimeSource.all().isEmpty) {
+      if (AnimeSource.allSources().isEmpty) {
         return 0;
       }
       var dio = AppDio();
@@ -34,7 +34,7 @@ class AnimeSourceSettings extends StatelessWidget {
         versions[source['key']] = source['version'];
       }
       var shouldUpdate = <String>[];
-      for (var source in AnimeSource.all()) {
+      for (var source in AnimeSource.allSources()) {
         if (versions.containsKey(source.key) &&
             compareSemVer(versions[source.key]!, source.version)) {
           shouldUpdate.add(source.key);
@@ -122,6 +122,8 @@ class _Body extends StatefulWidget {
 class _BodyState extends State<_Body> {
   var url = "";
 
+  bool _isDragging = false;
+
   void updateUI() {
     setState(() {});
   }
@@ -142,9 +144,13 @@ class _BodyState extends State<_Body> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text(t.animeSource), style: AppbarStyle.shadow),
+        SliverAppbar(
+          title: Text(t.animeSource),
+          style: AppbarStyle.shadow,
+          actions: const [_CheckUpdatesAction()],
+        ),
         buildCard(context),
-        for (var source in AnimeSource.all())
+        for (var source in AnimeSource.allSources())
           _SliverAnimeSource(
             key: ValueKey(source.key),
             source: source,
@@ -215,74 +221,117 @@ class _BodyState extends State<_Body> {
   }
 
   Widget buildCard(BuildContext context) {
-    Widget buildButton({
-      required Widget child,
-      required VoidCallback onPressed,
-    }) {
-      return Button.normal(onPressed: onPressed, child: child).fixHeight(32);
-    }
-
     return _BuildSectionPadding(
-      _SettingCard(
-        children: [
-          _SettingPartTitle(
-            title: t.addAnimeSource,
-            icon: Icons.dashboard_customize,
-          ),
-          TextField(
-            decoration: InputDecoration(
-              hintText: "URL",
-              border: const UnderlineInputBorder(),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-              suffix: IconButton(
-                onPressed: () => handleAddSource(url),
-                icon: const Icon(Icons.check),
+      DropTarget(
+        onDragDone: _onDragDone,
+        onDragEntered: (_) {
+          if (mounted) setState(() => _isDragging = true);
+        },
+        onDragExited: (_) {
+          if (mounted) setState(() => _isDragging = false);
+        },
+        child: Stack(
+          children: [
+            _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.addAnimeSource,
+                  icon: Icons.dashboard_customize,
+                ),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: "URL",
+                    border: const UnderlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    suffix: IconButton(
+                      onPressed: () => handleAddSource(url),
+                      icon: const Icon(Icons.check),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    url = value;
+                  },
+                  onSubmitted: handleAddSource,
+                ).paddingHorizontal(16).paddingBottom(8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _IconTileButton(
+                        icon: Icons.extension_outlined,
+                        label: t.builderEntry,
+                        onTap: () {
+                          showPopUpWidget(
+                            App.rootContext,
+                            const AnimeSourceBuilderPage(),
+                          );
+                        },
+                      ),
+                      _IconTileButton(
+                        icon: Icons.list_alt_outlined,
+                        label: t.animeSourceList,
+                        onTap: () {
+                          showPopUpWidget(
+                            App.rootContext,
+                            _AnimeSourceList(handleAddSource),
+                          );
+                        },
+                      ),
+                      _IconTileButton(
+                        icon: Icons.network_check_outlined,
+                        label: t.pingTest,
+                        onTap: () {
+                          showPopUpWidget(App.rootContext, _PingTestPage());
+                        },
+                      ),
+                      _IconTileButton(
+                        icon: Icons.file_open_outlined,
+                        label: t.useAConfigFile,
+                        onTap: _selectFile,
+                      ),
+                      _IconTileButton(
+                        icon: Icons.help_outline,
+                        label: t.help,
+                        onTap: help,
+                      ),
+                    ],
+                  ),
+                ),
+                _SwitchSetting(title: t.gitMirror, settingKey: "gitMirror"),
+                const SizedBox(height: 8),
+              ],
+            ),
+            if (_isDragging)
+              Positioned.fill(
+                child: Container(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.08),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.inverseSurface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        t.dropFileToImport,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onInverseSurface,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            onChanged: (value) {
-              url = value;
-            },
-            onSubmitted: handleAddSource,
-          ).paddingHorizontal(16).paddingBottom(8),
-          ListTile(
-            title: Text(t.animeSourceList),
-            trailing: buildButton(
-              child: Text(t.view),
-              onPressed: () {
-                showPopUpWidget(
-                  App.rootContext,
-                  _AnimeSourceList(handleAddSource),
-                );
-              },
-            ),
-          ),
-          ListTile(
-            title: Text(t.checkUpdates),
-            trailing: buildButton(
-              child: Text(t.view),
-              onPressed: () {
-                showPopUpWidget(App.rootContext, _PingTestPage());
-              },
-            ),
-          ),
-          ListTile(
-            title: Text(t.useAConfigFile),
-            trailing: buildButton(
-              onPressed: _selectFile,
-              child: Text(t.select),
-            ),
-          ),
-          ListTile(
-            title: Text(t.help),
-            trailing: buildButton(onPressed: help, child: Text(t.open)),
-          ),
-          ListTile(
-            title: Text(t.checkUpdates),
-            trailing: _CheckUpdatesButton(),
-          ),
-          _SwitchSetting(title: t.gitMirror, settingKey: "gitMirror"),
-          const SizedBox(height: 8),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -298,6 +347,23 @@ class _BodyState extends State<_Body> {
     } catch (e, s) {
       App.rootContext.showMessage(message: e.toString());
       SourceLog.error("Add anime source", "$e\n$s");
+    }
+  }
+
+  /// 拖拽 .js 文件到「添加番剧源」区域即导入
+  Future<void> _onDragDone(DropDoneDetails detail) async {
+    if (mounted) setState(() => _isDragging = false);
+    for (final file in detail.files) {
+      final name = file.name.toLowerCase();
+      if (!name.endsWith('.js')) continue;
+      try {
+        final bytes = await File(file.path).readAsBytes();
+        final content = utf8.decode(bytes);
+        await addSource(content, file.name);
+      } catch (e, s) {
+        App.rootContext.showMessage(message: e.toString());
+        SourceLog.error("Add anime source", "$e\n$s");
+      }
     }
   }
 
@@ -446,7 +512,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
   }
 
   Widget buildBody() {
-    var currentKey = AnimeSource.all().map((e) => e.key).toList();
+    var currentKey = AnimeSource.allSources().map((e) => e.key).toList();
 
     return ListView.builder(
       itemCount: (json?.length ?? 1) + 1,
@@ -587,7 +653,7 @@ void _validatePages() {
   }
 
   List categoryPages = appdata.settings['categories'];
-  var totalCategoryPages = AnimeSource.all()
+  var totalCategoryPages = AnimeSource.allSources()
       .map((e) => e.categoryData?.key)
       .where((e) => e != null)
       .map((e) => e!)
@@ -685,14 +751,14 @@ class __EditFilePageState extends State<_EditFilePage> {
   }
 }
 
-class _CheckUpdatesButton extends StatefulWidget {
-  const _CheckUpdatesButton();
+class _CheckUpdatesAction extends StatefulWidget {
+  const _CheckUpdatesAction();
 
   @override
-  State<_CheckUpdatesButton> createState() => _CheckUpdatesButtonState();
+  State<_CheckUpdatesAction> createState() => _CheckUpdatesActionState();
 }
 
-class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
+class _CheckUpdatesActionState extends State<_CheckUpdatesAction> {
   bool isLoading = false;
 
   void check() async {
@@ -771,11 +837,16 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Button.normal(
-      onPressed: check,
-      isLoading: isLoading,
-      child: Text(t.check),
-    ).fixHeight(32);
+    return IconButton(
+      onPressed: isLoading ? null : check,
+      tooltip: t.checkUpdates,
+      icon: isLoading
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.update),
+    );
   }
 }
 
@@ -806,36 +877,26 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
     var newVersion = AnimeSourceManager().availableUpdates[source.key];
     bool hasUpdate =
         newVersion != null && compareSemVer(newVersion, source.version);
+    final enabled = AnimeSourceManager().isEnabled(source.key);
+    final logged = source.isLogged;
 
     return _BuildSectionPadding(
       _SettingCard(
         children: [
+          // 标题行：源名 + 版本副标题 + 开关
           ListTile(
-            title: Row(
+            title: Text(source.name, style: ts.s18),
+            subtitle: Row(
               children: [
-                Text(source.name, style: ts.s18),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.surfaceContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    source.version,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ),
-                if (hasUpdate)
+                Text('v${source.version}'),
+                if (hasUpdate) ...[
+                  const SizedBox(width: 6),
                   Tooltip(
                     message: newVersion,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
-                        vertical: 2,
+                        vertical: 1,
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.primaryContainer,
@@ -843,244 +904,81 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                       ),
                       child: Text(
                         t.newVersion,
-                        style: const TextStyle(fontSize: 13),
+                        style: const TextStyle(fontSize: 12),
                       ),
                     ),
-                  ).paddingLeft(4),
+                  ),
+                ],
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Tooltip(
-                  message: t.edit,
-                  child: IconButton(
-                    onPressed: () => widget.edit(source),
-                    icon: const Icon(Icons.edit_note),
-                  ),
-                ),
-                Tooltip(
-                  message: t.update,
-                  child: IconButton(
-                    onPressed: () => widget.update(source),
-                    icon: const Icon(Icons.update),
-                  ),
-                ),
-                Tooltip(
-                  message: t.delete,
-                  child: IconButton(
-                    onPressed: () => widget.delete(source),
-                    icon: const Icon(Icons.delete),
-                  ),
-                ),
-              ],
+            trailing: CustomSwitch(
+              value: enabled,
+              onChanged: (v) {
+                AnimeSourceManager().toggleSource(source.key, v);
+                setState(() {});
+              },
             ),
           ),
 
-          // 分割线
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: context.colorScheme.outlineVariant,
-                  width: 0.6,
+          // 底部按钮（Wrap 流式排列，按需显示）
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (source.account != null)
+                  _IconTileButton(
+                    icon: logged
+                        ? Icons.person_outline
+                        : Icons.person_add_alt_outlined,
+                    label: logged ? t.account : t.logIn,
+                    onTap: () {
+                      showPopUpWidget(
+                        context,
+                        _AnimeSourceDetailPage(
+                          source: source,
+                          initialTab: _DetailTab.account,
+                        ),
+                      );
+                    },
+                  ),
+                if (source.settings != null && source.settings!.isNotEmpty)
+                  _IconTileButton(
+                    icon: Icons.settings_outlined,
+                    label: t.settings,
+                    onTap: () {
+                      showPopUpWidget(
+                        context,
+                        _AnimeSourceDetailPage(
+                          source: source,
+                          initialTab: _DetailTab.settings,
+                        ),
+                      );
+                    },
+                  ),
+                _IconTileButton(
+                  icon: Icons.edit_note,
+                  label: t.edit,
+                  onTap: () => widget.edit(source),
                 ),
-              ),
-            ),
-          ),
-          Column(children: buildSourceSettings().toList()),
-          ClipRRect(
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(16),
-              bottomRight: Radius.circular(16),
-            ),
-            child: Column(
-              children: _buildAccount()
-                  .map(
-                    (tile) => Material(color: Colors.transparent, child: tile),
-                  )
-                  .toList(),
+                _IconTileButton(
+                  icon: Icons.update,
+                  label: t.update,
+                  onTap: () => widget.update(source),
+                ),
+                _IconTileButton(
+                  icon: Icons.delete_outline,
+                  label: t.delete,
+                  color: context.colorScheme.error,
+                  onTap: () => widget.delete(source),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  Iterable<Widget> buildSourceSettings() sync* {
-    if (source.settings == null) {
-      return;
-    } else if (source.data['settings'] == null) {
-      source.data['settings'] = {};
-    }
-    for (var item in source.settings!.entries) {
-      var key = item.key;
-      String type = item.value['type'];
-      try {
-        if (type == "select") {
-          var current = source.data['settings'][key];
-          if (current == null) {
-            var d = item.value['default'];
-            for (var option in item.value['options']) {
-              if (option['value'] == d) {
-                current = option['text'] ?? option['value'];
-                break;
-              }
-            }
-          } else {
-            current =
-                item.value['options'].firstWhere(
-                  (e) => e['value'] == current,
-                )['text'] ??
-                current;
-          }
-          yield ListTile(
-            title: Text((item.value['title'] as String).ts(source.key)),
-            trailing: Select(
-              current: (current as String).ts(source.key),
-              values: (item.value['options'] as List)
-                  .map<String>(
-                    (e) => ((e['text'] ?? e['value']) as String).ts(source.key),
-                  )
-                  .toList(),
-              onTap: (i) {
-                source.data['settings'][key] =
-                    item.value['options'][i]['value'];
-                source.saveData();
-                setState(() {});
-              },
-            ),
-          );
-        } else if (type == "switch") {
-          var current = source.data['settings'][key] ?? item.value['default'];
-          yield ListTile(
-            title: Text((item.value['title'] as String).ts(source.key)),
-            trailing: CustomSwitch(
-              value: current,
-              onChanged: (v) {
-                source.data['settings'][key] = v;
-                source.saveData();
-                setState(() {});
-              },
-            ),
-          );
-        } else if (type == "input") {
-          var current =
-              source.data['settings'][key] ?? item.value['default'] ?? '';
-          yield ListTile(
-            title: Text((item.value['title'] as String).ts(source.key)),
-            subtitle: Text(
-              current,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                showInputDialog(
-                  context: context,
-                  title: (item.value['title'] as String).ts(source.key),
-                  initialValue: current,
-                  inputValidator: item.value['validator'] == null
-                      ? null
-                      : RegExp(item.value['validator']),
-                  onConfirm: (value) {
-                    source.data['settings'][key] = value;
-                    source.saveData();
-                    setState(() {});
-                    return null;
-                  },
-                );
-              },
-            ),
-          );
-        } else if (type == "callback") {
-          yield _AnimeSourceCallbackSetting(
-            setting: item,
-            sourceKey: source.key,
-          );
-        }
-      } catch (e, s) {
-        SourceLog.error("animeSourcePage", "Failed to build a setting\n$e\n$s");
-      }
-    }
-  }
-
-  final _reLogin = <String, bool>{};
-
-  Iterable<Widget> _buildAccount() sync* {
-    if (source.account == null) return;
-    final bool logged = source.isLogged;
-    if (!logged) {
-      yield ListTile(
-        title: Text(t.logIn),
-        trailing: const Icon(Icons.arrow_right),
-        onTap: () async {
-          await context.to(
-            () => _LoginPage(config: source.account!, source: source),
-          );
-          source.saveData();
-          setState(() {});
-        },
-      );
-    }
-    if (logged) {
-      for (var item in source.account!.infoItems) {
-        if (item.builder != null) {
-          yield item.builder!(context);
-        } else {
-          yield ListTile(
-            title: Text(item.title),
-            subtitle: item.data == null ? null : Text(item.data!()),
-            onTap: item.onTap,
-          );
-        }
-      }
-      if (source.data["account"] is List) {
-        bool loading = _reLogin[source.key] == true;
-        yield ListTile(
-          title: Text(t.reLogin),
-          subtitle: Text(t.clickIfLoginExpired),
-          onTap: () async {
-            if (source.data["account"] == null) {
-              context.showMessage(message: t.noData);
-              return;
-            }
-            setState(() {
-              _reLogin[source.key] = true;
-            });
-            final List account = source.data["account"];
-            var res = await source.account!.login!(account[0], account[1]);
-            if (res.error) {
-              context.showMessage(message: res.errorMessage!);
-            } else {
-              context.showMessage(message: t.saved);
-            }
-            setState(() {
-              _reLogin[source.key] = false;
-            });
-          },
-          trailing: loading
-              ? const SizedBox.square(
-                  dimension: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh),
-        );
-      }
-      yield ListTile(
-        title: Text(t.logOut),
-        onTap: () {
-          source.data["account"] = null;
-          source.account?.logout();
-          source.saveData();
-          AnimeSourceManager().notifyStateChange();
-          setState(() {});
-        },
-        trailing: const Icon(Icons.logout),
-      );
-    }
   }
 }
 
@@ -1403,7 +1301,7 @@ class _PingTestPageState extends State<_PingTestPage> {
 
   Future<void> _loadDefaultEndpoints() async {
     final result = <Map<String, String?>>[];
-    for (final source in AnimeSource.all()) {
+    for (final source in AnimeSource.allSources()) {
       final endpoint = source.host != null ? await source.host!() : null;
       result.add({'name': source.name, 'endpoint': endpoint});
     }
@@ -1833,6 +1731,298 @@ class _PingListTile extends StatelessWidget {
         ],
       ),
       onTap: enabled && onTap != null ? onTap : null,
+    );
+  }
+}
+
+// ── 图标在上、文字在下的按钮 ─────────────────────────────────────────────
+
+class _IconTileButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  const _IconTileButton({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final enabled = onTap != null;
+    final effectiveColor =
+        color ?? (enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.3));
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 56, maxWidth: 96),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 22, color: effectiveColor),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: enabled
+                      ? (color ?? cs.onSurface.withValues(alpha: 0.75))
+                      : cs.onSurface.withValues(alpha: 0.3),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 源详情二级页（账号 / 设置） ────────────────────────────────────────────
+
+enum _DetailTab { account, settings }
+
+class _AnimeSourceDetailPage extends StatefulWidget {
+  final AnimeSource source;
+  final _DetailTab initialTab;
+
+  const _AnimeSourceDetailPage({
+    required this.source,
+    this.initialTab = _DetailTab.account,
+  });
+
+  @override
+  State<_AnimeSourceDetailPage> createState() => _AnimeSourceDetailPageState();
+}
+
+class _AnimeSourceDetailPageState extends State<_AnimeSourceDetailPage> {
+  AnimeSource get source => widget.source;
+
+  final _reLogin = <String, bool>{};
+
+  Iterable<Widget> buildSourceSettings() sync* {
+    if (source.settings == null) {
+      return;
+    } else if (source.data['settings'] == null) {
+      source.data['settings'] = {};
+    }
+    for (var item in source.settings!.entries) {
+      var key = item.key;
+      String type = item.value['type'];
+      try {
+        if (type == "select") {
+          var current = source.data['settings'][key];
+          if (current == null) {
+            var d = item.value['default'];
+            for (var option in item.value['options']) {
+              if (option['value'] == d) {
+                current = option['text'] ?? option['value'];
+                break;
+              }
+            }
+          } else {
+            current =
+                item.value['options'].firstWhere(
+                  (e) => e['value'] == current,
+                )['text'] ??
+                current;
+          }
+          yield ListTile(
+            title: Text((item.value['title'] as String).ts(source.key)),
+            trailing: Select(
+              current: (current as String).ts(source.key),
+              values: (item.value['options'] as List)
+                  .map<String>(
+                    (e) => ((e['text'] ?? e['value']) as String).ts(source.key),
+                  )
+                  .toList(),
+              onTap: (i) {
+                source.data['settings'][key] =
+                    item.value['options'][i]['value'];
+                source.saveData();
+                setState(() {});
+              },
+            ),
+          );
+        } else if (type == "switch") {
+          var current = source.data['settings'][key] ?? item.value['default'];
+          yield ListTile(
+            title: Text((item.value['title'] as String).ts(source.key)),
+            trailing: CustomSwitch(
+              value: current,
+              onChanged: (v) {
+                source.data['settings'][key] = v;
+                source.saveData();
+                setState(() {});
+              },
+            ),
+          );
+        } else if (type == "input") {
+          var current =
+              source.data['settings'][key] ?? item.value['default'] ?? '';
+          yield ListTile(
+            title: Text((item.value['title'] as String).ts(source.key)),
+            subtitle: Text(current, maxLines: null),
+            isThreeLine: current.length > 40,
+            trailing: IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                showInputDialog(
+                  context: context,
+                  title: (item.value['title'] as String).ts(source.key),
+                  initialValue: current,
+                  minLines: 2,
+                  maxLines: 6,
+                  inputValidator: item.value['validator'] == null
+                      ? null
+                      : RegExp(item.value['validator']),
+                  onConfirm: (value) {
+                    source.data['settings'][key] = value;
+                    source.saveData();
+                    setState(() {});
+                    return null;
+                  },
+                );
+              },
+            ),
+          );
+        } else if (type == "callback") {
+          yield _AnimeSourceCallbackSetting(
+            setting: item,
+            sourceKey: source.key,
+          );
+        }
+      } catch (e, s) {
+        SourceLog.error("animeSourcePage", "Failed to build a setting\n$e\n$s");
+      }
+    }
+  }
+
+  Iterable<Widget> _buildAccount() sync* {
+    if (source.account == null) return;
+    final bool logged = source.isLogged;
+    if (!logged) {
+      yield ListTile(
+        title: Text(t.logIn),
+        trailing: const Icon(Icons.arrow_right),
+        onTap: () async {
+          await context.to(
+            () => _LoginPage(config: source.account!, source: source),
+          );
+          source.saveData();
+          setState(() {});
+        },
+      );
+    }
+    if (logged) {
+      for (var item in source.account!.infoItems) {
+        if (item.builder != null) {
+          yield item.builder!(context);
+        } else {
+          yield ListTile(
+            title: Text(item.title),
+            subtitle: item.data == null ? null : Text(item.data!()),
+            onTap: item.onTap,
+          );
+        }
+      }
+      if (source.data["account"] is List) {
+        bool loading = _reLogin[source.key] == true;
+        yield ListTile(
+          title: Text(t.reLogin),
+          subtitle: Text(t.clickIfLoginExpired),
+          onTap: () async {
+            if (source.data["account"] == null) {
+              context.showMessage(message: t.noData);
+              return;
+            }
+            setState(() {
+              _reLogin[source.key] = true;
+            });
+            final List account = source.data["account"];
+            var res = await source.account!.login!(account[0], account[1]);
+            if (res.error) {
+              context.showMessage(message: res.errorMessage!);
+            } else {
+              context.showMessage(message: t.saved);
+            }
+            setState(() {
+              _reLogin[source.key] = false;
+            });
+          },
+          trailing: loading
+              ? const SizedBox.square(
+                  dimension: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.refresh),
+        );
+      }
+      yield ListTile(
+        title: Text(t.logOut),
+        onTap: () {
+          source.data["account"] = null;
+          source.account?.logout();
+          source.saveData();
+          AnimeSourceManager().notifyStateChange();
+          setState(() {});
+        },
+        trailing: const Icon(Icons.logout),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isAccount = widget.initialTab == _DetailTab.account;
+    final children = (isAccount ? _buildAccount() : buildSourceSettings())
+        .toList();
+    return PopUpWidgetScaffold(
+      title: source.name,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Material(
+            color: cs.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: cs.outlineVariant, width: 0.6),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: children.isEmpty
+                  ? [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: Text(
+                            t.noData,
+                            style: TextStyle(color: cs.onSurfaceVariant),
+                          ),
+                        ),
+                      ),
+                    ]
+                  : children
+                        .map(
+                          (tile) =>
+                              Material(color: Colors.transparent, child: tile),
+                        )
+                        .toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

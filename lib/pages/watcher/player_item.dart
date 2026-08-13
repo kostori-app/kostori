@@ -29,6 +29,9 @@ class PlayerItem extends StatefulWidget {
 
   final VoidCallback openMenu;
 
+  /// 全屏时切换一起看聊天面板
+  final VoidCallback? onChatToggle;
+
   final VoidCallback locateEpisode;
   final FocusNode keyboardFocus;
 
@@ -36,6 +39,7 @@ class PlayerItem extends StatefulWidget {
     super.key,
     required this.playerController,
     required this.openMenu,
+    this.onChatToggle,
     required this.locateEpisode,
     required this.keyboardFocus,
   });
@@ -147,14 +151,15 @@ class _PlayerItemState extends State<PlayerItem>
   void handleProgressBarDragStart(ThumbDragDetails details) {
     // playerController.playerTimer?.cancel();
     playerController.stopPlayerStreams();
-    playerController.pause();
+    // 拖动进度条时静默暂停，不显示播放/暂停覆盖层
+    playerController.pause(showIndicator: false);
     hideTimer?.cancel();
     playerController.showVideoController = true;
     // _showPreview(details.timeStamp);
   }
 
   void handleProgressBarDragEnd() {
-    playerController.play();
+    playerController.play(showIndicator: false);
     startHideTimer();
     // playerController.playerTimer = playerController.getPlayerTimer();
     playerController.startPlayerStreams();
@@ -212,6 +217,23 @@ class _PlayerItemState extends State<PlayerItem>
               }
             },
           ),
+        if (App.isDesktop) ...[
+          MenuEntry(
+            icon: Icons.speaker_outlined,
+            text: t.audioOutputDevice,
+            onClick: () => _showAudioDevicePicker(),
+          ),
+          MenuEntry(
+            icon: Icons.graphic_eq_outlined,
+            text: playerController.volumeBoost
+                ? t.volumeBoostEnabled
+                : t.volumeBoostDisabled,
+            onClick: () async {
+              await playerController.toggleVolumeBoost();
+              App.rootContext.showMessage(message: t.switchSuccessful);
+            },
+          ),
+        ],
         if (!playerController.isFullScreen && App.isAndroid)
           MenuEntry(
             icon: Icons.picture_in_picture_alt,
@@ -230,7 +252,9 @@ class _PlayerItemState extends State<PlayerItem>
             },
           ),
         MenuEntry(
-          text: !playerController.glimmerEffect ? t.glimmerModeDisabled : t.glimmerModeEnabled,
+          text: !playerController.glimmerEffect
+              ? t.glimmerModeDisabled
+              : t.glimmerModeEnabled,
           onClick: () {
             glimmerEffectMode();
           },
@@ -261,6 +285,54 @@ class _PlayerItemState extends State<PlayerItem>
           },
         ),
       ],
+    );
+  }
+
+  /// 音频输出设备选择弹窗（桌面端）
+  Future<void> _showAudioDevicePicker() async {
+    final devices = await playerController.getAudioDevices();
+    final current = playerController.currentAudioDevice;
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.audioOutputDevice,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.autorenew, size: 18),
+              title: Text(t.autoDetect),
+              trailing: current.isEmpty
+                  ? const Icon(Icons.check, size: 18)
+                  : null,
+              onTap: () async {
+                await playerController.setAudioDevice('');
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+            ),
+            for (final d in devices)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.speaker_outlined, size: 18),
+                title: Text(d, maxLines: 1, overflow: TextOverflow.ellipsis),
+                trailing: current == d
+                    ? const Icon(Icons.check, size: 18)
+                    : null,
+                onTap: () async {
+                  await playerController.setAudioDevice(d);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+            if (devices.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(t.noAudioDevice),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -502,15 +574,19 @@ class _PlayerItemState extends State<PlayerItem>
                               }
                               return KeyEventResult.handled;
                             },
-                            child: PlayerItemSurface(
-                              playerController: playerController,
+                            child: RepaintBoundary(
+                              child: PlayerItemSurface(
+                                playerController: playerController,
+                              ),
                             ),
                           ),
                         )
                       else
                         Center(
-                          child: PlayerItemSurface(
-                            playerController: playerController,
+                          child: RepaintBoundary(
+                            child: PlayerItemSurface(
+                              playerController: playerController,
+                            ),
                           ),
                         ),
                       PlayerItemBasePanel(
@@ -530,6 +606,8 @@ class _PlayerItemState extends State<PlayerItem>
                           _handleDoubleTap();
                         },
                         onLongPressStart: (_) {
+                          // 一起看房间锁倍速：长按 2x 直接无效，也不显示 HUD
+                          if (playerController.speedLocked) return;
                           setState(() {
                             playerController.showPlaySpeed = true;
                           });
@@ -538,6 +616,7 @@ class _PlayerItemState extends State<PlayerItem>
                           );
                         },
                         onLongPressEnd: (_) {
+                          if (playerController.speedLocked) return;
                           setState(() {
                             playerController.showPlaySpeed = false;
                           });
@@ -554,6 +633,7 @@ class _PlayerItemState extends State<PlayerItem>
                       if (!playerController.isPortraitFullscreen)
                         PlayerItemPanel(
                           openMenu: widget.openMenu,
+                          onChatToggle: widget.onChatToggle,
                           handleProgressBarDragStart:
                               handleProgressBarDragStart,
                           handleProgressBarDragEnd: handleProgressBarDragEnd,
@@ -568,6 +648,7 @@ class _PlayerItemState extends State<PlayerItem>
                         PlayerItemPortraitPanel(
                           playerController: playerController,
                           openMenu: widget.openMenu,
+                          onChatToggle: widget.onChatToggle,
                           handleProgressBarDragStart:
                               handleProgressBarDragStart,
                           handleProgressBarDragEnd: handleProgressBarDragEnd,
@@ -595,7 +676,8 @@ class _PlayerItemState extends State<PlayerItem>
                             playerController.showSeekTime = true;
                             // playerController.playerTimer?.cancel();
                             playerController.stopPlayerStreams();
-                            playerController.pause();
+                            // 左右滑动 seek：静默暂停，不显示覆盖层
+                            playerController.pause(showIndicator: false);
                             final double scale =
                                 180000 / MediaQuery.sizeOf(context).width;
                             int ms =
@@ -612,7 +694,8 @@ class _PlayerItemState extends State<PlayerItem>
                             );
                           },
                           onHorizontalDragEnd: (_) {
-                            playerController.play();
+                            // 左右滑动 seek 结束：静默播放，不显示覆盖层
+                            playerController.play(showIndicator: false);
                             playerController.seek(
                               playerController.currentPosition,
                             );

@@ -12,6 +12,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
@@ -45,14 +47,17 @@ import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/network/bangumi_oauth.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/network/download.dart';
 import 'package:kostori/network/m3u8_ad_rule.dart';
 import 'package:kostori/pages/hub/hub_create_room_dialog.dart';
+import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
@@ -97,6 +102,8 @@ part 'translation_settings.dart';
 part 'service_settings.dart';
 
 part 'anime_source_settings.dart';
+
+part 'anime_source_builder.dart';
 
 part 'hub_service_setting.dart';
 

@@ -4,6 +4,8 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/utils.dart';
@@ -14,6 +16,7 @@ class PlayerItemPortraitPanel extends StatefulWidget {
     super.key,
     required this.playerController,
     required this.openMenu,
+    this.onChatToggle,
     required this.handleProgressBarDragStart,
     required this.handleProgressBarDragEnd,
     required this.animationController,
@@ -25,6 +28,7 @@ class PlayerItemPortraitPanel extends StatefulWidget {
 
   final PlayerController playerController;
   final void Function() openMenu;
+  final VoidCallback? onChatToggle;
   final void Function(ThumbDragDetails details) handleProgressBarDragStart;
   final void Function() handleProgressBarDragEnd;
   final AnimationController animationController;
@@ -497,6 +501,19 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                 },
                               ),
                               const Spacer(),
+                              if (playerController.inRoom)
+                                IconButton(
+                                  icon: const Icon(Icons.subtitles_outlined),
+                                  tooltip: t.danmaku,
+                                  onPressed: () {
+                                    showDanmakuSettingsDialog(context);
+                                  },
+                                ),
+                              if (playerController.inRoom)
+                                IconButton(
+                                  icon: const Icon(Icons.chat_bubble_outline),
+                                  onPressed: widget.onChatToggle,
+                                ),
                               IconButton(
                                 color: Colors.white,
                                 onPressed: () {

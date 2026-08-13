@@ -14,10 +14,12 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/anime_recognize_page.dart';
+import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
@@ -27,14 +29,14 @@ import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
-class MePage extends StatefulWidget {
+class MePage extends ConsumerStatefulWidget {
   const MePage({super.key});
 
   @override
-  State<MePage> createState() => _MePageState();
+  ConsumerState<MePage> createState() => _MePageState();
 }
 
-class _MePageState extends State<MePage> {
+class _MePageState extends ConsumerState<MePage> {
   final ScrollController scrollController = ScrollController();
 
   @override
@@ -55,6 +57,17 @@ class _MePageState extends State<MePage> {
 
   @override
   Widget build(BuildContext context) {
+    // 已加入一起看房间：个人页显示浮动按钮打开当前番剧
+    final hubState = ref.watch(hubProvider);
+    final watchRoom = hubState.currentRoom;
+    final inWatchRoom =
+        hubState.isConnected &&
+        watchRoom != null &&
+        watchRoom.roomId != hubState.lobbyRoomId &&
+        watchRoom.isWatchRoom &&
+        watchRoom.animeId != null &&
+        watchRoom.animeSourceKey != null;
+
     Widget widget = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
@@ -81,6 +94,27 @@ class _MePageState extends State<MePage> {
             controller: scrollController,
             child: [
               [
+                // 已加入一起看：快速跳转到当前一起看房间绑定的播放器页
+                if (inWatchRoom)
+                  SpeedDialChild(
+                    child: const Icon(Icons.play_circle_outline),
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onPrimaryContainer,
+                    onTap: () {
+                      context.to(
+                        () => AnimePage(
+                          id: watchRoom.animeId!,
+                          sourceKey: watchRoom.animeSourceKey!,
+                          cover: watchRoom.animeCover,
+                          title: watchRoom.animeTitle,
+                        ),
+                      );
+                    },
+                  ),
                 SpeedDialChild(
                   child: const Icon(Icons.vertical_align_top),
                   backgroundColor: Theme.of(
@@ -389,11 +423,15 @@ class TodayRecommendation extends StatelessWidget {
 
       final result = shuffled.take(count).toList();
 
-      appdata.implicitData['today_recommendation_ids'] = result
-          .map((a) => '${a.id}|${a.type.value}')
-          .toList();
-      appdata.implicitData['today_recommendation_date'] = today;
-      appdata.writeImplicitData();
+      // 写入会触发 implicitVersion 通知，不能在 build 阶段执行；
+      // 延迟到本帧结束后写盘，避免 "setState called during build"
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        appdata.implicitData['today_recommendation_ids'] = result
+            .map((a) => '${a.id}|${a.type.value}')
+            .toList();
+        appdata.implicitData['today_recommendation_date'] = today;
+        appdata.writeImplicitData();
+      });
 
       return result;
     }
@@ -506,14 +544,15 @@ class IconTile extends StatelessWidget {
   }
 }
 
-class _ToolEntryGrid extends StatelessWidget {
+class _ToolEntryGrid extends ConsumerWidget {
   const _ToolEntryGrid();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final settingKey = 'debugInfo';
     bool enabled = appdata.settings[settingKey] as bool? ?? false;
+    final connected = ref.watch(hubProvider).isConnected;
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -523,22 +562,42 @@ class _ToolEntryGrid extends StatelessWidget {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          // stretch 让 Wrap 撑满宽度，实现内部左对齐（默认 center 会把整行居中）
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Icon(Icons.dashboard, color: cs.primary, size: 24),
                   const SizedBox(width: 8),
                   Expanded(child: Text(t.aggregationEntry, style: ts.s16)),
+                  // 连接服务器快捷入口（聚合入口右侧）
+                  TextButton.icon(
+                    onPressed: () =>
+                        showPopUpWidget(context, const HubClientDetailPage()),
+                    icon: Icon(
+                      connected ? Icons.link : Icons.link_off,
+                      size: 16,
+                      color: connected ? cs.primary : cs.onSurfaceVariant,
+                    ),
+                    label: Text(t.connectToHub),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
                 ],
               ),
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+              // 左对齐 Wrap：按内容尺寸紧凑排列，自动换行
+              child: Wrap(
+                spacing: 28,
+                runSpacing: 8,
+                alignment: WrapAlignment.start,
                 children: [
                   _iconBlock(
                     context,
@@ -546,36 +605,39 @@ class _ToolEntryGrid extends StatelessWidget {
                     () => context.to(() => const AiHubPage()),
                     t.aiLabel,
                   ),
-                  const SizedBox(width: 28),
                   _iconBlock(
                     context,
                     Icons.translate,
                     () => context.to(() => const ManualTranslationPage()),
                     t.translation,
                   ),
-                  const SizedBox(width: 28),
                   _iconBlock(
                     context,
                     Icons.image_search,
                     () => context.to(() => const AnimeRecognizePage()),
                     t.animeRecognize,
                   ),
-                  const SizedBox(width: 28),
                   _iconBlock(
                     context,
                     Icons.wifi_find,
                     () => context.to(() => const LanDiscoveryPage()),
                     t.lanLabel,
                   ),
-                  if (kDebugMode || enabled) ...[
-                    const SizedBox(width: 28),
+                  // 已连接服务器时显示聊天室快捷入口（聚合入口内）
+                  if (connected)
+                    _iconBlock(
+                      context,
+                      Icons.chat_bubble_outline,
+                      () => showHubDialog(context),
+                      t.chatRoom,
+                    ),
+                  if (kDebugMode || enabled)
                     _iconBlock(
                       context,
                       Icons.play_circle_outline_rounded,
                       () => context.to(() => const VideoTestPage()),
                       t.videoTestLabel,
                     ),
-                  ],
                 ],
               ),
             ),

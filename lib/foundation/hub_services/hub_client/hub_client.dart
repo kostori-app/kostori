@@ -146,10 +146,20 @@ class HubClient {
   static const _tokenKey = 'hub_client_token';
   static const _avatarKey = 'hub_client_avatar';
   static const _bioKey = 'hub_client_bio';
+  static const _allowSelfSignedKey = 'hub_client_allow_self_signed';
 
   String? get savedAddress => appdata.implicitData[_addressKey] as String?;
 
   String? get savedName => appdata.implicitData[_nameKey] as String?;
+
+  /// 是否允许自签名证书（默认 true，方便自建 HTTPS 服务）
+  bool get allowSelfSignedCert =>
+      appdata.implicitData[_allowSelfSignedKey] as bool? ?? true;
+
+  set allowSelfSignedCert(bool v) {
+    appdata.implicitData[_allowSelfSignedKey] = v;
+    appdata.writeImplicitData();
+  }
 
   String? get savedToken {
     final raw = appdata.implicitData[_tokenKey] as String?;
@@ -248,6 +258,20 @@ class HubClient {
 
   // ── 连接 ──────────────────────────────────────────────────────────────────
 
+  /// 建立 WebSocket 连接；wss 时若开启「允许自签名证书」则信任自签名。
+  Future<WebSocket> _connectSocket(String url) async {
+    if (!url.startsWith('wss://')) {
+      return WebSocket.connect(url);
+    }
+    final client = HttpClient()
+      ..badCertificateCallback = (cert, host, port) => allowSelfSignedCert;
+    try {
+      return await WebSocket.connect(url, customClient: client);
+    } finally {
+      client.close(force: true);
+    }
+  }
+
   Future<void> connect(String address, String token, {String? name}) async {
     _currentToken = token;
     final base = address.startsWith('ws://') || address.startsWith('wss://')
@@ -259,7 +283,7 @@ class HubClient {
     final displayName = name ?? savedName ?? await getDefaultDisplayName();
 
     HubLog.info('HubClient', '连接到 $url  deviceId=$deviceId');
-    final socket = await WebSocket.connect(url);
+    final socket = await _connectSocket(url);
     final gen = ++_socketGeneration;
     _socket = socket;
     HubLog.info('HubClient', '✅ 已连接，发送鉴权...');
@@ -395,7 +419,14 @@ class HubClient {
     );
     _reconnectTimer = Timer(delay, () async {
       _reconnectAttempts++;
-      await connect(address, token, name: savedName);
+      try {
+        await connect(address, token, name: savedName);
+      } catch (e, st) {
+        // 重连失败：记录并继续调度，避免未捕获异步异常导致闪退
+        HubLog.error('HubClient', '重连失败：$e\n$st');
+        _shouldReconnect = true;
+        _scheduleReconnect();
+      }
     });
   }
 }

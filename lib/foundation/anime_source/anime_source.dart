@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
@@ -37,6 +38,10 @@ class AnimeSourceManager with ChangeNotifier, Init {
   factory AnimeSourceManager() => _instance ??= AnimeSourceManager._create();
 
   List<AnimeSource> all() => List.from(_sources);
+
+  /// 仅返回启用的源（业务页面用）
+  List<AnimeSource> enabledAll() =>
+      _sources.where((s) => isEnabled(s.key)).toList();
 
   AnimeSource? find(String key) =>
       _sources.firstWhereOrNull((element) => element.key == key);
@@ -82,10 +87,47 @@ class AnimeSourceManager with ChangeNotifier, Init {
 
   void remove(String key) {
     _sources.removeWhere((element) => element.key == key);
+    // 移除源时同时清理其禁用标记
+    final disabled = _disabledSources;
+    if (disabled.remove(key)) {
+      _saveDisabled(disabled);
+    }
     notifyListeners();
   }
 
   bool get isEmpty => _sources.isEmpty;
+
+  // ── 源开关 ─────────────────────────────────────────────────────────────
+
+  static const _disabledKey = 'disabled_anime_sources';
+
+  Set<String> get _disabledSources {
+    final raw = appdata.implicitData[_disabledKey];
+    if (raw is List) {
+      return raw.whereType<String>().toSet();
+    }
+    return <String>{};
+  }
+
+  void _saveDisabled(Set<String> disabled) {
+    appdata.implicitData[_disabledKey] = disabled.toList();
+    appdata.writeImplicitData();
+  }
+
+  /// 源是否启用（默认启用）
+  bool isEnabled(String key) => !_disabledSources.contains(key);
+
+  /// 切换源开关
+  void toggleSource(String key, bool enabled) {
+    final disabled = _disabledSources;
+    if (enabled) {
+      disabled.remove(key);
+    } else {
+      disabled.add(key);
+    }
+    _saveDisabled(disabled);
+    notifyListeners();
+  }
 
   /// Key is the source key, value is the version.
   final _availableUpdates = <String, String>{};
@@ -175,7 +217,9 @@ typedef HandleClickTagEvent =
 typedef StarRatingFunc = Future<Res<bool>> Function(String animeId, int rating);
 
 class AnimeSource {
-  static List<AnimeSource> all() => AnimeSourceManager().all();
+  static List<AnimeSource> all() => AnimeSourceManager().enabledAll();
+
+  static List<AnimeSource> allSources() => AnimeSourceManager().all();
 
   static AnimeSource? find(String key) => AnimeSourceManager().find(key);
 

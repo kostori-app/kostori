@@ -72,7 +72,8 @@ class HubRoom {
   String roomName;
   List<String> announcements;
   String? password;
-  final String ownerUserId;
+  // 可写：房主离开房间时所有权转移给剩余成员
+  String ownerUserId;
   final DateTime createdAt;
   final Map<String, HubClientInfo> participants = {};
   final List<HubMessage> messageHistory = [];

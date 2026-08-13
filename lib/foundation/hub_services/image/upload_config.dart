@@ -113,11 +113,17 @@ class HubUploadConfig {
   final int maxSizeBytes;
   final String? localStorePath;
 
+  /// 公网可访问的基础地址（如 http://[2001:db8::1]:9100）。
+  /// 配置后，本地存储的图片 URL 会用它拼成绝对地址，
+  /// 否则返回相对路径 /hub/files/xxx（由客户端按连接地址补全）。
+  final String? publicBaseUrl;
+
   const HubUploadConfig({
     this.mode = HubUploadMode.serverLocal,
     this.ossConfig,
     this.maxSizeBytes = 5 * 1024 * 1024,
     this.localStorePath,
+    this.publicBaseUrl,
   });
 
   // ── 持久化 ──
@@ -187,6 +193,7 @@ class HubUploadConfig {
     if (ossConfig != null) 'ossConfig': ossConfig!.toJson(),
     'maxSizeBytes': maxSizeBytes,
     if (localStorePath != null) 'localStorePath': localStorePath,
+    if (publicBaseUrl != null) 'publicBaseUrl': publicBaseUrl,
   };
 
   factory HubUploadConfig.fromJson(Map<String, dynamic> json) {
@@ -204,6 +211,7 @@ class HubUploadConfig {
       ossConfig: oss,
       maxSizeBytes: (json['maxSizeBytes'] as num?)?.toInt() ?? 5 * 1024 * 1024,
       localStorePath: json['localStorePath']?.toString(),
+      publicBaseUrl: json['publicBaseUrl']?.toString(),
     );
   }
 
@@ -214,6 +222,8 @@ class HubUploadConfig {
     int? maxSizeBytes,
     String? localStorePath,
     bool clearLocalStorePath = false,
+    String? publicBaseUrl,
+    bool clearPublicBaseUrl = false,
   }) => HubUploadConfig(
     mode: mode ?? this.mode,
     ossConfig: clearOssConfig ? null : (ossConfig ?? this.ossConfig),
@@ -221,5 +231,8 @@ class HubUploadConfig {
     localStorePath: clearLocalStorePath
         ? null
         : (localStorePath ?? this.localStorePath),
+    publicBaseUrl: clearPublicBaseUrl
+        ? null
+        : (publicBaseUrl ?? this.publicBaseUrl),
   );
 }

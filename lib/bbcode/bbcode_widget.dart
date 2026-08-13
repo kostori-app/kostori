@@ -7,6 +7,7 @@ import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
 import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
@@ -340,8 +341,10 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                             child: SizedBox(
                               width: double.infinity,
                               height: 240,
-                              child: Image.network(
-                                img,
+                              // 走统一图片加载（代理/headers/缓存），
+                              // 裸 Image.network 会绕过代理导致加载失败
+                              child: Image(
+                                image: CachedImageProvider(img),
                                 fit: BoxFit.contain,
                                 loadingBuilder: (context, child, progress) {
                                   if (progress == null) return child;
@@ -393,8 +396,8 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                     child: SizedBox(
                       width: 28,
                       height: 28,
-                      child: Image.network(
-                        url,
+                      child: Image(
+                        image: CachedImageProvider(url),
                         fit: BoxFit.contain,
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;
@@ -431,8 +434,10 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                     child: SizedBox(
                       width: 100,
                       height: 100,
-                      child: Image.network(
-                        'https://bangumi.tv/img/smiles/${e.id}.gif',
+                      child: Image(
+                        image: CachedImageProvider(
+                          'https://bangumi.tv/img/smiles/${e.id}.gif',
+                        ),
                         fit: BoxFit.contain,
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;

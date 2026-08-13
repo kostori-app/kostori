@@ -57,7 +57,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         final animeId = parts[0];
         final sourceKey = parts[1];
 
-        final validKeys = AnimeSource.all().map((s) => s.key).toSet();
+        final validKeys = AnimeSource.allSources().map((s) => s.key).toSet();
         if (!validKeys.contains(sourceKey)) {
           App.rootContext.showMessage(
             message: t.sourceNotFoundPleaseConfirmSourceInstalled,
@@ -298,6 +298,34 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         client.joinRoom(info.roomId);
       }
       App.rootContext.showMessage(message: t.joinedRoom);
+
+      // 一起看房间：加入完成后自动跳转到对应番剧页，进入后自动同步房主进度
+      // （joinRoom 是异步 fire-and-forget，这里轮询等待房间信息就绪）
+      final targetRoomId = info.roomId;
+      for (int i = 0; i < 40; i++) {
+        await Future.delayed(const Duration(milliseconds: 250));
+        final state = ref.read(hubProvider);
+        final room = state.currentRoom;
+        if (state.isConnected &&
+            state.currentRoomId == targetRoomId &&
+            state.currentRoomId != state.lobbyRoomId &&
+            room != null &&
+            room.isWatchRoom) {
+          final animeId = room.animeId;
+          final sourceKey = room.animeSourceKey;
+          if (animeId != null && sourceKey != null) {
+            App.rootContext.to(
+              () => AnimePage(
+                id: animeId,
+                sourceKey: sourceKey,
+                cover: room.animeCover,
+                title: room.animeTitle,
+              ),
+            );
+          }
+          break;
+        }
+      }
     } catch (e) {
       DebugLog.error('HubRoom', '加入房间失败', e);
       App.rootContext.showMessage(

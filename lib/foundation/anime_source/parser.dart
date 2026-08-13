@@ -119,7 +119,7 @@ class AnimeSourceParser {
         );
       }
     }
-    for (var source in AnimeSource.all()) {
+    for (var source in AnimeSource.allSources()) {
       if (source.key == key) {
         throw AnimeSourceParseException("key($key) already exists");
       }

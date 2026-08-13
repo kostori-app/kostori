@@ -224,7 +224,7 @@ LoadingDialogController showLoadingDialog(
   bool barrierDismissible = true,
   bool allowCancel = true,
   String? message,
-  String cancelButtonText = "Cancel",
+  String? cancelButtonText,
   bool withProgress = false,
 }) {
   var controller = LoadingDialogController();
@@ -264,7 +264,7 @@ LoadingDialogController showLoadingDialog(
                         onCancel?.call();
                       }
                     : null,
-                child: Text(cancelButtonText),
+                child: Text(cancelButtonText ?? t.cancel),
               ),
             ],
           );
@@ -479,6 +479,8 @@ Future<void> showInputDialog({
   RegExp? inputValidator,
   String? image,
   Uint8List? imageData,
+  int? minLines,
+  int? maxLines,
 }) {
   // 默认按钮文本 i18n（调用方未显式指定时使用）
   confirmText = confirmText == "Confirm" ? t.confirm : confirmText;
@@ -509,6 +511,8 @@ Future<void> showInputDialog({
                   ).paddingBottom(8),
                 TextField(
                   controller: controller,
+                  minLines: minLines,
+                  maxLines: maxLines,
                   decoration: InputDecoration(
                     hintText: hintText,
                     border: const OutlineInputBorder(),

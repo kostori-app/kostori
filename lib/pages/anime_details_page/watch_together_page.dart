@@ -3,12 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/hub/hub_create_room_dialog.dart';
@@ -28,11 +26,15 @@ class WatchTogetherPage extends ConsumerStatefulWidget {
   final PlayerController playerController;
   final WatcherController watcherController;
 
+  /// 打开番剧详情（Bangumi BottomInfo sheet）的回调，由番剧页提供
+  final VoidCallback? onOpenBangumiInfo;
+
   const WatchTogetherPage({
     super.key,
     this.animeTitle,
     required this.playerController,
     required this.watcherController,
+    this.onOpenBangumiInfo,
   });
 
   @override
@@ -44,6 +46,13 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
   Timer? _syncTimer;
   HubPlaybackSync? _ownerSync;
   bool _syncing = false;
+
+  // 缓存最后一次同步状态：dispose 时（房主退出播放页）广播停止状态
+  bool _cachedIsOwner = false;
+  bool _cachedInWatchRoom = false;
+  int _cachedEpisode = 1;
+  int _cachedPositionMs = 0;
+  dynamic _cachedAnime;
 
   // ── 一起看 P2P 直连 ─────────────────────────────────────────────────────
   HubPeerServer? _peerServer; // 房主侧：直连服务器
@@ -63,9 +72,18 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     super.initState();
     _client = ref.read(hubClientProvider);
     _client.addMessageListener(_onHubRaw);
+    final state = ref.read(hubProvider);
+    final room = state.currentRoom;
+    final isWatchMember =
+        state.isConnected &&
+        room != null &&
+        room.roomId != state.lobbyRoomId &&
+        room.isWatchRoom &&
+        room.ownerUserId != state.myId;
+    widget.playerController.syncLocked = isWatchMember;
     WidgetsBinding.instance.addPostFrameCallback((_) => _scanHistory());
     // 若打开时已连接，则按当前状态启动/停止广播定时器
-    _updateSyncTimer(ref.read(hubProvider));
+    _updateSyncTimer(state);
     // 尝试 P2P 直连
     WidgetsBinding.instance.addPostFrameCallback((_) => _tryPeerSetup());
   }
@@ -76,7 +94,29 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     _syncTimer?.cancel();
     _syncTimer = null;
     _teardownPeer();
+    // 房主退出播放页但仍在房间：广播停止状态，让成员知道房主已停止播放
+    _broadcastOwnerStopped();
     super.dispose();
+  }
+
+  /// 广播"房主已停止播放"（playing=false），供成员侧感知房主退出播放页
+  void _broadcastOwnerStopped() {
+    if (!_cachedIsOwner || !_cachedInWatchRoom) return;
+    final anime = _cachedAnime;
+    if (anime == null) return;
+    try {
+      final frame = encodeHubSync(
+        episode: _cachedEpisode,
+        positionMs: _cachedPositionMs,
+        playing: false,
+        animeId: anime.id,
+        title: anime.title,
+        sourceKey: anime.sourceKey,
+        cover: anime.cover,
+        senderId: _client.myId ?? '',
+      );
+      _client.broadcast([TextSegment(frame)]);
+    } catch (_) {}
   }
 
   /// 仅当已连接 + 已进真实房间 + 是房主时才运行广播定时器，否则停止
@@ -88,7 +128,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
         state.currentRoom?.ownerUserId == state.myId;
     if (shouldRun) {
       _syncTimer ??= Timer.periodic(
-        const Duration(seconds: 5),
+        const Duration(seconds: 1),
         (_) => _broadcastSync(),
       );
     } else {
@@ -109,7 +149,22 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     if (sync == null) return;
     final ownerId = ref.read(hubProvider).currentRoom?.ownerUserId;
     if (ownerId == null || sync.senderId != ownerId) return; // 只接受房主进度
-    setState(() => _ownerSync = sync);
+    // 房主每秒广播 sync，避免无意义 setState 导致整个一起看页面
+    // （含聊天列表）每秒重建、图片闪烁
+    final prev = _ownerSync;
+    // 自己的回环广播（房主本地进度）：实时刷新，避免房主进度条停滞
+    if (sync.senderId == _client.myId) {
+      setState(() => _ownerSync = sync);
+      return;
+    }
+    if (prev == null ||
+        prev.episode != sync.episode ||
+        prev.playing != sync.playing ||
+        (sync.positionMs - prev.positionMs).abs() > 5000) {
+      setState(() => _ownerSync = sync);
+    } else {
+      _ownerSync = sync;
+    }
   }
 
   void _scanHistory() {
@@ -223,6 +278,9 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     final anime = widget.watcherController.anime;
     if (anime == null) return;
     final pc = widget.playerController;
+    _cachedEpisode = pc.currentEpisoded;
+    _cachedPositionMs = pc.playerPosition.inMilliseconds;
+    _cachedAnime = anime;
     final frame = encodeHubSync(
       episode: pc.currentEpisoded,
       positionMs: pc.playerPosition.inMilliseconds,
@@ -258,10 +316,20 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
         );
         return;
       }
-      if (sync.episode != pc.currentEpisoded) {
-        await WatcherState.currentState?.loadInfo(sync.episode, pc.currentRoad);
+      // 临时解锁，允许同步切集与 seek（手动拖动/切集仍被 syncLocked 拦截）
+      final prev = pc.syncLocked;
+      pc.syncLocked = false;
+      try {
+        if (sync.episode != pc.currentEpisoded) {
+          await WatcherState.currentState?.loadInfo(
+            sync.episode,
+            pc.currentRoad,
+          );
+        }
+        await pc.seek(Duration(milliseconds: sync.positionMs));
+      } finally {
+        pc.syncLocked = prev;
       }
-      await pc.seek(Duration(milliseconds: sync.positionMs));
       App.rootContext.showMessage(message: t.syncedToOwner);
     } catch (_) {
       // ignore: 同步失败不打断
@@ -320,7 +388,8 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
           password: result.password,
           announcement: result.announcement,
           maxParticipants: result.maxParticipants,
-          roomType: result.roomType,
+          // 播放页只能创建一起看房间
+          roomType: HubRoomType.watch,
           animeId: anime?.id,
           animeTitle: anime?.title,
           animeSourceKey: anime?.sourceKey,
@@ -339,12 +408,19 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
       password = await _showPasswordDialog();
       if (password == null) return; // 取消
     }
+    final saved = client.savedAddress ?? '';
+    // 回环地址（127.0.0.1/localhost）扫码端连不上，替换为本机局域网地址
+    final address = await _resolveShareAddress(saved);
+    // 管理员分享时使用用户级 token，避免泄露管理员 key；普通用户用自身 token
+    final shareToken = client.isGlobalAdmin
+        ? ApiKeyManager().activeKey
+        : (client.savedToken ?? '');
     final payload = HubRoomJoinProtocol.encode(
-      address: client.savedAddress ?? '',
+      address: address,
       roomId: room.roomId,
       roomName: room.roomName,
       password: password,
-      token: client.savedToken ?? '',
+      token: shareToken,
     );
     showKostoriShareSheet(
       context,
@@ -353,7 +429,30 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
       payload: payload,
       title: t.watchTogether,
       subtitle: room.roomName,
+      // 二维码背景使用正在观看的番剧封面
+      backgroundImagePath: widget.watcherController.anime?.cover,
     );
+  }
+
+  /// 将回环地址替换为局域网可达地址；非回环（如公网域名）保持原样。
+  Future<String> _resolveShareAddress(String saved) async {
+    final uri = Uri.tryParse(saved);
+    final host = uri?.host ?? '';
+    if (host != '127.0.0.1' && host != 'localhost' && host != '0.0.0.0') {
+      return saved;
+    }
+    final port = (uri?.hasPort ?? false) ? uri!.port : 9100;
+    final scheme = (uri?.scheme ?? 'ws') == 'wss' ? 'wss' : 'ws';
+    try {
+      final candidates = await collectLanCandidates(port);
+      for (final c in candidates) {
+        final ip = Uri.tryParse(c)?.host ?? '';
+        if (ip.isNotEmpty && ip != '127.0.0.1') {
+          return '$scheme://$ip:$port';
+        }
+      }
+    } catch (_) {}
+    return saved;
   }
 
   Future<void> _joinRoom(HubRoomDto room) async {
@@ -399,14 +498,81 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     final connected = state.isConnected;
     final roomId = state.currentRoomId;
     final inRoom = roomId != null && roomId != state.lobbyRoomId;
+    // 一起看房间绑定番剧：仅在当前播放页番剧与房间一致时展示房间视图，
+    // 避免在别的番剧播放页误显示/锁定的别的番剧房间
+    final currentAnime = widget.watcherController.anime;
+    final roomMatchesAnime =
+        !inRoom ||
+        state.currentRoom?.animeId == null ||
+        state.currentRoom?.animeSourceKey == null ||
+        (currentAnime != null &&
+            state.currentRoom?.animeId == currentAnime.id &&
+            state.currentRoom?.animeSourceKey == currentAnime.sourceKey);
 
     ref.listen(hubProvider, (prev, next) {
+      // 一起看成员：锁定播放器（禁止拖动进度/调倍速/切集，强制 1 倍速跟随房主）
+      final room = next.currentRoom;
+      final currentAnime = widget.watcherController.anime;
+      final roomMatchesAnime =
+          room == null ||
+          room.animeId == null ||
+          room.animeSourceKey == null ||
+          (currentAnime != null &&
+              room.animeId == currentAnime.id &&
+              room.animeSourceKey == currentAnime.sourceKey);
+      final isWatchMember =
+          next.isConnected &&
+          room != null &&
+          room.roomId != next.lobbyRoomId &&
+          room.isWatchRoom &&
+          room.ownerUserId != next.myId &&
+          roomMatchesAnime;
+      // 缓存房主状态，dispose 时用于广播停止
+      _cachedIsOwner =
+          next.isConnected &&
+          room != null &&
+          room.roomId != next.lobbyRoomId &&
+          room.isWatchRoom &&
+          room.ownerUserId == next.myId &&
+          roomMatchesAnime;
+      _cachedInWatchRoom =
+          next.isConnected &&
+          room != null &&
+          room.roomId != next.lobbyRoomId &&
+          room.isWatchRoom &&
+          roomMatchesAnime;
+      _cachedAnime = widget.watcherController.anime;
+      widget.playerController.syncLocked = isWatchMember;
+      if (isWatchMember) {
+        widget.playerController.setPlaybackSpeed(1);
+      }
       if (prev?.currentRoomId != next.currentRoomId) {
         _ownerSync = null;
         _teardownPeer();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scanHistory();
           _tryPeerSetup();
+          // 一起看成员进入房间后自动对齐房主进度
+          final room = ref.read(hubProvider).currentRoom;
+          if (room != null &&
+              room.roomId != next.lobbyRoomId &&
+              room.isWatchRoom &&
+              room.ownerUserId != next.myId) {
+            _syncToOwner();
+          }
+        });
+      } else if (prev?.currentRoom?.ownerUserId !=
+          next.currentRoom?.ownerUserId) {
+        // 房主变化（原房主离开 / 所有权转移）：重置同步状态并重建直连
+        _ownerSync = null;
+        _teardownPeer();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scanHistory();
+          _tryPeerSetup();
+          if (next.currentRoom?.ownerUserId == next.myId) {
+            // 我是新房主：立即广播一次当前进度
+            _broadcastSync();
+          }
         });
       }
       // 房主候选地址更新后重试直连（P2P）
@@ -439,7 +605,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
         Expanded(
           child: !connected
               ? _buildDisconnected(cs)
-              : inRoom
+              : inRoom && roomMatchesAnime
               ? _buildRoomView(state, cs)
               : _buildLobbyView(state, cs),
         ),
@@ -561,9 +727,15 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     final canCreate =
         state.isGlobalAdmin ||
         !state.roomList.any((r) => r.ownerUserId == state.myId);
-    final rooms = state.roomList
-        .where((r) => r.roomId != state.lobbyRoomId)
-        .toList();
+    final currentAnime = widget.watcherController.anime;
+    // 播放页只显示与当前番剧绑定的一起看房间
+    final rooms = state.roomList.where((r) {
+      if (r.roomId == state.lobbyRoomId) return false;
+      if (currentAnime == null) return false;
+      return r.isWatchRoom &&
+          r.animeId == currentAnime.id &&
+          r.animeSourceKey == currentAnime.sourceKey;
+    }).toList();
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -701,9 +873,59 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
             roomId: state.currentRoomId,
             roomName: state.currentRoomName ?? t.lobby,
             embedded: true,
+            // 播放页内嵌：不显示"打开番剧"跳转卡片
+            showWatchCard: false,
           ),
         ),
+        // 底部操作栏：番剧详情入口
+        _buildRoomFooter(cs),
       ],
+    );
+  }
+
+  /// 一起看房间底部操作栏
+  Widget _buildRoomFooter(ColorScheme cs) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(
+          top: BorderSide(color: cs.outlineVariant.toOpacity(0.3), width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: t.bangumi,
+            icon: const Icon(Icons.movie_outlined, size: 20),
+            color: cs.onSurfaceVariant,
+            onPressed:
+                widget.onOpenBangumiInfo ??
+                () {
+                  App.rootContext.showMessage(message: t.notBoundToBangumi);
+                },
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              widget.animeTitle?.isNotEmpty == true
+                  ? widget.animeTitle!
+                  : t.bangumi,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (widget.onOpenBangumiInfo != null)
+            TextButton.icon(
+              onPressed: widget.onOpenBangumiInfo,
+              icon: const Icon(Icons.open_in_new, size: 14),
+              label: Text(t.bangumiInfo),
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+            ),
+        ],
+      ),
     );
   }
 
@@ -713,8 +935,6 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     final title = sync?.title.isNotEmpty == true
         ? sync!.title
         : (room?.animeTitle?.isNotEmpty == true ? room!.animeTitle : null);
-    final canOpenAnime =
-        sync != null && sync.sourceKey.isNotEmpty && sync.animeId.isNotEmpty;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -755,17 +975,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
                     overflow: TextOverflow.ellipsis,
                   ),
           ),
-          // 番剧源缺失时提示可打开番剧页
-          if (canOpenAnime && !isOwner)
-            TextButton.icon(
-              onPressed: () => _openAnime(sync),
-              icon: const Icon(Icons.open_in_new, size: 15),
-              label: Text(t.openAnime),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-            ),
+          // 番剧源缺失时提示可打开番剧页（入口改在个人页浮动按钮，避免与播放器冲突）
           if (sync != null && !isOwner)
             TextButton.icon(
               onPressed: _syncing ? null : _syncToOwner,
@@ -787,22 +997,6 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     );
   }
 
-  /// 打开房主正在观看的番剧页。番剧源缺失时给出提示。
-  void _openAnime(HubPlaybackSync sync) {
-    if (AnimeSource.find(sync.sourceKey) == null) {
-      App.rootContext.showMessage(
-        message: t.sourceNotInstalled(source: sync.sourceKey),
-        level: LogLevel.warning,
-      );
-      return;
-    }
-    context.to(
-      () => AnimePage(
-        id: sync.animeId,
-        sourceKey: sync.sourceKey,
-        cover: sync.cover,
-        title: sync.title,
-      ),
-    );
-  }
+  /// 打开房主正在观看的番剧页。
+  /// 入口已迁移到个人页浮动按钮（避免与播放器 UI 冲突）。
 }

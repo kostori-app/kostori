@@ -11,7 +11,7 @@ void handleLinks() {
 }
 
 Future<bool> handleAppLink(Uri uri) async {
-  for (var source in AnimeSource.all()) {
+  for (var source in AnimeSource.allSources()) {
     if (source.linkHandler != null) {
       if (source.linkHandler!.domains.contains(uri.host)) {
         var id = source.linkHandler!.linkToId(uri.toString());

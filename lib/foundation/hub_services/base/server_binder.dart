@@ -6,15 +6,28 @@ class ServerBinder {
   HttpServer? _serverV4;
   HttpServer? _serverV6;
   int? _port;
+  bool _secure = false;
 
   int get port => _port ?? 9000;
 
   bool get isRunning => _serverV4 != null || _serverV6 != null;
 
+  bool get isSecure => _secure;
+
   List<String> get boundAddresses {
+    final scheme = _secure ? 'https' : 'http';
     final list = <String>[];
-    if (_serverV4 != null) list.add('http://0.0.0.0:$port');
-    if (_serverV6 != null) list.add('http://[::]:$port');
+    if (_serverV4 != null) list.add('$scheme://0.0.0.0:$port');
+    if (_serverV6 != null) list.add('$scheme://[::]:$port');
+    return list;
+  }
+
+  /// WebSocket 地址（wss:// 或 ws://）
+  List<String> get boundWsAddresses {
+    final scheme = _secure ? 'wss' : 'ws';
+    final list = <String>[];
+    if (_serverV4 != null) list.add('$scheme://0.0.0.0:$port');
+    if (_serverV6 != null) list.add('$scheme://[::]:$port');
     return list;
   }
 
@@ -51,6 +64,7 @@ class ServerBinder {
     void Function(HttpRequest) onRequest,
   ) async {
     if (isRunning) return;
+    _secure = false;
     _port = await findAvailablePort(preferredPort, mode);
     if (_port != preferredPort) {
       HubLog.warning('ServerBinder', '⚠️ 端口 $preferredPort 被占用，改用 $_port');
@@ -91,6 +105,7 @@ class ServerBinder {
     _serverV4 = null;
     _serverV6 = null;
     _port = null;
+    _secure = false;
   }
 
   Future<void> bindSecure(
@@ -102,7 +117,10 @@ class ServerBinder {
     String password = '',
   }) async {
     if (isRunning) return;
+    _secure = true;
     _port = await findAvailablePort(preferredPort, mode);
+
+    _checkCertificateChain(certificatePath);
 
     final context = SecurityContext()
       ..useCertificateChain(certificatePath)
@@ -149,6 +167,26 @@ class ServerBinder {
       _serverV6!.listen(onRequest);
     } catch (e) {
       HubLog.warning('ServerBinder', '⚠️ IPv6 HTTPS 绑定失败：$e');
+    }
+  }
+
+  /// 检查证书链完整性：Let's Encrypt 若只给 cert.pem（仅叶子证书），
+  /// 部分客户端（Node.js 等）会因缺中间证书握手失败。
+  void _checkCertificateChain(String certificatePath) {
+    try {
+      final content = File(certificatePath).readAsStringSync();
+      final blocks = RegExp(
+        r'-----BEGIN CERTIFICATE-----',
+      ).allMatches(content).length;
+      if (blocks <= 1) {
+        HubLog.warning(
+          'ServerBinder',
+          '⚠️ 证书文件仅含 $blocks 个证书块，可能缺少中间证书链。'
+              'Let\'s Encrypt 请使用 fullchain.pem，否则部分客户端（如 Koishi）会握手失败。',
+        );
+      }
+    } catch (_) {
+      // 读取失败交给 useCertificateChain 抛异常
     }
   }
 }

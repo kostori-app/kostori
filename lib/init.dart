@@ -31,6 +31,7 @@ import 'package:kostori/skills/builtins/recognize_anime_skill.dart';
 import 'package:kostori/skills/builtins/time_skill.dart';
 import 'package:kostori/skills/skill_registry.dart';
 import 'package:kostori/utils/app_links.dart';
+import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
@@ -52,6 +53,8 @@ extension _FutureInit<T> on Future<T> {
 
 Future<void> init() async {
   await App.init().wait();
+  // 崩溃兜底：恢复上次同步中断遗留的 .bak 数据库（需在任何数据库打开之前）
+  recoverStaleBackups();
   await SingleInstanceCookieJar.createInstance();
   var futures = [
     Rhttp.init(),

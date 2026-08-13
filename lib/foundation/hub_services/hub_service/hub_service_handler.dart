@@ -269,6 +269,22 @@ extension HubServiceHandler on HubService {
     });
   }
 
+  /// Satori 适配层使用：把成员移回大厅（并广播房间成员变更事件）
+  void moveToLobbyForSatori(HubClientInfo target) {
+    final fromRoomId = target.currentRoomId;
+    _moveToLobby(target);
+    if (fromRoomId != _lobbyId) {
+      _broadcastLeft(target.userId, fromRoomId, target);
+      _broadcastSystem(HubSystemEvent.clientKickedFromRoom, {
+        'clientId': target.userId,
+        'clientName': target.displayName,
+        'roomId': fromRoomId,
+        'by': 'server',
+      });
+    }
+    onClientsChanged?.call();
+  }
+
   void _broadcastLeft(String fromId, String roomId, HubClientInfo client) {
     _broadcastSystem(HubSystemEvent.clientLeftRoom, {
       'clientId': fromId,

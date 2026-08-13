@@ -235,6 +235,17 @@ label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
       </div>
       <div class="sub" style="margin-top:12px" id="cfgKeys"></div>
     </div>
+    <div class="card">
+      <h2>图片上传</h2>
+      <div class="sub" style="margin-bottom:10px">上传的图片外网可访问地址（公网 IPv4/IPv6 或域名时填写），留空则使用连接地址</div>
+      <div class="row">
+        <div class="field" style="flex:2"><label>公网基础地址</label><input id="cfgPublicBase" placeholder="http://[2001:db8::1]:9100"></div>
+      </div>
+      <div class="row" style="margin-top:10px;flex:none">
+        <button onclick="detectPublicIp()">自动获取公网地址</button>
+        <button onclick="saveConfig()">保存上传配置</button>
+      </div>
+    </div>
   </div>
 
   <div id="pane-ai" class="tabpane">
@@ -553,6 +564,7 @@ async function loadConfig(){
     $('cfgPort').value=d.webAdminPort;$('cfgBind').value=d.webAdminBindMode;
     $('cfgHubPort').value=d.hubPort;$('cfgPing').value=d.pingIntervalMs;
     $('cfgNoAuth').checked=d.hubNoAuth;
+    $('cfgPublicBase').value=d.upload.publicBaseUrl||'';
     $('cfgKeys').textContent='用户层 Key '+(d.apiKeyConfigured?'已配置':'未配置')+' · 管理层 Key '+(d.adminKeyConfigured?'已配置':'未配置');
   }catch(e){toast(String(e));}
 }
@@ -562,9 +574,20 @@ async function saveConfig(){
     await api('/api/admin/config',{method:'POST',body:JSON.stringify({
       webAdminPort:+$('cfgPort').value,webAdminBindMode:$('cfgBind').value,
       hubPort:+$('cfgHubPort').value,pingIntervalMs:+$('cfgPing').value,hubNoAuth:$('cfgNoAuth').checked,
+      publicBaseUrl:$('cfgPublicBase').value,
     })});
     toast('已保存（部分设置重启后生效）');
   }catch(e){toast(String(e));}
+}
+
+async function detectPublicIp(){
+  try{
+    $('cfgPublicBase').value='';
+    toast('正在探测公网 IP…');
+    const d=await api('/api/admin/public-ip');
+    $('cfgPublicBase').value=d.url;
+    toast('已探测到公网地址：'+d.url+'（请点击保存）');
+  }catch(e){toast('探测失败：'+String(e));}
 }
 
 async function restartHub(){
@@ -659,9 +682,14 @@ $('loginBtn').onclick=()=>{
 (function(){
   const saved=localStorage.getItem(KEY);
   if(saved){token=saved;$('login').style.display='none';$('app').style.display='block';loadOverview();}
+  // 状态总览（运行秒数等）每秒刷新
   setInterval(()=>{
     if(!token)return;
     loadOverview();
+  },1000);
+  // 各 tab 数据 5 秒刷新
+  setInterval(()=>{
+    if(!token)return;
     const active=document.querySelector('.tab.active');
     if(!active)return;
     const t=active.dataset.tab;

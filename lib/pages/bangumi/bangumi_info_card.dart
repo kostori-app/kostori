@@ -321,7 +321,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                         : 260;
                     double width = height * 0.72;
                     return Container(
-                      width: MediaQuery.of(context).size.width,
+                      width: constraints.maxWidth,
                       height: height,
                       padding: EdgeInsets.all(2),
                       child: Row(

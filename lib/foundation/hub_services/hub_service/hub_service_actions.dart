@@ -474,12 +474,43 @@ extension HubServiceActions on HubService {
       return;
     }
     _rooms[currentRoomId]?.participants.remove(fromId);
+    _transferRoomOwnershipIfNeeded(currentRoomId, fromId);
     _broadcastLeft(fromId, currentRoomId, client!);
     _moveToLobby(client);
     onClientsChanged?.call();
     _broadcastSystem(HubSystemEvent.roomUpdated, {
       'room': _rooms[_lobbyId]!.toJson(),
     });
+    _cleanupEmptyWatchRoom(currentRoomId);
+  }
+
+  /// 房主离开房间时，把所有权转移给仍在房间的第一个成员（一起看同步不中断）
+  void _transferRoomOwnershipIfNeeded(String roomId, String leaverId) {
+    if (roomId == _lobbyId) return;
+    final room = _rooms[roomId];
+    if (room == null || room.ownerUserId != leaverId) return;
+    final remaining = room.participants.keys.toList();
+    if (remaining.isEmpty) return;
+    room.ownerUserId = remaining.first;
+    _logEvent(
+      '👑 房主 ${_name(leaverId)} 离开，${_name(remaining.first)} 成为新房主'
+      '（${room.roomName}）',
+    );
+    _broadcastSystem(HubSystemEvent.roomUpdated, {'room': room.toJson()});
+  }
+
+  /// 一起看房间空人后自动从服务器删除
+  void _cleanupEmptyWatchRoom(String roomId) {
+    if (roomId == _lobbyId) return;
+    final room = _rooms[roomId];
+    if (room == null) return;
+    if (room.roomType != HubRoomType.watch) return;
+    if (room.participants.isNotEmpty) return;
+    _rooms.remove(roomId);
+    onRoomsChanged?.call();
+    unawaited(_saveRooms());
+    _broadcastSystem(HubSystemEvent.roomDeleted, {'roomId': roomId});
+    _logEvent('🗑 一起看房间「${room.roomName}」空人，自动删除');
   }
 
   void _handleRoomBan(
@@ -734,6 +765,7 @@ extension HubServiceActions on HubService {
       _broadcastSystem(HubSystemEvent.clientLeftRoom, {
         'client': targetDto.toJson(),
         'roomId': roomId,
+        'leavingServer': true,
       });
       _broadcastSystem(HubSystemEvent.clientLeft, {
         'clientId': targetId,

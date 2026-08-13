@@ -122,6 +122,20 @@ class FavoriteItem implements Anime {
     };
   }
 
+  /// 字段级合并专用序列化（含 viewMore 与时间，跨端 JSON 传输）
+  Map<String, dynamic> toMergeJson() => {
+    'id': id,
+    'name': name,
+    'author': author,
+    'type': type.value,
+    'tags': tags,
+    'coverPath': coverPath,
+    'time': time,
+    'viewMore': viewMore is PageJumpTarget
+        ? (viewMore as PageJumpTarget).toJsonString()
+        : null,
+  };
+
   static FavoriteItem fromJson(Map<String, dynamic> json) {
     var type = json["type"] as int;
     return FavoriteItem(
@@ -474,6 +488,47 @@ class LocalFavoritesManager with ChangeNotifier {
     var items = rows.map((element) => FavoriteItem.fromRow(element)).toList();
 
     return items;
+  }
+
+  /// 收集所有 folder 的收藏（用于字段级合并导出）
+  List<FavoriteItem> getAllFavoriteItemsForMerge() {
+    final result = <FavoriteItem>[];
+    for (var folder in folderNames) {
+      result.addAll(getAllAnimes(folder));
+    }
+    return result;
+  }
+
+  /// 字段级合并（并集）：远端有、本地无的收藏添加到默认 folder；
+  /// 已存在的跳过。用于 WebDAV 多端同步（收藏是集合，无覆盖语义）。
+  void mergeFavoriteList(List<FavoriteItem> remote) {
+    if (remote.isEmpty) return;
+    var defaultFolder = folderNames.contains('默认') ? '默认' : folderNames.first;
+    var changed = false;
+    for (final r in remote) {
+      // 已存在（任意 folder）则跳过
+      if (findWithModelSync(r)) continue;
+      try {
+        addAnime(defaultFolder, r);
+        changed = true;
+      } catch (e) {
+        DebugLog.error('mergeFavoriteList', '添加收藏 ${r.id} 失败：$e');
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
+  bool findWithModelSync(FavoriteItem item) {
+    for (var folder in folderNames) {
+      final rows = _db.select(
+        """
+        select 1 from "$folder" where id == ? and type == ?;
+      """,
+        [item.id, item.type.value],
+      );
+      if (rows.isNotEmpty) return true;
+    }
+    return false;
   }
 
   void addTagTo(String folder, String id, String tag) {

@@ -8,9 +8,10 @@ abstract mixin class _AnimePageActions {
   InfoController get infoController =>
       providerContainer.read(infoControllerProvider.notifier);
 
-  final WatcherController watcherController = WatcherController();
-
   final PlayerController playerController = PlayerController();
+
+  WatcherController get watcherController =>
+      providerContainer.read(watcherControllerProvider);
 
   void update();
 
@@ -21,6 +22,29 @@ abstract mixin class _AnimePageActions {
   History? history;
 
   BangumiItem? bangumiBindInfo;
+
+  /// 拉取绑定番剧信息（含网络请求，成功或失败都刷新界面）
+  Future<void> updateBangumiBind() async {
+    final id = history?.bangumiId;
+    if (id == null) {
+      bangumiBindInfo = null;
+      update();
+      return;
+    }
+    try {
+      final item = await Bangumi.instance.bindFind(id);
+      bangumiBindInfo = item;
+      update();
+    } catch (e) {
+      // 网络失败等：保留旧值，仅刷新
+      update();
+    }
+  }
+
+  /// 绑定后下一帧再拉取一次，兜底首次网络失败
+  void updateBangumiBindScheduleNext() {
+    Future.microtask(() => updateBangumiBind());
+  }
 
   StatsDataImpl? statsDataImpl;
 
@@ -396,6 +420,9 @@ abstract mixin class _AnimePageActions {
                       type: history!.type.value,
                       bangumiId: item.id,
                     );
+                    // 立即拉取绑定番剧信息并刷新，避免"绑定了却不显示"
+                    await updateBangumiBind();
+                    updateBangumiBindScheduleNext();
                   }
                 } catch (e) {
                   Log.error("绑定bangumiId", "$e");

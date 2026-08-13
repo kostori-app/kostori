@@ -15,7 +15,6 @@ import 'package:kostori/network/cookie_jar.dart';
 
 const _kAccessToken = 'bangumi_access_token';
 const _kRefreshToken = 'bangumi_refresh_token';
-const _kRedirectUri = 'bangumi_redirect_uri';
 
 /// 网页端接口使用浏览器 UA（避免被 WAF 拒绝），API 接口才用 bangumiHTTPHeader
 const _webHeaders = {'user-agent': webUA, 'referer': 'https://bgm.tv/'};
@@ -40,9 +39,8 @@ bool get bangumiLoggedIn {
   return token != null && token.trim().isNotEmpty;
 }
 
-String bangumiRedirectUri() =>
-    (appdata.implicitData[_kRedirectUri] as String?) ??
-    'http://127.0.0.1:$bangumiCallbackPort/callback';
+/// 回调地址固定写死（端口 $bangumiCallbackPort），无需用户配置
+String bangumiRedirectUri() => 'http://127.0.0.1:$bangumiCallbackPort/callback';
 
 String _oauthFormEncode(Map<String, String> data) => data.entries
     .map(

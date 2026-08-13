@@ -567,19 +567,27 @@ class _IntSliderSettingState extends State<_IntSliderSetting> {
 }
 
 class _PopupWindowSetting extends StatelessWidget {
-  const _PopupWindowSetting({required this.title, required this.builder});
+  const _PopupWindowSetting({
+    required this.title,
+    required this.builder,
+    this.onClosed,
+  });
 
   final Widget Function() builder;
 
   final String title;
+
+  /// 弹窗关闭后回调（用于父页面同步刷新）
+  final VoidCallback? onClosed;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(title),
       trailing: const Icon(Icons.arrow_right),
-      onTap: () {
-        showPopUpWidget(App.rootContext, builder());
+      onTap: () async {
+        await showPopUpWidget(App.rootContext, builder());
+        onClosed?.call();
       },
     );
   }
@@ -963,12 +971,82 @@ class _BindModeSelector extends StatelessWidget {
   }
 }
 
+/// 协议选择器（ws / wss），风格与端口绑定模式选择器一致
+class _ProtoSelector extends StatelessWidget {
+  final bool useWss;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  const _ProtoSelector({
+    required this.useWss,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final entry in const [('ws', false), ('wss', true)])
+            GestureDetector(
+              onTap: enabled ? () => onChanged(entry.$2) : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: useWss == entry.$2
+                      ? colorScheme.surface
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: useWss == entry.$2
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.toOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  entry.$1,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: useWss == entry.$2
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                    color: useWss == entry.$2
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurface.toOpacity(
+                            enabled ? 0.45 : 0.25,
+                          ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SettingRow extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget? trailing;
   final Widget? content; // ← 新增，占满整行的内容区
-
   const _SettingRow({
     required this.title,
     this.subtitle,

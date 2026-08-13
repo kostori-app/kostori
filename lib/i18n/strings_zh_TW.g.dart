@@ -90,6 +90,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get autoPageTurning => '自動翻頁';
 	@override String get back => '返回';
 	@override String get bangumi => '番組計劃';
+	@override String get bangumiInfo => '番劇詳情';
 	@override String get block => '封鎖';
 	@override String get blue => '藍色';
 	@override String get brief => '簡介';
@@ -105,6 +106,14 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get checkUpdates => '檢查更新';
 	@override String get check => '檢查';
 	@override String get clearCache => '清除快取';
+	@override String get hubUploadedImages => 'Hub 上傳圖片';
+	@override String get hubUploadedImagesHint => '張圖片儲存在本機';
+	@override String get noHubUploads => '暫無上傳圖片';
+	@override String get clearHubUploadsConfirm => '刪除全部 Hub 上傳圖片？';
+	@override String get hubStickers => 'Hub 表情包';
+	@override String get hubStickersHint => '個表情包';
+	@override String get noHubStickers => '暫無表情包';
+	@override String get clearHubStickersConfirm => '刪除全部 Hub 表情包？';
 	@override String get clearHistory => '清除歷史記錄';
 	@override String get clearProgress => '清除進度';
 	@override String get clearSearchHistory => '清除搜尋歷史';
@@ -219,6 +228,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get local => '本地';
 	@override String get logIn => '登入';
 	@override String get logOut => '登出';
+	@override String get account => '帳號';
 	@override String get log => '日誌';
 	@override String get manualTranslation => '手動翻譯';
 	@override String get manualTranslationHint => '輸入文字，翻譯為你偏好的語言';
@@ -613,7 +623,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get enableSkipBangumiSchedule => '啟用跳過 bangumi 日程';
 	@override String get bangumiClientId => '用戶端 ID';
 	@override String get bangumiClientSecret => '用戶端密鑰';
-	@override String get bangumiRedirectUri => '回呼位址';
 	@override String get bangumiOAuthHint => '在 bgm.tv/dev 註冊應用程式以取得用戶端 ID 與密鑰';
 	@override String get bangumiOAuthLogin => 'Bangumi 登入';
 	@override String get bangumiShowNsfw => '顯示 NSFW 內容';
@@ -736,6 +745,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get status => '狀態';
 	@override String get audioOptionLowLatency => '音訊選項：\n 低延遲';
 	@override String get audioOptionCompatibility => '音訊選項：\n 相容性';
+	@override String get audioOutputDevice => '音訊輸出裝置';
+	@override String get noAudioDevice => '未偵測到音訊裝置';
+	@override String get volumeBoostEnabled => '音量增益: 開';
+	@override String get volumeBoostDisabled => '音量增益: 關';
 	@override String get switchSuccessful => '切換成功';
 	@override String get switchFailed => '切換失敗';
 	@override String get remoteCast => '遠端投屏';
@@ -1005,6 +1018,17 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get chooseIpVersionToListenOn => '選擇要監聽的 IP 版本';
 	@override String get hubServer => 'Hub 服務端';
 	@override String get enableHub => '啟用 Hub';
+	@override String get hubServerStartFailed => 'Hub 伺服器啟動失敗';
+	@override String get enableTls => '啟用 HTTPS/WSS';
+	@override String get tlsEnabledDesc => 'Hub 將透過 HTTPS/WSS 提供（需憑證）';
+	@override String get tlsDisabledDesc => 'Hub 透過 HTTP/WS 提供';
+	@override String get tlsCertificate => 'TLS 憑證';
+	@override String get tlsCertificateHint => 'PEM 憑證鏈（Let\'s Encrypt 請用 fullchain.pem）';
+	@override String get tlsPrivateKey => 'TLS 私鑰';
+	@override String get tlsPrivateKeyHint => 'PEM 私鑰檔案路徑';
+	@override String get tlsPassword => 'TLS 私鑰密碼';
+	@override String get tlsPasswordHint => '私鑰未加密則留空';
+	@override String get browse => '瀏覽';
 	@override String get hubServerIsStopped => 'Hub 服務端已停止';
 	@override String get clientsCount => '個用戶端';
 	@override String get hubPort => 'Hub 連接埠';
@@ -1022,7 +1046,16 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get exportRooms => '匯出房間';
 	@override String get importRooms => '匯入房間';
 	@override String get connect => '連線';
+	@override String get danmakuSettings => '彈幕設定';
+	@override String get danmakuColor => '顏色';
+	@override String get danmakuFontSize => '字號';
+	@override String get danmakuOpacity => '不透明度';
+	@override String get danmakuArea => '顯示區域';
+	@override String get danmakuDuration => '持續時間';
+	@override String get danmakuLineHeight => '行高';
+	@override String get danmaku => '彈幕';
 	@override String get watchTogether => '一起看';
+	@override String get watchTogetherRoomHasNoAnime => '一起看房間未綁定番劇';
 	@override String get watchTogetherDesc => '和朋友一起看番：建立或加入房間，邊看邊聊，分享截圖與字幕。';
 	@override String get selectRoomToStart => '選擇房間開始一起看';
 	@override String get syncToOwner => '同步到房主';
@@ -1138,6 +1171,23 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get hubAiBotKeywordHint => '例如';
 	@override String get hubAiBotMinInterval => '最小回覆間隔（秒）';
 	@override String get hubAiBotReplyDm => '回覆私聊訊息';
+	@override String get satoriBotManage => 'Satori 接入機器人管理';
+	@override String get satoriBotManageDesc => '第三方 Satori 機器人';
+	@override String get satoriBotCountUnit => '個機器人';
+	@override String get satoriBotAdd => '新增機器人';
+	@override String get satoriBotEdit => '編輯機器人';
+	@override String get satoriBotDelete => '刪除機器人';
+	@override String get satoriBotName => '機器人名稱';
+	@override String get satoriBotNameHint => '顯示在房間成員清單和 @ 提及中的名稱';
+	@override String get satoriBotAvatar => '頭像';
+	@override String get satoriBotBio => '簡介';
+	@override String get satoriBotToken => '連線令牌';
+	@override String get satoriBotTokenHint => 'Satori 用戶端用它連線並綁定到該機器人';
+	@override String get satoriBotTokenRegen => '重新產生';
+	@override String get satoriBotEnabled => '啟用';
+	@override String get satoriBotDeleteConfirm => '刪除該機器人？已連線的用戶端將中斷。';
+	@override String get satoriBotTokenCopied => '令牌已複製';
+	@override String get satoriBotConfigTitle => 'Satori 機器人';
 	@override String get webAdminSettings => 'Web 管理設定';
 	@override String get webAdminWhatIs => '什麼是 Web 管理？';
 	@override String get webAdminDescription => 'Web 管理提供基於瀏覽器的 Hub 管理面板。在任意裝置瀏覽器開啟位址，可查看伺服器狀態、管理房間與用戶端、瀏覽日誌、修改設定、控制 AI 機器人與 Webhook、重啟 Hub。使用現有的 Hub API Key 進行鑑權。';
@@ -1162,6 +1212,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get connectionSettings => '連接設定';
 	@override String get serverAddress => '伺服器地址';
 	@override String get host => '主機';
+	@override String get protocol => '協定';
 	@override String get authentication => '身分驗證';
 	@override String get paste => '貼上';
 	@override String get unblock => '取消封鎖';
@@ -1214,6 +1265,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get notSet => '未設定';
 	@override String get currentRoom => '目前房間';
 	@override String get editProfile => '編輯資料';
+	@override String get uploadAvatar => '上傳頭像';
+	@override String get avatar => '頭像';
+	@override String get connectFirstToUploadAvatar => '請先連線伺服器再上傳頭像';
+	@override String get avatarUploaded => '頭像已上傳';
+	@override String get uploadFailed => '上傳失敗';
 	@override String get noBlockedUsers => '沒有阻擋的使用者';
 	@override String get createRoom => '建立房間';
 	@override String get chat => '聊天';
@@ -1245,6 +1301,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get maxSizeMb => '單檔上傳大小上限 (MB)';
 	@override String get storePath => '儲存路徑';
 	@override String get leaveEmptyForDefault => '留空則使用預設值';
+	@override String get publicBaseUrl => '公網基礎網址';
+	@override String get publicBaseUrlHint => '上傳圖片的外網可存取網址（公網 IPv4/IPv6 或網域時填寫）；留空則使用連線網址';
+	@override String get publicIpDetected => '已偵測到公網 IP';
+	@override String get publicIpDetectFailed => '公網 IP 偵測失敗';
 	@override String get notConfiguredWillUseServerOrBase64 => '未配置 · 將使用伺服器或 Base64';
 	@override String get imageTooLargeToSend => '圖片太大，無法發送';
 	@override String get pleaseConfigureServerUploadOrClientOss => '請設定伺服器上傳或用戶端 OSS。';
@@ -1266,8 +1326,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noLimit => '無限制';
 	@override String get optional => '選填';
 	@override String get enterDisplayName => '輸入顯示名稱';
+	@override String get displayNameRequired => '請填寫顯示名稱';
 	@override String get enterBio => '輸入個人簡介';
 	@override String get autoReconnect => '自動重連';
+	@override String get allowSelfSignedCert => '允許自簽憑證';
+	@override String get allowSelfSignedCertHint => '透過 WSS 連線時信任自簽憑證';
 	@override String get directMessage => '私聊訊息';
 	@override String get noAnnouncementsYet => '暫無公告';
 	@override String get enterAnnouncementText => '輸入公告內容...';
@@ -1951,6 +2014,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get openVideoPreview => '影片預覽';
 	@override String get discussInAi => 'AI 討論';
 	@override String get dropImageToRecognize => '放開即可識別圖片';
+	@override String get dropFileToImport => '放開即可匯入 .js 來源檔';
 	@override String get viewOnBangumi => '查看 Bangumi';
 	@override String get templateVarHint => '可用變數：';
 	@override String get profilePersonaRequired => '請先選擇人格';
@@ -2083,6 +2147,48 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get mcpTestConnection => '測試連線';
 	@override String get mcpConnecting => '連線中...';
 	@override String get mcpConnectionFailed => '連線失敗';
+	@override String get builderTitle => '來源建構器';
+	@override String get builderEntry => '建構來源';
+	@override String get builderBasic => '基本資訊';
+	@override String get builderName => '名稱';
+	@override String get builderKey => '鍵';
+	@override String get builderVersion => '版本';
+	@override String get builderBaseUrl => '基礎位址';
+	@override String get builderSearch => '搜尋';
+	@override String get builderSearchUrl => '搜尋 URL 模板';
+	@override String get builderListSelector => '列表項選擇器';
+	@override String get builderTitleSelector => '標題選擇器';
+	@override String get builderCoverSelector => '封面選擇器';
+	@override String get builderCoverAttr => '封面屬性';
+	@override String get builderLinkSelector => '連結選擇器';
+	@override String get builderPageParam => '翻頁參數';
+	@override String get builderDetail => '番劇詳情';
+	@override String get builderDetailUrl => '詳情 URL 模板';
+	@override String get builderDescSelector => '簡介選擇器';
+	@override String get builderEpisodeSelector => '劇集列表選擇器';
+	@override String get builderEpisodeTitleSelector => '劇集標題選擇器';
+	@override String get builderEpisodeLinkSelector => '劇集連結選擇器';
+	@override String get builderPlay => '播放';
+	@override String get builderPlayUrl => '播放頁 URL 模板';
+	@override String get builderExtractRegex => '播放位址正則';
+	@override String get builderMaxPageSelector => '總頁數選擇器';
+	@override String get builderUserAgent => 'User-Agent';
+	@override String get builderPlayDirect => '直接回傳劇集連結';
+	@override String get builderPlayDirectDesc => '劇集連結本身就是播放位址（無需二次請求）';
+	@override String get builderPlayRegexDesc => '請求播放頁並透過正則提取播放位址';
+	@override String get builderExplore => '探索';
+	@override String get builderExploreTitle => '頁面標題';
+	@override String get builderExploreUrl => '列表 URL 模板（{page}）';
+	@override String get builderCategory => '分類';
+	@override String get builderCategoryTitle => '分類標題';
+	@override String get builderCategoryNames => '分類名（每行一個，"值-名稱"）';
+	@override String get builderCategoryUrl => '分類列表 URL（{category} {page}）';
+	@override String get builderGenerate => '生成並匯入';
+	@override String get builderNameRequired => '請填寫名稱';
+	@override String get builderKeyRequired => '請填寫鍵';
+	@override String get builderKeyInvalid => '鍵只能包含字母、數字和底線';
+	@override String get builderImported => '來源已匯入';
+	@override String get builderGenerateFailed => '生成失敗';
 }
 
 // Path: colors
@@ -2196,6 +2302,7 @@ extension on TranslationsZhTw {
 			'autoPageTurning' => '自動翻頁',
 			'back' => '返回',
 			'bangumi' => '番組計劃',
+			'bangumiInfo' => '番劇詳情',
 			'block' => '封鎖',
 			'blue' => '藍色',
 			'brief' => '簡介',
@@ -2211,6 +2318,14 @@ extension on TranslationsZhTw {
 			'checkUpdates' => '檢查更新',
 			'check' => '檢查',
 			'clearCache' => '清除快取',
+			'hubUploadedImages' => 'Hub 上傳圖片',
+			'hubUploadedImagesHint' => '張圖片儲存在本機',
+			'noHubUploads' => '暫無上傳圖片',
+			'clearHubUploadsConfirm' => '刪除全部 Hub 上傳圖片？',
+			'hubStickers' => 'Hub 表情包',
+			'hubStickersHint' => '個表情包',
+			'noHubStickers' => '暫無表情包',
+			'clearHubStickersConfirm' => '刪除全部 Hub 表情包？',
 			'clearHistory' => '清除歷史記錄',
 			'clearProgress' => '清除進度',
 			'clearSearchHistory' => '清除搜尋歷史',
@@ -2325,6 +2440,7 @@ extension on TranslationsZhTw {
 			'local' => '本地',
 			'logIn' => '登入',
 			'logOut' => '登出',
+			'account' => '帳號',
 			'log' => '日誌',
 			'manualTranslation' => '手動翻譯',
 			'manualTranslationHint' => '輸入文字，翻譯為你偏好的語言',
@@ -2647,6 +2763,8 @@ extension on TranslationsZhTw {
 			'vceReloadPreview' => '重新載入預覽片段',
 			'vceReload' => '重載',
 			'vceTimelineThumbnails' => '影片時間軸縮圖',
+			_ => null,
+		} ?? switch (path) {
 			'vceStart' => '起點',
 			'vceEnd' => '終點',
 			'vceModifyStart' => '修改起點',
@@ -2657,8 +2775,6 @@ extension on TranslationsZhTw {
 			'vceQualityCrf' => '品質 (CRF)',
 			'vceHighQuality' => '高品質',
 			'vceStandard' => '標準',
-			_ => null,
-		} ?? switch (path) {
 			'vceCompressed' => '壓縮',
 			'vceOriginal' => '原始',
 			'vceFixedBitrateOptional' => '固定碼率（選填，覆寫 CRF）',
@@ -2721,7 +2837,6 @@ extension on TranslationsZhTw {
 			'enableSkipBangumiSchedule' => '啟用跳過 bangumi 日程',
 			'bangumiClientId' => '用戶端 ID',
 			'bangumiClientSecret' => '用戶端密鑰',
-			'bangumiRedirectUri' => '回呼位址',
 			'bangumiOAuthHint' => '在 bgm.tv/dev 註冊應用程式以取得用戶端 ID 與密鑰',
 			'bangumiOAuthLogin' => 'Bangumi 登入',
 			'bangumiShowNsfw' => '顯示 NSFW 內容',
@@ -2844,6 +2959,10 @@ extension on TranslationsZhTw {
 			'status' => '狀態',
 			'audioOptionLowLatency' => '音訊選項：\n 低延遲',
 			'audioOptionCompatibility' => '音訊選項：\n 相容性',
+			'audioOutputDevice' => '音訊輸出裝置',
+			'noAudioDevice' => '未偵測到音訊裝置',
+			'volumeBoostEnabled' => '音量增益: 開',
+			'volumeBoostDisabled' => '音量增益: 關',
 			'switchSuccessful' => '切換成功',
 			'switchFailed' => '切換失敗',
 			'remoteCast' => '遠端投屏',
@@ -3155,6 +3274,19 @@ extension on TranslationsZhTw {
 			'chooseIpVersionToListenOn' => '選擇要監聽的 IP 版本',
 			'hubServer' => 'Hub 服務端',
 			'enableHub' => '啟用 Hub',
+			'hubServerStartFailed' => 'Hub 伺服器啟動失敗',
+			'enableTls' => '啟用 HTTPS/WSS',
+			'tlsEnabledDesc' => 'Hub 將透過 HTTPS/WSS 提供（需憑證）',
+			_ => null,
+		} ?? switch (path) {
+			'tlsDisabledDesc' => 'Hub 透過 HTTP/WS 提供',
+			'tlsCertificate' => 'TLS 憑證',
+			'tlsCertificateHint' => 'PEM 憑證鏈（Let\'s Encrypt 請用 fullchain.pem）',
+			'tlsPrivateKey' => 'TLS 私鑰',
+			'tlsPrivateKeyHint' => 'PEM 私鑰檔案路徑',
+			'tlsPassword' => 'TLS 私鑰密碼',
+			'tlsPasswordHint' => '私鑰未加密則留空',
+			'browse' => '瀏覽',
 			'hubServerIsStopped' => 'Hub 服務端已停止',
 			'clientsCount' => '個用戶端',
 			'hubPort' => 'Hub 連接埠',
@@ -3171,10 +3303,17 @@ extension on TranslationsZhTw {
 			'selectServer' => '選擇一個伺服器',
 			'exportRooms' => '匯出房間',
 			'importRooms' => '匯入房間',
-			_ => null,
-		} ?? switch (path) {
 			'connect' => '連線',
+			'danmakuSettings' => '彈幕設定',
+			'danmakuColor' => '顏色',
+			'danmakuFontSize' => '字號',
+			'danmakuOpacity' => '不透明度',
+			'danmakuArea' => '顯示區域',
+			'danmakuDuration' => '持續時間',
+			'danmakuLineHeight' => '行高',
+			'danmaku' => '彈幕',
 			'watchTogether' => '一起看',
+			'watchTogetherRoomHasNoAnime' => '一起看房間未綁定番劇',
 			'watchTogetherDesc' => '和朋友一起看番：建立或加入房間，邊看邊聊，分享截圖與字幕。',
 			'selectRoomToStart' => '選擇房間開始一起看',
 			'syncToOwner' => '同步到房主',
@@ -3290,6 +3429,23 @@ extension on TranslationsZhTw {
 			'hubAiBotKeywordHint' => '例如',
 			'hubAiBotMinInterval' => '最小回覆間隔（秒）',
 			'hubAiBotReplyDm' => '回覆私聊訊息',
+			'satoriBotManage' => 'Satori 接入機器人管理',
+			'satoriBotManageDesc' => '第三方 Satori 機器人',
+			'satoriBotCountUnit' => '個機器人',
+			'satoriBotAdd' => '新增機器人',
+			'satoriBotEdit' => '編輯機器人',
+			'satoriBotDelete' => '刪除機器人',
+			'satoriBotName' => '機器人名稱',
+			'satoriBotNameHint' => '顯示在房間成員清單和 @ 提及中的名稱',
+			'satoriBotAvatar' => '頭像',
+			'satoriBotBio' => '簡介',
+			'satoriBotToken' => '連線令牌',
+			'satoriBotTokenHint' => 'Satori 用戶端用它連線並綁定到該機器人',
+			'satoriBotTokenRegen' => '重新產生',
+			'satoriBotEnabled' => '啟用',
+			'satoriBotDeleteConfirm' => '刪除該機器人？已連線的用戶端將中斷。',
+			'satoriBotTokenCopied' => '令牌已複製',
+			'satoriBotConfigTitle' => 'Satori 機器人',
 			'webAdminSettings' => 'Web 管理設定',
 			'webAdminWhatIs' => '什麼是 Web 管理？',
 			'webAdminDescription' => 'Web 管理提供基於瀏覽器的 Hub 管理面板。在任意裝置瀏覽器開啟位址，可查看伺服器狀態、管理房間與用戶端、瀏覽日誌、修改設定、控制 AI 機器人與 Webhook、重啟 Hub。使用現有的 Hub API Key 進行鑑權。',
@@ -3314,6 +3470,7 @@ extension on TranslationsZhTw {
 			'connectionSettings' => '連接設定',
 			'serverAddress' => '伺服器地址',
 			'host' => '主機',
+			'protocol' => '協定',
 			'authentication' => '身分驗證',
 			'paste' => '貼上',
 			'unblock' => '取消封鎖',
@@ -3366,6 +3523,11 @@ extension on TranslationsZhTw {
 			'notSet' => '未設定',
 			'currentRoom' => '目前房間',
 			'editProfile' => '編輯資料',
+			'uploadAvatar' => '上傳頭像',
+			'avatar' => '頭像',
+			'connectFirstToUploadAvatar' => '請先連線伺服器再上傳頭像',
+			'avatarUploaded' => '頭像已上傳',
+			'uploadFailed' => '上傳失敗',
 			'noBlockedUsers' => '沒有阻擋的使用者',
 			'createRoom' => '建立房間',
 			'chat' => '聊天',
@@ -3397,6 +3559,10 @@ extension on TranslationsZhTw {
 			'maxSizeMb' => '單檔上傳大小上限 (MB)',
 			'storePath' => '儲存路徑',
 			'leaveEmptyForDefault' => '留空則使用預設值',
+			'publicBaseUrl' => '公網基礎網址',
+			'publicBaseUrlHint' => '上傳圖片的外網可存取網址（公網 IPv4/IPv6 或網域時填寫）；留空則使用連線網址',
+			'publicIpDetected' => '已偵測到公網 IP',
+			'publicIpDetectFailed' => '公網 IP 偵測失敗',
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
 			'imageTooLargeToSend' => '圖片太大，無法發送',
 			'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
@@ -3418,8 +3584,11 @@ extension on TranslationsZhTw {
 			'noLimit' => '無限制',
 			'optional' => '選填',
 			'enterDisplayName' => '輸入顯示名稱',
+			'displayNameRequired' => '請填寫顯示名稱',
 			'enterBio' => '輸入個人簡介',
 			'autoReconnect' => '自動重連',
+			'allowSelfSignedCert' => '允許自簽憑證',
+			'allowSelfSignedCertHint' => '透過 WSS 連線時信任自簽憑證',
 			'directMessage' => '私聊訊息',
 			'noAnnouncementsYet' => '暫無公告',
 			'enterAnnouncementText' => '輸入公告內容...',
@@ -3622,6 +3791,8 @@ extension on TranslationsZhTw {
 			'failedToFetchBangumiInfo' => 'Failed to fetch Bangumi info',
 			'linkFormatErrorCannotParseCharacterId' => 'Link format error, cannot parse character ID',
 			'verifyingCharacterInfo' => 'Verifying character info...',
+			_ => null,
+		} ?? switch (path) {
 			'characterNotFound' => 'Character not found',
 			'failedToFetchCharacterInfo' => 'Failed to fetch character info',
 			'linkFormatErrorCannotParsePersonId' => 'Link format error, cannot parse person ID',
@@ -3685,8 +3856,6 @@ extension on TranslationsZhTw {
 			'noMoreEpisodes' => '沒有更多集數可播放',
 			'routeNotFound' => '線路不存在',
 			'loadingDuplicateEpisode' => '載入重複集數',
-			_ => null,
-		} ?? switch (path) {
 			'getVideoUrlFailed' => '取得影片連結異常',
 			'pleaseEnterEpisodeNumber' => '請輸入集數',
 			'pleaseEnterValidEpisodeNumber' => '請輸入1-999之間的有效集數',
@@ -4105,6 +4274,7 @@ extension on TranslationsZhTw {
 			'openVideoPreview' => '影片預覽',
 			'discussInAi' => 'AI 討論',
 			'dropImageToRecognize' => '放開即可識別圖片',
+			'dropFileToImport' => '放開即可匯入 .js 來源檔',
 			'viewOnBangumi' => '查看 Bangumi',
 			'templateVarHint' => '可用變數：',
 			'profilePersonaRequired' => '請先選擇人格',
@@ -4135,6 +4305,8 @@ extension on TranslationsZhTw {
 			'testConnection' => '測試連線',
 			'testApiKey' => '檢測 API Key',
 			'enabledByApiKey' => '填寫 API Key 後自動啟用',
+			_ => null,
+		} ?? switch (path) {
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => '連線成功',
@@ -4199,8 +4371,6 @@ extension on TranslationsZhTw {
 			'injectionPositionBeforeTools' => '工具清單之前',
 			'injectionSortOrder' => '排序號',
 			'noInjectionsYet' => '暫無提示詞注入',
-			_ => null,
-		} ?? switch (path) {
 			'worldBookName' => '名稱',
 			'worldBookTriggers' => '觸發詞（每行一個）',
 			'worldBookTriggersHint' => '使用者訊息命中任一觸發詞時才注入',
@@ -4239,6 +4409,48 @@ extension on TranslationsZhTw {
 			'mcpTestConnection' => '測試連線',
 			'mcpConnecting' => '連線中...',
 			'mcpConnectionFailed' => '連線失敗',
+			'builderTitle' => '來源建構器',
+			'builderEntry' => '建構來源',
+			'builderBasic' => '基本資訊',
+			'builderName' => '名稱',
+			'builderKey' => '鍵',
+			'builderVersion' => '版本',
+			'builderBaseUrl' => '基礎位址',
+			'builderSearch' => '搜尋',
+			'builderSearchUrl' => '搜尋 URL 模板',
+			'builderListSelector' => '列表項選擇器',
+			'builderTitleSelector' => '標題選擇器',
+			'builderCoverSelector' => '封面選擇器',
+			'builderCoverAttr' => '封面屬性',
+			'builderLinkSelector' => '連結選擇器',
+			'builderPageParam' => '翻頁參數',
+			'builderDetail' => '番劇詳情',
+			'builderDetailUrl' => '詳情 URL 模板',
+			'builderDescSelector' => '簡介選擇器',
+			'builderEpisodeSelector' => '劇集列表選擇器',
+			'builderEpisodeTitleSelector' => '劇集標題選擇器',
+			'builderEpisodeLinkSelector' => '劇集連結選擇器',
+			'builderPlay' => '播放',
+			'builderPlayUrl' => '播放頁 URL 模板',
+			'builderExtractRegex' => '播放位址正則',
+			'builderMaxPageSelector' => '總頁數選擇器',
+			'builderUserAgent' => 'User-Agent',
+			'builderPlayDirect' => '直接回傳劇集連結',
+			'builderPlayDirectDesc' => '劇集連結本身就是播放位址（無需二次請求）',
+			'builderPlayRegexDesc' => '請求播放頁並透過正則提取播放位址',
+			'builderExplore' => '探索',
+			'builderExploreTitle' => '頁面標題',
+			'builderExploreUrl' => '列表 URL 模板（{page}）',
+			'builderCategory' => '分類',
+			'builderCategoryTitle' => '分類標題',
+			'builderCategoryNames' => '分類名（每行一個，"值-名稱"）',
+			'builderCategoryUrl' => '分類列表 URL（{category} {page}）',
+			'builderGenerate' => '生成並匯入',
+			'builderNameRequired' => '請填寫名稱',
+			'builderKeyRequired' => '請填寫鍵',
+			'builderKeyInvalid' => '鍵只能包含字母、數字和底線',
+			'builderImported' => '來源已匯入',
+			'builderGenerateFailed' => '生成失敗',
 			_ => null,
 		};
 	}

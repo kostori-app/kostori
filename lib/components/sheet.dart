@@ -448,8 +448,9 @@ class _BackgroundLayer extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           if (bgPath.startsWith('http'))
-            Image.network(
-              bgPath,
+            // 走项目统一图片加载（带代理/headers/缓存），裸 Image.network 会加载失败
+            Image(
+              image: CachedImageProvider(bgPath),
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => _GradientBg(color: config.themeColor),
             )

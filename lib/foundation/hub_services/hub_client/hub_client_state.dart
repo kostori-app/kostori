@@ -82,7 +82,11 @@ class HubState {
     final room = roomList.firstWhereOrNull((r) => r.roomId == currentRoomId);
     if (room == null) return onlineClients;
     final memberIds = room.participants.map((p) => p.userId).toSet();
-    return onlineClients.where((c) => memberIds.contains(c.userId)).toList();
+    return [
+      ...onlineClients.where((c) => memberIds.contains(c.userId)),
+      // 机器人不加入房间成员，但全局可见（可在任何房间 @ 触发）
+      ...onlineClients.where((c) => c.isBot && !memberIds.contains(c.userId)),
+    ];
   }
 
   List<String> get currentRoomModerators {
