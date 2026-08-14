@@ -419,6 +419,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String standardDeviationS({required Object s}) => '標準差：${s}';
 	@override String get nobodysPostedAnythingYet => '目前還沒有人發佈內容...';
 	@override String get reload => '重新載入';
+	@override String get mePagePlugin => '個人頁外掛';
+	@override String get noMePagePlugin => '暫無外掛（將 *.js 放入 plugins 目錄）';
+	@override String get openDir => '開啟目錄';
+	@override String get createPlugin => '建立外掛';
+	@override String get pluginName => '外掛檔名';
+	@override String get alreadyExists => '已存在';
 	@override String get mainContent => '正文';
 	@override String get switchh => '切換';
 	@override String get failedToLoadPleaseTryAgain => '載入失敗，請重試。';
@@ -749,6 +755,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noAudioDevice => '未偵測到音訊裝置';
 	@override String get volumeBoostEnabled => '音量增益: 開';
 	@override String get volumeBoostDisabled => '音量增益: 關';
+	@override String get volume => '音量';
 	@override String get switchSuccessful => '切換成功';
 	@override String get switchFailed => '切換失敗';
 	@override String get remoteCast => '遠端投屏';
@@ -2631,6 +2638,12 @@ extension on TranslationsZhTw {
 			'standardDeviationS' => ({required Object s}) => '標準差：${s}',
 			'nobodysPostedAnythingYet' => '目前還沒有人發佈內容...',
 			'reload' => '重新載入',
+			'mePagePlugin' => '個人頁外掛',
+			'noMePagePlugin' => '暫無外掛（將 *.js 放入 plugins 目錄）',
+			'openDir' => '開啟目錄',
+			'createPlugin' => '建立外掛',
+			'pluginName' => '外掛檔名',
+			'alreadyExists' => '已存在',
 			'mainContent' => '正文',
 			'switchh' => '切換',
 			'failedToLoadPleaseTryAgain' => '載入失敗，請重試。',
@@ -2757,14 +2770,14 @@ extension on TranslationsZhTw {
 			'watcherPlayingNext' => '正在播放下一集',
 			'watcherEpisodeLoadError' => ({required Object error}) => '載入劇集時出錯 ${error}',
 			'watcherNoMoreEpisodes' => '沒有更多劇集可播放',
+			_ => null,
+		} ?? switch (path) {
 			'watcherRouteNotFound' => '線路不存在',
 			'watcherDuplicateEpisode' => '已載入此集數',
 			'vceEstimating' => '估算中…',
 			'vceReloadPreview' => '重新載入預覽片段',
 			'vceReload' => '重載',
 			'vceTimelineThumbnails' => '影片時間軸縮圖',
-			_ => null,
-		} ?? switch (path) {
 			'vceStart' => '起點',
 			'vceEnd' => '終點',
 			'vceModifyStart' => '修改起點',
@@ -2963,6 +2976,7 @@ extension on TranslationsZhTw {
 			'noAudioDevice' => '未偵測到音訊裝置',
 			'volumeBoostEnabled' => '音量增益: 開',
 			'volumeBoostDisabled' => '音量增益: 關',
+			'volume' => '音量',
 			'switchSuccessful' => '切換成功',
 			'switchFailed' => '切換失敗',
 			'remoteCast' => '遠端投屏',
@@ -3270,6 +3284,8 @@ extension on TranslationsZhTw {
 			'regenerate' => '重新產生',
 			'port' => '連接埠',
 			'defaultP' => ({required Object p}) => '預設：${p}',
+			_ => null,
+		} ?? switch (path) {
 			'bindMode' => '綁定模式',
 			'chooseIpVersionToListenOn' => '選擇要監聽的 IP 版本',
 			'hubServer' => 'Hub 服務端',
@@ -3277,8 +3293,6 @@ extension on TranslationsZhTw {
 			'hubServerStartFailed' => 'Hub 伺服器啟動失敗',
 			'enableTls' => '啟用 HTTPS/WSS',
 			'tlsEnabledDesc' => 'Hub 將透過 HTTPS/WSS 提供（需憑證）',
-			_ => null,
-		} ?? switch (path) {
 			'tlsDisabledDesc' => 'Hub 透過 HTTP/WS 提供',
 			'tlsCertificate' => 'TLS 憑證',
 			'tlsCertificateHint' => 'PEM 憑證鏈（Let\'s Encrypt 請用 fullchain.pem）',
@@ -3784,6 +3798,8 @@ extension on TranslationsZhTw {
 			'required' => '必填',
 			'invalidNumber' => '無效數字',
 			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
+			_ => null,
+		} ?? switch (path) {
 			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
 			'linkFormatErrorCannotParseBangumiId' => 'Link format error, cannot parse Bangumi ID',
 			'fetchingBangumiInfo' => 'Fetching Bangumi info...',
@@ -3791,8 +3807,6 @@ extension on TranslationsZhTw {
 			'failedToFetchBangumiInfo' => 'Failed to fetch Bangumi info',
 			'linkFormatErrorCannotParseCharacterId' => 'Link format error, cannot parse character ID',
 			'verifyingCharacterInfo' => 'Verifying character info...',
-			_ => null,
-		} ?? switch (path) {
 			'characterNotFound' => 'Character not found',
 			'failedToFetchCharacterInfo' => 'Failed to fetch character info',
 			'linkFormatErrorCannotParsePersonId' => 'Link format error, cannot parse person ID',
@@ -4298,6 +4312,8 @@ extension on TranslationsZhTw {
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
 			'apiFormat' => '介面格式',
+			_ => null,
+		} ?? switch (path) {
 			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google（Gemini）',
@@ -4305,8 +4321,6 @@ extension on TranslationsZhTw {
 			'testConnection' => '測試連線',
 			'testApiKey' => '檢測 API Key',
 			'enabledByApiKey' => '填寫 API Key 後自動啟用',
-			_ => null,
-		} ?? switch (path) {
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => '連線成功',

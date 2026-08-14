@@ -138,7 +138,11 @@ class _AnimatedImageState extends State<AnimatedImage>
 
   @override
   void reassemble() {
-    _resolveImage(); // in case the image cache was flushed
+    // 热重载会清空 ImageCache 并 dispose 已解码的 ui.Image，
+    // 必须先清空本地引用再重新解析，否则 RawImage 在 rebuild 时
+    // 会 clone 已 dispose 的图片而抛 "Cannot clone a disposed image"。
+    _imageInfo = null;
+    _resolveImage();
     super.reassemble();
   }
 

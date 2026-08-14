@@ -210,6 +210,11 @@ class _AppSettingsState extends State<AppSettings> {
             ),
           ),
         ),
+        // 个人页插件管理
+        const SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(child: MePagePluginSettings()),
+        ),
         // 桌面平台：FFmpeg 设置
         if (App.isDesktop)
           SliverPadding(

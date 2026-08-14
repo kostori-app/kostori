@@ -390,6 +390,12 @@ barChart: Bar Chart
 standardDeviationS: "Standard Deviation: ${s}"
 nobodysPostedAnythingYet: Nobody's posted anything yet...
 reload: Reload
+mePagePlugin: Personal Page Plugins
+noMePagePlugin: No plugins (put *.js into plugins folder)
+openDir: Open Folder
+createPlugin: Create Plugin
+pluginName: Plugin file name
+alreadyExists: already exists
 mainContent: Main Content
 switchh: Switch
 failedToLoadPleaseTryAgain: Failed to load, please try again.
@@ -730,6 +736,7 @@ audioOutputDevice: Audio Output Device
 noAudioDevice: No audio device detected
 volumeBoostEnabled: "Volume Boost: On"
 volumeBoostDisabled: "Volume Boost: Off"
+volume: Volume
 switchSuccessful: Switch Successful
 switchFailed: Switch Failed
 remoteCast: Remote Cast

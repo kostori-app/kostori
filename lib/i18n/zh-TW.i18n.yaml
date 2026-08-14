@@ -378,6 +378,12 @@ barChart: 柱狀圖
 standardDeviationS: 標準差：${s}
 nobodysPostedAnythingYet: 目前還沒有人發佈內容...
 reload: 重新載入
+mePagePlugin: 個人頁外掛
+noMePagePlugin: 暫無外掛（將 *.js 放入 plugins 目錄）
+openDir: 開啟目錄
+createPlugin: 建立外掛
+pluginName: 外掛檔名
+alreadyExists: 已存在
 mainContent: 正文
 switchh: 切換
 failedToLoadPleaseTryAgain: 載入失敗，請重試。
@@ -712,6 +718,7 @@ audioOutputDevice: 音訊輸出裝置
 noAudioDevice: 未偵測到音訊裝置
 volumeBoostEnabled: "音量增益: 開"
 volumeBoostDisabled: "音量增益: 關"
+volume: 音量
 switchSuccessful: 切換成功
 switchFailed: 切換失敗
 remoteCast: 遠端投屏

@@ -379,6 +379,12 @@ barChart: 柱状图
 standardDeviationS: 标准差：${s}
 nobodysPostedAnythingYet: 还没有人发布内容...
 reload: 重新加载
+mePagePlugin: 个人页插件
+noMePagePlugin: 暂无插件（将 *.js 放入 plugins 目录）
+openDir: 打开目录
+createPlugin: 创建插件
+pluginName: 插件文件名
+alreadyExists: 已存在
 mainContent: 正文
 switchh: 切换
 failedToLoadPleaseTryAgain: 加载失败，请重试。
@@ -709,6 +715,7 @@ audioOutputDevice: 音频输出设备
 noAudioDevice: 未检测到音频设备
 volumeBoostEnabled: "音量增益: 开"
 volumeBoostDisabled: "音量增益: 关"
+volume: 音量
 switchSuccessful: 切换成功
 switchFailed: 切换失败
 remoteCast: 远程投屏

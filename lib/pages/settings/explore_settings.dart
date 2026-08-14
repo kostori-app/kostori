@@ -262,11 +262,9 @@ class _SourcesListState extends State<_SourcesList> {
     return _SourceReorderableList(
       sourceKeys: sourceKeys,
       sourcePages: sourcePages,
-      onReorder: (oldIndex, newIndex) {
+      onReorder: (reorderFunc) {
         setState(() {
-          var key = sourceKeys.removeAt(oldIndex);
-          var insertIdx = newIndex > oldIndex ? newIndex - 1 : newIndex;
-          sourceKeys.insert(insertIdx, key);
+          sourceKeys = List.from(reorderFunc(sourceKeys));
         });
         _saveData();
       },
@@ -295,7 +293,8 @@ class _SourcesListState extends State<_SourcesList> {
 class _SourceReorderableList extends StatelessWidget {
   final List<String> sourceKeys;
   final Map<String, List<String>> sourcePages;
-  final void Function(int oldIndex, int newIndex) onReorder;
+  final void Function(List<String> Function(List<String>) reorderFunc)
+  onReorder;
   final void Function(String sourceKey) onSourceTap;
 
   const _SourceReorderableList({
@@ -307,24 +306,25 @@ class _SourceReorderableList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ReorderableListView.builder(
-      itemCount: sourceKeys.length,
-      onReorderItem: onReorder,
-      itemBuilder: (context, index) {
-        var sourceKey = sourceKeys[index];
+    return SettingReorderableList<String>(
+      items: sourceKeys,
+      itemHeight: 64,
+      itemBuilder: (sourceKey) {
         var source = AnimeSource.find(sourceKey);
         var sourceName = source?.name ?? sourceKey;
         var pageCount = sourcePages[sourceKey]?.length ?? 0;
 
         return ListTile(
-          key: ValueKey(sourceKey),
-          leading: const Icon(Icons.drag_handle),
           title: Text(sourceName),
           subtitle: Text('$pageCount pages'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [Icon(Icons.chevron_right), Icon(Icons.drag_handle)],
+          ),
           onTap: () => onSourceTap(sourceKey),
         );
       },
+      onReorder: onReorder,
     );
   }
 }
@@ -367,16 +367,6 @@ class _SourcePagesListState extends State<_SourcePagesList> {
     widget.onPagesChanged(_pages);
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-    var item = _pages.removeAt(oldIndex);
-    _pages.insert(newIndex, item);
-    setState(() {});
-    _saveData();
-  }
-
   void _onDelete(int index) {
     _pages.removeAt(index);
     setState(() {});
@@ -394,20 +384,30 @@ class _SourcePagesListState extends State<_SourcePagesList> {
           onPressed: _showAddDialog,
         ),
       ],
-      body: ReorderableListView.builder(
-        itemCount: _pages.length,
-        onReorderItem: _onReorder,
-        itemBuilder: (context, index) {
-          var page = _pages[index];
+      body: SettingReorderableList<String>(
+        items: _pages,
+        itemHeight: 56,
+        itemKey: (page) => ValueKey("${widget.sourceKey}_$page"),
+        itemBuilder: (page) {
           return ListTile(
-            key: ValueKey("${widget.sourceKey}_$page"),
-            leading: const Icon(Icons.drag_handle),
             title: Text(page.ts(widget.sourceKey)),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => _onDelete(index),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => _onDelete(_pages.indexOf(page)),
+                ),
+                const Icon(Icons.drag_handle),
+              ],
             ),
           );
+        },
+        onReorder: (reorderFunc) {
+          setState(() {
+            _pages = List.from(reorderFunc(_pages));
+          });
+          _saveData();
         },
       ),
     );

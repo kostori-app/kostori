@@ -1205,6 +1205,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Reload'
 	String get reload => 'Reload';
 
+	/// en: 'Personal Page Plugins'
+	String get mePagePlugin => 'Personal Page Plugins';
+
+	/// en: 'No plugins (put *.js into plugins folder)'
+	String get noMePagePlugin => 'No plugins (put *.js into plugins folder)';
+
+	/// en: 'Open Folder'
+	String get openDir => 'Open Folder';
+
+	/// en: 'Create Plugin'
+	String get createPlugin => 'Create Plugin';
+
+	/// en: 'Plugin file name'
+	String get pluginName => 'Plugin file name';
+
+	/// en: 'already exists'
+	String get alreadyExists => 'already exists';
+
 	/// en: 'Main Content'
 	String get mainContent => 'Main Content';
 
@@ -2212,6 +2230,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Volume Boost: Off'
 	String get volumeBoostDisabled => 'Volume Boost: Off';
+
+	/// en: 'Volume'
+	String get volume => 'Volume';
 
 	/// en: 'Switch Successful'
 	String get switchSuccessful => 'Switch Successful';
@@ -7028,6 +7049,12 @@ extension on Translations {
 			'standardDeviationS' => ({required Object s}) => 'Standard Deviation: ${s}',
 			'nobodysPostedAnythingYet' => 'Nobody\'s posted anything yet...',
 			'reload' => 'Reload',
+			'mePagePlugin' => 'Personal Page Plugins',
+			'noMePagePlugin' => 'No plugins (put *.js into plugins folder)',
+			'openDir' => 'Open Folder',
+			'createPlugin' => 'Create Plugin',
+			'pluginName' => 'Plugin file name',
+			'alreadyExists' => 'already exists',
 			'mainContent' => 'Main Content',
 			'switchh' => 'Switch',
 			'failedToLoadPleaseTryAgain' => 'Failed to load, please try again.',
@@ -7146,14 +7173,14 @@ extension on Translations {
 			'good' => 'Good',
 			'great' => 'Great',
 			'master' => 'Master',
+			_ => null,
+		} ?? switch (path) {
 			'epic' => 'Epic',
 			'overview' => 'Overview',
 			'discussion' => 'Discussion',
 			'logs' => 'Logs',
 			'playerDetails' => 'Player Details',
 			'watcherPlayingNext' => 'Playing next episode',
-			_ => null,
-		} ?? switch (path) {
 			'watcherEpisodeLoadError' => ({required Object error}) => 'Failed to load episode: ${error}',
 			'watcherNoMoreEpisodes' => 'No more episodes to play',
 			'watcherRouteNotFound' => 'Route not found',
@@ -7366,6 +7393,7 @@ extension on Translations {
 			'noAudioDevice' => 'No audio device detected',
 			'volumeBoostEnabled' => 'Volume Boost: On',
 			'volumeBoostDisabled' => 'Volume Boost: Off',
+			'volume' => 'Volume',
 			'switchSuccessful' => 'Switch Successful',
 			'switchFailed' => 'Switch Failed',
 			'remoteCast' => 'Remote Cast',
@@ -7659,6 +7687,8 @@ extension on Translations {
 			'regenerate' => 'Regenerate',
 			'port' => 'Port',
 			'defaultP' => ({required Object p}) => 'Default: ${p}',
+			_ => null,
+		} ?? switch (path) {
 			'bindMode' => 'Bind Mode',
 			'chooseIpVersionToListenOn' => 'Choose IP version to listen on',
 			'hubServer' => 'Hub Server',
@@ -7666,8 +7696,6 @@ extension on Translations {
 			'hubServerStartFailed' => 'Failed to start Hub server',
 			'enableTls' => 'Enable HTTPS/WSS',
 			'tlsEnabledDesc' => 'Hub will serve over HTTPS/WSS (requires certificate)',
-			_ => null,
-		} ?? switch (path) {
 			'tlsDisabledDesc' => 'Hub serves over HTTP/WS',
 			'tlsCertificate' => 'TLS Certificate',
 			'tlsCertificateHint' => 'PEM certificate chain (Let\'s Encrypt: fullchain.pem)',
@@ -8173,6 +8201,8 @@ extension on Translations {
 			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
 			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
 			'linkFormatErrorCannotParseBangumiId' => 'Link format error, cannot parse Bangumi ID',
+			_ => null,
+		} ?? switch (path) {
 			'fetchingBangumiInfo' => 'Fetching Bangumi info...',
 			'bangumiEntryNotFound' => 'Bangumi entry not found',
 			'failedToFetchBangumiInfo' => 'Failed to fetch Bangumi info',
@@ -8180,8 +8210,6 @@ extension on Translations {
 			'verifyingCharacterInfo' => 'Verifying character info...',
 			'characterNotFound' => 'Character not found',
 			'failedToFetchCharacterInfo' => 'Failed to fetch character info',
-			_ => null,
-		} ?? switch (path) {
 			'linkFormatErrorCannotParsePersonId' => 'Link format error, cannot parse person ID',
 			'verifyingPersonInfo' => 'Verifying person info...',
 			'personNotFound' => 'Person not found',
@@ -8687,6 +8715,8 @@ extension on Translations {
 			'modalityVideo' => 'Video',
 			'capabilityTools' => 'Tools',
 			'capabilityReasoning' => 'Reasoning',
+			_ => null,
+		} ?? switch (path) {
 			'apiFormat' => 'API format',
 			'apiFormatOpenai' => 'OpenAI (chat)',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
@@ -8694,8 +8724,6 @@ extension on Translations {
 			'apiFormatClaude' => 'Claude (Anthropic)',
 			'testConnection' => 'Test connection',
 			'testApiKey' => 'Test API key',
-			_ => null,
-		} ?? switch (path) {
 			'enabledByApiKey' => 'Enabled automatically when an API key is filled in',
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',

@@ -420,6 +420,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String standardDeviationS({required Object s}) => '标准差：${s}';
 	@override String get nobodysPostedAnythingYet => '还没有人发布内容...';
 	@override String get reload => '重新加载';
+	@override String get mePagePlugin => '个人页插件';
+	@override String get noMePagePlugin => '暂无插件（将 *.js 放入 plugins 目录）';
+	@override String get openDir => '打开目录';
+	@override String get createPlugin => '创建插件';
+	@override String get pluginName => '插件文件名';
+	@override String get alreadyExists => '已存在';
 	@override String get mainContent => '正文';
 	@override String get switchh => '切换';
 	@override String get failedToLoadPleaseTryAgain => '加载失败，请重试。';
@@ -750,6 +756,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noAudioDevice => '未检测到音频设备';
 	@override String get volumeBoostEnabled => '音量增益: 开';
 	@override String get volumeBoostDisabled => '音量增益: 关';
+	@override String get volume => '音量';
 	@override String get switchSuccessful => '切换成功';
 	@override String get switchFailed => '切换失败';
 	@override String get remoteCast => '远程投屏';
@@ -2633,6 +2640,12 @@ extension on TranslationsZhCn {
 			'standardDeviationS' => ({required Object s}) => '标准差：${s}',
 			'nobodysPostedAnythingYet' => '还没有人发布内容...',
 			'reload' => '重新加载',
+			'mePagePlugin' => '个人页插件',
+			'noMePagePlugin' => '暂无插件（将 *.js 放入 plugins 目录）',
+			'openDir' => '打开目录',
+			'createPlugin' => '创建插件',
+			'pluginName' => '插件文件名',
+			'alreadyExists' => '已存在',
 			'mainContent' => '正文',
 			'switchh' => '切换',
 			'failedToLoadPleaseTryAgain' => '加载失败，请重试。',
@@ -2758,14 +2771,14 @@ extension on TranslationsZhCn {
 			'playerDetails' => '播放器详情',
 			'watcherPlayingNext' => '正在播放下一集',
 			'watcherEpisodeLoadError' => ({required Object error}) => '加载剧集时出错 ${error}',
+			_ => null,
+		} ?? switch (path) {
 			'watcherNoMoreEpisodes' => '没有更多剧集可播放',
 			'watcherRouteNotFound' => '线路不存在',
 			'watcherDuplicateEpisode' => '加载重复集数',
 			'vceEstimating' => '估算中…',
 			'vceReloadPreview' => '重新加载预览片段',
 			'vceReload' => '重载',
-			_ => null,
-		} ?? switch (path) {
 			'vceTimelineThumbnails' => '视频时间轴缩略图',
 			'vceStart' => '起点',
 			'vceEnd' => '终点',
@@ -2965,6 +2978,7 @@ extension on TranslationsZhCn {
 			'noAudioDevice' => '未检测到音频设备',
 			'volumeBoostEnabled' => '音量增益: 开',
 			'volumeBoostDisabled' => '音量增益: 关',
+			'volume' => '音量',
 			'switchSuccessful' => '切换成功',
 			'switchFailed' => '切换失败',
 			'remoteCast' => '远程投屏',
@@ -3271,6 +3285,8 @@ extension on TranslationsZhCn {
 			'port' => '端口',
 			'defaultP' => ({required Object p}) => '默认：${p}',
 			'bindMode' => '绑定模式',
+			_ => null,
+		} ?? switch (path) {
 			'chooseIpVersionToListenOn' => '选择监听的 IP 版本',
 			'hubServer' => 'Hub 服务端',
 			'enableHub' => '启用 Hub',
@@ -3278,8 +3294,6 @@ extension on TranslationsZhCn {
 			'enableTls' => '启用 HTTPS/WSS',
 			'tlsEnabledDesc' => 'Hub 将通过 HTTPS/WSS 提供（需证书）',
 			'tlsDisabledDesc' => 'Hub 通过 HTTP/WS 提供',
-			_ => null,
-		} ?? switch (path) {
 			'tlsCertificate' => 'TLS 证书',
 			'tlsCertificateHint' => 'PEM 证书链（Let\'s Encrypt 请用 fullchain.pem）',
 			'tlsPrivateKey' => 'TLS 私钥',
@@ -3785,6 +3799,8 @@ extension on TranslationsZhCn {
 			'invalidNumber' => '无效数字',
 			'noCategoryPages' => '无分类页面',
 			'linkFormatErrorCannotParseAnimeInfo' => '链接格式错误，无法解析番剧信息',
+			_ => null,
+		} ?? switch (path) {
 			'sourceNotFoundPleaseConfirmSourceInstalled' => '未找到数据源，请确认数据源已安装',
 			'linkFormatErrorCannotParseBangumiId' => '链接格式错误，无法解析 Bangumi ID',
 			'fetchingBangumiInfo' => '正在获取 Bangumi 信息...',
@@ -3792,8 +3808,6 @@ extension on TranslationsZhCn {
 			'failedToFetchBangumiInfo' => '获取 Bangumi 信息失败',
 			'linkFormatErrorCannotParseCharacterId' => '链接格式错误，无法解析角色 ID',
 			'verifyingCharacterInfo' => '正在验证角色信息...',
-			_ => null,
-		} ?? switch (path) {
 			'characterNotFound' => '未找到角色',
 			'failedToFetchCharacterInfo' => '获取角色信息失败',
 			'linkFormatErrorCannotParsePersonId' => '链接格式错误，无法解析人物 ID',
@@ -4299,6 +4313,8 @@ extension on TranslationsZhCn {
 			'modalityVideo' => '视频',
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
+			_ => null,
+		} ?? switch (path) {
 			'apiFormat' => '接口格式',
 			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
@@ -4306,8 +4322,6 @@ extension on TranslationsZhCn {
 			'apiFormatClaude' => 'Claude（Anthropic）',
 			'testConnection' => '测试连接',
 			'testApiKey' => '检测 API Key',
-			_ => null,
-		} ?? switch (path) {
 			'enabledByApiKey' => '填写 API Key 后自动启用',
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
