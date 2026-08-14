@@ -41,6 +41,16 @@ part 'player_controller.g.dart';
 
 class PlayerController = _PlayerController with _$PlayerController;
 
+/// 音频输出设备：`name` 为 mpv 设备标识（设置用），`description` 为友好名称（展示用）。
+class AudioDeviceInfo {
+  final String name;
+  final String description;
+
+  const AudioDeviceInfo(this.name, this.description);
+
+  String get label => description.isNotEmpty ? description : name;
+}
+
 abstract class _PlayerController with Store {
   late ShadersController shadersController;
   late final PlayerAudioHandler audioHandler;
@@ -182,6 +192,50 @@ abstract class _PlayerController with Store {
   /// 是否处于一起看房间（用于全屏弹幕设置/聊天按钮的显示）
   @observable
   bool inRoom = false;
+
+  /// 一起看房间：同步时长者（房主）的播放位置（ms），-1 表示无同步
+  @observable
+  int ownerSyncPositionMs = -1;
+
+  /// 同步时长者（房主）是否在播放
+  @observable
+  bool ownerSyncPlaying = true;
+
+  /// 同步时长者（房主）广播的 sentAt 时间戳（ms），用于延迟补偿
+  @observable
+  int ownerSyncSentAt = 0;
+
+  /// 点击时长触发的「追上房主」回调（由一起看页面注册，复用完整同步逻辑）
+  VoidCallback? onSyncToOwner;
+
+  /// 房主估算的当前播放位置（延迟补偿后，-1 表示无同步）。
+  /// 房主在播时，按「距广播的时间」补上进度；限制补偿 0~30s，避免时钟偏差跳变。
+  int get ownerSyncCompensatedPositionMs {
+    if (ownerSyncPositionMs < 0) return ownerSyncPositionMs;
+    if (!ownerSyncPlaying) return ownerSyncPositionMs;
+    final elapsed = DateTime.now().millisecondsSinceEpoch - ownerSyncSentAt;
+    return ownerSyncPositionMs + elapsed.clamp(0, 30000);
+  }
+
+  /// 与同步时长者（房主）的时间差文本，如 "+5s"/"-3s"；无同步时为空
+  String get ownerSyncDiffText {
+    final target = ownerSyncCompensatedPositionMs;
+    if (target < 0) return '';
+    final diff = currentPosition.inMilliseconds - target;
+    final abs = diff.abs();
+    if (abs < 500) return '0s';
+    final sign = diff >= 0 ? '+' : '-';
+    return '$sign${(abs / 1000).round()}s';
+  }
+
+  /// 时间差对应的颜色：<1s 绿（已同步），<5s 橙，其余红（偏离较大）
+  Color ownerSyncDiffColor(BuildContext context) {
+    final target = ownerSyncCompensatedPositionMs;
+    final diff = (currentPosition.inMilliseconds - target).abs();
+    if (diff < 1000) return const Color(0xFF4CAF50);
+    if (diff < 5000) return const Color(0xFFFF9800);
+    return const Color(0xFFF44336);
+  }
 
   @observable
   bool showSeekTime = false;
@@ -341,20 +395,26 @@ abstract class _PlayerController with Store {
   }
 
   /// 读取 libmpv 可用的音频输出设备列表（桌面端）。
-  /// 返回的设备名可直接传给 [setAudioDevice]。
-  Future<List<String>> getAudioDevices() async {
+  /// 返回 [AudioDeviceInfo]：`name` 为 mpv 设备标识（传给 [setAudioDevice]），
+  /// `description` 为友好名称（展示用）。
+  Future<List<AudioDeviceInfo>> getAudioDevices() async {
     try {
       final pp = player.platform as NativePlayer;
       final raw = await pp.getProperty("audio-device-list");
       final decoded = jsonDecode(raw.toString());
       if (decoded is List) {
-        final names = <String>[];
+        final devices = <AudioDeviceInfo>[];
         for (final e in decoded) {
           if (e is Map && e['name'] != null) {
-            names.add(e['name'] as String);
+            devices.add(
+              AudioDeviceInfo(
+                e['name'] as String,
+                (e['description'] as String?) ?? '',
+              ),
+            );
           }
         }
-        return names;
+        return devices;
       }
       return [];
     } catch (_) {
@@ -370,20 +430,20 @@ abstract class _PlayerController with Store {
     } else {
       await pp.setProperty('audio-device', deviceName);
     }
-    // 记住选择
-    appdata.settings['audioDevice'] = deviceName;
-    appdata.saveData();
+    // 记住选择（implicitData：SettingsData 无该字段，写 settings 会被 freezed 丢弃）
+    appdata.implicitData['audioDevice'] = deviceName;
+    appdata.writeImplicitData();
   }
 
   /// 当前已选音频设备（空 = 自动）
   String get currentAudioDevice =>
-      (appdata.settings['audioDevice'] as String?) ?? '';
+      (appdata.implicitData['audioDevice'] as String?) ?? '';
 
   /// 音量增益开关切换
   Future<void> toggleVolumeBoost() async {
     volumeBoost = !volumeBoost;
-    appdata.settings['volumeBoost'] = volumeBoost;
-    appdata.saveData();
+    appdata.implicitData['volumeBoost'] = volumeBoost;
+    appdata.writeImplicitData();
     // 增益关闭时若当前音量超 100，钳回 100
     if (!volumeBoost && volume > 100) {
       await setVolume(100);
@@ -408,7 +468,9 @@ abstract class _PlayerController with Store {
     hAenable = appdata.settings.s.haEnable;
     hardwareDecoder = appdata.settings.s.hardwareDecoder;
     videoSync = appdata.settings.s.videoSynchronizationMode;
-    volumeBoost = appdata.settings['volumeBoost'] ?? false;
+    volumeBoost = appdata.implicitData['volumeBoost'] ?? false;
+    // 恢复上次的音量（仅桌面端；-1 表示未设置，稍后默认 100）
+    volume = (appdata.implicitData['volume'] as num?)?.toDouble() ?? -1;
 
     if (App.isAndroid) {
       final info = await DeviceInfo.getDeviceInfo();
@@ -605,6 +667,8 @@ abstract class _PlayerController with Store {
     _overlayEntry = null;
     _overlayTimer?.cancel();
     _overlayTimer = null;
+    _persistVolumeTimer?.cancel();
+    _persistVolumeTimer = null;
     try {
       await playerLogSubscription?.cancel();
     } catch (_) {}
@@ -715,6 +779,7 @@ abstract class _PlayerController with Store {
   Future<void> setVolume(double value) async {
     value = value.clamp(0.0, volumeUpperBound);
     volume = value;
+    _scheduleVolumePersist();
     try {
       if (App.isDesktop) {
         await player.setVolume(value);
@@ -723,6 +788,18 @@ abstract class _PlayerController with Store {
         await FlutterVolumeController.setVolume(value / 100);
       }
     } catch (_) {}
+  }
+
+  Timer? _persistVolumeTimer;
+
+  /// 音量变更后延迟落盘，避免滑条拖动时频繁写盘
+  void _scheduleVolumePersist() {
+    if (!App.isDesktop) return;
+    _persistVolumeTimer?.cancel();
+    _persistVolumeTimer = Timer(const Duration(milliseconds: 500), () {
+      appdata.implicitData['volume'] = volume;
+      appdata.writeImplicitData();
+    });
   }
 
   Future<void> playOrPause() async {

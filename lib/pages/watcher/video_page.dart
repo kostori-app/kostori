@@ -349,9 +349,8 @@ class _VideoPageState extends State<VideoPage>
               // 全屏时一起看聊天浮层（Positioned.fill 覆盖全屏，供点击层/面板定位）
               if (playerController.isFullScreen)
                 Positioned.fill(child: _buildChatOverlay(context)),
-              // 全屏弹幕层（独立 State，父级 rebuild 不影响弹幕动画）
-              if (playerController.isFullScreen)
-                const Positioned.fill(child: _DanmakuOverlay()),
+              // 弹幕层（独立 State，父级 rebuild 不影响弹幕动画；全屏/非全屏都显示）
+              const Positioned.fill(child: _DanmakuOverlay()),
             ],
           ),
         ),
@@ -951,6 +950,7 @@ class _DanmakuOverlayState extends State<_DanmakuOverlay>
   ProviderContainer? _container;
   late final AnimationController _ticker;
   Timer? _cleanupTimer;
+  Size _size = Size.zero;
 
   @override
   void initState() {
@@ -1050,16 +1050,16 @@ class _DanmakuOverlayState extends State<_DanmakuOverlay>
     // 自己的消息也显示弹幕，便于确认发送成功
     final text = msg.plainText.trim();
     if (text.isEmpty) return;
+    if (_size.width <= 0) return;
     if (!_ticker.isAnimating) _ticker.repeat();
-    final size = MediaQuery.sizeOf(context);
     setState(() {
       _danmaku.add(
         _DanmakuData.create(
           name: msg.sender.displayName,
           text: text,
           nameColor: _nameColor(msg.sender.userId),
-          track: _danmaku.length % _trackCount(size.height),
-          screenWidth: size.width,
+          track: _danmaku.length % _trackCount(_size.height),
+          screenWidth: _size.width,
           fontSize: DanmakuSettings.fontSize,
           textColor: DanmakuSettings.color,
           opacity: DanmakuSettings.opacity,
@@ -1078,19 +1078,23 @@ class _DanmakuOverlayState extends State<_DanmakuOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
     return IgnorePointer(
       // RepaintBoundary 隔离弹幕重绘，不影响上层视频画面
       child: RepaintBoundary(
-        child: CustomPaint(
-          size: Size(size.width, size.height),
-          painter: _DanmakuPainter(
-            danmaku: _danmaku,
-            screenWidth: size.width,
-            lineHeight: DanmakuSettings.lineHeight,
-            trackCount: _trackCount(size.height),
-            repaint: _ticker,
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            _size = constraints.biggest;
+            return CustomPaint(
+              size: _size,
+              painter: _DanmakuPainter(
+                danmaku: _danmaku,
+                screenWidth: _size.width,
+                lineHeight: DanmakuSettings.lineHeight,
+                trackCount: _trackCount(_size.height),
+                repaint: _ticker,
+              ),
+            );
+          },
         ),
       ),
     );

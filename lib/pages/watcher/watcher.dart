@@ -46,7 +46,7 @@ class Watcher extends StatefulWidget {
 }
 
 class WatcherState extends State<Watcher>
-    with _WatcherLocation, SingleTickerProviderStateMixin {
+    with _WatcherLocation, SingleTickerProviderStateMixin, RouteAware {
   static WatcherState? currentState;
 
   PlayerController get playerController => widget.playerController;
@@ -140,13 +140,36 @@ class WatcherState extends State<Watcher>
   void didChangeDependencies() {
     super.didChangeDependencies();
     playerController.initWindow();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      App.routeObserver.subscribe(this, route);
+    }
+  }
+
+  /// 本页被其他页面覆盖时暂停播放，避免后台继续播放。
+  @override
+  void didPushNext() {
+    // 全屏时播放器转到 FullscreenVideoPage（同一 controller），不能暂停
+    if (!playerController.isFullScreen) {
+      playerController.pause(showIndicator: false);
+    }
+  }
+
+  /// 返回本页时恢复 currentState（多个详情页入栈后返回）
+  @override
+  void didPopNext() {
+    currentState = this;
   }
 
   int? bangumiId;
 
   @override
   void dispose() {
-    currentState = null;
+    App.routeObserver.unsubscribe(this);
+    // 仅当自己是当前激活的 Watcher 时才清空，避免多详情页时误清
+    if (currentState == this) {
+      currentState = null;
+    }
     _completedSub?.cancel();
     updateHistoryTimer?.cancel();
     playerController.dispose();

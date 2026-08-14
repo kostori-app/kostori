@@ -7,6 +7,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/volume_slider_popup.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
@@ -415,13 +416,56 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                           ),
                           child: Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.only(left: 10.0),
-                                child: Text(
-                                  "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16.0,
+                              GestureDetector(
+                                // 一起看房间：点击时长一键追上房主
+                                onTap: playerController.ownerSyncPositionMs >= 0
+                                    ? playerController.onSyncToOwner
+                                    : null,
+                                child: Container(
+                                  padding: const EdgeInsets.only(left: 10.0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // 房主暂停提示图标
+                                      if (playerController
+                                                  .ownerSyncPositionMs >=
+                                              0 &&
+                                          !playerController.ownerSyncPlaying)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 6,
+                                          ),
+                                          child: Icon(
+                                            Icons.pause_circle_filled,
+                                            size: 15,
+                                            color: const Color(0xFFFFB300),
+                                          ),
+                                        ),
+                                      Text(
+                                        "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16.0,
+                                        ),
+                                      ),
+                                      if (playerController
+                                              .ownerSyncPositionMs >=
+                                          0)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 8,
+                                          ),
+                                          child: Text(
+                                            playerController.ownerSyncDiffText,
+                                            style: TextStyle(
+                                              color: playerController
+                                                  .ownerSyncDiffColor(context),
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -500,6 +544,39 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                   playerController.playNextEpisode();
                                 },
                               ),
+                              // 音量滑条（桌面端）
+                              if (App.isDesktop)
+                                Builder(
+                                  builder: (buttonContext) {
+                                    return IconButton(
+                                      color: Colors.white,
+                                      icon: Icon(
+                                        playerController.volume <= 0
+                                            ? Icons.volume_off
+                                            : playerController.volume <
+                                                  playerController
+                                                          .volumeUpperBound /
+                                                      2
+                                            ? Icons.volume_down
+                                            : Icons.volume_up,
+                                      ),
+                                      tooltip: t.volume,
+                                      onPressed: () {
+                                        final renderBox =
+                                            buttonContext.findRenderObject()
+                                                as RenderBox;
+                                        final offset = renderBox.localToGlobal(
+                                          Offset.zero,
+                                        );
+                                        showVolumeSliderPopup(
+                                          buttonContext,
+                                          offset,
+                                          playerController,
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
                               const Spacer(),
                               if (playerController.inRoom)
                                 IconButton(

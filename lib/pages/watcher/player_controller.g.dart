@@ -463,6 +463,24 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$volumeBoostAtom = Atom(
+    name: '_PlayerController.volumeBoost',
+    context: context,
+  );
+
+  @override
+  bool get volumeBoost {
+    _$volumeBoostAtom.reportRead();
+    return super.volumeBoost;
+  }
+
+  @override
+  set volumeBoost(bool value) {
+    _$volumeBoostAtom.reportWrite(value, super.volumeBoost, () {
+      super.volumeBoost = value;
+    });
+  }
+
   late final _$playerSpeedAtom = Atom(
     name: '_PlayerController.playerSpeed',
     context: context,
@@ -496,6 +514,114 @@ mixin _$PlayerController on _PlayerController, Store {
   set playbackSpeed(double value) {
     _$playbackSpeedAtom.reportWrite(value, super.playbackSpeed, () {
       super.playbackSpeed = value;
+    });
+  }
+
+  late final _$syncLockedAtom = Atom(
+    name: '_PlayerController.syncLocked',
+    context: context,
+  );
+
+  @override
+  bool get syncLocked {
+    _$syncLockedAtom.reportRead();
+    return super.syncLocked;
+  }
+
+  @override
+  set syncLocked(bool value) {
+    _$syncLockedAtom.reportWrite(value, super.syncLocked, () {
+      super.syncLocked = value;
+    });
+  }
+
+  late final _$speedLockedAtom = Atom(
+    name: '_PlayerController.speedLocked',
+    context: context,
+  );
+
+  @override
+  bool get speedLocked {
+    _$speedLockedAtom.reportRead();
+    return super.speedLocked;
+  }
+
+  @override
+  set speedLocked(bool value) {
+    _$speedLockedAtom.reportWrite(value, super.speedLocked, () {
+      super.speedLocked = value;
+    });
+  }
+
+  late final _$inRoomAtom = Atom(
+    name: '_PlayerController.inRoom',
+    context: context,
+  );
+
+  @override
+  bool get inRoom {
+    _$inRoomAtom.reportRead();
+    return super.inRoom;
+  }
+
+  @override
+  set inRoom(bool value) {
+    _$inRoomAtom.reportWrite(value, super.inRoom, () {
+      super.inRoom = value;
+    });
+  }
+
+  late final _$ownerSyncPositionMsAtom = Atom(
+    name: '_PlayerController.ownerSyncPositionMs',
+    context: context,
+  );
+
+  @override
+  int get ownerSyncPositionMs {
+    _$ownerSyncPositionMsAtom.reportRead();
+    return super.ownerSyncPositionMs;
+  }
+
+  @override
+  set ownerSyncPositionMs(int value) {
+    _$ownerSyncPositionMsAtom.reportWrite(value, super.ownerSyncPositionMs, () {
+      super.ownerSyncPositionMs = value;
+    });
+  }
+
+  late final _$ownerSyncPlayingAtom = Atom(
+    name: '_PlayerController.ownerSyncPlaying',
+    context: context,
+  );
+
+  @override
+  bool get ownerSyncPlaying {
+    _$ownerSyncPlayingAtom.reportRead();
+    return super.ownerSyncPlaying;
+  }
+
+  @override
+  set ownerSyncPlaying(bool value) {
+    _$ownerSyncPlayingAtom.reportWrite(value, super.ownerSyncPlaying, () {
+      super.ownerSyncPlaying = value;
+    });
+  }
+
+  late final _$ownerSyncSentAtAtom = Atom(
+    name: '_PlayerController.ownerSyncSentAt',
+    context: context,
+  );
+
+  @override
+  int get ownerSyncSentAt {
+    _$ownerSyncSentAtAtom.reportRead();
+    return super.ownerSyncSentAt;
+  }
+
+  @override
+  set ownerSyncSentAt(int value) {
+    _$ownerSyncSentAtAtom.reportWrite(value, super.ownerSyncSentAt, () {
+      super.ownerSyncSentAt = value;
     });
   }
 
@@ -643,6 +769,24 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$chatOverlayOpenAtom = Atom(
+    name: '_PlayerController.chatOverlayOpen',
+    context: context,
+  );
+
+  @override
+  bool get chatOverlayOpen {
+    _$chatOverlayOpenAtom.reportRead();
+    return super.chatOverlayOpen;
+  }
+
+  @override
+  set chatOverlayOpen(bool value) {
+    _$chatOverlayOpenAtom.reportWrite(value, super.chatOverlayOpen, () {
+      super.chatOverlayOpen = value;
+    });
+  }
+
   late final _$animeImgAtom = Atom(
     name: '_PlayerController.animeImg',
     context: context,
@@ -735,8 +879,15 @@ saveAddress: ${saveAddress},
 showTabBody: ${showTabBody},
 volume: ${volume},
 brightness: ${brightness},
+volumeBoost: ${volumeBoost},
 playerSpeed: ${playerSpeed},
 playbackSpeed: ${playbackSpeed},
+syncLocked: ${syncLocked},
+speedLocked: ${speedLocked},
+inRoom: ${inRoom},
+ownerSyncPositionMs: ${ownerSyncPositionMs},
+ownerSyncPlaying: ${ownerSyncPlaying},
+ownerSyncSentAt: ${ownerSyncSentAt},
 showSeekTime: ${showSeekTime},
 showPlaySpeed: ${showPlaySpeed},
 showBrightness: ${showBrightness},
@@ -745,6 +896,7 @@ showVideoController: ${showVideoController},
 volumeSeeking: ${volumeSeeking},
 brightnessSeeking: ${brightnessSeeking},
 canHidePlayerPanel: ${canHidePlayerPanel},
+chatOverlayOpen: ${chatOverlayOpen},
 animeImg: ${animeImg},
 currentSetName: ${currentSetName}
     ''';
