@@ -1474,12 +1474,17 @@ class _SatoriBotEditPageState extends ConsumerState<_SatoriBotEditPage> {
       final httpBase = HubImageUploader.httpUrlOf(
         savedAddress,
       ).replaceAll(RegExp(r'/hub/?$'), '');
+      final token = _hubClient.savedToken;
       final resp = await AppDio().request(
         '$httpBase/hub/upload/config',
         options: Options(
           method: 'GET',
           sendTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 5),
+          headers: {
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          },
         ),
       );
       if (resp.statusCode != 200 || resp.data is! Map) return;

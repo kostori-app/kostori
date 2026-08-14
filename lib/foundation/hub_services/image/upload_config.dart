@@ -184,6 +184,28 @@ class HubUploadConfig {
   /// 是否需要显示 OSS 配置 UI
   bool get clientNeedsOssConfig => mode == HubUploadMode.clientOss;
 
+  /// 把相对路径 /hub/files/xxx 或本机地址（localhost/127.0.0.1/::1）解析为
+  /// 公网可访问的绝对 URL（优先 publicBaseUrl）。未配置 publicBaseUrl 时原样返回。
+  String resolveFileUrl(String url) {
+    if (url.isEmpty || url.startsWith('data:')) return url;
+    final base = publicBaseUrl;
+    if (base == null || base.isEmpty) return url;
+    final trimmed = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
+    if (url.startsWith('/hub/')) return '$trimmed$url';
+    final uri = Uri.tryParse(url);
+    if (uri != null &&
+        (uri.host == 'localhost' ||
+            uri.host == '127.0.0.1' ||
+            uri.host == '::1')) {
+      final origin =
+          '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+      return url.replaceFirst(origin, trimmed);
+    }
+    return url;
+  }
+
   bool get serverNeedsOssConfig => mode == HubUploadMode.serverOss;
 
   // ── 序列化 ──

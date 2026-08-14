@@ -19,7 +19,6 @@ class _HubUploadPageState extends State<_HubUploadPage> {
   final _secretCtrl = TextEditingController();
   final _cdnCtrl = TextEditingController();
   final _maxSizeCtrl = TextEditingController();
-  final _localPathCtrl = TextEditingController();
   final _publicBaseUrlCtrl = TextEditingController();
 
   @override
@@ -37,7 +36,6 @@ class _HubUploadPageState extends State<_HubUploadPage> {
     _secretCtrl.text = o?.accessKeySecret ?? '';
     _cdnCtrl.text = o?.cdnDomain ?? '';
     _maxSizeCtrl.text = (_cfg.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
-    _localPathCtrl.text = _cfg.localStorePath ?? '';
     _publicBaseUrlCtrl.text = _cfg.publicBaseUrl ?? '';
   }
 
@@ -49,7 +47,6 @@ class _HubUploadPageState extends State<_HubUploadPage> {
     _secretCtrl.dispose();
     _cdnCtrl.dispose();
     _maxSizeCtrl.dispose();
-    _localPathCtrl.dispose();
     _publicBaseUrlCtrl.dispose();
     super.dispose();
   }
@@ -184,14 +181,11 @@ class _HubUploadPageState extends State<_HubUploadPage> {
       );
     }
 
-    final lp = _localPathCtrl.text.trim();
     final pb = _publicBaseUrlCtrl.text.trim();
     final newCfg = _cfg.copyWith(
       ossConfig: oss,
       clearOssConfig: oss == null,
       maxSizeBytes: maxMb * 1024 * 1024,
-      localStorePath: lp.isEmpty ? null : lp,
-      clearLocalStorePath: lp.isEmpty,
       publicBaseUrl: pb.isEmpty ? null : pb,
       clearPublicBaseUrl: pb.isEmpty,
     );
@@ -331,19 +325,6 @@ class _HubUploadPageState extends State<_HubUploadPage> {
             if (_cfg.mode == HubUploadMode.serverLocal)
               _FormCard(
                 children: [
-                  _FormSectionTitle(
-                    title: t.storePath,
-                    icon: Icons.folder_outlined,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _localPathCtrl,
-                    decoration: _formFieldDecoration(
-                      labelText: t.storePath,
-                      hintText: '/data/hub_uploads',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   _FormSectionTitle(
                     title: t.publicBaseUrl,
                     icon: Icons.public_outlined,

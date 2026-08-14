@@ -166,7 +166,7 @@ class SatoriServer {
           hub?.registerBotMember(
             userId: profile.id,
             displayName: profile.name,
-            avatarUrl: profile.avatarUrl,
+            avatarUrl: _resolveAvatar(profile.avatarUrl),
           );
           _clients[socket] = profile;
           socket.add(
@@ -204,6 +204,12 @@ class SatoriServer {
     'proxyUrls': [],
   };
 
+  /// 把机器人头像解析为公网可访问地址（优先 publicBaseUrl，避免 localhost）
+  String? _resolveAvatar(String? url) {
+    if (url == null || url.isEmpty) return null;
+    return _hub?.uploadConfig.resolveFileUrl(url) ?? url;
+  }
+
   Map<String, dynamic> _login(SatoriBotProfile profile) => {
     'sn': _sn,
     'adapter': 'kostori',
@@ -211,7 +217,8 @@ class SatoriServer {
     'user': {
       'id': profile.id,
       'name': profile.name,
-      if (profile.avatarUrl?.isNotEmpty == true) 'avatar': profile.avatarUrl,
+      if (profile.avatarUrl?.isNotEmpty == true)
+        'avatar': _resolveAvatar(profile.avatarUrl),
       'isBot': true,
     },
     'status': 1,
@@ -582,7 +589,7 @@ class SatoriServer {
         hub.registerBotMember(
           userId: profile.id,
           displayName: profile.name,
-          avatarUrl: profile.avatarUrl,
+          avatarUrl: _resolveAvatar(profile.avatarUrl),
         );
         final bot =
             hub.clients.firstWhereOrNull((c) => c.userId == profile.id) ??
@@ -624,7 +631,7 @@ class SatoriServer {
         hub.registerBotMember(
           userId: profile.id,
           displayName: profile.name,
-          avatarUrl: profile.avatarUrl,
+          avatarUrl: _resolveAvatar(profile.avatarUrl),
         );
         final deleter =
             hub.clients.firstWhereOrNull((c) => c.userId == profile.id) ??
@@ -818,7 +825,8 @@ class SatoriServer {
   Map<String, dynamic> _user(HubClientDto client) => {
     'id': client.userId,
     'name': client.displayName,
-    if (client.avatarUrl?.isNotEmpty == true) 'avatar': client.avatarUrl,
+    if (client.avatarUrl?.isNotEmpty == true)
+      'avatar': _resolveAvatar(client.avatarUrl),
     'isBot': client.isBot,
   };
 

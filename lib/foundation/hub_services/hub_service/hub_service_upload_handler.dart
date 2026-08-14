@@ -21,13 +21,9 @@ extension HubServiceUploadHandler on HubService {
     appdata.writeImplicitData();
   }
 
-  // ── 本地存储目录 ──
+  // ── 本地存储目录（固定写死，不随配置更改）──
 
-  String get _uploadDir {
-    final custom = uploadConfig.localStorePath;
-    if (custom != null && custom.isNotEmpty) return custom;
-    return p.join(App.dataPath, 'hub_uploads');
-  }
+  String get _uploadDir => p.join(App.dataPath, 'hub_uploads');
 
   Future<void> _ensureUploadDir() async {
     final dir = Directory(_uploadDir);

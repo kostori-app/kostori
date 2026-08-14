@@ -97,7 +97,8 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
       );
 
       _closed = false;
-      _engine = FlutterQjs();
+      // timeout：JS 同步执行超时（CPU 时间，毫秒）后由 QuickJS 中断，防止死循环冻结 UI
+      _engine = FlutterQjs(timeout: 30000);
       _engine!.dispatch();
       var setGlobalFunc = _engine!.evaluate(
         "(key, value) => { this[key] = value; }",
@@ -425,15 +426,20 @@ mixin class _JSEngineApi {
   }
 
   Future<dynamic> _handleWebView(Map<String, dynamic> data) async {
-    String? action = data["action"] as String?;
+    final action = data["action"];
     if (action == 'extract') {
-      final url = data["url"] as String? ?? '';
-      final waitMs = data["waitMs"] as int? ?? 8000;
-      final scan = data["scan"] as bool? ?? true;
-      final script = data["script"] as String?;
+      final url = data["url"]?.toString() ?? '';
+      // waitMs 上限钳制，避免插件/源传入超大值导致 WebView 长时间挂起
+      final waitMs = (data["waitMs"] is int ? data["waitMs"] as int : 8000)
+          .clamp(1000, 60000);
+      final scan = data["scan"] is bool ? data["scan"] as bool : true;
+      final script = data["script"]?.toString();
       Map<String, String>? headers;
-      if (data['headers'] != null) {
-        headers = Map<String, String>.from(data['headers']);
+      final rawHeaders = data['headers'];
+      if (rawHeaders is Map) {
+        headers = rawHeaders.map(
+          (k, v) => MapEntry(k.toString(), v.toString()),
+        );
       }
       try {
         return await WebViewResolver.fetchViaWebView(
