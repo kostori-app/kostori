@@ -60,6 +60,9 @@ class _App {
 
   GlobalKey<NavigatorState>? mainNavigatorKey;
 
+  /// 主导航器的路由观察者，用于播放器在页面被覆盖时暂停等。
+  final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
   BuildContext get rootContext => rootNavigatorKey.currentContext!;
 
   final Appdata data = appdata;

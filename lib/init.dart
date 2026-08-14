@@ -18,6 +18,7 @@ import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/network/cookie_jar.dart';
@@ -64,6 +65,7 @@ Future<void> init() async {
     I18nUtils.init().wait(),
     JsEngine().init().wait(),
     AnimeSourceManager().init().wait(),
+    MePagePluginManager().init().wait(),
   ];
   await Future.wait(futures);
   SkillRegistry.instance.registerAll([

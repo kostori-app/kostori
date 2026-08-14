@@ -22,6 +22,7 @@ import 'package:kostori/pages/anime_recognize_page.dart';
 import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
+import 'package:kostori/pages/me_page_plugins.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/pages/video_test_page.dart';
@@ -78,6 +79,7 @@ class _MePageState extends ConsumerState<MePage> {
         const TodayRecommendation(),
         const _ImageManipulation(),
         const _StatsViewPage(),
+        const MePagePluginModules(),
         SliverPadding(
           padding: EdgeInsets.only(top: context.padding.bottom + 56),
         ),
@@ -793,6 +795,21 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                                     height: 200,
                                     child: Hero(
                                       tag: filename,
+                                      flightShuttleBuilder:
+                                          (
+                                            flightContext,
+                                            animation,
+                                            direction,
+                                            fromContext,
+                                            toContext,
+                                          ) {
+                                            return direction ==
+                                                    HeroFlightDirection.pop
+                                                ? (fromContext.widget as Hero)
+                                                      .child
+                                                : (toContext.widget as Hero)
+                                                      .child;
+                                          },
                                       child: Image.file(
                                         file,
                                         fit: BoxFit.cover,
