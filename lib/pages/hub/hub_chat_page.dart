@@ -13,14 +13,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
+import 'package:kostori/pages/bangumi/bottom_info.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/utils/ext.dart';
 
@@ -685,7 +689,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                 onRemovePending: (i) =>
                     setState(() => _pendingImages.removeAt(i)),
                 room: room,
-                onOpenBangumiInfo: widget.onOpenBangumiInfo,
+                onOpenBangumiInfo: _bangumiInfoCallback,
                 // 弹层内 PopUpWidgetScaffold 已统一处理键盘偏移，避免双重顶起；
                 // 仅无 Scaffold 的全屏覆盖层（播放器面板）才手动补偿
                 applyKeyboardPadding: widget.manualKeyboardPadding,
@@ -914,6 +918,71 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         title: room.animeTitle,
       ),
     );
+  }
+
+  /// 一起看房间：Bangumi 详情按钮回调。
+  /// 播放器内嵌时优先用外部传入的回调；独立聊天页则根据房间绑定的番剧补一个。
+  VoidCallback? get _bangumiInfoCallback {
+    if (widget.onOpenBangumiInfo != null) return widget.onOpenBangumiInfo;
+    final room = ref.read(hubProvider).currentRoom;
+    final hasAnime =
+        room?.animeId?.isNotEmpty == true &&
+        room?.animeSourceKey?.isNotEmpty == true;
+    return hasAnime ? _openRoomBangumiInfo : null;
+  }
+
+  /// 打开一起看房间绑定番剧的 Bangumi 详情
+  Future<void> _openRoomBangumiInfo() async {
+    final room = ref.read(hubProvider).currentRoom;
+    final animeId = room?.animeId;
+    final sourceKey = room?.animeSourceKey;
+    if (animeId == null ||
+        animeId.isEmpty ||
+        sourceKey == null ||
+        sourceKey.isEmpty) {
+      App.rootContext.showMessage(
+        message: t.notBoundToBangumi,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    try {
+      final history = await HistoryManager().findAsync(
+        animeId,
+        AnimeType(sourceKey.hashCode),
+      );
+      final bangumiId = history?.bangumiId;
+      if (bangumiId == null) {
+        App.rootContext.showMessage(
+          message: t.notBoundToBangumi,
+          level: LogLevel.warning,
+        );
+        return;
+      }
+      if (!mounted) return;
+      final infoController = ref.read(infoControllerProvider.notifier);
+      showModalBottomSheet(
+        isScrollControlled: true,
+        context: context,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+          maxWidth: MediaQuery.of(context).size.width <= 600
+              ? MediaQuery.of(context).size.width
+              : App.isDesktop
+                  ? MediaQuery.of(context).size.width * 9 / 16
+                  : MediaQuery.of(context).size.width,
+        ),
+        builder: (_) => BottomInfo(
+          bangumiId: bangumiId,
+          infoController: infoController,
+        ),
+      );
+    } catch (_) {
+      App.rootContext.showMessage(
+        message: t.notBoundToBangumi,
+        level: LogLevel.warning,
+      );
+    }
   }
 
   Widget _buildAnnouncementBar(ColorScheme cs, HubState hubState) {
