@@ -177,31 +177,35 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
       return ImageSegment(url: cached, alt: fileName);
     }
 
+    // 记录上传失败的具体原因，用于向用户展示真实错误而非笼统的「图片太大」
+    String? lastUploadError;
+
     // 3. 服务端上传
     final hubState = ref.read(hubProvider);
     if (hubState.serverUploadEnabled) {
-      final url = await _tryServerUpload(toSend, fileName, mimeType);
+      final (url, err) = await _tryServerUpload(toSend, fileName, mimeType);
       if (url != null) {
         client.uploadCache[hash] = url;
         return ImageSegment(url: url, alt: fileName);
       }
+      if (err != null && err.isNotEmpty) lastUploadError = err;
     }
 
     // 4. 客户端直传 OSS
-    final clientUrl = await _tryClientOssUpload(toSend, fileName, mimeType);
+    final (clientUrl, clientErr) = await _tryClientOssUpload(
+      toSend,
+      fileName,
+      mimeType,
+    );
     if (clientUrl != null) {
       client.uploadCache[hash] = clientUrl;
       return ImageSegment(url: clientUrl, alt: fileName);
     }
+    if (clientErr != null && clientErr.isNotEmpty) lastUploadError = clientErr;
 
-    // 5. 无上传通道：GIF 无法安全压缩，直接报错
+    // 5. 无上传通道：GIF 无法安全压缩，直接报错（区分具体失败原因）
     if (isGif && toSend.length > _kBase64FallbackBinary) {
-      App.rootContext.showMessage(
-        message:
-            '${t.imageTooLargeToSend}. '
-            '${t.pleaseConfigureServerUploadOrClientOss}',
-        level: LogLevel.warning,
-      );
+      _showUploadError(lastUploadError);
       return null;
     }
 
@@ -213,15 +217,19 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
       }
     }
 
-    // 7. 仍超限报错
+    // 7. 仍超限报错（区分「确实太大」与「上传通道失败」）
     if (toSend.length > _kBase64FallbackBinary) {
       final sizeMb = (toSend.length / 1024 / 1024).toStringAsFixed(1);
-      App.rootContext.showMessage(
-        message:
-            '${t.imageTooLargeToSend} (${sizeMb}MB). '
-            '${t.pleaseConfigureServerUploadOrClientOss}',
-        level: LogLevel.warning,
-      );
+      if (lastUploadError != null) {
+        _showUploadError(lastUploadError);
+      } else {
+        App.rootContext.showMessage(
+          message:
+              '${t.imageTooLargeToSend} (${sizeMb}MB). '
+              '${t.pleaseConfigureServerUploadOrClientOss}',
+          level: LogLevel.warning,
+        );
+      }
       return null;
     }
 
@@ -232,15 +240,45 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     );
   }
 
+  /// 将上传失败的具体原因映射为友好的错误提示
+  void _showUploadError(String? error) {
+    if (error == null || error.isEmpty) {
+      App.rootContext.showMessage(
+        message: t.pleaseConfigureServerUploadOrClientOss,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    final s = error.toLowerCase();
+    if (s.contains('too large')) {
+      App.rootContext.showMessage(
+        message: t.imageTooLargeToSend,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    if (s.contains('not configured')) {
+      App.rootContext.showMessage(
+        message: t.pleaseConfigureServerUploadOrClientOss,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    App.rootContext.showMessage(
+      message: '${t.uploadFailed}: $error',
+      level: LogLevel.error,
+    );
+  }
+
   // ── 服务端上传 ────────────────────────────────────────────────────────────
-  Future<String?> _tryServerUpload(
+  Future<(String?, String?)> _tryServerUpload(
     Uint8List bytes,
     String fileName,
     String mimeType,
   ) async {
     final client = (this as _HubChatPageState)._client;
     final savedAddress = client.savedAddress;
-    if (savedAddress == null || savedAddress.isEmpty) return null;
+    if (savedAddress == null || savedAddress.isEmpty) return (null, null);
 
     // 把 ws:// → http://、wss:// → https://，无协议时补 http://；去掉尾部 /hub
     final httpBase = HubImageUploader.httpUrlOf(
@@ -248,48 +286,57 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     ).replaceAll(RegExp(r'/hub/?$'), '');
 
     try {
+      final token = client.savedToken;
       final resp = await AppDio().request(
         '$httpBase/hub/upload/config',
         options: Options(
           method: 'GET',
           sendTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 5),
+          headers: {
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          },
         ),
       );
-      if (resp.statusCode != 200 || resp.data is! Map) return null;
+      if (resp.statusCode != 200 || resp.data is! Map) {
+        return (null, 'server returned ${resp.statusCode}');
+      }
 
       final config = HubUploadConfig.fromJson(
         Map<String, dynamic>.from(resp.data as Map),
       );
 
-      return await HubImageUploader(
+      final url = await HubImageUploader(
         config: config,
         serverBaseUrl: httpBase,
         authToken: client.savedToken,
       ).upload(bytes, fileName);
+      return (url, null);
     } catch (e) {
       Log.warning('HubUploader', '_tryServerUpload failed: $e');
-      return null;
+      return (null, e.toString());
     }
   }
 
   // ── 客户端直传 OSS ────────────────────────────────────────────────────────
-  Future<String?> _tryClientOssUpload(
+  Future<(String?, String?)> _tryClientOssUpload(
     Uint8List bytes,
     String fileName,
     String mimeType,
   ) async {
     final cfg = _clientUploadCfg;
-    if (cfg?.ossConfig == null || !cfg!.ossConfig!.isValid) return null;
+    if (cfg?.ossConfig == null || !cfg!.ossConfig!.isValid) return (null, null);
 
     try {
-      return await HubImageUploader(
+      final url = await HubImageUploader(
         config: cfg,
         serverBaseUrl: '',
       ).upload(bytes, fileName);
+      return (url, null);
     } catch (e, st) {
       Log.error('HubUploader', '_tryClientOssUpload failed: $e\n$st');
-      return null;
+      return (null, e.toString());
     }
   }
 }

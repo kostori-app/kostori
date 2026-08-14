@@ -128,7 +128,7 @@ class HubReaction {
   bool get isEmpty => users.isEmpty;
 }
 
-enum SegmentType { text, image, reaction, mention, quote }
+enum SegmentType { text, image, reaction, mention, quote, link }
 
 abstract class MessageSegment {
   final SegmentType type;
@@ -145,6 +145,7 @@ abstract class MessageSegment {
       SegmentType.reaction => ReactionSegment.fromJson(json['data']),
       SegmentType.mention => MentionSegment.fromJson(json['data']),
       SegmentType.quote => QuoteSegment.fromJson(json['data']),
+      SegmentType.link => LinkSegment.fromJson(json['data']),
     };
   }
 }
@@ -258,5 +259,27 @@ class QuoteSegment extends MessageSegment {
   Map<String, dynamic> toJson() => {
     'type': type.name,
     'data': {'messageId': messageId, 'fromName': fromName, 'preview': preview},
+  };
+}
+
+/// 链接预览卡片：发送网页链接时抓取的标题 + 缩略图
+class LinkSegment extends MessageSegment {
+  final String url;
+  final String title;
+  final String? image;
+
+  const LinkSegment({required this.url, required this.title, this.image})
+    : super(SegmentType.link);
+
+  factory LinkSegment.fromJson(Map<String, dynamic> json) => LinkSegment(
+    url: json['url'] as String,
+    title: json['title'] as String? ?? '',
+    image: json['image'] as String?,
+  );
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'data': {'url': url, 'title': title, 'image': image},
   };
 }

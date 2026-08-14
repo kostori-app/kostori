@@ -11,6 +11,7 @@ import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/volume_slider_popup.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
@@ -51,6 +52,17 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   final TextEditingController textController = TextEditingController();
 
   bool glimmerEffect = appdata.implicitData['glimmerEffect'] ?? false;
+
+  /// 快捷输入框焦点回调（稳定方法引用，避免 Observer 频繁重建时创建新闭包
+  /// 导致 _QuickChatInput 收到新的 widget 字段、打断中文输入法组词）
+  void _onQuickChatFocusChanged(bool hasFocus) {
+    playerController.canHidePlayerPanel = !hasFocus;
+    if (hasFocus) {
+      widget.cancelHideTimer();
+    } else {
+      widget.startHideTimer();
+    }
+  }
 
   @override
   void initState() {
@@ -379,27 +391,77 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             if (playerController.isFullScreen &&
                                 widget.onChatToggle != null &&
                                 !playerController.chatOverlayOpen)
-                              const Expanded(child: _QuickChatInput())
+                              Expanded(
+                                child: _QuickChatInput(
+                                  onFocusChanged: _onQuickChatFocusChanged,
+                                ),
+                              )
                             else
                               const Spacer(),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: playerController.isFullScreen
-                                    ? 16
-                                    : 8,
-                                vertical: playerController.isFullScreen ? 6 : 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black12,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: playerController.isFullScreen
+                            GestureDetector(
+                              // 一起看房间：点击时长一键追上房主
+                              onTap: playerController.ownerSyncPositionMs >= 0
+                                  ? playerController.onSyncToOwner
+                                  : null,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: playerController.isFullScreen
                                       ? 16
-                                      : 12,
+                                      : 8,
+                                  vertical: playerController.isFullScreen
+                                      ? 6
+                                      : 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black12,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // 房主暂停提示图标
+                                    if (playerController.ownerSyncPositionMs >=
+                                            0 &&
+                                        !playerController.ownerSyncPlaying)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 6,
+                                        ),
+                                        child: Icon(
+                                          Icons.pause_circle_filled,
+                                          size: playerController.isFullScreen
+                                              ? 16
+                                              : 13,
+                                          color: const Color(0xFFFFB300),
+                                        ),
+                                      ),
+                                    Text(
+                                      "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: playerController.isFullScreen
+                                            ? 16
+                                            : 12,
+                                      ),
+                                    ),
+                                    if (playerController.ownerSyncPositionMs >=
+                                        0)
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8),
+                                        child: Text(
+                                          playerController.ownerSyncDiffText,
+                                          style: TextStyle(
+                                            color: playerController
+                                                .ownerSyncDiffColor(context),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize:
+                                                playerController.isFullScreen
+                                                ? 14
+                                                : 11,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -444,6 +506,39 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     },
                                   )
                                 : Container(),
+                            // 音量滑条（桌面端）
+                            if (App.isDesktop)
+                              Builder(
+                                builder: (buttonContext) {
+                                  return IconButton(
+                                    color: Colors.white,
+                                    icon: Icon(
+                                      playerController.volume <= 0
+                                          ? Icons.volume_off
+                                          : playerController.volume <
+                                                playerController
+                                                        .volumeUpperBound /
+                                                    2
+                                          ? Icons.volume_down
+                                          : Icons.volume_up,
+                                    ),
+                                    tooltip: t.volume,
+                                    onPressed: () {
+                                      final renderBox =
+                                          buttonContext.findRenderObject()
+                                              as RenderBox;
+                                      final offset = renderBox.localToGlobal(
+                                        Offset.zero,
+                                      );
+                                      showVolumeSliderPopup(
+                                        buttonContext,
+                                        offset,
+                                        playerController,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             Expanded(
                               child: ProgressBar(
                                 thumbRadius: 8,
@@ -550,7 +645,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
 /// 全屏一起看底部快捷输入框：发送消息到当前房间
 class _QuickChatInput extends ConsumerStatefulWidget {
-  const _QuickChatInput();
+  final void Function(bool hasFocus) onFocusChanged;
+  const _QuickChatInput({required this.onFocusChanged});
 
   @override
   ConsumerState<_QuickChatInput> createState() => _QuickChatInputState();
@@ -561,7 +657,18 @@ class _QuickChatInputState extends ConsumerState<_QuickChatInput> {
   final FocusNode _focusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChanged);
+  }
+
+  void _onFocusChanged() {
+    widget.onFocusChanged(_focusNode.hasFocus);
+  }
+
+  @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -577,7 +684,8 @@ class _QuickChatInputState extends ConsumerState<_QuickChatInput> {
     if (!inRoom) return;
     ref.read(hubClientProvider).broadcast([TextSegment(text)]);
     _controller.clear();
-    _focusNode.unfocus();
+    // 保持焦点，便于连续发送弹幕
+    _focusNode.requestFocus();
   }
 
   @override
@@ -610,6 +718,8 @@ class _QuickChatInputState extends ConsumerState<_QuickChatInput> {
               child: TextField(
                 controller: _controller,
                 focusNode: _focusNode,
+                // 点击输入框外部时取消焦点，避免"没点输入框却在打字"
+                onTapOutside: (_) => _focusNode.unfocus(),
                 style: const TextStyle(color: Colors.white, fontSize: 13),
                 decoration: InputDecoration(
                   isDense: true,

@@ -17,6 +17,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/utils/ext.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 // ── 颜色工具 ──────────────────────────────────────────────────────────────────
 
@@ -320,6 +321,7 @@ class HubBubbleRow extends StatefulWidget {
   final List<String> roomModeratorIds;
   final void Function(String userId)? onPoke;
   final void Function(HubClientDto sender)? onMention;
+  final String heroPrefix;
 
   const HubBubbleRow({
     super.key,
@@ -333,6 +335,7 @@ class HubBubbleRow extends StatefulWidget {
     required this.onRecall,
     required this.onScrollToEntry,
     required this.roomModeratorIds,
+    required this.heroPrefix,
     this.onPoke,
     this.onMention,
   });
@@ -728,6 +731,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                   url: seg.url,
                   borderRadius: bubbleBr,
                   messageId: widget.entry.messageId,
+                  heroPrefix: widget.heroPrefix,
                 ),
               ),
             ),
@@ -749,6 +753,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
       final imageSegs = widget.entry.segments
           .whereType<ImageSegment>()
           .toList();
+      final linkSegs = widget.entry.segments.whereType<LinkSegment>().toList();
 
       bubbleWidget = ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxW),
@@ -823,7 +828,19 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                         url: seg.url,
                         borderRadius: BorderRadius.circular(8),
                         messageId: widget.entry.messageId,
+                        heroPrefix: widget.heroPrefix,
                       ),
+                    ),
+                  ),
+                ),
+                ...linkSegs.map(
+                  (seg) => Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: _BubbleLinkCard(
+                      url: seg.url,
+                      title: seg.title,
+                      image: seg.image,
+                      isMe: widget.isMe,
                     ),
                   ),
                 ),
@@ -1038,13 +1055,35 @@ class _BubbleImage extends StatelessWidget {
   final String url;
   final BorderRadius borderRadius;
   final String messageId;
+  final String heroPrefix;
   static const double _maxWidth = 220;
   static const double _fixedHeight = 200; // 固定外框高度，避免抽搐
   const _BubbleImage({
     required this.url,
     required this.borderRadius,
     required this.messageId,
+    required this.heroPrefix,
   });
+
+  /// Hero 标签：同一房间聊天可能同时存在多个实例（一起看 Tab + 全屏浮层），
+  /// 用 heroPrefix 区分实例，用 url.hashCode 区分同一消息里的多张图，
+  /// 避免 tag 冲突导致 Hero 崩溃。
+  String get _heroTag => '$heroPrefix-$messageId-${url.hashCode}';
+
+  /// Hero 转场：统一用预览页（目标）的图片作为 shuttle，
+  /// 避免气泡固定高度(BoxFit.contain)在返回时造成的缩放跳变。
+  Widget _buildHero(Widget child) {
+    return Hero(
+      tag: _heroTag,
+      flightShuttleBuilder:
+          (flightContext, animation, direction, fromContext, toContext) {
+            return direction == HeroFlightDirection.pop
+                ? (fromContext.widget as Hero).child
+                : (toContext.widget as Hero).child;
+          },
+      child: child,
+    );
+  }
 
   bool get _isBase64 => url.startsWith('data:');
 
@@ -1079,9 +1118,8 @@ class _BubbleImage extends StatelessWidget {
       final raw = url.replaceFirst('file://', '');
       final path = Uri.tryParse(raw)?.toFilePath() ?? raw;
       if (!File(path).existsSync()) return _placeholder();
-      return Hero(
-        tag: messageId,
-        child: Image.file(
+      return _buildHero(
+        Image.file(
           File(path),
           height: _fixedHeight,
           fit: BoxFit.contain,
@@ -1094,9 +1132,8 @@ class _BubbleImage extends StatelessWidget {
   }
 
   Widget _buildNetwork() {
-    return Hero(
-      tag: messageId,
-      child: AnimatedImage(
+    return _buildHero(
+      AnimatedImage(
         image: CachedImageProvider(hubFileUrlOf(url), sourceKey: 'hub'),
         height: _fixedHeight,
         fit: BoxFit.contain,
@@ -1106,9 +1143,8 @@ class _BubbleImage extends StatelessWidget {
 
   Widget _buildBase64() {
     try {
-      return Hero(
-        tag: messageId,
-        child: AnimatedImage(
+      return _buildHero(
+        AnimatedImage(
           // Base64ImageProvider key 稳定（按 base64 前缀），避免每次 build 重解码闪烁
           image: Base64ImageProvider(url),
           height: _fixedHeight,
@@ -1134,7 +1170,7 @@ class _BubbleImage extends StatelessWidget {
           context: App.rootContext,
           url: tmp.path,
           title: '',
-          heroTag: messageId,
+          heroTag: _heroTag,
         );
       } catch (e) {
         HubLog.error('HubBubbleImage', '$e');
@@ -1147,7 +1183,7 @@ class _BubbleImage extends StatelessWidget {
           context: App.rootContext,
           url: path,
           title: '',
-          heroTag: messageId,
+          heroTag: _heroTag,
         );
       } catch (e) {
         HubLog.error('HubBubbleImage', '$e');
@@ -1157,7 +1193,7 @@ class _BubbleImage extends StatelessWidget {
         context: App.rootContext,
         url: url,
         title: '',
-        heroTag: messageId,
+        heroTag: _heroTag,
       );
     }
   }
@@ -1168,6 +1204,94 @@ class _BubbleImage extends StatelessWidget {
     color: Colors.black12,
     child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
   );
+}
+
+/// 链接预览卡片：标题 + 缩略图 + 域名，点击打开链接
+class _BubbleLinkCard extends StatelessWidget {
+  final String url;
+  final String title;
+  final String? image;
+  final bool isMe;
+
+  const _BubbleLinkCard({
+    required this.url,
+    required this.title,
+    required this.image,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final host = Uri.tryParse(url)?.host ?? url;
+    final displayTitle = title.isNotEmpty ? title : host;
+    final hasImage = image != null && image!.isNotEmpty;
+    return GestureDetector(
+      onTap: () => launchUrlString(url),
+      child: Container(
+        width: 220,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: isMe
+              ? Colors.white.withValues(alpha: 0.12)
+              : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: (isMe
+                    ? Colors.white
+                    : cs.outlineVariant)
+                .withValues(alpha: 0.35),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasImage)
+              SizedBox(
+                width: 220,
+                height: 116,
+                child: AnimatedImage(
+                  image: CachedImageProvider(image!, sourceKey: 'hub'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isMe ? Colors.white : cs.onSurface,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    host,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: (isMe ? Colors.white : cs.onSurface).withValues(
+                        alpha: 0.55,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── 快捷 emoji 按钮 ───────────────────────────────────────────────────────────
@@ -1235,6 +1359,9 @@ class HubInputBar extends ConsumerWidget {
   final void Function(int index) onRemovePending;
   final HubRoomDto? room;
 
+  /// 打开番剧详情（Bangumi BottomInfo）的回调，仅一起看房间需要
+  final VoidCallback? onOpenBangumiInfo;
+
   /// 是否需要手动补偿软键盘高度。
   /// 播放器全屏聊天面板（embedded，无 PopUpWidgetScaffold）需要；
   /// 弹层内（PopUpWidgetScaffold 已通过 keyboardOffset 统一处理）不需要，避免双重顶起。
@@ -1252,6 +1379,7 @@ class HubInputBar extends ConsumerWidget {
     required this.pendingImages,
     required this.onRemovePending,
     required this.room,
+    this.onOpenBangumiInfo,
     this.applyKeyboardPadding = true,
   });
 
@@ -1380,6 +1508,8 @@ class HubInputBar extends ConsumerWidget {
                       focusNode: focusNode,
                       maxLines: 4,
                       minLines: 1,
+                      // 点击输入框外部时取消焦点，避免"没点输入框却在打字"
+                      onTapOutside: (_) => focusNode.unfocus(),
                       style: TextStyle(fontSize: 14, color: cs.onSurface),
                       decoration: InputDecoration(
                         isDense: true,
@@ -1477,6 +1607,20 @@ class HubInputBar extends ConsumerWidget {
                     ),
                   ),
                   const Spacer(),
+                  if (onOpenBangumiInfo != null)
+                    IconButton(
+                      onPressed: onOpenBangumiInfo,
+                      icon: Icon(
+                        Icons.movie_outlined,
+                        size: 20,
+                        color: cs.onSurface.toOpacity(0.5),
+                      ),
+                      tooltip: t.bangumiInfo,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
                   if (room != null)
                     IconButton(
                       onPressed: () => showHubRoomSettingsSheet(context, room!),

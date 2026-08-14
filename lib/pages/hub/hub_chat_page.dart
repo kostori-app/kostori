@@ -8,6 +8,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:html/parser.dart' as html_parser;
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -39,6 +40,9 @@ class HubChatPage extends ConsumerStatefulWidget {
   /// 是否显示"打开番剧"卡片（播放页内嵌一起看时置 false，避免重复跳转）
   final bool showWatchCard;
 
+  /// 打开番剧详情（Bangumi BottomInfo）的回调，仅一起看房间需要
+  final VoidCallback? onOpenBangumiInfo;
+
   const HubChatPage({
     super.key,
     this.roomId,
@@ -48,6 +52,7 @@ class HubChatPage extends ConsumerStatefulWidget {
     this.embedded = false,
     this.showWatchCard = true,
     this.manualKeyboardPadding = false,
+    this.onOpenBangumiInfo,
   }) : assert(roomId != null || dmUserId != null);
 
   bool get isDm => dmUserId != null;
@@ -75,6 +80,11 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
   bool _initialScrollDone = false;
 
   late final HubClient _client;
+
+  /// 本聊天实例的 Hero 前缀：同一房间聊天可能同时存在多个实例
+  /// （一起看 Tab + 全屏浮层），用于区分 Hero tag，避免冲突。
+  static int _heroCounter = 0;
+  final String _heroPrefix = 'chat${_heroCounter++}';
 
   @override
   bool get wantKeepAlive => true;
@@ -372,7 +382,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
     final segments = <MessageSegment>[];
     if (text.isNotEmpty) {
-      segments.addAll(_parseTextWithMentions(text));
+      segments.addAll(await _parseTextWithLinks(text));
     }
 
     if (images.isNotEmpty) {
@@ -420,6 +430,159 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
     if (segments.isEmpty) segments.add(TextSegment(text));
     return segments;
+  }
+
+  // ── 链接转图片 / 链接预览 ───────────────────────────────────────────────────
+
+  static final RegExp _urlRegex = RegExp(
+    r"https?://[^\s<>'()\[\]{}]+",
+    caseSensitive: false,
+  );
+
+  /// 图片直链后缀（去掉查询串后判断）
+  static const Set<String> _imageExts = {
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'bmp',
+    'svg',
+    'avif',
+  };
+
+  /// 先解析 @ 提及，再对纯文本段扫描 URL，把链接转成图片/预览卡片
+  Future<List<MessageSegment>> _parseTextWithLinks(String text) async {
+    final mentionSegs = _parseTextWithMentions(text);
+    final result = <MessageSegment>[];
+    for (final seg in mentionSegs) {
+      if (seg is! TextSegment) {
+        result.add(seg);
+        continue;
+      }
+      result.addAll(await _convertTextUrls(seg.text));
+    }
+    return result;
+  }
+
+  /// 扫描一段纯文本里的 URL：图片直链→ImageSegment，网页→LinkSegment，
+  /// 抓取失败则保留原始文本。支持一条消息里多个链接。
+  Future<List<MessageSegment>> _convertTextUrls(String text) async {
+    final result = <MessageSegment>[];
+    int last = 0;
+    for (final m in _urlRegex.allMatches(text)) {
+      if (m.start > last) {
+        result.add(TextSegment(text.substring(last, m.start)));
+      }
+      final raw = m.group(0)!;
+      final url = _stripUrlPunctuation(raw);
+      if (url.isEmpty) {
+        result.add(TextSegment(raw));
+      } else {
+        result.add(await _buildUrlSegment(url));
+        // 被剥掉的结尾标点保留为文本
+        if (url.length < raw.length) {
+          result.add(TextSegment(raw.substring(url.length)));
+        }
+      }
+      last = m.end;
+    }
+    if (last < text.length) {
+      result.add(TextSegment(text.substring(last)));
+    }
+    if (result.isEmpty) result.add(TextSegment(text));
+    return result;
+  }
+
+  /// 去掉 URL 结尾的中英文标点（这些通常不属于链接本身）
+  static final RegExp _urlTrailingPunct = RegExp(
+    "[.,;:!?、，。；：！？…）)\\]}'\"»]+\$",
+  );
+
+  String _stripUrlPunctuation(String url) {
+    return url.replaceFirst(_urlTrailingPunct, '');
+  }
+
+  bool _isImageUrl(String url) {
+    final path = url.toLowerCase().split('?').first.split('#').first;
+    final ext = path.split('.').last;
+    return _imageExts.contains(ext);
+  }
+
+  Future<MessageSegment> _buildUrlSegment(String url) async {
+    if (_isImageUrl(url)) {
+      final fileName = url.split('/').last.split('?').first;
+      return ImageSegment(url: url, alt: fileName);
+    }
+    final meta = await _fetchLinkMeta(url);
+    if (meta != null) {
+      return LinkSegment(url: url, title: meta.$1, image: meta.$2);
+    }
+    return TextSegment(url);
+  }
+
+  /// 抓取网页标题 + og:image 缩略图（限时 5s，失败返回 null）
+  Future<(String, String?)?> _fetchLinkMeta(String url) async {
+    try {
+      final resp = await AppDio().request(
+        url,
+        options: Options(
+          method: 'GET',
+          responseType: ResponseType.plain,
+          validateStatus: (s) => s != null && s < 400,
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+          headers: {
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/120.0.0.0 Safari/537.36',
+          },
+        ),
+      );
+      // 非文本/非 HTML 响应（如图片、二进制）不解析
+      final ct = (resp.headers.value('content-type') ?? '').toLowerCase();
+      if (ct.isNotEmpty &&
+          !ct.contains('html') &&
+          !ct.contains('text') &&
+          !ct.contains('xml')) {
+        return null;
+      }
+      final body = resp.data;
+      if (body is! String || body.isEmpty) return null;
+      final doc = html_parser.parse(body);
+      String? firstMeta(String selector) {
+        final el = doc.querySelector(selector);
+        final v = el?.attributes['content'];
+        return (v != null && v.trim().isNotEmpty) ? v.trim() : null;
+      }
+
+      final title = firstMeta('meta[property="og:title"]') ??
+          firstMeta('meta[name="twitter:title"]') ??
+          doc.querySelector('title')?.text.trim();
+
+      // 相对路径缩略图补全为绝对地址
+      String? toAbsolute(String? u) {
+        if (u == null || u.isEmpty) return null;
+        final resolved = Uri.tryParse(url)?.resolve(u).toString();
+        return resolved ?? u;
+      }
+
+      final image = toAbsolute(
+        firstMeta('meta[property="og:image"]') ??
+            firstMeta('meta[name="twitter:image"]') ??
+            firstMeta('meta[property="twitter:image:src"]') ??
+            firstMeta('meta[property="og:image:secure_url"]'),
+      );
+
+      if ((title == null || title.isEmpty) && (image == null)) {
+        return null;
+      }
+      final finalTitle = (title != null && title.isNotEmpty) ? title : url;
+      return (finalTitle, image);
+    } catch (_) {
+      return null;
+    }
   }
 
   void _onMentionSelect(HubClientDto user) {
@@ -522,6 +685,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                 onRemovePending: (i) =>
                     setState(() => _pendingImages.removeAt(i)),
                 room: room,
+                onOpenBangumiInfo: widget.onOpenBangumiInfo,
                 // 弹层内 PopUpWidgetScaffold 已统一处理键盘偏移，避免双重顶起；
                 // 仅无 Scaffold 的全屏覆盖层（播放器面板）才手动补偿
                 applyKeyboardPadding: widget.manualKeyboardPadding,
@@ -1036,6 +1200,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                             myId: hubState.myId,
                             allEntries: _entries,
                             isContinuation: isContinuation,
+                            heroPrefix: _heroPrefix,
                             onReply: (id) {
                               setState(() => _replyToId = id);
                               _inputFocus.requestFocus();

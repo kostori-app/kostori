@@ -101,9 +101,15 @@ class _PlayerItemState extends State<PlayerItem>
     animationController?.reverse();
     hideTimer?.cancel();
     playerController.showVideoController = false;
+    // 收起面板时顺带取消输入框焦点，避免按键被隐藏的快捷输入框截获打字
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   void _handleTap() {
+    // 点击视频区域：先取消当前输入框焦点，防止"没点输入框却还在打字"
+    if (FocusManager.instance.primaryFocus?.hasFocus == true) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
     if (playerController.showVideoController) {
       hideVideoController();
     } else {
@@ -316,12 +322,16 @@ class _PlayerItemState extends State<PlayerItem>
               ListTile(
                 dense: true,
                 leading: const Icon(Icons.speaker_outlined, size: 18),
-                title: Text(d, maxLines: 1, overflow: TextOverflow.ellipsis),
-                trailing: current == d
+                title: Text(
+                  d.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: current == d.name
                     ? const Icon(Icons.check, size: 18)
                     : null,
                 onTap: () async {
-                  await playerController.setAudioDevice(d);
+                  await playerController.setAudioDevice(d.name);
                   if (ctx.mounted) Navigator.pop(ctx);
                 },
               ),
@@ -382,6 +392,13 @@ class _PlayerItemState extends State<PlayerItem>
                       !playerController.showVideoController)
                   ? SystemMouseCursors.none
                   : SystemMouseCursors.basic,
+              onEnter: (_) {
+                // 非全屏时键盘焦点常被 Tab/其他控件抢走，鼠标进入播放器时重新抢回，
+                // 保证空格/F/方向键等快捷键可用。
+                if (App.isDesktop && !widget.keyboardFocus.hasFocus) {
+                  widget.keyboardFocus.requestFocus();
+                }
+              },
               onHover: (PointerEvent pointerEvent) {
                 // workaround for android.
                 // I don't know why, but android tap event will trigger onHover event.

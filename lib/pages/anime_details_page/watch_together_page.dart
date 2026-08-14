@@ -46,6 +46,8 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
   Timer? _syncTimer;
   HubPlaybackSync? _ownerSync;
   bool _syncing = false;
+  // 自动跟播去重：记录最近一次自动跳转的集数，避免房主每 1s 广播触发重复跳集
+  int? _lastAutoSyncedEpisode;
 
   // 缓存最后一次同步状态：dispose 时（房主退出播放页）广播停止状态
   bool _cachedIsOwner = false;
@@ -81,6 +83,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
         room.isWatchRoom &&
         room.ownerUserId != state.myId;
     widget.playerController.syncLocked = isWatchMember;
+    widget.playerController.onSyncToOwner = _syncToOwner;
     WidgetsBinding.instance.addPostFrameCallback((_) => _scanHistory());
     // 若打开时已连接，则按当前状态启动/停止广播定时器
     _updateSyncTimer(state);
@@ -91,6 +94,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
   @override
   void dispose() {
     _client.removeMessageListener(_onHubRaw);
+    widget.playerController.onSyncToOwner = null;
     _syncTimer?.cancel();
     _syncTimer = null;
     _teardownPeer();
@@ -139,6 +143,30 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
 
   // ── 播放进度同步 ──────────────────────────────────────────────────────────
 
+  /// 记录房主（同步时长者）的进度，并同步给播放器用于显示时间差
+  void _applyOwnerSync(HubPlaybackSync? sync) {
+    _ownerSync = sync;
+    if (sync == null) {
+      _lastAutoSyncedEpisode = null;
+    }
+    // 房主自己：无同步目标，不显示时间差 / 暂停图标
+    final state = ref.read(hubProvider);
+    final isOwner = state.currentRoom?.ownerUserId == _client.myId;
+    if (isOwner) {
+      widget.playerController.ownerSyncPositionMs = -1;
+      widget.playerController.ownerSyncPlaying = true;
+      widget.playerController.ownerSyncSentAt = 0;
+    } else {
+      widget.playerController.ownerSyncPositionMs = sync?.positionMs ?? -1;
+      widget.playerController.ownerSyncPlaying = sync?.playing ?? true;
+      // 用「本机收到的时间」而非房主广播的 sentAt 做延迟补偿：
+      // 房主与成员时钟可能不同步，用 sentAt 算 elapsed 会因时钟偏差跳变。
+      widget.playerController.ownerSyncSentAt = sync == null
+          ? 0
+          : DateTime.now().millisecondsSinceEpoch;
+    }
+  }
+
   void _onHubRaw(Map<String, dynamic> data) {
     if (!mounted) return;
     final event = HubEvent.fromJson(data);
@@ -154,17 +182,18 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     final prev = _ownerSync;
     // 自己的回环广播（房主本地进度）：实时刷新，避免房主进度条停滞
     if (sync.senderId == _client.myId) {
-      setState(() => _ownerSync = sync);
+      setState(() => _applyOwnerSync(sync));
       return;
     }
     if (prev == null ||
         prev.episode != sync.episode ||
         prev.playing != sync.playing ||
         (sync.positionMs - prev.positionMs).abs() > 5000) {
-      setState(() => _ownerSync = sync);
+      setState(() => _applyOwnerSync(sync));
     } else {
-      _ownerSync = sync;
+      _applyOwnerSync(sync);
     }
+    _maybeAutoFollow(sync);
   }
 
   void _scanHistory() {
@@ -179,7 +208,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
       if (sync == null || sync.senderId != ownerId) continue;
       if (latest == null || sync.sentAt > latest.sentAt) latest = sync;
     }
-    if (latest != null) _ownerSync = latest;
+    if (latest != null) _applyOwnerSync(latest);
     if (mounted) setState(() {});
   }
 
@@ -251,7 +280,8 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     if (ownerId == null || sync.senderId != ownerId) return;
     if (sync.sentAt == _lastDirectSentAt) return; // 去重
     _lastDirectSentAt = sync.sentAt;
-    setState(() => _ownerSync = sync);
+    setState(() => _applyOwnerSync(sync));
+    _maybeAutoFollow(sync);
   }
 
   void _teardownPeer() {
@@ -297,7 +327,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     _peerServer?.broadcastSync(frame);
   }
 
-  Future<void> _syncToOwner() async {
+  Future<void> _syncToOwner({bool silent = false}) async {
     final sync = _ownerSync;
     if (sync == null || _syncing) return;
     setState(() => _syncing = true);
@@ -308,12 +338,14 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
       if (current == null ||
           (sync.sourceKey.isNotEmpty && current.sourceKey != sync.sourceKey) ||
           (sync.animeId.isNotEmpty && current.id != sync.animeId)) {
-        App.rootContext.showMessage(
-          message: t.syncRequiresSameAnime(
-            title: sync.title.isEmpty ? '?' : sync.title,
-          ),
-          level: LogLevel.warning,
-        );
+        if (!silent) {
+          App.rootContext.showMessage(
+            message: t.syncRequiresSameAnime(
+              title: sync.title.isEmpty ? '?' : sync.title,
+            ),
+            level: LogLevel.warning,
+          );
+        }
         return;
       }
       // 临时解锁，允许同步切集与 seek（手动拖动/切集仍被 syncLocked 拦截）
@@ -326,16 +358,37 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
             pc.currentRoad,
           );
         }
-        await pc.seek(Duration(milliseconds: sync.positionMs));
+        // 延迟补偿：房主在播时，按「距收到广播的时间」补上进度，减少成员固有落后。
+        // 用本机收到时间（ownerSyncSentAt）而非房主 sentAt，避免两端时钟不同步导致跳变。
+        var targetMs = sync.positionMs;
+        if (sync.playing && pc.ownerSyncSentAt > 0) {
+          final elapsed =
+              DateTime.now().millisecondsSinceEpoch - pc.ownerSyncSentAt;
+          targetMs += elapsed.clamp(0, 30000);
+        }
+        await pc.seek(Duration(milliseconds: targetMs));
       } finally {
         pc.syncLocked = prev;
       }
-      App.rootContext.showMessage(message: t.syncedToOwner);
+      if (!silent) {
+        App.rootContext.showMessage(message: t.syncedToOwner);
+      }
     } catch (_) {
       // ignore: 同步失败不打断
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
+  }
+
+  /// 成员自动跟播：房主切集时自动跳转到对应集数（静默，不弹提示）。
+  void _maybeAutoFollow(HubPlaybackSync sync) {
+    if (!mounted) return;
+    final pc = widget.playerController;
+    if (!pc.syncLocked) return; // 仅一起看成员自动跟播
+    if (sync.episode == pc.currentEpisoded) return; // 集数一致，无需跳转
+    if (_lastAutoSyncedEpisode == sync.episode) return; // 去重，避免每秒重复跳集
+    _lastAutoSyncedEpisode = sync.episode;
+    _syncToOwner(silent: true);
   }
 
   String _fmtTime(int ms) {
@@ -547,7 +600,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
         widget.playerController.setPlaybackSpeed(1);
       }
       if (prev?.currentRoomId != next.currentRoomId) {
-        _ownerSync = null;
+        _applyOwnerSync(null);
         _teardownPeer();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scanHistory();
@@ -564,7 +617,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
       } else if (prev?.currentRoom?.ownerUserId !=
           next.currentRoom?.ownerUserId) {
         // 房主变化（原房主离开 / 所有权转移）：重置同步状态并重建直连
-        _ownerSync = null;
+        _applyOwnerSync(null);
         _teardownPeer();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scanHistory();
@@ -875,57 +928,11 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
             embedded: true,
             // 播放页内嵌：不显示"打开番剧"跳转卡片
             showWatchCard: false,
+            // 番剧详情入口移到输入框工具栏（设置按钮旁）
+            onOpenBangumiInfo: widget.onOpenBangumiInfo,
           ),
         ),
-        // 底部操作栏：番剧详情入口
-        _buildRoomFooter(cs),
       ],
-    );
-  }
-
-  /// 一起看房间底部操作栏
-  Widget _buildRoomFooter(ColorScheme cs) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border(
-          top: BorderSide(color: cs.outlineVariant.toOpacity(0.3), width: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: t.bangumi,
-            icon: const Icon(Icons.movie_outlined, size: 20),
-            color: cs.onSurfaceVariant,
-            onPressed:
-                widget.onOpenBangumiInfo ??
-                () {
-                  App.rootContext.showMessage(message: t.notBoundToBangumi);
-                },
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              widget.animeTitle?.isNotEmpty == true
-                  ? widget.animeTitle!
-                  : t.bangumi,
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (widget.onOpenBangumiInfo != null)
-            TextButton.icon(
-              onPressed: widget.onOpenBangumiInfo,
-              icon: const Icon(Icons.open_in_new, size: 14),
-              label: Text(t.bangumiInfo),
-              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-            ),
-        ],
-      ),
     );
   }
 
