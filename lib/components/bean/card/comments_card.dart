@@ -20,12 +20,15 @@ class CommentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: isBone ? _buildBone(context) : _buildContent(context),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: isBone ? _buildBone(context) : _buildContent(context),
+      ),
     );
   }
 

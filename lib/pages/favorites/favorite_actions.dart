@@ -276,7 +276,8 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
 }
 
 Future<void> sortFolders() async {
-  var folders = LocalFavoritesManager().folderNames;
+  final original = LocalFavoritesManager().folderNames;
+  var folders = original;
 
   await showPopUpWidget(
     App.rootContext,
@@ -299,22 +300,19 @@ Future<void> sortFolders() async {
               ),
             ),
           ],
-          body: ReorderableListView.builder(
-            onReorderItem: (oldIndex, newIndex) {
-              if (oldIndex < newIndex) {
-                newIndex--;
-              }
-              setState(() {
-                var item = folders.removeAt(oldIndex);
-                folders.insert(newIndex, item);
-              });
-            },
-            itemCount: folders.length,
-            itemBuilder: (context, index) {
+          body: SettingReorderableList<String>(
+            items: folders,
+            itemHeight: 56,
+            itemBuilder: (folder) {
               return ListTile(
-                key: ValueKey(folders[index]),
-                title: Text(folders[index]),
+                title: Text(folder),
+                trailing: const Icon(Icons.drag_handle),
               );
+            },
+            onReorder: (reorderFunc) {
+              setState(() {
+                folders = List.from(reorderFunc(folders));
+              });
             },
           ),
         );
@@ -322,5 +320,8 @@ Future<void> sortFolders() async {
     ),
   );
 
-  LocalFavoritesManager().updateOrder(folders);
+  // 顺序没有变化时不写回，避免无谓刷新
+  if (!listEquals(folders, original)) {
+    LocalFavoritesManager().updateOrder(folders);
+  }
 }

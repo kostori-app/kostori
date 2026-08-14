@@ -286,6 +286,24 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                       child: Hero(
                                                         tag: characterFullItem
                                                             .image,
+                                                        flightShuttleBuilder:
+                                                            (
+                                                              flightContext,
+                                                              animation,
+                                                              direction,
+                                                              fromContext,
+                                                              toContext,
+                                                            ) {
+                                                              return direction ==
+                                                                      HeroFlightDirection
+                                                                          .pop
+                                                                  ? (fromContext.widget
+                                                                            as Hero)
+                                                                        .child
+                                                                  : (toContext.widget
+                                                                            as Hero)
+                                                                        .child;
+                                                            },
                                                         child:
                                                             BangumiWidget.kostoriImage(
                                                               context,
@@ -680,6 +698,24 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                               .character
                                                               .images
                                                               .large,
+                                                      flightShuttleBuilder:
+                                                          (
+                                                            flightContext,
+                                                            animation,
+                                                            direction,
+                                                            fromContext,
+                                                            toContext,
+                                                          ) {
+                                                            return direction ==
+                                                                    HeroFlightDirection
+                                                                        .pop
+                                                                ? (fromContext.widget
+                                                                          as Hero)
+                                                                      .child
+                                                                : (toContext.widget
+                                                                          as Hero)
+                                                                      .child;
+                                                          },
                                                       child: ClipRRect(
                                                         borderRadius:
                                                             BorderRadius.circular(
@@ -1086,61 +1122,53 @@ class _PersonPageState extends ConsumerState<PersonPage>
                   key: const PageStorageKey<String>('人物参与作品'),
                   slivers: [
                     if (personWorksList.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: 240,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: personWorksList.length,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            itemBuilder: (context, index) {
-                              final work = personWorksList[index];
-                              return SizedBox(
-                                width: 240 * 0.68,
-                                height: 240,
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: BangumiBriefCard(
-                                        bangumiItem: work.subject,
-                                        heroTag: 'PersonWork',
+                      SliverPadding(
+                        padding: const EdgeInsets.all(8),
+                        sliver: SliverGrid(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final work = personWorksList[index];
+                            return Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: BangumiBriefCard(
+                                    bangumiItem: work.subject,
+                                    heroTag: 'PersonWork',
+                                  ),
+                                ),
+                                if (work.positions.isNotEmpty)
+                                  Positioned(
+                                    left: 8,
+                                    top: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
                                       ),
-                                    ),
-                                    if (work.positions.isNotEmpty)
-                                      Positioned(
-                                        left: 8,
-                                        top: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.secondaryContainer,
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            work.positions.first.type.cn.isEmpty
-                                                ? work.positions.first.type.jp
-                                                : work.positions.first.type.cn,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.secondaryContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        work.positions.first.type.cn.isEmpty
+                                            ? work.positions.first.type.jp
+                                            : work.positions.first.type.cn,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                  ],
-                                ),
-                              );
-                            },
+                                    ),
+                                  ),
+                              ],
+                            );
+                          }, childCount: personWorksList.length),
+                          gridDelegate: SliverGridDelegateWithBangumiItems(
+                            true,
                           ),
                         ),
                       )

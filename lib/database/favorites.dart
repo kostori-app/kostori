@@ -145,7 +145,9 @@ class FavoriteItem implements Anime {
       coverPath: json["coverPath"],
       type: AnimeType(type),
       tags: List<String>.from(json["tags"] ?? []),
-      viewMore: json["viewMore"],
+      viewMore: json["viewMore"] is String
+          ? PageJumpTarget.fromJsonString(json["viewMore"] as String)
+          : null,
     );
   }
 }

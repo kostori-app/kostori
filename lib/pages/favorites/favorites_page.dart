@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gif/gif.dart';
@@ -26,6 +27,7 @@ import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/favorites/favorites_controller.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 

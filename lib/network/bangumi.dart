@@ -546,10 +546,8 @@ class Bangumi {
     List<List<BangumiItem>> bangumiCalendar = [];
     try {
       var res = await _dio.request(
-        Api.checkBangumiDataUrl,
-        // GitHub API 不能用 Bangumi 的 Bearer token（会 401 Bad credentials），
-        // 仅带 UA；GitHub 匿名访问每小时 60 次，但该接口低频调用足够
-        options: Options(method: 'GET', headers: {'user-agent': webUA}),
+        Api.bangumiCalendar,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
       await manager.clearBangumiCalendar();
@@ -618,7 +616,7 @@ class Bangumi {
     try {
       final response = await _dio.request(
         Api.bangumiDataUrl,
-        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+        options: Options(method: 'GET', headers: {'user-agent': webUA}),
       );
 
       final responseData = response.data;
@@ -681,7 +679,7 @@ class Bangumi {
     try {
       var res = await _dio.request(
         Api.checkBangumiDataUrl,
-        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+        options: Options(method: 'GET', headers: {'user-agent': webUA}),
       );
       final jsonData = res.data;
       if (appdata.settings['bangumiDataVer'] != jsonData['tag_name']) {
@@ -731,7 +729,7 @@ class Bangumi {
     try {
       var res = await _dio.request(
         Api.checkBangumiDataUrl,
-        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+        options: Options(method: 'GET', headers: {'user-agent': webUA}),
       );
       final jsonData = res.data;
       NetLog.info('resetBangumiData', '${jsonData['tag_name']}');

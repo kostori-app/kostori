@@ -91,6 +91,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   BangumiItem? get bangumiItem => bangumiBindInfo;
   late TabController tabController;
 
+  /// 播放器 Watcher 的 GlobalKey：宽屏/窄屏布局切换时保持 State 不被重建，
+  /// 避免播放器（media_kit Player）被 dispose 后仍被异步操作访问。
+  final GlobalKey<WatcherState> watcherKey = GlobalKey<WatcherState>();
+
   // 各 Tab 的滚动控制器，供 AppScrollBar 使用
   final ScrollController infoScrollCtrl = ScrollController();
   final ScrollController episodesScrollCtrl = ScrollController();
@@ -358,9 +362,76 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     });
 
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
     final isDesktop = screenWidth > 800;
     final playerHeight = isDesktop ? screenWidth * 0.35 : screenWidth * 0.6;
+    // 宽屏（>2000 且为横向）改为左右布局：播放器在左，Tab 内容在右。
+    // 需同时满足宽 > 高，避免竖向超高分辨率竖屏（宽超 2k 但高更高）、
+    // 折叠屏展开成竖向/方形时误触发左右布局。
+    final sideBySide = screenWidth > 2000 && screenWidth > screenHeight;
+
+    final tabBar = Container(
+      color: Theme.of(context).colorScheme.surface,
+      child: TabBar(
+        controller: tabController,
+        isScrollable: true,
+        indicatorColor: Theme.of(context).colorScheme.primary,
+        tabAlignment: TabAlignment.center,
+        tabs: [
+          Tab(text: t.basicInfo),
+          Tab(text: t.allEpisodes),
+          Tab(text: t.relatedEntries),
+          Tab(text: t.imageOperations),
+          Tab(text: t.watchTogether),
+        ],
+      ),
+    );
+
+    if (sideBySide) {
+      final playerWidth = screenWidth * 0.70;
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: playerWidth,
+            child: Column(
+              children: [
+                Container(
+                  height: topPadding,
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                // 播放器在左侧垂直居中
+                Expanded(
+                  child: Center(
+                    child: MediaQuery(
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(size: Size(playerWidth, screenHeight)),
+                      child: Watcher(
+                        key: watcherKey,
+                        playerController: playerController,
+                        watcherController: watcherController,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                // 右侧 Tab 留出安全顶部空间
+                SizedBox(height: topPadding + 12),
+                tabBar,
+                Expanded(child: animeTab()),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     // 固定布局：视频头 + TabBar 固定在上方，剩余空间交给 Tab 内容。
     // 不再用 NestedScrollView（视频头固定不折叠），避免 Tab 内容重叠在
@@ -378,6 +449,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
               ),
               Expanded(
                 child: Watcher(
+                  key: watcherKey,
                   playerController: playerController,
                   watcherController: watcherController,
                 ),
@@ -385,22 +457,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             ],
           ),
         ),
-        Container(
-          color: Theme.of(context).colorScheme.surface,
-          child: TabBar(
-            controller: tabController,
-            isScrollable: true,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            tabAlignment: TabAlignment.center,
-            tabs: [
-              Tab(text: t.basicInfo),
-              Tab(text: t.allEpisodes),
-              Tab(text: t.relatedEntries),
-              Tab(text: t.imageOperations),
-              Tab(text: t.watchTogether),
-            ],
-          ),
-        ),
+        tabBar,
         Expanded(child: animeTab()),
       ],
     );
@@ -1055,18 +1112,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final screenWidth = MediaQuery.of(context).size.width;
-                        final crossAxisCount = screenWidth < 800 ? 3 : 8;
-                        return SliverGridAnimes(
-                          animes: recommend,
-                          isRecommend: true,
-                          asSliver: false,
-                          shrinkWrap: true,
-                          crossAxisCount: crossAxisCount,
-                        );
-                      },
+                    // 不指定固定列数，交给 SliverGridDelegateWithAnimes 按可用宽度自适应
+                    child: SliverGridAnimes(
+                      animes: recommend,
+                      isRecommend: true,
+                      asSliver: false,
+                      shrinkWrap: true,
                     ),
                   ),
                 ],
@@ -1171,53 +1222,170 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget buildContainer(
-      double? width,
-      double? height, {
-      Color? color,
-      double? radius,
-    }) {
-      return Container(
-        height: height,
-        width: width,
-        decoration: BoxDecoration(
-          color: color ?? context.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(radius ?? 4),
-        ),
-      );
-    }
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    // 与正文一致的宽屏判定：>2000 且横向
+    final sideBySide = screenWidth > 2000 && screenWidth > screenHeight;
 
     return Shimmer(
       color: context.isDarkMode ? Colors.grey.shade700 : Colors.white,
+      child: sideBySide
+          ? _buildSideBySide(context, screenWidth, screenHeight)
+          : _buildStacked(context),
+    );
+  }
+
+  Widget _buildStacked(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildVideoPlaceholder(context),
-          const SizedBox(height: 4),
-          const Divider(),
-          const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 16),
+          _buildInfoArea(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSideBySide(
+    BuildContext context,
+    double screenWidth,
+    double screenHeight,
+  ) {
+    final playerWidth = screenWidth * 0.70;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: playerWidth,
+          child: Column(
             children: [
-              const SizedBox(width: 16),
-              buildImage(context),
-              const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (title != null)
-                      Text(title ?? "", style: ts.s18)
-                    else
-                      buildContainer(200, 25),
-                    const SizedBox(height: 8),
-                    buildContainer(80, 20),
-                  ],
+                child: Center(
+                  child: MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(size: Size(playerWidth, screenHeight)),
+                    child: buildVideoPlaceholder(context),
+                  ),
                 ),
               ),
             ],
           ),
-        ],
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [const SizedBox(height: 24), _buildInfoArea(context)],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoArea(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildImage(context),
+              const SizedBox(width: 16),
+              Expanded(child: _buildTitleSkeleton(context)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildTagChips(context),
+        ),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildDescriptionSkeleton(context),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _block(
+    BuildContext context, {
+    required double width,
+    required double height,
+    double radius = 6,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(radius),
       ),
+    );
+  }
+
+  Widget _buildTitleSkeleton(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title != null)
+          Text(
+            title!,
+            style: ts.s18,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          )
+        else
+          _block(context, width: double.infinity, height: 22),
+        const SizedBox(height: 10),
+        _block(context, width: 150, height: 14),
+        const SizedBox(height: 10),
+        _block(context, width: 90, height: 12),
+        const SizedBox(height: 14),
+        _block(context, width: 180, height: 12),
+      ],
+    );
+  }
+
+  Widget _buildTagChips(BuildContext context) {
+    const widths = [52.0, 76.0, 48.0, 64.0, 84.0, 56.0, 70.0, 60.0];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final w in widths)
+          _block(context, width: w, height: 28, radius: 14),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionSkeleton(BuildContext context) {
+    const factors = [1.0, 0.95, 0.98, 0.62];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _block(context, width: 88, height: 16),
+        const SizedBox(height: 14),
+        for (final f in factors)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: f,
+              child: _block(context, width: double.infinity, height: 12),
+            ),
+          ),
+      ],
     );
   }
 

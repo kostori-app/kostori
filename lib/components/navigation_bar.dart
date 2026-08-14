@@ -242,7 +242,7 @@ class NaviPaneState extends State<NaviPane>
             return false;
           },
           child: Navigator(
-            observers: [widget.observer],
+            observers: [widget.observer, App.routeObserver],
             key: widget.navigatorKey,
             onGenerateRoute: (settings) => AppPageRoute(
               preventRebuild: false,
