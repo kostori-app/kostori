@@ -28,8 +28,14 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
     namespace = 'com.axlmly.kostori'
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion "28.0.13004108"
+    compileSdk = 37
+    ndkVersion "28.2.13676358"
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 
     splits {
         abi {

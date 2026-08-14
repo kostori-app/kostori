@@ -4,7 +4,6 @@
             android:name="${applicationName}"
             android:icon="@mipmap/ic_launcher"
             android:usesCleartextTraffic="true"
-            android:extractNativeLibs="true"
             android:resizeableActivity="true"
             android:hardwareAccelerated="true">
         <activity
