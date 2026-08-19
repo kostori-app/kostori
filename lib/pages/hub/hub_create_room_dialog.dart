@@ -3,7 +3,6 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/i18n/strings.g.dart';
 
 // ── 公共表单对话框 ──────────────────────────────────────────────────────────────

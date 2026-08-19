@@ -24,6 +24,7 @@ class AnimeList extends StatefulWidget {
     this.controller,
     this.refreshHandlerCallback,
     this.enablePageStorage = false,
+    this.enableFloatingMenu = true,
   });
 
   final Future<Res<List<Anime>>> Function(int page)? loadPage;
@@ -43,6 +44,9 @@ class AnimeList extends StatefulWidget {
   final void Function(VoidCallback c)? refreshHandlerCallback;
 
   final bool enablePageStorage;
+
+  /// 是否显示内置的右下角浮动按钮（探索页用页面级 GridSpeedDial，可关闭）
+  final bool enableFloatingMenu;
 
   @override
   State<AnimeList> createState() => AnimeListState();
@@ -505,56 +509,57 @@ class AnimeListState extends State<AnimeList>
         Positioned(
           bottom: 15,
           right: 10,
-          child: FloatingMenu(
-            controller: scrollController,
-            child: [
-              [
-                SpeedDialChild(
-                  child: const Icon(Icons.refresh),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
-                  onTap: refresh,
-                ),
-              ],
-              [
-                SpeedDialChild(
-                  child: const Icon(Icons.vertical_align_top),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
-                  onTap: scrollToTop,
-                ),
-              ],
-              [
-                SpeedDialChild(
-                  child: type == 'paging'
-                      ? Icon(Icons.view_cozy_outlined)
-                      : Icon(Icons.menu),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
-                  onTap: () {
-                    appdata.settings['animeListDisplayMode'] = type == 'paging'
-                        ? 'continuous'
-                        : 'paging';
-                    appdata.saveData();
-                    refresh;
-                    setState(() {});
-                  },
-                ),
-              ],
-            ],
-          ),
+          child: widget.enableFloatingMenu
+              ? FloatingMenu(
+                  controller: scrollController,
+                  child: [
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.refresh),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: refresh,
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.vertical_align_top),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: scrollToTop,
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child: type == 'paging'
+                            ? Icon(Icons.view_cozy_outlined)
+                            : Icon(Icons.menu),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () {
+                          appdata.settings['animeListDisplayMode'] =
+                              type == 'paging' ? 'continuous' : 'paging';
+                          appdata.saveData();
+                          refresh;
+                          setState(() {});
+                        },
+                      ),
+                    ],
+                  ],
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );
@@ -701,7 +706,7 @@ class AnimeListState extends State<AnimeList>
       return Column(
         children: [
           if (widget.errorLeading != null) widget.errorLeading!,
-          const Expanded(child: Center(child: CircularProgressIndicator())),
+          const Expanded(child: Center(child: KostoriRefreshIndicator())),
         ],
       );
     }

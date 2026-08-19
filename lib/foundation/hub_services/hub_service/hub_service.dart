@@ -888,6 +888,9 @@ class HubService extends BaseHttpService {
         mode: mode ?? savedHubBindMode,
       );
     }
+    // 端口被占用自动改用其他端口时，记住实际端口，下次直接复用，
+    // 避免每次启动都从固定端口重新撞占用
+    if (port != savedHubPort) saveHubPort(port);
     await startWebAdmin(); // 独立端口的管理网页
     SatoriServer.instance.attach(this); // Satori 协议适配层
     syncAiBotMember(); // 内置 AI bot 启用时注册为成员（@ 列表可见）

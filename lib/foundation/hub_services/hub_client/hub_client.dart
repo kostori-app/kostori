@@ -69,12 +69,13 @@ class HubClient {
     currentRoomId: '',
   );
 
+  // 自定义设置走 implicitData（settings 是 freezed 固定 schema，非字段会被丢弃）
   bool get autoReconnect =>
-      appdata.settings['hubAutoReconnect'] as bool? ?? false;
+      appdata.implicitData['hubAutoReconnect'] as bool? ?? false;
 
   set autoReconnect(bool v) {
-    appdata.settings['hubAutoReconnect'] = v;
-    appdata.saveData();
+    appdata.implicitData['hubAutoReconnect'] = v;
+    appdata.writeImplicitData();
   }
 
   void addMessageListener(void Function(Map<String, dynamic>) fn) {

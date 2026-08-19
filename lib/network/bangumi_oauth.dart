@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, empty_catches
+import 'package:kostori/components/animated.dart';
 
 import 'dart:math';
 import 'dart:typed_data';
@@ -651,7 +652,7 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: PolygonRefreshIndicator(),
                     )
                   : Text(t.bangumiOAuthLogin),
             ),
@@ -661,3 +662,4 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
     );
   }
 }
+

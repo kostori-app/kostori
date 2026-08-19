@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
@@ -174,16 +174,10 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                       child: loadingCharacter
                           ? Center(child: KostoriRefreshIndicator())
                           : (characterFullItem.id == 0
-                                ? GeneralErrorWidget(
-                                    errMsg: t.nobodysPostedAnythingYet,
-                                    actions: [
-                                      GeneralErrorButton(
-                                        onPressed: () {
-                                          loadCharacter();
-                                        },
-                                        text: t.reload,
-                                      ),
-                                    ],
+                                ? EmptyState(
+                                    message: t.nobodysPostedAnythingYet,
+                                    retry: loadCharacter,
+                                    retryText: t.reload,
                                   )
                                 : ScrollConfiguration(
                                     behavior: ScrollConfiguration.of(
@@ -487,16 +481,12 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                 }
                 if (commentsQueryTimeout) {
                   return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: t.failedToLoadPleaseTryAgain,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadComments();
-                          },
-                          text: t.reload,
-                        ),
-                      ],
+                    child: ErrorState(
+                      message: t.failedToLoadPleaseTryAgain,
+                      retry: () {
+                        loadComments();
+                      },
+                      retryText: t.reload,
                     ),
                   );
                 }
@@ -739,16 +729,12 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                 }
                 if (characterCastsQueryTimeout) {
                   return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: t.failedToLoadPleaseTryAgain,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadCharacterCasts();
-                          },
-                          text: t.reload,
-                        ),
-                      ],
+                    child: ErrorState(
+                      message: t.failedToLoadPleaseTryAgain,
+                      retry: () {
+                        loadCharacterCasts();
+                      },
+                      retryText: t.reload,
                     ),
                   );
                 }

@@ -43,6 +43,16 @@ relatedEntries: 相关条目
 alsoRemoveFilesOnDisk: 同时删除本地文件
 animeSourceList: 番剧源列表
 animeSource: 番剧源
+filterAll: 全部
+noMatchingSource: 未找到匹配的番源
+filterNonBangumi: 其他
+sortByDefault: 默认
+sortByName: 名称
+sortById: ID
+switchSource: 切换源
+searchSourceHint: 搜索其他源的该条目
+needVerification: 需要验证
+tapToVerify: 点击验证
 appearance: 外观
 areYouSureYouWantToClearYourHistory: 确定要清除历史记录吗？
 areYouSureYouWantToClearYourProgress: 确定要清除全部进度吗？
@@ -53,7 +63,8 @@ bangumi: 番组计划
 bangumiInfo: 番剧详情
 block: 封锁
 blue: 蓝色
-brief: 简介
+brief: 简洁
+masonry: 瀑布流
 cacheLimit: 缓存限制
 cacheSize: 缓存大小
 cacheCleared: 缓存已清除
@@ -131,7 +142,6 @@ displayTimeAndBatteryInfoInReader: 在阅读器中显示时间与电池信息
 doNotReportAnyIssuesRelatedToSourcesToAppRepo: 请勿将与源相关的问题反馈至本应用的仓库。
 downloadAll: 下载全部
 downloadSelected: 下载选中项
-downloadThreads: 下载线程
 download: 下载
 downloading: 下载中
 edit: 编辑
@@ -379,15 +389,18 @@ barChart: 柱状图
 standardDeviationS: 标准差：${s}
 nobodysPostedAnythingYet: 还没有人发布内容...
 reload: 重新加载
-mePagePlugin: 个人页插件
+mePagePlugin: 插件
 noMePagePlugin: 暂无插件（将 *.js 放入 plugins 目录）
 openDir: 打开目录
 createPlugin: 创建插件
+pluginSourceUrl: 插件地址
+fetchPlugins: 获取插件
 pluginName: 插件文件名
 alreadyExists: 已存在
 mainContent: 正文
 switchh: 切换
 failedToLoadPleaseTryAgain: 加载失败，请重试。
+failedToOpen: 打开失败
 doing: 在看
 collect: 看过
 wish: 想看
@@ -516,6 +529,7 @@ watcherDuplicateEpisode: 加载重复集数
 vceEstimating: 估算中…
 vceReloadPreview: 重新加载预览片段
 vceReload: 重载
+reloadEpisode: 重载当前集
 vceTimelineThumbnails: 视频时间轴缩略图
 vceStart: 起点
 vceEnd: 终点
@@ -713,6 +727,7 @@ audioOptionLowLatency: "音频: 低延迟"
 audioOptionCompatibility: "音频: 兼容模式"
 audioOutputDevice: 音频输出设备
 noAudioDevice: 未检测到音频设备
+volumeBoost: 音量增益
 volumeBoostEnabled: "音量增益: 开"
 volumeBoostDisabled: "音量增益: 关"
 volume: 音量
@@ -947,7 +962,7 @@ collectStatus: 看过
 onHoldStatus: 搁置
 droppedStatus: 抛弃
 player: 播放器
-audioOption: 音频选项
+audioOption: 低延迟音频
 hardwareDecoding: 硬件解码
 hardwareDecoder: 硬件解码器
 videoRenderer: 视频渲染器
@@ -2221,3 +2236,49 @@ builderKeyRequired: 请填写键
 builderKeyInvalid: 键只能包含字母、数字和下划线
 builderImported: 源已导入
 builderGenerateFailed: 生成失败
+collapseSidebar: 收起侧边栏
+expandSidebar: 展开侧边栏
+clearFinishedDownload: 清空已完成下载
+downloadEmpty: 暂无下载任务
+downloadQueued: 等待中
+downloadCompleted: 已完成
+pauseDownload: 暂停下载
+resumeDownload: 继续下载
+retryDownload: 重试下载
+pausedDownload: 已暂停
+downloadSettings: 下载设置
+downloadConcurrent: 任务并发数
+downloadSegmentConcurrent: 分片并发数
+downloadWifiOnly: 仅 WiFi 下载
+downloadOther: 其他
+downloadRecords: 下载记录
+openWithOtherPlayer: 用其他播放器打开
+downloadTitleFormat: "下载标题格式"
+downloadFormatHint: "占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份"
+downloadDir: "下载目录"
+loadingStepParse: "解析视频地址"
+loadingStepInit: "初始化播放器"
+loadingStepLoad: "加载媒体数据"
+loadingStepBuffer: "缓冲播放"
+downloadEpisode: "选择要下载的剧集"
+downloadNotYet: "暂无选集可下载"
+downloadSelectedCount: "下载 ${n} 集"
+selectResolution: "选择分辨率"
+defaultResolution: "默认"
+noResolutionAvailable: "无更多清晰度可选"
+series: "系列"
+playing: "正在播放"
+selectNone: "取消全选"
+downloadActive: "正在下载"
+redownload: "重新下载"
+startAll: "全部开始"
+pauseAll: "全部暂停"
+cancelAll: "全部取消"
+recordsEmpty: "暂无下载记录"
+fileNotFound: "未找到文件"
+deleted: "已删除"
+localPlayerSpeedTip: "长按画面切换倍速"
+audioTrack: "音轨"
+subtitle: "字幕"
+subtitleOff: "关闭字幕"
+quality: "清晰度"

@@ -3,16 +3,17 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/components/components.dart';
 import 'package:kostori/components/system_status_widget.dart';
+import 'package:kostori/foundation/anime_source/anime_play_result.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/volume_slider_popup.dart';
-import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 
@@ -40,7 +41,7 @@ class PlayerItemPanel extends StatefulWidget {
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
   final void Function() showVideoInfo;
-  final MenuButton buildMenuItems;
+  final Widget buildMenuItems;
 
   @override
   State<PlayerItemPanel> createState() => _PlayerItemPanelState();
@@ -182,8 +183,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           Expanded(
                             child: LayoutBuilder(
                               builder: (context, constraints) {
-                                final text =
-                                    WatcherState.currentState!.anime.title;
+                final text =
+                    providerContainer
+                        .read(watcherControllerProvider)
+                        .anime!
+                        .title;
                                 const style = TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -602,6 +606,63 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   )
                                 : Container(),
 
+                            // 音轨选择（源脚本提供媒体信息时显示）
+                            if ((playerController
+                                        .playResult
+                                        ?.audioTracks
+                                        .length ??
+                                    0) >
+                                1)
+                              PopupMenuButton<int>(
+                                color: Colors.white,
+                                tooltip: t.audioTrack,
+                                onSelected: (i) =>
+                                    playerController.setAudioTrack(i),
+                                itemBuilder: (_) => playerController
+                                    .playResult!
+                                    .audioTracks
+                                    .map(
+                                      (tr) => PopupMenuItem(
+                                        value: tr.index,
+                                        child: Text(tr.displayTitle),
+                                      ),
+                                    )
+                                    .toList(),
+                                child: Icon(
+                                  Icons.audiotrack,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            // 字幕选择
+                            if ((playerController
+                                        .playResult
+                                        ?.subtitleTracks
+                                        .isNotEmpty ??
+                                    false))
+                              PopupMenuButton<int>(
+                                color: Colors.white,
+                                tooltip: t.subtitle,
+                                onSelected: (i) =>
+                                    playerController.setSubtitleTrack(i),
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(
+                                    value: -1,
+                                    child: Text(t.subtitleOff),
+                                  ),
+                                  ...playerController.playResult!.subtitleTracks
+                                      .map(
+                                        (tr) => PopupMenuItem(
+                                          value: tr.index,
+                                          child: Text(tr.displayTitle),
+                                        ),
+                                      ),
+                                ],
+                                child: Icon(
+                                  Icons.subtitles,
+                                  color: Colors.white,
+                                ),
+                              ),
+
                             if (App.isAndroid && !playerController.isFullScreen)
                               IconButton(
                                 color: Colors.white,
@@ -616,6 +677,38 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     isPortraitFullScreen: true,
                                   );
                                 },
+                              ),
+
+                            // 清晰度切换（源提供多清晰度时显示）
+                            if ((playerController
+                                        .playResult
+                                        ?.videoStreams
+                                        ?.length ??
+                                    0) >
+                                1)
+                              PopupMenuButton<VideoStreamInfo>(
+                                color: Colors.white,
+                                tooltip: t.quality,
+                                onSelected: (vs) {
+                                  final u = vs.url;
+                                  if (u != null && u.isNotEmpty) {
+                                    playerController.switchQuality(u);
+                                  }
+                                },
+                                itemBuilder: (_) => playerController
+                                    .playResult!
+                                    .videoStreams!
+                                    .map(
+                                      (vs) => PopupMenuItem(
+                                        value: vs,
+                                        child: Text(vs.label),
+                                      ),
+                                    )
+                                    .toList(),
+                                child: Icon(
+                                  Icons.high_quality_outlined,
+                                  color: Colors.white,
+                                ),
                               ),
                             IconButton(
                               color: Colors.white,

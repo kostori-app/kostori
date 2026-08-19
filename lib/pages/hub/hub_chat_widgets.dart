@@ -383,157 +383,36 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
     _dismissActiveOverlay();
     final hasImage = widget.entry.segments.whereType<ImageSegment>().isNotEmpty;
     final isMe = widget.isMe;
+
+    // 气泡全局区域：菜单精确定位到长按的消息附近（宽屏下不再固定居中于整屏）
+    Rect? bubbleRect;
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      if (box != null && box.hasSize) {
+        bubbleRect = box.localToGlobal(Offset.zero) & box.size;
+      }
+    } catch (_) {}
+
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final screenSize = MediaQuery.of(context).size;
+
     final entry = OverlayEntry(
-      builder: (_) {
-        return GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: _dismissActiveOverlay,
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: MediaQuery.of(context).padding.bottom + 120,
-                child: Center(
-                  child: Material(
-                    elevation: 10,
-                    borderRadius: BorderRadius.circular(16),
-                    color: cs.surfaceContainer,
-                    child: SizedBox(
-                      width: 260,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(8, 10, 8, 6),
-                              child: Wrap(
-                                alignment: WrapAlignment.spaceEvenly,
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: [
-                                  ...HubEmoji.quickBar.map(
-                                    (e) => _QuickEmojiBtn(
-                                      emoji: e,
-                                      onTap: () {
-                                        _dismissActiveOverlay();
-                                        widget.onReact(
-                                          widget.entry.messageId,
-                                          e.id,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  _MoreEmojiBtn(
-                                    onTap: () {
-                                      _dismissActiveOverlay();
-                                      final size = MediaQuery.of(context).size;
-                                      final centerOffset = Offset(
-                                        size.width / 2,
-                                        size.height * 0.8,
-                                      );
-                                      HubEmojiPicker.show(
-                                        context,
-                                        centerOffset,
-                                        onPick: (emojiId) => widget.onReact(
-                                          widget.entry.messageId,
-                                          emojiId,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Divider(
-                              height: 1,
-                              color: cs.outlineVariant.toOpacity(0.3),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 6,
-                              ),
-                              child: Row(
-                                children: [
-                                  if (!_isPureImage)
-                                    Expanded(
-                                      child: _TrayBtn(
-                                        icon: Icons.copy_outlined,
-                                        label: t.copy,
-                                        onTap: () {
-                                          _dismissActiveOverlay();
-                                          Clipboard.setData(
-                                            ClipboardData(
-                                              text: widget.entry.plainText,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  if (hasImage)
-                                    Expanded(
-                                      child: _TrayBtn(
-                                        icon: Icons.mood_outlined,
-                                        label: t.memes,
-                                        onTap: () {
-                                          _dismissActiveOverlay();
-                                          for (final seg
-                                              in widget.entry.segments
-                                                  .whereType<ImageSegment>()) {
-                                            HubStickerManager.add(
-                                              HubSticker(url: seg.url),
-                                            );
-                                          }
-                                          App.rootContext.showMessage(
-                                            message: t.memeSaved,
-                                            level: LogLevel.info,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  Expanded(
-                                    child: _TrayBtn(
-                                      icon: Icons.reply_outlined,
-                                      label: t.reply,
-                                      onTap: () {
-                                        _dismissActiveOverlay();
-                                        widget.onReply(widget.entry.messageId);
-                                      },
-                                    ),
-                                  ),
-                                  if (isMe)
-                                    Expanded(
-                                      child: _TrayBtn(
-                                        icon: Icons.undo_outlined,
-                                        label: t.recall,
-                                        color: cs.error,
-                                        onTap: () {
-                                          _dismissActiveOverlay();
-                                          widget.onRecall(
-                                            widget.entry.messageId,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => _MessageActionMenu(
+        cs: cs,
+        isMe: isMe,
+        hasImage: hasImage,
+        isPureImage: _isPureImage,
+        bubbleRect: bubbleRect,
+        screenSize: screenSize,
+        entry: widget.entry,
+        onDismiss: _dismissActiveOverlay,
+        onReact: (emojiId) => widget.onReact(widget.entry.messageId, emojiId),
+        onReply: () => widget.onReply(widget.entry.messageId),
+        onRecall: () => widget.onRecall(widget.entry.messageId),
+      ),
     );
     _activeOverlay = entry;
-    Overlay.of(context).insert(entry);
+    overlay.insert(entry);
   }
 
   @override
@@ -1031,19 +910,264 @@ class _TrayBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final c = color ?? cs.onSurface;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20, color: c),
-            const SizedBox(height: 3),
-            Text(label, style: TextStyle(fontSize: 11, color: c)),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: c),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 12, color: c),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+// ── 长按消息操作菜单：精确定位到消息附近 + 缩放渐显动画 ───────────────────────
+
+class _MessageActionMenu extends StatefulWidget {
+  final ColorScheme cs;
+  final bool isMe;
+  final bool hasImage;
+  final bool isPureImage;
+  final Rect? bubbleRect;
+  final Size screenSize;
+  final HubMessage entry;
+  final VoidCallback onDismiss;
+  final void Function(String emojiId) onReact;
+  final VoidCallback onReply;
+  final VoidCallback onRecall;
+
+  const _MessageActionMenu({
+    required this.cs,
+    required this.isMe,
+    required this.hasImage,
+    required this.isPureImage,
+    required this.bubbleRect,
+    required this.screenSize,
+    required this.entry,
+    required this.onDismiss,
+    required this.onReact,
+    required this.onReply,
+    required this.onRecall,
+  });
+
+  @override
+  State<_MessageActionMenu> createState() => _MessageActionMenuState();
+}
+
+class _MessageActionMenuState extends State<_MessageActionMenu>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _anim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 200),
+  );
+
+  late final Animation<double> _scale = CurvedAnimation(
+    parent: _anim,
+    curve: Curves.easeOutBack,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _anim.forward();
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  static const double _menuWidth = 280;
+
+  /// 估算高度（仅用于上下定位判断，实际高度由内容撑开）
+  static const double _estHeight = 150;
+
+  static double _clampD(double v, double lo, double hi) =>
+      v < lo ? lo : (v > hi ? hi : v);
+
+  Offset _computePosition() {
+    final rect = widget.bubbleRect;
+    final size = widget.screenSize;
+    if (rect == null) {
+      return Offset(
+        (size.width - _menuWidth) / 2,
+        (size.height - _estHeight) / 2,
+      );
+    }
+    final left = _clampD(
+      rect.center.dx - _menuWidth / 2,
+      12,
+      size.width - _menuWidth - 12,
+    );
+    const margin = 8.0;
+    double top;
+    if (rect.top > _estHeight + margin + 12) {
+      top = rect.top - _estHeight - margin;
+    } else {
+      top = rect.bottom + margin;
+    }
+    top = _clampD(top, 12, size.height - _estHeight - 12);
+    return Offset(left, top);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pos = _computePosition();
+    final cs = widget.cs;
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: widget.onDismiss,
+      child: Stack(
+        children: [
+          Positioned(
+            left: pos.dx,
+            top: pos.dy,
+            child: ScaleTransition(
+              scale: _scale,
+              child: FadeTransition(
+                opacity: _anim,
+                child: BlurEffect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Material(
+                    color: cs.surfaceContainerHigh.withValues(alpha: 0.75),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      width: _menuWidth,
+                      padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: cs.outlineVariant.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 快捷表情
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              ...HubEmoji.quickBar.map(
+                                (e) => _QuickEmojiBtn(
+                                  emoji: e,
+                                  onTap: () {
+                                    widget.onDismiss();
+                                    widget.onReact(e.id);
+                                  },
+                                ),
+                              ),
+                              _MoreEmojiBtn(
+                                onTap: () {
+                                  widget.onDismiss();
+                                  HubEmojiPicker.show(
+                                    context,
+                                    Offset(
+                                      widget.screenSize.width / 2,
+                                      widget.screenSize.height * 0.8,
+                                    ),
+                                    onPick: widget.onReact,
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Divider(
+                            height: 1,
+                            color: cs.outlineVariant.withValues(alpha: 0.25),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              if (!widget.isPureImage)
+                                Expanded(
+                                  child: _TrayBtn(
+                                    icon: Icons.copy_outlined,
+                                    label: t.copy,
+                                    onTap: () {
+                                      widget.onDismiss();
+                                      Clipboard.setData(
+                                        ClipboardData(
+                                          text: widget.entry.plainText,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              if (widget.hasImage)
+                                Expanded(
+                                  child: _TrayBtn(
+                                    icon: Icons.mood_outlined,
+                                    label: t.memes,
+                                    onTap: () {
+                                      widget.onDismiss();
+                                      for (final seg in widget.entry.segments
+                                          .whereType<ImageSegment>()) {
+                                        HubStickerManager.add(
+                                          HubSticker(url: seg.url),
+                                        );
+                                      }
+                                      App.rootContext.showMessage(
+                                        message: t.memeSaved,
+                                        level: LogLevel.info,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              Expanded(
+                                child: _TrayBtn(
+                                  icon: Icons.reply_outlined,
+                                  label: t.reply,
+                                  onTap: () {
+                                    widget.onDismiss();
+                                    widget.onReply();
+                                  },
+                                ),
+                              ),
+                              if (widget.isMe)
+                                Expanded(
+                                  child: _TrayBtn(
+                                    icon: Icons.undo_outlined,
+                                    label: t.recall,
+                                    color: cs.error,
+                                    onTap: () {
+                                      widget.onDismiss();
+                                      widget.onRecall();
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1352,6 +1476,7 @@ class HubInputBar extends ConsumerWidget {
   final FocusNode focusNode;
   final VoidCallback onSend;
   final VoidCallback onPickImage;
+  final VoidCallback onPasteImage;
   final VoidCallback onOpenStickers;
   final bool isDesktop;
   final bool uploading;
@@ -1373,6 +1498,7 @@ class HubInputBar extends ConsumerWidget {
     required this.focusNode,
     required this.onSend,
     required this.onPickImage,
+    required this.onPasteImage,
     required this.onOpenStickers,
     required this.isDesktop,
     this.uploading = false,
@@ -1486,6 +1612,12 @@ class HubInputBar extends ConsumerWidget {
                       if (event is! KeyDownEvent || !isDesktop) {
                         return KeyEventResult.ignored;
                       }
+                      // 支持粘贴剪贴板图片（Ctrl+V）
+                      if (event.logicalKey == LogicalKeyboardKey.keyV &&
+                          HardwareKeyboard.instance.isControlPressed) {
+                        onPasteImage();
+                        return KeyEventResult.handled;
+                      }
                       if (event.logicalKey == LogicalKeyboardKey.enter) {
                         if (HardwareKeyboard.instance.isControlPressed) {
                           final t = controller.text;
@@ -1576,10 +1708,7 @@ class HubInputBar extends ConsumerWidget {
                         ? SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: cs.primary,
-                            ),
+                            child: PolygonRefreshIndicator(),
                           )
                         : Icon(
                             Icons.image_outlined,

@@ -2,11 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
@@ -237,17 +236,11 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       child: loadingPerson
                           ? Center(child: KostoriRefreshIndicator())
                           : (characterFullItem.id == 0
-                                ? GeneralErrorWidget(
-                                    errMsg: t.nobodysPostedAnythingYet,
-                                    actions: [
-                                      GeneralErrorButton(
-                                        onPressed: () {
-                                          loadPerson();
-                                        },
-                                        text: t.reload,
-                                      ),
-                                    ],
-                                  )
+                                  ? EmptyState(
+                                      message: t.nobodysPostedAnythingYet,
+                                      retry: loadPerson,
+                                      retryText: t.reload,
+                                    )
                                 : ScrollConfiguration(
                                     behavior: ScrollConfiguration.of(
                                       context,
@@ -554,16 +547,12 @@ class _PersonPageState extends ConsumerState<PersonPage>
                 }
                 if (commentsQueryTimeout) {
                   return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: t.failedToLoadPleaseTryAgain,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadComments();
-                          },
-                          text: t.reload,
-                        ),
-                      ],
+                    child: ErrorState(
+                      message: t.failedToLoadPleaseTryAgain,
+                      retry: () {
+                        loadComments();
+                      },
+                      retryText: t.reload,
                     ),
                   );
                 }
@@ -927,17 +916,13 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       )
                     else if (characterPersonCastsQueryTimeout)
                       SliverFillRemaining(
-                        child: GeneralErrorWidget(
-                          errMsg: t.failedToLoadPleaseTryAgain,
-                          actions: [
-                            GeneralErrorButton(
-                              onPressed: () {
-                                loadPersonCasts();
-                              },
-                              text: t.reload,
-                            ),
-                          ],
-                        ),
+                    child: ErrorState(
+                      message: t.failedToLoadPleaseTryAgain,
+                      retry: () {
+                        loadPersonCasts();
+                      },
+                      retryText: t.reload,
+                    ),
                       )
                     else
                       SliverList.builder(
@@ -1174,17 +1159,13 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       )
                     else if (personWorksQueryTimeout)
                       SliverFillRemaining(
-                        child: GeneralErrorWidget(
-                          errMsg: t.failedToLoadPleaseTryAgain,
-                          actions: [
-                            GeneralErrorButton(
-                              onPressed: () {
-                                loadPersonWorks();
-                              },
-                              text: t.reload,
-                            ),
-                          ],
-                        ),
+                    child: ErrorState(
+                      message: t.failedToLoadPleaseTryAgain,
+                      retry: () {
+                        loadPersonWorks();
+                      },
+                      retryText: t.reload,
+                    ),
                       )
                     else
                       BangumiWidget.bangumiSkeletonSliverBrief(),

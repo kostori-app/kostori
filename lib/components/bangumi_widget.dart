@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
@@ -331,10 +332,14 @@ class BangumiWidget {
           : CachedImageProvider(url);
 
       if (!isLocal) {
-        // 预加载图片，确保首次进入预览页时 hero 目标立即有图，
-        // 否则图片未缓存时 hero flight 不触发（二次进入才正常）
+        // 预加载图片：2 秒内加载完成则 hero 目标立即有图；
+        // 超时只解除阻塞（后台继续加载，不进 ImageCache 的图取消掉），
+        // 不阻塞进入预览页，预览页内继续显示加载/骨架屏
         try {
-          await precacheImage(img, context);
+          await precacheImage(img, context).timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {},
+          );
         } catch (e, s) {
           Log.error('precacheImage', '$e\n$s');
         }
@@ -800,11 +805,49 @@ class _ExpandableTagsState extends State<ExpandableTags>
   }
 }
 
+/// 显示 Bangumi 条目的长按菜单（含预览图片、复制标题）
+void _showBangumiMenu(
+  BuildContext context,
+  Offset location,
+  BangumiItem item,
+  Object? heroTag,
+) {
+  final title = item.nameCn.isNotEmpty ? item.nameCn : item.name;
+  final hero = heroTag != null ? '$heroTag-${item.id}' : item.id.toString();
+  showMenuX(
+    context,
+    location,
+    [
+      MenuEntry(
+        icon: Icons.image_outlined,
+        text: t.preview,
+        onClick: () => BangumiWidget.showImagePreview(
+          context: App.rootContext,
+          url: item.images['large'] ?? '',
+          title: title,
+          heroTag: hero,
+        ),
+      ),
+      MenuEntry(
+        icon: Icons.copy,
+        text: t.copyTitle,
+        onClick: () {
+          Clipboard.setData(ClipboardData(text: title));
+          App.rootContext.showMessage(message: t.titleCopied);
+        },
+      ),
+    ],
+  );
+}
+
 class BangumiBriefCard extends StatelessWidget {
   final BangumiItem bangumiItem;
   final Object? heroTag;
   final void Function(BangumiItem)? onTap;
   final void Function(BangumiItem)? onLongPressed;
+
+  /// 瀑布流模式：非 null 时封面高度 = 卡片宽 × 系数（错落），标题不限行数
+  final double? masonryFactor;
 
   const BangumiBriefCard({
     super.key,
@@ -812,6 +855,7 @@ class BangumiBriefCard extends StatelessWidget {
     required this.heroTag,
     this.onTap,
     this.onLongPressed,
+    this.masonryFactor,
   });
 
   Widget _buildScore(BuildContext context) {
@@ -906,7 +950,11 @@ class BangumiBriefCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final useMarquee = appdata.settings['tileTitleMarquee'] == true;
-          final height = constraints.maxHeight - 16;
+          // 瀑布流：封面高度 = 卡片宽 × 系数；规整网格：由网格高度决定
+          final masonry = masonryFactor != null;
+          final height = masonry
+              ? constraints.maxWidth * masonryFactor!
+              : constraints.maxHeight - 16;
           Widget image = Container(
             decoration: BoxDecoration(
               color: context.colorScheme.secondaryContainer,
@@ -941,6 +989,7 @@ class BangumiBriefCard extends StatelessWidget {
 
           final shouldScroll = textPainter.width >= constraints.maxWidth - 30;
 
+          Offset pressPosition = Offset.zero;
           return InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {
@@ -955,89 +1004,159 @@ class BangumiBriefCard extends StatelessWidget {
                 );
               }
             },
+            onTapDown: (detail) => pressPosition = detail.globalPosition,
             onLongPress: onLongPressed != null
                 ? () => onLongPressed?.call(bangumiItem)
-                : null,
+                : () => _showBangumiMenu(context, pressPosition, bangumiItem, heroTag),
+            onSecondaryTapDown: (detail) =>
+                _showBangumiMenu(context, detail.globalPosition, bangumiItem, heroTag),
             child: Column(
               children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(child: image),
-                      if (showOverlay)
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                if (bangumiItem.airDate.isNotEmpty)
+                if (masonry)
+                  SizedBox(
+                    width: double.infinity,
+                    height: height,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(child: image),
+                        if (showOverlay)
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (bangumiItem.airDate.isNotEmpty)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: animeCardUseBlur
+                                          ? backdropFilter(
+                                              Text(
+                                                bangumiItem.airDate,
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            )
+                                          : containerBackground(
+                                              Text(
+                                                bangumiItem.airDate,
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                  const SizedBox(height: 4),
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: animeCardUseBlur
-                                        ? backdropFilter(
-                                            Text(
-                                              bangumiItem.airDate,
-                                              style: const TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          )
+                                        ? backdropFilter(_buildScore(context))
                                         : containerBackground(
-                                            Text(
-                                              bangumiItem.airDate,
-                                              style: const TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
+                                            _buildScore(context),
                                           ),
                                   ),
-                                const SizedBox(height: 4),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: animeCardUseBlur
-                                      ? backdropFilter(_buildScore(context))
-                                      : containerBackground(
-                                          _buildScore(context),
-                                        ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                  child: SizedBox(
-                    height: 20,
-                    child: ClipRect(
-                      child: useMarquee && shouldScroll
-                          ? Marquee(
-                              text: title,
-                              style: style,
-                              scrollAxis: Axis.horizontal,
-                              blankSpace: 10.0,
-                              velocity: 40.0,
-                              pauseAfterRound: Duration.zero,
-                              accelerationDuration: Duration.zero,
-                              decelerationDuration: Duration.zero,
-                            )
-                          : Text(
-                              title,
-                              style: style,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                      ],
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(child: image),
+                        if (showOverlay)
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (bangumiItem.airDate.isNotEmpty)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: animeCardUseBlur
+                                          ? backdropFilter(
+                                              Text(
+                                                bangumiItem.airDate,
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            )
+                                          : containerBackground(
+                                              Text(
+                                                bangumiItem.airDate,
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                  const SizedBox(height: 4),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: animeCardUseBlur
+                                        ? backdropFilter(_buildScore(context))
+                                        : containerBackground(
+                                            _buildScore(context),
+                                          ),
+                                  ),
+                                ],
+                              ),
                             ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
+                if (masonry)
+                  // 瀑布流卡片高：标题不限行数，按内容换行完整显示
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                    child: Text(
+                      title,
+                      style: style,
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                    child: SizedBox(
+                      height: 20,
+                      child: ClipRect(
+                        child: useMarquee && shouldScroll
+                            ? Marquee(
+                                text: title,
+                                style: style,
+                                scrollAxis: Axis.horizontal,
+                                blankSpace: 10.0,
+                                velocity: 40.0,
+                                pauseAfterRound: Duration.zero,
+                                accelerationDuration: Duration.zero,
+                                decelerationDuration: Duration.zero,
+                              )
+                            : Text(
+                                title,
+                                style: style,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                      ),
+                    ),
+                  ),
               ],
             ).paddingHorizontal(2).paddingVertical(2),
           );
@@ -1093,6 +1212,7 @@ class BangumiDetailedCard extends StatelessWidget {
           ),
         );
 
+        Offset pressPosition = Offset.zero;
         return InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
@@ -1105,9 +1225,12 @@ class BangumiDetailedCard extends StatelessWidget {
               );
             }
           },
+          onTapDown: (detail) => pressPosition = detail.globalPosition,
           onLongPress: onLongPressed != null
               ? () => onLongPressed!(bangumiItem)
-              : null,
+              : () => _showBangumiMenu(context, pressPosition, bangumiItem, heroTag),
+          onSecondaryTapDown: (detail) =>
+              _showBangumiMenu(context, detail.globalPosition, bangumiItem, heroTag),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
             child: Row(

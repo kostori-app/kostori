@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
@@ -178,15 +177,11 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
                   }
                   if (queryTimeout) {
                     return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: t.nobodysPostedAnythingYet,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: onReload,
-                            text: t.reload,
-                          ),
-                        ],
-                      ),
+        child: EmptyState(
+          message: t.nobodysPostedAnythingYet,
+          retry: onReload,
+          retryText: t.reload,
+        ),
                     );
                   }
                   return SliverList.builder(

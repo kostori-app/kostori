@@ -114,7 +114,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: PolygonRefreshIndicator(),
                         )
                       : const Icon(Icons.brush),
                   label: Text(_isLoading ? t.generating : t.generateTag),

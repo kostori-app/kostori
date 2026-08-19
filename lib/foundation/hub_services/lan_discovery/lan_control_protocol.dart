@@ -470,7 +470,7 @@ class CurrentAnime {
   final String title;
   final int currentEpisode;
   final String? coverUrl;
-  final Map<String, Map<String, String>>? episodes;
+  final Map<String, Map<String, dynamic>>? episodes;
   final Set<int>? watchedEpisodes;
 
   const CurrentAnime({

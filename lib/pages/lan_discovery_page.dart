@@ -14,7 +14,6 @@ import 'package:kostori/pages/main_page.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
-import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 class _LanPlayerControlHandler implements LanPlayerControlHandler {
   @override
@@ -129,7 +128,7 @@ class _LanPlayerControlHandler implements LanPlayerControlHandler {
     );
   }
 
-  WatcherState? _getWatcher() => WatcherState.currentState;
+  WatcherPlayer? _getWatcher() => WatcherPlayer.currentState;
 }
 
 final lanDiscoveryProvider = ChangeNotifierProvider<LanDiscoveryController>((
@@ -214,7 +213,7 @@ class LanDiscoveryController extends ChangeNotifier {
         App.mainNavigatorKey?.currentContext?.to(() => const SettingsPage());
         break;
       case NavigateTarget.exitPlayer:
-        if (WatcherState.currentState != null) {
+        if (WatcherPlayer.hasActivePlayer) {
           App.pop();
         }
         break;
@@ -731,7 +730,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: PolygonRefreshIndicator(),
                         )
                       : const Icon(Icons.refresh),
                   tooltip: t.refresh,
@@ -813,7 +812,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: PolygonRefreshIndicator(),
                         )
                       : const Icon(Icons.link),
                   tooltip: t.lanManualConnect,
@@ -908,9 +907,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                                     ? const SizedBox(
                                         width: 20,
                                         height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
+                                        child: PolygonRefreshIndicator(),
                                       )
                                     : const Icon(Icons.link),
                                 onPressed: state.isConnecting
@@ -964,35 +961,11 @@ class _RemoteControlTab extends ConsumerWidget {
                             width: 0.8,
                           ),
                         ),
-                        child: SizedBox(
-                          width: 400,
-                          height: 400,
-                          child: PrettyQrView.data(
-                            data: state.qrContent!,
-                            errorCorrectLevel: QrErrorCorrectLevel.H,
-                            decoration: PrettyQrDecoration(
-                              background: qrBg,
-                              shape: const PrettyQrSmoothSymbol(
-                                color: PrettyQrBrush.gradient(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Color(0xFF80D8DA),
-                                      Color(0xFFF1919B),
-                                    ],
-                                  ),
-                                ),
-                                roundFactor: 1.0,
-                              ),
-                              image: const PrettyQrDecorationImage(
-                                image: AssetImage('images/app_icon.png'),
-                                scale: 0.2,
-                                position:
-                                    PrettyQrDecorationImagePosition.embedded,
-                              ),
-                            ),
-                          ),
+                        child: KostoriQrCode(
+                          content: state.qrContent!,
+                          size: 400,
+                          background: qrBg,
+                          logoScale: 0.2,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -1030,7 +1003,7 @@ class _RemoteControlTab extends ConsumerWidget {
                 : Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(),
+                      const PolygonRefreshIndicator(),
                       const SizedBox(height: 16),
                       Text(
                         t.lanGeneratingQrCode,
@@ -1248,10 +1221,7 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
                 },
               ),
               const SizedBox(height: 8),
-              Text(
-                t.lanUdpPortHint,
-                style: ts.s12.copyWith(color: cs.outline),
-              ),
+              Text(t.lanUdpPortHint, style: ts.s12.copyWith(color: cs.outline)),
               const SizedBox(height: 16),
               Text(t.lanMulticastTitle, style: ts.s14),
               const SizedBox(height: 8),
@@ -1404,21 +1374,34 @@ class _SelfCheckSheetState extends ConsumerState<_SelfCheckSheet> {
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: _error != null
-              ? Center(child: Text(t.lanSelfTestFailed(error: _error ?? ''), style: ts.bodyMedium))
+              ? Center(
+                  child: Text(
+                    t.lanSelfTestFailed(error: _error ?? ''),
+                    style: ts.bodyMedium,
+                  ),
+                )
               : _result == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: PolygonRefreshIndicator())
               : ListView(
                   controller: scrollController,
                   children: [
                     Text(t.lanSelfTest, style: ts.titleMedium),
                     const SizedBox(height: 4),
                     Text(
-                      t.lanSelfTestDetail(platform: _result!['platform'], udpPort: _result!['udpPort'], state: _result!['state']),
+                      t.lanSelfTestDetail(
+                        platform: _result!['platform'],
+                        udpPort: _result!['udpPort'],
+                        state: _result!['state'],
+                      ),
                       style: ts.bodySmall?.copyWith(color: cs.outline),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      t.lanPinStatus(status: LanControlService.instance.pinEnabled ? t.lanEnabled : t.lanDisabled),
+                      t.lanPinStatus(
+                        status: LanControlService.instance.pinEnabled
+                            ? t.lanEnabled
+                            : t.lanDisabled,
+                      ),
                       style: ts.bodySmall?.copyWith(color: cs.outline),
                     ),
                     const SizedBox(height: 12),

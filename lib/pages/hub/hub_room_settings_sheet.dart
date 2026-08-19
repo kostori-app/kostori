@@ -7,7 +7,6 @@ import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

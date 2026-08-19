@@ -335,102 +335,21 @@ class _QrCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              _BackgroundLayer(config: config),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (config.title != null && config.showTitle) ...[
-                      Text(
-                        config.title!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          shadows: [
-                            Shadow(blurRadius: 8, color: Colors.black45),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: config.qrBackground,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 20,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: SizedBox(
-                        width: 220,
-                        height: 220,
-                        child: PrettyQrView.data(
-                          data: config.content,
-                          errorCorrectLevel: QrErrorCorrectLevel.H,
-                          decoration: PrettyQrDecoration(
-                            background: config.qrBackground,
-                            shape: const PrettyQrSmoothSymbol(
-                              color: PrettyQrBrush.gradient(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFF80D8DA),
-                                    Color(0xFFF1919B),
-                                  ],
-                                ),
-                              ),
-                              roundFactor: 1.0,
-                            ),
-                            image: const PrettyQrDecorationImage(
-                              image: AssetImage('images/app_icon.png'),
-                              scale: 0.2,
-                              position:
-                                  PrettyQrDecorationImagePosition.embedded,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (config.subtitle != null && config.showSubtitle) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        config.subtitle!,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          letterSpacing: 0.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Kostori',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 11,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _BackgroundLayer(config: config),
+          // 复用统一二维码卡片组件（标题 + 二维码 + 副标题 + 水印）
+          KostoriQrCard(
+            content: config.content,
+            title: config.title,
+            subtitle: config.subtitle,
+            showTitle: config.showTitle,
+            showSubtitle: config.showSubtitle,
+            qrBackground: config.qrBackground,
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
@@ -1091,6 +1010,7 @@ class PlayerLogEntry {
 
 class _LogEntryCard extends StatefulWidget {
   const _LogEntryCard({required this.entry});
+
   final PlayerLogEntry entry;
 
   @override

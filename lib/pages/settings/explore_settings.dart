@@ -20,13 +20,18 @@ class _ExploreSettingsState extends State<ExploreSettings> {
               borderRadius: BorderRadius.circular(16),
               child: _SettingCard(
                 children: [
-                  SelectSetting(
+                  _SettingRow(
                     title: t.displayModeOfAnimeTile,
-                    settingKey: "animeDisplayMode",
-                    optionTranslation: {
-                      "detailed": t.detailed,
-                      "brief": t.brief,
-                    },
+                    trailing: _DisplayModeSelector(
+                      value: appdata.settings['animeDisplayMode'] ?? 'brief',
+                      onChanged: (v) {
+                        appdata.settings['animeDisplayMode'] = v;
+                        appdata.saveData();
+                        // 立即刷新当前选中态 + 全局重建，让探索页等同步生效
+                        if (mounted) setState(() {});
+                        App.forceRebuild();
+                      },
+                    ),
                   ),
                   _SliderSetting(
                     title: t.sizeOfAnimeTile,

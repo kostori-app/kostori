@@ -40,3 +40,17 @@
 # 忽略 Google Play Core 的类缺失警告
 -dontwarn com.google.android.play.core.**
 -dontwarn io.flutter.embedding.engine.deferredcomponents.**
+# Floating (画中画 PiP)
+-keep class eu.wroblewscy.marcin.floating.** { *; }
+-dontwarn eu.wroblewscy.marcin.floating.**
+
+# audio_service 播放通知
+-keep class com.ryanheise.audioservice.** { *; }
+-dontwarn com.ryanheise.audioservice.**
+
+# wakelock_plus / permission_handler / flutter_inappwebview 等常用插件
+-keep class com.fluttercandies.ffmpeg_kit.** { *; }
+-keep class com.pichillilorenzo.flutter_inappwebview.** { *; }
+-dontwarn com.pichillilorenzo.flutter_inappwebview.**
+-keep class com.bluebubbles.** { *; }
+-keep class com.baseflow.permissionhandler.** { *; }

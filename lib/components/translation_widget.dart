@@ -348,12 +348,7 @@ class _TranslationWidgetState extends State<TranslationWidget> {
                       ? SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
+                          child: PolygonRefreshIndicator(),
                         )
                       : Icon(
                           Icons.translate,
@@ -477,12 +472,7 @@ class _TranslateIconButtonState extends State<TranslateIconButton> {
                   ? SizedBox(
                       width: widget.iconSize,
                       height: widget.iconSize,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                      child: PolygonRefreshIndicator(),
                     )
                   : Icon(
                       Icons.translate,
@@ -511,7 +501,7 @@ class TranslationOutput extends StatelessWidget {
   const TranslationOutput({
     super.key,
     required this.controller,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16),
+    this.padding = const EdgeInsets.symmetric(horizontal: 0),
   });
 
   final TranslationController controller;

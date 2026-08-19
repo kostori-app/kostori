@@ -34,13 +34,6 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                   title: t.ignoreCertificateErrors,
                   settingKey: "ignoreBadCertificate",
                 ),
-                _SliderSetting(
-                  title: t.downloadThreads,
-                  settingsIndex: 'downloadThreads',
-                  interval: 1,
-                  min: 1,
-                  max: 16,
-                ),
               ],
             ),
           ),
@@ -320,6 +313,8 @@ class __DNSOverridesState extends State<_DNSOverrides> {
 
   @override
   void dispose() {
+    // 返回时保存所有编辑（新建条目/输入域名 IP 后直接返回也能存住）
+    _saveData();
     for (var entry in overrides) {
       entry.$2.dispose();
       entry.$3.dispose();
@@ -480,6 +475,8 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
 
   @override
   void dispose() {
+    // 返回时保存所有编辑（新建条目/输入域名后直接返回也能存住）
+    _saveData();
     for (var entry in overrides) {
       entry.$2.dispose();
     }

@@ -84,6 +84,16 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get alsoRemoveFilesOnDisk => '同时删除本地文件';
 	@override String get animeSourceList => '番剧源列表';
 	@override String get animeSource => '番剧源';
+	@override String get filterAll => '全部';
+	@override String get noMatchingSource => '未找到匹配的番源';
+	@override String get filterNonBangumi => '其他';
+	@override String get sortByDefault => '默认';
+	@override String get sortByName => '名称';
+	@override String get sortById => 'ID';
+	@override String get switchSource => '切换源';
+	@override String get searchSourceHint => '搜索其他源的该条目';
+	@override String get needVerification => '需要验证';
+	@override String get tapToVerify => '点击验证';
 	@override String get appearance => '外观';
 	@override String get areYouSureYouWantToClearYourHistory => '确定要清除历史记录吗？';
 	@override String get areYouSureYouWantToClearYourProgress => '确定要清除全部进度吗？';
@@ -94,7 +104,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get bangumiInfo => '番剧详情';
 	@override String get block => '封锁';
 	@override String get blue => '蓝色';
-	@override String get brief => '简介';
+	@override String get brief => '简洁';
+	@override String get masonry => '瀑布流';
 	@override String get cacheLimit => '缓存限制';
 	@override String get cacheSize => '缓存大小';
 	@override String get cacheCleared => '缓存已清除';
@@ -172,7 +183,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get doNotReportAnyIssuesRelatedToSourcesToAppRepo => '请勿将与源相关的问题反馈至本应用的仓库。';
 	@override String get downloadAll => '下载全部';
 	@override String get downloadSelected => '下载选中项';
-	@override String get downloadThreads => '下载线程';
 	@override String get download => '下载';
 	@override String get downloading => '下载中';
 	@override String get edit => '编辑';
@@ -420,15 +430,18 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String standardDeviationS({required Object s}) => '标准差：${s}';
 	@override String get nobodysPostedAnythingYet => '还没有人发布内容...';
 	@override String get reload => '重新加载';
-	@override String get mePagePlugin => '个人页插件';
+	@override String get mePagePlugin => '插件';
 	@override String get noMePagePlugin => '暂无插件（将 *.js 放入 plugins 目录）';
 	@override String get openDir => '打开目录';
 	@override String get createPlugin => '创建插件';
+	@override String get pluginSourceUrl => '插件地址';
+	@override String get fetchPlugins => '获取插件';
 	@override String get pluginName => '插件文件名';
 	@override String get alreadyExists => '已存在';
 	@override String get mainContent => '正文';
 	@override String get switchh => '切换';
 	@override String get failedToLoadPleaseTryAgain => '加载失败，请重试。';
+	@override String get failedToOpen => '打开失败';
 	@override String get doing => '在看';
 	@override String get collect => '看过';
 	@override String get wish => '想看';
@@ -557,6 +570,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vceEstimating => '估算中…';
 	@override String get vceReloadPreview => '重新加载预览片段';
 	@override String get vceReload => '重载';
+	@override String get reloadEpisode => '重载当前集';
 	@override String get vceTimelineThumbnails => '视频时间轴缩略图';
 	@override String get vceStart => '起点';
 	@override String get vceEnd => '终点';
@@ -754,6 +768,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get audioOptionCompatibility => '音频: 兼容模式';
 	@override String get audioOutputDevice => '音频输出设备';
 	@override String get noAudioDevice => '未检测到音频设备';
+	@override String get volumeBoost => '音量增益';
 	@override String get volumeBoostEnabled => '音量增益: 开';
 	@override String get volumeBoostDisabled => '音量增益: 关';
 	@override String get volume => '音量';
@@ -941,7 +956,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get onHoldStatus => '搁置';
 	@override String get droppedStatus => '抛弃';
 	@override String get player => '播放器';
-	@override String get audioOption => '音频选项';
+	@override String get audioOption => '低延迟音频';
 	@override String get hardwareDecoding => '硬件解码';
 	@override String get hardwareDecoder => '硬件解码器';
 	@override String get videoRenderer => '视频渲染器';
@@ -2197,6 +2212,52 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get builderKeyInvalid => '键只能包含字母、数字和下划线';
 	@override String get builderImported => '源已导入';
 	@override String get builderGenerateFailed => '生成失败';
+	@override String get collapseSidebar => '收起侧边栏';
+	@override String get expandSidebar => '展开侧边栏';
+	@override String get clearFinishedDownload => '清空已完成下载';
+	@override String get downloadEmpty => '暂无下载任务';
+	@override String get downloadQueued => '等待中';
+	@override String get downloadCompleted => '已完成';
+	@override String get pauseDownload => '暂停下载';
+	@override String get resumeDownload => '继续下载';
+	@override String get retryDownload => '重试下载';
+	@override String get pausedDownload => '已暂停';
+	@override String get downloadSettings => '下载设置';
+	@override String get downloadConcurrent => '任务并发数';
+	@override String get downloadSegmentConcurrent => '分片并发数';
+	@override String get downloadWifiOnly => '仅 WiFi 下载';
+	@override String get downloadOther => '其他';
+	@override String get downloadRecords => '下载记录';
+	@override String get openWithOtherPlayer => '用其他播放器打开';
+	@override String get downloadTitleFormat => '下载标题格式';
+	@override String get downloadFormatHint => '占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份';
+	@override String get downloadDir => '下载目录';
+	@override String get loadingStepParse => '解析视频地址';
+	@override String get loadingStepInit => '初始化播放器';
+	@override String get loadingStepLoad => '加载媒体数据';
+	@override String get loadingStepBuffer => '缓冲播放';
+	@override String get downloadEpisode => '选择要下载的剧集';
+	@override String get downloadNotYet => '暂无选集可下载';
+	@override String downloadSelectedCount({required Object n}) => '下载 ${n} 集';
+	@override String get selectResolution => '选择分辨率';
+	@override String get defaultResolution => '默认';
+	@override String get noResolutionAvailable => '无更多清晰度可选';
+	@override String get series => '系列';
+	@override String get playing => '正在播放';
+	@override String get selectNone => '取消全选';
+	@override String get downloadActive => '正在下载';
+	@override String get redownload => '重新下载';
+	@override String get startAll => '全部开始';
+	@override String get pauseAll => '全部暂停';
+	@override String get cancelAll => '全部取消';
+	@override String get recordsEmpty => '暂无下载记录';
+	@override String get fileNotFound => '未找到文件';
+	@override String get deleted => '已删除';
+	@override String get localPlayerSpeedTip => '长按画面切换倍速';
+	@override String get audioTrack => '音轨';
+	@override String get subtitle => '字幕';
+	@override String get subtitleOff => '关闭字幕';
+	@override String get quality => '清晰度';
 }
 
 // Path: colors
@@ -2304,6 +2365,16 @@ extension on TranslationsZhCn {
 			'alsoRemoveFilesOnDisk' => '同时删除本地文件',
 			'animeSourceList' => '番剧源列表',
 			'animeSource' => '番剧源',
+			'filterAll' => '全部',
+			'noMatchingSource' => '未找到匹配的番源',
+			'filterNonBangumi' => '其他',
+			'sortByDefault' => '默认',
+			'sortByName' => '名称',
+			'sortById' => 'ID',
+			'switchSource' => '切换源',
+			'searchSourceHint' => '搜索其他源的该条目',
+			'needVerification' => '需要验证',
+			'tapToVerify' => '点击验证',
 			'appearance' => '外观',
 			'areYouSureYouWantToClearYourHistory' => '确定要清除历史记录吗？',
 			'areYouSureYouWantToClearYourProgress' => '确定要清除全部进度吗？',
@@ -2314,7 +2385,8 @@ extension on TranslationsZhCn {
 			'bangumiInfo' => '番剧详情',
 			'block' => '封锁',
 			'blue' => '蓝色',
-			'brief' => '简介',
+			'brief' => '简洁',
+			'masonry' => '瀑布流',
 			'cacheLimit' => '缓存限制',
 			'cacheSize' => '缓存大小',
 			'cacheCleared' => '缓存已清除',
@@ -2392,7 +2464,6 @@ extension on TranslationsZhCn {
 			'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => '请勿将与源相关的问题反馈至本应用的仓库。',
 			'downloadAll' => '下载全部',
 			'downloadSelected' => '下载选中项',
-			'downloadThreads' => '下载线程',
 			'download' => '下载',
 			'downloading' => '下载中',
 			'edit' => '编辑',
@@ -2640,15 +2711,18 @@ extension on TranslationsZhCn {
 			'standardDeviationS' => ({required Object s}) => '标准差：${s}',
 			'nobodysPostedAnythingYet' => '还没有人发布内容...',
 			'reload' => '重新加载',
-			'mePagePlugin' => '个人页插件',
+			'mePagePlugin' => '插件',
 			'noMePagePlugin' => '暂无插件（将 *.js 放入 plugins 目录）',
 			'openDir' => '打开目录',
 			'createPlugin' => '创建插件',
+			'pluginSourceUrl' => '插件地址',
+			'fetchPlugins' => '获取插件',
 			'pluginName' => '插件文件名',
 			'alreadyExists' => '已存在',
 			'mainContent' => '正文',
 			'switchh' => '切换',
 			'failedToLoadPleaseTryAgain' => '加载失败，请重试。',
+			'failedToOpen' => '打开失败',
 			'doing' => '在看',
 			'collect' => '看过',
 			'wish' => '想看',
@@ -2758,6 +2832,8 @@ extension on TranslationsZhCn {
 			'awful' => '极差',
 			'terrible' => '很差',
 			'bad' => '差',
+			_ => null,
+		} ?? switch (path) {
 			'poor' => '较差',
 			'okay' => '不过不失',
 			'fine' => '还行',
@@ -2771,14 +2847,13 @@ extension on TranslationsZhCn {
 			'playerDetails' => '播放器详情',
 			'watcherPlayingNext' => '正在播放下一集',
 			'watcherEpisodeLoadError' => ({required Object error}) => '加载剧集时出错 ${error}',
-			_ => null,
-		} ?? switch (path) {
 			'watcherNoMoreEpisodes' => '没有更多剧集可播放',
 			'watcherRouteNotFound' => '线路不存在',
 			'watcherDuplicateEpisode' => '加载重复集数',
 			'vceEstimating' => '估算中…',
 			'vceReloadPreview' => '重新加载预览片段',
 			'vceReload' => '重载',
+			'reloadEpisode' => '重载当前集',
 			'vceTimelineThumbnails' => '视频时间轴缩略图',
 			'vceStart' => '起点',
 			'vceEnd' => '终点',
@@ -2976,6 +3051,7 @@ extension on TranslationsZhCn {
 			'audioOptionCompatibility' => '音频: 兼容模式',
 			'audioOutputDevice' => '音频输出设备',
 			'noAudioDevice' => '未检测到音频设备',
+			'volumeBoost' => '音量增益',
 			'volumeBoostEnabled' => '音量增益: 开',
 			'volumeBoostDisabled' => '音量增益: 关',
 			'volume' => '音量',
@@ -3205,7 +3281,7 @@ extension on TranslationsZhCn {
 			'onHoldStatus' => '搁置',
 			'droppedStatus' => '抛弃',
 			'player' => '播放器',
-			'audioOption' => '音频选项',
+			'audioOption' => '低延迟音频',
 			'hardwareDecoding' => '硬件解码',
 			'hardwareDecoder' => '硬件解码器',
 			'videoRenderer' => '视频渲染器',
@@ -3270,6 +3346,8 @@ extension on TranslationsZhCn {
 			'enableService' => '启用服务',
 			'serviceIsStopped' => '服务已停止',
 			'runningOnH' => ({required Object h}) => '运行在 ${h}',
+			_ => null,
+		} ?? switch (path) {
 			'apiKey' => 'API Key',
 			'activeKey' => '当前 Key',
 			'usingFixedKey' => '使用固定 Key',
@@ -3285,8 +3363,6 @@ extension on TranslationsZhCn {
 			'port' => '端口',
 			'defaultP' => ({required Object p}) => '默认：${p}',
 			'bindMode' => '绑定模式',
-			_ => null,
-		} ?? switch (path) {
 			'chooseIpVersionToListenOn' => '选择监听的 IP 版本',
 			'hubServer' => 'Hub 服务端',
 			'enableHub' => '启用 Hub',
@@ -3784,6 +3860,8 @@ extension on TranslationsZhCn {
 			'announcement' => '公告',
 			'image' => '图片',
 			'enterToSendCtrlEnterForNewline' => '回车发送，Ctrl+Enter 换行',
+			_ => null,
+		} ?? switch (path) {
 			'message' => '消息',
 			'stickers' => '贴纸',
 			'noStickersYet' => '还没有贴纸',
@@ -3799,8 +3877,6 @@ extension on TranslationsZhCn {
 			'invalidNumber' => '无效数字',
 			'noCategoryPages' => '无分类页面',
 			'linkFormatErrorCannotParseAnimeInfo' => '链接格式错误，无法解析番剧信息',
-			_ => null,
-		} ?? switch (path) {
 			'sourceNotFoundPleaseConfirmSourceInstalled' => '未找到数据源，请确认数据源已安装',
 			'linkFormatErrorCannotParseBangumiId' => '链接格式错误，无法解析 Bangumi ID',
 			'fetchingBangumiInfo' => '正在获取 Bangumi 信息...',
@@ -4298,6 +4374,8 @@ extension on TranslationsZhCn {
 			'imageUnderstandingDisabled' => '该助手未启用图片理解',
 			'modelType' => '模型类型',
 			'inputModality' => '输入模态',
+			_ => null,
+		} ?? switch (path) {
 			'outputModality' => '输出模态',
 			'supportsReasoning' => '支持推理',
 			'capabilities' => '能力',
@@ -4313,8 +4391,6 @@ extension on TranslationsZhCn {
 			'modalityVideo' => '视频',
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
-			_ => null,
-		} ?? switch (path) {
 			'apiFormat' => '接口格式',
 			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
@@ -4467,6 +4543,52 @@ extension on TranslationsZhCn {
 			'builderKeyInvalid' => '键只能包含字母、数字和下划线',
 			'builderImported' => '源已导入',
 			'builderGenerateFailed' => '生成失败',
+			'collapseSidebar' => '收起侧边栏',
+			'expandSidebar' => '展开侧边栏',
+			'clearFinishedDownload' => '清空已完成下载',
+			'downloadEmpty' => '暂无下载任务',
+			'downloadQueued' => '等待中',
+			'downloadCompleted' => '已完成',
+			'pauseDownload' => '暂停下载',
+			'resumeDownload' => '继续下载',
+			'retryDownload' => '重试下载',
+			'pausedDownload' => '已暂停',
+			'downloadSettings' => '下载设置',
+			'downloadConcurrent' => '任务并发数',
+			'downloadSegmentConcurrent' => '分片并发数',
+			'downloadWifiOnly' => '仅 WiFi 下载',
+			'downloadOther' => '其他',
+			'downloadRecords' => '下载记录',
+			'openWithOtherPlayer' => '用其他播放器打开',
+			'downloadTitleFormat' => '下载标题格式',
+			'downloadFormatHint' => '占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份',
+			'downloadDir' => '下载目录',
+			'loadingStepParse' => '解析视频地址',
+			'loadingStepInit' => '初始化播放器',
+			'loadingStepLoad' => '加载媒体数据',
+			'loadingStepBuffer' => '缓冲播放',
+			'downloadEpisode' => '选择要下载的剧集',
+			'downloadNotYet' => '暂无选集可下载',
+			'downloadSelectedCount' => ({required Object n}) => '下载 ${n} 集',
+			'selectResolution' => '选择分辨率',
+			'defaultResolution' => '默认',
+			'noResolutionAvailable' => '无更多清晰度可选',
+			'series' => '系列',
+			'playing' => '正在播放',
+			'selectNone' => '取消全选',
+			'downloadActive' => '正在下载',
+			'redownload' => '重新下载',
+			'startAll' => '全部开始',
+			'pauseAll' => '全部暂停',
+			'cancelAll' => '全部取消',
+			'recordsEmpty' => '暂无下载记录',
+			'fileNotFound' => '未找到文件',
+			'deleted' => '已删除',
+			'localPlayerSpeedTip' => '长按画面切换倍速',
+			'audioTrack' => '音轨',
+			'subtitle' => '字幕',
+			'subtitleOff' => '关闭字幕',
+			'quality' => '清晰度',
 			_ => null,
 		};
 	}

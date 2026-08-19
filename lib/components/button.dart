@@ -177,12 +177,7 @@ class _ButtonState extends State<Button> {
       child: DefaultTextStyle(
         style: TextStyle(color: textColor, fontSize: 14),
         child: isLoading
-            ? CircularProgressIndicator(
-                color: widget.type == ButtonType.filled
-                    ? context.colorScheme.inversePrimary
-                    : context.colorScheme.primary,
-                strokeWidth: 1.8,
-              ).fixWidth(16).fixHeight(16)
+            ? PolygonRefreshIndicator().fixWidth(16).fixHeight(16)
             : widget.child,
       ),
     );
@@ -324,9 +319,7 @@ class _IconButtonState extends State<_IconButton> {
       child: widget.icon,
     );
     if (widget.isLoading) {
-      icon = const CircularProgressIndicator(
-        strokeWidth: 1.5,
-      ).paddingAll(2).fixWidth(iconSize).fixHeight(iconSize);
+      icon = const PolygonRefreshIndicator().paddingAll(2).fixWidth(iconSize).fixHeight(iconSize);
     }
     return MouseRegion(
       onEnter: (_) => setState(() => isHover = true),

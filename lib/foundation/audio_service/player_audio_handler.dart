@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
-import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:media_kit/media_kit.dart';
 
 class PlayerAudioHandler extends BaseAudioHandler {
@@ -102,11 +101,11 @@ class PlayerAudioHandler extends BaseAudioHandler {
     final title = _controller!.currentSetName;
     final artUri = _controller!.animeImg;
 
-    mediaItem.add(
-      MediaItem(
-        id: _controller!.videoUrl,
-        title: WatcherState.currentState!.anime.title,
-        artUri: artUri.isNotEmpty ? Uri.parse(artUri) : null,
+mediaItem.add(
+  MediaItem(
+    id: _controller!.videoUrl,
+    title: _controller!.animeTitle,
+    artUri: artUri.isNotEmpty ? Uri.parse(artUri) : null,
         artist: title,
         duration: _controller!.duration,
         album: '',

@@ -101,6 +101,25 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                       options: [0, 2, 3],
                       dataSource: SwitchDataSource.implicit,
                     ),
+                    _SettingRow(
+                      title: t.displayModeOfAnimeTile,
+                      // bangumi 只有简洁/瀑布流两种卡片，无详细卡片
+                      trailing: _DisplayModeSelector(
+                        value:
+                            appdata.implicitData['bangumiDisplayMode'] ??
+                            'brief',
+                        options: [
+                          ('brief', t.brief),
+                          ('masonry', t.masonry),
+                        ],
+                        onChanged: (v) {
+                          appdata.implicitData['bangumiDisplayMode'] = v;
+                          appdata.writeImplicitData();
+                          if (mounted) setState(() {});
+                          App.forceRebuild();
+                        },
+                      ),
+                    ),
                     _SwitchSetting(
                       title: t.calendarFetchEpisodes,
                       settingKey: "calendarFetchEpisodes",
@@ -147,9 +166,7 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                                           child: SizedBox(
                                             width: 16,
                                             height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
+                                            child: PolygonRefreshIndicator(),
                                           ),
                                         ),
                                       )

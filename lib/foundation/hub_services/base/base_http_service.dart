@@ -29,8 +29,6 @@ abstract class BaseHttpService implements BaseService {
   static const _hubPortKey = 'hub_port';
   static const _hubBindModeKey = 'hub_bind_mode';
 
-  static const _pingIntervalKey = 'hub_service_ping_interval';
-
   static const _hubNoAuthKey = 'hub_no_auth';
 
   // ── TLS 配置键（Hub 服务端）───────────────────────────────
@@ -88,12 +86,12 @@ abstract class BaseHttpService implements BaseService {
 
   Duration get pingInterval => Duration(
     milliseconds:
-        appdata.settings['hub_service_ping_interval'] as int? ?? 30000,
+        appdata.implicitData['hub_service_ping_interval'] as int? ?? 30000,
   );
 
   void setPingInterval(int milliseconds) {
-    appdata.settings[_pingIntervalKey] = milliseconds;
-    appdata.saveData();
+    appdata.implicitData['hub_service_ping_interval'] = milliseconds;
+    appdata.writeImplicitData();
   }
 
   int get savedPort {

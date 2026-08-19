@@ -1,4 +1,4 @@
-// ignore_for_file: unused_element_parameter
+// ignore_for_file: unused_element_parameter, prefer_final_fields
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -21,6 +21,7 @@ import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/database/stats.dart';
+import 'package:kostori/foundation/anime_source/anime_play_result.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -34,15 +35,18 @@ import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/anime_details_page/watch_together_page.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
+import 'package:kostori/pages/download/download_page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
+import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/translations.dart';
@@ -64,6 +68,7 @@ class AnimePage extends ConsumerStatefulWidget {
     this.cover,
     this.title,
     this.heroID,
+    this.heroTag,
   });
 
   final String id;
@@ -76,6 +81,9 @@ class AnimePage extends ConsumerStatefulWidget {
 
   final int? heroID;
 
+  /// 唯一 Hero tag（跨列表唯一，匹配点击来源的封面动画）
+  final String? heroTag;
+
   @override
   ConsumerState<AnimePage> createState() => _AnimePageState();
 }
@@ -86,6 +94,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   bool isDownloaded = false;
   bool isBangumi = false;
 
+  /// 当前生效的源 key / 条目 id：支持页内切换播放源（聚合源）。
+  /// 初始为进入时的源，切换后更新并重新加载详情
+  late String _sourceKey = widget.sourceKey;
+  late String _animeId = widget.id;
+
+  /// 切换源后要继承播放的集（新源数据加载完成后播放该集）
+  int? _pendingEpisode;
+
   final stats = StatsManager();
 
   BangumiItem? get bangumiItem => bangumiBindInfo;
@@ -93,16 +109,33 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   /// 播放器 Watcher 的 GlobalKey：宽屏/窄屏布局切换时保持 State 不被重建，
   /// 避免播放器（media_kit Player）被 dispose 后仍被异步操作访问。
-  final GlobalKey<WatcherState> watcherKey = GlobalKey<WatcherState>();
+  final GlobalKey<State<Watcher>> watcherKey = GlobalKey<State<Watcher>>();
 
   // 各 Tab 的滚动控制器，供 AppScrollBar 使用
   final ScrollController infoScrollCtrl = ScrollController();
   final ScrollController episodesScrollCtrl = ScrollController();
   final ScrollController recommendScrollCtrl = ScrollController();
 
+  // 封面图 provider 缓存：buildTitle 每次 build 都新建 CachedImageProvider，
+  // 虽然 ImageCache 按 key 命中不重新下载，但避免每次都重复 resolve 的开销
+  String? _coverCacheUrl;
+  CachedImageProvider? _coverCacheProvider;
+
+  CachedImageProvider _coverProvider(String url) {
+    if (_coverCacheUrl != url || _coverCacheProvider == null) {
+      _coverCacheProvider = CachedImageProvider(
+        url,
+        sourceKey: anime.sourceKey,
+        aid: anime.id,
+      );
+      _coverCacheUrl = url;
+    }
+    return _coverCacheProvider!;
+  }
+
   void updateHistory() {
     // 读缓存而非查库：避免每秒查库与后台写入锁冲突导致卡顿
-    final cached = HistoryManager().cachedHistories[widget.id];
+    final cached = HistoryManager().cachedHistories[_animeId];
     if (cached == null) return;
     // 只在集数变化时刷新 UI（lastWatchTime 每秒变，无需每秒 rebuild）
     if (cached.lastWatchEpisode != history?.lastWatchEpisode) {
@@ -117,16 +150,16 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (!mounted) return;
     try {
       if (!await stats.isExistAsync(
-        widget.id,
-        AnimeType(widget.sourceKey.hashCode),
+        _animeId,
+        AnimeType(_sourceKey.hashCode),
       )) {
         try {
           await stats.addStats(
             stats.createStatsData(
-              id: widget.id,
+              id: _animeId,
               title: widget.title,
               cover: widget.cover,
-              type: widget.sourceKey.hashCode,
+              type: _sourceKey.hashCode,
             ),
           );
         } catch (e) {
@@ -137,8 +170,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
       final (statsDataImpl, todayClick, platformRecord) = await stats
           .getOrCreateTodayPlatformRecord(
-            id: widget.id,
-            type: widget.sourceKey.hashCode,
+            id: _animeId,
+            type: _sourceKey.hashCode,
             targetType: DailyEventType.click,
           );
       if (!mounted) return;
@@ -157,8 +190,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (!mounted) return;
     try {
       final s = await stats.getStatsByIdAndType(
-        id: widget.id,
-        type: widget.sourceKey.hashCode,
+        id: _animeId,
+        type: _sourceKey.hashCode,
       );
       if (!mounted) return;
       if (s == null) return;
@@ -190,8 +223,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     return _AnimePageLoadingPlaceHolder(
       cover: widget.cover,
       title: widget.title,
-      sourceKey: widget.sourceKey,
-      aid: widget.id,
+      sourceKey: _sourceKey,
+      aid: _animeId,
       heroID: widget.heroID,
     );
   }
@@ -215,6 +248,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   Future<void> onDataLoaded() async {
+    // 先更新播放器数据源：后续步骤即使失败，watcher 也能用新源刷新
+    watcherController.anime = data;
     if (history == null) {
       history = History.fromModel(model: data!);
       await HistoryManager().addHistory(history!);
@@ -242,13 +277,35 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       await updateBangumiBind();
     }
     await stats.updateStats(
-      id: widget.id,
-      type: widget.sourceKey.hashCode,
+      id: _animeId,
+      type: _sourceKey.hashCode,
       bangumiId: history!.bangumiId,
     );
     await updateStats();
     watcherController.anime = data!;
     await initializeProgress();
+
+    // 切换源：新源数据加载完成后，播放继承的集（原集数）。
+    // retry 期间 watcher 会被卸载重建（currentState 为 null），
+    // 需等 buildContent 构建完 watcher 后再播放
+    if (_pendingEpisode != null) {
+      final ep = _pendingEpisode!;
+      _pendingEpisode = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          playerController.playEpisode(ep, 0);
+        }
+      });
+    }
+
+    // 查询下载状态（是否已下载，用于下载按钮显示）
+    final records = await DownloadManager.recordsFor(
+      _animeId,
+      _sourceKey,
+    );
+    if (mounted && records.isNotEmpty != isDownloaded) {
+      setState(() => isDownloaded = records.isNotEmpty);
+    }
   }
 
   @override
@@ -401,18 +458,16 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   height: topPadding,
                   color: Theme.of(context).colorScheme.surface,
                 ),
-                // 播放器在左侧垂直居中
+                // 播放器在左侧铺满剩余空间
                 Expanded(
-                  child: Center(
-                    child: MediaQuery(
-                      data: MediaQuery.of(
-                        context,
-                      ).copyWith(size: Size(playerWidth, screenHeight)),
-                      child: Watcher(
-                        key: watcherKey,
-                        playerController: playerController,
-                        watcherController: watcherController,
-                      ),
+                  child: MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(size: Size(playerWidth, screenHeight)),
+                    child: Watcher(
+                      key: watcherKey,
+                      playerController: playerController,
+                      watcherController: watcherController,
                     ),
                   ),
                 ),
@@ -465,20 +520,20 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   Future<Res<AnimeDetails>> loadData() async {
-    var animeSource = AnimeSource.find(widget.sourceKey);
+    var animeSource = AnimeSource.find(_sourceKey);
     if (animeSource == null) {
       return const Res.error('Anime source not found');
     }
     isAddToLocalFav = LocalFavoritesManager().isExist(
-      widget.id,
-      AnimeType(widget.sourceKey.hashCode),
+      _animeId,
+      AnimeType(_sourceKey.hashCode),
     );
     history = await HistoryManager().findAsync(
-      widget.id,
-      AnimeType(widget.sourceKey.hashCode),
+      _animeId,
+      AnimeType(_sourceKey.hashCode),
     );
 
-    return animeSource.loadAnimeInfo!(widget.id);
+    return animeSource.loadAnimeInfo!(_animeId);
   }
 
   Widget animeTab() {
@@ -550,12 +605,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(
-                      top: 16,
-                      right: 16,
-                      left: 16,
-                      bottom: 0,
-                    ),
+                    // 横向由外层 Padding(16) 控制，避免双倍左右留白
+                    padding: const EdgeInsets.only(top: 16),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -570,17 +621,21 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                       context: context,
                                       url: widget.cover ?? anime.cover,
                                       title: anime.title,
-                                      heroTag: "cover${widget.heroID}",
+                                      heroTag:
+                                          widget.heroTag ??
+                                          "cover${widget.heroID}",
                                     )
                                   : BangumiWidget.showImagePreview(
                                       context: context,
                                       url: bangumiItem.images['large']!,
                                       title: bangumiItem.nameCn,
-                                      heroTag: "cover${widget.heroID}",
+                                      heroTag:
+                                          widget.heroTag ??
+                                          "cover${widget.heroID}",
                                     );
                             },
                             child: Hero(
-                              tag: "cover${widget.heroID}",
+                              tag: widget.heroTag ?? "cover${widget.heroID}",
                               flightShuttleBuilder:
                                   (
                                     flightContext,
@@ -612,10 +667,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     widget.cover != null ||
                                         anime.cover.isNotEmpty
                                     ? AnimatedImage(
-                                        image: CachedImageProvider(
+                                        image: _coverProvider(
                                           widget.cover ?? anime.cover,
-                                          sourceKey: anime.sourceKey,
-                                          aid: anime.id,
                                         ),
                                         fit: BoxFit.cover,
                                         width: double.infinity,
@@ -784,14 +837,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                       ],
                                     ),
                                   ),
-                                SizedBox(
-                                  height: 45,
-                                  child: _buildActionButtons(
-                                    context,
-                                    anime,
-                                    true,
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -801,12 +846,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                      horizontal: 0,
                       vertical: 8,
                     ),
                     child: SizedBox(
-                      height: 45,
-                      child: _buildActionButtons(context, anime, false),
+                      height: 62,
+                      child: _buildActionButtons(context, anime),
                     ),
                   ),
                 ],
@@ -818,111 +863,310 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     );
   }
 
-  Widget _buildActionButtons(
-    BuildContext context,
-    AnimeDetails anime,
-    bool isZero,
-  ) {
+  Widget _buildActionButtons(BuildContext context, AnimeDetails anime) {
     return ListView(
       scrollDirection: Axis.horizontal,
       children: [
-        if (isZero)
-          _ActionButton(
-            icon: const Icon(Icons.star_border_rounded),
-            activeIcon: const Icon(Icons.star_rounded),
-            isActive: isFavorite || isAddToLocalFav,
-            text: t.favorite,
-            onPressed: openFavPanel,
-            onLongPressed: quickFavorite,
-            iconColor: context.useTextColor(Colors.purple),
+        IconTileButton(
+          icon: const Icon(Icons.star_border_rounded),
+          activeIcon: const Icon(Icons.star_rounded),
+          isActive: isFavorite || isAddToLocalFav,
+          label: t.favorite,
+          onTap: openFavPanel,
+          onLongPress: quickFavorite,
+          color: context.useTextColor(Colors.purple),
+        ),
+        IconTileButton(
+          icon: const Icon(Icons.share),
+          label: t.share,
+          onTap: share,
+          onLongPress: () => showKostoriShareSheet(
+            context,
+            ref,
+            type: KostoriRouteType.anime,
+            payload: '$_animeId|$_sourceKey',
+            title: anime.title,
+            subtitle: _sourceKey,
+            backgroundImagePath: anime.cover,
           ),
-        if (isZero)
-          _ActionButton(
-            icon: const Icon(Icons.share),
-            text: t.share,
-            onPressed: share,
-            onLongPressed: () => showKostoriShareSheet(
-              context,
-              ref,
-              type: KostoriRouteType.anime,
-              payload: '${widget.id}|${widget.sourceKey}',
-              title: anime.title,
-              subtitle: widget.sourceKey,
-              backgroundImagePath: anime.cover,
-            ),
-            iconColor: Theme.of(context).colorScheme.inversePrimary,
+          color: Theme.of(context).colorScheme.inversePrimary,
+        ),
+        // 聚合模式（切换源）：仅对 bangumi 生态的源开放
+        if (animeSource.isBangumi)
+          IconTileButton(
+            icon: const Icon(Icons.swap_horiz),
+            label: t.switchSource,
+            onTap: _switchSource,
+            color: Theme.of(context).colorScheme.secondary,
           ),
-        if (!isZero)
-          _ActionButton(
-            icon: const Icon(Icons.favorite_border),
-            activeIcon: const Icon(Icons.favorite),
-            isActive: isLiked,
-            text: t.liked,
-            onPressed: () {
-              liked();
-              setState(() {
-                isLiked = !isLiked;
-              });
-              if (isLiked) {
-                App.rootContext.showMessage(message: t.likeSuccess);
-              } else {
-                App.rootContext.showMessage(message: t.unlikeSuccess);
-              }
-            },
-            iconColor: Colors.redAccent,
-          ),
-        if (!isZero)
-          _ActionButton(
-            icon: (ratingValue != 0)
-                ? Row(
-                    children: [
-                      Text(Utils.getRatingLabel(ratingValue ?? 0)),
-                      SizedBox(width: 4),
-                      RatingBarIndicator(
-                        itemCount: 5,
-                        rating: ratingValue!.toDouble() / 2,
-                        itemBuilder: (context, index) =>
-                            const Icon(Icons.star_rounded),
-                        itemSize: 20.0,
-                      ),
-                    ],
-                  )
-                : const Icon(Icons.comment),
-            text: (ratingValue == 0) ? t.rating : '',
-            onPressed: () async {
-              await showRatingDialog(statsDataImpl!).then((_) {
-                setState(() {});
-              });
-            },
-            iconColor: Theme.of(context).colorScheme.primary,
-          ),
-        if (!isZero)
-          _ActionButton(
-            icon: ClipOval(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: SvgPicture.asset(
-                  'assets/img/bangumi_icon.svg',
-                  fit: BoxFit.fill,
-                ),
+        IconTileButton(
+          icon: const Icon(Icons.favorite_border),
+          activeIcon: const Icon(Icons.favorite),
+          isActive: isLiked,
+          label: t.liked,
+          onTap: () {
+            liked();
+            setState(() {
+              isLiked = !isLiked;
+            });
+            if (isLiked) {
+              App.rootContext.showMessage(message: t.likeSuccess);
+            } else {
+              App.rootContext.showMessage(message: t.unlikeSuccess);
+            }
+          },
+          color: Colors.redAccent,
+        ),
+        IconTileButton(
+          icon: Icon((ratingValue != 0) ? Icons.star_rounded : Icons.comment),
+          // 评分后 label 显示评分值（与其他按钮一致：单图标 + 文字）
+          label: (ratingValue != 0)
+              ? Utils.getRatingLabel(ratingValue ?? 0)
+              : t.rating,
+          onTap: () async {
+            await showRatingDialog(statsDataImpl!).then((_) {
+              setState(() {});
+            });
+          },
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        IconTileButton(
+          icon: ClipOval(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: SvgPicture.asset(
+                'assets/img/bangumi_icon.svg',
+                fit: BoxFit.fill,
               ),
             ),
-            text: t.bangumi,
-            onPressed: () async {
-              bangumiBottomInfo(context);
-            },
-            // iconColor: context.useTextColor(Colors.blue),
           ),
-        if (anime.url != null && !isZero)
-          _ActionButton(
+          label: t.bangumi,
+          onTap: () async {
+            bangumiBottomInfo(context);
+          },
+        ),
+        if (anime.url != null)
+          IconTileButton(
             icon: const Icon(Icons.open_in_browser),
-            text: t.openInBrowser,
-            onPressed: () => launchUrlString(anime.url!),
-            iconColor: Theme.of(context).colorScheme.secondary,
+            label: t.openInBrowser,
+            onTap: () => launchUrlString(anime.url!),
+            color: Theme.of(context).colorScheme.secondary,
           ),
       ],
-    ).fixHeight(48);
+    ).fixHeight(60);
+  }
+
+  /// 切换播放源：搜索其他源的该条目，选中后页内热切换到该源
+  /// （不迁移历史/收藏；重新加载新源详情，并继承当前播放的集）
+  Future<void> _switchSource() async {
+    final picked = await showModalBottomSheet<Anime>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _SourceSwitchSheet(
+        initialKeyword: anime.title,
+        currentSourceKey: _sourceKey,
+        currentAnimeId: _animeId,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await _switchTo(picked.sourceKey, picked.id);
+  }
+
+  /// 页内热切换源：记录要继承的集，切源后重载详情并播放该集。
+  /// 历史/收藏等逻辑按新源处理（像打开新源的详情页），不做迁移
+  Future<void> _switchTo(String newSourceKey, String newId) async {
+    if (_sourceKey == newSourceKey && _animeId == newId) return;
+    // 继承当前播放的集（新源加载完成后播放同集）
+    _pendingEpisode = playerController.currentEpisoded;
+    playerController.pause();
+    // 重置旧源历史：onDataLoaded 会用新源 data 重新建立观看记录
+    history = null;
+    setState(() {
+      _sourceKey = newSourceKey;
+      _animeId = newId;
+      isDownloaded = false;
+    });
+    // 不切 loading（避免 watcher 卸载重建时 dispose playerController），
+    // 直接加载新源数据并刷新
+    final res = await loadDataWithRetry();
+    if (!mounted) return;
+    if (res.success) {
+      data = res.data;
+      try {
+        await onDataLoaded();
+      } catch (e, s) {
+        // onDataLoaded 内部分步骤失败不能阻塞内容刷新
+        Log.error('切换源加载后处理', '$e\n$s');
+      }
+      if (mounted) setState(() {});
+    } else {
+      setState(() {
+        error = res.errorMessage ?? 'Load failed';
+      });
+    }
+  }
+
+  /// 下载按钮点击：弹卡片选集（每集可选分辨率）批量下载；
+  /// 系列模式（无分集）则从 loadSeries 加载系列列表再下载
+  Future<void> _onDownloadTap() async {
+    final episode = data?.episode;
+    if (episode == null || episode.isEmpty || episode.values.first.isEmpty) {
+      await _onDownloadSeries();
+      return;
+    }
+    final records = await DownloadManager.recordsFor(
+      _animeId,
+      _sourceKey,
+    );
+    if (!mounted) return;
+    final eps = episode.values.first;
+    final items = <_DownloadItem>[
+      for (final e in eps.entries)
+        () {
+          final title = AnimeDetails.episodeTitleOf(e.value);
+          final name = title.isEmpty ? '第 ${e.key} 集' : title;
+          return _DownloadItem(
+            key: e.key,
+            title: name,
+            subtitle: '',
+            episodeName: name,
+            sourceKey: _sourceKey,
+          );
+        }(),
+    ];
+    await _openDownloadPicker(
+      items: items,
+      downloaded: records.map((r) => r['episode'] as String? ?? '').toSet(),
+    );
+  }
+
+  /// 系列模式下载：从 loadSeries 加载系列条目（每条一个视频，可单独选分辨率）
+  Future<void> _onDownloadSeries() async {
+    final source = AnimeSource.find(_sourceKey);
+    if (source == null || source.loadSeries == null) {
+      App.rootContext.showMessage(message: t.downloadNotYet);
+      return;
+    }
+    final res = await source.loadSeries!(data!);
+    if (!mounted) return;
+    final series = res.dataOrNull ?? const <Anime>[];
+    if (series.isEmpty) {
+      App.rootContext.showMessage(message: t.downloadNotYet);
+      return;
+    }
+    final records = await DownloadManager.recordsFor(
+      _animeId,
+      _sourceKey,
+    );
+    if (!mounted) return;
+    final items = <_DownloadItem>[
+      for (final a in series)
+        _DownloadItem(
+          key: a.id,
+          title: a.title,
+          subtitle: a.subtitle ?? '',
+          episodeName: a.title,
+          sourceKey: _sourceKey,
+        ),
+    ];
+    await _openDownloadPicker(
+      items: items,
+      downloaded: records.map((r) => r['episode'] as String? ?? '').toSet(),
+    );
+  }
+
+  /// 弹出卡片化下载选择框，确认后逐项加入下载队列
+  Future<void> _openDownloadPicker({
+    required List<_DownloadItem> items,
+    required Set<String> downloaded,
+  }) async {
+    final result = await showModalBottomSheet<List<_DownloadPick>>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _EpisodeDownloadPicker(
+        items: items,
+        downloaded: downloaded,
+        resolvePlay: _resolvePlayResult,
+      ),
+    );
+    if (result == null || result.isEmpty || !mounted) return;
+    for (final item in result) {
+      await _downloadEpisode(
+        item.key,
+        item.episodeName,
+        url: item.url,
+        resolution: item.resolution,
+      );
+    }
+  }
+
+  /// 解析单集/系列条目的播放结果（String 或 AnimePlayResult）
+  Future<AnimePlayResult?> _resolvePlayResult(String epKey) async {
+    final source = AnimeSource.find(_sourceKey);
+    if (source == null || source.loadAnimePages == null) return null;
+    final res = await source.loadAnimePages!(data!.id, epKey);
+    if (res is! Map) return null;
+    try {
+      return AnimePlayResult.fromJson(Map<String, dynamic>.from(res));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 解析地址并加入下载队列；[url]/[resolution] 指定分辨率时使用该清晰度
+  Future<void> _downloadEpisode(
+    String epKey,
+    String epName, {
+    String? url,
+    String? resolution,
+  }) async {
+    final source = AnimeSource.find(_sourceKey);
+    if (source == null || source.loadAnimePages == null) {
+      App.rootContext.showMessage(message: t.downloadFailed);
+      return;
+    }
+    var targetUrl = url;
+    if (targetUrl == null) {
+      final res = await source.loadAnimePages!(data!.id, epKey);
+      if (res is String) {
+        targetUrl = res;
+      } else if (res is Map) {
+        targetUrl = _parsePlayResultUrl(res);
+      }
+    }
+    if (!mounted) return;
+    if (targetUrl == null ||
+        targetUrl.isEmpty ||
+        targetUrl.startsWith('blob:')) {
+      App.rootContext.showMessage(message: t.downloadFailed);
+      return;
+    }
+    await DownloadManager.instance.enqueue(
+      url: targetUrl,
+      title: data!.title,
+      subtitle: epName,
+      cover: data!.cover,
+      sourceKey: data!.sourceKey,
+      animeId: _animeId,
+      animeTitle: data!.title,
+      episode: epName,
+      author: data!.uploader,
+      headers: source.httpHeaders ?? const {},
+      resolution: resolution,
+    );
+    if (mounted) App.rootContext.showMessage(message: t.downloadQueued);
+  }
+
+  /// 从 AnimePlayResult Map 取默认播放地址
+  String? _parsePlayResultUrl(Map res) {
+    try {
+      return AnimePlayResult.fromJson(Map<String, dynamic>.from(res)).url;
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget buildComment() {
@@ -931,7 +1175,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         child: Column(
           children: [
             ListTile(title: Text(t.myRating)),
@@ -953,7 +1197,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         child: Column(
           children: [
             TranslationWidget(
@@ -1044,7 +1288,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1085,7 +1329,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
     // 过滤掉当前番剧自己，避免推荐列表与顶部封面产生重复 Hero tag
     final recommend = anime.recommend!
-        .where((a) => !(a.id == widget.id && a.sourceKey == widget.sourceKey))
+        .where((a) => !(a.id == _animeId && a.sourceKey == _sourceKey))
         .toList();
     if (recommend.isEmpty) {
       return const SizedBox.shrink();
@@ -1098,7 +1342,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         controller: recommendScrollCtrl,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: ScrollConfiguration(
               behavior: ScrollConfiguration.of(
                 context,
@@ -1106,96 +1350,23 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ListTile(title: Text(t.related)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    // 不指定固定列数，交给 SliverGridDelegateWithAnimes 按可用宽度自适应
-                    child: SliverGridAnimes(
-                      animes: recommend,
-                      isRecommend: true,
-                      asSliver: false,
-                      shrinkWrap: true,
-                    ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(t.related),
+                  ),
+                  // 不指定固定列数，交给 SliverGridDelegateWithAnimes 按可用宽度自适应
+                  SliverGridAnimes(
+                    animes: recommend,
+                    isRecommend: true,
+                    asSliver: false,
+                    shrinkWrap: true,
+                    minCrossAxisCount: 3,
                   ),
                 ],
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.text,
-    required this.onPressed,
-    this.onLongPressed,
-    this.activeIcon,
-    this.isActive,
-    this.iconColor,
-    this.isLoading,
-  });
-
-  final Widget icon;
-
-  final Widget? activeIcon;
-
-  final bool? isActive;
-
-  final String text;
-
-  final void Function() onPressed;
-
-  final bool? isLoading;
-
-  final Color? iconColor;
-
-  final void Function()? onLongPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: context.colorScheme.outlineVariant,
-          width: 0.6,
-        ),
-      ),
-      child: Tooltip(
-        message: text,
-        child: InkWell(
-          onTap: () {
-            if (!(isLoading ?? false)) {
-              onPressed();
-            }
-          },
-          onLongPress: onLongPressed,
-          borderRadius: BorderRadius.circular(18),
-          child: IconTheme.merge(
-            data: IconThemeData(size: 20, color: iconColor),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isLoading ?? false)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 1.8),
-                  )
-                else
-                  (isActive ?? false) ? (activeIcon ?? icon) : icon,
-              ],
-            ).paddingHorizontal(16),
-          ),
-        ),
       ),
     );
   }
@@ -1463,6 +1634,735 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
       width: 144 * 0.72,
       clipBehavior: Clip.antiAlias,
       child: child,
+    );
+  }
+}
+
+/// 切换源的搜索选择弹窗：搜索其他源的该条目，选中后返回 Anime
+class _SourceSwitchSheet extends StatefulWidget {
+  const _SourceSwitchSheet({
+    required this.initialKeyword,
+    required this.currentSourceKey,
+    required this.currentAnimeId,
+  });
+
+  final String initialKeyword;
+
+  final String currentSourceKey;
+
+  final String currentAnimeId;
+
+  @override
+  State<_SourceSwitchSheet> createState() => _SourceSwitchSheetState();
+}
+
+/// 单个源的切换搜索状态
+class _SourceSearchState {
+  bool loading = true;
+  List<Anime> results = [];
+  bool success = false;
+  CloudflareException? cf;
+  bool needsCaptcha = false;
+}
+
+class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
+  /// sourceKey → 搜索状态（所有 bangumi 源）
+  final Map<String, _SourceSearchState> _states = {};
+
+  /// 已展开（查看结果）的源
+  final Set<String> _expanded = {};
+
+  /// 正在验证的源（CF）
+  CloudflareException? _verifying;
+
+  /// 源是否声明需要验证码（settings 里有 captcha 类配置）
+  bool _sourceNeedsCaptcha(AnimeSource source) {
+    final settings = source.settings;
+    return settings != null &&
+        settings.keys.any((k) => k.toLowerCase().contains('captcha'));
+  }
+
+  /// 参与聚合的 bangumi 源（排除当前源）
+  List<AnimeSource> get _bangumiSources =>
+      AnimeSource.allSources()
+          .where(
+            (x) => x.isBangumi && x.key != widget.currentSourceKey,
+          )
+          .toList();
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化所有 bangumi 源（除当前源），打开即自动搜索当前标题
+    for (final s in _bangumiSources) {
+      _states[s.key] = _SourceSearchState();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _searchAll());
+  }
+
+  Future<void> _searchAll() async {
+    for (final source in _bangumiSources) {
+      _searchSource(source);
+    }
+  }
+
+  Future<void> _searchSource(AnimeSource source) async {
+    final st = _states[source.key]!;
+    st.loading = true;
+    st.results = [];
+    st.success = false;
+    st.cf = null;
+    setState(() {});
+    final data = source.searchPageData;
+    if (data == null || data.loadPage == null) {
+      st.loading = false;
+      setState(() {});
+      return;
+    }
+    try {
+      final options = (data.searchOptions ?? const [])
+          .map((e) => e.defaultValue)
+          .toList();
+      final res = await data.loadPage!(widget.initialKeyword, 1, options);
+      if (!mounted) return;
+      st.loading = false;
+      st.success = res.success;
+      st.results = res.dataOrNull ?? [];
+    } catch (e) {
+      if (!mounted) return;
+      st.loading = false;
+      final msg = e.toString();
+      st.cf = CloudflareException.fromString(msg);
+      st.needsCaptcha =
+          !st.needsCaptcha &&
+          (msg.toLowerCase().contains('captcha') || msg.contains('验证码'));
+    }
+    setState(() {});
+  }
+
+  /// 点击需要验证的源：触发 Cloudflare 验证，通过后重搜该源
+  Future<void> _verifySource(String sourceKey, CloudflareException cfe) async {
+    if (_verifying != null) return;
+    setState(() => _verifying = cfe);
+    passCloudflare(cfe, () {
+      if (mounted) {
+        setState(() => _verifying = null);
+        final s = AnimeSource.find(sourceKey);
+        if (s != null) _searchSource(s);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sources = _bangumiSources;
+    return Sheet(
+      title: t.switchSource,
+      icon: Icons.swap_horiz,
+      initialSize: 0.7,
+      builder: (ctx, sc) => ListView(
+        controller: sc,
+        padding: const EdgeInsets.all(12),
+        children: [
+          for (final s in sources)
+            _SourceCard(
+              source: s,
+              state: _states[s.key]!,
+              needsCaptchaDeclared: _sourceNeedsCaptcha(s),
+              expanded: _expanded.contains(s.key),
+              verifying: _verifying?.url == s.key,
+              isCurrent:
+                  s.key == widget.currentSourceKey &&
+                  _states[s.key]!.results.any((a) => a.id == widget.currentAnimeId),
+              onToggle: () => setState(() {
+                if (!_expanded.remove(s.key)) _expanded.add(s.key);
+              }),
+              onVerify: () {
+                final cfe = _states[s.key]!.cf;
+                if (cfe != null) _verifySource(s.key, cfe);
+              },
+              onPick: (a) => Navigator.pop(ctx, a),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 切换源列表里的单个源卡片：标题 + 状态（成功/数量/CF/验证码），点击展开结果
+class _SourceCard extends StatelessWidget {
+  const _SourceCard({
+    required this.source,
+    required this.state,
+    required this.needsCaptchaDeclared,
+    required this.expanded,
+    required this.verifying,
+    required this.isCurrent,
+    required this.onToggle,
+    required this.onVerify,
+    required this.onPick,
+  });
+
+  final AnimeSource source;
+
+  final _SourceSearchState state;
+
+  final bool needsCaptchaDeclared;
+
+  final bool expanded;
+
+  final bool verifying;
+
+  final bool isCurrent;
+
+  final VoidCallback onToggle;
+
+  final VoidCallback onVerify;
+
+  final void Function(Anime) onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final needsCf = state.cf != null;
+    final needsCaptcha = needsCaptchaDeclared || state.needsCaptcha;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onToggle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        source.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isCurrent) ...[
+                      Icon(Icons.check_circle, size: 18, color: cs.primary),
+                      const SizedBox(width: 6),
+                    ],
+                    _StatusBadge(
+                      icon: Icons.verified_user_outlined,
+                      label: 'CF',
+                      color: cs.error,
+                      show: needsCf,
+                    ),
+                    _StatusBadge(
+                      icon: Icons.password_outlined,
+                      label: t.needVerification,
+                      color: Colors.orange,
+                      show: needsCaptcha,
+                    ),
+                    if (state.loading)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: PolygonRefreshIndicator(),
+                      )
+                    else if (state.success)
+                      _StatusBadge(
+                        icon: Icons.check_circle_outline,
+                        label: '${state.results.length}',
+                        color: Colors.green,
+                        show: true,
+                      )
+                    else if (!needsCf && !needsCaptcha)
+                      _StatusBadge(
+                        icon: Icons.error_outline,
+                        label: '0',
+                        color: cs.outline,
+                        show: true,
+                      ),
+                    Icon(
+                      expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 20,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+              if (expanded)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (needsCf)
+                        ListTile(
+                          dense: true,
+                          leading: Icon(Icons.verified_user_outlined, color: cs.error),
+                          title: Text(t.needVerification),
+                          subtitle: Text(t.tapToVerify),
+                          trailing: verifying
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: PolygonRefreshIndicator(),
+                                )
+                              : Icon(Icons.chevron_right, color: cs.outline),
+                          onTap: onVerify,
+                        ),
+                      for (final a in state.results)
+                        ListTile(
+                          dense: true,
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: SizedBox(
+                              width: 36,
+                              height: 48,
+                              child: AnimatedImage(
+                                image: CachedImageProvider(
+                                  a.cover,
+                                  sourceKey: a.sourceKey,
+                                  aid: a.id,
+                                ),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            a.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            source.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing:
+                              a.sourceKey == source.key
+                              ? Icon(Icons.chevron_right, color: cs.outline)
+                              : null,
+                          onTap: () => onPick(a),
+                        ),
+                      if (state.results.isEmpty && !state.loading && !needsCf)
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(
+                            t.search,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 卡片上的小状态标记（图标 + 文案）
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.show,
+  });
+
+  final IconData icon;
+
+  final String label;
+
+  final Color color;
+
+  final bool show;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!show) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.toOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 下载选集选择弹窗：多选/全选，已下载的集排除，确认后批量下载
+/// 下载项统一抽象（剧集 epKey 或系列条目 id）
+class _DownloadItem {
+  final String key;
+
+  final String title;
+
+  final String subtitle;
+
+  /// 下载记录里的 episode 字段（用于已下载标记）
+  final String episodeName;
+
+  /// 封面所属源 key
+  final String sourceKey;
+
+  const _DownloadItem({
+    required this.key,
+    required this.title,
+    this.subtitle = '',
+    required this.episodeName,
+    required this.sourceKey,
+  });
+}
+
+/// 下载选择结果
+class _DownloadPick {
+  final String key;
+
+  final String episodeName;
+
+  /// 选定分辨率的 url（null = 使用默认）
+  final String? url;
+
+  /// 分辨率标签（如 1080p）
+  final String? resolution;
+
+  const _DownloadPick({
+    required this.key,
+    required this.episodeName,
+    this.url,
+    this.resolution,
+  });
+}
+
+/// 卡片化下载选择弹窗：每集一张卡片（封面 + 标题 + 分辨率选择）
+class _EpisodeDownloadPicker extends StatefulWidget {
+  const _EpisodeDownloadPicker({
+    required this.items,
+    required this.downloaded,
+    required this.resolvePlay,
+  });
+
+  final List<_DownloadItem> items;
+
+  /// 已下载的 episodeName 集合
+  final Set<String> downloaded;
+
+  /// 解析单集/系列条目的播放结果（获取多分辨率）
+  final Future<AnimePlayResult?> Function(String key) resolvePlay;
+
+  @override
+  State<_EpisodeDownloadPicker> createState() => _EpisodeDownloadPickerState();
+}
+
+class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
+  late final Set<String> selected;
+
+  /// key → 选定分辨率（存 url + label）
+  final Map<String, String?> _resolutionByKey = {};
+  final Map<String, String?> _resolutionLabelByKey = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // 默认全选未下载的项
+    selected = widget.items
+        .where((e) => !widget.downloaded.contains(e.episodeName))
+        .map((e) => e.key)
+        .toSet();
+  }
+
+  void _toggle(String key) {
+    setState(() {
+      if (!selected.add(key)) selected.remove(key);
+    });
+  }
+
+  void _confirm() {
+    final picks = <_DownloadPick>[
+      for (final item in widget.items)
+        if (selected.contains(item.key))
+          _DownloadPick(
+            key: item.key,
+            episodeName: item.episodeName,
+            url: _resolutionByKey[item.key],
+            resolution: _resolutionLabelByKey[item.key],
+          ),
+    ];
+    Navigator.of(context).pop(picks);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allSelected = selected.length == widget.items.length;
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t.downloadEpisode,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() {
+                    if (allSelected) {
+                      selected.clear();
+                    } else {
+                      selected.addAll(widget.items.map((e) => e.key));
+                    }
+                  }),
+                  child: Text(allSelected ? t.selectNone : t.selectAll),
+                ),
+              ],
+            ),
+          ),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                for (final item in widget.items)
+                  _DownloadItemCard(
+                    item: item,
+                    isDownloaded: widget.downloaded.contains(item.episodeName),
+                    isSelected: selected.contains(item.key),
+                    resolutionLabel: _resolutionLabelByKey[item.key],
+                    onToggle: () => _toggle(item.key),
+                    onResolution: (url, label) => setState(() {
+                      _resolutionByKey[item.key] = url;
+                      _resolutionLabelByKey[item.key] = label;
+                    }),
+                    resolvePlay: widget.resolvePlay,
+                  ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: FilledButton(
+              onPressed: selected.isEmpty ? null : _confirm,
+              child: Text(t.downloadSelectedCount(n: selected.length)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 单个下载项卡片：封面 + 标题/副标题 + 分辨率选择
+class _DownloadItemCard extends StatefulWidget {
+  const _DownloadItemCard({
+    required this.item,
+    required this.isDownloaded,
+    required this.isSelected,
+    required this.resolutionLabel,
+    required this.onToggle,
+    required this.onResolution,
+    required this.resolvePlay,
+  });
+
+  final _DownloadItem item;
+
+  final bool isDownloaded;
+
+  final bool isSelected;
+
+  final String? resolutionLabel;
+
+  final VoidCallback onToggle;
+
+  final void Function(String url, String label) onResolution;
+
+  final Future<AnimePlayResult?> Function(String key) resolvePlay;
+
+  @override
+  State<_DownloadItemCard> createState() => _DownloadItemCardState();
+}
+
+class _DownloadItemCardState extends State<_DownloadItemCard> {
+  bool _resolving = false;
+
+  /// 解析多分辨率并弹出选择（只有一种分辨率时提示无更多可选）
+  Future<void> _pickResolution() async {
+    if (_resolving || widget.isDownloaded) return;
+    setState(() => _resolving = true);
+    final result = await widget.resolvePlay(widget.item.key);
+    if (!mounted) return;
+    setState(() => _resolving = false);
+    final options = (result?.videoStreams ?? const <VideoStreamInfo>[])
+        .where((s) => s.url != null && s.url!.isNotEmpty)
+        .toList();
+    if (options.length <= 1) {
+      App.rootContext.showMessage(message: t.noResolutionAvailable);
+      return;
+    }
+    final index = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                t.selectResolution,
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
+            ),
+            for (var i = 0; i < options.length; i++)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.high_quality_outlined),
+                title: Text(options[i].label),
+                trailing: options[i].label == widget.resolutionLabel
+                    ? Icon(
+                        Icons.check,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      )
+                    : null,
+                onTap: () => Navigator.of(ctx).pop(i),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (index == null || !mounted) return;
+    widget.onResolution(options[index].url!, options[index].label);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final item = widget.item;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: widget.isDownloaded
+            ? colorScheme.surfaceContainerHigh
+            : (widget.isSelected
+                  ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+                  : colorScheme.surfaceContainerLow),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: widget.isSelected
+                ? colorScheme.primary
+                : colorScheme.outlineVariant,
+            width: widget.isSelected ? 1.5 : 0.6,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.isDownloaded ? null : widget.onToggle,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Icon(
+                  widget.isSelected
+                      ? Icons.check_circle
+                      : Icons.circle_outlined,
+                  size: 20,
+                  color: widget.isDownloaded
+                      ? colorScheme.outline
+                      : (widget.isSelected
+                            ? colorScheme.primary
+                            : colorScheme.outlineVariant),
+                ),
+                const SizedBox(width: 8),
+                // 标题 + 副标题
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (item.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          item.subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 分辨率选择 / 已下载标记
+                if (widget.isDownloaded)
+                  Icon(Icons.download_done, size: 20, color: Colors.green)
+                else
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    onPressed: _pickResolution,
+                    icon: _resolving
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: PolygonRefreshIndicator(),
+                          )
+                        : const Icon(Icons.high_quality_outlined, size: 16),
+                    label: Text(
+                      widget.resolutionLabel ?? t.defaultResolution,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

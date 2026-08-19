@@ -88,6 +88,22 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     }
   }
 
+  // ── 粘贴剪贴板图片（Ctrl+V）───────────────────────────────────────────────
+  Future<void> _pasteImage() async {
+    final state = this as _HubChatPageState;
+    try {
+      final bytes = await Pasteboard.image;
+      if (bytes == null || bytes.isEmpty) return;
+      if (state.mounted) {
+        state.setState(
+          () => state._pendingImages.add(
+            PendingImage.local(bytes: bytes, fileName: 'pasted.png'),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
   // ── 拖入处理 ──────────────────────────────────────────────────────────────
   Future<void> _onDragDone(DropDoneDetails detail) async {
     final state = this as _HubChatPageState;

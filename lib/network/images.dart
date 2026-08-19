@@ -77,6 +77,10 @@ abstract class ImageDownloader {
         headers: Map<String, dynamic>.from(configs['headers']),
         method: configs['method'] ?? 'GET',
         responseType: ResponseType.stream,
+        // 图片加载用更短的连接超时：无法访问的域名尽早失败，
+        // 避免占用并发加载槽位拖慢其他图片
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 15),
       ),
     );
 

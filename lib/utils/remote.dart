@@ -91,7 +91,7 @@ class RemotePlay {
                         ? const SizedBox(
                             width: 14,
                             height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: PolygonRefreshIndicator(),
                           )
                         : const Icon(Icons.search, size: 18),
                     label: Text(isSearching ? t.searchingDevices : t.search),

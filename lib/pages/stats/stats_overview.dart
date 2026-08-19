@@ -163,11 +163,15 @@ class _StatsOverviewState extends State<StatsOverview> {
 
   Future<void> _loadBangumiItems() async {
     final items = <BangumiItem>[];
-    for (final id in _uniqueBangumiIds) {
+    final seen = <int>{};
+    for (final s in _deduplicatedStats) {
+      final id = s.bangumiId;
+      if (id == null || !seen.add(id)) continue;
       final item = await providerContainer
           .read(bangumiManagerProvider)
           .getBangumiItem(id);
-      if (item != null) items.add(item);
+      // bangumi.db 数据缺失时用统计自带的 title/cover 兜底
+      items.add(item ?? s.toBangumiItem());
     }
     if (mounted) setState(() => _bangumiItems = items);
   }
@@ -208,14 +212,6 @@ class _StatsOverviewState extends State<StatsOverview> {
         .where((e) => _isInTimeRange(e.date))
         .expand((e) => e.platformEventRecords)
         .toList();
-  }
-
-  List<int> get _uniqueBangumiIds {
-    final ids = <int>{};
-    for (final s in _deduplicatedStats) {
-      if (s.bangumiId != null) ids.add(s.bangumiId!);
-    }
-    return ids.toList();
   }
 
   List<MapEntry<String, int>> get _sortedTagCounts =>

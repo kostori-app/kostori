@@ -91,6 +91,9 @@ class FavoriteItem implements Anime {
   }
 
   @override
+  List<AnimeDescriptionLine>? get descriptionLines => null;
+
+  @override
   String? get favoriteId => null;
 
   @override
@@ -198,6 +201,9 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
     var sourceName = type.animeSource?.name ?? "Unknown";
     return "$updateTime | $sourceName";
   }
+
+  @override
+  List<AnimeDescriptionLine>? get descriptionLines => null;
 
   @override
   operator ==(Object other) {

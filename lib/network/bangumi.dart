@@ -30,6 +30,10 @@ import 'package:kostori/utils/utils.dart';
 class Bangumi {
   static final instance = Bangumi._();
 
+  /// 进程内自动检查节流：init 与进日历页都会触发检查，
+  /// 短时间内只请求一次，避免重复打 GitHub API（无 token 限流 60/h）
+  static DateTime? _lastAutoCheck;
+
   Bangumi._() {
     _dio.interceptors.add(BangumiTokenInterceptor(_dio));
   }
@@ -670,12 +674,19 @@ class Bangumi {
   }
 
   Future<void> checkBangumiData({bool isUpdata = false}) async {
-    final nowStr = Utils.formatDate(DateTime.now());
+    // 进程内节流：自动检查（启动 init + 进日历页）1 小时内只请求一次
     if (!isUpdata) {
+      final last = _lastAutoCheck;
+      if (last != null &&
+          DateTime.now().difference(last) < const Duration(hours: 1)) {
+        return;
+      }
+      final nowStr = Utils.formatDate(DateTime.now());
       final needsUpdate = appdata.settings['getBangumiDataTime'] != nowStr;
       final enableSkipUpdate = appdata.settings['enableSkipUpdate'] ?? true;
       if (!needsUpdate && enableSkipUpdate) return;
     }
+    _lastAutoCheck = DateTime.now();
     try {
       var res = await _dio.request(
         Api.checkBangumiDataUrl,
@@ -695,7 +706,9 @@ class Bangumi {
           '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
         );
         appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
-        appdata.settings['getBangumiDataTime'] = nowStr;
+        appdata.settings['getBangumiDataTime'] = Utils.formatDate(
+          DateTime.now(),
+        );
         appdata.saveData();
         NetLog.info(
           'bangumiDataVer',

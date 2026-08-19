@@ -880,7 +880,7 @@ class _WorldBookHitTestDialogState extends State<_WorldBookHitTestDialog> {
                       ? const SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: PolygonRefreshIndicator(),
                         )
                       : const Icon(Icons.search, size: 16),
                   label: Text(t.worldBookHitTest),

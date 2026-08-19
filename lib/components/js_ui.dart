@@ -255,9 +255,7 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
       "filled" => FilledButton(
         onPressed: onClick,
         child: isLoading
-            ? CircularProgressIndicator(
-                strokeWidth: 1.4,
-              ).fixWidth(18).fixHeight(18)
+            ? PolygonRefreshIndicator().fixWidth(18).fixHeight(18)
             : Text(widget.text),
       ),
       "danger" => FilledButton(
@@ -266,17 +264,13 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
           backgroundColor: WidgetStateProperty.all(context.colorScheme.error),
         ),
         child: isLoading
-            ? CircularProgressIndicator(
-                strokeWidth: 1.4,
-              ).fixWidth(18).fixHeight(18)
+            ? PolygonRefreshIndicator().fixWidth(18).fixHeight(18)
             : Text(widget.text),
       ),
       _ => TextButton(
         onPressed: onClick,
         child: isLoading
-            ? CircularProgressIndicator(
-                strokeWidth: 1.4,
-              ).fixWidth(18).fixHeight(18)
+            ? PolygonRefreshIndicator().fixWidth(18).fixHeight(18)
             : Text(widget.text),
       ),
     };

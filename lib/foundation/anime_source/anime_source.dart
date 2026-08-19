@@ -157,6 +157,11 @@ typedef LoadAnimeFunc = Future<Res<AnimeDetails>> Function(String id);
 
 typedef LoadAnimePagesFunc<T> = Future<T> Function(String id, String? ep);
 
+/// 系列加载接口：部分源（emby/jellyfin 等的电影/合集类条目）没有分集，
+/// 而是返回与剧集平行的系列列表。一个源只会存在剧集或系列之一。
+/// [anime] 为加载完成的 AnimeDetails；返回的每条目复用 [Anime] 结构。
+typedef SeriesLoader = Future<Res<List<Anime>>> Function(AnimeDetails anime);
+
 typedef CommentsLoader =
     Future<Res<List<Comment>>> Function(
       String id,
@@ -216,6 +221,47 @@ typedef HandleClickTagEvent =
 /// [rating] is the rating value, 0-10. 1 represents 0.5 star.
 typedef StarRatingFunc = Future<Res<bool>> Function(String animeId, int rating);
 
+/// 播放进度上报（源实现，如 emby/jellyfin 同步到服务端）。
+/// [url] 为播放 URL，源从中提取条目 id；[playSessionId] 为源返回的会话 id。
+typedef PlaybackProgressFunc = Future<dynamic> Function(
+  String url,
+  int positionMs,
+  int durationMs,
+  bool playing,
+  String? playSessionId,
+);
+
+/// 播放停止上报（退出播放器时调用）。
+typedef PlaybackStoppedFunc = Future<dynamic> Function(
+  String url,
+  int positionMs,
+  String? playSessionId,
+);
+
+/// 通用源操作（favorite/delete/评论等），[action] 由源定义。
+///
+/// 源脚本实现 `anime.sourceAction(action, params)` 统一处理各类操作。
+/// 已约定动作（源可按需实现）：
+///
+/// | action | params | 说明 |
+/// |---|---|---|
+/// | `favorite` | `{ id, favorite }` | 收藏/取消收藏（服务器） |
+/// | `delete` | `{ id }` | 删除条目 |
+/// | `markPlayed` | `{ id, played }` | 标记已播放/未播放 |
+/// | `clearPlayback` | `{ id }` | 清除播放进度 |
+/// | `rate` | `{ id, rating }` | 评分（0-10） |
+/// | `sendComment` | `{ id, subId, content, replyTo }` | 发表评论 |
+/// | `likeAnime` | `{ animeId, isLiking }` | 点赞/取消点赞番剧 |
+/// | `likeComment` | `{ animeId, subId, commentId, isLiking }` | 点赞/取消点赞评论 |
+/// | `voteComment` | `{ animeId, subId, commentId, isUp, isCancel }` | 投票评论 |
+/// | `loadComments` | `{ id, subId, page, replyTo }` | 加载评论，返回 `{ comments, maxPage }` |
+///
+/// 返回：操作成功与否或数据（源自定义；失败可 throw 或返回 null）。
+typedef SourceActionFunc = Future<dynamic> Function(
+  String action,
+  Map<String, dynamic> params,
+);
+
 class AnimeSource {
   static List<AnimeSource> all() => AnimeSourceManager().enabledAll();
 
@@ -261,6 +307,9 @@ class AnimeSource {
   /// 加载动漫页面的函数
   final LoadAnimePagesFunc? loadAnimePages;
 
+  /// 系列加载接口（剧集与系列一个源只会存在一种）
+  final SeriesLoader? loadSeries;
+
   final GetImageLoadingConfigFunc? getImageLoadingConfig;
 
   final Map<String, dynamic> Function(String imageKey)?
@@ -301,6 +350,15 @@ class AnimeSource {
   final bool enableTagsTranslate;
 
   final StarRatingFunc? starRatingFunc;
+
+  /// 播放进度上报（源实现）
+  final PlaybackProgressFunc? playbackProgress;
+
+  /// 播放停止上报
+  final PlaybackStoppedFunc? playbackStopped;
+
+  /// 通用源操作（favorite/delete 等）
+  final SourceActionFunc? sourceAction;
 
   final Map<String, String>? httpHeaders;
 
@@ -365,6 +423,7 @@ class AnimeSource {
     required this.loadAnimeInfo,
     required this.loadAnimeThumbnail,
     required this.loadAnimePages,
+    this.loadSeries,
     required this.getImageLoadingConfig,
     required this.getThumbnailLoadingConfig,
     required this.filePath,
@@ -382,6 +441,9 @@ class AnimeSource {
     required this.enableTagsSuggestions,
     required this.enableTagsTranslate,
     required this.starRatingFunc,
+    this.playbackProgress,
+    this.playbackStopped,
+    this.sourceAction,
     required this.isBangumi,
     required this.host,
     required this.httpHeaders,

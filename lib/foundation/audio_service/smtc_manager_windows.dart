@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
-import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 
 class SMTCManagerWindows {
@@ -122,12 +121,11 @@ class SMTCManagerWindows {
   /// Only calls the native API when something actually changed,
   /// and guards every nullable field before touching SMTC.
   void _pushMetadataIfChanged() {
-    try {
-      final watcherState = WatcherState.currentState;
-      if (watcherState == null || _controller == null) return;
+try {
+  if (_controller == null) return;
 
-      final title = watcherState.anime.title;
-      final artist = _controller!.currentSetName;
+  final title = _controller!.animeTitle;
+  final artist = _controller!.currentSetName;
 
       // Sanitise thumbnail: empty string → null so SMTC gets no URI
       // rather than an empty one, which is what triggers the panic.

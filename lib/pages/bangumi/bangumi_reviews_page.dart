@@ -4,6 +4,7 @@ import 'package:kostori/bbcode/bbcode_precache.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/reviews_comments_card.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -50,11 +51,14 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
   }
 
   Future<void> queryBangumiReviewsByID(int id) async {
-    reviewsInfoItem = await Bangumi.instance.getReviewsInfoByID(id);
-    reviewsCommentsItem = await Bangumi.instance.getReviewsCommentsByID(id);
-    bangumiReviewsSubjects = await Bangumi.instance.getReviewsSubjectsByID(id);
+    try {
+      reviewsInfoItem = await Bangumi.instance.getReviewsInfoByID(id);
+      reviewsCommentsItem = await Bangumi.instance.getReviewsCommentsByID(id);
+      bangumiReviewsSubjects = await Bangumi.instance.getReviewsSubjectsByID(id);
+    } catch (_) {
+      reviewsInfoItem = null;
+    }
     isLoading = false;
-    // ← 加这段
     _replyKeys.clear();
     for (final item in reviewsCommentsItem) {
       _replyKeys[item.id] = GlobalKey();
@@ -306,9 +310,10 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                                 ),
                             ],
                           )
-                        : Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
+                        : isLoading
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 /// 顶部标题区域骨架
@@ -401,7 +406,13 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                                 ),
                               ],
                             ),
-                          ),
+                          )
+                          : ErrorState(
+                              message: t.failedToLoadPleaseTryAgain,
+                              retry: () =>
+                                  queryBangumiReviewsByID(reviewsItem.entry.id),
+                              retryText: t.reload,
+                            ),
                   ),
                 ),
               ),

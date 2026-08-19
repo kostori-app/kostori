@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -5,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/calendar_screenshot_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -26,20 +26,97 @@ import 'package:kostori/utils/utils.dart';
 
 Future<List<List<BangumiItem>>> loadBangumiCalendar({
   bool isFetchEpisodes = true,
+  List<int>? days,
 }) async {
   try {
     if (isFetchEpisodes) {
       await Bangumi.instance.getCalendarData();
       await Bangumi.instance.checkBangumiData();
     }
-    final allItems = await providerContainer
-        .read(bangumiManagerProvider)
-        .getWeeks([1, 2, 3, 4, 5, 6, 7]);
+    // 默认全周；主页只取当天时传 days: [today]
+    final targetDays = days ?? const [1, 2, 3, 4, 5, 6, 7];
+    final manager = providerContainer.read(bangumiManagerProvider);
+    final allItems = await manager.getWeeks(targetDays);
+
+    // 补全：bangumi_data 表（全量）中日历表缺失的近期条目。
+    // 仅补最近 ~12 个月内开播的（覆盖当季 + 半年番），避免对历史数据大量请求；
+    // 补全成功写回本地日历表，下次直接读取，不再重复请求接口。
+    final supplement = await manager.getAllBangumiDataEntries();
+    final existingIds = allItems.map((item) => item.id).toSet();
+    // 仅补全「近期在播或刚完结」且播放日在目标天内的条目
+    final recentIds = supplement.entries
+        .where((e) {
+          final begin = DateTime.tryParse(e.value.begin ?? '');
+          if (begin == null) return false;
+          if (!targetDays.contains(begin.weekday)) return false;
+          // 开始时间在最近 12 个月内
+          if (!begin.isAfter(
+            DateTime.now().subtract(const Duration(days: 365)),
+          )) {
+            return false;
+          }
+          // 在播（end 为空/在未来）或最近 60 天内完结
+          final end = DateTime.tryParse(e.value.end ?? '');
+          if (end == null) return true;
+          return end.isAfter(DateTime.now().subtract(const Duration(days: 60)));
+        })
+        .map((e) => e.key);
+    final missingIds = recentIds
+        .where((id) => !existingIds.contains(id))
+        .toList();
+
+    final supplementToCache = <BangumiItem>[];
+    if (missingIds.isNotEmpty) {
+      const batchSize = 5;
+      for (var i = 0; i < missingIds.length; i += batchSize) {
+        final batch = missingIds.sublist(
+          i,
+          (i + batchSize).clamp(0, missingIds.length),
+        );
+        final fetched = await Future.wait(
+          batch.map((id) => Bangumi.instance.getBangumiInfoByID(id)),
+        );
+        for (var j = 0; j < batch.length; j++) {
+          final id = batch[j];
+          final basic = supplement[id]!;
+          final info = fetched[j];
+          final begin = DateTime.tryParse(basic.begin ?? '');
+          var item = info;
+          if (item != null && begin != null) {
+            item = item.copyWith(airTime: basic.begin, airWeekday: begin.weekday);
+          } else {
+            // 接口失败：用 bangumi_data 基础信息占位（标题 + 时间）
+            item = BangumiItem(
+              id: id,
+              type: 2,
+              name: basic.titleTranslate ?? basic.title,
+              nameCn: basic.titleTranslate ?? basic.title,
+              summary: '',
+              airDate: basic.begin ?? '2077',
+              airWeekday: begin?.weekday ?? 0,
+              rank: 0,
+              total: 0,
+              totalEpisodes: 0,
+              score: 0,
+              images: const {},
+              tags: const [],
+              airTime: basic.begin,
+            );
+          }
+          allItems.add(item);
+          supplementToCache.add(item);
+        }
+      }
+      // 写回本地缓存，下次 getWeeks 直接命中，不再请求接口
+      try {
+        await manager.batchAddBangumiCalendar(supplementToCache);
+      } catch (e, s) {
+        Log.warning('补全日历缓存', '$e\n$s');
+      }
+    }
 
     final allIds = allItems.map((item) => item.id.toString()).toList();
-    final existenceMap = await providerContainer
-        .read(bangumiManagerProvider)
-        .checkWhetherDataExistsBatch(allIds);
+    final existenceMap = await manager.checkWhetherDataExistsBatch(allIds);
 
     final validItems = allItems
         .where((item) => existenceMap.containsKey(item.id.toString()))
@@ -60,7 +137,9 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
       if (airTimeStr == null) continue;
 
       try {
-        final weekday = DateTime.parse(airTimeStr).toLocal().weekday;
+        final parsedTime = parseBangumiAirTime(airTimeStr);
+        if (parsedTime == null) continue;
+        final weekday = parsedTime.weekday;
         final episodes = allEpisodesMap[item.id];
 
         final episodeResult = fetchEpisodes && isFetchEpisodes
@@ -213,6 +292,25 @@ Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
   return result;
 }
 
+/// 解析 bangumi 播出时间（支持深夜番 `25:00` 等超过 24 点的时间，
+/// 会进位到次日，如 `2026-08-17 25:00` → 2026-08-18 01:00）
+DateTime? parseBangumiAirTime(String str) {
+  final t = DateTime.tryParse(str);
+  if (t != null) return t.toLocal();
+  final m = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?',
+  ).firstMatch(str);
+  if (m == null) return null;
+  return DateTime(
+    int.parse(m[1]!),
+    int.parse(m[2]!),
+    int.parse(m[3]!),
+    int.parse(m[4]!),
+    int.parse(m[5]!),
+    int.parse(m[6] ?? '0'),
+  ).toLocal();
+}
+
 class BangumiCalendarPage extends ConsumerStatefulWidget {
   const BangumiCalendarPage({super.key});
 
@@ -243,9 +341,46 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
     try {
       final newCalendar = await loadBangumiCalendar();
       if (mounted) setState(() => bangumiCalendar = newCalendar);
+      // 后台预取封面到本地缓存，避免显示时逐张网络加载
+      unawaited(_precacheImages(newCalendar));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// 批量下载封面图片到本地缓存（仅未缓存的会走网络）
+  Future<void> _precacheImages(List<List<BangumiItem>> calendar) async {
+    final urls = calendar
+        .expand((day) => day)
+        .map((item) => item.images['large'])
+        .whereType<String>()
+        .toSet()
+        .toList();
+    const batchSize = 6;
+    for (var i = 0; i < urls.length; i += batchSize) {
+      final batch = urls.sublist(
+        i,
+        (i + batchSize).clamp(0, urls.length),
+      );
+      await Future.wait(
+        batch.map((url) async {
+          try {
+            await precacheImage(
+              CachedImageProvider(url, sourceKey: 'bangumi'),
+              context,
+            );
+          } catch (_) {}
+        }),
+      );
+    }
+  }
+
+  /// 全部番剧数量（一周总和）
+  int _allCount() {
+    return bangumiCalendar.fold<int>(
+      0,
+      (sum, day) => sum + day.length,
+    );
   }
 
   List<Tab> getTabs() {
@@ -343,7 +478,25 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
       final bangumiList = bangumiCalendar[weekdayIndex];
       DebugLog.info('day[$weekdayIndex] count', bangumiList.length.toString());
       if (bangumiList.isEmpty) {
-        return Center(child: Text(t.calNoAnimeToday));
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.event_busy,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                t.calNoAnimeToday,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        );
       }
 
       final weekday = weekdayIndex + 1;
@@ -419,7 +572,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
             ).copyWith(scrollbars: false),
             child: Scaffold(
               appBar: Appbar(
-                title: Text(t.timetable),
+                title: Text('${t.timetable}（${_allCount()}）'),
                 actions: [
                   IconButton(
                     onPressed: () {
@@ -491,17 +644,49 @@ class _BangumiCalendarCard extends StatelessWidget {
 
   final BangumiItem bangumiItem;
 
+  Widget _buildCover(
+    BuildContext context,
+    ColorScheme colorScheme,
+    double imageWidth,
+    double imageHeight,
+  ) {
+    final imageUrl =
+        bangumiItem.images['large'] ??
+        bangumiItem.images['common'] ??
+        bangumiItem.images['medium'] ??
+        '';
+    if (imageUrl.isEmpty) {
+      // 补全条目接口失败时无图，显示占位
+      return Container(
+        width: imageWidth,
+        height: imageHeight,
+        color: colorScheme.surfaceContainerHighest,
+        child: Icon(
+          Icons.movie_outlined,
+          size: 36,
+          color: colorScheme.outline,
+        ),
+      );
+    }
+    return BangumiWidget.kostoriImage(
+      context,
+      imageUrl,
+      width: imageWidth,
+      height: imageHeight,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final imageHeight = constraints.maxWidth * 6 / 16;
+          final imageHeight = constraints.maxWidth * 5 / 16;
           final imageWidth = imageHeight * 0.72;
 
           return SizedBox(
-            height: constraints.maxWidth * 8 / 16,
+            height: constraints.maxWidth * 7 / 16,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,14 +698,14 @@ class _BangumiCalendarCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(12),
                         child: Hero(
                           tag: 'Timetable-${bangumiItem.id}',
-                          child: BangumiWidget.kostoriImage(
+                          child: _buildCover(
                             context,
-                            bangumiItem.images['large']!,
-                            width: imageWidth,
-                            height: imageHeight,
+                            Theme.of(context).colorScheme,
+                            imageWidth,
+                            imageHeight,
                           ),
                         ),
                       ),
@@ -557,31 +742,39 @@ class _CardInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title = bangumiItem.nameCn.isNotEmpty
+        ? bangumiItem.nameCn
+        : bangumiItem.name;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          bangumiItem.nameCn,
+          title,
           style: TextStyle(
             fontSize: imageWidth * 0.12,
             fontWeight: FontWeight.bold,
             height: 1.2,
           ),
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          bangumiItem.name,
-          style: TextStyle(fontSize: imageWidth * 0.08),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
+        const SizedBox(height: 2),
+        if (bangumiItem.name.isNotEmpty &&
+            bangumiItem.name != bangumiItem.nameCn)
+          Text(
+            bangumiItem.name,
+            style: TextStyle(
+              fontSize: imageWidth * 0.08,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         if (appdata.settings['calendarFetchEpisodes'] ?? false)
           Text(
             '${t.episodeEp(ep: bangumiItem.extraInfo?.episodeEp?.toCleanString() ?? 0)}: $_episodeName',
-            style: TextStyle(fontSize: imageWidth * 0.12),
+            style: TextStyle(fontSize: imageWidth * 0.11),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),

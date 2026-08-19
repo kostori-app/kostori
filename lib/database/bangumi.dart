@@ -18,6 +18,21 @@ part 'bangumi.g.dart';
 // 数据类
 // ═══════════════════════════════════════════════════════════
 
+/// bangumi_data 表条目的基础信息（用于补全日历）
+class BangumiDataBasic {
+  final String title;
+  final String? titleTranslate;
+  final String? begin;
+  final String? end;
+
+  const BangumiDataBasic({
+    required this.title,
+    this.titleTranslate,
+    this.begin,
+    this.end,
+  });
+}
+
 class BangumiData {
   String? title;
   Map<String, dynamic>? titleTranslate;
@@ -248,7 +263,15 @@ class _BangumiDb extends _$_BangumiDb {
 
 LazyDatabase _openConn() => LazyDatabase(() async {
   final file = File(p.join(App.dataPath, 'bangumi.db'));
-  return NativeDatabase.createInBackground(file);
+  return NativeDatabase.createInBackground(
+    file,
+    setup: (db) {
+      // WAL + NORMAL：异常中断（杀进程/崩溃/强制退出）时大幅降低
+      // 数据库损坏（disk image malformed）概率
+      db.execute('PRAGMA journal_mode = WAL;');
+      db.execute('PRAGMA synchronous = NORMAL;');
+    },
+  );
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -319,6 +342,9 @@ class BangumiManager with ChangeNotifier {
   /// 在途数据库操作计数；close/reinit 前等待归零，
   /// 避免数据导入关库打断在途查询（"database disk image is malformed"）
   int _busy = 0;
+
+  /// 防止并发触发多次重建损坏表
+  bool _allEpRepairing = false;
 
   Future<void> _waitIdle() async {
     while (_busy > 0) {
@@ -516,6 +542,38 @@ class BangumiManager with ChangeNotifier {
     return map.containsKey(id);
   }
 
+  /// 读取 bangumi_data 表中所有含 bangumi 站点的条目（id → 基础信息）。
+  /// 用于补全日历：日历接口只覆盖当季，这里能拿到更全的条目。
+  Future<Map<int, BangumiDataBasic>> getAllBangumiDataEntries() {
+    return _guard(() async {
+      final result = <int, BangumiDataBasic>{};
+      final rows = await _db.select(_db.bangumiDataTable).get();
+      for (final row in rows) {
+        final sitesRaw = row.sites;
+        if (sitesRaw == null || sitesRaw.isEmpty) continue;
+        try {
+          final sites = jsonDecode(sitesRaw) as List;
+          for (final site in sites.cast<Map>()) {
+            if (site['site'] == 'bangumi') {
+              final id = int.tryParse(site['id'].toString());
+              if (id != null) {
+                result[id] = BangumiDataBasic(
+                  title: row.title,
+                  titleTranslate: row.titleTranslate,
+                  begin: row.begin,
+                  end: row.end,
+                );
+              }
+            }
+          }
+        } catch (e) {
+          DebugLog.error('getAllBangumiDataEntries', 'parse error: $e');
+        }
+      }
+      return result;
+    });
+  }
+
   Future<void> clearBangumiData() {
     return _guard(() async {
       await _db.delete(_db.bangumiDataTable).go();
@@ -670,35 +728,114 @@ class BangumiManager with ChangeNotifier {
 
   Future<List<EpisodeInfo>> allEpInfoFind(int id) {
     return _guard(() async {
-      final row = await (_db.select(
-        _db.bangumiAllEpInfoTable,
-      )..where((t) => t.id.equals(id))).getSingleOrNull();
-
-      DebugLog.info(
-        'allEpInfoFind',
-        'id=$id, row=${row == null ? 'null' : 'found'}, data=${row?.data == null ? 'null' : 'length:${row!.data!.length}'}',
-      );
-
-      if (row?.data == null) {
-        DebugLog.info(
-          'allEpInfoFind',
-          'id=$id → row or data is null, returning []',
-        );
-        return <EpisodeInfo>[];
-      }
-
       try {
-        final list = jsonDecode(row!.data!) as List;
+        final row = await (_db.select(
+          _db.bangumiAllEpInfoTable,
+        )..where((t) => t.id.equals(id))).getSingleOrNull();
+
         DebugLog.info(
           'allEpInfoFind',
-          'id=$id → decoded ${list.length} episodes',
+          'id=$id, row=${row == null ? 'null' : 'found'}, data=${row?.data == null ? 'null' : 'length:${row!.data!.length}'}',
         );
-        return list.map((e) => EpisodeInfo.fromJson(e)).toList();
+
+        if (row?.data == null) {
+          DebugLog.info(
+            'allEpInfoFind',
+            'id=$id → row or data is null, returning []',
+          );
+          return <EpisodeInfo>[];
+        }
+
+        try {
+          final list = jsonDecode(row!.data!) as List;
+          DebugLog.info(
+            'allEpInfoFind',
+            'id=$id → decoded ${list.length} episodes',
+          );
+          return list.map((e) => EpisodeInfo.fromJson(e)).toList();
+        } catch (e, s) {
+          DebugLog.error(
+            'allEpInfoFind',
+            'id=$id → jsonDecode failed: $e\n$s',
+          );
+          return <EpisodeInfo>[];
+        }
       } catch (e, s) {
-        DebugLog.error('allEpInfoFind', 'id=$id → jsonDecode failed: $e\n$s');
+        // 数据库损坏（disk image malformed）：只重建损坏的表恢复，
+        // 不整库删除；重建后该表的缓存清空，重新从 bangumi 拉取。
+        // 注意：库经 drift remote（isolate）执行，传回的异常可能被包装成
+        // 非 SqliteException，故同时用 message 判断
+        final msg = e.toString();
+        final isMalformed =
+            (e is SqliteException && e.resultCode == 11) ||
+            msg.contains('malformed') ||
+            msg.contains('code 11');
+        if (isMalformed) {
+          await _repairAllEpInfoTable();
+        }
+        Log.error('allEpInfoFind', '读取失败 id=$id: $e\n$s');
         return <EpisodeInfo>[];
       }
     });
+  }
+
+  /// 重建损坏的 bangumi_AllEpInfo 表（disk image malformed 时调用）。
+  /// 只重建该表，保留其余数据；重建失败（文件损坏严重）时自动整库重建兜底
+  Future<void> _repairAllEpInfoTable() async {
+    if (_allEpRepairing) return;
+    _allEpRepairing = true;
+    try {
+      final table = _db.bangumiAllEpInfoTable;
+      await _db.customStatement('DROP TABLE IF EXISTS "${table.tableName}"');
+      final migrator = Migrator(_db);
+      await migrator.createTable(table);
+      // 重开连接：清空 drift 缓存的 prepared statement（保留数据）。
+      // 注意不能用 reinit()——重建由 _guard 内的查询触发，_waitIdle 会死锁
+      await _reopenDb();
+      DebugLog.info('allEpInfoFind', '已重建 ${table.tableName} 表');
+    } catch (e, s) {
+      Log.error(
+        'allEpInfoFind',
+        '重建 ${_db.bangumiAllEpInfoTable.tableName} 失败，尝试整库重建: $e\n$s',
+      );
+      await _rebuildDatabase();
+    } finally {
+      _allEpRepairing = false;
+    }
+  }
+
+  /// 整库重建：删除 bangumi.db 文件并重新初始化（表级重建失败时的兜底）。
+  /// 不走 reinit（它先 _waitIdle，重建由在途查询触发时会死锁），直接关连
+  Future<void> _rebuildDatabase() async {
+    try {
+      await _db.close();
+      isInitialized = false;
+      final f = File(p.join(App.dataPath, 'bangumi.db'));
+      if (await f.exists()) await f.delete();
+      await _openFreshDb();
+      DebugLog.info('allEpInfoFind', '已重建整个 bangumi 数据库');
+    } catch (e, s) {
+      Log.error('allEpInfoFind', '整库重建失败: $e\n$s');
+      // 确保连接仍可恢复，避免后续查询全部失效
+      if (!isInitialized) {
+        try {
+          await _openFreshDb();
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// 关闭旧连接并打开新连接（保留数据文件）
+  Future<void> _reopenDb() async {
+    await _db.close();
+    isInitialized = false;
+    await _openFreshDb();
+  }
+
+  Future<void> _openFreshDb() async {
+    _db = _BangumiDb();
+    isInitialized = true;
+    notifyListeners();
   }
 }
 

@@ -12,6 +12,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/utils/ext.dart';
@@ -525,7 +526,13 @@ class _StatsDb extends _$_StatsDb {
 
 LazyDatabase _openConn() => LazyDatabase(() async {
   final file = File(p.join(App.dataPath, 'stats.db'));
-  return NativeDatabase.createInBackground(file);
+  return NativeDatabase.createInBackground(
+  file,
+  setup: (db) {
+    db.execute('PRAGMA journal_mode = WAL;');
+    db.execute('PRAGMA synchronous = NORMAL;');
+  },
+);
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -971,14 +978,17 @@ class StatsManager with ChangeNotifier {
     return latestComment;
   }
 
-  Future<Map<int, List<int>>> getRatingsWithBangumiIds() async {
+  /// 返回评分分组的 stats 记录（含 title/cover，bangumi 数据缺失时可兜底展示）
+  Future<Map<int, List<StatsDataImpl>>> getRatingsWithBangumiIds() async {
     final allStats = await getStatsAll();
     final int bangumiKey = 'bangumi'.hashCode;
     final Map<int?, List<StatsDataImpl>> groups = {};
     for (final s in allStats) {
       groups.putIfAbsent(s.bangumiId, () => []).add(s);
     }
-    final Map<int, Set<int>> resultSet = {for (var i = 1; i <= 10; i++) i: {}};
+    final Map<int, List<StatsDataImpl>> resultSet = {
+      for (var i = 1; i <= 10; i++) i: <StatsDataImpl>[],
+    };
     for (final entry in groups.entries) {
       final bangumiId = entry.key;
       if (bangumiId == null) continue;
@@ -996,10 +1006,10 @@ class StatsManager with ChangeNotifier {
         }
       }
       if (rating != null && rating >= 1 && rating <= 10) {
-        resultSet[rating]!.add(bangumiId);
+        resultSet[rating]!.add(bangumiStat ?? statsList.first);
       }
     }
-    return resultSet.map((k, v) => MapEntry(k, v.toList()));
+    return resultSet;
   }
 
   int? _getLatestRatingFromStats(StatsDataImpl stats) {
@@ -1323,5 +1333,30 @@ class StatsAllNotifier extends StreamNotifier<List<StatsDataImpl>> {
     final manager = StatsManager();
     await manager.init();
     yield* manager.watchAll();
+  }
+}
+
+
+/// 统计记录 → 占位 BangumiItem：bangumi.db 数据缺失（重建/清空）时，
+/// 用统计里自带的 title/cover 兜底展示，避免统计页条目消失
+extension StatsDataImplExt on StatsDataImpl {
+  BangumiItem toBangumiItem() {
+    final title = this.title ?? '';
+    final hasCover = cover != null && cover!.isNotEmpty;
+    return BangumiItem(
+      id: bangumiId ?? int.tryParse(id) ?? 0,
+      type: 2,
+      name: title,
+      nameCn: title,
+      summary: '',
+      airDate: '',
+      airWeekday: 0,
+      rank: 0,
+      total: 0,
+      totalEpisodes: 0,
+      score: 0,
+      images: hasCover ? {'large': cover!} : const {},
+      tags: const [],
+    );
   }
 }

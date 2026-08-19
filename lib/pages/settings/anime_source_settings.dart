@@ -124,6 +124,80 @@ class _BodyState extends State<_Body> {
 
   bool _isDragging = false;
 
+  // ── 番源筛选 / 检索 / 排序（持久化） ─────────────────────────
+  static const _filterKey = 'anime_source_filter';
+
+  final _searchCtrl = TextEditingController();
+
+  /// 是否番组：all / yes / no
+  String _isBangumiFilter = 'all';
+
+  /// 启用状态：all / enabled / disabled
+  String _enabledFilter = 'all';
+
+  /// 排序：default / name / id
+  String _sort = 'default';
+
+  void _loadFilter() {
+    final saved = appdata.implicitData[_filterKey];
+    if (saved is Map) {
+      _searchCtrl.text = saved['search']?.toString() ?? '';
+      _isBangumiFilter = saved['isBangumi']?.toString() ?? 'all';
+      _enabledFilter = saved['enabled']?.toString() ?? 'all';
+      _sort = saved['sort']?.toString() ?? 'default';
+    }
+  }
+
+  void _saveFilter() {
+    appdata.implicitData[_filterKey] = {
+      'search': _searchCtrl.text,
+      'isBangumi': _isBangumiFilter,
+      'enabled': _enabledFilter,
+      'sort': _sort,
+    };
+    appdata.writeImplicitData();
+  }
+
+  void _setFilter(VoidCallback update) {
+    update();
+    setState(() {});
+    _saveFilter();
+  }
+
+  /// 按筛选条件过滤 + 排序
+  List<AnimeSource> _filteredSources() {
+    var list = AnimeSource.allSources();
+    final q = _searchCtrl.text.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list
+          .where(
+            (s) =>
+                s.name.toLowerCase().contains(q) ||
+                s.key.toLowerCase().contains(q),
+          )
+          .toList();
+    }
+    if (_isBangumiFilter != 'all') {
+      final wantBangumi = _isBangumiFilter == 'yes';
+      list = list.where((s) => s.isBangumi == wantBangumi).toList();
+    }
+    if (_enabledFilter != 'all') {
+      final wantEnabled = _enabledFilter == 'enabled';
+      list = list
+          .where(
+            (s) => AnimeSourceManager().isEnabled(s.key) == wantEnabled,
+          )
+          .toList();
+    }
+    switch (_sort) {
+      case 'name':
+        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      case 'id':
+        list.sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+    }
+    return list;
+  }
+
   void updateUI() {
     setState(() {});
   }
@@ -131,17 +205,21 @@ class _BodyState extends State<_Body> {
   @override
   void initState() {
     super.initState();
+    _searchCtrl.addListener(() => setState(() {}));
+    _loadFilter();
     AnimeSourceManager().addListener(updateUI);
   }
 
   @override
   void dispose() {
-    super.dispose();
+    _searchCtrl.dispose();
     AnimeSourceManager().removeListener(updateUI);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final sources = _filteredSources();
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(
@@ -149,19 +227,130 @@ class _BodyState extends State<_Body> {
           style: AppbarStyle.shadow,
           actions: const [_CheckUpdatesAction()],
         ),
+        SliverToBoxAdapter(child: _buildFilterBar(context)),
         buildCard(context),
-        for (var source in AnimeSource.allSources())
-          _SliverAnimeSource(
-            key: ValueKey(source.key),
-            source: source,
-            edit: edit,
-            update: update,
-            delete: delete,
+        // SliverList 惰性构建：只构建视口内的源卡片，
+        // 避免进入页面时一次性构建所有源导致首帧卡顿、跳转动画消失
+        if (sources.isEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Text(
+                  t.noMatchingSource,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) => _SliverAnimeSource(
+                key: ValueKey(sources[i].key),
+                source: sources[i],
+                edit: edit,
+                update: update,
+                delete: delete,
+              ),
+              childCount: sources.length,
+            ),
           ),
         SliverPadding(
           padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
         ),
       ],
+    );
+  }
+
+  /// 筛选栏：搜索 + 番组筛选 + 启用筛选 + 排序
+  Widget _buildFilterBar(BuildContext context) {
+    final chips = <Widget>[
+      for (final (key, label) in [
+        ('all', t.filterAll),
+        ('yes', t.bangumi),
+        ('no', t.filterNonBangumi),
+      ])
+        ChoiceChip(
+          label: Text(label),
+          selected: _isBangumiFilter == key,
+          onSelected: (_) => _setFilter(() => _isBangumiFilter = key),
+        ),
+      for (final (key, label) in [
+        ('all', t.filterAll),
+        ('enabled', t.enabled),
+        ('disabled', t.disabled),
+      ])
+        ChoiceChip(
+          label: Text(label),
+          selected: _enabledFilter == key,
+          onSelected: (_) => _setFilter(() => _enabledFilter = key),
+        ),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _searchCtrl,
+            decoration: InputDecoration(
+              hintText: t.search,
+              prefixIcon: const Icon(Icons.search),
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: Wrap(spacing: 6, runSpacing: 4, children: chips)),
+              PopupMenuButton<String>(
+                tooltip: t.sort,
+                initialValue: _sort,
+                onSelected: (v) => _setFilter(() => _sort = v),
+                itemBuilder: (_) => [
+                  for (final (key, label) in [
+                    ('default', t.sortByDefault),
+                    ('name', t.sortByName),
+                    ('id', t.sortById),
+                  ])
+                    PopupMenuItem(
+                      value: key,
+                      child: Text(
+                        label,
+                        style: _sort == key
+                            ? TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                              )
+                            : null,
+                      ),
+                    ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.sort, size: 18),
+                      const SizedBox(width: 4),
+                      Text(t.sort, style: const TextStyle(fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -259,8 +448,8 @@ class _BodyState extends State<_Body> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _IconTileButton(
-                        icon: Icons.extension_outlined,
+                      IconTileButton(
+                        icon: const Icon(Icons.extension_outlined),
                         label: t.builderEntry,
                         onTap: () {
                           showPopUpWidget(
@@ -269,8 +458,8 @@ class _BodyState extends State<_Body> {
                           );
                         },
                       ),
-                      _IconTileButton(
-                        icon: Icons.list_alt_outlined,
+                      IconTileButton(
+                        icon: const Icon(Icons.list_alt_outlined),
                         label: t.animeSourceList,
                         onTap: () {
                           showPopUpWidget(
@@ -279,20 +468,20 @@ class _BodyState extends State<_Body> {
                           );
                         },
                       ),
-                      _IconTileButton(
-                        icon: Icons.network_check_outlined,
+                      IconTileButton(
+                        icon: const Icon(Icons.network_check_outlined),
                         label: t.pingTest,
                         onTap: () {
                           showPopUpWidget(App.rootContext, _PingTestPage());
                         },
                       ),
-                      _IconTileButton(
-                        icon: Icons.file_open_outlined,
+                      IconTileButton(
+                        icon: const Icon(Icons.file_open_outlined),
                         label: t.useAConfigFile,
                         onTap: _selectFile,
                       ),
-                      _IconTileButton(
-                        icon: Icons.help_outline,
+                      IconTileButton(
+                        icon: const Icon(Icons.help_outline),
                         label: t.help,
                         onTap: help,
                       ),
@@ -843,7 +1032,7 @@ class _CheckUpdatesActionState extends State<_CheckUpdatesAction> {
       icon: isLoading
           ? const SizedBox.square(
               dimension: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: PolygonRefreshIndicator(),
             )
           : const Icon(Icons.update),
     );
@@ -872,6 +1061,31 @@ class _SliverAnimeSource extends StatefulWidget {
 class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
   AnimeSource get source => widget.source;
 
+  /// 设置该源独立的下载标题格式模板
+  Future<void> _setDownloadFormat(AnimeSource source) async {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData['downloadTitleFormats'] as Map? ?? {},
+    );
+    final current = map[source.key] as String? ?? '';
+    await showInputDialog(
+      context: context,
+      title: t.downloadTitleFormat,
+      hintText: t.downloadFormatHint,
+      initialValue: current,
+      onConfirm: (value) {
+        final v = value.toString().trim();
+        if (v.isEmpty) {
+          map.remove(source.key);
+        } else {
+          map[source.key] = v;
+        }
+        appdata.implicitData['downloadTitleFormats'] = map;
+        appdata.writeImplicitData();
+        return null;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var newVersion = AnimeSourceManager().availableUpdates[source.key];
@@ -880,8 +1094,11 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
     final enabled = AnimeSourceManager().isEnabled(source.key);
     final logged = source.isLogged;
 
-    return _BuildSectionPadding(
-      _SettingCard(
+    // 返回 box（非 sliver）：该卡片由 SliverList 惰性构建
+    return Padding(
+      // 垂直间距尽量小，减少番源卡片之间的空隙
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: _SettingCard(
         children: [
           // 标题行：源名 + 版本副标题 + 开关
           ListTile(
@@ -920,19 +1137,22 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
             ),
           ),
 
+          // 版本行与操作按钮之间的分隔线
+          const Divider(height: 1, indent: 16, endIndent: 16),
+
           // 底部按钮（Wrap 流式排列，按需显示）
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 if (source.account != null)
-                  _IconTileButton(
-                    icon: logged
-                        ? Icons.person_outline
-                        : Icons.person_add_alt_outlined,
-                    label: logged ? t.account : t.logIn,
+                IconTileButton(
+                  icon: logged
+                      ? const Icon(Icons.person_outline)
+                      : const Icon(Icons.person_add_alt_outlined),
+                  label: logged ? t.account : t.logIn,
                     onTap: () {
                       showPopUpWidget(
                         context,
@@ -944,8 +1164,8 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                     },
                   ),
                 if (source.settings != null && source.settings!.isNotEmpty)
-                  _IconTileButton(
-                    icon: Icons.settings_outlined,
+                  IconTileButton(
+                    icon: const Icon(Icons.settings_outlined),
                     label: t.settings,
                     onTap: () {
                       showPopUpWidget(
@@ -957,18 +1177,23 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                       );
                     },
                   ),
-                _IconTileButton(
-                  icon: Icons.edit_note,
+                IconTileButton(
+                  icon: const Icon(Icons.edit_note),
                   label: t.edit,
                   onTap: () => widget.edit(source),
                 ),
-                _IconTileButton(
-                  icon: Icons.update,
+                IconTileButton(
+                  icon: const Icon(Icons.title),
+                  label: t.downloadTitleFormat,
+                  onTap: () => _setDownloadFormat(source),
+                ),
+                IconTileButton(
+                  icon: const Icon(Icons.update),
                   label: t.update,
                   onTap: () => widget.update(source),
                 ),
-                _IconTileButton(
-                  icon: Icons.delete_outline,
+                IconTileButton(
+                  icon: const Icon(Icons.delete_outline),
                   label: t.delete,
                   color: context.colorScheme.error,
                   onTap: () => widget.delete(source),
@@ -1324,7 +1549,7 @@ class _PingTestPageState extends State<_PingTestPage> {
   void initState() {
     super.initState();
     _loadDefaultEndpoints();
-    final saved = appdata.settings['pingCustomEndpoints'];
+    final saved = appdata.implicitData['pingCustomEndpoints'];
     if (saved is List && saved.isNotEmpty) {
       customControllers = saved
           .map((e) => TextEditingController(text: e.toString()))
@@ -1339,11 +1564,11 @@ class _PingTestPageState extends State<_PingTestPage> {
     _continuousTimer?.cancel();
     _inputController.dispose();
     if (changed) {
-      appdata.settings['pingCustomEndpoints'] = customControllers
+      appdata.implicitData['pingCustomEndpoints'] = customControllers
           .map((c) => c.text)
           .where((t) => t.isNotEmpty)
           .toList();
-      appdata.saveData();
+      appdata.writeImplicitData();
     }
     for (final c in customControllers) {
       c.dispose();
@@ -1666,7 +1891,7 @@ class _PingListTile extends StatelessWidget {
           statusWidget = const SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: PolygonRefreshIndicator(),
           );
           break;
         case _PingStatus.success:
@@ -1731,59 +1956,6 @@ class _PingListTile extends StatelessWidget {
         ],
       ),
       onTap: enabled && onTap != null ? onTap : null,
-    );
-  }
-}
-
-// ── 图标在上、文字在下的按钮 ─────────────────────────────────────────────
-
-class _IconTileButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final Color? color;
-
-  const _IconTileButton({
-    required this.icon,
-    required this.label,
-    this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final enabled = onTap != null;
-    final effectiveColor =
-        color ?? (enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.3));
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 56, maxWidth: 96),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 22, color: effectiveColor),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: enabled
-                      ? (color ?? cs.onSurface.withValues(alpha: 0.75))
-                      : cs.onSurface.withValues(alpha: 0.3),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1963,7 +2135,7 @@ class _AnimeSourceDetailPageState extends State<_AnimeSourceDetailPage> {
           trailing: loading
               ? const SizedBox.square(
                   dimension: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: PolygonRefreshIndicator(),
                 )
               : const Icon(Icons.refresh),
         );

@@ -85,7 +85,7 @@ class ListLoadingIndicator extends StatelessWidget {
     return const SizedBox(
       width: double.infinity,
       height: 80,
-      child: Center(child: FiveDotLoadingAnimation()),
+      child: Center(child: PolygonRefreshIndicator()),
     );
   }
 }

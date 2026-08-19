@@ -1,3 +1,4 @@
+import 'package:kostori/components/animated.dart';
 import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
@@ -245,7 +246,7 @@ class _QrScannerPageState extends State<QrScannerPage>
                     ),
                   ),
                 if (_isAnalyzing) ...[
-                  const CircularProgressIndicator(color: Colors.white),
+                  const PolygonRefreshIndicator(),
                   const SizedBox(height: 8),
                   Text(
                     t.qrRecognizing,
@@ -410,3 +411,4 @@ class _CircleBtn extends StatelessWidget {
     );
   }
 }
+

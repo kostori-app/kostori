@@ -31,7 +31,6 @@ import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 final GlobalKey repaintKey = GlobalKey();
 
@@ -1889,32 +1888,11 @@ class _ShareQrCodeState extends State<ShareQrCode> {
                         width: 0.8,
                       ),
                     ),
-                    child: SizedBox(
-                      width: 96,
-                      height: 96,
-                      child: PrettyQrView.data(
-                        data: _content,
-                        errorCorrectLevel: QrErrorCorrectLevel.H,
-
-                        decoration: PrettyQrDecoration(
-                          background: qrBg,
-                          shape: const PrettyQrSmoothSymbol(
-                            color: PrettyQrBrush.gradient(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Color(0xFF80D8DA), Color(0xFFF1919B)],
-                              ),
-                            ),
-                            roundFactor: 1.0,
-                          ),
-                          image: const PrettyQrDecorationImage(
-                            image: AssetImage('images/app_icon.png'),
-                            scale: 0.2,
-                            position: PrettyQrDecorationImagePosition.embedded,
-                          ),
-                        ),
-                      ),
+                    child: KostoriQrCode(
+                      content: _content,
+                      size: 96,
+                      background: qrBg,
+                      logoScale: 0.2,
                     ),
                   ),
                   const SizedBox(width: 20),

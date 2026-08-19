@@ -205,92 +205,188 @@ class _PlayerItemState extends State<PlayerItem>
     );
   }
 
-  MenuButton _buildMenuItems() {
-    return MenuButton(
-      message: t.more,
-      entries: [
-        if (App.isAndroid)
-          MenuEntry(
-            text: (appdata.settings['audioOutType'] ?? true)
-                ? t.audioOptionLowLatency
-                : t.audioOptionCompatibility,
-            onClick: () async {
-              try {
-                await playerController.changeAudioOutType();
-                App.rootContext.showMessage(message: t.switchSuccessful);
-              } catch (e) {
-                App.rootContext.showMessage(message: t.switchFailed);
-              }
-            },
-          ),
-        if (App.isDesktop) ...[
-          MenuEntry(
-            icon: Icons.speaker_outlined,
-            text: t.audioOutputDevice,
-            onClick: () => _showAudioDevicePicker(),
-          ),
-          MenuEntry(
-            icon: Icons.graphic_eq_outlined,
-            text: playerController.volumeBoost
-                ? t.volumeBoostEnabled
-                : t.volumeBoostDisabled,
-            onClick: () async {
-              await playerController.toggleVolumeBoost();
-              App.rootContext.showMessage(message: t.switchSuccessful);
-            },
-          ),
-        ],
-        if (!playerController.isFullScreen && App.isAndroid)
-          MenuEntry(
-            icon: Icons.picture_in_picture_alt,
-            text: t.watcherMiniWindow,
-            onClick: () async {
-              final floating = Floating();
-              if (await floating.isPipAvailable) {
-                final status = await floating.pipStatus;
-                if (status == PiPStatus.disabled ||
-                    status == PiPStatus.automatic) {
-                  playerController.enterPiPMode();
-                } else if (status == PiPStatus.enabled) {
-                  playerController.exitPiPMode();
-                }
-              }
-            },
-          ),
+  /// 更多面板里"点击型"操作项（小窗 / 投屏 / 日志 / 播放器详情 / 音频设备）
+  List<MenuEntry> _actionEntries() {
+    return [
+      if (App.isDesktop)
         MenuEntry(
-          text: !playerController.glimmerEffect
-              ? t.glimmerModeDisabled
-              : t.glimmerModeEnabled,
-          onClick: () {
-            glimmerEffectMode();
+          icon: Icons.speaker_outlined,
+          text: t.audioOutputDevice,
+          onClick: () => _showAudioDevicePicker(),
+        ),
+      if (!playerController.isFullScreen && App.isAndroid)
+        MenuEntry(
+          icon: Icons.picture_in_picture_alt,
+          text: t.watcherMiniWindow,
+          onClick: () async {
+            final floating = Floating();
+            if (await floating.isPipAvailable) {
+              final status = await floating.pipStatus;
+              if (status == PiPStatus.disabled ||
+                  status == PiPStatus.automatic) {
+                playerController.enterPiPMode();
+              } else if (status == PiPStatus.enabled) {
+                playerController.exitPiPMode();
+              }
+            }
           },
         ),
+      MenuEntry(
+        icon: Icons.cast_outlined,
+        text: t.remoteCast,
+        onClick: () {
+          bool needRestart = playerController.playing;
+          playerController.pause();
+          RemotePlay().castVideo(playerController.videoUrl).whenComplete(() {
+            if (needRestart) {
+              playerController.play();
+            }
+          });
+        },
+      ),
+      if (!playerController.isFullScreen)
         MenuEntry(
-          text: t.remoteCast,
+          icon: Icons.article_outlined,
+          text: t.log,
           onClick: () {
-            bool needRestart = playerController.playing;
-            playerController.pause();
-            RemotePlay().castVideo(playerController.videoUrl).whenComplete(() {
-              if (needRestart) {
-                playerController.play();
-              }
-            });
+            context.to(() => const LogsPage());
           },
         ),
-        if (!playerController.isFullScreen)
-          MenuEntry(
-            text: t.log,
-            onClick: () {
-              context.to(() => const LogsPage());
-            },
-          ),
-        MenuEntry(
-          text: t.playerDetails,
-          onClick: () {
-            showVideoInfo();
-          },
+      MenuEntry(
+        icon: Icons.info_outline,
+        text: t.playerDetails,
+        onClick: () {
+          showVideoInfo();
+        },
+      ),
+    ];
+  }
+
+  /// 播放器面板右上角"更多"按钮：点击弹出底部 sheet
+  Widget _buildMenuItems() {
+    return IconButton(
+      tooltip: t.more,
+      icon: const Icon(Icons.more_vert),
+      color: Colors.white,
+      onPressed: _showMoreSheet,
+    );
+  }
+
+  /// 更多选项底部 sheet：上方是"图标在上文字在下"的操作项，下方是卡片式开关
+  void _showMoreSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      builder: (_) => Sheet(
+        title: t.more,
+        icon: Icons.more_horiz,
+        initialSize: 0.6,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          children: [
+            // 操作项：图标在上文字在下，放置最上方
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  for (final e in _actionEntries())
+                    IconTileButton(
+                      icon: Icon(e.icon),
+                      label: e.text,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        e.onClick();
+                      },
+                    ),
+                ],
+              ),
+            ),
+            // 开关类：卡片风格（图标 + 标题 + 开关）
+            if (App.isAndroid)
+              _MoreSwitchCard(
+                icon: Icons.speaker_outlined,
+                title: t.audioOption, // 低延迟音频
+                value: appdata.settings['audioOutType'] ?? true,
+                onChanged: (v) async {
+                  appdata.settings['audioOutType'] = v;
+                  appdata.saveData();
+                  await playerController.changeAudioOutType();
+                  App.rootContext.showMessage(message: t.switchSuccessful);
+                },
+              ),
+            if (App.isDesktop)
+              _MoreSwitchCard(
+                icon: Icons.graphic_eq_outlined,
+                title: t.volumeBoost,
+                value: playerController.volumeBoost,
+                onChanged: (v) async {
+                  await playerController.toggleVolumeBoost();
+                  App.rootContext.showMessage(message: t.switchSuccessful);
+                },
+              ),
+            _MoreSwitchCard(
+              icon: Icons.auto_awesome_outlined,
+              title: t.glimmerMode,
+              value: playerController.glimmerEffect,
+              onChanged: (v) => glimmerEffectMode(),
+            ),
+            // 播放倍率（与全屏视频信息一致，Observer 驱动实时刷新）
+            _MoreSettingCard(
+              icon: Icons.speed_outlined,
+              title: t.playbackSpeed,
+              child: Observer(
+                builder: (context) => Column(
+                  children: [
+                    Slider(
+                      value: playerController.playbackSpeed,
+                      min: 0.5,
+                      max: 4.0,
+                      divisions: 7,
+                      onChanged: (v) => playerController.setPlaybackSpeed(v),
+                    ),
+                    Text(
+                      '${playerController.playbackSpeed.toStringAsFixed(2)}x',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // 超分辨率（与全屏视频信息一致）
+            _MoreSettingCard(
+              icon: Icons.high_quality_outlined,
+              title: t.superResolution,
+              child: Observer(
+                builder: (context) => SegmentedButton<int>(
+                  segments: [
+                    ButtonSegment<int>(
+                      value: 1,
+                      label: Text(t.superResolutionOff),
+                    ),
+                    ButtonSegment<int>(
+                      value: 2,
+                      label: Text(t.superResolutionEfficiency),
+                    ),
+                    ButtonSegment<int>(
+                      value: 3,
+                      label: Text(t.superResolutionQuality),
+                    ),
+                  ],
+                  selected: {playerController.superResolutionType},
+                  onSelectionChanged: (Set<int> selected) {
+                    if (selected.isNotEmpty) {
+                      playerController.setShader(selected.first);
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -431,7 +527,7 @@ class _PlayerItemState extends State<PlayerItem>
                 child: SizedBox(
                   height: playerController.isFullScreen
                       ? (MediaQuery.of(context).size.height)
-                      : (MediaQuery.of(context).size.width * 9.0 / 16.0),
+                      : double.infinity,
                   width: MediaQuery.of(context).size.width,
                   child: Stack(
                     alignment: Alignment.center,
@@ -874,6 +970,120 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 更多面板里的设置卡片：图标 + 标题 + 自定义内容（卡片风格）
+class _MoreSettingCard extends StatelessWidget {
+  const _MoreSettingCard({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  final IconData icon;
+
+  final String title;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 20, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 更多面板里的开关卡片：图标 + 标题 + 开关（卡片风格）
+class _MoreSwitchCard extends StatefulWidget {
+  const _MoreSwitchCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+
+  final String title;
+
+  final bool value;
+
+  final ValueChanged<bool> onChanged;
+
+  @override
+  State<_MoreSwitchCard> createState() => _MoreSwitchCardState();
+}
+
+class _MoreSwitchCardState extends State<_MoreSwitchCard> {
+  late bool _value = widget.value;
+
+  @override
+  void didUpdateWidget(covariant _MoreSwitchCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _value = widget.value;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              Icon(widget.icon, size: 20, color: cs.onSurfaceVariant),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+              CustomSwitch(
+                value: _value,
+                onChanged: (v) {
+                  setState(() => _value = v);
+                  widget.onChanged(v);
+                },
+              ),
+            ],
           ),
         ),
       ),

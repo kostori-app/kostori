@@ -1,14 +1,14 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:kostori/components/components.dart';
 import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/volume_slider_popup.dart';
-import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 
@@ -36,7 +36,7 @@ class PlayerItemPortraitPanel extends StatefulWidget {
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
   final void Function() showVideoInfo;
-  final MenuButton buildMenuItems;
+  final Widget buildMenuItems;
 
   @override
   State<PlayerItemPortraitPanel> createState() =>
@@ -123,8 +123,8 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                   ? Expanded(
                                       child: LayoutBuilder(
                                         builder: (context, constraints) {
-                                          final text =
-                                              '${WatcherState.currentState!.anime.title} ${playerController.currentSetName}';
+                final text =
+                    '${providerContainer.read(watcherControllerProvider).anime!.title} ${playerController.currentSetName}';
                                           const style = TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,

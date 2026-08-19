@@ -301,6 +301,9 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                     sliver: SliverGridAnimes(
                       animes: groupData.items,
                       selections: selectedAnimes,
+                      // SliverAnimatedSwitcher 内与 SliverMasonryGrid 布局不兼容，
+                      // 瀑布流模式下回退普通网格
+                      disableMasonry: true,
                       onLongPressed: null,
                       onTap: multiSelectMode
                           ? (c, heroID) {

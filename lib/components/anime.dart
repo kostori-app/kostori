@@ -34,6 +34,8 @@ class AnimeTile extends ConsumerWidget {
     this.onTap,
     this.onLongPressed,
     this.heroID,
+    this.heroTag,
+    this.masonryFactor,
   });
 
   final Anime anime;
@@ -46,6 +48,14 @@ class AnimeTile extends ConsumerWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPressed;
   final int? heroID;
+
+  /// 瀑布流模式：非 null 时封面高度 = 卡片宽 × 系数（错落高度），
+  /// null 时用网格模式的等高布局
+  final double? masonryFactor;
+
+  /// 唯一 Hero tag（跨列表避免 "multiple heroes share the same tag"）；
+  /// 为空时回退 `cover$heroID`
+  final String? heroTag;
 
   AnimeType get _animeType => AnimeType(anime.sourceKey.hashCode);
 
@@ -62,6 +72,7 @@ class AnimeTile extends ConsumerWidget {
           cover: anime.cover,
           title: anime.title,
           heroID: heroID,
+          heroTag: heroTag,
         ),
       );
     } else if (anime.viewMore != null && anime.viewMore?.attributes != null) {
@@ -75,6 +86,7 @@ class AnimeTile extends ConsumerWidget {
           cover: anime.cover,
           title: anime.title,
           heroID: heroID,
+          heroTag: heroTag,
         ),
       );
     }
@@ -99,19 +111,15 @@ class AnimeTile extends ConsumerWidget {
   }
 
   // ignore: strict_top_level_inference
-  void _onLongPressed(BuildContext context, WidgetRef ref) {
+  void _onLongPressed(BuildContext context, WidgetRef ref, Offset position) {
     if (onLongPressed != null) {
       onLongPressed!();
       return;
     }
-    _onLongPress(context, ref);
+    _onLongPress(position, context, ref);
   }
 
-  void _onLongPress(BuildContext context, WidgetRef ref) {
-    // 从上下文获取位置用于上下文菜单
-    final renderBox = context.findRenderObject() as RenderBox?;
-    final Offset location =
-        renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
+  void _onLongPress(Offset location, BuildContext context, WidgetRef ref) {
     _showMenu(location, context, ref);
   }
 
@@ -353,19 +361,26 @@ class AnimeTile extends ConsumerWidget {
           )
         : null;
 
-    Widget child = type == 'detailed'
-        ? _buildDetailedMode(context, ref)
-        : _buildBriefMode(context, ref);
+    // 三种独立显示模式：详细 / 瀑布流（错落封面）/ 简洁
+    Widget child = switch (type) {
+      'detailed' => _buildDetailedMode(context, ref),
+      // 瀑布流需要封面高度系数（由瀑布流网格传入）；无系数时回退简洁布局
+      'masonry' => masonryFactor != null
+          ? _buildMasonryMode(context, ref)
+          : _buildBriefMode(context, ref),
+      _ => _buildBriefMode(context, ref),
+    };
 
     if (!isFavorite && history == null) {
       return child;
     }
 
+    // 卡片作为非 Positioned 子：Stack 尺寸由卡片决定。
+    // 规整网格里有界约束下卡片填满；瀑布流（主轴无界）下 Stack 尺寸 = 卡片内容，
+    // 避免 "A Stack requires bounded constraints"
     return Stack(
       children: [
-        Positioned.fill(
-          child: Material(color: Colors.transparent, child: child),
-        ),
+        Material(color: Colors.transparent, child: child),
         Positioned(
           left: type == 'detailed' ? 16 : 6,
           top: 6,
@@ -483,14 +498,16 @@ class AnimeTile extends ConsumerWidget {
         );
 
         if (heroID != null) {
-          image = Hero(tag: "cover$heroID", child: image);
+          image = Hero(tag: heroTag ?? "cover$heroID", child: image);
         }
 
+        Offset pressPosition = Offset.zero;
         return InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () => _onTap(ref),
+          onTapDown: (detail) => pressPosition = detail.globalPosition,
           onLongPress: enableLongPressed
-              ? () => _onLongPressed(context, ref)
+              ? () => _onLongPressed(context, ref, pressPosition)
               : null,
           onSecondaryTapDown: (detail) => _onSecondaryTap(detail, context, ref),
           child: Padding(
@@ -523,6 +540,102 @@ class AnimeTile extends ConsumerWidget {
     );
   }
 
+  /// brief 模式：封面右下角的描述覆盖层（描述优先，副标题兜底，逐行徽章展示）。
+  /// description 支持 String（`|`/换行）或 List（可携带每行颜色）
+  Widget _buildOverlayDescription(BoxConstraints constraints) {
+    final lines = _overlayLines();
+    if (lines == null) return const SizedBox();
+
+    // 按卡片宽度分级：小卡片更紧凑
+    final compact = constraints.maxWidth < 80;
+    final small = constraints.maxWidth < 150;
+    final fontSize = compact ? 8.0 : (small ? 10.0 : 12.0);
+    final padH = compact ? 3.0 : (small ? 4.0 : 5.0);
+    final padV = compact ? 1.0 : 2.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (final (text, color) in lines)
+          Container(
+            margin: const EdgeInsets.fromLTRB(2, 0, 2, 2),
+            padding: EdgeInsets.fromLTRB(padH, padV, padH, padV),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.black.toOpacity(0.5),
+            ),
+            constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: fontSize,
+                color: color ?? Colors.white,
+              ),
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// 取覆盖层的行列表 `(文本, 颜色?)`：
+  /// 有结构化 descriptionLines 时用它们（支持每行颜色），
+  /// 否则从 description 字符串（`|`/换行分隔）解析，副标题兜底
+  List<(String, Color?)>? _overlayLines() {
+    final structured = anime.descriptionLines;
+    if (structured != null && structured.isNotEmpty) {
+      return [
+        for (final l in structured)
+          (l.text, _parseColor(l.color)),
+      ];
+    }
+    final subtitle = anime.subtitle?.replaceAll('\n', '').trim();
+    final text = anime.description.isNotEmpty
+        ? anime.description.split('|').join('\n')
+        : (subtitle?.isNotEmpty == true ? subtitle : null);
+    if (text == null) return null;
+    return [
+      for (final line in text.split('\n'))
+        if (line.trim().isNotEmpty) (line, null),
+    ];
+  }
+
+  /// 解析颜色：`#RGB` / `#RRGGBB` / `#AARRGGBB` 或常见颜色名
+  Color? _parseColor(String? colorStr) {
+    if (colorStr == null || colorStr.isEmpty) return null;
+    final s = colorStr.trim();
+    if (s.startsWith('#')) {
+      try {
+        var hex = s.substring(1);
+        if (hex.length == 3) {
+          hex = hex.split('').map((c) => '$c$c').join();
+        }
+        if (hex.length == 6) return Color(int.parse('FF$hex', radix: 16));
+        if (hex.length == 8) return Color(int.parse(hex, radix: 16));
+      } catch (_) {
+        return null;
+      }
+    }
+    return switch (s.toLowerCase()) {
+      'white' => Colors.white,
+      'black' => Colors.black,
+      'red' => Colors.redAccent,
+      'yellow' => Colors.yellow,
+      'green' => Colors.greenAccent,
+      'orange' => Colors.orangeAccent,
+      'cyan' => Colors.cyanAccent,
+      'blue' => Colors.blueAccent,
+      'purple' => Colors.purpleAccent,
+      'pink' => Colors.pinkAccent,
+      'grey' || 'gray' => Colors.grey,
+      _ => null,
+    };
+  }
+
   Widget _buildBriefMode(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
@@ -539,7 +652,7 @@ class AnimeTile extends ConsumerWidget {
           );
 
           if (heroID != null) {
-            image = Hero(tag: "cover$heroID", child: image);
+            image = Hero(tag: heroTag ?? "cover$heroID", child: image);
           }
 
           final title = anime.title.replaceAll('\n', '');
@@ -553,11 +666,13 @@ class AnimeTile extends ConsumerWidget {
 
           final shouldScroll = textPainter.width >= constraints.maxWidth - 20;
 
+          Offset pressPosition = Offset.zero;
           return InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => _onTap(ref),
+            onTapDown: (detail) => pressPosition = detail.globalPosition,
             onLongPress: enableLongPressed
-                ? () => _onLongPressed(context, ref)
+                ? () => _onLongPressed(context, ref, pressPosition)
                 : null,
             onSecondaryTapDown: (detail) =>
                 _onSecondaryTap(detail, context, ref),
@@ -569,60 +684,7 @@ class AnimeTile extends ConsumerWidget {
                       Positioned.fill(child: image),
                       Align(
                         alignment: Alignment.bottomRight,
-                        child: (() {
-                          final subtitle = anime.subtitle
-                              ?.replaceAll('\n', '')
-                              .trim();
-                          final text = anime.description.isNotEmpty
-                              ? anime.description.split('|').join('\n')
-                              : (subtitle?.isNotEmpty == true
-                                    ? subtitle
-                                    : null);
-                          final fortSize = constraints.maxWidth < 80
-                              ? 8.0
-                              : constraints.maxWidth < 150
-                              ? 10.0
-                              : 12.0;
-
-                          if (text == null) return const SizedBox();
-
-                          var children = <Widget>[];
-                          for (var line in text.split('\n')) {
-                            children.add(
-                              Container(
-                                margin: const EdgeInsets.fromLTRB(2, 0, 2, 2),
-                                padding: constraints.maxWidth < 80
-                                    ? const EdgeInsets.fromLTRB(3, 1, 3, 1)
-                                    : constraints.maxWidth < 150
-                                    ? const EdgeInsets.fromLTRB(4, 2, 4, 2)
-                                    : const EdgeInsets.fromLTRB(5, 2, 5, 2),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.black.toOpacity(0.5),
-                                ),
-                                constraints: BoxConstraints(
-                                  maxWidth: constraints.maxWidth,
-                                ),
-                                child: Text(
-                                  line,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: fortSize,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            );
-                          }
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: children,
-                          );
-                        })(),
+                        child: _buildOverlayDescription(constraints),
                       ),
                     ],
                   ),
@@ -651,6 +713,71 @@ class AnimeTile extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                     ),
+                  ),
+                ),
+              ],
+            ).paddingHorizontal(2).paddingVertical(2),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 瀑布流模式（独立于 brief/detailed）：封面高度 = 卡片宽 × 系数，错落排列
+  Widget _buildMasonryMode(BuildContext context, WidgetRef ref) {
+    final factor = masonryFactor!;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          Widget image = Material(
+            color: context.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(12),
+            elevation: 2,
+            shadowColor: Colors.black.toOpacity(0.2),
+            clipBehavior: Clip.antiAlias,
+            child: buildImage(context),
+          );
+
+          if (heroID != null) {
+            image = Hero(tag: heroTag ?? "cover$heroID", child: image);
+          }
+
+          final title = anime.title.replaceAll('\n', '');
+          const style = TextStyle(fontWeight: FontWeight.w500);
+
+          Offset pressPosition = Offset.zero;
+          return InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _onTap(ref),
+            onTapDown: (detail) => pressPosition = detail.globalPosition,
+            onLongPress: enableLongPressed
+                ? () => _onLongPressed(context, ref, pressPosition)
+                : null,
+            onSecondaryTapDown: (detail) =>
+                _onSecondaryTap(detail, context, ref),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: constraints.maxWidth * factor,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(child: image),
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: _buildOverlayDescription(constraints),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                  // 瀑布流卡片高：标题不限制行数，按内容自然换行完整显示
+                  child: Text(
+                    title,
+                    style: style,
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
@@ -935,10 +1062,16 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
     this.asSliver = true,
     this.shrinkWrap = false,
     this.crossAxisCount,
+    this.minCrossAxisCount,
     this.horizontal = false,
+    this.disableMasonry = false,
   });
 
   final List<Anime> animes;
+
+  /// 屏蔽瀑布流：某些容器（如 SliverAnimatedSwitcher 内）与
+  /// SliverMasonryGrid 布局不兼容，此时即使全局是瀑布流也回退普通网格
+  final bool disableMasonry;
 
   final Map<Anime, bool>? selections;
 
@@ -964,14 +1097,113 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
 
   final int? crossAxisCount;
 
+  /// 最小列数（自适应时至少显示这么多列）
+  final int? minCrossAxisCount;
+
   final bool horizontal;
 
   @override
   ConsumerState<SliverGridAnimes> createState() => _SliverGridAnimesState();
 }
 
+/// 瀑布流网格：卡片封面高度按系数错落（探索页等使用）。
+/// 封面采用 brief 卡片样式，标题在底部，卡片高度 = 宽 × 系数
+class SliverMasonryAnimes extends ConsumerStatefulWidget {
+  const SliverMasonryAnimes({
+    super.key,
+    required this.animes,
+    this.columns,
+    this.isRecommend = false,
+    this.enableFavorite = true,
+    this.enableHistory = false,
+    this.badgeBuilder,
+    this.menuBuilder,
+    this.onTap,
+    this.onLongPressed,
+  });
+
+  final List<Anime> animes;
+
+  /// 固定列数（null 时按屏幕宽度自适应）
+  final int? columns;
+
+  final bool isRecommend;
+
+  final bool enableFavorite;
+
+  final bool enableHistory;
+
+  final String? Function(Anime)? badgeBuilder;
+
+  final List<MenuEntry> Function(Anime)? menuBuilder;
+
+  final void Function(Anime, int heroID)? onTap;
+
+  final void Function(Anime, int heroID)? onLongPressed;
+
+  /// 封面高度系数：按索引循环错落，形成瀑布流
+  static const _factors = [1.25, 1.5, 1.1, 1.4, 1.6, 1.2];
+
+  static int _heroSeedCounter = 0;
+
+  @override
+  ConsumerState<SliverMasonryAnimes> createState() =>
+      _SliverMasonryAnimesState();
+}
+
+class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
+  /// 本列表实例的 Hero 唯一种子，避免同路由多个列表 Hero tag 冲突
+  late final int _heroSeed = SliverMasonryAnimes._heroSeedCounter++;
+
+  @override
+  Widget build(BuildContext context) {
+    final animes = widget.animes;
+    final count = widget.columns ?? _resolveColumns(context);
+    return SliverMasonryGrid.count(
+      crossAxisCount: count,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
+      childCount: animes.length,
+      itemBuilder: (context, index) {
+        final anime = animes[index];
+        return AnimeTile(
+          anime: anime,
+          isRecommend: widget.isRecommend,
+          enableFavorite: widget.enableFavorite,
+          enableHistory: widget.enableHistory,
+          badge: widget.badgeBuilder?.call(anime),
+          menuOptions: widget.menuBuilder?.call(anime),
+          onTap:
+              widget.onTap == null ? null : () => widget.onTap!(anime, index),
+          onLongPressed:
+              widget.onLongPressed == null
+                  ? null
+                  : () => widget.onLongPressed!(anime, index),
+          heroID: index,
+          heroTag: "cover${_heroSeed}_h$index",
+          masonryFactor: SliverMasonryAnimes._factors[
+              index % SliverMasonryAnimes._factors.length],
+        );
+      },
+    );
+  }
+
+  int _resolveColumns(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    // 按每列最小宽度动态计算：窄屏少列，宽屏多列
+    const minColWidth = 140.0;
+    final cols = (width / minColWidth).floor();
+    return cols.clamp(2, 6);
+  }
+}
+
 class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   List<Anime> animes = [];
+
+  static int _nextHeroSeed = 0;
+
+  /// 本列表实例的 Hero 唯一种子，避免同路由多个列表 Hero tag 冲突
+  late final int _heroSeed = _nextHeroSeed++;
 
   /// 过滤屏蔽项并按 Hero 标识去重（同 id@sourceKey 只保留首个），
   /// 避免同一路由出现重复 Hero tag 导致 "multiple heroes share the same tag"
@@ -1015,8 +1247,25 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
 
   @override
   Widget build(BuildContext context) {
+    // 全局瀑布流模式：sliver 场景委托瀑布流网格（错落封面）
+    if (widget.asSliver &&
+        !widget.horizontal &&
+        !widget.disableMasonry &&
+        appdata.settings['animeDisplayMode'] == 'masonry') {
+      return SliverMasonryAnimes(
+        animes: animes,
+        isRecommend: widget.isRecommend ?? false,
+        enableFavorite: widget.enableFavorite ?? true,
+        enableHistory: widget.enableHistory ?? false,
+        badgeBuilder: widget.badgeBuilder,
+        menuBuilder: widget.menuBuilder,
+        onTap: widget.onTap,
+        onLongPressed: widget.onLongPressed,
+      );
+    }
     return _SliverGridAnimes(
       animes: animes,
+      heroSeed: _heroSeed,
       selection: widget.selections,
       onLastItemBuild: widget.onLastItemBuild,
       badgeBuilder: widget.badgeBuilder,
@@ -1029,6 +1278,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
       asSliver: widget.asSliver,
       shrinkWrap: widget.shrinkWrap,
       crossAxisCount: widget.crossAxisCount,
+      minCrossAxisCount: widget.minCrossAxisCount,
       horizontal: widget.horizontal,
     );
   }
@@ -1041,6 +1291,7 @@ class _SliverGridAnimes extends StatelessWidget {
 
   const _SliverGridAnimes({
     required this.animes,
+    required this.heroSeed,
     this.onLastItemBuild,
     this.badgeBuilder,
     this.menuBuilder,
@@ -1053,10 +1304,14 @@ class _SliverGridAnimes extends StatelessWidget {
     this.asSliver = true,
     this.shrinkWrap = false,
     this.crossAxisCount,
+    this.minCrossAxisCount,
     this.horizontal = false,
   });
 
   final List<Anime> animes;
+
+  /// 列表实例唯一种子（避免同路由多个列表 Hero tag 冲突）
+  final int heroSeed;
 
   final Map<Anime, bool>? selection;
 
@@ -1081,6 +1336,8 @@ class _SliverGridAnimes extends StatelessWidget {
   final bool shrinkWrap;
 
   final int? crossAxisCount;
+
+  final int? minCrossAxisCount;
 
   final bool horizontal;
 
@@ -1126,6 +1383,8 @@ class _SliverGridAnimes extends StatelessWidget {
                       )
                     : null,
                 heroID: _SliverGridAnimes.heroIDOf(animes[index]),
+                heroTag:
+                    "cover${_SliverGridAnimes.heroIDOf(animes[index])}_h$index",
               );
               if (selection == null) {
                 return Padding(
@@ -1190,6 +1449,7 @@ class _SliverGridAnimes extends StatelessWidget {
                   )
                 : null,
             heroID: _SliverGridAnimes.heroIDOf(animes[index]),
+                                    heroTag: "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
           );
           if (selection == null) return anime;
           return AnimatedContainer(
@@ -1209,6 +1469,7 @@ class _SliverGridAnimes extends StatelessWidget {
         }, childCount: animes.length),
         gridDelegate: SliverGridDelegateWithAnimes(
           fixedCrossAxisCount: crossAxisCount,
+          minCrossAxisCount: minCrossAxisCount,
         ),
       );
     } else {
@@ -1218,6 +1479,7 @@ class _SliverGridAnimes extends StatelessWidget {
         itemCount: animes.length,
         gridDelegate: SliverGridDelegateWithAnimes(
           fixedCrossAxisCount: crossAxisCount,
+          minCrossAxisCount: minCrossAxisCount,
         ),
         shrinkWrap: shrinkWrap,
         itemBuilder: (context, index) {
@@ -1248,6 +1510,7 @@ class _SliverGridAnimes extends StatelessWidget {
                   )
                 : null,
             heroID: _SliverGridAnimes.heroIDOf(animes[index]),
+                                    heroTag: "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
           );
           if (selection == null) return anime;
           return AnimatedContainer(

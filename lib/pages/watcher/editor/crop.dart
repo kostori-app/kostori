@@ -62,8 +62,8 @@ class _CropOverlayState extends State<_CropOverlay> {
               height: dr.height,
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
-                onVerticalDragUpdate: (d) => _handleMove(d, sz),
-                onHorizontalDragUpdate: (d) => _handleMove(d, sz),
+                // 拖动移动裁剪框：用 pan（任意方向）。同时注册 vertical/
+                // horizontal/pan 会触发断言（pan 被忽略）
                 onPanUpdate: (d) => _handleMove(d, sz),
                 child: Container(color: Colors.transparent),
               ),
@@ -193,9 +193,8 @@ class _CropOverlayState extends State<_CropOverlay> {
       top: pos.dy - hs / 2,
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
+        // 只用 pan：同时注册 vertical/horizontal/pan 会触发断言
         onPanUpdate: onUpdate,
-        onVerticalDragUpdate: onUpdate,
-        onHorizontalDragUpdate: onUpdate,
         child: SizedBox(
           width: hs,
           height: hs,

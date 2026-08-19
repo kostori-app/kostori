@@ -286,7 +286,7 @@ class _BalanceConfigFieldsState extends State<_BalanceConfigFields> {
                   ? const SizedBox(
                       width: 14,
                       height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: PolygonRefreshIndicator(),
                     )
                   : const Icon(Icons.bolt, size: 18),
               label: Text(t.queryBalance),

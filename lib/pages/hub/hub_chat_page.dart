@@ -27,6 +27,7 @@ import 'package:kostori/pages/bangumi/bottom_info.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/utils/ext.dart';
+import 'package:pasteboard/pasteboard.dart';
 
 part 'hub_chat_page_upload.dart';
 
@@ -682,6 +683,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                 focusNode: _inputFocus,
                 onSend: _send,
                 onPickImage: _pickAndSendImage,
+                onPasteImage: _pasteImage,
                 onOpenStickers: _openStickerSheet,
                 isDesktop: App.isDesktop,
                 uploading: _uploading,

@@ -88,6 +88,8 @@ android {
             signingConfig signingConfigs.release
         }
         debug {
+            // 与 release 应用 id 区分，可共存安装
+            applicationIdSuffix ".debug"
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
             }

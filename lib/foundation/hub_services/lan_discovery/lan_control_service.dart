@@ -133,6 +133,7 @@ class LanControlService {
       );
 
       HubLog.info('LanControlService', 'WebSocket 服务已启动，端口: $port');
+      _saveActualPort();
     } on SocketException catch (e) {
       if (e.osError?.errorCode == 10048) {
         HubLog.error(
@@ -150,6 +151,7 @@ class LanControlService {
 
           _server!.listen(_handleHttpRequest);
           HubLog.info('LanControlService', 'WebSocket 服务已在动态端口启动，端口: $_port');
+          _saveActualPort();
           return;
         } catch (innerEx) {
           _lastError = '动态端口绑定失败: $innerEx';
@@ -164,6 +166,13 @@ class LanControlService {
       _setState(LanControlServiceState.error);
       rethrow;
     }
+  }
+
+  /// 记住实际监听的端口：端口被占自动跳转后，下次启动直接复用，
+  /// 避免每次都从固定端口重新撞占用
+  void _saveActualPort() {
+    appdata.implicitData['lan_discovery_port'] = _port;
+    appdata.writeImplicitData();
   }
 
   Future<void> stop() async {

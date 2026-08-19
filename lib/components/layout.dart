@@ -76,11 +76,15 @@ class SliverGridDelegateWithFixedHeight extends SliverGridDelegate {
 }
 
 class SliverGridDelegateWithAnimes extends SliverGridDelegate {
-  SliverGridDelegateWithAnimes({this.fixedCrossAxisCount});
+  SliverGridDelegateWithAnimes({this.fixedCrossAxisCount, this.minCrossAxisCount});
 
   final int? fixedCrossAxisCount;
 
-  final bool useBriefMode = appdata.settings['animeDisplayMode'] == 'brief';
+  /// 最小列数（自适应时至少显示这么多列，避免卡片过大）
+  final int? minCrossAxisCount;
+
+  // brief 与 masonry 都用简洁卡片网格；detailed 用详细卡片
+  final bool useBriefMode = appdata.settings['animeDisplayMode'] != 'detailed';
 
   final double scale = (appdata.settings['animeTileScale'] as num).toDouble();
 
@@ -105,7 +109,7 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
       crossItems = fixedCrossAxisCount!;
     } else {
       crossItems = width ~/ minCrossAxisExtent;
-      crossItems = math.max(1, crossItems);
+      crossItems = math.max(minCrossAxisCount ?? 1, crossItems);
     }
     return SliverGridRegularTileLayout(
       crossAxisCount: crossItems,
@@ -131,7 +135,7 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
           (constraints.crossAxisExtent /
                   (maxCrossAxisExtent + crossAxisSpacing))
               .ceil();
-      crossAxisCount = math.max(1, crossAxisCount);
+      crossAxisCount = math.max(minCrossAxisCount ?? 1, crossAxisCount);
     }
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
@@ -156,7 +160,8 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
     if (oldDelegate is! SliverGridDelegateWithAnimes) return true;
     if (oldDelegate.scale != scale ||
         oldDelegate.useBriefMode != useBriefMode ||
-        oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount) {
+        oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount ||
+        oldDelegate.minCrossAxisCount != minCrossAxisCount) {
       return true;
     }
     return false;

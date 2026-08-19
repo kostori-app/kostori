@@ -2208,6 +2208,8 @@ class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
 
   @override
   void dispose() {
+    // 返回时保存端口（之前只在按回车时保存，直接返回会丢改动）
+    _savePort();
     _portCtrl.dispose();
     super.dispose();
   }

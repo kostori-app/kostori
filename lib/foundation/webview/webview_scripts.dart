@@ -60,19 +60,7 @@ const String bridgeInAppWebview = r'''
 })();
 ''';
 
-/// Windows（webview_windows/WebView2）平台的桥：通过 chrome.webview.postMessage 上报
-const String bridgeWebviewWindows = r'''
-(function() {
-  window.__kostoriReport = function(data) {
-    try {
-      window.chrome.webview.postMessage(JSON.stringify(data));
-    } catch(e) {}
-  };
-  window.__kostoriStop = window.__kostoriStop || function() {};
-})();
-''';
-
-/// 早期脚本：注入桥 + 附加请求头（XHR/fetch）
+/// 早期脚本：附加请求头（XHR/fetch）
 String buildEarlyScript(
   Map<String, String>? headers, {
   required String bridgeSource,
@@ -223,7 +211,8 @@ const String videoScanScript = r'''
     var m;
     while ((m = re.exec(text))) {
       var raw = unescapeHtml(m[1]);
-      if (raw && !/\.(m3u8|mp4)(\?.*)?$/i.test(raw)) {
+      if (raw && !/\.(m3u8|mp4)(\?.*)?$/i.test(raw) && !_reported[raw]) {
+        _reported[raw] = true;
         try { __kostoriReport({ type: 'player_url', url: raw }); } catch (e) {}
       }
     }
@@ -236,8 +225,7 @@ const String videoScanScript = r'''
         title.indexOf('just a moment') >= 0 ||
         title.indexOf('请稍候') >= 0 ||
         body.indexOf('__cf_chl') >= 0 ||
-        body.indexOf('cf_chl') >= 0 ||
-        document.querySelector('.cf-browser-verification, #challenge-running, form[id^="challenge-form"], input[name="cf_chl"]') != null;
+        document.querySelector('#cf-chl-widget, #challenge-running, form[id^="challenge-form"], input[name="cf_chl"], .cf-browser-verification') != null;
       if (hit) { try { __kostoriReport({ type: 'cf' }); } catch (e) {} }
     } catch (e) {}
   }

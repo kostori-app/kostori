@@ -301,7 +301,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
 
     final images = _uiImages;
     if (images == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: PolygonRefreshIndicator());
     }
     if (images.isEmpty) {
       return Center(child: Text(t.failedToLoadImagesOrNoImages));

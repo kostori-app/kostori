@@ -122,15 +122,19 @@ class HubKeepAliveService : Service() {
             .setOngoing(true)
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 15+ (targetSdk 36) 禁止 dataSync 前台服务类型，
-            // Hub 长连接属远程消息传递，改用 remoteMessaging。
-            val type = if (Build.VERSION.SDK_INT >= 35) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
-            } else {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            }
-            startForeground(NOTIFICATION_ID, notification, type)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Android 14+：dataSync 在 targetSDK 36 被禁止，Hub 保活用 specialUse
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+            )
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }

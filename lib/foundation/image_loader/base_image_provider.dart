@@ -13,6 +13,12 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
     extends ImageProvider<T> {
   const BaseImageProvider();
 
+  /// 1×1 透明 PNG，解码失败/空响应体（非图片/损坏数据）时作为占位返回，
+  /// 避免反复抛 Invalid image data / Empty response body
+  static final Uint8List kTransparentPng = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  );
+
   static double? _effectiveScreenWidth;
 
   static const double _normalAnimeImageRatio = 0.72;
@@ -93,13 +99,26 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
         } on _ImageLoadingStopException {
           rethrow;
         } catch (e) {
-          if (e.toString().contains("Invalid Status Code: 404")) {
+          final msg = e.toString();
+          if (msg.contains("Invalid Status Code: 404")) {
             rethrow;
           }
-          if (e.toString().contains("Invalid Status Code: 403")) {
+          if (msg.contains("Invalid Status Code: 403")) {
             rethrow;
           }
-          if (e.toString().contains("handshake")) {
+          // 网络层不可达（连接超时/拒绝/重置/DNS 失败）时重试没有意义，
+          // 直接失败显示占位，避免"无法访问的图片卡很久"
+          final lower = msg.toLowerCase();
+          if (lower.contains('timeout') ||
+              lower.contains('socketexception') ||
+              lower.contains('connection refused') ||
+              lower.contains('failed to connect') ||
+              lower.contains('connection reset') ||
+              lower.contains('network is unreachable') ||
+              lower.contains('hostlookup')) {
+            rethrow;
+          }
+          if (msg.contains("handshake")) {
             if (retryTime < 5) {
               retryTime = 5;
             }
@@ -139,7 +158,15 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
             // ignore
           }
         }
-        rethrow;
+        // 非图片/损坏数据：返回 1×1 透明占位，避免 Invalid image data 刷屏
+        try {
+          final fallback = await ImmutableBuffer.fromUint8List(
+            kTransparentPng,
+          );
+          return await decode(fallback);
+        } catch (_) {
+          rethrow;
+        }
       }
     } on _ImageLoadingStopException {
       rethrow;

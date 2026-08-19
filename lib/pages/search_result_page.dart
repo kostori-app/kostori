@@ -9,6 +9,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class SearchResultPage extends StatefulWidget {
   const SearchResultPage({
@@ -16,6 +17,7 @@ class SearchResultPage extends StatefulWidget {
     required this.text,
     required this.sourceKey,
     this.options,
+    this.webUrl,
   });
 
   final String text;
@@ -23,6 +25,9 @@ class SearchResultPage extends StatefulWidget {
   final String sourceKey;
 
   final List<String>? options;
+
+  /// 源附带的网页地址，右上角提供"打开网页"入口
+  final String? webUrl;
 
   @override
   State<SearchResultPage> createState() => _SearchResultPageState();
@@ -112,28 +117,41 @@ class _SearchResultPageState extends State<SearchResultPage> {
   }
 
   Widget buildAction() {
-    return Tooltip(
-      message: t.settings,
-      child: IconButton(
-        icon: const Icon(Icons.tune),
-        onPressed: () async {
-          var previousOptions = List<String>.from(options);
-          var previousSourceKey = sourceKey;
-          await showDialog(
-            context: context,
-            useRootNavigator: true,
-            builder: (context) {
-              return _SearchSettingsDialog(state: this);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.webUrl != null && widget.webUrl!.isNotEmpty)
+          Tooltip(
+            message: t.openInBrowser,
+            child: IconButton(
+              icon: const Icon(Icons.open_in_new),
+              onPressed: () => launchUrlString(widget.webUrl!),
+            ),
+          ),
+        Tooltip(
+          message: t.settings,
+          child: IconButton(
+            icon: const Icon(Icons.tune),
+            onPressed: () async {
+              var previousOptions = List<String>.from(options);
+              var previousSourceKey = sourceKey;
+              await showDialog(
+                context: context,
+                useRootNavigator: true,
+                builder: (context) {
+                  return _SearchSettingsDialog(state: this);
+                },
+              );
+              if (!previousOptions.isEqualTo(options) ||
+                  previousSourceKey != sourceKey) {
+                text = controller.text;
+                controller.currentText = text;
+                setState(() {});
+              }
             },
-          );
-          if (!previousOptions.isEqualTo(options) ||
-              previousSourceKey != sourceKey) {
-            text = controller.text;
-            controller.currentText = text;
-            setState(() {});
-          }
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

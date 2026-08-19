@@ -1,18 +1,27 @@
 part of 'settings_page.dart';
 
 /// 个人页插件管理卡片：列出已加载插件，支持重新加载与删除。
-class MePagePluginSettings extends StatefulWidget {
-  const MePagePluginSettings({super.key});
+class PluginSettings extends StatefulWidget {
+  const PluginSettings({super.key});
 
   @override
-  State<MePagePluginSettings> createState() => _MePagePluginSettingsState();
+  State<PluginSettings> createState() => _PluginSettingsState();
 }
 
-class _MePagePluginSettingsState extends State<MePagePluginSettings> {
+class _PluginSettingsState extends State<PluginSettings> {
+  late final TextEditingController _urlCtrl;
+
   @override
   void initState() {
     super.initState();
+    _urlCtrl = TextEditingController(text: _sourceUrl);
     MePagePluginManager().ensureInit();
+  }
+
+  @override
+  void dispose() {
+    _urlCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _reload() async {
@@ -67,6 +76,46 @@ class _MePagePluginSettingsState extends State<MePagePluginSettings> {
     );
   }
 
+  String get _sourceUrl =>
+      (appdata.implicitData['pluginSourceUrl'] as String?)?.trim() ?? '';
+
+  Future<void> _editSourceUrl() async {
+    await showInputDialog(
+      context: context,
+      title: t.pluginSourceUrl,
+      hintText: 'https://example.com/plugins/index.json',
+      initialValue: _sourceUrl,
+      onConfirm: (value) async {
+        final v = value.trim();
+        appdata.implicitData['pluginSourceUrl'] = v;
+        appdata.writeImplicitData();
+        if (mounted) setState(() {});
+        return null;
+      },
+    );
+  }
+
+  Future<void> _fetchPlugins() async {
+    final url = _sourceUrl;
+    if (url.isEmpty) {
+      await _editSourceUrl();
+      return;
+    }
+    try {
+      final count = await MePagePluginManager().fetchFromUrl(url);
+      if (mounted) setState(() {});
+      App.rootContext.showMessage(
+        message: '$t.fetchPlugins：$count',
+        level: LogLevel.info,
+      );
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: '${t.fetchPlugins} $e',
+        level: LogLevel.error,
+      );
+    }
+  }
+
   static String _pluginTemplate(String name) =>
       '''
 /**
@@ -91,51 +140,149 @@ const plugin = {
   @override
   Widget build(BuildContext context) {
     final plugins = MePagePluginManager().all();
-    return _SettingCard(
-      children: [
-        _SettingPartTitle(title: t.mePagePlugin, icon: Icons.widgets_outlined),
+    return SmoothCustomScrollView(
+      slivers: [
+        SliverAppbar(
+          title: Text(t.mePagePlugin),
+          style: AppbarStyle.shadow,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: t.reload,
+              onPressed: _reload,
+            ),
+          ],
+        ),
+        // 操作卡片：插件源 URL（对齐番源"添加番剧源"组件）
+        _BuildSectionPadding(
+          _SettingCard(
+            children: [
+              _SettingPartTitle(
+                title: t.pluginSourceUrl,
+                icon: Icons.widgets_outlined,
+              ),
+              TextField(
+                controller: _urlCtrl,
+                decoration: InputDecoration(
+                  hintText: 'https://example.com/plugins/index.json',
+                  border: const UnderlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  suffix: IconButton(
+                    onPressed: _fetchPlugins,
+                    icon: const Icon(Icons.check),
+                  ),
+                ),
+                onChanged: (value) {
+                  appdata.implicitData['pluginSourceUrl'] = value.trim();
+                  appdata.writeImplicitData();
+                },
+                onSubmitted: (_) => _fetchPlugins(),
+              ).paddingHorizontal(16).paddingBottom(8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    IconTileButton(
+                      icon: const Icon(Icons.download_outlined),
+                      label: t.fetchPlugins,
+                      onTap: _fetchPlugins,
+                    ),
+                    // 打开目录仅桌面端有意义（移动端无桌面文件管理器）
+                    if (App.isDesktop)
+                      IconTileButton(
+                        icon: const Icon(Icons.folder_open),
+                        label: t.openDir,
+                        onTap: _openDir,
+                      ),
+                    IconTileButton(
+                      icon: const Icon(Icons.add),
+                      label: t.createPlugin,
+                      onTap: _create,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // 每个插件一个卡片（对齐番源卡片风格）
         if (plugins.isEmpty)
-          ListTile(
-            dense: true,
-            subtitle: Text(
-              t.noMePagePlugin,
-              style: const TextStyle(fontSize: 12),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  t.noMePagePlugin,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ),
           )
         else
           for (final p in plugins)
-            ListTile(
-              dense: true,
-              title: Text(p.name, style: const TextStyle(fontSize: 13)),
-              subtitle: Text(
-                'v${p.version}',
-                style: const TextStyle(fontSize: 11),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20),
-                tooltip: t.delete,
-                onPressed: () => _delete(p),
+            _BuildSectionPadding(
+              _SettingCard(
+                children: [
+                  ListTile(
+                    title: Text(p.name, style: ts.s18),
+                    subtitle: Text('v${p.version}'),
+                    trailing: IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      tooltip: t.delete,
+                      onPressed: () => _delete(p),
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        IconTileButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          label: t.edit,
+                          onTap: () => _edit(p),
+                        ),
+                        IconTileButton(
+                          icon: const Icon(Icons.delete_outline),
+                          label: t.delete,
+                          color: Theme.of(context).colorScheme.error,
+                          onTap: () => _delete(p),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-        ListTile(
-          dense: true,
-          leading: const Icon(Icons.refresh, size: 20),
-          title: Text(t.reload, style: const TextStyle(fontSize: 13)),
-          onTap: _reload,
-        ),
-        ListTile(
-          dense: true,
-          leading: const Icon(Icons.folder_open, size: 20),
-          title: Text(t.openDir, style: const TextStyle(fontSize: 13)),
-          onTap: _openDir,
-        ),
-        ListTile(
-          dense: true,
-          leading: const Icon(Icons.add, size: 20),
-          title: Text(t.createPlugin, style: const TextStyle(fontSize: 13)),
-          onTap: _create,
+        SliverPadding(
+          padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
         ),
       ],
+    );
+  }
+
+  /// 打开插件源码编辑（桌面优先 VS Code，否则内置编辑器）
+  Future<void> _edit(MePagePlugin p) async {
+    if (App.isDesktop) {
+      try {
+        await io.Process.run("code", [p.filePath], runInShell: true);
+        return;
+      } catch (_) {}
+    }
+    context.to(
+      () => _EditFilePage(p.filePath, () async {
+        await MePagePluginManager().reload();
+        if (mounted) setState(() {});
+      }),
     );
   }
 }

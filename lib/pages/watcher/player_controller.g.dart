@@ -49,6 +49,42 @@ mixin _$PlayerController on _PlayerController, Store {
     );
   }
 
+  late final _$loadingStepAtom = Atom(
+    name: '_PlayerController.loadingStep',
+    context: context,
+  );
+
+  @override
+  int get loadingStep {
+    _$loadingStepAtom.reportRead();
+    return super.loadingStep;
+  }
+
+  @override
+  set loadingStep(int value) {
+    _$loadingStepAtom.reportWrite(value, super.loadingStep, () {
+      super.loadingStep = value;
+    });
+  }
+
+  late final _$isParsingAtom = Atom(
+    name: '_PlayerController.isParsing',
+    context: context,
+  );
+
+  @override
+  bool get isParsing {
+    _$isParsingAtom.reportRead();
+    return super.isParsing;
+  }
+
+  @override
+  set isParsing(bool value) {
+    _$isParsingAtom.reportWrite(value, super.isParsing, () {
+      super.isParsing = value;
+    });
+  }
+
   late final _$audioOutTypeAtom = Atom(
     name: '_PlayerController.audioOutType',
     context: context,
@@ -388,6 +424,24 @@ mixin _$PlayerController on _PlayerController, Store {
   set playUrl(String value) {
     _$playUrlAtom.reportWrite(value, super.playUrl, () {
       super.playUrl = value;
+    });
+  }
+
+  late final _$playResultAtom = Atom(
+    name: '_PlayerController.playResult',
+    context: context,
+  );
+
+  @override
+  AnimePlayResult? get playResult {
+    _$playResultAtom.reportRead();
+    return super.playResult;
+  }
+
+  @override
+  set playResult(AnimePlayResult? value) {
+    _$playResultAtom.reportWrite(value, super.playResult, () {
+      super.playResult = value;
     });
   }
 
@@ -856,6 +910,8 @@ mixin _$PlayerController on _PlayerController, Store {
     return '''
 loading: ${loading},
 isPortraitFullscreen: ${isPortraitFullscreen},
+loadingStep: ${loadingStep},
+isParsing: ${isParsing},
 audioOutType: ${audioOutType},
 isPiPMode: ${isPiPMode},
 isFullScreen: ${isFullScreen},
@@ -875,6 +931,7 @@ currentEpisoded: ${currentEpisoded},
 currentRoad: ${currentRoad},
 videoUrl: ${videoUrl},
 playUrl: ${playUrl},
+playResult: ${playResult},
 saveAddress: ${saveAddress},
 showTabBody: ${showTabBody},
 volume: ${volume},

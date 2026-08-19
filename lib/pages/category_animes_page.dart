@@ -4,7 +4,9 @@ import 'package:kostori/components/components.dart';
 import "package:kostori/components/ui_components.dart";
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:kostori/foundation/app.dart";
+import "package:kostori/i18n/strings.g.dart";
 import "package:kostori/utils/translations.dart";
+import 'package:url_launcher/url_launcher_string.dart';
 
 class CategoryAnimesPage extends StatefulWidget {
   const CategoryAnimesPage({
@@ -13,6 +15,7 @@ class CategoryAnimesPage extends StatefulWidget {
     required this.sourceKey,
     required this.categoryKey,
     this.options,
+    this.webUrl,
     super.key,
   });
 
@@ -23,6 +26,9 @@ class CategoryAnimesPage extends StatefulWidget {
   final String categoryKey;
 
   final List<String>? options;
+
+  /// 源附带的网页地址，右上角提供"打开网页"入口
+  final String? webUrl;
 
   @override
   State<CategoryAnimesPage> createState() => _CategoryAnimesPageState();
@@ -133,7 +139,17 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: Appbar(title: Text(widget.category)),
+      appBar: Appbar(
+        title: Text(widget.category),
+        actions: [
+          if (widget.webUrl != null && widget.webUrl!.isNotEmpty)
+            IconButton(
+              tooltip: t.openInBrowser,
+              icon: const Icon(Icons.open_in_new),
+              onPressed: () => launchUrlString(widget.webUrl!),
+            ),
+        ],
+      ),
       body: body,
     );
   }

@@ -8,7 +8,7 @@ import 'package:kostori/components/bean/card/episode_comments_sheet.dart';
 import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
-import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -503,15 +503,7 @@ class BottomInfoState extends State<BottomInfo>
                                     ? SizedBox(
                                         width: 24,
                                         height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                              ),
-                                        ),
+                                        child: PolygonRefreshIndicator(),
                                       )
                                     : Icon(
                                         Icons.translate,
@@ -768,12 +760,11 @@ class BottomInfoState extends State<BottomInfo>
               }
               if (queryTimeout) {
                 return SliverFillRemaining(
-                  child: GeneralErrorWidget(
-                    errMsg: t.nobodysPostedAnythingYet,
-                    actions: [
-                      GeneralErrorButton(onPressed: retry, text: t.reload),
-                    ],
-                  ),
+                child: EmptyState(
+                  message: t.nobodysPostedAnythingYet,
+                  retry: retry,
+                  retryText: t.reload,
+                ),
                 );
               }
               return SliverList.builder(
@@ -927,7 +918,7 @@ class BottomInfoState extends State<BottomInfo>
                   EpisodeCommentsSheet(
                     episodeInfo: episodeInfo,
                     loadComments: loadComments,
-                    episode: WatcherState.currentState!.epIndex,
+                    episode: WatcherPlayer.currentState!.epIndex,
                     infoController: infoController,
                   ),
                   topicsListBody,

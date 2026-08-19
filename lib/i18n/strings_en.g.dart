@@ -176,6 +176,36 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Anime Source'
 	String get animeSource => 'Anime Source';
 
+	/// en: 'All'
+	String get filterAll => 'All';
+
+	/// en: 'No matching sources'
+	String get noMatchingSource => 'No matching sources';
+
+	/// en: 'Others'
+	String get filterNonBangumi => 'Others';
+
+	/// en: 'Default'
+	String get sortByDefault => 'Default';
+
+	/// en: 'Name'
+	String get sortByName => 'Name';
+
+	/// en: 'ID'
+	String get sortById => 'ID';
+
+	/// en: 'Switch source'
+	String get switchSource => 'Switch source';
+
+	/// en: 'Search this title on other sources'
+	String get searchSourceHint => 'Search this title on other sources';
+
+	/// en: 'Needs verification'
+	String get needVerification => 'Needs verification';
+
+	/// en: 'Tap to verify'
+	String get tapToVerify => 'Tap to verify';
+
 	/// en: 'Appearance'
 	String get appearance => 'Appearance';
 
@@ -229,6 +259,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Brief'
 	String get brief => 'Brief';
+
+	/// en: 'Masonry'
+	String get masonry => 'Masonry';
 
 	/// en: 'Cache Limit'
 	String get cacheLimit => 'Cache Limit';
@@ -460,9 +493,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Download Selected'
 	String get downloadSelected => 'Download Selected';
-
-	/// en: 'Download Threads'
-	String get downloadThreads => 'Download Threads';
 
 	/// en: 'Download'
 	String get download => 'Download';
@@ -1205,8 +1235,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Reload'
 	String get reload => 'Reload';
 
-	/// en: 'Personal Page Plugins'
-	String get mePagePlugin => 'Personal Page Plugins';
+	/// en: 'Plugins'
+	String get mePagePlugin => 'Plugins';
 
 	/// en: 'No plugins (put *.js into plugins folder)'
 	String get noMePagePlugin => 'No plugins (put *.js into plugins folder)';
@@ -1216,6 +1246,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Create Plugin'
 	String get createPlugin => 'Create Plugin';
+
+	/// en: 'Plugin Source URL'
+	String get pluginSourceUrl => 'Plugin Source URL';
+
+	/// en: 'Fetch Plugins'
+	String get fetchPlugins => 'Fetch Plugins';
 
 	/// en: 'Plugin file name'
 	String get pluginName => 'Plugin file name';
@@ -1231,6 +1267,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Failed to load, please try again.'
 	String get failedToLoadPleaseTryAgain => 'Failed to load, please try again.';
+
+	/// en: 'Failed to open'
+	String get failedToOpen => 'Failed to open';
 
 	/// en: 'doing'
 	String get doing => 'doing';
@@ -1615,6 +1654,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Reload'
 	String get vceReload => 'Reload';
+
+	/// en: 'Reload current episode'
+	String get reloadEpisode => 'Reload current episode';
 
 	/// en: 'Video timeline thumbnails'
 	String get vceTimelineThumbnails => 'Video timeline thumbnails';
@@ -2225,6 +2267,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No audio device detected'
 	String get noAudioDevice => 'No audio device detected';
 
+	/// en: 'Volume Boost'
+	String get volumeBoost => 'Volume Boost';
+
 	/// en: 'Volume Boost: On'
 	String get volumeBoostEnabled => 'Volume Boost: On';
 
@@ -2749,8 +2794,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Player'
 	String get player => 'Player';
 
-	/// en: 'Audio Option'
-	String get audioOption => 'Audio Option';
+	/// en: 'Low-latency audio'
+	String get audioOption => 'Low-latency audio';
 
 	/// en: 'Hardware Decoding'
 	String get hardwareDecoding => 'Hardware Decoding';
@@ -6513,6 +6558,144 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Generate failed'
 	String get builderGenerateFailed => 'Generate failed';
+
+	/// en: 'Collapse sidebar'
+	String get collapseSidebar => 'Collapse sidebar';
+
+	/// en: 'Expand sidebar'
+	String get expandSidebar => 'Expand sidebar';
+
+	/// en: 'Clear finished downloads'
+	String get clearFinishedDownload => 'Clear finished downloads';
+
+	/// en: 'No download tasks'
+	String get downloadEmpty => 'No download tasks';
+
+	/// en: 'Queued'
+	String get downloadQueued => 'Queued';
+
+	/// en: 'Completed'
+	String get downloadCompleted => 'Completed';
+
+	/// en: 'Pause download'
+	String get pauseDownload => 'Pause download';
+
+	/// en: 'Resume download'
+	String get resumeDownload => 'Resume download';
+
+	/// en: 'Retry download'
+	String get retryDownload => 'Retry download';
+
+	/// en: 'Paused'
+	String get pausedDownload => 'Paused';
+
+	/// en: 'Download settings'
+	String get downloadSettings => 'Download settings';
+
+	/// en: 'Concurrent tasks'
+	String get downloadConcurrent => 'Concurrent tasks';
+
+	/// en: 'Segment concurrency'
+	String get downloadSegmentConcurrent => 'Segment concurrency';
+
+	/// en: 'Wi-Fi only'
+	String get downloadWifiOnly => 'Wi-Fi only';
+
+	/// en: 'Other'
+	String get downloadOther => 'Other';
+
+	/// en: 'Download records'
+	String get downloadRecords => 'Download records';
+
+	/// en: 'Open with other player'
+	String get openWithOtherPlayer => 'Open with other player';
+
+	/// en: 'Download title format'
+	String get downloadTitleFormat => 'Download title format';
+
+	/// en: 'Placeholders: {title} {episode} {author} {resolution} {source} {year}'
+	String get downloadFormatHint => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}';
+
+	/// en: 'Download directory'
+	String get downloadDir => 'Download directory';
+
+	/// en: 'Resolving video address'
+	String get loadingStepParse => 'Resolving video address';
+
+	/// en: 'Initializing player'
+	String get loadingStepInit => 'Initializing player';
+
+	/// en: 'Loading media'
+	String get loadingStepLoad => 'Loading media';
+
+	/// en: 'Buffering'
+	String get loadingStepBuffer => 'Buffering';
+
+	/// en: 'Select episode to download'
+	String get downloadEpisode => 'Select episode to download';
+
+	/// en: 'No episodes available to download'
+	String get downloadNotYet => 'No episodes available to download';
+
+	/// en: 'Download ${n} episodes'
+	String downloadSelectedCount({required Object n}) => 'Download ${n} episodes';
+
+	/// en: 'Select resolution'
+	String get selectResolution => 'Select resolution';
+
+	/// en: 'Default'
+	String get defaultResolution => 'Default';
+
+	/// en: 'No more qualities available'
+	String get noResolutionAvailable => 'No more qualities available';
+
+	/// en: 'Series'
+	String get series => 'Series';
+
+	/// en: 'Playing'
+	String get playing => 'Playing';
+
+	/// en: 'Select none'
+	String get selectNone => 'Select none';
+
+	/// en: 'Downloading'
+	String get downloadActive => 'Downloading';
+
+	/// en: 'Redownload'
+	String get redownload => 'Redownload';
+
+	/// en: 'Start all'
+	String get startAll => 'Start all';
+
+	/// en: 'Pause all'
+	String get pauseAll => 'Pause all';
+
+	/// en: 'Cancel all'
+	String get cancelAll => 'Cancel all';
+
+	/// en: 'No download records'
+	String get recordsEmpty => 'No download records';
+
+	/// en: 'File not found'
+	String get fileNotFound => 'File not found';
+
+	/// en: 'Deleted'
+	String get deleted => 'Deleted';
+
+	/// en: 'Long press to change speed'
+	String get localPlayerSpeedTip => 'Long press to change speed';
+
+	/// en: 'Audio track'
+	String get audioTrack => 'Audio track';
+
+	/// en: 'Subtitles'
+	String get subtitle => 'Subtitles';
+
+	/// en: 'Off'
+	String get subtitleOff => 'Off';
+
+	/// en: 'Quality'
+	String get quality => 'Quality';
 }
 
 // Path: colors
@@ -6706,6 +6889,16 @@ extension on Translations {
 			'alsoRemoveFilesOnDisk' => 'Also remove files on disk',
 			'animeSourceList' => 'Anime Source list',
 			'animeSource' => 'Anime Source',
+			'filterAll' => 'All',
+			'noMatchingSource' => 'No matching sources',
+			'filterNonBangumi' => 'Others',
+			'sortByDefault' => 'Default',
+			'sortByName' => 'Name',
+			'sortById' => 'ID',
+			'switchSource' => 'Switch source',
+			'searchSourceHint' => 'Search this title on other sources',
+			'needVerification' => 'Needs verification',
+			'tapToVerify' => 'Tap to verify',
 			'appearance' => 'Appearance',
 			'areYouSureYouWantToClearYourHistory' => 'Are you sure you want to clear your history?',
 			'areYouSureYouWantToClearYourProgress' => 'Are you sure you want to clear your progress?',
@@ -6724,6 +6917,7 @@ extension on Translations {
 			'glimmerModeOff' => 'Off',
 			'blue' => 'Blue',
 			'brief' => 'Brief',
+			'masonry' => 'Masonry',
 			'cacheLimit' => 'Cache Limit',
 			'cacheSize' => 'Cache Size',
 			'cacheCleared' => 'Cache cleared',
@@ -6801,7 +6995,6 @@ extension on Translations {
 			'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => 'Do not report any issues related to sources to App repo.',
 			'downloadAll' => 'Download All',
 			'downloadSelected' => 'Download Selected',
-			'downloadThreads' => 'Download Threads',
 			'download' => 'Download',
 			'downloading' => 'Downloading',
 			'edit' => 'Edit',
@@ -7049,15 +7242,18 @@ extension on Translations {
 			'standardDeviationS' => ({required Object s}) => 'Standard Deviation: ${s}',
 			'nobodysPostedAnythingYet' => 'Nobody\'s posted anything yet...',
 			'reload' => 'Reload',
-			'mePagePlugin' => 'Personal Page Plugins',
+			'mePagePlugin' => 'Plugins',
 			'noMePagePlugin' => 'No plugins (put *.js into plugins folder)',
 			'openDir' => 'Open Folder',
 			'createPlugin' => 'Create Plugin',
+			'pluginSourceUrl' => 'Plugin Source URL',
+			'fetchPlugins' => 'Fetch Plugins',
 			'pluginName' => 'Plugin file name',
 			'alreadyExists' => 'already exists',
 			'mainContent' => 'Main Content',
 			'switchh' => 'Switch',
 			'failedToLoadPleaseTryAgain' => 'Failed to load, please try again.',
+			'failedToOpen' => 'Failed to open',
 			'doing' => 'doing',
 			'collect' => 'collect',
 			'wish' => 'wish',
@@ -7160,6 +7356,8 @@ extension on Translations {
 			'saturday' => 'Saturday',
 			'sunday' => 'Sunday',
 			'defaultOrder' => 'Default Order',
+			_ => null,
+		} ?? switch (path) {
 			'byTime' => 'By Time',
 			'byName' => 'By Name',
 			'recentlyWatched' => 'Recently Watched',
@@ -7173,8 +7371,6 @@ extension on Translations {
 			'good' => 'Good',
 			'great' => 'Great',
 			'master' => 'Master',
-			_ => null,
-		} ?? switch (path) {
 			'epic' => 'Epic',
 			'overview' => 'Overview',
 			'discussion' => 'Discussion',
@@ -7188,6 +7384,7 @@ extension on Translations {
 			'vceEstimating' => 'Estimating…',
 			'vceReloadPreview' => 'Reload preview clip',
 			'vceReload' => 'Reload',
+			'reloadEpisode' => 'Reload current episode',
 			'vceTimelineThumbnails' => 'Video timeline thumbnails',
 			'vceStart' => 'Start',
 			'vceEnd' => 'End',
@@ -7391,6 +7588,7 @@ extension on Translations {
 			'audioOptionCompatibility' => 'Audio Option: \n Compatibility',
 			'audioOutputDevice' => 'Audio Output Device',
 			'noAudioDevice' => 'No audio device detected',
+			'volumeBoost' => 'Volume Boost',
 			'volumeBoostEnabled' => 'Volume Boost: On',
 			'volumeBoostDisabled' => 'Volume Boost: Off',
 			'volume' => 'Volume',
@@ -7608,7 +7806,7 @@ extension on Translations {
 			'onHoldStatus' => 'On Hold',
 			'droppedStatus' => 'Dropped',
 			'player' => 'Player',
-			'audioOption' => 'Audio Option',
+			'audioOption' => 'Low-latency audio',
 			'hardwareDecoding' => 'Hardware Decoding',
 			'hardwareDecoder' => 'Hardware decoder',
 			'videoRenderer' => 'Video renderer',
@@ -7672,6 +7870,8 @@ extension on Translations {
 			'serviceSettings' => 'Service Settings',
 			'enableService' => 'Enable Service',
 			'serviceIsStopped' => 'Service is stopped',
+			_ => null,
+		} ?? switch (path) {
 			'runningOnH' => ({required Object h}) => 'Running on ${h}',
 			'apiKey' => 'API Key',
 			'activeKey' => 'Active Key',
@@ -7687,8 +7887,6 @@ extension on Translations {
 			'regenerate' => 'Regenerate',
 			'port' => 'Port',
 			'defaultP' => ({required Object p}) => 'Default: ${p}',
-			_ => null,
-		} ?? switch (path) {
 			'bindMode' => 'Bind Mode',
 			'chooseIpVersionToListenOn' => 'Choose IP version to listen on',
 			'hubServer' => 'Hub Server',
@@ -8186,6 +8384,8 @@ extension on Translations {
 			'pinnedMessages' => 'Pinned Messages',
 			'announcement' => 'Announcement',
 			'image' => 'Image',
+			_ => null,
+		} ?? switch (path) {
 			'enterToSendCtrlEnterForNewline' => 'Enter to send  ·  Ctrl+Enter for newline',
 			'message' => 'Message...',
 			'stickers' => 'Stickers',
@@ -8201,8 +8401,6 @@ extension on Translations {
 			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
 			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
 			'linkFormatErrorCannotParseBangumiId' => 'Link format error, cannot parse Bangumi ID',
-			_ => null,
-		} ?? switch (path) {
 			'fetchingBangumiInfo' => 'Fetching Bangumi info...',
 			'bangumiEntryNotFound' => 'Bangumi entry not found',
 			'failedToFetchBangumiInfo' => 'Failed to fetch Bangumi info',
@@ -8700,6 +8898,8 @@ extension on Translations {
 			'imageUnderstandingDisabled' => 'This assistant has image understanding disabled',
 			'modelType' => 'Model type',
 			'inputModality' => 'Input modalities',
+			_ => null,
+		} ?? switch (path) {
 			'outputModality' => 'Output modalities',
 			'supportsReasoning' => 'Supports reasoning',
 			'capabilities' => 'Capabilities',
@@ -8715,8 +8915,6 @@ extension on Translations {
 			'modalityVideo' => 'Video',
 			'capabilityTools' => 'Tools',
 			'capabilityReasoning' => 'Reasoning',
-			_ => null,
-		} ?? switch (path) {
 			'apiFormat' => 'API format',
 			'apiFormatOpenai' => 'OpenAI (chat)',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
@@ -8869,6 +9067,52 @@ extension on Translations {
 			'builderKeyInvalid' => 'Key must contain only letters, digits and underscore',
 			'builderImported' => 'Source imported',
 			'builderGenerateFailed' => 'Generate failed',
+			'collapseSidebar' => 'Collapse sidebar',
+			'expandSidebar' => 'Expand sidebar',
+			'clearFinishedDownload' => 'Clear finished downloads',
+			'downloadEmpty' => 'No download tasks',
+			'downloadQueued' => 'Queued',
+			'downloadCompleted' => 'Completed',
+			'pauseDownload' => 'Pause download',
+			'resumeDownload' => 'Resume download',
+			'retryDownload' => 'Retry download',
+			'pausedDownload' => 'Paused',
+			'downloadSettings' => 'Download settings',
+			'downloadConcurrent' => 'Concurrent tasks',
+			'downloadSegmentConcurrent' => 'Segment concurrency',
+			'downloadWifiOnly' => 'Wi-Fi only',
+			'downloadOther' => 'Other',
+			'downloadRecords' => 'Download records',
+			'openWithOtherPlayer' => 'Open with other player',
+			'downloadTitleFormat' => 'Download title format',
+			'downloadFormatHint' => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}',
+			'downloadDir' => 'Download directory',
+			'loadingStepParse' => 'Resolving video address',
+			'loadingStepInit' => 'Initializing player',
+			'loadingStepLoad' => 'Loading media',
+			'loadingStepBuffer' => 'Buffering',
+			'downloadEpisode' => 'Select episode to download',
+			'downloadNotYet' => 'No episodes available to download',
+			'downloadSelectedCount' => ({required Object n}) => 'Download ${n} episodes',
+			'selectResolution' => 'Select resolution',
+			'defaultResolution' => 'Default',
+			'noResolutionAvailable' => 'No more qualities available',
+			'series' => 'Series',
+			'playing' => 'Playing',
+			'selectNone' => 'Select none',
+			'downloadActive' => 'Downloading',
+			'redownload' => 'Redownload',
+			'startAll' => 'Start all',
+			'pauseAll' => 'Pause all',
+			'cancelAll' => 'Cancel all',
+			'recordsEmpty' => 'No download records',
+			'fileNotFound' => 'File not found',
+			'deleted' => 'Deleted',
+			'localPlayerSpeedTip' => 'Long press to change speed',
+			'audioTrack' => 'Audio track',
+			'subtitle' => 'Subtitles',
+			'subtitleOff' => 'Off',
+			'quality' => 'Quality',
 			_ => null,
 		};
 	}

@@ -1,10 +1,23 @@
+import 'package:kostori/components/animated.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
+import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+
+/// 打开插件管理页（项目风格 Scaffold + 内置 SliverAppbar）
+Future<void> openMePagePluginManage(BuildContext context) {
+  return context.to(
+    () => Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: const SafeArea(child: PluginSettings()),
+    ),
+  );
+}
 
 /// 安全转 double：避免插件返回非数字时 as 强转崩溃
 double _asDouble(dynamic v, [double fallback = 0]) {
@@ -66,15 +79,67 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
     if (!_loaded) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
-    if (_cards.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
+    final cs = Theme.of(context).colorScheme;
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       sliver: SliverToBoxAdapter(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: _cards,
+          children: [
+            // 标题 + 插件管理入口
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t.mePagePlugin,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _openManage,
+                  icon: const Icon(Icons.settings_outlined, size: 16),
+                  label: Text(t.manage),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (_cards.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  t.noMePagePlugin,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurfaceVariant.toOpacity(0.7),
+                  ),
+                ),
+              )
+            else
+              ..._cards,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 打开插件管理页
+  void _openManage() {
+    App.mainNavigatorKey?.currentContext?.to(
+      () => Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        appBar: AppBar(title: Text(t.mePagePlugin)),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: const [PluginSettings()],
+          ),
         ),
       ),
     );
@@ -447,7 +512,7 @@ class _SignInButtonState extends State<_SignInButton> {
           ? const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: PolygonRefreshIndicator(),
             )
           : Text(widget.m['text']?.toString() ?? '签到'),
     );
@@ -475,3 +540,4 @@ class _Button extends StatelessWidget {
     );
   }
 }
+

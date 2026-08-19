@@ -556,14 +556,28 @@ class _LoadingInfoCard extends StatelessWidget {
         // state.buffering 是实时快照；二者同源。loading 是历史遗留字段（恒 true）弃用。
         final buffering =
             playerController.isBuffering || playerController.playerBuffering;
+        final step = playerController.loadingStep;
         final setName = playerController.currentSetName.trim();
         // 简洁提示：第x集 · 正在加载（不带百分比）
         final loadingText = setName.isNotEmpty
             ? '$setName · ${t.loadingVideo}'
             : t.loadingVideo;
 
-        // 加载中才显示覆盖层；不缓冲时完全不渲染（避免遮挡与性能损耗）
-        if (!buffering) return const SizedBox.shrink();
+        // 当前加载步骤文案（只显示一条：正在进行的步骤）
+        final stepText = switch (step) {
+          0 => t.loadingStepParse,
+          1 => t.loadingStepInit,
+          2 => t.loadingStepLoad,
+          _ => t.loadingStepBuffer,
+        };
+
+        // 显示条件：真正在缓冲，或正在解析视频地址。
+        // 不用「未播放且步骤<3」——解析失败或暂停时 step 停留会导致误导。
+        // loadFailed 时隐藏（失败后 buffering 快照可能仍为 true）
+        final showOverlay = !playerController.loadFailed &&
+            (buffering || (step == 0 && playerController.isParsing));
+        if (!showOverlay) return const SizedBox.shrink();
+
         return Align(
           alignment: Alignment.center,
           child: Container(
@@ -579,10 +593,19 @@ class _LoadingInfoCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   loadingText,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  stepText,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -597,9 +620,9 @@ class _LoadingInfoCard extends StatelessWidget {
     final custom = _customImage;
     if (custom == null) {
       return const SizedBox(
-        width: 48,
-        height: 48,
-        child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white70),
+        width: 36,
+        height: 36,
+        child: PolygonRefreshIndicator(),
       );
     }
 
@@ -686,7 +709,7 @@ class _NetworkOrFileImage extends StatelessWidget {
       errorBuilder: (context, error, stack) => const SizedBox(
         width: 48,
         height: 48,
-        child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white70),
+        child: PolygonRefreshIndicator(),
       ),
     );
   }

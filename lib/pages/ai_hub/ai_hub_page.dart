@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/ai_model_card.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
@@ -462,7 +461,7 @@ class _PluginModulePageState extends State<PluginModulePage> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: PolygonRefreshIndicator(),
                       )
                     : const Icon(Icons.auto_awesome, size: 18),
                 label: Text(_running ? t.processing : t.run),
@@ -616,21 +615,18 @@ class _PluginEditorState extends State<_PluginEditor> {
                     ),
                     child: Column(
                       children: [
-                        _field(Icons.badge_outlined, t.name, _nameCtrl),
+                        _field(t.name, _nameCtrl),
                         _field(
-                          Icons.emoji_emotions_outlined,
                           t.pluginIcon,
                           _iconCtrl,
                           required: false,
                         ),
                         _field(
-                          Icons.description_outlined,
                           t.pluginDescription,
                           _descCtrl,
                           required: false,
                         ),
                         _field(
-                          Icons.notes_outlined,
                           t.pluginPrompt,
                           _promptCtrl,
                           required: false,
@@ -668,7 +664,6 @@ class _PluginEditorState extends State<_PluginEditor> {
   }
 
   Widget _field(
-    IconData icon,
     String label,
     TextEditingController ctrl, {
     bool required = true,
@@ -681,7 +676,6 @@ class _PluginEditorState extends State<_PluginEditor> {
         maxLines: multiline ? 8 : 1,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, size: 20),
           border: const OutlineInputBorder(),
         ),
         validator: required
@@ -994,7 +988,7 @@ class _SessionDetailDialog extends StatelessWidget {
           if (messages.isEmpty) {
             return const Padding(
               padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
+              child: PolygonRefreshIndicator(),
             );
           }
           final reply = messages.lastWhere(

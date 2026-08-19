@@ -423,7 +423,7 @@ class _RenderDialogueComposePageState
     // 尺寸尚未加载完成时先显示加载态，避免越界
     if (imageSizes.length != imageList.length ||
         cropHeights.length != imageList.length) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: PolygonRefreshIndicator());
     }
 
     return Padding(
@@ -517,7 +517,7 @@ class _RenderDialogueComposePageState
 
     final images = _uiImages;
     if (images == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: PolygonRefreshIndicator());
     }
     if (images.isEmpty) {
       return Center(child: Text(t.noImages));

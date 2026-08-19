@@ -10,10 +10,15 @@ void showCenter({
   Widget? icon,
   Widget? trailing,
   int? seconds,
+  Rect? centerRect,
 }) {
   var newEntry = OverlayEntry(
-    builder: (context) =>
-        _CenterOverlay(message: message, icon: icon, trailing: trailing),
+    builder: (context) => _CenterOverlay(
+      message: message,
+      icon: icon,
+      trailing: trailing,
+      centerRect: centerRect,
+    ),
   );
 
   var state = context.findAncestorStateOfType<OverlayWidgetState>();
@@ -24,19 +29,30 @@ void showCenter({
 }
 
 class _CenterOverlay extends StatelessWidget {
-  const _CenterOverlay({required this.message, this.icon, this.trailing});
+  const _CenterOverlay({
+    required this.message,
+    this.icon,
+    this.trailing,
+    this.centerRect,
+  });
 
   final String message;
   final Widget? icon;
   final Widget? trailing;
 
+  /// 指定后把提示居中显示在该区域（如宽屏下居中于播放器组件），否则居中于整个屏幕
+  final Rect? centerRect;
+
   @override
   Widget build(BuildContext context) {
+    final rect = centerRect;
     return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0 + MediaQuery.of(context).viewInsets.bottom,
+      top: rect?.top ?? 0,
+      left: rect?.left ?? 0,
+      right: rect == null ? 0 : null,
+      bottom: rect == null ? MediaQuery.of(context).viewInsets.bottom : null,
+      width: rect?.width,
+      height: rect?.height,
       child: Align(
         alignment: Alignment.center,
         child: ClipRRect(

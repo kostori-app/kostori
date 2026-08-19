@@ -3,6 +3,7 @@ import 'package:kostori/bbcode/bbcode_precache.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bean/card/episode_comments_card.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -32,6 +33,7 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
 
   InfoController get infoController => widget.infoController;
   bool commentsQueryTimeout = false;
+  bool _commentsLoadFailed = false;
 
   /// 从已加载的集评论中提取图片 URL 并预加载（页面内保持缓存）
   void _precacheCommentImages() {
@@ -48,13 +50,18 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
 
   Future<void> loadComments(int episode, {int offset = 0}) async {
     commentsQueryTimeout = false;
-    await queryBangumiEpisodeCommentsByID(episode, offset: offset).then((_) {
-      if (infoController.episodeCommentsList.isEmpty && mounted) {
-        setState(() {
-          commentsQueryTimeout = true;
-        });
-      }
-    });
+    _commentsLoadFailed = false;
+    try {
+      await queryBangumiEpisodeCommentsByID(episode, offset: offset);
+    } catch (_) {
+      _commentsLoadFailed = true;
+    }
+    // 加载完成（无论成功/失败/空）：结束骨架，避免 0 条评论时骨架永久残留
+    if (mounted) {
+      setState(() {
+        commentsQueryTimeout = true;
+      });
+    }
   }
 
   Future<void> queryBangumiEpisodeCommentsByID(int id, {int offset = 0}) async {
@@ -177,26 +184,42 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                           _buildReplyCard(context, index),
                     ),
                   )
-                : SliverList.builder(
-                    itemCount: 4,
-                    itemBuilder: (context, _) {
-                      return SafeArea(
-                        top: false,
-                        bottom: false,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > 950
-                                  ? 950
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: EpisodeCommentsCard.bone(),
-                            ),
-                          ),
+                : commentsQueryTimeout
+                      ? SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _commentsLoadFailed
+                              ? ErrorState(
+                                  message: t.failedToLoadPleaseTryAgain,
+                                  retry: () => loadComments(episode.id),
+                                  retryText: t.reload,
+                                )
+                              : EmptyState(
+                                  message: t.nobodysPostedAnythingYet,
+                                  retry: () => loadComments(episode.id),
+                                  retryText: t.reload,
+                                ),
+                        )
+                      : SliverList.builder(
+                          itemCount: 4,
+                          itemBuilder: (context, _) {
+                            return SafeArea(
+                              top: false,
+                              bottom: false,
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: SizedBox(
+                                    width: MediaQuery.sizeOf(context).width >
+                                            950
+                                        ? 950
+                                        : MediaQuery.sizeOf(context).width - 32,
+                                    child: EpisodeCommentsCard.bone(),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
           ],
         ),
       ),

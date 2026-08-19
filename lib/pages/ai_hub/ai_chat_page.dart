@@ -1083,7 +1083,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               children: [
                 Expanded(
                   child: _sessionId == null
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(child: PolygonRefreshIndicator())
                       : StreamBuilder<List<AiTask>>(
                           stream: AiConversationService().watchMessages(
                             _sessionId!,

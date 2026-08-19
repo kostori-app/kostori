@@ -12,13 +12,13 @@ import 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/proxy.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
@@ -44,7 +44,7 @@ Future<void> showVideoClipEditor({
   required Duration duration,
 }) async {
   if (App.isDesktop) {
-    final customPath = appdata.settings['ffmpegPath'] as String?;
+    final customPath = appdata.implicitData['ffmpegPath'] as String?;
     bool ffmpegExists = false;
 
     if (customPath != null && customPath.isNotEmpty) {
@@ -94,16 +94,14 @@ Future<void> showVideoClipEditor({
     }
   }
 
-  await showPopUpWidget(
-    context,
-    ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-      child: VideoClipEditorPage(
-        videoUrl: videoUrl,
-        httpHeaders: httpHeaders,
-        currentPosition: currentPosition,
-        duration: duration,
-      ),
+  // 用全屏路由展示（而非弹窗）：横屏/宽屏下不再受 PopUpWidget 的
+  // 尺寸限制，播放器在左、控件在右可正常操作
+  await context.to(
+    () => VideoClipEditorPage(
+      videoUrl: videoUrl,
+      httpHeaders: httpHeaders,
+      currentPosition: currentPosition,
+      duration: duration,
     ),
   );
 }
@@ -536,7 +534,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   }
 
   Future<String?> _findFfmpeg() async {
-    final customPath = appdata.settings['ffmpegPath'] as String?;
+    final customPath = appdata.implicitData['ffmpegPath'] as String?;
     if (customPath != null && customPath.isNotEmpty) {
       if (await File(customPath).exists()) return customPath;
     }
@@ -1172,34 +1170,70 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                 ],
               ),
             ),
+            // 横屏（宽度 > 高度）时横向布局：播放组件在左、控件在右，
+            // 竖屏保持纵向滚动（预览在上、控件在下）
             Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (n) {
-                  if (n.metrics.axisDirection != AxisDirection.down) {
-                    return false;
-                  }
-                  final atTop = n.metrics.pixels == n.metrics.minScrollExtent;
-                  if (atTop != _atScrollTop) {
-                    setState(() => _atScrollTop = atTop);
-                  }
-                  return false;
-                },
-                child: CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildVideoPreview()),
-                    SliverToBoxAdapter(child: _buildVideoControls()),
-                    SliverToBoxAdapter(child: _buildTimeSection()),
-                    SliverToBoxAdapter(child: _buildExportSettings()),
-                    SliverToBoxAdapter(child: _buildCropSection()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                  ],
-                ),
-              ),
+              child:
+                  MediaQuery.of(context).size.width >
+                      MediaQuery.of(context).size.height
+                  ? _buildLandscapeBody()
+                  : _buildControlsScroll(),
             ),
             _buildExportBar(),
           ],
         ),
       ),
+    );
+  }
+
+  /// 竖屏：预览 + 控件纵向滚动；横屏右栏：仅控件滚动
+  Widget _buildControlsScroll({bool includePreview = true}) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (n.metrics.axisDirection != AxisDirection.down) {
+          return false;
+        }
+        final atTop = n.metrics.pixels == n.metrics.minScrollExtent;
+        if (atTop != _atScrollTop) {
+          setState(() => _atScrollTop = atTop);
+        }
+        return false;
+      },
+      child: CustomScrollView(
+        slivers: [
+          if (includePreview) SliverToBoxAdapter(child: _buildVideoPreview()),
+          SliverToBoxAdapter(child: _buildVideoControls()),
+          SliverToBoxAdapter(child: _buildTimeSection()),
+          SliverToBoxAdapter(child: _buildExportSettings()),
+          SliverToBoxAdapter(child: _buildCropSection()),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+
+  /// 横屏布局：播放组件在左、控件在右
+  Widget _buildLandscapeBody() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 左：播放组件（黑底 + 预览按比例居中铺满左栏）
+        Expanded(
+          flex: 3,
+          child: ColoredBox(
+            color: Colors.black,
+            child: Center(child: _buildVideoPreview()),
+          ),
+        ),
+        // 右：控件滚动
+        Expanded(
+          flex: 2,
+          child: ColoredBox(
+            color: Theme.of(context).colorScheme.surface,
+            child: _buildControlsScroll(includePreview: false),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1221,10 +1255,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(
-                    color: Colors.white70,
-                    strokeWidth: 2.5,
-                  ),
+                  const KostoriRefreshIndicator(),
                   const SizedBox(height: 10),
                   Text(
                     _previewStatus.isEmpty ? t.loadingPreview : _previewStatus,
@@ -1477,10 +1508,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                         child: SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white38,
-                          ),
+                          child: PolygonRefreshIndicator(),
                         ),
                       )
                     : _thumbnailPaths.isEmpty
@@ -2168,10 +2196,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     ? SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: cs.onPrimary,
-                        ),
+                        child: PolygonRefreshIndicator(),
                       )
                     : const Icon(Icons.file_download_outlined, size: 18),
                 label: Text(_isExporting ? t.exporting : t.export),

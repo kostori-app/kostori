@@ -12,6 +12,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
+import 'package:kostori/foundation/anime_source/anime_play_result.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
@@ -27,6 +28,7 @@ import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.da
 import 'package:kostori/pages/watcher/editor/video_clip_editor.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
@@ -79,6 +81,14 @@ abstract class _PlayerController with Store {
   bool loading = true;
   @observable
   bool isPortraitFullscreen = false;
+
+  /// 加载流程步骤：0 解析地址 → 1 初始化播放器 → 2 加载媒体 → 3 缓冲
+  @observable
+  int loadingStep = 0;
+
+  /// 是否正在解析视频地址（解析结束/失败后为 false，用于覆盖层不误导）
+  @observable
+  bool isParsing = false;
 
   late Player player = Player(
     configuration: PlayerConfiguration(
@@ -140,6 +150,10 @@ abstract class _PlayerController with Store {
   bool isBuffering = false;
   @observable
   bool completed = false;
+
+  /// 最近一次打开媒体是否失败：覆盖层据此隐藏加载提示
+  @observable
+  bool loadFailed = false;
   @observable
   Duration buffer = Duration.zero;
   @observable
@@ -159,6 +173,11 @@ abstract class _PlayerController with Store {
   @observable
   String playUrl = ''; // 实际播放的 URL（可能是代理 URL）
   Map<String, String>? videoHeaders; // HTTP headers for video
+
+  /// 当前播放的结构化结果（音轨/字幕/清晰度等媒体信息，由源脚本提供）
+  @observable
+  AnimePlayResult? playResult;
+
   @observable
   String saveAddress = '';
   @observable
@@ -257,6 +276,17 @@ abstract class _PlayerController with Store {
   bool chatOverlayOpen = false;
   @observable
   String animeImg = '';
+
+  /// 当前观看番剧标题（初始化时从 watcher 缓存，供无 context 处使用）
+  String animeTitle = '';
+
+  /// 当前观看番剧的源 key / id
+  String? animeSourceKey;
+
+  String? animeAnimeId;
+
+  /// 上传者
+  String? animeUploader;
   @observable
   String currentSetName = '';
 
@@ -363,23 +393,34 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> playNextEpisode() async {
-    WatcherState.currentState!.playNextEpisode();
+    WatcherPlayer.currentState!.playNextEpisode();
   }
 
-  void playEpisode(int index, int road) {
-    WatcherState.currentState!.loadInfo(index, road);
-  }
+  Future<void> playEpisode(int index, int road) =>
+      WatcherPlayer.currentState!.loadInfo(index, road);
+
+  /// 重载当前集视频链接（重新解析地址）
+  Future<void> reloadCurrent() => WatcherPlayer.currentState!.reloadCurrent();
 
   // 更新当前集数的方法
   void updateCurrentSetName(int newEpisode) {
-    currentSetName = WatcherState.currentState!.anime.episode!.values
-        .elementAt(currentRoad)
-        .values
-        .elementAt(newEpisode - 1);
-    videoUrl = WatcherState.currentState!.anime.episode!.values
-        .elementAt(currentRoad)
-        .keys
-        .elementAt(newEpisode - 1);
+    final watcher = WatcherPlayer.currentState!;
+    final anime = watcher.anime;
+    if (anime.episode == null || anime.episode!.isEmpty) {
+      // 系列模式：无 episode 结构，当前集名 = 系列条目标题
+      final entry = watcher.seriesAt(newEpisode - 1);
+      currentSetName = entry?.title ?? '';
+      videoUrl = entry?.id ?? '';
+    } else {
+      currentSetName = anime.episode!.values
+          .elementAt(currentRoad)
+          .values
+          .elementAt(newEpisode - 1);
+      videoUrl = anime.episode!.values
+          .elementAt(currentRoad)
+          .keys
+          .elementAt(newEpisode - 1);
+    }
   }
 
   Future<void> changeAudioOutType() async {
@@ -516,7 +557,16 @@ abstract class _PlayerController with Store {
     playerLogSubscription = player.stream.log.listen((event) {
       playerLog.add(PlayerLogEntry(event));
       if (event.level == 'error' && event.text.contains('Failed to open')) {
-        App.rootContext.showMessage(message: 'Failed to open');
+        App.rootContext.showMessage(
+          message: t.failedToOpen,
+          level: LogLevel.error,
+        );
+        // open 对部分失败不抛异常，而是异步走 log 流；
+        // 这里复位加载状态并标记失败，避免覆盖层一直显示"加载媒体数据"
+        loadingStep = 0;
+        isParsing = false;
+        isBuffering = false;
+        loadFailed = true;
       }
     });
 
@@ -558,7 +608,11 @@ abstract class _PlayerController with Store {
     // playerTimer = getPlayerTimer();
     startPlayerStreams();
 
-    animeImg = WatcherState.currentState!.anime.cover;
+    animeImg = WatcherPlayer.currentState!.anime.cover;
+    animeTitle = WatcherPlayer.currentState!.anime.title;
+    animeSourceKey = WatcherPlayer.currentState!.anime.sourceKey;
+    animeAnimeId = WatcherPlayer.currentState!.anime.animeId;
+    animeUploader = WatcherPlayer.currentState!.anime.uploader;
 
     timeStream = Stream.periodic(
       const Duration(seconds: 1),
@@ -810,6 +864,39 @@ abstract class _PlayerController with Store {
     }
   }
 
+  /// 切换音轨（mpv aid，索引从 1 开始；源 MediaStream 通常从 0 起）
+  Future<void> setAudioTrack(int index) async {
+    try {
+      final pp = player.platform as NativePlayer;
+      await pp.waitForPlayerInitialization;
+      await pp.command(['aid', '${index + 1}']);
+    } catch (_) {}
+  }
+
+  /// 切换字幕（mpv sid；index < 0 关闭字幕）
+  Future<void> setSubtitleTrack(int index) async {
+    try {
+      final pp = player.platform as NativePlayer;
+      await pp.waitForPlayerInitialization;
+      await pp.command(['sid', index >= 0 ? '${index + 1}' : 'no']);
+    } catch (_) {}
+  }
+
+  /// 切换清晰度（源提供对应清晰度的播放地址时）
+  Future<void> switchQuality(String url) async {
+    if (url.isEmpty) return;
+    try {
+      final pos = currentPosition;
+      await player.open(
+        Media(url, httpHeaders: videoHeaders ?? {}),
+        play: true,
+      );
+      if (pos > Duration.zero) {
+        await player.seek(pos);
+      }
+    } catch (_) {}
+  }
+
   // 播放/暂停渐隐覆盖层（中上方、半透明磨砂、停留约 0.6s）
   Timer? _playPauseIndicatorTimer;
   OverlayEntry? _playPauseIndicatorEntry;
@@ -976,7 +1063,7 @@ abstract class _PlayerController with Store {
       }
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final title = WatcherState.currentState!.anime.title;
+      final title = animeTitle;
       final filename = '${title}_$timestamp.png';
 
       final file = await ImageSaver.writeFile(
@@ -1013,6 +1100,25 @@ abstract class _PlayerController with Store {
       currentPosition: currentPosition,
       duration: duration,
     );
+  }
+
+  /// 下载当前播放的视频到本地（mp4/m3u8 均走 ffmpeg，转封装 mp4）
+  Future<void> downloadCurrentVideo() async {
+    final url = playUrl.isNotEmpty ? playUrl : videoUrl;
+    if (url.isEmpty || url.startsWith('blob:')) return;
+    await DownloadManager.instance.enqueue(
+      url: url,
+      title: animeTitle.isNotEmpty ? animeTitle : currentSetName,
+      subtitle: currentSetName,
+      cover: animeImg,
+      sourceKey: animeSourceKey,
+      animeId: animeAnimeId,
+      animeTitle: animeTitle.isNotEmpty ? animeTitle : currentSetName,
+      episode: currentSetName,
+      author: animeUploader,
+      headers: videoHeaders ?? const {},
+    );
+    App.rootContext.showMessage(message: t.downloadQueued);
   }
 }
 

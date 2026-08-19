@@ -82,7 +82,17 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get relatedEntries => '相關條目';
 	@override String get alsoRemoveFilesOnDisk => '同時刪除本地檔案';
 	@override String get animeSourceList => '動漫源列表';
-	@override String get animeSource => '動漫源';
+	@override String get animeSource => '番劇源';
+	@override String get filterAll => '全部';
+	@override String get noMatchingSource => '未找到符合的番源';
+	@override String get filterNonBangumi => '其他';
+	@override String get sortByDefault => '預設';
+	@override String get sortByName => '名稱';
+	@override String get sortById => 'ID';
+	@override String get switchSource => '切換源';
+	@override String get searchSourceHint => '搜尋其他源的該條目';
+	@override String get needVerification => '需要驗證';
+	@override String get tapToVerify => '點擊驗證';
 	@override String get appearance => '外觀';
 	@override String get areYouSureYouWantToClearYourHistory => '確定要清除歷史記錄嗎？';
 	@override String get areYouSureYouWantToClearYourProgress => '確定要清除全部進度嗎？';
@@ -93,7 +103,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get bangumiInfo => '番劇詳情';
 	@override String get block => '封鎖';
 	@override String get blue => '藍色';
-	@override String get brief => '簡介';
+	@override String get brief => '簡潔';
+	@override String get masonry => '瀑布流';
 	@override String get cacheLimit => '快取限制';
 	@override String get cacheSize => '快取大小';
 	@override String get cacheCleared => '快取已清除';
@@ -171,7 +182,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get doNotReportAnyIssuesRelatedToSourcesToAppRepo => '請勿向主儲存庫報告任何與源有關的問題。';
 	@override String get downloadAll => '下載全部';
 	@override String get downloadSelected => '下載選中';
-	@override String get downloadThreads => '下載執行緒';
 	@override String get download => '下載';
 	@override String get downloading => '下載中';
 	@override String get edit => '編輯';
@@ -419,15 +429,18 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String standardDeviationS({required Object s}) => '標準差：${s}';
 	@override String get nobodysPostedAnythingYet => '目前還沒有人發佈內容...';
 	@override String get reload => '重新載入';
-	@override String get mePagePlugin => '個人頁外掛';
+	@override String get mePagePlugin => '外掛';
 	@override String get noMePagePlugin => '暫無外掛（將 *.js 放入 plugins 目錄）';
 	@override String get openDir => '開啟目錄';
 	@override String get createPlugin => '建立外掛';
+	@override String get pluginSourceUrl => '外掛地址';
+	@override String get fetchPlugins => '獲取外掛';
 	@override String get pluginName => '外掛檔名';
 	@override String get alreadyExists => '已存在';
 	@override String get mainContent => '正文';
 	@override String get switchh => '切換';
 	@override String get failedToLoadPleaseTryAgain => '載入失敗，請重試。';
+	@override String get failedToOpen => '開啟失敗';
 	@override String get doing => '在看';
 	@override String get collect => '看過';
 	@override String get wish => '想看';
@@ -556,6 +569,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vceEstimating => '估算中…';
 	@override String get vceReloadPreview => '重新載入預覽片段';
 	@override String get vceReload => '重載';
+	@override String get reloadEpisode => '重載當前集';
 	@override String get vceTimelineThumbnails => '影片時間軸縮圖';
 	@override String get vceStart => '起點';
 	@override String get vceEnd => '終點';
@@ -753,6 +767,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get audioOptionCompatibility => '音訊選項：\n 相容性';
 	@override String get audioOutputDevice => '音訊輸出裝置';
 	@override String get noAudioDevice => '未偵測到音訊裝置';
+	@override String get volumeBoost => '音量增益';
 	@override String get volumeBoostEnabled => '音量增益: 開';
 	@override String get volumeBoostDisabled => '音量增益: 關';
 	@override String get volume => '音量';
@@ -942,7 +957,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get onHoldStatus => '擱置';
 	@override String get droppedStatus => '拋棄';
 	@override String get player => '播放器';
-	@override String get audioOption => '音訊選項';
+	@override String get audioOption => '低延遲音訊';
 	@override String get hardwareDecoding => '硬體解碼';
 	@override String get hardwareDecoder => '硬體解碼器';
 	@override String get videoRenderer => '影片渲染器';
@@ -2196,6 +2211,52 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get builderKeyInvalid => '鍵只能包含字母、數字和底線';
 	@override String get builderImported => '來源已匯入';
 	@override String get builderGenerateFailed => '生成失敗';
+	@override String get collapseSidebar => '收起側邊欄';
+	@override String get expandSidebar => '展開側邊欄';
+	@override String get clearFinishedDownload => '清空已完成下載';
+	@override String get downloadEmpty => '暫無下載任務';
+	@override String get downloadQueued => '等待中';
+	@override String get downloadCompleted => '已完成';
+	@override String get pauseDownload => '暫停下載';
+	@override String get resumeDownload => '繼續下載';
+	@override String get retryDownload => '重試下載';
+	@override String get pausedDownload => '已暫停';
+	@override String get downloadSettings => '下載設定';
+	@override String get downloadConcurrent => '任務並發數';
+	@override String get downloadSegmentConcurrent => '分片並發數';
+	@override String get downloadWifiOnly => '僅 WiFi 下載';
+	@override String get downloadOther => '其他';
+	@override String get downloadRecords => '下載紀錄';
+	@override String get openWithOtherPlayer => '用其他播放器開啟';
+	@override String get downloadTitleFormat => '下載標題格式';
+	@override String get downloadFormatHint => '佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份';
+	@override String get downloadDir => '下載目錄';
+	@override String get loadingStepParse => '解析影片網址';
+	@override String get loadingStepInit => '初始化播放器';
+	@override String get loadingStepLoad => '載入媒體資料';
+	@override String get loadingStepBuffer => '緩衝播放';
+	@override String get downloadEpisode => '選擇要下載的集數';
+	@override String get downloadNotYet => '暫無集數可下載';
+	@override String downloadSelectedCount({required Object n}) => '下載 ${n} 集';
+	@override String get selectResolution => '選擇解析度';
+	@override String get defaultResolution => '預設';
+	@override String get noResolutionAvailable => '無更多畫質可選';
+	@override String get series => '系列';
+	@override String get playing => '正在播放';
+	@override String get selectNone => '取消全選';
+	@override String get downloadActive => '正在下載';
+	@override String get redownload => '重新下載';
+	@override String get startAll => '全部開始';
+	@override String get pauseAll => '全部暫停';
+	@override String get cancelAll => '全部取消';
+	@override String get recordsEmpty => '暫無下載記錄';
+	@override String get fileNotFound => '找不到檔案';
+	@override String get deleted => '已刪除';
+	@override String get localPlayerSpeedTip => '長按畫面切換倍速';
+	@override String get audioTrack => '音軌';
+	@override String get subtitle => '字幕';
+	@override String get subtitleOff => '關閉字幕';
+	@override String get quality => '清晰度';
 }
 
 // Path: colors
@@ -2301,7 +2362,17 @@ extension on TranslationsZhTw {
 			'relatedEntries' => '相關條目',
 			'alsoRemoveFilesOnDisk' => '同時刪除本地檔案',
 			'animeSourceList' => '動漫源列表',
-			'animeSource' => '動漫源',
+			'animeSource' => '番劇源',
+			'filterAll' => '全部',
+			'noMatchingSource' => '未找到符合的番源',
+			'filterNonBangumi' => '其他',
+			'sortByDefault' => '預設',
+			'sortByName' => '名稱',
+			'sortById' => 'ID',
+			'switchSource' => '切換源',
+			'searchSourceHint' => '搜尋其他源的該條目',
+			'needVerification' => '需要驗證',
+			'tapToVerify' => '點擊驗證',
 			'appearance' => '外觀',
 			'areYouSureYouWantToClearYourHistory' => '確定要清除歷史記錄嗎？',
 			'areYouSureYouWantToClearYourProgress' => '確定要清除全部進度嗎？',
@@ -2312,7 +2383,8 @@ extension on TranslationsZhTw {
 			'bangumiInfo' => '番劇詳情',
 			'block' => '封鎖',
 			'blue' => '藍色',
-			'brief' => '簡介',
+			'brief' => '簡潔',
+			'masonry' => '瀑布流',
 			'cacheLimit' => '快取限制',
 			'cacheSize' => '快取大小',
 			'cacheCleared' => '快取已清除',
@@ -2390,7 +2462,6 @@ extension on TranslationsZhTw {
 			'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => '請勿向主儲存庫報告任何與源有關的問題。',
 			'downloadAll' => '下載全部',
 			'downloadSelected' => '下載選中',
-			'downloadThreads' => '下載執行緒',
 			'download' => '下載',
 			'downloading' => '下載中',
 			'edit' => '編輯',
@@ -2638,15 +2709,18 @@ extension on TranslationsZhTw {
 			'standardDeviationS' => ({required Object s}) => '標準差：${s}',
 			'nobodysPostedAnythingYet' => '目前還沒有人發佈內容...',
 			'reload' => '重新載入',
-			'mePagePlugin' => '個人頁外掛',
+			'mePagePlugin' => '外掛',
 			'noMePagePlugin' => '暫無外掛（將 *.js 放入 plugins 目錄）',
 			'openDir' => '開啟目錄',
 			'createPlugin' => '建立外掛',
+			'pluginSourceUrl' => '外掛地址',
+			'fetchPlugins' => '獲取外掛',
 			'pluginName' => '外掛檔名',
 			'alreadyExists' => '已存在',
 			'mainContent' => '正文',
 			'switchh' => '切換',
 			'failedToLoadPleaseTryAgain' => '載入失敗，請重試。',
+			'failedToOpen' => '開啟失敗',
 			'doing' => '在看',
 			'collect' => '看過',
 			'wish' => '想看',
@@ -2757,6 +2831,8 @@ extension on TranslationsZhTw {
 			'terrible' => '非常差',
 			'bad' => '差',
 			'poor' => '較差',
+			_ => null,
+		} ?? switch (path) {
 			'okay' => '不過不失',
 			'fine' => '還行',
 			'good' => '推薦',
@@ -2770,13 +2846,12 @@ extension on TranslationsZhTw {
 			'watcherPlayingNext' => '正在播放下一集',
 			'watcherEpisodeLoadError' => ({required Object error}) => '載入劇集時出錯 ${error}',
 			'watcherNoMoreEpisodes' => '沒有更多劇集可播放',
-			_ => null,
-		} ?? switch (path) {
 			'watcherRouteNotFound' => '線路不存在',
 			'watcherDuplicateEpisode' => '已載入此集數',
 			'vceEstimating' => '估算中…',
 			'vceReloadPreview' => '重新載入預覽片段',
 			'vceReload' => '重載',
+			'reloadEpisode' => '重載當前集',
 			'vceTimelineThumbnails' => '影片時間軸縮圖',
 			'vceStart' => '起點',
 			'vceEnd' => '終點',
@@ -2974,6 +3049,7 @@ extension on TranslationsZhTw {
 			'audioOptionCompatibility' => '音訊選項：\n 相容性',
 			'audioOutputDevice' => '音訊輸出裝置',
 			'noAudioDevice' => '未偵測到音訊裝置',
+			'volumeBoost' => '音量增益',
 			'volumeBoostEnabled' => '音量增益: 開',
 			'volumeBoostDisabled' => '音量增益: 關',
 			'volume' => '音量',
@@ -3205,7 +3281,7 @@ extension on TranslationsZhTw {
 			'onHoldStatus' => '擱置',
 			'droppedStatus' => '拋棄',
 			'player' => '播放器',
-			'audioOption' => '音訊選項',
+			'audioOption' => '低延遲音訊',
 			'hardwareDecoding' => '硬體解碼',
 			'hardwareDecoder' => '硬體解碼器',
 			'videoRenderer' => '影片渲染器',
@@ -3269,6 +3345,8 @@ extension on TranslationsZhTw {
 			'serviceSettings' => '服務設定',
 			'enableService' => '啟用服務',
 			'serviceIsStopped' => '服務已停止',
+			_ => null,
+		} ?? switch (path) {
 			'runningOnH' => ({required Object h}) => '執行於 ${h}',
 			'apiKey' => 'API Key',
 			'activeKey' => '目前金鑰',
@@ -3284,8 +3362,6 @@ extension on TranslationsZhTw {
 			'regenerate' => '重新產生',
 			'port' => '連接埠',
 			'defaultP' => ({required Object p}) => '預設：${p}',
-			_ => null,
-		} ?? switch (path) {
 			'bindMode' => '綁定模式',
 			'chooseIpVersionToListenOn' => '選擇要監聽的 IP 版本',
 			'hubServer' => 'Hub 服務端',
@@ -3783,6 +3859,8 @@ extension on TranslationsZhTw {
 			'pinnedMessages' => '置頂訊息',
 			'announcement' => '公告',
 			'image' => '圖片',
+			_ => null,
+		} ?? switch (path) {
 			'enterToSendCtrlEnterForNewline' => ' Enter 發送，Ctrl+Enter 換行',
 			'message' => '訊息',
 			'stickers' => '貼紙',
@@ -3798,8 +3876,6 @@ extension on TranslationsZhTw {
 			'required' => '必填',
 			'invalidNumber' => '無效數字',
 			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
-			_ => null,
-		} ?? switch (path) {
 			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
 			'linkFormatErrorCannotParseBangumiId' => 'Link format error, cannot parse Bangumi ID',
 			'fetchingBangumiInfo' => 'Fetching Bangumi info...',
@@ -4297,6 +4373,8 @@ extension on TranslationsZhTw {
 			'modelType' => '模型類型',
 			'inputModality' => '輸入模態',
 			'outputModality' => '輸出模態',
+			_ => null,
+		} ?? switch (path) {
 			'supportsReasoning' => '支援推理',
 			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
@@ -4312,8 +4390,6 @@ extension on TranslationsZhTw {
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
 			'apiFormat' => '介面格式',
-			_ => null,
-		} ?? switch (path) {
 			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google（Gemini）',
@@ -4465,6 +4541,52 @@ extension on TranslationsZhTw {
 			'builderKeyInvalid' => '鍵只能包含字母、數字和底線',
 			'builderImported' => '來源已匯入',
 			'builderGenerateFailed' => '生成失敗',
+			'collapseSidebar' => '收起側邊欄',
+			'expandSidebar' => '展開側邊欄',
+			'clearFinishedDownload' => '清空已完成下載',
+			'downloadEmpty' => '暫無下載任務',
+			'downloadQueued' => '等待中',
+			'downloadCompleted' => '已完成',
+			'pauseDownload' => '暫停下載',
+			'resumeDownload' => '繼續下載',
+			'retryDownload' => '重試下載',
+			'pausedDownload' => '已暫停',
+			'downloadSettings' => '下載設定',
+			'downloadConcurrent' => '任務並發數',
+			'downloadSegmentConcurrent' => '分片並發數',
+			'downloadWifiOnly' => '僅 WiFi 下載',
+			'downloadOther' => '其他',
+			'downloadRecords' => '下載紀錄',
+			'openWithOtherPlayer' => '用其他播放器開啟',
+			'downloadTitleFormat' => '下載標題格式',
+			'downloadFormatHint' => '佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份',
+			'downloadDir' => '下載目錄',
+			'loadingStepParse' => '解析影片網址',
+			'loadingStepInit' => '初始化播放器',
+			'loadingStepLoad' => '載入媒體資料',
+			'loadingStepBuffer' => '緩衝播放',
+			'downloadEpisode' => '選擇要下載的集數',
+			'downloadNotYet' => '暫無集數可下載',
+			'downloadSelectedCount' => ({required Object n}) => '下載 ${n} 集',
+			'selectResolution' => '選擇解析度',
+			'defaultResolution' => '預設',
+			'noResolutionAvailable' => '無更多畫質可選',
+			'series' => '系列',
+			'playing' => '正在播放',
+			'selectNone' => '取消全選',
+			'downloadActive' => '正在下載',
+			'redownload' => '重新下載',
+			'startAll' => '全部開始',
+			'pauseAll' => '全部暫停',
+			'cancelAll' => '全部取消',
+			'recordsEmpty' => '暫無下載記錄',
+			'fileNotFound' => '找不到檔案',
+			'deleted' => '已刪除',
+			'localPlayerSpeedTip' => '長按畫面切換倍速',
+			'audioTrack' => '音軌',
+			'subtitle' => '字幕',
+			'subtitleOff' => '關閉字幕',
+			'quality' => '清晰度',
 			_ => null,
 		};
 	}

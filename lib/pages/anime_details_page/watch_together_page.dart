@@ -12,7 +12,6 @@ import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/hub/hub_create_room_dialog.dart';
 import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
-import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/protocol_parser.dart';
@@ -352,12 +351,9 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
       final prev = pc.syncLocked;
       pc.syncLocked = false;
       try {
-        if (sync.episode != pc.currentEpisoded) {
-          await WatcherState.currentState?.loadInfo(
-            sync.episode,
-            pc.currentRoad,
-          );
-        }
+          if (sync.episode != pc.currentEpisoded) {
+            await pc.playEpisode(sync.episode, pc.currentRoad);
+          }
         // 延迟补偿：房主在播时，按「距收到广播的时间」补上进度，减少成员固有落后。
         // 用本机收到时间（ownerSyncSentAt）而非房主 sentAt，避免两端时钟不同步导致跳变。
         var targetMs = sync.positionMs;
@@ -990,7 +986,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
                   ? const SizedBox(
                       width: 14,
                       height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: PolygonRefreshIndicator(),
                     )
                   : const Icon(Icons.play_arrow, size: 16),
               label: Text(t.syncToOwner),

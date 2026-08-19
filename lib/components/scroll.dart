@@ -341,11 +341,22 @@ class _AppScrollBarState extends State<AppScrollBar> {
     maxExtent = outerMax + innerMax;
     position = outerOffset + innerOffset;
 
-    // 直接在当前帧重建，避免 post-frame 二次 setState 造成 thumb 位置滞后一帧而抖动
+    // 直接在当前帧重建，避免 post-frame 二次 setState 造成 thumb 位置滞后一帧而抖动；
+    // 但窗口 resize 时滚动通知会在 layout 阶段派发，此时 setState 会触发
+    // "Build scheduled during frame"，需要延迟到 post-frame 处理
     if (!mounted) return false;
     showScrollbar = true;
     _restartHideTimer();
-    setState(() {});
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      setState(() {});
+    }
 
     return false;
   }

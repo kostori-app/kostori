@@ -4,11 +4,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
@@ -393,10 +393,10 @@ class _RemoteControlTab extends ConsumerWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: SizedBox(
-                          width: 160,
-                          height: 160,
-                          child: PrettyQrView.data(data: state.qrContent!),
+                        child: KostoriQrCode(
+                          content: state.qrContent!,
+                          size: 160,
+                          logoScale: 0.25,
                         ),
                       ),
                       const SizedBox(height: 12),

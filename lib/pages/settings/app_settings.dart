@@ -210,11 +210,6 @@ class _AppSettingsState extends State<AppSettings> {
             ),
           ),
         ),
-        // 个人页插件管理
-        const SliverPadding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          sliver: SliverToBoxAdapter(child: MePagePluginSettings()),
-        ),
         // 桌面平台：FFmpeg 设置
         if (App.isDesktop)
           SliverPadding(
@@ -226,7 +221,8 @@ class _AppSettingsState extends State<AppSettings> {
                   _CallbackSetting(
                     title: t.selectFile,
                     subtitle: () {
-                      final p = appdata.settings['ffmpegPath'] as String?;
+                      final p =
+                          appdata.implicitData['ffmpegPath'] as String?;
                       if (p == null || p.trim().isEmpty) {
                         return t.notSet;
                       }
@@ -238,8 +234,8 @@ class _AppSettingsState extends State<AppSettings> {
                       );
                       if (file != null) {
                         final path = file.path;
-                        appdata.settings['ffmpegPath'] = path;
-                        appdata.saveData();
+                        appdata.implicitData['ffmpegPath'] = path;
+                        appdata.writeImplicitData();
                         setState(() {});
                       }
                     },
@@ -755,7 +751,7 @@ class _HubUploadedImagesPageState extends State<_HubUploadedImagesPage> {
     return PopUpWidgetScaffold(
       title: t.hubUploadedImages,
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: PolygonRefreshIndicator())
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

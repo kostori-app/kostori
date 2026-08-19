@@ -38,7 +38,13 @@ class _SearchHistoryDb extends _$_SearchHistoryDb {
 
 LazyDatabase _openConn() => LazyDatabase(() async {
   final file = File(p.join(App.dataPath, 'search_history.db'));
-  return NativeDatabase.createInBackground(file);
+  return NativeDatabase.createInBackground(
+  file,
+  setup: (db) {
+    db.execute('PRAGMA journal_mode = WAL;');
+    db.execute('PRAGMA synchronous = NORMAL;');
+  },
+);
 });
 
 class SearchHistoryItem {

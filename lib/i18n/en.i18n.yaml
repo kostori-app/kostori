@@ -43,6 +43,16 @@ relatedEntries: Related Entries
 alsoRemoveFilesOnDisk: Also remove files on disk
 animeSourceList: Anime Source list
 animeSource: Anime Source
+filterAll: All
+noMatchingSource: No matching sources
+filterNonBangumi: Others
+sortByDefault: Default
+sortByName: Name
+sortById: ID
+switchSource: Switch source
+searchSourceHint: Search this title on other sources
+needVerification: Needs verification
+tapToVerify: Tap to verify
 appearance: Appearance
 areYouSureYouWantToClearYourHistory: Are you sure you want to clear your history?
 areYouSureYouWantToClearYourProgress: Are you sure you want to clear your progress?
@@ -65,6 +75,7 @@ glimmerModeOn: On
 glimmerModeOff: Off
 blue: Blue
 brief: Brief
+masonry: Masonry
 cacheLimit: Cache Limit
 cacheSize: Cache Size
 cacheCleared: Cache cleared
@@ -142,7 +153,6 @@ displayTimeAndBatteryInfoInReader: Display time & battery info in reader
 doNotReportAnyIssuesRelatedToSourcesToAppRepo: Do not report any issues related to sources to App repo.
 downloadAll: Download All
 downloadSelected: Download Selected
-downloadThreads: Download Threads
 download: Download
 downloading: Downloading
 edit: Edit
@@ -390,15 +400,18 @@ barChart: Bar Chart
 standardDeviationS: "Standard Deviation: ${s}"
 nobodysPostedAnythingYet: Nobody's posted anything yet...
 reload: Reload
-mePagePlugin: Personal Page Plugins
+mePagePlugin: Plugins
 noMePagePlugin: No plugins (put *.js into plugins folder)
 openDir: Open Folder
 createPlugin: Create Plugin
+pluginSourceUrl: Plugin Source URL
+fetchPlugins: Fetch Plugins
 pluginName: Plugin file name
 alreadyExists: already exists
 mainContent: Main Content
 switchh: Switch
 failedToLoadPleaseTryAgain: Failed to load, please try again.
+failedToOpen: Failed to open
 doing: doing
 collect: collect
 wish: wish
@@ -527,6 +540,7 @@ watcherDuplicateEpisode: Episode already loaded
 vceEstimating: Estimating…
 vceReloadPreview: Reload preview clip
 vceReload: Reload
+reloadEpisode: Reload current episode
 vceTimelineThumbnails: Video timeline thumbnails
 vceStart: Start
 vceEnd: End
@@ -734,6 +748,7 @@ audioOptionCompatibility: |-
    Compatibility
 audioOutputDevice: Audio Output Device
 noAudioDevice: No audio device detected
+volumeBoost: Volume Boost
 volumeBoostEnabled: "Volume Boost: On"
 volumeBoostDisabled: "Volume Boost: Off"
 volume: Volume
@@ -952,7 +967,7 @@ collectStatus: Collect
 onHoldStatus: On Hold
 droppedStatus: Dropped
 player: Player
-audioOption: Audio Option
+audioOption: Low-latency audio
 hardwareDecoding: Hardware Decoding
 hardwareDecoder: Hardware decoder
 videoRenderer: Video renderer
@@ -2222,3 +2237,49 @@ builderKeyRequired: Key is required
 builderKeyInvalid: Key must contain only letters, digits and underscore
 builderImported: Source imported
 builderGenerateFailed: Generate failed
+collapseSidebar: Collapse sidebar
+expandSidebar: Expand sidebar
+clearFinishedDownload: Clear finished downloads
+downloadEmpty: No download tasks
+downloadQueued: Queued
+downloadCompleted: Completed
+pauseDownload: Pause download
+resumeDownload: Resume download
+retryDownload: Retry download
+pausedDownload: Paused
+downloadSettings: Download settings
+downloadConcurrent: Concurrent tasks
+downloadSegmentConcurrent: Segment concurrency
+downloadWifiOnly: Wi-Fi only
+downloadOther: Other
+downloadRecords: Download records
+openWithOtherPlayer: Open with other player
+downloadTitleFormat: "Download title format"
+downloadFormatHint: "Placeholders: {title} {episode} {author} {resolution} {source} {year}"
+downloadDir: "Download directory"
+loadingStepParse: "Resolving video address"
+loadingStepInit: "Initializing player"
+loadingStepLoad: "Loading media"
+loadingStepBuffer: "Buffering"
+downloadEpisode: "Select episode to download"
+downloadNotYet: "No episodes available to download"
+downloadSelectedCount: "Download ${n} episodes"
+selectResolution: "Select resolution"
+defaultResolution: "Default"
+noResolutionAvailable: "No more qualities available"
+series: "Series"
+playing: "Playing"
+selectNone: "Select none"
+downloadActive: "Downloading"
+redownload: "Redownload"
+startAll: "Start all"
+pauseAll: "Pause all"
+cancelAll: "Cancel all"
+recordsEmpty: "No download records"
+fileNotFound: "File not found"
+deleted: "Deleted"
+localPlayerSpeedTip: "Long press to change speed"
+audioTrack: "Audio track"
+subtitle: "Subtitles"
+subtitleOff: "Off"
+quality: "Quality"

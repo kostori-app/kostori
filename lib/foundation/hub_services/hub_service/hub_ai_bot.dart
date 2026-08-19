@@ -39,7 +39,7 @@ class HubAiBotConfig {
     this.model = '',
     this.systemPrompt =
         '你是一个活跃在 Kostori Hub 聊天室里的 AI 陪聊伙伴，'
-        '性格友善幽默，说话自然、简洁，用中文回复，不超过 200 字。',
+        '性格友善幽默，说话自然、简洁，用中文回复。',
     this.name = 'AI 助手',
     this.minIntervalSec = 3,
     this.replyDm = true,
@@ -49,6 +49,18 @@ class HubAiBotConfig {
 
   static const _key = 'hub_ai_bot_config';
 
+  /// 默认人设提示词
+  static const String _defaultSystemPrompt =
+      '你是一个活跃在 Kostori Hub 聊天室里的 AI 陪聊伙伴，'
+      '性格友善幽默，说话自然、简洁，用中文回复。';
+
+  /// 迁移旧配置：去掉旧默认里的「不超过 200 字」限制
+  static String _migratePrompt(String prompt) => prompt
+      .replaceAll('，不超过 200 字', '')
+      .replaceAll('，不超过200字', '')
+      .replaceAll('不超过 200 字', '')
+      .replaceAll('不超过200字', '');
+
   static HubAiBotConfig load() {
     final raw = appdata.implicitData[_key];
     if (raw is Map<String, dynamic>) {
@@ -57,10 +69,9 @@ class HubAiBotConfig {
         enabled: j['enabled'] as bool? ?? false,
         provider: j['provider'] as String? ?? 'deepseek',
         model: j['model'] as String? ?? '',
-        systemPrompt:
-            j['systemPrompt'] as String? ??
-            '你是一个活跃在 Kostori Hub 聊天室里的 AI 陪聊伙伴，'
-                '性格友善幽默，说话自然、简洁，用中文回复，不超过 200 字。',
+        systemPrompt: _migratePrompt(
+          j['systemPrompt'] as String? ?? _defaultSystemPrompt,
+        ),
         name: j['name'] as String? ?? 'AI 助手',
         minIntervalSec: j['minIntervalSec'] as int? ?? 3,
         replyDm: j['replyDm'] as bool? ?? true,
@@ -273,8 +284,14 @@ extension HubAiBotExtension on HubService {
           ? history.sublist(history.length - contextWindow)
           : history;
 
-      // ── 系统提示词：人设 + 一起看番剧信息 + 跨房间参考 ──
+      // ── 系统提示词：人设 + 对话格式说明 + 一起看番剧信息 + 跨房间参考 ──
       var systemPrompt = config.systemPrompt;
+      systemPrompt +=
+          '\n\n【对话格式说明】\n'
+          '你正在与房间里的一位用户对话。'
+          '消息中不带「名字: 」前缀的内容都是这位当前对话者说的；'
+          '带「名字: 」前缀的内容是房间里的其他用户说的，仅供上下文参考。'
+          '不要把其他用户的话当成当前对话者说的。';
       if (room.roomType == HubRoomType.watch &&
           room.animeId != null &&
           room.animeId!.isNotEmpty) {
@@ -288,10 +305,8 @@ extension HubAiBotExtension on HubService {
           .where((r) => r.roomId != room.roomId && r.participants.isNotEmpty)
           .toList();
       if (otherRooms.isNotEmpty) {
-        final buf = StringBuffer('\n\n【其他房间近期内容（仅当你被问及/需要总结其他房间时参考）】');
-        var roomsShown = 0;
+        final parts = <String>[];
         for (final r in otherRooms) {
-          if (roomsShown >= 4) break;
           final recentOfRoom = r.messageHistory
               .where(
                 (m) =>
@@ -302,16 +317,19 @@ extension HubAiBotExtension on HubService {
               )
               .toList();
           if (recentOfRoom.isEmpty) continue;
-          final tail = recentOfRoom.length > 2
-              ? recentOfRoom.sublist(recentOfRoom.length - 2)
+          final tail = recentOfRoom.length > 20
+              ? recentOfRoom.sublist(recentOfRoom.length - 20)
               : recentOfRoom;
-          buf.write(
+          parts.add(
             '\n- 房间「${r.roomName}」: '
             '${tail.map((m) => '${m.sender.displayName}: ${HubAiBot.cleanText(m)}').join(' | ')}',
           );
-          roomsShown++;
         }
-        if (roomsShown > 0) systemPrompt += buf.toString();
+        if (parts.isNotEmpty) {
+          systemPrompt +=
+              '\n\n【其他房间近期内容（仅当你被问及/需要总结其他房间时参考）】'
+              '${parts.join()}';
+        }
       }
 
       final messages = <AiMessage>[
@@ -332,7 +350,7 @@ extension HubAiBotExtension on HubService {
         AiUserMessage(
           content:
               '${dmTargetUserId != null ? '[私聊] ' : ''}'
-              '${incoming.sender.displayName}: ${HubAiBot.cleanText(incoming, mode: config.triggerMode, pattern: config.triggerPattern)}',
+              '${HubAiBot.cleanText(incoming, mode: config.triggerMode, pattern: config.triggerPattern)}',
         ),
       ];
 
@@ -340,7 +358,7 @@ extension HubAiBotExtension on HubService {
         messages,
         systemPrompt: systemPrompt,
         modelOverride: config.model.isEmpty ? null : config.model,
-        params: const AiGenerationParams(temperature: 0.8, maxTokens: 800),
+        params: const AiGenerationParams(temperature: 0.8, maxTokens: 8000),
       );
 
       if (res.error) {

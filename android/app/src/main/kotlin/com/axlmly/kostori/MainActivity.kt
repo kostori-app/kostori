@@ -155,6 +155,22 @@ class MainActivity : AudioServiceFragmentActivity() {
                     res.success(null)
                 }
 
+                "startDownloadForeground" -> {
+                    DownloadForegroundService.start(applicationContext)
+                    res.success(null)
+                }
+
+                "stopDownloadForeground" -> {
+                    DownloadForegroundService.stop(applicationContext)
+                    res.success(null)
+                }
+
+                "updateDownloadForeground" -> {
+                    val rawTasks = call.argument<List<Map<String, Any>>>("tasks") ?: emptyList()
+                    DownloadForegroundService.update(applicationContext, rawTasks)
+                    res.success(null)
+                }
+
                 "getDirectoryPath" -> {
                     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)

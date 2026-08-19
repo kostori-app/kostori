@@ -108,7 +108,7 @@ class M3u8AdRuleStore {
   static List<M3u8AdRule> get rules {
     final cached = _cache;
     if (cached != null) return cached;
-    final saved = appdata.settings[_key];
+    final saved = appdata.implicitData[_key];
     if (saved is List && saved.isNotEmpty) {
       final parsed = <M3u8AdRule>[];
       for (final item in saved) {
@@ -129,8 +129,8 @@ class M3u8AdRuleStore {
   }
 
   static void save(List<M3u8AdRule> rules) {
-    appdata.settings[_key] = rules.map((r) => r.toJson()).toList();
-    appdata.saveData();
+    appdata.implicitData[_key] = rules.map((r) => r.toJson()).toList();
+    appdata.writeImplicitData();
     _cache = null; // 失效缓存
   }
 

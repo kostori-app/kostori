@@ -409,7 +409,7 @@ abstract mixin class _AnimePageActions {
                   if (history != null) {
                     history!.bangumiId = item.id;
                     await HistoryManager().addHistory(history!);
-                    WatcherState.currentState!.bangumiId = item.id;
+                    WatcherPlayer.currentState?.bangumiId = item.id;
                     infoController.bangumiId = item.id;
                     BottomInfoState.currentState?.queryBangumiInfoByID(item.id);
                     BottomInfoState.currentState?.queryBangumiEpisodeByID(
@@ -675,7 +675,7 @@ class _RatingDialogState extends State<RatingDialog> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: KostoriRefreshIndicator());
     }
     return ContentDialog(
       title: t.rating,

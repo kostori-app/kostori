@@ -14,6 +14,7 @@ import 'package:ffmpeg_kit_flutter_new_min_gpl/ffprobe_kit.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffprobe_kit.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:path/path.dart' as p;
 
 /// 编码参数
 class FfmpegEncodeArgs {
@@ -132,6 +133,9 @@ class FfmpegDownloadArgs {
 
   final void Function(double progress)? onProgress;
 
+  /// 取消句柄：调用 cancel() 后 ffmpeg 进程会被终止。
+  final FfmpegCancelToken? cancelToken;
+
   const FfmpegDownloadArgs({
     required this.inputUrl,
     required this.outputPath,
@@ -143,7 +147,23 @@ class FfmpegDownloadArgs {
     this.reconnect = 5,
     this.timeoutSeconds = 0,
     this.onProgress,
+    this.cancelToken,
   });
+}
+
+/// 下载取消句柄
+class FfmpegCancelToken {
+  bool _cancelled = false;
+
+  bool get isCancelled => _cancelled;
+
+  void cancel() => _cancelled = true;
+}
+
+/// 下载被取消
+class FfmpegCancelledException implements Exception {
+  @override
+  String toString() => 'FfmpegCancelledException: download cancelled';
 }
 
 /// 图片操作参数（ffmpeg 完全支持图片处理）
@@ -302,6 +322,7 @@ class FfmpegEncoder {
         isDownload: true,
         outputPath: safeOutput,
         onProgress: args.onProgress,
+        cancelToken: args.cancelToken,
       );
     } else {
       await _runMobile(
@@ -310,11 +331,64 @@ class FfmpegEncoder {
         isDownload: true,
         outputPath: safeOutput,
         onProgress: args.onProgress,
+        cancelToken: args.cancelToken,
       );
     }
   }
 
   // ── 媒体探测（解析视频详情） ─────────────────────────────────────────
+
+  /// 本地 ts 分片合并转 mp4（concat demuxer + 流复制）。
+  /// 供 m3u8 分片下载后合并使用。
+  static Future<void> mergeTs({
+    required List<String> tsPaths,
+    required String outputPath,
+    FfmpegCancelToken? cancelToken,
+    void Function(double progress)? onProgress,
+  }) async {
+    if (tsPaths.isEmpty) {
+      throw Exception('没有可合并的 ts 分片');
+    }
+    final tmpDir = Directory.systemTemp;
+    final listFile = File(
+      p.join(
+        tmpDir.path,
+        'kostori_concat_${DateTime.now().millisecondsSinceEpoch}.txt',
+      ),
+    );
+    final lines = tsPaths
+        .map((path) => "file '${path.replaceAll("'", r"'\''")}'")
+        .join('\n');
+    await listFile.writeAsString(lines);
+
+    final safeList = listFile.path.replaceAll('\\', '/');
+    final safeOutput = outputPath.replaceAll('\\', '/');
+    final cmd = '-y -f concat -safe 0 -i "$safeList" -c copy "$safeOutput"';
+
+    try {
+      if (Platform.isWindows) {
+        await _runWindows(
+          cmd,
+          totalMs: 0,
+          outputPath: outputPath,
+          onProgress: onProgress,
+          cancelToken: cancelToken,
+        );
+      } else {
+        await _runMobile(
+          cmd,
+          totalMs: 0,
+          outputPath: outputPath,
+          onProgress: onProgress,
+          cancelToken: cancelToken,
+        );
+      }
+    } finally {
+      try {
+        await listFile.delete();
+      } catch (_) {}
+    }
+  }
 
   /// 解析媒体文件/流的详细信息（时长、分辨率、编码、码率等）。
   /// 移动端走 FFprobeKit；桌面端优先 `ffprobe`，缺失时回退解析 `ffmpeg -i` 输出。
@@ -627,7 +701,7 @@ class FfmpegEncoder {
   // ── 执行器 ──────────────────────────────────────────────────────────
 
   static Future<String?> _findFfmpeg() async {
-    final customPath = appdata.settings['ffmpegPath'] as String?;
+    final customPath = appdata.implicitData['ffmpegPath'] as String?;
     if (customPath != null && customPath.isNotEmpty) {
       if (await File(customPath).exists()) return customPath;
     }
@@ -678,6 +752,7 @@ class FfmpegEncoder {
     bool isDownload = false,
     String? outputPath,
     void Function(double progress)? onProgress,
+    FfmpegCancelToken? cancelToken,
   }) async {
     final ffmpegPath = await _findFfmpeg();
     if (ffmpegPath == null) {
@@ -697,6 +772,16 @@ class FfmpegEncoder {
     }).toList();
 
     final process = await Process.start(ffmpegPath, processedArgs);
+
+    // 取消检查：定时探测取消句柄，命中则终止进程
+    Timer? cancelTimer;
+    if (cancelToken != null) {
+      cancelTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
+        if (cancelToken.isCancelled) {
+          process.kill();
+        }
+      });
+    }
 
     double lastProgress = 0;
     int lastSize = 0;
@@ -743,7 +828,11 @@ class FfmpegEncoder {
     });
 
     final exitCode = await process.exitCode;
+    cancelTimer?.cancel();
     sizeTimer?.cancel();
+    if (cancelToken != null && cancelToken.isCancelled) {
+      throw FfmpegCancelledException();
+    }
     onProgress?.call(1.0);
     if (exitCode != 0) {
       throw Exception(
@@ -759,6 +848,7 @@ class FfmpegEncoder {
     bool isDownload = false,
     String? outputPath,
     void Function(double progress)? onProgress,
+    FfmpegCancelToken? cancelToken,
   }) async {
     Log.info('FfmpegEncoder', 'Mobile FFmpeg command: $cmd');
 
@@ -801,6 +891,15 @@ class FfmpegEncoder {
       );
 
       final timeout = Duration(seconds: 300);
+      // 取消检查：定时探测，命中则取消 ffmpeg session
+      Timer? cancelTimer;
+      if (cancelToken != null) {
+        cancelTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
+          if (cancelToken.isCancelled) {
+            session.cancel();
+          }
+        });
+      }
       await completer.future.timeout(
         timeout,
         onTimeout: () {
@@ -810,6 +909,11 @@ class FfmpegEncoder {
           );
         },
       );
+      cancelTimer?.cancel();
+
+      if (cancelToken != null && cancelToken.isCancelled) {
+        throw FfmpegCancelledException();
+      }
 
       onProgress?.call(1.0);
 

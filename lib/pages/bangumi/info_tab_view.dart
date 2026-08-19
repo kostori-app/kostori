@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
@@ -7,7 +6,7 @@ import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -678,19 +677,15 @@ class _InfoTabViewState extends State<InfoTabView>
                   }
                   if (widget.commentsQueryTimeout) {
                     return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: t.nobodysPostedAnythingYet,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: () {
-                              widget.loadMoreComments(
-                                offset: widget.commentsList.length,
-                              );
-                            },
-                            text: t.reload,
-                          ),
-                        ],
-                      ),
+        child: EmptyState(
+          message: t.nobodysPostedAnythingYet,
+          retry: () {
+            widget.loadMoreComments(
+              offset: widget.commentsList.length,
+            );
+          },
+          retryText: t.reload,
+        ),
                     );
                   }
                   return SliverList.builder(
@@ -777,17 +772,11 @@ class _InfoTabViewState extends State<InfoTabView>
                   }
                   if (widget.topicsQueryTimeout) {
                     return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: t.nobodysPostedAnythingYet,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: () {
-                              widget.loadMoreTopics();
-                            },
-                            text: t.reload,
-                          ),
-                        ],
-                      ),
+        child: EmptyState(
+          message: t.nobodysPostedAnythingYet,
+          retry: widget.loadMoreTopics,
+          retryText: t.reload,
+        ),
                     );
                   }
                   return SliverList.builder(
@@ -870,17 +859,11 @@ class _InfoTabViewState extends State<InfoTabView>
                   }
                   if (widget.reviewsQueryTimeout) {
                     return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: t.nobodysPostedAnythingYet,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: () {
-                              widget.loadMoreReviews();
-                            },
-                            text: t.reload,
-                          ),
-                        ],
-                      ),
+        child: EmptyState(
+          message: t.nobodysPostedAnythingYet,
+          retry: widget.loadMoreReviews,
+          retryText: t.reload,
+        ),
                     );
                   }
                   return SliverList.builder(
@@ -947,16 +930,10 @@ class _InfoTabViewState extends State<InfoTabView>
                 }
                 if (widget.charactersQueryTimeout) {
                   return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: t.failedToLoadPleaseTryAgain,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            widget.loadCharacters();
-                          },
-                          text: t.reload,
-                        ),
-                      ],
+                    child: ErrorState(
+                      message: t.failedToLoadPleaseTryAgain,
+                      retry: widget.loadCharacters,
+                      retryText: t.reload,
                     ),
                   );
                 }
@@ -1016,16 +993,10 @@ class _InfoTabViewState extends State<InfoTabView>
                 }
                 if (widget.staffQueryTimeout) {
                   return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: t.failedToLoadPleaseTryAgain,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            widget.loadStaff();
-                          },
-                          text: t.reload,
-                        ),
-                      ],
+                    child: ErrorState(
+                      message: t.failedToLoadPleaseTryAgain,
+                      retry: widget.loadStaff,
+                      retryText: t.reload,
                     ),
                   );
                 }

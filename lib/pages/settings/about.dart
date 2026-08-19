@@ -144,7 +144,9 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
                       setState(() {
                         isCheckingBangumiDataUpdate = true;
                       });
-                      Bangumi.instance.checkBangumiData().then((value) {
+                      Bangumi.instance.checkBangumiData(isUpdata: true).then((
+                        value,
+                      ) {
                         setState(() {
                           isCheckingBangumiDataUpdate = false;
                         });
@@ -405,7 +407,7 @@ Future<void> updateLog(BuildContext context) async {
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Container(color: Colors.black.toOpacity(0.2)),
                     ),
                   ),

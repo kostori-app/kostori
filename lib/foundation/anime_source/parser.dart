@@ -143,6 +143,7 @@ class AnimeSourceParser {
       loadAnimeInfo: _parseLoadAnimeFunc(),
       loadAnimeThumbnail: _parseThumbnailLoader(),
       loadAnimePages: _parseLoadAnimePagesFunc(),
+      loadSeries: _parseSeriesLoader(),
       getImageLoadingConfig: _parseImageLoadingConfigFunc(),
       getThumbnailLoadingConfig: _parseThumbnailLoadingConfigFunc(),
       filePath: filePath,
@@ -160,6 +161,9 @@ class AnimeSourceParser {
       enableTagsSuggestions: _getValue("search.enableTagsSuggestions") ?? false,
       enableTagsTranslate: _getValue("anime.enableTagsTranslate") ?? false,
       starRatingFunc: _parseStarRatingFunc(),
+      playbackProgress: _parsePlaybackProgressFunc(),
+      playbackStopped: _parsePlaybackStoppedFunc(),
+      sourceAction: _parseSourceActionFunc(),
       isBangumi: isBangumi,
       host: _parseHostFunc(),
       httpHeaders: _parseHttpHeaders(),
@@ -808,6 +812,29 @@ class AnimeSourceParser {
     };
   }
 
+  SeriesLoader? _parseSeriesLoader() {
+    if (!_checkExists("anime.loadSeries")) return null;
+    return (anime) async {
+      try {
+        final res = await JsEngine().runCode("""
+          AnimeSource.sources.$_key.anime.loadSeries(${jsonEncode(anime.toJson())})
+        """);
+        // 兼容返回数组或 { animes: [...] } / { series: [...] }
+        final raw = res is Map
+            ? (res['animes'] ?? res['series'] ?? [])
+            : (res ?? []);
+        return Res(
+          List<Anime>.from(
+            (raw as List).map((e) => Anime.fromJson(e, _key!)),
+          ),
+        );
+      } catch (e, s) {
+        SourceLog.error("Network", "$e\n$s");
+        return Res.error(e.toString());
+      }
+    };
+  }
+
   LoadAnimePagesFunc? _parseLoadAnimePagesFunc() {
     return (id, ep) async {
       try {
@@ -1078,6 +1105,58 @@ class AnimeSourceParser {
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
+      }
+    };
+  }
+
+  PlaybackProgressFunc? _parsePlaybackProgressFunc() {
+    if (!_checkExists("anime.playbackProgress")) {
+      return null;
+    }
+    return (url, positionMs, durationMs, playing, playSessionId) async {
+      try {
+        return await JsEngine().runCode("""
+          AnimeSource.sources.$_key.anime.playbackProgress(
+            ${jsonEncode(url)}, ${jsonEncode(positionMs)}, ${jsonEncode(durationMs)},
+            ${jsonEncode(playing)}, ${jsonEncode(playSessionId)})
+        """);
+      } catch (e, s) {
+        SourceLog.error("Network", "$e\n$s");
+        return null;
+      }
+    };
+  }
+
+  PlaybackStoppedFunc? _parsePlaybackStoppedFunc() {
+    if (!_checkExists("anime.playbackStopped")) {
+      return null;
+    }
+    return (url, positionMs, playSessionId) async {
+      try {
+        return await JsEngine().runCode("""
+          AnimeSource.sources.$_key.anime.playbackStopped(
+            ${jsonEncode(url)}, ${jsonEncode(positionMs)}, ${jsonEncode(playSessionId)})
+        """);
+      } catch (e, s) {
+        SourceLog.error("Network", "$e\n$s");
+        return null;
+      }
+    };
+  }
+
+  SourceActionFunc? _parseSourceActionFunc() {
+    if (!_checkExists("anime.sourceAction")) {
+      return null;
+    }
+    return (action, params) async {
+      try {
+        return await JsEngine().runCode("""
+          AnimeSource.sources.$_key.anime.sourceAction(
+            ${jsonEncode(action)}, ${jsonEncode(params)})
+        """);
+      } catch (e, s) {
+        SourceLog.error("Network", "$e\n$s");
+        return null;
       }
     };
   }

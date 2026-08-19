@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:kostori/foundation/webview/impl/video_webview_inappwebview_impl.dart';
-import 'package:kostori/foundation/webview/impl/video_webview_windows_impl.dart';
 
 /// 单次嗅探请求的上报结果（与源脚本契约一致，见 [WebviewResultType]）。
 typedef WebviewResult = Map<String, dynamic>;
@@ -20,6 +18,12 @@ abstract class VideoWebviewController<T> {
       StreamController<WebviewResult>.broadcast();
 
   Stream<WebviewResult> get onResult => resultEventController.stream;
+
+  /// 页面加载完成事件（每次导航/重载完成触发，供上层重置等待定时器）。
+  final StreamController<void> loadStopEventController =
+      StreamController<void>.broadcast();
+
+  Stream<void> get onLoadStop => loadStopEventController.stream;
 
   /// 日志事件流（供排查）。
   final StreamController<String> logEventController =
@@ -44,6 +48,10 @@ abstract class VideoWebviewController<T> {
   /// 卸载当前页面（切到空白页释放页面资源，但不销毁引擎）。
   Future<void> unloadPage();
 
+  /// 在主框架执行 JavaScript 并返回结果字符串
+  /// （用于抓取页面内容 / 读取渲染后的 HTML，见 [WebViewResolver.fetchHtml]）。
+  Future<String?> evaluateJavascript(String source);
+
   /// 销毁 WebView 与事件流。
   Future<void> dispose();
 
@@ -51,6 +59,9 @@ abstract class VideoWebviewController<T> {
   void disposeEventControllers() {
     if (!resultEventController.isClosed) {
       resultEventController.close();
+    }
+    if (!loadStopEventController.isClosed) {
+      loadStopEventController.close();
     }
     if (!logEventController.isClosed) {
       logEventController.close();
@@ -61,9 +72,17 @@ abstract class VideoWebviewController<T> {
 /// 按平台选择实现。
 class VideoWebviewControllerFactory {
   static VideoWebviewController getController() {
-    if (Platform.isWindows) {
-      return VideoWebviewWindowsImpl();
-    }
+    // 统一用 flutter_inappwebview：其 Windows 原生层对 * 注册了
+    // WebResourceRequested（CONTEXT_ALL），能拦截到跨域 iframe（QQ 播放器等）
+    // 里的 m3u8/mp4 资源请求——这是 desktop_webview_window 可见窗口做不到的
+    // （它只有导航事件，无资源拦截；JS 又受 CORS 限制读不到跨域 iframe 内容）。
     return VideoWebviewInAppWebviewImpl();
+  }
+
+  /// 创建并初始化。
+  static Future<VideoWebviewController> createInitialized() async {
+    final c = VideoWebviewInAppWebviewImpl();
+    await c.init();
+    return c;
   }
 }

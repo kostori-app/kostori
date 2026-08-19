@@ -69,108 +69,6 @@ class _SwitchSettingState extends State<_SwitchSetting> {
   }
 }
 
-class CustomSwitch extends StatelessWidget {
-  /// 开关的当前状态。
-  final bool value;
-
-  /// 开关被点击时调用的回调函数。
-  final ValueChanged<bool> onChanged;
-
-  /// 开关的整体高度。
-  final double height;
-
-  /// 开关的整体宽度。
-  final double width;
-
-  /// 开关背景（轨道）的颜色。
-  final Color? trackColor;
-
-  /// 滑块的颜色。
-  final Color? thumbColor;
-
-  /// 动画持续时间，单位毫秒。
-  final int durationInMillisecond;
-
-  /// 开启状态下背景的颜色。
-  final Color? activeTrackColor;
-
-  /// 关闭状态下背景的颜色。
-  final Color? inactiveTrackColor;
-
-  /// 关闭状态下滑块的颜色。
-  final Color? inactiveThumbColor;
-
-  /// 自定义滑块内部的子Widget。
-  final Widget? thumbChild;
-
-  final Gradient? activeGradient;
-
-  const CustomSwitch({
-    super.key,
-    required this.value,
-    required this.onChanged,
-    this.height = 21.0,
-    this.width = 40.0,
-    this.trackColor,
-    this.thumbColor,
-    this.durationInMillisecond = 300,
-    this.activeTrackColor,
-    this.inactiveTrackColor,
-    this.inactiveThumbColor,
-    this.thumbChild,
-    this.activeGradient,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final Color effectiveTrackColor = value
-        ? Theme.of(context).colorScheme.primary
-        : inactiveTrackColor ?? Colors.grey.toOpacity(0.5);
-    final Color effectiveThumbColor = Colors.white;
-    Color fixedGlowColor = Theme.of(context).colorScheme.primary;
-    const double fixedGlowRadius = 12.0;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => onChanged(!value),
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: durationInMillisecond),
-          curve: Curves.easeInOut,
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            color: effectiveTrackColor,
-            borderRadius: BorderRadius.circular(height / 2),
-            boxShadow: value
-                ? [
-                    BoxShadow(
-                      color: fixedGlowColor.toOpacity(0.36),
-                      blurRadius: fixedGlowRadius,
-                      spreadRadius: 0,
-                    ),
-                  ]
-                : null,
-          ),
-          child: AnimatedAlign(
-            duration: Duration(milliseconds: durationInMillisecond),
-            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-              width: height - 6,
-              height: height - 6,
-              decoration: BoxDecoration(
-                color: effectiveThumbColor,
-                shape: BoxShape.circle,
-              ),
-              child: thumbChild,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class SelectSetting extends StatelessWidget {
   const SelectSetting({
     super.key,
@@ -916,7 +814,7 @@ class _SettingCard extends StatelessWidget {
   const _SettingCard({
     super.key,
     required this.children,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    this.padding = const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
   });
 
   final List<Widget> children;
@@ -924,18 +822,30 @@ class _SettingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+    final cs = Theme.of(context).colorScheme;
+    // 用 Material 提供 ListTile 需要的祖先，避免
+    // "ListTile wrapped in DecoratedBox with background color" 警告
+    // （背景/水波纹被非 Material 背景容器盖住）
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Material(
-        color: context.brightness == Brightness.light
-            ? Colors.white.toOpacity(0.72)
-            : const Color(0xFF1E1E1E).toOpacity(0.72),
-        elevation: 4,
-        shadowColor: Theme.of(context).colorScheme.shadow,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [...children, const SizedBox(height: 8)],
+        color: cs.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.6),
+            width: 0.6,
+          ),
+        ),
+        elevation: 1,
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [...children, const SizedBox(height: 8)],
+          ),
         ),
       ),
     );
@@ -1013,6 +923,78 @@ class _BindModeSelector extends StatelessWidget {
                   color: selected
                       ? colorScheme.onSurface
                       : colorScheme.onSurface.toOpacity(enabled ? 0.45 : 0.25),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+/// 卡片显示模式选择器（简洁 / 详细 / 瀑布流，或自定义选项），
+/// 风格与端口绑定模式选择器一致
+class _DisplayModeSelector extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  /// 选项 (key, label)；null 时用默认三选（简洁/详细/瀑布流）
+  final List<(String, String)>? options;
+
+  const _DisplayModeSelector({
+    required this.value,
+    required this.onChanged,
+    this.options,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final modes = options ??
+        [
+          ('brief', t.brief),
+          ('detailed', t.detailed),
+          ('masonry', t.masonry),
+        ];
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: modes.map((mode) {
+          final (key, label) = mode;
+          final selected = value == key;
+          return GestureDetector(
+            onTap: () => onChanged(key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: selected ? colorScheme.surface : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.toOpacity(0.08),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurface.toOpacity(0.45),
                 ),
               ),
             ),

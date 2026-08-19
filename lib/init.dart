@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
@@ -14,7 +15,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
-import 'package:kostori/foundation/cache_manager.dart';
+import 'package:kostori/services/download/download_manager.dart';import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
@@ -92,6 +93,15 @@ Future<void> init() async {
   await OpenAiProviderRegistry.refreshKeyFormats().wait();
   ApiKeyManager().init();
   CacheManager().setLimitSize(appdata.settings['cacheSize']);
+  // 后台预热 AI 数据库：首次进入 AI 聊天页才建库（drift isolate 启动/建表）
+  // 会卡住首帧，启动时异步触发一次查询提前完成
+  unawaited(() async {
+    try {
+      await AiDatabase.instance.aiSessionDao.watchAllSessions().first;
+    } catch (_) {}
+  }());
+  // 加载持久化的下载任务
+  await DownloadManager.instance.init();
   // 启动即初始化数据同步（启用时自动首次下载，并监听数据变化自动上传）
   DataSync();
   _checkOldConfigs();

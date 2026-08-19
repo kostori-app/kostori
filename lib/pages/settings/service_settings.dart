@@ -93,6 +93,8 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
       final port = int.tryParse(_hubPortController.text) ?? 9100;
       try {
         await _hub.init(preferredPort: port, mode: _hubBindMode);
+        // 端口被占用自动跳转后，输入框同步为实际端口，下次直接复用
+        _hubPortController.text = _hub.port.toString();
       } catch (e) {
         App.rootContext.showMessage(
           message: '${t.hubServerStartFailed}: $e',

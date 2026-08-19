@@ -48,7 +48,8 @@ class _StatItemWidgetState extends State<StatItemWidget> {
       final item = await providerContainer
           .read(bangumiManagerProvider)
           .getBangumiItem(primary.bangumiId!);
-      if (mounted) setState(() => _bangumiItem = item);
+      // bangumi.db 数据缺失时用统计自带的 title/cover 兜底
+      if (mounted) setState(() => _bangumiItem = item ?? primary.toBangumiItem());
     }
   }
 

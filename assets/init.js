@@ -1129,6 +1129,30 @@ function ImageLoadingConfig({url, method, data, headers, onResponse, modifyImage
     this.onLoadFailed = onLoadFailed;
 }
 
+/**
+ * 源脚本操作类接口统一协议。
+ *
+ * 源脚本实现 `anime.sourceAction(action, params)` 统一处理各类操作；
+ * 播放进度上报实现 `anime.playbackProgress` / `anime.playbackStopped`。
+ *
+ * ## sourceAction 动作
+ * | action | params | 说明 |
+ * | --- | --- | --- |
+ * | `favorite` | `{ id, favorite }` | 收藏/取消收藏（服务器） |
+ * | `delete` | `{ id }` | 删除条目 |
+ * | `markPlayed` | `{ id, played }` | 标记已播放/未播放 |
+ * | `clearPlayback` | `{ id }` | 清除播放进度 |
+ * | `rate` | `{ id, rating }` | 评分（0-10） |
+ * | `sendComment` | `{ id, subId, content, replyTo }` | 发表评论 |
+ * | `likeAnime` | `{ animeId, isLiking }` | 点赞/取消点赞番剧 |
+ * | `likeComment` | `{ animeId, subId, commentId, isLiking }` | 点赞/取消点赞评论 |
+ * | `voteComment` | `{ animeId, subId, commentId, isUp, isCancel }` | 投票评论 |
+ * | `loadComments` | `{ id, subId, page, replyTo }` | 加载评论，返回 `{ comments, maxPage }` |
+ *
+ * ## 播放进度上报
+ * - `anime.playbackProgress(url, positionMs, durationMs, playing, playSessionId)`
+ * - `anime.playbackStopped(url, positionMs, playSessionId)`
+ */
 class AnimeSource {
     name = ""
 

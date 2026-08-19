@@ -223,7 +223,14 @@ class RHttpAdapter implements HttpClientAdapter {
         ? const rhttp.RedirectSettings.none()
         : rhttp.RedirectSettings.limited(options.maxRedirects);
 
+    // 下载等场景强制 HTTP/1.1：部分 CDN（moedet/CCDN 等）对
+    // reqwest 默认协商出的 HTTP/2 请求返回 400，而 curl/浏览器（HTTP/1.1）正常
+    final httpVersionPref = options.extra['httpVersion11'] == true
+        ? rhttp.HttpVersionPref.http1_1
+        : rhttp.HttpVersionPref.all;
+
     return rhttp.ClientSettings(
+      httpVersionPref: httpVersionPref,
       proxySettings: isNoProxy
           ? const rhttp.ProxySettings.noProxy()
           : (proxy == null

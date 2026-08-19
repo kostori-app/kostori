@@ -36,7 +36,8 @@ class HistoryImageProvider
         return progress.imageBytes!;
       }
     }
-    throw "Error: Empty response body.";
+    // 空响应体/加载失败：返回 1×1 透明 PNG 占位，避免抛 Empty response body 刷屏
+    return BaseImageProvider.kTransparentPng;
   }
 
   @override

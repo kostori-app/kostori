@@ -403,7 +403,7 @@ class _LoadingState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const CircularProgressIndicator(),
+            const PolygonRefreshIndicator(),
             const SizedBox(height: 12),
             Text(
               t.recognizing,
@@ -503,7 +503,7 @@ class _ResultCard extends StatelessWidget {
                     ? child
                     : Container(
                         color: scheme.surfaceContainerHighest,
-                        child: const Center(child: CircularProgressIndicator()),
+                        child: const Center(child: PolygonRefreshIndicator()),
                       ),
                 errorBuilder: (ctx, e, s) => Container(
                   color: scheme.surfaceContainerHighest,

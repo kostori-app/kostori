@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/init.dart';
 
 /// 插件目录名（相对 App.dataPath）
@@ -126,6 +127,71 @@ class MePagePluginManager with ChangeNotifier, Init {
     _plugins.clear();
     await doInit();
     notifyListeners();
+  }
+
+  /// 从插件源地址拉取插件列表并安装。
+  ///
+  /// 源地址返回 JSON 数组，形如：
+  /// ```json
+  /// [{ "name": "girigirilove", "fileName": "girigirilove.js", "key": "girigirilove", "version": "1.1.6" }]
+  /// ```
+  /// 每项无 url 字段，JS 下载地址 = 源地址所在目录 + fileName。
+  /// 逐个下载 JS 到 plugins 目录后重载。返回安装数量。
+  Future<int> fetchFromUrl(String url) async {
+    var dio = AppDio();
+    final list = await dio.get<List<dynamic>>(
+      url,
+      options: Options(method: 'GET', receiveTimeout: const Duration(seconds: 30)),
+    );
+    final items = list.data;
+    if (items is! List) return 0;
+
+    final baseUrl = _baseDirOf(url);
+
+    final dir = Directory('${App.dataPath}/$mePluginsDirName');
+    if (!await dir.exists()) {
+      await dir.create();
+    }
+
+    int installed = 0;
+    for (final raw in items) {
+      if (raw is! Map) continue;
+      final name = raw['name']?.toString().trim() ?? '';
+      final key = raw['key']?.toString().trim() ?? '';
+      var fileName = raw['fileName']?.toString().trim() ?? '';
+      if (fileName.isEmpty) fileName = '$key.js';
+      // 文件名白名单 + 去路径，避免路径注入
+      final safe = fileName.split('/').last;
+      if (!RegExp(r'^[A-Za-z0-9_\-]+\.js$').hasMatch(safe)) continue;
+      final jsUrl = '$baseUrl$safe';
+      try {
+        final jsRes = await dio.get<String>(
+          jsUrl,
+          options: Options(
+            method: 'GET',
+            responseType: ResponseType.plain,
+            receiveTimeout: const Duration(seconds: 30),
+          ),
+        );
+        if (jsRes.statusCode != 200) continue;
+        final file = File('${dir.path}/$safe');
+        await file.writeAsString(jsRes.data ?? '');
+        installed++;
+      } catch (e, s) {
+        SourceLog.error('MePagePlugin', '下载插件 $name 失败: $e\n$s');
+      }
+    }
+    await reload();
+    return installed;
+  }
+
+  /// 源地址去掉末尾文件名与查询串，得到目录部分。
+  /// 如 `https://x/plugins/index.json` → `https://x/plugins/`
+  static String _baseDirOf(String url) {
+    final clean = url.split('?').first.split('#').first;
+    final idx = clean.lastIndexOf('/');
+    if (idx < 0) return '$clean/';
+    return clean.substring(0, idx + 1);
   }
 }
 

@@ -25,7 +25,6 @@ abstract class SettingsData with _$SettingsData {
     @Default(true) bool enablePageAnimation,
     @Default('system') String language,
     @Default(2048) int cacheSize,
-    @Default(5) int downloadThreads,
     @Default(true) bool enableLongPressToZoom,
     @Default(false) bool checkUpdateOnStart,
     @Default(true) bool limitImageWidth,

@@ -354,9 +354,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                                       child: SizedBox(
                                         width: 40,
                                         height: 40,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
+                                        child: PolygonRefreshIndicator(),
                                       ),
                                     ),
                                   );
@@ -368,7 +366,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                           ),
                         ),
                       ),
-                      if (_isSaving) const CircularProgressIndicator(),
+                      if (_isSaving) const PolygonRefreshIndicator(),
                     ],
                   ),
                 );
@@ -407,9 +405,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                               child: SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: PolygonRefreshIndicator(),
                               ),
                             ),
                           );
@@ -447,9 +443,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                               child: SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: PolygonRefreshIndicator(),
                               ),
                             ),
                           );

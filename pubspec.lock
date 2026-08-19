@@ -933,6 +933,14 @@ packages:
       url: "https://github.com/kostori-app/flutter_saf"
     source: git
     version: "0.0.1"
+  flutter_staggered_grid_view:
+    dependency: "direct main"
+    description:
+      name: flutter_staggered_grid_view
+      sha256: "19e7abb550c96fbfeb546b23f3ff356ee7c59a019a651f8f102a4ba9b7349395"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -2523,15 +2531,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
-  webview_windows:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "2b3306d2bfb9f22cbb328743b60e547cf50f0c3c"
-      resolved-ref: "2b3306d2bfb9f22cbb328743b60e547cf50f0c3c"
-      url: "https://github.com/Predidit/flutter-webview-windows.git"
-    source: git
-    version: "0.4.0"
   win32:
     dependency: transitive
     description:

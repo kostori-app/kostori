@@ -19,6 +19,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/anime_recognize_page.dart';
+import 'package:kostori/pages/download/download_page.dart';
 import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
@@ -79,7 +80,6 @@ class _MePageState extends ConsumerState<MePage> {
         const TodayRecommendation(),
         const _ImageManipulation(),
         const _StatsViewPage(),
-        const MePagePluginModules(),
         SliverPadding(
           padding: EdgeInsets.only(top: context.padding.bottom + 56),
         ),
@@ -135,7 +135,7 @@ class _MePageState extends ConsumerState<MePage> {
     );
 
     widget = AppScrollBar(
-      topPadding: 56,
+      // topPadding: 56,
       controller: scrollController,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -207,9 +207,7 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget> {
                           fontSize: 13,
                         ),
                       )
-                    : const CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ).fixWidth(18).fixHeight(18),
+                    : const PolygonRefreshIndicator().fixWidth(18).fixHeight(18),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
@@ -625,6 +623,18 @@ class _ToolEntryGrid extends ConsumerWidget {
                     () => context.to(() => const LanDiscoveryPage()),
                     t.lanLabel,
                   ),
+                  _iconBlock(
+                    context,
+                    Icons.download_outlined,
+                    () => context.to(() => const DownloadPage()),
+                    t.download,
+                  ),
+                  _iconBlock(
+                    context,
+                    Icons.extension_outlined,
+                    () => openMePagePluginManage(context),
+                    t.mePagePlugin,
+                  ),
                   // 已连接服务器时显示聊天室快捷入口（聚合入口内）
                   if (connected)
                     _iconBlock(
@@ -747,7 +757,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
               SizedBox(
                 height: 220,
                 child: _isLoadingImages && images.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: PolygonRefreshIndicator())
                     : ScrollConfiguration(
                         behavior: ScrollConfiguration.of(context).copyWith(
                           scrollbars: true,

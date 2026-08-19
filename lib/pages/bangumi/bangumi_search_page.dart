@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
@@ -98,6 +97,8 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   @override
   void initState() {
     super.initState();
+    // 布局偏好持久化
+    useBriefMode = appdata.implicitData['bangumiSearchBrief'] as bool? ?? false;
     final perRow = appdata.implicitData['bangumiCardPerRow'];
     if (perRow != null && perRow.toString().isNotEmpty) {
       fixedCrossAxisCount = int.tryParse(perRow.toString());
@@ -121,6 +122,15 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     _scrollController.removeListener(_loadMoreData);
     _debounce?.cancel();
     super.dispose();
+  }
+
+  /// 切换卡片布局（简要/详情），并持久化偏好
+  void _toggleBriefMode() {
+    setState(() {
+      useBriefMode = !useBriefMode;
+      appdata.implicitData['bangumiSearchBrief'] = useBriefMode;
+      appdata.writeImplicitData();
+    });
   }
 
   Future<List<BangumiItem>> bangumiSearch() async {
@@ -1259,10 +1269,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             ),
           if (subjectSearch)
             IconButton(
-              onPressed: () {
-                useBriefMode = !useBriefMode;
-                setState(() {});
-              },
+              onPressed: _toggleBriefMode,
               tooltip: t.switchLayout,
               icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
             ),
@@ -1384,10 +1391,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
           ),
           if (subjectSearch)
             IconButton(
-              onPressed: () {
-                useBriefMode = !useBriefMode;
-                setState(() {});
-              },
+              onPressed: _toggleBriefMode,
               tooltip: t.switchLayout,
               icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
             ),

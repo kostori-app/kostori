@@ -541,10 +541,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
                       SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: cs.primary,
-                        ),
+                        child: PolygonRefreshIndicator(),
                       ),
                   ],
                 ),

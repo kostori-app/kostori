@@ -196,6 +196,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
   Future<void> queryBangumiInfoByID(int id) async {
     try {
       await infoController.queryBangumiInfoByID(id);
+      if (!mounted) return;
       setState(() {});
     } catch (e) {
       Log.error('queryBangumiInfoByID', e.toString());
@@ -205,6 +206,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
   Future<void> queryBangumiEpisodeByID(int id) async {
     try {
       await infoController.queryBangumiEpisodeByID(id);
+      if (!mounted) return;
       DebugLog.info(
         'queryBangumiEpisodeByID',
         infoController.allEpisodes.toString(),

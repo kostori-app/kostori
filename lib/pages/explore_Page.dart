@@ -475,7 +475,11 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   }
 
   void onScroll() {
-    if (scrollController.offset > 50) {
+    final canScroll = scrollController.hasClients &&
+        scrollController.position.maxScrollExtent > 0;
+    // 内容不可滚动时也显示浮动按钮
+    final shouldShow = !canScroll || scrollController.offset > 50;
+    if (shouldShow) {
       if (!exploreController.showFB) {
         exploreController.show();
       }
@@ -491,6 +495,10 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     super.initState();
     exploreController = widget.exploreController;
     scrollController.addListener(onScroll);
+    // 内容不可滚动时（无滚动监听触发）也显示浮动按钮
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) onScroll();
+    });
     var source = AnimeSource.find(widget.sourceKey);
     if (source != null) {
       for (var d in source.explorePages) {
@@ -534,6 +542,8 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         loadNext: data.loadNext,
         key: PageStorageKey("anime_list_${widget.title}"),
         controller: scrollController,
+        // 探索页用页面级 GridSpeedDial，避免多 tab 浮动按钮叠加
+        enableFloatingMenu: false,
         refreshHandlerCallback: (c) {
           refreshHandler = c;
         },

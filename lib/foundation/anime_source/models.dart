@@ -39,6 +39,19 @@ class Comment {
       voteStatus = json["voteStatus"];
 }
 
+/// 描述里的一行信息（可选颜色，供卡片覆盖层逐行徽章展示）
+class AnimeDescriptionLine {
+  final String text;
+
+  /// 颜色：`#RRGGBB` / `#RGB` 或颜色名（red/yellow/green/...），UI 层解析
+  final String? color;
+
+  const AnimeDescriptionLine(this.text, this.color);
+
+  @override
+  String toString() => color == null ? text : '$text($color)';
+}
+
 class Anime {
   final String title;
 
@@ -51,6 +64,9 @@ class Anime {
   final List<String>? tags;
 
   final String description;
+
+  /// description 的结构化行（源返回 List 且含 Map 项时非空，可携带每行颜色）
+  final List<AnimeDescriptionLine>? descriptionLines;
 
   final String sourceKey;
 
@@ -72,9 +88,10 @@ class Anime {
     this.description,
     this.sourceKey,
     this.language,
-    this.viewMore,
-  ) : favoriteId = null,
-      stars = null;
+    this.viewMore, {
+    this.descriptionLines,
+  }) : favoriteId = null,
+       stars = null;
 
   Map<String, dynamic> toJson() {
     return {
@@ -84,6 +101,11 @@ class Anime {
       "subtitle": subtitle,
       "tags": tags,
       "description": description,
+      if (descriptionLines != null)
+        "descriptionLines": descriptionLines!.map((l) {
+          if (l.color == null) return l.text;
+          return {'text': l.text, 'color': l.color};
+        }).toList(),
       "sourceKey": sourceKey,
       "language": language,
       "favoriteId": favoriteId,
@@ -97,11 +119,42 @@ class Anime {
       cover = json["cover"] ?? '',
       id = json["id"],
       tags = List<String>.from(json["tags"] ?? []),
-      description = json["description"] ?? "",
+      description = normalizeDescription(json["description"]),
+      descriptionLines = parseDescriptionLines(json["description"]),
       language = json["language"],
       favoriteId = json["favoriteId"],
       stars = (json["stars"] as num?)?.toDouble(),
       viewMore = PageJumpTarget.parse(sourceKey, json["viewMore"]);
+
+  /// 兼容 description 的三种写法：
+  /// - `String`：多行用 `|` 分隔（旧写法），或直接含换行符
+  /// - `List<String>`：每项一行
+  /// - `List<Map>`：每项 `{ text, color }`（可指定该行展示颜色）
+  static String normalizeDescription(dynamic value) {
+    if (value is List) {
+      return value.map((e) {
+        if (e is Map) return (e['text'] ?? '').toString();
+        return e.toString();
+      }).join('\n');
+    }
+    return value?.toString() ?? '';
+  }
+
+  /// 解析 description 为结构化行（带颜色）；非 List 或纯 String 行时返回 null
+  static List<AnimeDescriptionLine>? parseDescriptionLines(dynamic value) {
+    if (value is! List || value.isEmpty) return null;
+    final lines = <AnimeDescriptionLine>[];
+    for (final e in value) {
+      if (e is String) {
+        lines.add(AnimeDescriptionLine(e, null));
+      } else if (e is Map) {
+        final text = (e['text'] ?? '').toString();
+        if (text.isEmpty) continue;
+        lines.add(AnimeDescriptionLine(text, e['color']?.toString()));
+      }
+    }
+    return lines.isEmpty ? null : lines;
+  }
 
   @override
   bool operator ==(Object other) {
@@ -137,6 +190,13 @@ class AnimeID {
 }
 
 class AnimeDetails with HistoryMixin {
+  /// 兼容旧 episode 格式：value 可为 String（集名）或 Map（携带 title/cover 等）
+  static String episodeTitleOf(dynamic value) =>
+      value is Map ? (value['title'] as String? ?? '') : (value?.toString() ?? '');
+
+  static String? episodeCoverOf(dynamic value) =>
+      value is Map ? (value['cover'] as String?) : null;
+
   @override
   final String title;
 
@@ -151,7 +211,7 @@ class AnimeDetails with HistoryMixin {
   final Map<String, List<String>> tags;
 
   /// id-name
-  final Map<String, Map<String, String>>? episode;
+  final Map<String, Map<String, dynamic>>? episode;
 
   final List<String>? thumbnails;
 
@@ -191,12 +251,13 @@ class AnimeDetails with HistoryMixin {
     return res;
   }
 
-  static Map<String, Map<String, String>> _generateNestedMap(
+  static Map<String, Map<String, dynamic>> _generateNestedMap(
     Map<dynamic, dynamic> map,
   ) {
-    var res = <String, Map<String, String>>{};
+    var res = <String, Map<String, dynamic>>{};
     map.forEach((key, value) {
-      res[key] = Map<String, String>.from(value as Map<dynamic, dynamic>);
+      // 兼容旧格式（value 为 String 集名）与新格式（value 为 Map 携带 title/cover 等）
+      res[key] = Map<String, dynamic>.from(value as Map<dynamic, dynamic>);
     });
     return res;
   }
@@ -205,7 +266,7 @@ class AnimeDetails with HistoryMixin {
     : title = json["title"],
       subTitle = json["subtitle"],
       cover = json["cover"],
-      description = json["description"],
+      description = Anime.normalizeDescription(json["description"]),
       tags = _generateMap(json["tags"]),
       episode = _generateNestedMap(json["episode"]),
       sourceKey = json["sourceKey"],
@@ -270,14 +331,20 @@ class PageJumpTarget {
 
   const PageJumpTarget(this.sourceKey, this.page, this.attributes);
 
+  /// 解析 PageJumpTarget，支持两种写法：
+  /// - Map：`{ page, attributes, url? }`（url 可选，二级页右上角"打开网页"）或旧 `{ action, keyword }`
+  /// - String（旧版）：`search:关键词` / `category:分类名` / `category:分类名@param`
   static PageJumpTarget parse(String sourceKey, dynamic value) {
     if (value is Map) {
       if (value['page'] != null) {
-        return PageJumpTarget(
-          sourceKey,
-          value["page"] ?? "search",
-          value["attributes"],
-        );
+        // 兼容源在跳转目标里附带网页地址：attributes['url'] 供二级页打开
+        final attrs = (value["attributes"] as Map?)?.map(
+              (k, v) => MapEntry(k.toString(), v),
+            ) ??
+            <String, dynamic>{};
+        final url = value['url'] as String?;
+        if (url != null && url.isNotEmpty) attrs['url'] = url;
+        return PageJumpTarget(sourceKey, value["page"] ?? "search", attrs);
       } else if (value["action"] != null) {
         // old version `onClickTag`
         var page = value["action"];
@@ -326,6 +393,7 @@ class PageJumpTarget {
           text: attributes?["text"] ?? attributes?["keyword"] ?? "",
           sourceKey: sourceKey,
           options: List.from(attributes?["options"] ?? []),
+          webUrl: attributes?["url"],
         ),
       );
     } else if (page == "category") {
@@ -339,6 +407,7 @@ class PageJumpTarget {
               (throw ArgumentError("Category name is required")),
           options: List.from(attributes?["options"] ?? []),
           param: attributes?["param"],
+          webUrl: attributes?["url"],
         ),
       );
     } else {

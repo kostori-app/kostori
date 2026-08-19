@@ -504,5 +504,11 @@ class AiDatabase extends _$AiDatabase {
 
 LazyDatabase _openConnection() => LazyDatabase(() async {
   final file = File(p.join(App.dataPath, 'ai_database.db'));
-  return NativeDatabase.createInBackground(file);
+  return NativeDatabase.createInBackground(
+  file,
+  setup: (db) {
+    db.execute('PRAGMA journal_mode = WAL;');
+    db.execute('PRAGMA synchronous = NORMAL;');
+  },
+);
 });

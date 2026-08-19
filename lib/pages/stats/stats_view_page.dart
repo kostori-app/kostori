@@ -32,12 +32,16 @@ class _StatsViewPageState extends State<StatsViewPage> {
       if (!mounted) return;
 
       final results = await Future.wait(
-        entry.value.map((id) => manager.getBangumiItem(id)),
+        entry.value.map((s) async {
+          // bangumi.db 数据缺失时用统计自带的 title/cover 兜底
+          final item = await manager.getBangumiItem(s.bangumiId!);
+          return item ?? s.toBangumiItem();
+        }),
       );
 
       if (!mounted) return;
 
-      newMap[entry.key] = results.whereType<BangumiItem>().toList();
+      newMap[entry.key] = results.toList();
     }
 
     ratingBangumiMap = newMap;
@@ -329,7 +333,8 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
       final item = await providerContainer
           .read(bangumiManagerProvider)
           .getBangumiItem(s.bangumiId!);
-      if (item != null) likedItems.add(item);
+      // bangumi.db 数据缺失时用统计自带的 title/cover 兜底
+      likedItems.add(item ?? s.toBangumiItem());
     }
 
     setState(() {

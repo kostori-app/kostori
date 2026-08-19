@@ -54,7 +54,13 @@ class _CookieDb extends _$_CookieDb {
 }
 
 LazyDatabase _openConn(String dbPath) => LazyDatabase(() async {
-  return NativeDatabase(File(dbPath));
+  return NativeDatabase(
+  File(dbPath),
+  setup: (db) {
+    db.execute('PRAGMA journal_mode = WAL;');
+    db.execute('PRAGMA synchronous = NORMAL;');
+  },
+);
 });
 
 // ═══════════════════════════════════════════════════════════

@@ -206,6 +206,27 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
             int index = (v / stageInterval).floor().clamp(0, totalStages - 1);
             double stageProgress = (v % stageInterval) / stageInterval;
 
+            // 形状阶段颜色渐变：每个阶段一个主色，阶段内平滑过渡
+            final cs = Theme.of(context).colorScheme;
+            final stageColors = [
+              cs.primary,
+              cs.tertiary,
+              cs.secondary,
+              cs.primary,
+              cs.tertiary,
+              cs.secondary,
+              cs.primary,
+              cs.secondary,
+              cs.tertiary,
+              cs.primary,
+              cs.tertiary,
+            ];
+            final color = Color.lerp(
+              stageColors[index % stageColors.length],
+              stageColors[(index + 1) % stageColors.length],
+              stageProgress,
+            )!;
+
             double rotateT = (stageProgress / 0.7).clamp(0.0, 1.0);
             double rotateCurve = const _CustomBackOutCurve(
               0.8,
@@ -233,7 +254,7 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
                   child: CustomPaint(
                     painter: _OptimizedShapePainter(
                       sides: currentSides,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: color,
                       polygonCache: _polygonCache,
                       capsulePath: _capsulePath,
                       footballPath: _footballPath,
@@ -387,5 +408,204 @@ class _CustomBackOutCurve extends Curve {
   double transformInternal(double t) {
     t = t - 1.0;
     return t * t * ((s + 1) * t + s) + 1.0;
+  }
+}
+
+/// 项目自定义开关（可配置尺寸/颜色/动画）
+class CustomSwitch extends StatelessWidget {
+  /// 开关的当前状态。
+  final bool value;
+
+  /// 开关被点击时调用的回调函数。
+  final ValueChanged<bool> onChanged;
+
+  /// 开关的整体高度。
+  final double height;
+
+  /// 开关的整体宽度。
+  final double width;
+
+  /// 开关背景（轨道）的颜色。
+  final Color? trackColor;
+
+  /// 滑块的颜色。
+  final Color? thumbColor;
+
+  /// 动画持续时间，单位毫秒。
+  final int durationInMillisecond;
+
+  /// 开启状态下背景的颜色。
+  final Color? activeTrackColor;
+
+  /// 关闭状态下背景的颜色。
+  final Color? inactiveTrackColor;
+
+  /// 关闭状态下滑块的颜色。
+  final Color? inactiveThumbColor;
+
+  /// 自定义滑块内部的子Widget。
+  final Widget? thumbChild;
+
+  final Gradient? activeGradient;
+
+  const CustomSwitch({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.height = 21.0,
+    this.width = 40.0,
+    this.trackColor,
+    this.thumbColor,
+    this.durationInMillisecond = 300,
+    this.activeTrackColor,
+    this.inactiveTrackColor,
+    this.inactiveThumbColor,
+    this.thumbChild,
+    this.activeGradient,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color effectiveTrackColor = value
+        ? Theme.of(context).colorScheme.primary
+        : inactiveTrackColor ?? Colors.grey.toOpacity(0.5);
+    final Color effectiveThumbColor = Colors.white;
+    Color fixedGlowColor = Theme.of(context).colorScheme.primary;
+    const double fixedGlowRadius = 12.0;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: durationInMillisecond),
+          curve: Curves.easeInOut,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: effectiveTrackColor,
+            borderRadius: BorderRadius.circular(height / 2),
+            boxShadow: value
+                ? [
+                    BoxShadow(
+                      color: fixedGlowColor.toOpacity(0.36),
+                      blurRadius: fixedGlowRadius,
+                      spreadRadius: 0,
+                    ),
+                  ]
+                : null,
+          ),
+          child: AnimatedAlign(
+            duration: Duration(milliseconds: durationInMillisecond),
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4.0),
+              width: height - 6,
+              height: height - 6,
+              decoration: BoxDecoration(
+                color: effectiveThumbColor,
+                shape: BoxShape.circle,
+              ),
+              child: thumbChild,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// 竖向图标按钮：上面图标，下面文字。
+/// 用于详情页操作栏、番源设置页操作按钮等（统一复用）。
+class IconTileButton extends StatelessWidget {
+  const IconTileButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.onLongPress,
+    this.activeIcon,
+    this.isActive,
+    this.isLoading,
+    this.color,
+    this.activeColor,
+  });
+
+  /// 图标（可为 Icon / Row / SvgPicture 等任意 Widget）
+  final Widget icon;
+
+  /// 激活态图标（配合 [isActive]）
+  final Widget? activeIcon;
+
+  /// 是否激活（激活时用主题色高亮）
+  final bool? isActive;
+
+  final String label;
+
+  final VoidCallback? onTap;
+
+  final VoidCallback? onLongPress;
+
+  /// 是否显示加载中指示（替换图标）
+  final bool? isLoading;
+
+  /// 图标颜色
+  final Color? color;
+
+  /// 激活态颜色（默认主题色）
+  final Color? activeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final enabled = onTap != null;
+    final active = isActive ?? false;
+    final loading = isLoading ?? false;
+    final iconColor = color ??
+        (active
+            ? (activeColor ?? cs.primary)
+            : (enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.3)));
+    final textColor = active
+        ? (activeColor ?? cs.primary)
+        : (enabled
+              ? (color ?? cs.onSurface.withValues(alpha: 0.75))
+              : cs.onSurface.withValues(alpha: 0.3));
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 56, maxWidth: 96),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        onLongPress: enabled ? onLongPress : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 24,
+                child: loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: PolygonRefreshIndicator(),
+                      )
+                    : IconTheme.merge(
+                        data: IconThemeData(color: iconColor, size: 22),
+                        child: active ? (activeIcon ?? icon) : icon,
+                      ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: textColor),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

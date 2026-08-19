@@ -5,6 +5,7 @@ import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/topics_info_comments_card.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
@@ -74,13 +75,18 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
   }
 
   Future<void> queryBangumiTopicsInfoByID(int id) async {
-    topicsInfoItem = await Bangumi.instance.getTopicsInfoByID(id);
-    if (topicsInfoItem != null) {
-      isLoading = false;
-      _buildReplyKeys();
+    try {
+      topicsInfoItem = await Bangumi.instance.getTopicsInfoByID(id);
+      if (mounted && topicsInfoItem != null) {
+        _buildReplyKeys();
+      }
+    } catch (_) {
+      topicsInfoItem = null;
     }
     if (mounted) {
-      setState(() {});
+      setState(() {
+        isLoading = false;
+      });
       _precacheTopicImages();
     }
   }
@@ -370,9 +376,10 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                               ),
                             ],
                           )
-                        : Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
+                        : isLoading
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Skeletonizer.zone(
@@ -459,7 +466,12 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                                 ),
                               ],
                             ),
-                          ),
+                          )
+                          : EmptyState(
+                              message: t.failedToLoadPleaseTryAgain,
+                              retry: () => queryBangumiTopicsInfoByID(id),
+                              retryText: t.reload,
+                            ),
                   ),
                 ),
               ),

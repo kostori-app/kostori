@@ -204,6 +204,9 @@ class History implements Anime {
     return res;
   }
 
+  @override
+  List<AnimeDescriptionLine>? get descriptionLines => null;
+
   String formatLastWatchTime(int ms) {
     final total = ms ~/ 1000;
     final h = total ~/ 3600;
@@ -419,7 +422,13 @@ class _HistoryDb extends _$_HistoryDb {
 
 LazyDatabase _openConn() => LazyDatabase(() async {
   final file = File(p.join(App.dataPath, 'history.db'));
-  return NativeDatabase.createInBackground(file);
+  return NativeDatabase.createInBackground(
+  file,
+  setup: (db) {
+    db.execute('PRAGMA journal_mode = WAL;');
+    db.execute('PRAGMA synchronous = NORMAL;');
+  },
+);
 });
 
 // ═══════════════════════════════════════════════════════════

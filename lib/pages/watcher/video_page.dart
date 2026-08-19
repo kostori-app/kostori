@@ -12,13 +12,14 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
-import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/utils/remote.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:window_manager/window_manager.dart';
@@ -358,8 +359,15 @@ class _VideoPageState extends State<VideoPage>
     );
   }
 
-  /// 当前观看的番剧（替代重复的 WatcherState.currentState!.anime）
-  AnimeDetails get _panelAnime => WatcherState.currentState!.anime;
+/// 当前观看的番剧（从全局 providerContainer 读取，与 AnimePage 同一容器，
+/// 避免 widget 树容器与 init 容器实例不一致导致 anime 为 null）
+AnimeDetails get _panelAnime =>
+    providerContainer.read(watcherControllerProvider).anime!;
+
+/// 系列模式判断：无分集（episode 为空）且源提供 loadSeries
+bool get _isSeries =>
+    (_panelAnime.episode == null || _panelAnime.episode!.isEmpty) &&
+    AnimeSource.find(_panelAnime.sourceKey)?.loadSeries != null;
 
   /// 面板内统一的分区标题
   Widget _sectionTitle(String text) {
@@ -481,7 +489,25 @@ class _VideoPageState extends State<VideoPage>
   Widget _buildPlaylistTab() {
     return GridViewObserver(
       controller: observerController,
-      child: Column(children: [_buildPlaylistHeader(), _buildPlaylistBody()]),
+      child: Column(
+        children: [
+          // 顶层操作按钮行（剧集/系列列表之上，后续可扩展更多按钮）
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              children: [
+                IconTileButton(
+                  icon: const Icon(Icons.refresh),
+                  label: t.reloadEpisode,
+                  onTap: () => playerController.reloadCurrent(),
+                ),
+              ],
+            ),
+          ),
+          _buildPlaylistHeader(),
+          _buildPlaylistBody(),
+        ],
+      ),
     );
   }
 
@@ -502,66 +528,74 @@ class _VideoPageState extends State<VideoPage>
             ),
           ),
           const SizedBox(width: 10),
-          MenuAnchor(
-            consumeOutsideTap: true,
-            builder: (_, MenuController controller, _) {
-              return TextButton(
-                style: ButtonStyle(
-                  padding: WidgetStateProperty.all(EdgeInsets.zero),
-                ),
-                onPressed: () {
-                  controller.isOpen ? controller.close() : controller.open();
-                },
-                child: Text(
-                  _panelAnime.episode!.keys.elementAt(currentRoad),
-                  style: const TextStyle(fontSize: 13),
-                ),
-              );
-            },
-            menuChildren: List<MenuItemButton>.generate(
-              _panelAnime.episode!.keys.length,
-              (i) {
-                final title = _panelAnime.episode!.keys.elementAt(i);
-                final isCurrent = i == currentRoad;
-                return MenuItemButton(
+          // 系列模式：无线路概念，不显示线路选择器
+          if (!_isSeries)
+            MenuAnchor(
+              consumeOutsideTap: true,
+              builder: (_, MenuController controller, _) {
+                return TextButton(
+                  style: ButtonStyle(
+                    padding: WidgetStateProperty.all(EdgeInsets.zero),
+                  ),
                   onPressed: () {
-                    setState(() {
-                      currentRoad = i;
-                    });
+                    controller.isOpen
+                        ? controller.close()
+                        : controller.open();
                   },
-                  child: Container(
-                    height: 48,
-                    constraints: const BoxConstraints(minWidth: 112),
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: isCurrent
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                    ),
+                  child: Text(
+                    _panelAnime.episode!.keys.elementAt(currentRoad),
+                    style: const TextStyle(fontSize: 13),
                   ),
                 );
               },
+              menuChildren: List<MenuItemButton>.generate(
+                _panelAnime.episode!.keys.length,
+                (i) {
+                  final title = _panelAnime.episode!.keys.elementAt(i);
+                  final isCurrent = i == currentRoad;
+                  return MenuItemButton(
+                    onPressed: () {
+                      setState(() {
+                        currentRoad = i;
+                      });
+                    },
+                    child: Container(
+                      height: 48,
+                      constraints: const BoxConstraints(minWidth: 112),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: isCurrent
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildPlaylistBody() {
+    // 系列模式：只有一个条目，显示当前播放的一条
+    if (_isSeries) {
+      return _buildSeriesPlaylistBody();
+    }
     var cardList = <Widget>[];
     var roadList = _panelAnime.episode ?? {};
     var selectedRoad = roadList.values.elementAt(currentRoad);
-    final watcher = WatcherState.currentState!;
+    final history = providerContainer.read(watcherControllerProvider).history;
 
     int count = 1;
 
     for (var epKey in selectedRoad.keys) {
       int count0 = count;
-      bool visited = (watcher.history.watchEpisode).contains(count0);
+      bool visited = (history?.watchEpisode ?? const {}).contains(count0);
       cardList.add(
         Container(
           margin: const EdgeInsets.only(bottom: 4),
@@ -650,6 +684,56 @@ class _VideoPageState extends State<VideoPage>
           itemBuilder: (context, index) {
             return cardList[index];
           },
+        ),
+      ),
+    );
+  }
+
+  /// 系列模式侧面板：只显示当前播放的一条系列条目
+  Widget _buildSeriesPlaylistBody() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final title = playerController.currentSetName.isNotEmpty
+        ? playerController.currentSetName
+        : _panelAnime.title;
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Material(
+          color: colorScheme.primary.toOpacity(0.3),
+          borderRadius: BorderRadius.circular(6),
+          clipBehavior: Clip.hardEdge,
+          child: InkWell(
+            onTap: () async {
+              closeTabBodyAnimated();
+              playerController.currentRoad = 0;
+              await playerController.pause();
+              playerController.playEpisode(playerController.currentEpisoded, 0);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/img/playing.gif',
+                    color: colorScheme.primary,
+                    height: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color.lerp(colorScheme.primary, Colors.white, 0.3),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

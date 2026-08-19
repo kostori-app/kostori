@@ -70,7 +70,11 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
       }
     });
     if (name.isNotEmpty) {
-      loadDoingList();
+      // 列表已有缓存时不重复调取，仅首次加载
+      final cached = ref.read(favoritesControllerProvider).doingList;
+      if (cached.isEmpty) {
+        loadDoingList();
+      }
     }
   }
 
@@ -121,6 +125,28 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
     setLoading: (v) => droppedIsLoading = v,
     query: favoritesController.queryBangumiDropped,
   );
+
+  /// 手动刷新当前 tab 的 Bangumi 收藏列表
+  Future<void> _refresh() async {
+    if (name.isEmpty) return;
+    switch (controller.index) {
+      case 0:
+        await loadDroppedList();
+        break;
+      case 1:
+        await loadWishList();
+        break;
+      case 2:
+        await loadDoingList();
+        break;
+      case 3:
+        await loadOnHoldList();
+        break;
+      case 4:
+        await loadCollectList();
+        break;
+    }
+  }
 
   Widget _bangumiListSliver(List<BangumiItem> bangumiItems) {
     return SliverGrid(
@@ -228,6 +254,15 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
                 )
               : const SizedBox(),
         ),
+        actions: [
+          Tooltip(
+            message: t.refresh,
+            child: IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refresh,
+            ),
+          ),
+        ],
         bottom: TabBar(
           tabs: tab.map((title) => Tab(text: title)).toList(),
           controller: controller,

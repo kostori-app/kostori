@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 import 'dart:ui' as ui;
-import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' hide Column;
@@ -20,7 +19,6 @@ import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/ai_model_card.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
@@ -141,6 +139,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     t.explore,
     t.bangumi,
     t.fanyuan,
+    t.mePagePlugin,
     t.player,
     t.appearance,
     t.localFavorites,
@@ -156,6 +155,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Icons.explore,
     Icons.account_balance,
     Icons.source,
+    Icons.widgets_outlined,
     Icons.display_settings_rounded,
     Icons.color_lens,
     Icons.collections_bookmark_rounded,
@@ -266,20 +266,16 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       ),
     );
 
+    // 注意：原实现包了一层全屏 BackdropFilter（blur），但下方 Material
+    // 是 scaffoldBackgroundColor 不透明，模糊效果被完全盖住、实际不可见，
+    // 却导致移动端大面积实时模糊严重卡顿，故移除
     return Positioned(
       left: 0,
       right: 0,
       bottom: 0,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: 10,
-          sigmaY: 10,
-          tileMode: TileMode.clamp,
-        ),
-        child: Material(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: base,
-        ),
+      child: Material(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: base,
       ),
     );
   }
@@ -383,7 +379,9 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
 
                       return SlideTransition(
                         position: tween.animate(animation),
-                        child: child,
+                        // RepaintBoundary：动画期间整页作为图层移动，
+                        // 避免每帧重绘导致跳转动画卡顿/消失
+                        child: RepaintBoundary(child: child),
                       );
                     },
                     child: Material(
@@ -546,15 +544,16 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       0 => const ExploreSettings(),
       1 => const BangumiSettings(),
       2 => const AnimeSourceSettings(),
-      3 => const PlayerSettings(),
-      4 => const AppearanceSettings(),
-      5 => const LocalFavoritesSettings(),
-      6 => const AppSettings(),
-      7 => const NetworkSettings(),
-      8 => const AiSettings(),
-      9 => const ServiceSettings(),
-      10 => const LogSettings(),
-      11 => const AboutSettings(),
+      3 => const PluginSettings(),
+      4 => const PlayerSettings(),
+      5 => const AppearanceSettings(),
+      6 => const LocalFavoritesSettings(),
+      7 => const AppSettings(),
+      8 => const NetworkSettings(),
+      9 => const AiSettings(),
+      10 => const ServiceSettings(),
+      11 => const LogSettings(),
+      12 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }
@@ -822,7 +821,7 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: PolygonRefreshIndicator(),
                           )
                         : const Icon(Icons.translate),
                     label: Text(translating ? t.translating : t.translate),

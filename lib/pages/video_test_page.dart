@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 
 class HeaderEntry {
   final String key;
@@ -233,17 +237,487 @@ class _VideoTestPageState extends ConsumerState<VideoTestPage> {
   }
 }
 
-class _PlayerView extends StatelessWidget {
+/// 播放器视图（布局照搬本地播放器）：全屏 Video + 径向渐变遮罩 +
+/// 点击/双击/长按 2x / 左右滑动 seek / 上下音量亮度 + 底部控件 + HUD。
+class _PlayerView extends ConsumerStatefulWidget {
   const _PlayerView({required this.videoController});
 
   final VideoController videoController;
 
   @override
+  ConsumerState<_PlayerView> createState() => _PlayerViewState();
+}
+
+class _PlayerViewState extends ConsumerState<_PlayerView>
+    with TickerProviderStateMixin {
+  bool _showControls = true;
+  Timer? _hideTimer;
+  late final AnimationController _animCtrl;
+  late final Animation<double> _fade;
+
+  Duration? _seekPreview;
+  bool _showSeekTime = false;
+  bool _showVolume = false;
+  bool _showBrightness = false;
+  double _volume = 1.0;
+  double _brightness = 1.0;
+  double _boostSpeed = 0.0; // 长按 2x 临时倍速（0 = 未加速）
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+      value: 1,
+    );
+    _fade = CurvedAnimation(parent: _animCtrl, curve: Curves.easeInOut);
+    _startHideTimer();
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  void _showControlsDirect(bool v) {
+    setState(() => _showControls = v);
+  }
+
+  void _displayControls() {
+    _animCtrl.forward();
+    _hideTimer?.cancel();
+    _startHideTimer();
+    _showControlsDirect(true);
+  }
+
+  void _hideControls() {
+    _animCtrl.reverse();
+    _hideTimer?.cancel();
+    _showControlsDirect(false);
+  }
+
+  void _startHideTimer() {
+    _hideTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        _animCtrl.reverse();
+        _showControlsDirect(false);
+      }
+      _hideTimer = null;
+    });
+  }
+
+  void _handleTap() {
+    if (_showControls) {
+      _hideControls();
+    } else {
+      _displayControls();
+    }
+  }
+
+  Future<void> _handleDoubleTap() async {
+    await ref.read(videoTestProvider.notifier).togglePlay();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    final s = ref.read(videoTestProvider);
+    final scale = 180000 / MediaQuery.sizeOf(context).width;
+    final base = _seekPreview ?? s.position;
+    final ms = (base.inMilliseconds + (details.delta.dx * scale).round())
+        .clamp(0, s.duration.inMilliseconds);
+    setState(() => _seekPreview = Duration(milliseconds: ms));
+  }
+
+  Future<void> _onHorizontalDragEnd() async {
+    final target = _seekPreview;
+    final notifier = ref.read(videoTestProvider.notifier);
+    if (target != null) {
+      await notifier.seek(target);
+    }
+    setState(() {
+      _seekPreview = null;
+      _showSeekTime = false;
+    });
+  }
+
+  Future<void> _onVerticalDragUpdate(DragUpdateDetails details) async {
+    final w = MediaQuery.sizeOf(context).width;
+    final h = MediaQuery.sizeOf(context).height;
+    final delta = details.delta.dy;
+    if (details.localPosition.dx < w / 2) {
+      setState(() => _showBrightness = true);
+      final result = (_brightness - delta / (h * 2)).clamp(0.0, 1.0);
+      _brightness = result;
+      try {
+        await ScreenBrightnessPlatform.instance
+            .setApplicationScreenBrightness(result);
+      } catch (_) {}
+    } else {
+      setState(() => _showVolume = true);
+      final v = (_volume - delta / (h * 0.03)).clamp(0.0, 1.0);
+      _volume = v;
+      try {
+        FlutterVolumeController.updateShowSystemUI(false);
+        await FlutterVolumeController.setVolume(v);
+      } catch (_) {}
+    }
+  }
+
+  void _onVerticalDragEnd() {
+    setState(() {
+      _showVolume = false;
+      _showBrightness = false;
+    });
+    FlutterVolumeController.updateShowSystemUI(true);
+  }
+
+  String _fmtDuration(Duration d) {
+    final h = d.inHours;
+    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return h > 0 ? '$h:$m:$s' : '$m:$s';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Video(
-      controller: videoController,
-      controls: NoVideoControls,
-      fill: Colors.black,
+    final state = ref.watch(videoTestProvider);
+    final displaySpeed = _boostSpeed > 0 ? _boostSpeed : state.speed;
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Video(
+            controller: widget.videoController,
+            controls: NoVideoControls,
+            fill: Colors.black,
+          ),
+        ),
+        // 径向渐变遮罩（照搬本地播放器）
+        FadeTransition(
+          opacity: _fade,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.0,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.toOpacity(0.2),
+                  Colors.black.toOpacity(0.5),
+                  Colors.black.toOpacity(0.7),
+                ],
+                stops: const [0.0, 0.6, 0.85, 1.0],
+              ),
+            ),
+          ),
+        ),
+        // tap 手势层
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _handleTap,
+            onDoubleTap: _handleDoubleTap,
+            onLongPressStart: (_) {
+              setState(() => _boostSpeed = 2.0);
+              ref.read(videoTestProvider.notifier).setSpeed(2.0);
+            },
+            onLongPressEnd: (_) {
+              setState(() => _boostSpeed = 0.0);
+              ref.read(videoTestProvider.notifier).setSpeed(1.0);
+            },
+          ),
+        ),
+        // 滑动手势层
+        Positioned.fill(
+          left: 16,
+          top: 25,
+          right: 15,
+          bottom: MediaQuery.paddingOf(context).bottom + 70,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragStart: (_) {
+              setState(() => _showSeekTime = true);
+            },
+            onHorizontalDragUpdate: _onHorizontalDragUpdate,
+            onHorizontalDragEnd: (_) => _onHorizontalDragEnd(),
+            onVerticalDragUpdate: _onVerticalDragUpdate,
+            onVerticalDragEnd: (_) => _onVerticalDragEnd(),
+          ),
+        ),
+        // 底部控件
+        if (_showControls)
+          FadeTransition(
+            opacity: _fade,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: _buildBottomBar(state, displaySpeed),
+            ),
+          ),
+        // HUD
+        if (_showSeekTime) _buildSeekHud(state),
+        if (_showVolume) _buildLevelHud(volume: _volume, isBrightness: false),
+        if (_showBrightness)
+          _buildLevelHud(brightness: _brightness, isBrightness: true),
+        if (_boostSpeed > 0) _buildSpeedHud(displaySpeed),
+      ],
+    );
+  }
+
+  Widget _buildBottomBar(VideoTestState state, double speed) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Colors.black54, Colors.transparent],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            IconButton(
+              color: Colors.white,
+              icon: Icon(
+                state.playing ? Icons.pause : Icons.play_arrow,
+                size: 30,
+              ),
+              onPressed: () => ref.read(videoTestProvider.notifier).togglePlay(),
+            ),
+            Expanded(
+              child: ProgressBar(
+                thumbRadius: 8,
+                thumbGlowRadius: 18,
+                timeLabelLocation: TimeLabelLocation.none,
+                progress: state.position,
+                buffered: state.buffer,
+                total: state.duration,
+                onSeek: (d) => ref.read(videoTestProvider.notifier).seek(d),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                '${speed}x',
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeekHud(VideoTestState state) {
+    final target = _seekPreview ?? state.position;
+    final current = state.position;
+    final total = state.duration;
+    final isForward = target > current;
+    final diffSec = (target - current).inSeconds.abs().clamp(0, 999);
+    final totalSec = total.inSeconds > 0 ? total.inSeconds : 1;
+    final progress = (target.inMilliseconds / (totalSec * 1000)).clamp(
+      0.0,
+      1.0,
+    );
+    final accent = isForward
+        ? const Color(0xFF2ED8A7)
+        : const Color(0xFFFF7A6B);
+    final icon = isForward
+        ? Icons.fast_forward_rounded
+        : Icons.fast_rewind_rounded;
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 80,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        child: Center(
+          child: _frostedGlass(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: accent, size: 22),
+                const SizedBox(width: 10),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isForward
+                          ? t.seekForward(s: diffSec)
+                          : t.seekBackward(s: diffSec),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _fmtDuration(target),
+                          style: TextStyle(
+                            color: accent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          ' / ${_fmtDuration(total)}',
+                          style: TextStyle(
+                            color: Colors.white.toOpacity(0.6),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 120,
+                      height: 3,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: Stack(
+                          children: [
+                            Container(color: Colors.white.toOpacity(0.15)),
+                            FractionallySizedBox(
+                              widthFactor: progress,
+                              child: Container(color: accent),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLevelHud({
+    double? volume,
+    double? brightness,
+    required bool isBrightness,
+  }) {
+    final accent = isBrightness
+        ? const Color(0xFFF5A623)
+        : const Color(0xFF4DB6FF);
+    final value = isBrightness ? (brightness ?? 1) * 100 : (volume ?? 1) * 100;
+    final icon = isBrightness
+        ? Icons.brightness_7_rounded
+        : (value <= 0
+              ? Icons.volume_off_rounded
+              : value < 50
+              ? Icons.volume_down_rounded
+              : Icons.volume_up_rounded);
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 80,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        child: Center(
+          child: _frostedGlass(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: accent, size: 22),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 110,
+                  height: 8,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Stack(
+                      children: [
+                        Container(color: Colors.white.toOpacity(0.15)),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOutCubic,
+                          width: 110 * (value.clamp(0, 100) / 100),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.toOpacity(0.5),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 38,
+                  child: Text(
+                    '${value.round()}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeedHud(double speed) {
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 80,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        child: Center(
+          child: _frostedGlass(
+            child: Text(
+              '${speed.toInt()}X',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _frostedGlass({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.toOpacity(0.60),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.toOpacity(0.22)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.toOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 }
@@ -256,7 +730,7 @@ class _BufferingOverlay extends ConsumerWidget {
     final buffering = ref.watch(videoTestProvider.select((s) => s.buffering));
     final hasUrl = ref.watch(videoTestProvider.select((s) => s.url.isNotEmpty));
     if (!buffering || !hasUrl) return const SizedBox.shrink();
-    return const Center(child: CircularProgressIndicator(color: Colors.white));
+    return const Center(child: PolygonRefreshIndicator());
   }
 }
 

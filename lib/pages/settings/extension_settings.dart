@@ -266,7 +266,7 @@ class _McpServersBlockState extends State<_McpServersBlock> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: PolygonRefreshIndicator(),
                       )
                     : const Icon(Icons.refresh),
                 tooltip: t.mcpReconnect,

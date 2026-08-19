@@ -824,7 +824,7 @@ class _WaitingProgressBarState extends State<_WaitingProgressBar>
 }
 
 class _EpisodeSelectionSection extends StatefulWidget {
-  final Map<String, Map<String, String>>? episodes;
+  final Map<String, Map<String, dynamic>>? episodes;
   final int currentEpisode;
   final Set<int>? watchedEpisodes;
   final bool isWaiting;

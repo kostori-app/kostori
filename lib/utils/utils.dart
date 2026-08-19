@@ -615,40 +615,38 @@ class BangumiUtils {
 
     try {
       for (final ep in targetEpisodes) {
-        try {
-          final airDate = DateTime.parse(ep.airDate).toLocal();
-          final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
-          final (currentYear, currentWeekNum) = currentWeek;
-          final adjustedWeekNum = shouldAdjustWeek
-              ? (airWeekNum == 1 ? 52 : airWeekNum + 1)
-              : airWeekNum;
+        // 日期缺失/格式异常时静默跳过该集，不刷警告日志
+        final airDate = DateTime.tryParse(ep.airDate)?.toLocal();
+        if (airDate == null) continue;
+        final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
+        final (currentYear, currentWeekNum) = currentWeek;
+        final adjustedWeekNum = shouldAdjustWeek
+            ? (airWeekNum == 1 ? 52 : airWeekNum + 1)
+            : airWeekNum;
 
-          if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
-            if (calendar) {
-              if (airDate.isAfter(now)) {
-                currentWeekEpisode ??= ep;
-              }
-            } else {
-              if (!airDate.isAfter(now)) {
-                currentWeekEpisode ??= ep;
-              }
+        if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
+          if (calendar) {
+            if (airDate.isAfter(now)) {
+              currentWeekEpisode ??= ep;
+            }
+          } else {
+            if (!airDate.isAfter(now)) {
+              currentWeekEpisode ??= ep;
             }
           }
+        }
 
-          // 记录所有年份中最接近当前日期的过去剧集（解析结果缓存，避免重复 DateTime.parse）
-          if (airDate.isBefore(now)) {
-            if (lastPastEpisode == null || lastPastDate == null) {
-              lastPastEpisode = ep;
-              lastPastDate = airDate;
-            } else if (airDate.isAfter(lastPastDate)) {
-              lastPastEpisode = ep;
-              lastPastDate = airDate;
-            } else if (airDate.isAtSameMomentAs(lastPastDate)) {
-              lastPastEpisode = ep;
-            }
+        // 记录所有年份中最接近当前日期的过去剧集（解析结果缓存，避免重复 DateTime.parse）
+        if (airDate.isBefore(now)) {
+          if (lastPastEpisode == null || lastPastDate == null) {
+            lastPastEpisode = ep;
+            lastPastDate = airDate;
+          } else if (airDate.isAfter(lastPastDate)) {
+            lastPastEpisode = ep;
+            lastPastDate = airDate;
+          } else if (airDate.isAtSameMomentAs(lastPastDate)) {
+            lastPastEpisode = ep;
           }
-        } catch (e) {
-          DebugLog.warning('dateParse', '解析日期失败: ${ep.airDate}');
         }
       }
 

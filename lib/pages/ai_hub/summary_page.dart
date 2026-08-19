@@ -209,7 +209,7 @@ Generate a $rangeLabel anime watch report based on the following data:
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: PolygonRefreshIndicator(),
                       )
                     : const Icon(Icons.summarize),
                 label: Text(_isLoading ? t.generating : t.generateSummary),

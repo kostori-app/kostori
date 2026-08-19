@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
@@ -120,6 +120,35 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     return null;
   }
 
+  /// 瀑布流封面高度系数：按索引循环错落
+  static const _masonryFactors = [1.3, 1.55, 1.15, 1.45, 1.65, 1.25];
+
+  /// bangumi 趋势列表瀑布流（错落封面）
+  Widget _buildMasonryGrid() {
+    final perRow = _getFixedCrossAxisCount();
+    final columns = perRow ?? _resolveMasonryColumns();
+    return SliverMasonryGrid.count(
+      crossAxisCount: columns,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
+      childCount: bangumiItems.length,
+      itemBuilder: (context, index) {
+        return BangumiBriefCard(
+          bangumiItem: bangumiItems[index],
+          heroTag: 'Trending$index',
+          masonryFactor: _masonryFactors[index % _masonryFactors.length],
+        );
+      },
+    );
+  }
+
+  /// 瀑布流列数：按每列最小宽度动态计算，窄屏少列
+  int _resolveMasonryColumns() {
+    final width = MediaQuery.of(context).size.width;
+    const minColWidth = 140.0;
+    return (width / minColWidth).floor().clamp(2, 6);
+  }
+
   List<Widget> buildBangumiTrendingSlivers(BuildContext context) {
     return [
       SliverPadding(
@@ -158,20 +187,22 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
       // Grid 部分
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        sliver: SliverGrid(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            return bangumiItems.isNotEmpty
-                ? BangumiBriefCard(
-                    bangumiItem: bangumiItems[index],
-                    heroTag: 'Trending$index',
-                  )
-                : null;
-          }, childCount: bangumiItems.length),
-          gridDelegate: SliverGridDelegateWithBangumiItems(
-            true,
-            fixedCrossAxisCount: _getFixedCrossAxisCount(),
-          ),
-        ),
+        sliver: appdata.implicitData['bangumiDisplayMode'] == 'masonry'
+            ? _buildMasonryGrid()
+            : SliverGrid(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return bangumiItems.isNotEmpty
+                      ? BangumiBriefCard(
+                          bangumiItem: bangumiItems[index],
+                          heroTag: 'Trending$index',
+                        )
+                      : null;
+                }, childCount: bangumiItems.length),
+                gridDelegate: SliverGridDelegateWithBangumiItems(
+                  true,
+                  fixedCrossAxisCount: _getFixedCrossAxisCount(),
+                ),
+              ),
       ),
       // 加载更多指示器
       if (isLoadingMore)
@@ -296,7 +327,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     );
 
     widget = AppScrollBar(
-      topPadding: 82,
+      // topPadding: 82,
       controller: scrollController,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -372,8 +403,15 @@ class _TimetableState extends State<_Timetable> {
 
   Future<void> filterTodayBangumiItems() async {
     try {
-      final calendar = await loadBangumiCalendar(isFetchEpisodes: false);
-      final todayItems = calendar[weekday - 1];
+      // 与 bangumi_calendar_page 当天保持一致：用同一 loadBangumiCalendar
+      // （含深夜番跨天处理，parseBangumiAirTime 会把昨天 25:00 的条目归到今天组）。
+      // 用昨天+今天两天拉取，避免 getWeeks 按原始 airWeekday 过滤时漏掉深夜番
+      final todayWeekday = weekday;
+      final yesterdayWeekday = todayWeekday == 1 ? 7 : todayWeekday - 1;
+      final calendar = await loadBangumiCalendar(
+        days: [yesterdayWeekday, todayWeekday],
+      );
+      final todayItems = calendar[todayWeekday - 1];
 
       if (mounted) {
         setState(() => bangumiCalendar = todayItems);

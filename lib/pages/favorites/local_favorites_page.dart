@@ -680,15 +680,26 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     });
   }
 
-  void _onAnimeLongPress(Anime a, int heroID, String name) {
+  /// 长按菜单（由 AnimeTile 在长按位置自动弹出）：多选入口
+  List<MenuEntry> _buildLongPressMenu(Anime a) {
+    return [
+      MenuEntry(
+        icon: Icons.check_box_outlined,
+        text: t.multiSelect,
+        onClick: () {
+          setState(() {
+            multiSelectMode = true;
+            selectedAnimes[a as FavoriteItem] = true;
+            lastSelectedIndex = _currentList(favState.folder).indexOf(a);
+          });
+        },
+      ),
+    ];
+  }
+
+  void _rangeSelect(Anime a, String name) {
     setState(() {
       final item = a as FavoriteItem;
-      if (!multiSelectMode) {
-        multiSelectMode = true;
-        selectedAnimes[item] = true;
-        lastSelectedIndex = _currentList(name).indexOf(item);
-        return;
-      }
       // Range select.
       if (lastSelectedIndex != null && lastSelectedIndex! >= 0) {
         int start = lastSelectedIndex!;
@@ -750,11 +761,15 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                       : (favState.animes[name] ?? []),
                   selections: selectedAnimes,
                   enableFavorite: false,
+                  // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
+                  menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
                   onTap: multiSelectMode
                       ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
                       : _onAnimeTap,
-                  onLongPressed: (a, heroID) =>
-                      _onAnimeLongPress(a, heroID, name),
+                  // 多选模式下长按保留范围选择
+                  onLongPressed: multiSelectMode
+                      ? (a, heroID) => _rangeSelect(a, name)
+                      : null,
                 );
               }).toList(),
             ),
