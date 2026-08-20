@@ -21,6 +21,115 @@ final historyVersion = StateProvider<int>((ref) => 0);
 
 // ── AnimeTile ─────────────────────────────────────────────────────────────────
 
+/// 每源独立显示模式作用域（探索页按源包裹）。
+/// mode 为 null 时使用全局设置（appdata.settings['animeDisplayMode']）。
+class AnimeDisplayModeScope extends InheritedWidget {
+  const AnimeDisplayModeScope({
+    super.key,
+    required this.mode,
+    required super.child,
+  });
+
+  final String? mode;
+
+  static String? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AnimeDisplayModeScope>()?.mode;
+
+  @override
+  bool updateShouldNotify(AnimeDisplayModeScope oldWidget) =>
+      mode != oldWidget.mode;
+}
+
+/// 每源显示模式覆盖的存储 key（implicitData）。
+const String sourceDisplayModesKey = 'animeSourceDisplayModes';
+
+/// 读取某源显示模式覆盖，支持子维度（如 `sourceKey:search`、`sourceKey:category:国漫`）：
+/// 子覆盖 > 源级覆盖 > null（跟随全局默认）。
+String? sourceDisplayModeOf(String sourceKey, [String? subKey]) {
+  final v = appdata.implicitData[sourceDisplayModesKey];
+  if (v is! Map) return null;
+  if (subKey != null) {
+    final sub = v['$sourceKey:$subKey'];
+    if (sub is String && sub.isNotEmpty) return sub;
+  }
+  final root = v[sourceKey];
+  return root is String ? root : null;
+}
+
+/// 设置某源显示模式覆盖；mode 为 null 清除覆盖（恢复源级/全局默认）。
+void setSourceDisplayMode(String sourceKey, String? mode, [String? subKey]) {
+  final v = appdata.implicitData[sourceDisplayModesKey];
+  final m = Map<String, dynamic>.from(v is Map ? v : <String, dynamic>{});
+  final sk = subKey == null ? sourceKey : '$sourceKey:$subKey';
+  if (mode == null || mode.isEmpty) {
+    m.remove(sk);
+  } else {
+    m[sk] = mode;
+  }
+  appdata.implicitData[sourceDisplayModesKey] = m;
+  appdata.writeImplicitData();
+  App.forceRebuild();
+}
+
+/// 二级页面顶部布局切换菜单：可单独覆盖该页面的显示模式，
+/// 未覆盖时跟随源级/全局默认。
+class AnimeSourceLayoutMenu extends StatelessWidget {
+  const AnimeSourceLayoutMenu({
+    super.key,
+    required this.sourceKey,
+    this.subKey,
+  });
+
+  final String sourceKey;
+
+  final String? subKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final current =
+        sourceDisplayModeOf(sourceKey, subKey) ??
+        appdata.settings['animeDisplayMode'];
+    final modes = [
+      ('brief', t.brief),
+      ('detailed', t.detailed),
+      ('masonry', t.masonry),
+      ('poster', t.poster),
+    ];
+    return PopupMenuButton<String>(
+      tooltip: t.displayModeOfAnimeTile,
+      icon: const Icon(Icons.grid_view_outlined),
+      onSelected: (v) => setSourceDisplayMode(
+        sourceKey,
+        v == '_default' ? null : v,
+        subKey,
+      ),
+      itemBuilder: (_) => [
+        for (final (key, label) in modes)
+          PopupMenuItem(
+            value: key,
+            child: Row(
+              children: [
+                Icon(
+                  key == current ? Icons.check : Icons.circle_outlined,
+                  size: 18,
+                  color: key == current ? colorScheme.primary : null,
+                ),
+                const SizedBox(width: 8),
+                Text(label),
+              ],
+            ),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: '_default',
+          child: Text(subKey != null ? t.followSourceDefault : t.sortByDefault),
+        ),
+      ],
+    );
+  }
+}
+
 class AnimeTile extends ConsumerWidget {
   const AnimeTile({
     super.key,
@@ -36,6 +145,7 @@ class AnimeTile extends ConsumerWidget {
     this.heroID,
     this.heroTag,
     this.masonryFactor,
+    this.displayMode,
   });
 
   final Anime anime;
@@ -52,6 +162,10 @@ class AnimeTile extends ConsumerWidget {
   /// 瀑布流模式：非 null 时封面高度 = 卡片宽 × 系数（错落高度），
   /// null 时用网格模式的等高布局
   final double? masonryFactor;
+
+  /// 显式指定显示模式（brief/detailed/masonry/poster），优先于 scope/全局设置。
+  /// 如水平布局强制用简洁卡。
+  final String? displayMode;
 
   /// 唯一 Hero tag（跨列表避免 "multiple heroes share the same tag"）；
   /// 为空时回退 `cover$heroID`
@@ -136,18 +250,6 @@ class AnimeTile extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
-    // 确保远程控制服务已启动
-    if (!LanControlService.instance.isListening &&
-        LanControlService.instance.connectionCount == 0) {
-      try {
-        final port =
-            appdata.implicitData['lan_discovery_port'] as int? ?? 42183;
-        await LanControlService.instance.start(port);
-      } catch (e) {
-        DebugLog.warning('AnimeTile', '启动远程控制服务失败: $e');
-      }
-    }
-
     // 检查是否有远程连接
     // isListening: 当前设备作为被控端是否正在监听
     // connectionCount: 当前设备作为被控端有多少客户端连接
@@ -258,7 +360,7 @@ class AnimeTile extends ConsumerWidget {
                               final copyValue = e.$2 ?? '';
                               Clipboard.setData(ClipboardData(text: copyValue));
                               App.rootContext.showMessage(
-                                message: "已复制: ${e.$1}",
+                                message: t.copiedField(x: e.$1),
                               );
                             },
                             child: Padding(
@@ -340,7 +442,10 @@ class AnimeTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final type = appdata.settings['animeDisplayMode'];
+    final type =
+        displayMode ??
+        AnimeDisplayModeScope.of(context) ??
+        appdata.settings['animeDisplayMode'];
 
     final isFavorite = appdata.settings['showFavoriteStatusOnTile']
         ? ref.watch(
@@ -361,9 +466,10 @@ class AnimeTile extends ConsumerWidget {
           )
         : null;
 
-    // 三种独立显示模式：详细 / 瀑布流（错落封面）/ 简洁
+    // 显示模式：详细 / 瀑布流（错落封面）/ 简洁 / 海报（横向宽卡）
     Widget child = switch (type) {
       'detailed' => _buildDetailedMode(context, ref),
+      'poster' => _buildPosterMode(context, ref),
       // 瀑布流需要封面高度系数（由瀑布流网格传入）；无系数时回退简洁布局
       'masonry' => masonryFactor != null
           ? _buildMasonryMode(context, ref)
@@ -788,6 +894,212 @@ class AnimeTile extends ConsumerWidget {
     );
   }
 
+  /// 海报模式（横向宽卡）：圆角矩形，上半为图片（底部叠加左右信息条），
+  /// 下半为标题（最多两行）、作者名、底部左右分开的信息。
+  Widget _buildPosterMode(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final theme = Theme.of(context);
+          Widget image = Material(
+            color: theme.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(12),
+            elevation: 2,
+            shadowColor: Colors.black.toOpacity(0.2),
+            clipBehavior: Clip.antiAlias,
+            child: buildImage(context),
+          );
+
+          if (heroID != null) {
+            image = Hero(tag: heroTag ?? "cover$heroID", child: image);
+          }
+
+          final title = anime.title.replaceAll('\n', '');
+          final lines = anime.descriptionLines;
+          final structured = lines != null && lines.isNotEmpty;
+          // 结构化行约定：[0] 时长, [1] 观看数, [2] 过去时间；subtitle = 作者
+          final durationText = structured && lines.isNotEmpty
+              ? lines[0].text.trim()
+              : null;
+          final viewsText = structured && lines.length > 1
+              ? lines[1].text.trim()
+              : null;
+          final timeText = structured && lines.length > 2
+              ? lines[2].text.trim()
+              : null;
+
+          // 作者位：subtitle（结构化时约定为作者），否则 description 首段
+          String? authorText = anime.subtitle?.trim();
+          if (authorText == null || authorText.isEmpty) {
+            if (anime.description.isNotEmpty) {
+              authorText = anime.description.split('|').first.trim();
+            }
+          }
+
+          // 图片底部条：左 = 观看数（降级副标题），右 = 时长（降级徽章/语言）
+          final barLeft = viewsText ?? anime.subtitle?.trim();
+          final barRight = durationText ?? badge ?? anime.language;
+
+          // 底部行：左 = 点赞率（stars 换算百分比），右 = 过去时间（降级 ★ 评分）
+          final hasStars = anime.stars != null && anime.stars! > 0;
+          final bottomLeft = hasStars
+              ? '↑ ${(anime.stars! / 5 * 100).round()}%'
+              : (anime.tags != null && anime.tags!.isNotEmpty
+                    ? anime.tags!.first
+                    : anime.language);
+          final bottomRight = timeText ??
+              (hasStars ? '★ ${anime.stars!.toStringAsFixed(1)}' : '');
+
+          Offset pressPosition = Offset.zero;
+          return InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _onTap(ref),
+            onTapDown: (detail) => pressPosition = detail.globalPosition,
+            onLongPress: enableLongPressed
+                ? () => _onLongPressed(context, ref, pressPosition)
+                : null,
+            onSecondaryTapDown: (detail) =>
+                _onSecondaryTap(detail, context, ref),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      image,
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          width: double.infinity,
+                          // 渐变区更高，底部文字更清晰
+                          padding: const EdgeInsets.fromLTRB(8, 20, 8, 6),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.78),
+                              ],
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              if (barLeft != null && barLeft.isNotEmpty)
+                                Expanded(
+                                  child: Text(
+                                    barLeft,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          blurRadius: 3,
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              if (barRight != null && barRight.isNotEmpty)
+                                Expanded(
+                                  child: Text(
+                                    barRight,
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          blurRadius: 3,
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(6, 5, 6, 0),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (authorText != null && authorText.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 1, 6, 0),
+                    child: Text(
+                      authorText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(6, 3, 6, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          bottomLeft ?? '',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: theme.colorScheme.primary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (bottomRight.isNotEmpty)
+                        Text(
+                          bottomRight,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   List<String> _splitText(String text) {
     var words = <String>[];
     var buffer = StringBuffer();
@@ -1120,6 +1432,7 @@ class SliverMasonryAnimes extends ConsumerStatefulWidget {
     this.menuBuilder,
     this.onTap,
     this.onLongPressed,
+    this.onLastItemBuild,
   });
 
   final List<Anime> animes;
@@ -1140,6 +1453,9 @@ class SliverMasonryAnimes extends ConsumerStatefulWidget {
   final void Function(Anime, int heroID)? onTap;
 
   final void Function(Anime, int heroID)? onLongPressed;
+
+  /// 触底加载回调：瀑布流滑到最后一个 item 构建时触发
+  final void Function()? onLastItemBuild;
 
   /// 封面高度系数：按索引循环错落，形成瀑布流
   static const _factors = [1.25, 1.5, 1.1, 1.4, 1.6, 1.2];
@@ -1165,6 +1481,9 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
       crossAxisSpacing: 4,
       childCount: animes.length,
       itemBuilder: (context, index) {
+        if (index == animes.length - 1) {
+          widget.onLastItemBuild?.call();
+        }
         final anime = animes[index];
         return AnimeTile(
           anime: anime,
@@ -1247,11 +1566,13 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
 
   @override
   Widget build(BuildContext context) {
-    // 全局瀑布流模式：sliver 场景委托瀑布流网格（错落封面）
+    final mode = AnimeDisplayModeScope.of(context) ??
+        appdata.settings['animeDisplayMode'];
+    // 瀑布流模式：sliver 场景委托瀑布流网格（错落封面）
     if (widget.asSliver &&
         !widget.horizontal &&
         !widget.disableMasonry &&
-        appdata.settings['animeDisplayMode'] == 'masonry') {
+        mode == 'masonry') {
       return SliverMasonryAnimes(
         animes: animes,
         isRecommend: widget.isRecommend ?? false,
@@ -1261,6 +1582,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
         menuBuilder: widget.menuBuilder,
         onTap: widget.onTap,
         onLongPressed: widget.onLongPressed,
+        onLastItemBuild: widget.onLastItemBuild,
       );
     }
     return _SliverGridAnimes(
@@ -1280,6 +1602,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
       crossAxisCount: widget.crossAxisCount,
       minCrossAxisCount: widget.minCrossAxisCount,
       horizontal: widget.horizontal,
+      displayMode: mode,
     );
   }
 }
@@ -1306,6 +1629,7 @@ class _SliverGridAnimes extends StatelessWidget {
     this.crossAxisCount,
     this.minCrossAxisCount,
     this.horizontal = false,
+    this.displayMode,
   });
 
   final List<Anime> animes;
@@ -1341,13 +1665,22 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final bool horizontal;
 
+  /// 显示模式（brief/detailed/masonry），null 时用全局设置
+  final String? displayMode;
+
   @override
   Widget build(BuildContext context) {
     // 水平布局模式
     if (horizontal) {
       const height = 240.0;
-      const aspectRatio = 0.68;
-      final width = height * aspectRatio;
+      // 按显示模式决定横向卡片宽度：
+      // brief/masonry 竖卡，detailed 宽卡，poster 横卡
+      final mode = displayMode;
+      final double width = switch (mode) {
+        'detailed' => 380.0,
+        'poster' => height * 1.25,
+        _ => height * 0.68,
+      };
       return SliverToBoxAdapter(
         child: SizedBox(
           height: animes.isEmpty ? 0.0 : height,
@@ -1370,6 +1703,7 @@ class _SliverGridAnimes extends StatelessWidget {
                 enableHistory: enableHistory ?? false,
                 badge: badge,
                 menuOptions: menuBuilder?.call(animes[index]),
+                displayMode: mode,
                 onTap: onTap != null
                     ? () => onTap!(
                         animes[index],
@@ -1383,8 +1717,9 @@ class _SliverGridAnimes extends StatelessWidget {
                       )
                     : null,
                 heroID: _SliverGridAnimes.heroIDOf(animes[index]),
+                // 用列表实例种子（而非索引），避免多个水平列表 hero tag 冲突
                 heroTag:
-                    "cover${_SliverGridAnimes.heroIDOf(animes[index])}_h$index",
+                    "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
               );
               if (selection == null) {
                 return Padding(
@@ -1470,6 +1805,7 @@ class _SliverGridAnimes extends StatelessWidget {
         gridDelegate: SliverGridDelegateWithAnimes(
           fixedCrossAxisCount: crossAxisCount,
           minCrossAxisCount: minCrossAxisCount,
+          displayMode: displayMode,
         ),
       );
     } else {
@@ -1480,6 +1816,7 @@ class _SliverGridAnimes extends StatelessWidget {
         gridDelegate: SliverGridDelegateWithAnimes(
           fixedCrossAxisCount: crossAxisCount,
           minCrossAxisCount: minCrossAxisCount,
+          displayMode: displayMode,
         ),
         shrinkWrap: shrinkWrap,
         itemBuilder: (context, index) {

@@ -32,17 +32,15 @@ Future<SearchSourceSelection?> showSearchSourceSheet(
   return showModalBottomSheet<SearchSourceSelection>(
     context: context,
     isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
-    builder: (_) => FractionallySizedBox(
-      heightFactor: 0.78,
-      child: SearchSourceSheet(
-        group: group,
-        singleKey: singleKey,
-        aggregatedKeys: aggregatedKeys,
-        aggregated: aggregated,
-      ),
+    backgroundColor: Colors.transparent,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => SearchSourceSheet(
+      group: group,
+      singleKey: singleKey,
+      aggregatedKeys: aggregatedKeys,
+      aggregated: aggregated,
     ),
   );
 }
@@ -120,129 +118,126 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sources = _sources;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
-          child: Row(
-            children: [
-              Text(
-                t.chooseSearchSource,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+    return Sheet(
+      title: t.chooseSearchSource,
+      icon: Icons.travel_explore,
+      initialSize: 0.78,
+      headerTrailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SegmentedButton<bool>(
+            segments: [
+              ButtonSegment(
+                value: false,
+                label: Text(t.singleSourceSearch),
               ),
-              const Spacer(),
-              SegmentedButton<bool>(
-                segments: [
-                  ButtonSegment(
-                    value: false,
-                    label: Text(t.singleSourceSearch),
-                  ),
-                  ButtonSegment(value: true, label: Text(t.aggregatedSearch)),
-                ],
-                selected: {_aggregated},
-                onSelectionChanged: (s) =>
-                    setState(() => _aggregated = s.first),
-                showSelectedIcon: false,
-                style: ButtonStyle(
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                tooltip: t.manageGroups,
-                visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.tune, size: 20, color: cs.primary),
-                onPressed: _manageGroups,
-              ),
+              ButtonSegment(value: true, label: Text(t.aggregatedSearch)),
             ],
-          ),
-        ),
-        SizedBox(
-          height: 40,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              for (final group in searchGroups())
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: OptionChip(
-                    text: searchGroupLabel(group),
-                    isSelected: _group == group,
-                    onTap: () => _switchGroup(group),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: sources.isEmpty
-              ? Center(
-                  child: Text(
-                    t.noSearchSources,
-                    style: TextStyle(color: cs.onSurface.toOpacity(0.5)),
-                  ),
-                )
-              : ListView(
-                  children: [
-                    for (final source in sources)
-                      _aggregated
-                          ? CheckboxListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              title: Text(source.name),
-                              value: _selected.contains(source.key),
-                              onChanged: (v) => setState(() {
-                                if (v == true) {
-                                  _selected.add(source.key);
-                                } else {
-                                  _selected.remove(source.key);
-                                }
-                              }),
-                            )
-                          : ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              leading: Icon(
-                                _singleKey == source.key
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_unchecked,
-                                color: _singleKey == source.key
-                                    ? cs.primary
-                                    : cs.onSurfaceVariant,
-                              ),
-                              title: Text(source.name),
-                              onTap: () {
-                                setState(() => _singleKey = source.key);
-                                _confirm();
-                              },
-                            ),
-                  ],
-                ),
-        ),
-        if (_aggregated)
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: sources.isEmpty ? null : _confirm,
-                  icon: const Icon(Icons.check),
-                  label: Text('${t.apply} (${_selected.length})'),
-                ),
-              ),
+            selected: {_aggregated},
+            onSelectionChanged: (s) =>
+                setState(() => _aggregated = s.first),
+            showSelectedIcon: false,
+            style: ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
-      ],
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: t.manageGroups,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(Icons.tune, size: 20, color: cs.primary),
+            onPressed: _manageGroups,
+          ),
+        ],
+      ),
+      footer: _aggregated
+          ? SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: sources.isEmpty ? null : _confirm,
+                    icon: const Icon(Icons.check),
+                    label: Text('${t.apply} (${_selected.length})'),
+                  ),
+                ),
+              ),
+            )
+          : null,
+      builder: (context, sc) => Column(
+        children: [
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              controller: sc,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                for (final group in searchGroups())
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: OptionChip(
+                      text: searchGroupLabel(group),
+                      isSelected: _group == group,
+                      onTap: () => _switchGroup(group),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: sources.isEmpty
+                ? Center(
+                    child: Text(
+                      t.noSearchSources,
+                      style: TextStyle(color: cs.onSurface.toOpacity(0.5)),
+                    ),
+                  )
+                : ListView(
+                    children: [
+                      for (final source in sources)
+                        _aggregated
+                            ? CheckboxListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                title: Text(source.name),
+                                value: _selected.contains(source.key),
+                                onChanged: (v) => setState(() {
+                                  if (v == true) {
+                                    _selected.add(source.key);
+                                  } else {
+                                    _selected.remove(source.key);
+                                  }
+                                }),
+                              )
+                            : ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                leading: Icon(
+                                  _singleKey == source.key
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_unchecked,
+                                  color: _singleKey == source.key
+                                      ? cs.primary
+                                      : cs.onSurfaceVariant,
+                                ),
+                                title: Text(source.name),
+                                onTap: () {
+                                  setState(() => _singleKey = source.key);
+                                  _confirm();
+                                },
+                              ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

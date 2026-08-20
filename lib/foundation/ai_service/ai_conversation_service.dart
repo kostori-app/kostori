@@ -17,6 +17,7 @@ import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/skills/skill_registry.dart';
 import 'package:uuid/uuid.dart';
 
@@ -266,11 +267,11 @@ class AiConversationService {
     String? systemPromptOverride,
   }) async {
     var session = await _sessionDao.getSession(sessionId);
-    if (session == null) return Res.error('会话不存在: $sessionId');
+    if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
 
     final provider = providerOverride ?? session.provider;
     final ai = AiFactory.create(provider);
-    if (ai == null) return Res.error('未知服务商: $provider');
+    if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
 
     // 1. 读取历史消息构建上下文
     var history = await _sessionDao.getMessages(sessionId);
@@ -431,14 +432,14 @@ class AiConversationService {
   }) async* {
     var session = await _sessionDao.getSession(sessionId);
     if (session == null) {
-      yield AiChatUpdate(errorMessage: '会话不存在: $sessionId');
+      yield AiChatUpdate(errorMessage: t.sessionNotFound(id: sessionId));
       return;
     }
 
     final provider = providerOverride ?? session.provider;
     final ai = AiFactory.create(provider);
     if (ai == null) {
-      yield AiChatUpdate(errorMessage: '未知服务商: $provider');
+      yield AiChatUpdate(errorMessage: t.unknownServiceProvider(provider: provider));
       return;
     }
 
@@ -647,7 +648,7 @@ class AiConversationService {
         yield AiChatUpdate(
           text: currentText,
           reasoning: currentReasoning,
-          errorMessage: '对话流意外中断',
+          errorMessage: t.conversationInterrupted,
           steps: List.unmodifiable(steps),
         );
         return;
@@ -707,7 +708,7 @@ class AiConversationService {
               try {
                 return await handler(tc.name, tc.arguments);
               } catch (e) {
-                return '工具执行失败: $e';
+                return t.toolExecutionFailed(error: e);
               }
             }(),
         ]);
@@ -816,11 +817,11 @@ class AiConversationService {
     int keepRecent = 10,
   }) async {
     final session = await _sessionDao.getSession(sessionId);
-    if (session == null) return Res.error('会话不存在: $sessionId');
+    if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
     final aux = await _loadAuxConfig('compress');
     final provider = aux.provider.isEmpty ? session.provider : aux.provider;
     final ai = AiFactory.create(provider);
-    if (ai == null) return Res.error('未知服务商: $provider');
+    if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
 
     final history = await _sessionDao.getMessages(sessionId);
     final contextMessages = history
@@ -829,7 +830,7 @@ class AiConversationService {
     final keep = contextMessages.length > keepRecent
         ? contextMessages.length - keepRecent
         : 0;
-    if (keep <= 0) return Res.error('历史消息太少，无需压缩');
+    if (keep <= 0) return Res.error(t.historyTooShort);
 
     final older = contextMessages.take(keep).toList();
     final conversationText = older

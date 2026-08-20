@@ -949,7 +949,9 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                                         'Kostori',
                                   ),
                                   Text(
-                                    '评价时 ${Utils.formatHMS(watchDuration ?? 0)}',
+                                    t.reviewedAtTime(
+                                      time: Utils.formatHMS(watchDuration ?? 0),
+                                    ),
                                   ),
                                 ],
                               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -169,7 +170,7 @@ class _CharacterChildRepliesListState
                                   ).colorScheme.secondaryContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text('层主'),
+                                child: Text(t.floorOwner),
                               ),
                           ],
                         ),
@@ -191,7 +192,7 @@ class _CharacterChildRepliesListState
               children: [
                 TextButton(
                   onPressed: () => setState(() => _showAll = !_showAll),
-                  child: Text(_showAll ? '收起' : '展开 ($total)'),
+                  child: Text(_showAll ? t.collapse : t.expandCount(total: total)),
                 ),
               ],
             ),

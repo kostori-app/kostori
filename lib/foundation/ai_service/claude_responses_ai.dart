@@ -2,6 +2,7 @@
 // 均为非流式（chat / chatWithTools），流式由 AiBase 默认回退到非流式一次性返回。
 
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/res.dart';
@@ -149,7 +150,7 @@ class ClaudeAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('$sourceName API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
           configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);
@@ -196,7 +197,7 @@ class ClaudeAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('$sourceName API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
           configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);
@@ -259,7 +260,7 @@ class ClaudeAi extends AiBase {
           try {
             result = await onToolCall(name, arguments);
           } catch (e) {
-            result = '工具执行失败: $e';
+            result = t.toolExecutionFailed(error: e);
           }
           history = [
             ...history,
@@ -267,7 +268,7 @@ class ClaudeAi extends AiBase {
           ];
         }
       }
-      return Res.error('$sourceName 工具调用轮次过多');
+      return Res.error(t.toolRoundsExceeded(source: sourceName));
     } catch (e) {
       return Res.error(aiErrorMessageOf(e));
     }
@@ -401,7 +402,7 @@ class ResponsesAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('$sourceName API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
           configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);
@@ -448,7 +449,7 @@ class ResponsesAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('$sourceName API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
           configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);
@@ -506,7 +507,7 @@ class ResponsesAi extends AiBase {
           try {
             result = await onToolCall(name, arguments);
           } catch (e) {
-            result = '工具执行失败: $e';
+            result = t.toolExecutionFailed(error: e);
           }
           history = [
             ...history,
@@ -518,7 +519,7 @@ class ResponsesAi extends AiBase {
           ];
         }
       }
-      return Res.error('$sourceName 工具调用轮次过多');
+      return Res.error(t.toolRoundsExceeded(source: sourceName));
     } catch (e) {
       return Res.error(aiErrorMessageOf(e));
     }

@@ -3,11 +3,9 @@ import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
-import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/search_page.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -96,23 +94,27 @@ class _SearchResultPageState extends State<SearchResultPage> {
   @override
   Widget build(BuildContext context) {
     var source = AnimeSource.find(sourceKey);
-    return AnimeList(
-      key: Key(text + options.toString() + sourceKey),
-      errorLeading: AppSearchBar(controller: controller, action: buildAction()),
-      leadingSliver: SliverSearchBar(
-        controller: controller,
-        action: buildAction(),
+    // 应用该源自定义的显示模式（搜索页独立覆盖 > 源覆盖 > 全局默认）
+    return AnimeDisplayModeScope(
+      mode: sourceDisplayModeOf(widget.sourceKey, 'search'),
+      child: AnimeList(
+        key: Key(text + options.toString() + sourceKey),
+        errorLeading: AppSearchBar(controller: controller, action: buildAction()),
+        leadingSliver: SliverSearchBar(
+          controller: controller,
+          action: buildAction(),
+        ),
+        loadPage: source!.searchPageData!.loadPage == null
+            ? null
+            : (i) {
+          return source.searchPageData!.loadPage!(text, i, options);
+        },
+        loadNext: source.searchPageData!.loadNext == null
+            ? null
+            : (i) {
+          return source.searchPageData!.loadNext!(text, i, options);
+        },
       ),
-      loadPage: source!.searchPageData!.loadPage == null
-          ? null
-          : (i) {
-        return source.searchPageData!.loadPage!(text, i, options);
-      },
-      loadNext: source.searchPageData!.loadNext == null
-          ? null
-          : (i) {
-        return source.searchPageData!.loadNext!(text, i, options);
-      },
     );
   }
 
@@ -120,6 +122,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        AnimeSourceLayoutMenu(sourceKey: widget.sourceKey, subKey: 'search'),
         if (widget.webUrl != null && widget.webUrl!.isNotEmpty)
           Tooltip(
             message: t.openInBrowser,
@@ -132,22 +135,21 @@ class _SearchResultPageState extends State<SearchResultPage> {
           message: t.settings,
           child: IconButton(
             icon: const Icon(Icons.tune),
-            onPressed: () async {
-              var previousOptions = List<String>.from(options);
-              var previousSourceKey = sourceKey;
-              await showDialog(
+            onPressed: () {
+              showModalBottomSheet<void>(
                 context: context,
                 useRootNavigator: true,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
                 builder: (context) {
                   return _SearchSettingsDialog(state: this);
                 },
               );
-              if (!previousOptions.isEqualTo(options) ||
-                  previousSourceKey != sourceKey) {
-                text = controller.text;
-                controller.currentText = text;
-                setState(() {});
-              }
             },
           ),
         ),
@@ -180,6 +182,9 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
   void onChanged() {
     widget.state.sourceKey = searchTarget;
     widget.state.options = options;
+    widget.state.text = widget.state.controller.text;
+    widget.state.controller.currentText = widget.state.controller.text;
+    widget.state.setState(() {});
   }
 
   @override
@@ -189,55 +194,55 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
     sources.removeWhere((e) {
       return !enabled.contains(e.key);
     });
-    return ContentDialog(
+    return Sheet(
       title: t.settings,
-      content: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: 320),
-        child: SingleChildScrollView(
+      icon: Icons.tune,
+      builder: (context, sc) {
+        return SingleChildScrollView(
+          controller: sc,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 title: Text(t.searchIn),
               ),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: sources.map((e) {
-                  return OptionChip(
-                    text: e.name.tl,
-                    isSelected: searchTarget == e.key,
-                    onTap: () {
-                      setState(() {
-                        searchTarget = e.key;
-                        options.clear();
-                        final searchOptions =
-                            AnimeSource.find(
-                              searchTarget,
-                            )!.searchPageData!.searchOptions ??
-                                <SearchOptions>[];
-                        options = searchOptions
-                            .map((e) => e.defaultValue)
-                            .toList();
-                        onChanged();
-                      });
-                    },
-                  );
-                }).toList(),
-              ).fixWidth(double.infinity).paddingHorizontal(16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: sources.map((e) {
+                    return OptionChip(
+                      text: e.name.tl,
+                      isSelected: searchTarget == e.key,
+                      onTap: () {
+                        setState(() {
+                          searchTarget = e.key;
+                          options.clear();
+                          final searchOptions =
+                              AnimeSource.find(
+                                searchTarget,
+                              )!
+                                  .searchPageData!
+                                  .searchOptions ??
+                                  <SearchOptions>[];
+                          options = searchOptions
+                              .map((e) => e.defaultValue)
+                              .toList();
+                          onChanged();
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
               buildSearchOptions(),
             ],
           ),
-        ),
-      ).fixWidth(double.infinity),
-      actions: [
-        FilledButton(
-          child: Text(t.confirm),
-          onPressed: () {
-            context.pop();
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -262,6 +267,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
           onChanged: (value) {
             setState(() {
               options[i] = value;
+              onChanged();
             });
           },
           sourceKey: searchTarget,

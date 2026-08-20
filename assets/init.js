@@ -413,6 +413,23 @@ const WebViewVideo = {
             waitMs: waitMs ?? 8000,
             scan: scan ?? true,
         });
+    },
+    /**
+     * Loads a page in the headless WebView and returns its rendered HTML.
+     * Useful when plain HTTP (Network.get/post) is blocked (Cloudflare 522 etc).
+     * @param {string} url     - The page URL to load.
+     * @param {object} headers - Optional request headers.
+     * @param {number} waitMs  - Max wait (ms) for page load + render. Default: 10000.
+     * @returns {Promise<?string>} - Rendered `document.documentElement.outerHTML`, or null on failure.
+     */
+    fetchHtml: (url, headers, waitMs) => {
+        return sendMessage({
+            method: 'webview',
+            action: 'html',
+            url: url,
+            headers: headers ?? {},
+            waitMs: waitMs ?? 10000,
+        });
     }
 };
 
@@ -1050,8 +1067,10 @@ function AnimeDetails({
                           likesCount,
                           isLiked,
                           uploader,
+                          uploaderAvatar,
                           updateTime,
                           uploadTime,
+                          viewsCount,
                           url,
                           stars,
                           maxPage
@@ -1070,8 +1089,10 @@ function AnimeDetails({
     this.likesCount = likesCount;
     this.isLiked = isLiked;
     this.uploader = uploader;
+    this.uploaderAvatar = uploaderAvatar;
     this.updateTime = updateTime;
     this.uploadTime = uploadTime;
+    this.viewsCount = viewsCount;
     this.url = url;
     this.stars = stars;
     this.maxPage = maxPage;

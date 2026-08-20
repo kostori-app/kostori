@@ -396,15 +396,16 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
     if (parsed.type == KostoriRouteType.anime) {
       final parts = parsed.payload.split('|');
       detail = parts.length >= 2
-          ? '番剧 ID：${parts[0]}\n来源：${parts[1]}'
+          ? t.qrAnimeId(id: parts[0], source: parts[1])
           : parsed.payload;
     } else if (parsed.type == KostoriRouteType.bangumi) {
-      detail = 'Bangumi ID：${parsed.payload}';
+      detail = t.qrBangumiId(id: parsed.payload);
     } else if (parsed.type == KostoriRouteType.hubRoom) {
       final info = parsed.hubRoomInfo;
-      detail =
-          '一起看房间：${info?.roomName ?? parsed.payload}\n'
-          '服务端：${info?.address ?? ''}';
+      detail = t.qrWatchRoom(
+        room: info?.roomName ?? parsed.payload,
+        server: info?.address ?? '',
+      );
     } else {
       detail = parsed.payload;
     }
@@ -413,9 +414,9 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
 
     ContentDialog.show(
       context: App.rootContext,
-      title: '检测到 ${parsed.type.label} 链接',
+      title: t.qrDetectedType(type: parsed.type.label),
       content: Text(
-        '${parsed.wasBase64 ? "（口令已解析）\n" : ""}$detail',
+        '${parsed.wasBase64 ? t.qrPasswordResolved : ""}$detail',
         maxLines: 4,
         overflow: TextOverflow.ellipsis,
       ),

@@ -26,7 +26,7 @@ class DeviceInfo {
       context: App.rootContext,
       builder: (context) {
         return ContentDialog(
-          title: "设备信息",
+          title: t.deviceInfo,
           content: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: 500.0),
             child: ScrollConfiguration(

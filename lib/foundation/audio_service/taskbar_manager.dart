@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 
@@ -28,7 +29,7 @@ class TaskbarManager {
                     ThumbnailToolbarAssetIcon(
                       'assets/img/audio_service_play_arrow.ico',
                     ),
-                    '播放',
+                    t.play,
                     () {
                       _controller?.play();
                     },
@@ -37,7 +38,7 @@ class TaskbarManager {
                     ThumbnailToolbarAssetIcon(
                       'assets/img/audio_service_pause.ico',
                     ),
-                    '暂停',
+                    t.pause,
                     () {
                       _controller?.pause();
                     },
@@ -46,7 +47,7 @@ class TaskbarManager {
               ThumbnailToolbarAssetIcon(
                 'assets/img/audio_service_skip_next.ico',
               ),
-              '下一集',
+              t.nextEpisode,
               () {
                 _controller?.playNextEpisode();
               },

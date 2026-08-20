@@ -1,4 +1,5 @@
 import 'package:kostori/foundation/bangumi/character/actor_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 class CharacterAvator {
   final String small;
@@ -59,7 +60,7 @@ class CharacterItem {
       name: json['name'] ?? '',
       relation: (json['relation'] != '' && json['relation'] != null)
           ? json['relation']
-          : '未知',
+          : t.unknown,
       avator: CharacterAvator.fromJson(json['images'] as Map<String, dynamic>),
       actorList: resActorList,
     );

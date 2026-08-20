@@ -43,10 +43,17 @@ relatedEntries: Related Entries
 alsoRemoveFilesOnDisk: Also remove files on disk
 animeSourceList: Anime Source list
 animeSource: Anime Source
+addRepo: Add repository
+repo: Repositories
+repoUrlHint: "Repo URL: http(s) link or local index.json path (file://)"
+repoEmpty: No sources in this repository
 filterAll: All
 noMatchingSource: No matching sources
+sourceCount: '${count} sources'
 filterNonBangumi: Others
 sortByDefault: Default
+sortAsc: Ascending
+sortDesc: Descending
 sortByName: Name
 sortById: ID
 switchSource: Switch source
@@ -76,6 +83,9 @@ glimmerModeOff: Off
 blue: Blue
 brief: Brief
 masonry: Masonry
+poster: Poster
+sourceDisplayModeReset: Follow global default
+followSourceDefault: Follow source default
 cacheLimit: Cache Limit
 cacheSize: Cache Size
 cacheCleared: Cache cleared
@@ -2268,6 +2278,7 @@ selectResolution: "Select resolution"
 defaultResolution: "Default"
 noResolutionAvailable: "No more qualities available"
 series: "Series"
+singleEpisode: "Single episode · 1 total"
 playing: "Playing"
 selectNone: "Select none"
 downloadActive: "Downloading"
@@ -2283,3 +2294,78 @@ audioTrack: "Audio track"
 subtitle: "Subtitles"
 subtitleOff: "Off"
 quality: "Quality"
+copiedField: "Copied: ${x}"
+selectAliasCount: "Select alias (${count})"
+monthDayFormat: "MMM d"
+monthDay: "${month}/${day}"
+qrAnimeId: "Anime ID: ${id}\nSource: ${source}"
+qrBangumiId: "Bangumi ID: ${id}"
+qrWatchRoom: "Watch together room: ${room}\nServer: ${server}"
+qrDetectedType: "Detected ${type} link"
+qrPasswordResolved: "(Password resolved)\n"
+reviewedAtTime: "Reviewed at ${time}"
+qrCopiedToClipboard: "QR code copied to clipboard"
+qrSavedToGallery: "QR code saved"
+reloadSuccess: "Reloaded successfully"
+floorOwner: "OP"
+postOwner: "OP"
+collapse: "Collapse"
+expandCount: "Expand (${total})"
+deletedReply: "Reply deleted"
+author: "Author"
+episodeTitleLabel: "Episode title"
+manualSwitch: "Manual switch"
+inputEpisodeNumber: "Enter episode number"
+episodeNumberHint: "Enter a number between 1 and 999"
+enterEpisodeNumber: "Please enter an episode number"
+invalidEpisodeNumber: "Please enter a valid number between 1 and 999"
+episodeN: "Ep. ${n}"
+noViewingRecord: "No viewing record found for this episode"
+viewingRecord: "Viewing record"
+watchDurationLabel: "Watch duration: ${duration}"
+completedStatus: "Completed: ${status}"
+yes: "Yes"
+no: "No"
+startTimeLabel: "Start time: ${time}"
+endTimeLabel: "End time: ${time}"
+appInfo: "App info"
+partRepoFetchFailed: "Some repositories failed to fetch: ${list}"
+airTimeLabel: "Air time: ${time}"
+durationLabel: "Duration: ${duration}"
+replyBracket: "[Reply]"
+wantToWatch: "Want to watch"
+watching: "Watching"
+addToFolder: "Add to ${folder}"
+removeFromFolder: "Remove from ${folder}"
+movedFromTo: "Move from ${from} to ${to}"
+unknownFolder: "Unknown folder"
+fetchVideoUrlError: "Failed to get video link: ${detail}"
+missingUrl: "Missing url"
+success: "Success"
+failedWithStatus: "Failed (${status})"
+checkIn: "Check in"
+button: "Button"
+requestFailedDetail: "Request failed: ${error}"
+play: "Play"
+nextEpisode: "Next episode"
+trackN: "Track ${n}"
+deviceInfo: "Device info"
+conversationInterrupted: "Conversation stream interrupted unexpectedly"
+toolExecutionFailed: "Tool execution failed: ${error}"
+apiKeyNotConfigured: "${source} API Key is not configured or is disabled"
+imageInvalid: "Invalid image"
+recognizeBusy: "Recognition service is busy, please try again later"
+connectionTimeout: "Connection timeout"
+pinError: "Incorrect PIN"
+connectionClosed: "Connection closed"
+unknownCommand: "Unknown command type: ${type}"
+processingFailed: "Processing failed: ${error}"
+executionFailed: "Execution failed: ${error}"
+unknownServiceProvider: "Unknown service provider: ${provider}"
+sessionNotFound: "Session not found: ${id}"
+historyTooShort: "Not enough history to compress"
+messageTooLarge: "Message too large, maximum 64KB"
+rateLimit: "Too many requests, please try again later"
+portBusy: "Ports ${start} to ${end} are all occupied"
+webSocketOnly: "Only WebSocket connections are supported"
+toolRoundsExceeded: "${source} has too many tool call rounds"

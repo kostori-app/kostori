@@ -92,6 +92,12 @@ class BatteryWidgetState extends State<BatteryWidget>
   }
 
   void _startAnimation(double targetLevel) {
+    // 先创建动画（避免 late _animation 未初始化就 addListener 崩溃）
+    _animation = Tween<double>(
+      begin: _displayLevel,
+      end: targetLevel,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
     // 复用同一个监听器，避免多次调用时累积监听导致重复 setState
     if (!_hasAnimationListener) {
       _hasAnimationListener = true;
@@ -103,10 +109,6 @@ class BatteryWidgetState extends State<BatteryWidget>
         }
       });
     }
-    _animation = Tween<double>(
-      begin: _displayLevel,
-      end: targetLevel,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.reset();
     _controller.forward();

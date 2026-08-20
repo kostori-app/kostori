@@ -13,6 +13,7 @@ import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/anime_source/anime_play_result.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
@@ -154,6 +155,19 @@ abstract class _PlayerController with Store {
   /// 最近一次打开媒体是否失败：覆盖层据此隐藏加载提示
   @observable
   bool loadFailed = false;
+
+  /// 播放失败提示去抖：mpv 对失效链接会反复重试刷错误日志，短时间只弹一次
+  DateTime? _lastFailToastAt;
+  void toastPlayFailed(String msg) {
+    final now = DateTime.now();
+    if (_lastFailToastAt != null &&
+        now.difference(_lastFailToastAt!).inMilliseconds < 2000) {
+      return;
+    }
+    _lastFailToastAt = now;
+    App.rootContext.showMessage(message: msg, level: LogLevel.error);
+  }
+
   @observable
   Duration buffer = Duration.zero;
   @observable
@@ -404,7 +418,9 @@ abstract class _PlayerController with Store {
 
   // 更新当前集数的方法
   void updateCurrentSetName(int newEpisode) {
-    final watcher = WatcherPlayer.currentState!;
+    final watcher = WatcherPlayer.currentState;
+    // 播放器已退出（currentState 被 dispose 置空）时跳过
+    if (watcher == null) return;
     final anime = watcher.anime;
     if (anime.episode == null || anime.episode!.isEmpty) {
       // 系列模式：无 episode 结构，当前集名 = 系列条目标题
@@ -412,10 +428,10 @@ abstract class _PlayerController with Store {
       currentSetName = entry?.title ?? '';
       videoUrl = entry?.id ?? '';
     } else {
-      currentSetName = anime.episode!.values
+      currentSetName = AnimeDetails.episodeTitleOf(anime.episode!.values
           .elementAt(currentRoad)
           .values
-          .elementAt(newEpisode - 1);
+          .elementAt(newEpisode - 1));
       videoUrl = anime.episode!.values
           .elementAt(currentRoad)
           .keys
@@ -557,10 +573,7 @@ abstract class _PlayerController with Store {
     playerLogSubscription = player.stream.log.listen((event) {
       playerLog.add(PlayerLogEntry(event));
       if (event.level == 'error' && event.text.contains('Failed to open')) {
-        App.rootContext.showMessage(
-          message: t.failedToOpen,
-          level: LogLevel.error,
-        );
+        toastPlayFailed(t.failedToOpen);
         // open 对部分失败不抛异常，而是异步走 log 流；
         // 这里复位加载状态并标记失败，避免覆盖层一直显示"加载媒体数据"
         loadingStep = 0;

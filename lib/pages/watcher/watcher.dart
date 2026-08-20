@@ -20,6 +20,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/m3u8_proxy_server.dart';
+import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
@@ -162,6 +163,9 @@ class _WatcherState extends State<Watcher>
   var loaded = 0;
 
   bool isLoading = false;
+
+  /// 加载代次：切换集/线路时自增，用于丢弃过期异步结果（旧集还在解析时切走）
+  int _loadGen = 0;
 
   /// 系列模式下的系列条目列表（源 loadSeries 返回，复用 Anime 结构）
   List<Anime>? _series;
@@ -343,6 +347,9 @@ class _WatcherState extends State<Watcher>
   }) async {
     // 一起看成员：禁止手动切换集数，只能跟随房主（房主同步会临时解锁放行）
     if (playerController.syncLocked) return;
+    // 切换集/线路：取消上一个还在进行的 WebView 解析，避免旧任务占用资源
+    WebViewResolver.cancel();
+    final gen = ++_loadGen;
     if (!_isSeries &&
         (anime.episode == null || road >= anime.episode!.length)) {
       App.rootContext.showMessage(message: t.watcherRouteNotFound);
@@ -356,15 +363,34 @@ class _WatcherState extends State<Watcher>
     PlayLog.info("加载剧集", "$episodeIndex");
 
     try {
-      final progressFind = await HistoryManager().progressFindAsync(
+      var progressFind = await HistoryManager().progressFindAsync(
         anime.id,
         AnimeType(anime.sourceKey.hashCode),
         epIndex - 1,
         road,
       );
       if (progressFind == null) {
-        PlayLog.warning('progress not found', '$episodeIndex-$road');
-        return;
+        // 无历史进度（新条目/系列条目首次播放）：创建初始进度，避免被跳过
+        await HistoryManager().addProgress(
+          Progress.fromModel(
+            model: anime,
+            episode: epIndex - 1,
+            road: road,
+            progressInMilli: 0,
+            startTime: DateTime.now(),
+          ),
+          anime.id,
+        );
+        progressFind = await HistoryManager().progressFindAsync(
+          anime.id,
+          AnimeType(anime.sourceKey.hashCode),
+          epIndex - 1,
+          road,
+        );
+        if (progressFind == null) {
+          PlayLog.warning('progress create failed', '$episodeIndex-$road');
+          return;
+        }
       }
       this.progressFind = progressFind;
 
@@ -389,13 +415,16 @@ class _WatcherState extends State<Watcher>
         _episodeKey(road, epIndex),
       );
 
+      // 已切走或播放器已退出：丢弃过期结果，不再初始化播放器
+      if (gen != _loadGen || !mounted) return;
+
       // 兼容：源可返回 String（纯 URL）或结构化对象（AnimePlayResult）
       final (playUrl, playResult) = _parsePlayResult(res);
       if (playUrl.isEmpty) {
         playerController.isParsing = false;
         PlayLog.error("加载剧集", "$res 不合法");
         App.rootContext.showMessage(
-          message: '获取视频链接异常: $res',
+          message: t.fetchVideoUrlError(detail: res),
           level: LogLevel.error,
         );
         return;
@@ -413,12 +442,15 @@ class _WatcherState extends State<Watcher>
 
       await _play(playUrl, time);
 
+      // 播放器已退出：后续状态写入无意义
+      if (!mounted) return;
+
       // 源提供播放进度上报接口时开始同步（emby/jellyfin 历史）
       _startPlaybackReporting(playUrl, playResult);
 
       playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
-      playerController.videoUrl = res;
+      playerController.videoUrl = playUrl;
       playerController.playing = true;
       playerController.updateCurrentSetName(epIndex);
 
@@ -429,6 +461,8 @@ class _WatcherState extends State<Watcher>
       await updateHistory();
     } catch (e, s) {
       PlayLog.error("_loadEpisode", "$e\n$s");
+      // 已切走或播放器已退出：过期任务（被取消的 WebView 解析）的报错静默丢弃
+      if (gen != _loadGen || !mounted) return;
       // 解析异常也要复位，否则覆盖层会一直显示"正在解析"
       playerController.isParsing = false;
     }
@@ -453,16 +487,17 @@ class _WatcherState extends State<Watcher>
       );
     } catch (e, s) {
       PlayLog.error("openMedia", "$e\n$s");
-      // 加载失败：复位加载状态并标记失败，避免覆盖层一直显示"加载媒体数据"
+      // 复位加载状态并标记失败，避免覆盖层一直显示"加载媒体数据"
       playerController.loadingStep = 0;
       playerController.isParsing = false;
       playerController.isBuffering = false;
       playerController.loadFailed = true;
+      // 停止播放器，避免 mpv 对失效链接反复重试刷错误日志
+      try {
+        await playerController.player.stop();
+      } catch (_) {}
       if (mounted) {
-        App.rootContext.showMessage(
-          message: t.failedToLoadPleaseTryAgain,
-          level: LogLevel.error,
-        );
+        playerController.toastPlayFailed(t.failedToLoadPleaseTryAgain);
       }
       return;
     }
@@ -566,7 +601,9 @@ class _WatcherState extends State<Watcher>
 
   Future<void> updateHistory() async {
     history.lastWatchEpisode = epIndex;
-    history.allEpisode = _episodeCount(playerController.currentRoad);
+    // 系列条目互相独立（每条目一个独立视频）：历史按单集记录，不把系列当多集
+    history.allEpisode =
+        _isSeries ? 1 : _episodeCount(playerController.currentRoad);
     if (anime.cover.trim().isNotEmpty) {
       history.cover = anime.cover;
     }

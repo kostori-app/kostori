@@ -17,6 +17,46 @@ class WebViewResolver {
 
   static VideoWebviewController? _controller;
 
+  /// WebView 操作串行队列：全局单例 WebView 同一时刻只允许一个
+  /// loadUrl，并发调用会互相覆盖页面导致结果错乱/超时，故排队执行。
+  static Future<void> _pending = Future.value();
+
+  /// 取消代次：cancel 自增；任务入队时捕获代次，执行时代次不一致
+  /// 说明该任务在 cancel 之前已入队 → 跳过。避免 cancel 误伤其后的新任务。
+  static int _cancelGen = 0;
+
+  /// 当前正在执行任务的取消感知（action 内部回调检查，命中即提前结束）
+  static bool _cancelled = false;
+
+  /// 取消所有排队/正在执行的 WebView 任务（切换集/线路时调用，
+  /// 避免上一个还在嗅探的任务继续占用 WebView 与资源）。
+  /// 调用之后新发起的任务不受影响。
+  static void cancel() {
+    _cancelGen++;
+    _cancelled = true;
+    _pending = Future.value();
+  }
+
+  static Future<T?> _serial<T>(Future<T?> Function() action) {
+    final completer = Completer<T?>();
+    final gen = _cancelGen;
+    _pending = _pending.then((_) async {
+      try {
+        if (gen != _cancelGen) {
+          // 入队后已被 cancel：跳过（复位标记，避免残留影响后续任务）
+          _cancelled = false;
+          completer.complete(null);
+          return;
+        }
+        _cancelled = false;
+        completer.complete(await action());
+      } catch (e, s) {
+        completer.completeError(e, s);
+      }
+    });
+    return completer.future;
+  }
+
   static Future<VideoWebviewController> _getController() async {
     if (_controller == null) {
       try {
@@ -57,19 +97,19 @@ class WebViewResolver {
       return (result as List?)?.cast<dynamic>() ?? [];
     }
     try {
-      return await _resolve(
+      final result = await _resolve(
         url,
         headers: headers,
         script: script,
         waitMs: waitMs,
         scan: scan,
       );
+      return result ?? [];
     } catch (e, s) {
       SourceLog.error('WebViewResolver', '$e\n$s');
     }
     return [];
   }
-
   /// 主 isolate 上注册 webview 任务处理器（应用启动时调用）
   static void registerMainIsolateHandler() {
     MainIsolateRunner.registerHandler('webview', (payload) async {
@@ -127,52 +167,69 @@ class WebViewResolver {
     String url, {
     Map<String, String>? headers,
     required int waitMs,
-  }) async {
-    debugPrint('[WebViewResolver] fetchHtml 开始: $url');
-    final controller = await _getController();
-    final completer = Completer<void>();
-    Timer? timer;
+  }) {
+    return _serial(() async {
+      debugPrint('[WebViewResolver] fetchHtml 开始: $url');
+      final controller = await _getController();
+      final completer = Completer<void>();
+      Timer? timer;
 
-    void finish() {
-      if (!completer.isCompleted) completer.complete(null);
-    }
+      void finish() {
+        if (_cancelled) {
+          _cancelled = false;
+          try {
+            controller.unloadPage();
+          } catch (_) {}
+        }
+        if (!completer.isCompleted) completer.complete(null);
+      }
 
-    final loadStopSub = controller.onLoadStop.listen((_) {
-      // 首次加载完成后稍等页面内 JS 渲染，再读取 HTML
-      timer?.cancel();
-      timer = Timer(const Duration(milliseconds: 600), finish);
-    });
+      final loadStopSub = controller.onLoadStop.listen((_) {
+        if (_cancelled) {
+          finish();
+          return;
+        }
+        // 首次加载完成后稍等页面内 JS 渲染，再读取 HTML
+        timer?.cancel();
+        timer = Timer(const Duration(milliseconds: 600), finish);
+      });
 
-    try {
-      await controller.loadUrl(url, headers: headers, scan: false);
-      timer ??= Timer(Duration(milliseconds: waitMs), finish);
-      await completer.future.timeout(
-        Duration(milliseconds: waitMs + 3000),
-        onTimeout: finish,
-      );
-      final html = await controller.evaluateJavascript(
-        'document.documentElement.outerHTML',
-      );
-      return (html == null || html.isEmpty) ? null : html;
-    } finally {
-      timer?.cancel();
-      await loadStopSub.cancel();
-      // 卸载页面（保留引擎实例供下次复用）
       try {
-        await controller.unloadPage();
-      } catch (_) {}
-    }
+        await controller.loadUrl(url, headers: headers, scan: false);
+        timer ??= Timer(Duration(milliseconds: waitMs), finish);
+        await completer.future.timeout(
+          Duration(milliseconds: waitMs + 3000),
+          onTimeout: finish,
+        );
+        if (_cancelled) {
+          _cancelled = false;
+          return null;
+        }
+        final html = await controller.evaluateJavascript(
+          'document.documentElement.outerHTML',
+        );
+        return (html == null || html.isEmpty) ? null : html;
+      } finally {
+        timer?.cancel();
+        await loadStopSub.cancel();
+        // 卸载页面（保留引擎实例供下次复用）
+        try {
+          await controller.unloadPage();
+        } catch (_) {}
+      }
+    });
   }
 
-  static Future<List<dynamic>> _resolve(
+  static Future<List<dynamic>?> _resolve(
     String url, {
     Map<String, String>? headers,
     String? script,
     required int waitMs,
     required bool scan,
-  }) async {
-    debugPrint('[WebViewResolver] 开始嗅探: $url');
-    Log.info('WebViewResolver', '嗅探: $url');
+  }) {
+    return _serial(() async {
+      debugPrint('[WebViewResolver] 开始嗅探: $url');
+      Log.info('WebViewResolver', '嗅探: $url');
     final controller = await _getController();
     final results = <dynamic>[];
     final seen = <String>{};
@@ -180,14 +237,32 @@ class WebViewResolver {
     final completer = Completer<List<dynamic>>();
     Timer? timer;
 
+    void cancelNow() {
+      if (_cancelled) {
+        _cancelled = false;
+        try {
+          controller.unloadPage();
+        } catch (_) {}
+      }
+      if (!completer.isCompleted) completer.complete(results);
+    }
+
     void arm([int? ms]) {
       timer?.cancel();
       timer = Timer(Duration(milliseconds: ms ?? waitMs), () {
+        if (_cancelled) {
+          cancelNow();
+          return;
+        }
         if (!completer.isCompleted) completer.complete(results);
       });
     }
 
     void onItem(Map<String, dynamic> item) {
+      if (_cancelled) {
+        cancelNow();
+        return;
+      }
       final type = item['type'];
       if (type == WebviewResultType.cf) {
         sawCf = true;
@@ -214,6 +289,10 @@ class WebViewResolver {
     final loadStopSub = controller.onLoadStop.listen((_) {
       // 每次导航/重载完成都重置等待计时，避免慢页面/重定向提前返回空；
       // 若已识别 CF 挑战则保持延长
+      if (_cancelled) {
+        cancelNow();
+        return;
+      }
       arm(sawCf ? waitMs + 15000 : waitMs);
     });
 
@@ -225,6 +304,7 @@ class WebViewResolver {
         scan: scan,
       );
       arm();
+      if (_cancelled) cancelNow();
 
       final finalResults = await completer.future.timeout(
         Duration(milliseconds: waitMs + 15000),
@@ -243,5 +323,6 @@ class WebViewResolver {
         await controller.unloadPage();
       } catch (_) {}
     }
+    });
   }
 }

@@ -454,6 +454,28 @@ mixin class _JSEngineApi {
         return <dynamic>[];
       }
     }
+    if (action == 'html') {
+      final url = data["url"]?.toString() ?? '';
+      final waitMs = (data["waitMs"] is int ? data["waitMs"] as int : 10000)
+          .clamp(1000, 60000);
+      Map<String, String>? headers;
+      final rawHeaders = data['headers'];
+      if (rawHeaders is Map) {
+        headers = rawHeaders.map(
+          (k, v) => MapEntry(k.toString(), v.toString()),
+        );
+      }
+      try {
+        return await WebViewResolver.fetchHtml(
+          url,
+          headers: headers,
+          waitMs: waitMs,
+        );
+      } catch (e) {
+        SourceLog.error("WebViewResolver", e.toString());
+        return null;
+      }
+    }
     return null;
   }
 

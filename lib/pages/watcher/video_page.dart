@@ -634,7 +634,7 @@ bool get _isSeries =>
                         ],
                         Expanded(
                           child: Text(
-                            selectedRoad[epKey] ?? "",
+                            AnimeDetails.episodeTitleOf(selectedRoad[epKey]),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -689,7 +689,7 @@ bool get _isSeries =>
     );
   }
 
-  /// 系列模式侧面板：只显示当前播放的一条系列条目
+  /// 系列模式侧面板：只显示当前播放的一条系列条目（内容高度，不拉伸占满）
   Widget _buildSeriesPlaylistBody() {
     final colorScheme = Theme.of(context).colorScheme;
     final title = playerController.currentSetName.isNotEmpty
@@ -698,39 +698,57 @@ bool get _isSeries =>
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Material(
-          color: colorScheme.primary.toOpacity(0.3),
-          borderRadius: BorderRadius.circular(6),
-          clipBehavior: Clip.hardEdge,
-          child: InkWell(
-            onTap: () async {
-              closeTabBodyAnimated();
-              playerController.currentRoad = 0;
-              await playerController.pause();
-              playerController.playEpisode(playerController.currentEpisoded, 0);
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/img/playing.gif',
-                    color: colorScheme.primary,
-                    height: 16,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width,
+            ),
+            child: Material(
+              color: colorScheme.primary.toOpacity(0.3),
+              borderRadius: BorderRadius.circular(6),
+              clipBehavior: Clip.hardEdge,
+              child: InkWell(
+                onTap: () async {
+                  closeTabBodyAnimated();
+                  playerController.currentRoad = 0;
+                  await playerController.pause();
+                  playerController.playEpisode(
+                    playerController.currentEpisoded,
+                    0,
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 10,
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color.lerp(colorScheme.primary, Colors.white, 0.3),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        'assets/img/playing.gif',
+                        color: colorScheme.primary,
+                        height: 16,
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color.lerp(
+                              colorScheme.primary,
+                              Colors.white,
+                              0.3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

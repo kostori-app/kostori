@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/ai_service/balance_helper.dart';
@@ -326,7 +327,7 @@ class OpenAiCompatibleAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('$sourceName API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
           configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);
@@ -363,7 +364,7 @@ class OpenAiCompatibleAi extends AiBase {
           try {
             result = await onToolCall(tc.name, tc.arguments);
           } catch (e) {
-            result = '工具执行失败: $e';
+            result = t.toolExecutionFailed(error: e);
           }
           history = [
             ...history,
@@ -375,7 +376,7 @@ class OpenAiCompatibleAi extends AiBase {
           ];
         }
       }
-      return Res.error('$sourceName 工具调用轮次过多');
+      return Res.error(t.toolRoundsExceeded(source: sourceName));
     } catch (e) {
       return Res.error(aiErrorMessageOf(e));
     }
@@ -395,7 +396,7 @@ class OpenAiCompatibleAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        yield AiStreamChunk(errorMessage: '$sourceName API Key 未配置或已禁用');
+        yield AiStreamChunk(errorMessage: t.apiKeyNotConfigured(source: sourceName));
         return;
       }
       final config =
@@ -565,7 +566,7 @@ class OpenAiCompatibleAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('$sourceName API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config =
           configOverride ?? buildConfig(keyRow, modelOverride: modelOverride);

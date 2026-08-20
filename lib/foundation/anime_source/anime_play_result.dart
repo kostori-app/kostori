@@ -2,6 +2,10 @@
 ///
 /// 兼容旧协议：源脚本可返回 String（纯 URL），也可返回该结构
 /// （URL + 播放请求头 + 媒体信息：音轨/字幕/视频流/清晰度）。
+library;
+
+import 'package:kostori/i18n/strings.g.dart';
+
 class AnimePlayResult {
   final String url;
 
@@ -100,7 +104,7 @@ class MediaTrackInfo {
         '$language${codec != null && codec!.isNotEmpty ? ' · $codec' : ''}',
       if (channels != null && channels! > 0) '${channels}ch',
     ];
-    return parts.isEmpty ? '第 $index 轨' : parts.join(' ');
+    return parts.isEmpty ? t.trackN(n: index) : parts.join(' ');
   }
 
   factory MediaTrackInfo.fromJson(Map<String, dynamic> json) {

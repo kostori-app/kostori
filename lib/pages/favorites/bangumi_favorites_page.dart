@@ -24,7 +24,7 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
 
   String get name => favState.bangumiUserName;
 
-  final List<String> tab = ['抛弃', '想看', '在看', '搁置', '看过'];
+  final List<String> tab = [t.dropped, t.wantToWatch, t.watching, t.onHold, t.completed];
 
   bool useBriefMode = true;
 

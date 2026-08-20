@@ -348,16 +348,23 @@ class _StatItemWidgetState extends State<StatItemWidget> {
               String actionText;
               switch (record.favoriteAction) {
                 case FavoriteAction.add:
-                  actionText = "添加到 ${record.favorite ?? 'Unknown folder'}";
+                  actionText = t.addToFolder(
+                    folder: record.favorite ?? t.unknownFolder,
+                  );
                   break;
                 case FavoriteAction.remove:
-                  actionText = "从 ${record.favorite ?? 'Unknown folder'} 删除";
+                  actionText = t.removeFromFolder(
+                    folder: record.favorite ?? t.unknownFolder,
+                  );
                   break;
                 case FavoriteAction.move:
                   if (record.favorite != null &&
                       record.favorite!.contains(',')) {
                     final parts = record.favorite!.split(',');
-                    actionText = "从 ${parts[0]} 移动到 ${parts[1]}";
+                    actionText = t.movedFromTo(
+                      from: parts[0],
+                      to: parts[1],
+                    );
                   } else {
                     actionText = t.moveOperationTargetUnknown;
                   }

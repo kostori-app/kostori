@@ -132,9 +132,13 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Text("放送时间：${episode.airDate}"),
+                            Text(t.airTimeLabel(time: episode.airDate)),
                             const SizedBox(width: 8),
-                            Text("时长：${episode.duration}"),
+                            Text(
+                              t.durationLabel(
+                                duration: episode.duration,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 24),

@@ -283,6 +283,24 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$loadFailedAtom = Atom(
+    name: '_PlayerController.loadFailed',
+    context: context,
+  );
+
+  @override
+  bool get loadFailed {
+    _$loadFailedAtom.reportRead();
+    return super.loadFailed;
+  }
+
+  @override
+  set loadFailed(bool value) {
+    _$loadFailedAtom.reportWrite(value, super.loadFailed, () {
+      super.loadFailed = value;
+    });
+  }
+
   late final _$bufferAtom = Atom(
     name: '_PlayerController.buffer',
     context: context,
@@ -923,6 +941,7 @@ playing: ${playing},
 currentPosition: ${currentPosition},
 isBuffering: ${isBuffering},
 completed: ${completed},
+loadFailed: ${loadFailed},
 buffer: ${buffer},
 duration: ${duration},
 previewImage: ${previewImage},

@@ -137,20 +137,30 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
       );
     }
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: Appbar(
-        title: Text(widget.category),
-        actions: [
-          if (widget.webUrl != null && widget.webUrl!.isNotEmpty)
-            IconButton(
-              tooltip: t.openInBrowser,
-              icon: const Icon(Icons.open_in_new),
-              onPressed: () => launchUrlString(widget.webUrl!),
-            ),
-        ],
+    return AnimeDisplayModeScope(
+      mode: sourceDisplayModeOf(
+        widget.sourceKey,
+        'category:${widget.category}',
       ),
-      body: body,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: Appbar(
+          title: Text(widget.category),
+          actions: [
+            if (widget.webUrl != null && widget.webUrl!.isNotEmpty)
+              IconButton(
+                tooltip: t.openInBrowser,
+                icon: const Icon(Icons.open_in_new),
+                onPressed: () => launchUrlString(widget.webUrl!),
+              ),
+            AnimeSourceLayoutMenu(
+              sourceKey: widget.sourceKey,
+              subKey: 'category:${widget.category}',
+            ),
+          ],
+        ),
+        body: body,
+      ),
     );
   }
 

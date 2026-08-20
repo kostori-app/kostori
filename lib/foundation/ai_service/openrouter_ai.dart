@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/ai_service/balance_helper.dart';
@@ -146,7 +147,7 @@ class OpenRouterAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('$sourceName API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: sourceName));
       }
       final config = buildConfig(keyRow, modelOverride: modelOverride);
       final response = await AppDio().request(
@@ -184,7 +185,7 @@ class OpenRouterAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        yield AiStreamChunk(errorMessage: '$sourceName API Key 未配置或已禁用');
+        yield AiStreamChunk(errorMessage: t.apiKeyNotConfigured(source: sourceName));
         return;
       }
       final config = buildConfig(keyRow, modelOverride: modelOverride);

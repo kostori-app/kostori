@@ -614,7 +614,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     0) >
                                 1)
                               PopupMenuButton<int>(
-                                color: Colors.white,
                                 tooltip: t.audioTrack,
                                 onSelected: (i) =>
                                     playerController.setAudioTrack(i),
@@ -640,7 +639,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                         .isNotEmpty ??
                                     false))
                               PopupMenuButton<int>(
-                                color: Colors.white,
                                 tooltip: t.subtitle,
                                 onSelected: (i) =>
                                     playerController.setSubtitleTrack(i),
@@ -687,7 +685,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     0) >
                                 1)
                               PopupMenuButton<VideoStreamInfo>(
-                                color: Colors.white,
                                 tooltip: t.quality,
                                 onSelected: (vs) {
                                   final u = vs.url;

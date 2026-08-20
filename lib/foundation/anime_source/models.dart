@@ -233,7 +233,13 @@ class AnimeDetails with HistoryMixin {
 
   final String? uploader;
 
+  /// 作者头像 URL（可为空：部分条目无头像图）
+  final String? uploaderAvatar;
+
   final String? uploadTime;
+
+  /// 观看次数（源提供原始字符串，如 "189.8万次"）
+  final String? viewsCount;
 
   final String? updateTime;
 
@@ -281,7 +287,9 @@ class AnimeDetails with HistoryMixin {
       isLiked = json["isLiked"],
       commentsCount = json["commentsCount"],
       uploader = json["uploader"],
+      uploaderAvatar = json["uploaderAvatar"],
       uploadTime = json["uploadTime"],
+      viewsCount = json["viewsCount"],
       updateTime = json["updateTime"],
       url = json["url"],
       stars = (json["stars"] as num?)?.toDouble();
@@ -304,7 +312,9 @@ class AnimeDetails with HistoryMixin {
       "likesCount": likesCount,
       "commentsCount": commentsCount,
       "uploader": uploader,
+      "uploaderAvatar": uploaderAvatar,
       "uploadTime": uploadTime,
+      "viewsCount": viewsCount,
       "updateTime": updateTime,
       "url": url,
     };

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/res.dart';
@@ -136,7 +137,7 @@ class GeminiAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        return Res.error('Gemini API Key 未配置或已禁用');
+        return Res.error(t.apiKeyNotConfigured(source: 'Gemini'));
       }
       final config = buildConfig(keyRow, modelOverride: modelOverride);
       final response = await AppDio().request(
@@ -174,7 +175,7 @@ class GeminiAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        yield const AiStreamChunk(errorMessage: 'Gemini API Key 未配置或已禁用');
+        yield AiStreamChunk(errorMessage: t.apiKeyNotConfigured(source: 'Gemini'));
         return;
       }
       final config = buildConfig(keyRow, modelOverride: modelOverride);

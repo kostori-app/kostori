@@ -239,7 +239,7 @@ class _AnimeSourceBuilderPageState extends State<AnimeSourceBuilderPage> {
   String _buildExploreJs() {
     if (_exploreUrlCtrl.text.trim().isEmpty) return '';
     final title = _exploreTitleCtrl.text.trim().isEmpty
-        ? '首页'
+        ? t.home
         : _exploreTitleCtrl.text.trim();
     final sb = StringBuffer();
     sb.writeln('');
@@ -275,7 +275,7 @@ class _AnimeSourceBuilderPageState extends State<AnimeSourceBuilderPage> {
       return '';
     }
     final title = _categoryTitleCtrl.text.trim().isEmpty
-        ? '分类'
+        ? t.category
         : _categoryTitleCtrl.text.trim();
     final sb = StringBuffer();
 
@@ -287,7 +287,7 @@ class _AnimeSourceBuilderPageState extends State<AnimeSourceBuilderPage> {
       sb.writeln('    title: "${_jsStr(title)}",');
       sb.writeln('    parts: [');
       sb.writeln('      {');
-      sb.writeln('        name: "全部",');
+      sb.writeln('        name: "${t.all}",');
       sb.writeln('        type: "fixed",');
       sb.writeln('        categories: [');
       for (final c in categories) {

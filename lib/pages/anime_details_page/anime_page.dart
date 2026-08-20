@@ -14,6 +14,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/js_ui.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
@@ -101,6 +102,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   /// 切换源后要继承播放的集（新源数据加载完成后播放该集）
   int? _pendingEpisode;
+
+  /// 系列模式缓存：跨 episodes 重建保留，避免每次进入"全部剧集"重新加载
+  List<Anime>? _seriesListCache;
 
   final stats = StatsManager();
 
@@ -549,6 +553,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             slivers: [
               ...buildTitle(),
               buildComment(),
+              buildMetaInfo(),
               buildDescription(),
               buildInfo(),
             ],
@@ -719,10 +724,54 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     scrollPhysics:
                                         const NeverScrollableScrollPhysics(),
                                   ).paddingVertical(4),
-                                Text(
-                                  AnimeSource.find(anime.sourceKey)?.name ?? '',
-                                  style: ts.s12,
-                                ),
+                                if (animeSource.isBangumi)
+                                  // 源名称卡片：点击切换源
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(8),
+                                      onTap: _switchSource,
+                                      child: Container(
+                                        margin: const EdgeInsets.only(top: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondaryContainer
+                                              .toOpacity(0.6),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.swap_horiz,
+                                              size: 14,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              AnimeSource.find(
+                                                anime.sourceKey,
+                                              )?.name ??
+                                              '',
+                                              style: ts.s12,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    AnimeSource.find(anime.sourceKey)?.name ?? '',
+                                    style: ts.s12,
+                                  ),
                                 const Spacer(),
                                 if (bangumiItem != null)
                                   Align(
@@ -891,14 +940,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           ),
           color: Theme.of(context).colorScheme.inversePrimary,
         ),
-        // 聚合模式（切换源）：仅对 bangumi 生态的源开放
-        if (animeSource.isBangumi)
-          IconTileButton(
-            icon: const Icon(Icons.swap_horiz),
-            label: t.switchSource,
-            onTap: _switchSource,
-            color: Theme.of(context).colorScheme.secondary,
-          ),
         IconTileButton(
           icon: const Icon(Icons.favorite_border),
           activeIcon: const Icon(Icons.favorite),
@@ -974,6 +1015,35 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     await _switchTo(picked.sourceKey, picked.id);
   }
 
+  /// 独立条目源（independentSeries）：点击系列条目时同页切换详情信息为该条目
+  /// （同源、不换源：更新 id → 重载详情 → 刷新历史/收藏/相关等）
+  Future<void> _switchToSeriesEntry(Anime entry) async {
+    if (entry.id.isEmpty || _animeId == entry.id) return;
+    playerController.pause();
+    // 重置旧条目历史与系列缓存：onDataLoaded 会用新条目 data 重新建立
+    history = null;
+    _seriesListCache = null;
+    setState(() {
+      _animeId = entry.id;
+      isDownloaded = false;
+    });
+    final res = await loadDataWithRetry();
+    if (!mounted) return;
+    if (res.success) {
+      data = res.data;
+      try {
+        await onDataLoaded();
+      } catch (e, s) {
+        Log.error('系列条目切换', '$e\n$s');
+      }
+      if (mounted) setState(() {});
+    } else {
+      setState(() {
+        error = res.errorMessage ?? 'Load failed';
+      });
+    }
+  }
+
   /// 页内热切换源：记录要继承的集，切源后重载详情并播放该集。
   /// 历史/收藏等逻辑按新源处理（像打开新源的详情页），不做迁移
   Future<void> _switchTo(String newSourceKey, String newId) async {
@@ -1026,7 +1096,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       for (final e in eps.entries)
         () {
           final title = AnimeDetails.episodeTitleOf(e.value);
-          final name = title.isEmpty ? '第 ${e.key} 集' : title;
+          final name = title.isEmpty ? t.episodeN(n: e.key) : title;
           return _DownloadItem(
             key: e.key,
             title: name,
@@ -1215,6 +1285,172 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     return anime.tags.values.every((list) => list.isEmpty);
   }
 
+  /// 作者信息（描述上方，卡片样式）：
+  /// 作者卡（头像+作者名+类型）+ 观看次数卡 + 上传时间卡
+  Widget buildMetaInfo() {
+    final uploader = anime.uploader;
+    final avatar = anime.uploaderAvatar;
+    final views = anime.viewsCount;
+    final time = anime.uploadTime;
+    // 类型：仅在源提供作者信息时取 tags 首个值（如"里番"/"2.5D"）
+    String? genre;
+    if (uploader != null && uploader.isNotEmpty) {
+      for (final list in anime.tags.values) {
+        if (list.isNotEmpty) {
+          genre = list.first;
+          break;
+        }
+      }
+    }
+    final hasAuthor =
+        uploader?.isNotEmpty == true ||
+        avatar?.isNotEmpty == true ||
+        genre?.isNotEmpty == true;
+    final hasStats = views?.isNotEmpty == true || time?.isNotEmpty == true;
+    if (!hasAuthor && !hasStats) {
+      return const SliverPadding(padding: EdgeInsets.zero);
+    }
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Widget card({required Widget child}) => Material(
+      color: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outlineVariant, width: 0.6),
+      ),
+      child: Padding(padding: const EdgeInsets.all(12), child: child),
+    );
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 作者卡片：左头像 + 右作者名/类型
+            if (hasAuthor)
+              card(
+                child: Row(
+                  children: [
+                    ClipOval(
+                      child: avatar != null && avatar.isNotEmpty
+                          ? AnimatedImage(
+                              image: CachedImageProvider(
+                                avatar,
+                                headers: AnimeSource.find(
+                                  anime.sourceKey,
+                                )?.httpHeaders,
+                              ),
+                              width: 48,
+                              height: 48,
+                            )
+                          : Container(
+                              width: 48,
+                              height: 48,
+                              color: colorScheme.secondaryContainer,
+                              child: Icon(
+                                Icons.person_outline,
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (uploader != null && uploader.isNotEmpty)
+                            Text(
+                              uploader,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          if (genre != null && genre.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                genre,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // 观看次数卡 + 上传时间卡（各自包裹内容宽度，不撑满整行）
+            if (hasStats)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (views != null && views.isNotEmpty)
+                      card(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.remove_red_eye_outlined,
+                              size: 16,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              views,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (time != null && time.isNotEmpty)
+                      card(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 14,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              time,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget buildInfo() {
     if (isTagsEmpty()) {
       return const SliverPadding(padding: EdgeInsets.zero);
@@ -1318,7 +1554,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         padding: EdgeInsets.zero,
         physics: _tabPhysics,
         controller: episodesScrollCtrl,
-        children: [_AnimeEpisodes(history: history)],
+        // key 随条目变化：切换系列条目后重建，系列列表重新加载为该条目的系列
+        children: [_AnimeEpisodes(key: ValueKey(anime.id), history: history)],
       ),
     );
   }
@@ -1720,6 +1957,8 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
       return;
     }
     try {
+      // 批量自动搜索：抑制源 JS 的验证码弹窗，验证码只在该源被主动触发时弹出
+      JsUiApi.suppressCaptcha();
       final options = (data.searchOptions ?? const [])
           .map((e) => e.defaultValue)
           .toList();
@@ -1736,6 +1975,8 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
       st.needsCaptcha =
           !st.needsCaptcha &&
           (msg.toLowerCase().contains('captcha') || msg.contains('验证码'));
+    } finally {
+      JsUiApi.restoreCaptcha();
     }
     setState(() {});
   }
@@ -1781,6 +2022,7 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
                 final cfe = _states[s.key]!.cf;
                 if (cfe != null) _verifySource(s.key, cfe);
               },
+              onRetry: () => _searchSource(s),
               onPick: (a) => Navigator.pop(ctx, a),
             ),
         ],
@@ -1800,6 +2042,7 @@ class _SourceCard extends StatelessWidget {
     required this.isCurrent,
     required this.onToggle,
     required this.onVerify,
+    required this.onRetry,
     required this.onPick,
   });
 
@@ -1818,6 +2061,8 @@ class _SourceCard extends StatelessWidget {
   final VoidCallback onToggle;
 
   final VoidCallback onVerify;
+
+  final VoidCallback onRetry;
 
   final void Function(Anime) onPick;
 
@@ -1950,14 +2195,33 @@ class _SourceCard extends StatelessWidget {
                         ),
                       if (state.results.isEmpty && !state.loading && !needsCf)
                         Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Text(
-                            t.search,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurfaceVariant,
-                            ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 14,
+                                color: cs.outline,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                t.search,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton.icon(
+                                onPressed: onRetry,
+                                icon: const Icon(Icons.refresh, size: 14),
+                                label: Text(t.retry),
+                              ),
+                            ],
                           ),
                         ),
                     ],

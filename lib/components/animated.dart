@@ -198,7 +198,7 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
 
         return AnimatedBuilder(
           animation: _controller,
-          builder: (_, _) {
+          builder: (context, _) {
             double v = _controller.value;
             int totalStages = _shapeSides.length - 1;
             double stageInterval = 1.0 / totalStages;

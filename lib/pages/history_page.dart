@@ -324,15 +324,20 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                     App.mainNavigatorKey!.currentContext!;
                                 a.viewMore!.jump(ctx);
                               } else {
-                                App.mainNavigatorKey?.currentContext?.to(
-                                  () => AnimePage(
-                                    id: a.id,
-                                    sourceKey: a.sourceKey,
-                                    cover: a.cover,
-                                    title: a.title,
-                                    heroID: heroID,
-                                  ),
-                                );
+                                App.mainNavigatorKey?.currentContext
+                                  ?.to<dynamic>(
+                                    () => AnimePage(
+                                      id: a.id,
+                                      sourceKey: a.sourceKey,
+                                      cover: a.cover,
+                                      title: a.title,
+                                      heroID: heroID,
+                                    ),
+                                  )
+                                  .then((_) {
+                                    // 从详情页/播放器返回后刷新历史（进度/集数可能已变）
+                                    if (mounted) onUpdate();
+                                  });
                                 final stats = StatsManager();
                                 if (!await stats.isExistAsync(
                                   a.id,

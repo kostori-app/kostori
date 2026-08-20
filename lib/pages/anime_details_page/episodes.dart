@@ -1,7 +1,7 @@
 part of 'anime_page.dart';
 
 class _AnimeEpisodes extends StatefulWidget {
-  const _AnimeEpisodes({this.history});
+  const _AnimeEpisodes({this.history, super.key});
 
   final History? history;
 
@@ -17,6 +17,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   Map<String, dynamic> currentEps = {};
   int length = 0;
   bool reverse = false;
+
+  /// 系列列表是否正序（默认 false = 保持源返回的倒序，可切换）
+  bool _seriesAsc = false;
   bool showAll = false;
 
   /// 系列模式：源无分集，加载与剧集平行的系列列表（复用 Anime 结构）
@@ -27,12 +30,17 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
       (state.anime.episode == null || state.anime.episode!.isEmpty) &&
       AnimeSource.find(state.anime.sourceKey)?.loadSeries != null;
 
+  /// 是否已从历史恢复线路（anime_page 的 history 是异步加载的，
+  /// 首次 build 可能为 null，需等它就绪后再恢复一次）
+  bool _playListRestored = false;
+
   @override
   void initState() {
     super.initState();
     history = widget.history;
     if (history != null) {
-      playList = history!.lastRoad!;
+      playList = history!.lastRoad ?? 0;
+      _playListRestored = true;
     }
   }
 
@@ -45,14 +53,18 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     super.didChangeDependencies();
   }
 
-  /// 加载系列列表（仅系列模式）
+  /// 加载系列列表（仅系列模式）；结果缓存在 anime_page state，避免每次重建重新请求
   Future<void> _loadSeries() async {
     final source = AnimeSource.find(state.anime.sourceKey);
     if (source == null || source.loadSeries == null) return;
-    final res = await source.loadSeries!(state.anime);
-    if (mounted) {
-      setState(() => _series = res.dataOrNull ?? const []);
+    if (state._seriesListCache != null) {
+      if (mounted) setState(() => _series = state._seriesListCache);
+      return;
     }
+    final res = await source.loadSeries!(state.anime);
+    final list = res.dataOrNull ?? const <Anime>[];
+    state._seriesListCache = list;
+    if (mounted) setState(() => _series = list);
   }
 
   @override
@@ -60,6 +72,11 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     super.didUpdateWidget(oldWidget);
     setState(() {
       history = widget.history;
+      // history 异步就绪后，把线路恢复到上次播放/选择的位置
+      if (!_playListRestored && widget.history != null) {
+        playList = widget.history!.lastRoad ?? 0;
+        _playListRestored = true;
+      }
     });
   }
 
@@ -69,35 +86,66 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     if (series == null) {
       return Padding(
         padding: const EdgeInsets.all(32),
-        child: Center(child: PolygonRefreshIndicator()),
+        child: Center(child: KostoriRefreshIndicator()),
       );
     }
     if (series.isEmpty) {
       return const SizedBox.shrink();
     }
+    // 排序：优先按标题尾部数字（集序），无数字保持原序
+    final items = List<Anime>.from(series)..sort((a, b) {
+      final ka = _seriesSortKey(a.title);
+      final kb = _seriesSortKey(b.title);
+      if (ka == 0 || kb == 0) return 0;
+      return _seriesAsc ? ka - kb : kb - ka;
+    });
+    // 当前播放的条目：按原始索引定位，排序后改用 id 匹配高亮
+    final playingIndex = state.playerController.currentEpisoded - 1;
+    final playingId = (playingIndex >= 0 && playingIndex < series.length)
+        ? series[playingIndex].id
+        : null;
+    // 当前详情条目（id 与 anime 一致），系列模式下其单集卡片显示在顶部
+    final currentIndex = series.indexWhere((a) => a.id == state.anime.id);
     // Observer：监听 playerController 状态，正在播放/暂停切换时实时刷新卡片
     return Observer(
       builder: (context) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (currentIndex >= 0)
+              _buildCurrentEpisodeCard(context, series[currentIndex]),
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               title: Text(
                 t.series,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
+              trailing: IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: _seriesAsc ? t.sortAsc : t.sortDesc,
+                icon: Icon(
+                  _seriesAsc ? Icons.arrow_upward : Icons.arrow_downward,
+                ),
+                onPressed: () => setState(() => _seriesAsc = !_seriesAsc),
+              ),
             ),
-            for (var i = 0; i < series.length; i++)
+            for (var i = 0; i < items.length; i++)
               _SeriesCard(
-                entry: series[i],
+                entry: items[i],
                 isPlaying:
                     state.playerController.videoUrl.isNotEmpty &&
-                    state.playerController.currentRoad == 0 &&
-                    state.playerController.currentEpisoded - 1 == i,
+                    playingId != null &&
+                    items[i].id == playingId,
                 isPlayingNow: state.playerController.playing,
                 onTap: () async {
-                  await state.playerController.playEpisode(i + 1, 0);
+                  // 播放用原始列表索引，排序不影响播放逻辑
+                  final originalIndex = series.indexOf(items[i]);
+                  await state.playerController.playEpisode(
+                    originalIndex + 1,
+                    0,
+                  );
+                  // 系列条目互相独立：点击时同页切换详情信息为该条目
+                  await state._switchToSeriesEntry(items[i]);
                   if (mounted) setState(() {});
                 },
               ),
@@ -106,6 +154,111 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
         );
       },
     );
+  }
+
+  /// 当前条目（系列模式单集）卡片：标题 + 播放按钮，点击直接播放该条目
+  Widget _buildCurrentEpisodeCard(BuildContext context, Anime entry) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Material(
+        color: colorScheme.primary.withValues(alpha: 0.12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: colorScheme.primary, width: 1.5),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            final idx = _series!.indexWhere((a) => a.id == entry.id);
+            if (idx >= 0) {
+              state.playerController.playEpisode(idx + 1, 0);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 96,
+                    height: 134,
+                    child: entry.cover.isEmpty
+                        ? ColoredBox(
+                            color: colorScheme.secondaryContainer,
+                            child: Icon(
+                              Icons.movie_outlined,
+                              color: colorScheme.outline,
+                            ),
+                          )
+                        : AnimatedImage(
+                            image: CachedImageProvider(
+                              entry.cover,
+                              sourceKey: entry.sourceKey,
+                            ),
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      if (entry.subtitle != null &&
+                          entry.subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          entry.subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Text(
+                        t.singleEpisode,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.play_circle_fill,
+                  size: 44,
+                  color: colorScheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 从标题提取排序数字（如"少女彈珠汽水 7" → 7），无数字返回 0
+  int _seriesSortKey(String title) {
+    final m = RegExp(r'(\d+)\s*$').firstMatch(title.trim());
+    if (m == null) return 0;
+    return int.tryParse(m.group(1)!) ?? 0;
   }
 
   Future<void> showEp({required int ep, required int road}) async {
@@ -120,7 +273,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
       showDialog(
         context: App.rootContext,
         builder: (context) {
-          return const ContentDialog(content: Text("没有找到该集的观看记录"));
+          return ContentDialog(content: Text(t.noViewingRecord));
         },
       );
       return;
@@ -146,17 +299,29 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
       context: App.rootContext,
       builder: (context) {
         return ContentDialog(
-          title: "观看记录",
+          title: t.viewingRecord,
           displayButton: false,
           content: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("第 ${p.episode + 1} 集"),
-                Text("观看时长: ${formatHMS(p.progressInMilli)}"),
-                Text("是否完成: ${p.isCompleted ? "是" : "否"}"),
-                if (p.startTime != null) Text("开始时间: ${p.startTime}"),
-                if (p.endTime != null) Text("结束时间: ${p.endTime}"),
+                Text(t.episodeN(n: p.episode + 1)),
+                Text(
+                  t.watchDurationLabel(
+                    duration: formatHMS(p.progressInMilli),
+                  ),
+                ),
+                Text(
+                  t.completedStatus(
+                    status: p.isCompleted ? t.yes : t.no,
+                  ),
+                ),
+                if (p.startTime != null)
+                  Text(
+                    t.startTimeLabel(time: p.startTime.toString()),
+                  ),
+                if (p.endTime != null)
+                  Text(t.endTimeLabel(time: p.endTime.toString())),
               ],
             ),
           ),
@@ -503,8 +668,8 @@ class _SeriesCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: SizedBox(
-                    width: 72,
-                    height: 100,
+                    width: 96,
+                    height: 134,
                     child: entry.cover.isEmpty
                         ? ColoredBox(
                             color: colorScheme.secondaryContainer,

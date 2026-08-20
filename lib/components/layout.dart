@@ -76,25 +76,72 @@ class SliverGridDelegateWithFixedHeight extends SliverGridDelegate {
 }
 
 class SliverGridDelegateWithAnimes extends SliverGridDelegate {
-  SliverGridDelegateWithAnimes({this.fixedCrossAxisCount, this.minCrossAxisCount});
+  SliverGridDelegateWithAnimes({
+    this.fixedCrossAxisCount,
+    this.minCrossAxisCount,
+    this.displayMode,
+  });
 
   final int? fixedCrossAxisCount;
 
   /// 最小列数（自适应时至少显示这么多列，避免卡片过大）
   final int? minCrossAxisCount;
 
+  /// 显示模式（brief/detailed/masonry），null 时用全局设置
+  final String? displayMode;
+
   // brief 与 masonry 都用简洁卡片网格；detailed 用详细卡片
-  final bool useBriefMode = appdata.settings['animeDisplayMode'] != 'detailed';
+  late final bool useBriefMode =
+      (displayMode ?? appdata.settings['animeDisplayMode']) != 'detailed';
 
   final double scale = (appdata.settings['animeTileScale'] as num).toDouble();
 
   @override
   SliverGridLayout getLayout(SliverConstraints constraints) {
+    if (displayMode == 'poster') {
+      return getPosterModeLayout(constraints, scale);
+    }
     if (useBriefMode) {
       return getBriefModeLayout(constraints, scale);
     } else {
       return getDetailedModeLayout(constraints, scale);
     }
+  }
+
+  /// 海报模式：横向宽卡（宽比高多一点），图片在上、信息在下。
+  SliverGridLayout getPosterModeLayout(
+    SliverConstraints constraints,
+    double scale,
+  ) {
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      // 卡片更大，列数更少，保证图上部分有足够空间
+      final maxCrossAxisExtent = 280.0 * scale;
+      const crossAxisSpacing = 0.0;
+      crossAxisCount =
+          (constraints.crossAxisExtent /
+                  (maxCrossAxisExtent + crossAxisSpacing))
+              .ceil();
+      crossAxisCount = math.max(minCrossAxisCount ?? 1, crossAxisCount);
+    }
+    // 宽比高多一点（横卡）
+    const childAspectRatio = 1.25;
+    final double usableCrossAxisExtent = math.max(
+      0.0,
+      constraints.crossAxisExtent,
+    );
+    final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
+    final double childMainAxisExtent = childCrossAxisExtent / childAspectRatio;
+    return SliverGridRegularTileLayout(
+      crossAxisCount: crossAxisCount,
+      mainAxisStride: childMainAxisExtent,
+      crossAxisStride: childCrossAxisExtent,
+      childMainAxisExtent: childMainAxisExtent,
+      childCrossAxisExtent: childCrossAxisExtent,
+      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+    );
   }
 
   SliverGridLayout getDetailedModeLayout(
@@ -160,6 +207,7 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
     if (oldDelegate is! SliverGridDelegateWithAnimes) return true;
     if (oldDelegate.scale != scale ||
         oldDelegate.useBriefMode != useBriefMode ||
+        oldDelegate.displayMode != displayMode ||
         oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount ||
         oldDelegate.minCrossAxisCount != minCrossAxisCount) {
       return true;

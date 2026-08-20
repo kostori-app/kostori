@@ -675,7 +675,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                 ? '${s.fromName}: '
                                 : '';
                             return TextSpan(
-                              text: preview.isEmpty ? '[回复]' : '$label$preview',
+                              text: preview.isEmpty ? t.replyBracket : '$label$preview',
                               style: TextStyle(
                                 fontSize: 12,
                                 height: 1.4,

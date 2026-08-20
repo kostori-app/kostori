@@ -42,10 +42,17 @@ relatedEntries: 相關條目
 alsoRemoveFilesOnDisk: 同時刪除本地檔案
 animeSourceList: 動漫源列表
 animeSource: 番劇源
+addRepo: 新增倉庫
+repo: 倉庫
+repoUrlHint: "倉庫位址：http(s) 連結或本地 index.json 路徑（file://）"
+repoEmpty: 倉庫暫無番劇源
 filterAll: 全部
 noMatchingSource: 未找到符合的番源
+sourceCount: '${count} 個源'
 filterNonBangumi: 其他
 sortByDefault: 預設
+sortAsc: 正序
+sortDesc: 倒序
 sortByName: 名稱
 sortById: ID
 switchSource: 切換源
@@ -64,6 +71,9 @@ block: 封鎖
 blue: 藍色
 brief: 簡潔
 masonry: 瀑布流
+poster: 海報
+sourceDisplayModeReset: 跟隨全局預設
+followSourceDefault: 跟隨源預設
 cacheLimit: 快取限制
 cacheSize: 快取大小
 cacheCleared: 快取已清除
@@ -2269,6 +2279,7 @@ selectResolution: "選擇解析度"
 defaultResolution: "預設"
 noResolutionAvailable: "無更多畫質可選"
 series: "系列"
+singleEpisode: "單集 · 共 1 集"
 playing: "正在播放"
 selectNone: "取消全選"
 downloadActive: "正在下載"
@@ -2284,3 +2295,78 @@ audioTrack: "音軌"
 subtitle: "字幕"
 subtitleOff: "關閉字幕"
 quality: "清晰度"
+copiedField: "已複製: ${x}"
+selectAliasCount: "選擇別名 (${count})"
+monthDayFormat: "M月d日"
+monthDay: "${month}月${day}日"
+qrAnimeId: "番劇 ID：${id}\n來源：${source}"
+qrBangumiId: "Bangumi ID：${id}"
+qrWatchRoom: "一起看房間：${room}\n服務端：${server}"
+qrDetectedType: "檢測到 ${type} 連結"
+qrPasswordResolved: "（口令已解析）\n"
+reviewedAtTime: "評價時 ${time}"
+qrCopiedToClipboard: "二維碼已複製到剪貼簿"
+qrSavedToGallery: "二維碼已儲存"
+reloadSuccess: "重載成功"
+floorOwner: "層主"
+postOwner: "貼主"
+collapse: "收起"
+expandCount: "展開 (${total})"
+deletedReply: "刪除了回覆"
+author: "作者"
+episodeTitleLabel: "本集標題"
+manualSwitch: "手動切換"
+inputEpisodeNumber: "輸入集數"
+episodeNumberHint: "請輸入1-999之間的集數"
+enterEpisodeNumber: "請輸入集數"
+invalidEpisodeNumber: "請輸入1-999之間的有效集數"
+episodeN: "第 ${n} 集"
+noViewingRecord: "沒有找到該集的觀看記錄"
+viewingRecord: "觀看記錄"
+watchDurationLabel: "觀看時長: ${duration}"
+completedStatus: "是否完成: ${status}"
+yes: "是"
+no: "否"
+startTimeLabel: "開始時間: ${time}"
+endTimeLabel: "結束時間: ${time}"
+appInfo: "應用資訊"
+partRepoFetchFailed: "部分倉庫拉取失敗: ${list}"
+airTimeLabel: "放送時間：${time}"
+durationLabel: "時長：${duration}"
+replyBracket: "[回覆]"
+wantToWatch: "想看"
+watching: "在看"
+addToFolder: "新增到 ${folder}"
+removeFromFolder: "從 ${folder} 刪除"
+movedFromTo: "從 ${from} 移動到 ${to}"
+unknownFolder: "Unknown folder"
+fetchVideoUrlError: "取得影片連結異常: ${detail}"
+missingUrl: "缺少 url"
+success: "成功"
+failedWithStatus: "失敗 (${status})"
+checkIn: "簽到"
+button: "按鈕"
+requestFailedDetail: "請求失敗: ${error}"
+play: "播放"
+nextEpisode: "下一集"
+trackN: "第 ${n} 軌"
+deviceInfo: "設備資訊"
+conversationInterrupted: "對話流意外中斷"
+toolExecutionFailed: "工具執行失敗: ${error}"
+apiKeyNotConfigured: "${source} API Key 未配置或已停用"
+imageInvalid: "圖片無效"
+recognizeBusy: "識別服務繁忙，請稍後再試"
+connectionTimeout: "連線逾時"
+pinError: "PIN 碼錯誤"
+connectionClosed: "連線已斷開"
+unknownCommand: "未知命令類型: ${type}"
+processingFailed: "處理失敗: ${error}"
+executionFailed: "執行失敗: ${error}"
+unknownServiceProvider: "未知服務商: ${provider}"
+sessionNotFound: "會話不存在: ${id}"
+historyTooShort: "歷史訊息太少，無需壓縮"
+messageTooLarge: "訊息過大，最大允許 64KB"
+rateLimit: "請求過於頻繁，請稍後再試"
+portBusy: "連接埠 ${start} 到 ${end} 全部被佔用"
+webSocketOnly: "僅支援 WebSocket 連線"
+toolRoundsExceeded: "${source} 工具呼叫輪次過多"

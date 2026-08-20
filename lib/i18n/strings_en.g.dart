@@ -176,17 +176,38 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Anime Source'
 	String get animeSource => 'Anime Source';
 
+	/// en: 'Add repository'
+	String get addRepo => 'Add repository';
+
+	/// en: 'Repositories'
+	String get repo => 'Repositories';
+
+	/// en: 'Repo URL: http(s) link or local index.json path (file://)'
+	String get repoUrlHint => 'Repo URL: http(s) link or local index.json path (file://)';
+
+	/// en: 'No sources in this repository'
+	String get repoEmpty => 'No sources in this repository';
+
 	/// en: 'All'
 	String get filterAll => 'All';
 
 	/// en: 'No matching sources'
 	String get noMatchingSource => 'No matching sources';
 
+	/// en: '${count} sources'
+	String sourceCount({required Object count}) => '${count} sources';
+
 	/// en: 'Others'
 	String get filterNonBangumi => 'Others';
 
 	/// en: 'Default'
 	String get sortByDefault => 'Default';
+
+	/// en: 'Ascending'
+	String get sortAsc => 'Ascending';
+
+	/// en: 'Descending'
+	String get sortDesc => 'Descending';
 
 	/// en: 'Name'
 	String get sortByName => 'Name';
@@ -262,6 +283,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Masonry'
 	String get masonry => 'Masonry';
+
+	/// en: 'Poster'
+	String get poster => 'Poster';
+
+	/// en: 'Follow global default'
+	String get sourceDisplayModeReset => 'Follow global default';
+
+	/// en: 'Follow source default'
+	String get followSourceDefault => 'Follow source default';
 
 	/// en: 'Cache Limit'
 	String get cacheLimit => 'Cache Limit';
@@ -6652,6 +6682,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Series'
 	String get series => 'Series';
 
+	/// en: 'Single episode · 1 total'
+	String get singleEpisode => 'Single episode · 1 total';
+
 	/// en: 'Playing'
 	String get playing => 'Playing';
 
@@ -6696,6 +6729,231 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Quality'
 	String get quality => 'Quality';
+
+	/// en: 'Copied: ${x}'
+	String copiedField({required Object x}) => 'Copied: ${x}';
+
+	/// en: 'Select alias (${count})'
+	String selectAliasCount({required Object count}) => 'Select alias (${count})';
+
+	/// en: 'MMM d'
+	String get monthDayFormat => 'MMM d';
+
+	/// en: '${month}/${day}'
+	String monthDay({required Object month, required Object day}) => '${month}/${day}';
+
+	/// en: 'Anime ID: ${id} Source: ${source}'
+	String qrAnimeId({required Object id, required Object source}) => 'Anime ID: ${id}\nSource: ${source}';
+
+	/// en: 'Bangumi ID: ${id}'
+	String qrBangumiId({required Object id}) => 'Bangumi ID: ${id}';
+
+	/// en: 'Watch together room: ${room} Server: ${server}'
+	String qrWatchRoom({required Object room, required Object server}) => 'Watch together room: ${room}\nServer: ${server}';
+
+	/// en: 'Detected ${type} link'
+	String qrDetectedType({required Object type}) => 'Detected ${type} link';
+
+	/// en: '(Password resolved) '
+	String get qrPasswordResolved => '(Password resolved)\n';
+
+	/// en: 'Reviewed at ${time}'
+	String reviewedAtTime({required Object time}) => 'Reviewed at ${time}';
+
+	/// en: 'QR code copied to clipboard'
+	String get qrCopiedToClipboard => 'QR code copied to clipboard';
+
+	/// en: 'QR code saved'
+	String get qrSavedToGallery => 'QR code saved';
+
+	/// en: 'Reloaded successfully'
+	String get reloadSuccess => 'Reloaded successfully';
+
+	/// en: 'OP'
+	String get floorOwner => 'OP';
+
+	/// en: 'OP'
+	String get postOwner => 'OP';
+
+	/// en: 'Collapse'
+	String get collapse => 'Collapse';
+
+	/// en: 'Expand (${total})'
+	String expandCount({required Object total}) => 'Expand (${total})';
+
+	/// en: 'Reply deleted'
+	String get deletedReply => 'Reply deleted';
+
+	/// en: 'Author'
+	String get author => 'Author';
+
+	/// en: 'Episode title'
+	String get episodeTitleLabel => 'Episode title';
+
+	/// en: 'Manual switch'
+	String get manualSwitch => 'Manual switch';
+
+	/// en: 'Enter episode number'
+	String get inputEpisodeNumber => 'Enter episode number';
+
+	/// en: 'Enter a number between 1 and 999'
+	String get episodeNumberHint => 'Enter a number between 1 and 999';
+
+	/// en: 'Please enter an episode number'
+	String get enterEpisodeNumber => 'Please enter an episode number';
+
+	/// en: 'Please enter a valid number between 1 and 999'
+	String get invalidEpisodeNumber => 'Please enter a valid number between 1 and 999';
+
+	/// en: 'Ep. ${n}'
+	String episodeN({required Object n}) => 'Ep. ${n}';
+
+	/// en: 'No viewing record found for this episode'
+	String get noViewingRecord => 'No viewing record found for this episode';
+
+	/// en: 'Viewing record'
+	String get viewingRecord => 'Viewing record';
+
+	/// en: 'Watch duration: ${duration}'
+	String watchDurationLabel({required Object duration}) => 'Watch duration: ${duration}';
+
+	/// en: 'Completed: ${status}'
+	String completedStatus({required Object status}) => 'Completed: ${status}';
+
+	/// en: 'Yes'
+	String get yes => 'Yes';
+
+	/// en: 'No'
+	String get no => 'No';
+
+	/// en: 'Start time: ${time}'
+	String startTimeLabel({required Object time}) => 'Start time: ${time}';
+
+	/// en: 'End time: ${time}'
+	String endTimeLabel({required Object time}) => 'End time: ${time}';
+
+	/// en: 'App info'
+	String get appInfo => 'App info';
+
+	/// en: 'Some repositories failed to fetch: ${list}'
+	String partRepoFetchFailed({required Object list}) => 'Some repositories failed to fetch: ${list}';
+
+	/// en: 'Air time: ${time}'
+	String airTimeLabel({required Object time}) => 'Air time: ${time}';
+
+	/// en: 'Duration: ${duration}'
+	String durationLabel({required Object duration}) => 'Duration: ${duration}';
+
+	/// en: '[Reply]'
+	String get replyBracket => '[Reply]';
+
+	/// en: 'Want to watch'
+	String get wantToWatch => 'Want to watch';
+
+	/// en: 'Watching'
+	String get watching => 'Watching';
+
+	/// en: 'Add to ${folder}'
+	String addToFolder({required Object folder}) => 'Add to ${folder}';
+
+	/// en: 'Remove from ${folder}'
+	String removeFromFolder({required Object folder}) => 'Remove from ${folder}';
+
+	/// en: 'Move from ${from} to ${to}'
+	String movedFromTo({required Object from, required Object to}) => 'Move from ${from} to ${to}';
+
+	/// en: 'Unknown folder'
+	String get unknownFolder => 'Unknown folder';
+
+	/// en: 'Failed to get video link: ${detail}'
+	String fetchVideoUrlError({required Object detail}) => 'Failed to get video link: ${detail}';
+
+	/// en: 'Missing url'
+	String get missingUrl => 'Missing url';
+
+	/// en: 'Success'
+	String get success => 'Success';
+
+	/// en: 'Failed (${status})'
+	String failedWithStatus({required Object status}) => 'Failed (${status})';
+
+	/// en: 'Check in'
+	String get checkIn => 'Check in';
+
+	/// en: 'Button'
+	String get button => 'Button';
+
+	/// en: 'Request failed: ${error}'
+	String requestFailedDetail({required Object error}) => 'Request failed: ${error}';
+
+	/// en: 'Play'
+	String get play => 'Play';
+
+	/// en: 'Next episode'
+	String get nextEpisode => 'Next episode';
+
+	/// en: 'Track ${n}'
+	String trackN({required Object n}) => 'Track ${n}';
+
+	/// en: 'Device info'
+	String get deviceInfo => 'Device info';
+
+	/// en: 'Conversation stream interrupted unexpectedly'
+	String get conversationInterrupted => 'Conversation stream interrupted unexpectedly';
+
+	/// en: 'Tool execution failed: ${error}'
+	String toolExecutionFailed({required Object error}) => 'Tool execution failed: ${error}';
+
+	/// en: '${source} API Key is not configured or is disabled'
+	String apiKeyNotConfigured({required Object source}) => '${source} API Key is not configured or is disabled';
+
+	/// en: 'Invalid image'
+	String get imageInvalid => 'Invalid image';
+
+	/// en: 'Recognition service is busy, please try again later'
+	String get recognizeBusy => 'Recognition service is busy, please try again later';
+
+	/// en: 'Connection timeout'
+	String get connectionTimeout => 'Connection timeout';
+
+	/// en: 'Incorrect PIN'
+	String get pinError => 'Incorrect PIN';
+
+	/// en: 'Connection closed'
+	String get connectionClosed => 'Connection closed';
+
+	/// en: 'Unknown command type: ${type}'
+	String unknownCommand({required Object type}) => 'Unknown command type: ${type}';
+
+	/// en: 'Processing failed: ${error}'
+	String processingFailed({required Object error}) => 'Processing failed: ${error}';
+
+	/// en: 'Execution failed: ${error}'
+	String executionFailed({required Object error}) => 'Execution failed: ${error}';
+
+	/// en: 'Unknown service provider: ${provider}'
+	String unknownServiceProvider({required Object provider}) => 'Unknown service provider: ${provider}';
+
+	/// en: 'Session not found: ${id}'
+	String sessionNotFound({required Object id}) => 'Session not found: ${id}';
+
+	/// en: 'Not enough history to compress'
+	String get historyTooShort => 'Not enough history to compress';
+
+	/// en: 'Message too large, maximum 64KB'
+	String get messageTooLarge => 'Message too large, maximum 64KB';
+
+	/// en: 'Too many requests, please try again later'
+	String get rateLimit => 'Too many requests, please try again later';
+
+	/// en: 'Ports ${start} to ${end} are all occupied'
+	String portBusy({required Object start, required Object end}) => 'Ports ${start} to ${end} are all occupied';
+
+	/// en: 'Only WebSocket connections are supported'
+	String get webSocketOnly => 'Only WebSocket connections are supported';
+
+	/// en: '${source} has too many tool call rounds'
+	String toolRoundsExceeded({required Object source}) => '${source} has too many tool call rounds';
 }
 
 // Path: colors
@@ -6889,10 +7147,17 @@ extension on Translations {
 			'alsoRemoveFilesOnDisk' => 'Also remove files on disk',
 			'animeSourceList' => 'Anime Source list',
 			'animeSource' => 'Anime Source',
+			'addRepo' => 'Add repository',
+			'repo' => 'Repositories',
+			'repoUrlHint' => 'Repo URL: http(s) link or local index.json path (file://)',
+			'repoEmpty' => 'No sources in this repository',
 			'filterAll' => 'All',
 			'noMatchingSource' => 'No matching sources',
+			'sourceCount' => ({required Object count}) => '${count} sources',
 			'filterNonBangumi' => 'Others',
 			'sortByDefault' => 'Default',
+			'sortAsc' => 'Ascending',
+			'sortDesc' => 'Descending',
 			'sortByName' => 'Name',
 			'sortById' => 'ID',
 			'switchSource' => 'Switch source',
@@ -6918,6 +7183,9 @@ extension on Translations {
 			'blue' => 'Blue',
 			'brief' => 'Brief',
 			'masonry' => 'Masonry',
+			'poster' => 'Poster',
+			'sourceDisplayModeReset' => 'Follow global default',
+			'followSourceDefault' => 'Follow source default',
 			'cacheLimit' => 'Cache Limit',
 			'cacheSize' => 'Cache Size',
 			'cacheCleared' => 'Cache cleared',
@@ -7346,6 +7614,8 @@ extension on Translations {
 			'selectImages' => 'Select Images',
 			'addImages' => 'Add Images',
 			'importedCountI' => ({required Object i}) => 'Imported ${i} image(s)',
+			_ => null,
+		} ?? switch (path) {
 			'exportImage' => 'Copy / Share',
 			'saveAndShare' => 'Save & Share',
 			'monday' => 'Monday',
@@ -7356,8 +7626,6 @@ extension on Translations {
 			'saturday' => 'Saturday',
 			'sunday' => 'Sunday',
 			'defaultOrder' => 'Default Order',
-			_ => null,
-		} ?? switch (path) {
 			'byTime' => 'By Time',
 			'byName' => 'By Name',
 			'recentlyWatched' => 'Recently Watched',
@@ -7860,6 +8128,8 @@ extension on Translations {
 			'viewAll' => 'View All',
 			'kostoriChangelog' => 'Kostori Changelog',
 			'copyPath' => 'Copy Path',
+			_ => null,
+		} ?? switch (path) {
 			'properties' => 'Properties',
 			'noEndpoint' => 'No endpoint',
 			'testAll' => 'Test All',
@@ -7870,8 +8140,6 @@ extension on Translations {
 			'serviceSettings' => 'Service Settings',
 			'enableService' => 'Enable Service',
 			'serviceIsStopped' => 'Service is stopped',
-			_ => null,
-		} ?? switch (path) {
 			'runningOnH' => ({required Object h}) => 'Running on ${h}',
 			'apiKey' => 'API Key',
 			'activeKey' => 'Active Key',
@@ -8374,6 +8642,8 @@ extension on Translations {
 			'translationErrorRegionNotSupported' => 'The AI translation provider does not support your current region. Please switch provider or use a different network',
 			'translationErrorModelNotSupported' => 'The configured model is not supported by this provider. Please change it in AI settings',
 			'translationErrorApiKeyInvalid' => 'The API key is invalid or lacks permission. Please check it in AI settings',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorRateLimited' => 'Too many requests or insufficient quota. Please try again later',
 			'translationErrorRequestFailed' => 'Translation request failed',
 			'writeYourReview' => 'Write your review',
@@ -8384,8 +8654,6 @@ extension on Translations {
 			'pinnedMessages' => 'Pinned Messages',
 			'announcement' => 'Announcement',
 			'image' => 'Image',
-			_ => null,
-		} ?? switch (path) {
 			'enterToSendCtrlEnterForNewline' => 'Enter to send  ·  Ctrl+Enter for newline',
 			'message' => 'Message...',
 			'stickers' => 'Stickers',
@@ -8888,6 +9156,8 @@ extension on Translations {
 			'episodeLabel' => 'EP',
 			'unknownEpisode' => 'Unknown episode',
 			'openVideoPreview' => 'Video preview',
+			_ => null,
+		} ?? switch (path) {
 			'discussInAi' => 'Discuss in AI',
 			'dropImageToRecognize' => 'Drop an image to recognize',
 			'dropFileToImport' => 'Drop a .js file to import',
@@ -8898,8 +9168,6 @@ extension on Translations {
 			'imageUnderstandingDisabled' => 'This assistant has image understanding disabled',
 			'modelType' => 'Model type',
 			'inputModality' => 'Input modalities',
-			_ => null,
-		} ?? switch (path) {
 			'outputModality' => 'Output modalities',
 			'supportsReasoning' => 'Supports reasoning',
 			'capabilities' => 'Capabilities',
@@ -9098,6 +9366,7 @@ extension on Translations {
 			'defaultResolution' => 'Default',
 			'noResolutionAvailable' => 'No more qualities available',
 			'series' => 'Series',
+			'singleEpisode' => 'Single episode · 1 total',
 			'playing' => 'Playing',
 			'selectNone' => 'Select none',
 			'downloadActive' => 'Downloading',
@@ -9113,6 +9382,81 @@ extension on Translations {
 			'subtitle' => 'Subtitles',
 			'subtitleOff' => 'Off',
 			'quality' => 'Quality',
+			'copiedField' => ({required Object x}) => 'Copied: ${x}',
+			'selectAliasCount' => ({required Object count}) => 'Select alias (${count})',
+			'monthDayFormat' => 'MMM d',
+			'monthDay' => ({required Object month, required Object day}) => '${month}/${day}',
+			'qrAnimeId' => ({required Object id, required Object source}) => 'Anime ID: ${id}\nSource: ${source}',
+			'qrBangumiId' => ({required Object id}) => 'Bangumi ID: ${id}',
+			'qrWatchRoom' => ({required Object room, required Object server}) => 'Watch together room: ${room}\nServer: ${server}',
+			'qrDetectedType' => ({required Object type}) => 'Detected ${type} link',
+			'qrPasswordResolved' => '(Password resolved)\n',
+			'reviewedAtTime' => ({required Object time}) => 'Reviewed at ${time}',
+			'qrCopiedToClipboard' => 'QR code copied to clipboard',
+			'qrSavedToGallery' => 'QR code saved',
+			'reloadSuccess' => 'Reloaded successfully',
+			'floorOwner' => 'OP',
+			'postOwner' => 'OP',
+			'collapse' => 'Collapse',
+			'expandCount' => ({required Object total}) => 'Expand (${total})',
+			'deletedReply' => 'Reply deleted',
+			'author' => 'Author',
+			'episodeTitleLabel' => 'Episode title',
+			'manualSwitch' => 'Manual switch',
+			'inputEpisodeNumber' => 'Enter episode number',
+			'episodeNumberHint' => 'Enter a number between 1 and 999',
+			'enterEpisodeNumber' => 'Please enter an episode number',
+			'invalidEpisodeNumber' => 'Please enter a valid number between 1 and 999',
+			'episodeN' => ({required Object n}) => 'Ep. ${n}',
+			'noViewingRecord' => 'No viewing record found for this episode',
+			'viewingRecord' => 'Viewing record',
+			'watchDurationLabel' => ({required Object duration}) => 'Watch duration: ${duration}',
+			'completedStatus' => ({required Object status}) => 'Completed: ${status}',
+			'yes' => 'Yes',
+			'no' => 'No',
+			'startTimeLabel' => ({required Object time}) => 'Start time: ${time}',
+			'endTimeLabel' => ({required Object time}) => 'End time: ${time}',
+			'appInfo' => 'App info',
+			'partRepoFetchFailed' => ({required Object list}) => 'Some repositories failed to fetch: ${list}',
+			'airTimeLabel' => ({required Object time}) => 'Air time: ${time}',
+			'durationLabel' => ({required Object duration}) => 'Duration: ${duration}',
+			'replyBracket' => '[Reply]',
+			'wantToWatch' => 'Want to watch',
+			'watching' => 'Watching',
+			'addToFolder' => ({required Object folder}) => 'Add to ${folder}',
+			'removeFromFolder' => ({required Object folder}) => 'Remove from ${folder}',
+			'movedFromTo' => ({required Object from, required Object to}) => 'Move from ${from} to ${to}',
+			'unknownFolder' => 'Unknown folder',
+			'fetchVideoUrlError' => ({required Object detail}) => 'Failed to get video link: ${detail}',
+			'missingUrl' => 'Missing url',
+			'success' => 'Success',
+			'failedWithStatus' => ({required Object status}) => 'Failed (${status})',
+			'checkIn' => 'Check in',
+			'button' => 'Button',
+			'requestFailedDetail' => ({required Object error}) => 'Request failed: ${error}',
+			'play' => 'Play',
+			'nextEpisode' => 'Next episode',
+			'trackN' => ({required Object n}) => 'Track ${n}',
+			'deviceInfo' => 'Device info',
+			'conversationInterrupted' => 'Conversation stream interrupted unexpectedly',
+			'toolExecutionFailed' => ({required Object error}) => 'Tool execution failed: ${error}',
+			'apiKeyNotConfigured' => ({required Object source}) => '${source} API Key is not configured or is disabled',
+			'imageInvalid' => 'Invalid image',
+			'recognizeBusy' => 'Recognition service is busy, please try again later',
+			'connectionTimeout' => 'Connection timeout',
+			'pinError' => 'Incorrect PIN',
+			'connectionClosed' => 'Connection closed',
+			'unknownCommand' => ({required Object type}) => 'Unknown command type: ${type}',
+			'processingFailed' => ({required Object error}) => 'Processing failed: ${error}',
+			'executionFailed' => ({required Object error}) => 'Execution failed: ${error}',
+			'unknownServiceProvider' => ({required Object provider}) => 'Unknown service provider: ${provider}',
+			'sessionNotFound' => ({required Object id}) => 'Session not found: ${id}',
+			'historyTooShort' => 'Not enough history to compress',
+			'messageTooLarge' => 'Message too large, maximum 64KB',
+			'rateLimit' => 'Too many requests, please try again later',
+			'portBusy' => ({required Object start, required Object end}) => 'Ports ${start} to ${end} are all occupied',
+			'webSocketOnly' => 'Only WebSocket connections are supported',
+			'toolRoundsExceeded' => ({required Object source}) => '${source} has too many tool call rounds',
 			_ => null,
 		};
 	}

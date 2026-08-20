@@ -331,10 +331,17 @@ class _AnimatedImageState extends State<AnimatedImage>
       }
     } else if (_lastException != null) {
       final is404 = _lastException.toString().contains('404');
-      result = Center(
-        child: Icon(
-          is404 ? Icons.image_not_supported_outlined : Icons.error,
-          color: is404 ? Colors.grey : null,
+      // 中性底色覆盖卡片容器背景色（如蓝调 secondaryContainer），避免刺眼
+      final cs = Theme.of(context).colorScheme;
+      result = ColoredBox(
+        color: cs.surfaceContainerHighest,
+        child: Center(
+          child: Icon(
+            is404
+                ? Icons.image_not_supported_outlined
+                : Icons.broken_image_outlined,
+            color: cs.onSurfaceVariant,
+          ),
         ),
       );
 

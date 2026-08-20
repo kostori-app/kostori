@@ -22,7 +22,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
 
   static final DateFormat _timeFormat = DateFormat('HH:mm');
   static final DateFormat _dateTimeFormat = DateFormat('yyyy-MM-dd HH:mm');
-  static final DateFormat _monthDayFormat = DateFormat('M月d日');
+  static DateFormat get _monthDayFormat => DateFormat(t.monthDayFormat);
 
   String _weekdayName(int weekdayIndex) => switch (weekdayIndex) {
     0 => t.monday,
@@ -276,7 +276,7 @@ class _DayHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '${date.month}月${date.day}日',
+            t.monthDay(month: date.month, day: date.day),
             style: TextStyle(fontWeight: FontWeight.bold, color: fg),
           ),
           const SizedBox(width: 8),

@@ -7,6 +7,16 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 mixin class JsUiApi {
+  /// 验证码对话框抑制计数：批量自动搜索（如切换源弹窗）期间抑制，
+  /// 不自动弹出验证码输入框；用户主动触发该源搜索（点击验证/重试）时恢复。
+  static int _captchaSuppressed = 0;
+
+  static void suppressCaptcha() => _captchaSuppressed++;
+
+  static void restoreCaptcha() => _captchaSuppressed--;
+
+  static bool get captchaEnabled => _captchaSuppressed <= 0;
+
   final Map<int, LoadingDialogController> _loadingDialogControllers = {};
 
   dynamic handleUIMessage(Map<String, dynamic> message) {
@@ -141,8 +151,10 @@ mixin class JsUiApi {
     JSInvokable? validator,
     String? image,
   ) async {
-    // 带图片（验证码场景）时走专用验证码对话框，支持 AI 识别
+    // 带图片（验证码场景）时走专用验证码对话框，支持 AI 识别；
+    // 批量自动搜索期间抑制，不自动弹出
     if (image != null) {
+      if (!captchaEnabled) return null;
       var func = validator == null ? null : JSAutoFreeFunction(validator);
       return showCaptchaDialog(
         context: App.rootContext,
@@ -181,6 +193,7 @@ mixin class JsUiApi {
   }
 
   Future<String?> _showCaptchaDialog(String title, String image) {
+    if (!captchaEnabled) return Future.value(null);
     return showCaptchaDialog(
       context: App.rootContext,
       title: title,

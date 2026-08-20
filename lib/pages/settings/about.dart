@@ -235,7 +235,7 @@ Future<void> showDeviceInfoDialog() async {
     context: App.rootContext,
     builder: (context) {
       return ContentDialog(
-        title: "应用信息",
+        title: t.appInfo,
         content: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: 500.0),
           child: ScrollConfiguration(

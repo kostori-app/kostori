@@ -956,6 +956,7 @@ class _DisplayModeSelector extends StatelessWidget {
           ('brief', t.brief),
           ('detailed', t.detailed),
           ('masonry', t.masonry),
+          ('poster', t.poster),
         ];
     return Container(
       decoration: BoxDecoration(

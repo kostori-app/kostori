@@ -825,7 +825,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '选择别名 (${keywords.length})',
+                    t.selectAliasCount(count: keywords.length),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),

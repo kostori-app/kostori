@@ -9,29 +9,31 @@ class AnimeSourceSettings extends StatelessWidget {
       if (AnimeSource.allSources().isEmpty) {
         return 0;
       }
-      var dio = AppDio();
-      dynamic res;
-      final timeout = const Duration(seconds: 30);
-      if (appdata.settings['gitMirror'] &&
-          appdata.settings['animeSourceListUrl'] == Api.kostoriConfig) {
-        res = await dio.get<String>(
-          Api.gitMirror + Api.kostoriConfig,
-          options: Options(method: 'GET', receiveTimeout: timeout),
-        );
-      } else {
-        res = await dio.get<String>(
-          appdata.settings['animeSourceListUrl'],
-          options: Options(method: 'GET', receiveTimeout: timeout),
-        );
+      // 汇总所有仓库（多仓库 + 兼容旧的单 URL 配置）的版本表
+      final versions = <String, String>{};
+      final failures = <String>[];
+      for (final url in _collectRepoUrls()) {
+        try {
+          final text = await _fetchRepoText(url);
+          if (text == null || text.isEmpty) continue;
+          final list = jsonDecode(text);
+          if (list is! List) continue;
+          for (final source in list) {
+            if (source is Map &&
+                source['key'] is String &&
+                source['version'] is String) {
+              versions[source['key'] as String] = source['version'] as String;
+            }
+          }
+        } catch (e) {
+          failures.add('$url: $e');
+        }
       }
-
-      if (res.statusCode != 200) {
-        return -1;
-      }
-      var list = jsonDecode(res.data!) as List;
-      var versions = <String, String>{};
-      for (var source in list) {
-        versions[source['key']] = source['version'];
+      if (failures.isNotEmpty) {
+        NetLog.warning(
+          'checkAnimeSourceUpdate',
+          '部分仓库拉取失败: ${failures.join('; ')}',
+        );
       }
       var shouldUpdate = <String>[];
       for (var source in AnimeSource.allSources()) {
@@ -55,11 +57,61 @@ class AnimeSourceSettings extends StatelessWidget {
     }
   }
 
+  /// 收集所有番剧源仓库 URL：优先多仓库列表（implicitData['animeSourceRepos']），
+  /// 无多仓库配置时回退到旧的 settings['animeSourceListUrl']。
+  static List<String> _collectRepoUrls() {
+    final raw = appdata.implicitData['animeSourceRepos'];
+    if (raw is List && raw.isNotEmpty) {
+      return [
+        for (final r in raw)
+          if (r is Map && (r['url']?.toString() ?? '').isNotEmpty)
+            r['url'].toString()
+          else if (r is String && r.isNotEmpty)
+            r,
+      ];
+    }
+    final legacy = appdata.settings['animeSourceListUrl'];
+    return (legacy == null || legacy.isEmpty) ? [] : [legacy];
+  }
+
+  /// 拉取仓库 index.json 文本：本地路径（file:// 或无 scheme/盘符）直接读文件，
+  /// 远程走 HTTP；默认仓库走 gitMirror。
+  static Future<String?> _fetchRepoText(String url) async {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed.startsWith('file://')) {
+      final file = io.File(trimmed.substring('file://'.length));
+      return await file.exists() ? await file.readAsString() : null;
+    }
+    final uri = Uri.tryParse(trimmed);
+    // 无 scheme 或 Windows 盘符路径 → 本地文件
+    if (uri != null && (!uri.hasScheme || uri.scheme.length == 1)) {
+      final file = io.File(trimmed);
+      return await file.exists() ? await file.readAsString() : null;
+    }
+    final dio = AppDio();
+    final target =
+        (trimmed == Api.kostoriConfig && appdata.settings['gitMirror'])
+        ? Api.gitMirror + Api.kostoriConfig
+        : trimmed;
+    final res = await dio.get<String>(
+      target,
+      options: Options(
+        method: 'GET',
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
+    if (res.statusCode != 200) return null;
+    return res.data;
+  }
+
   static Future<void> update(
     AnimeSource source, [
     bool showLoading = true,
+    String? urlOverride,
   ]) async {
-    if (!source.url.isURL) {
+    final target = urlOverride ?? source.url;
+    if (!target.isURL) {
       if (showLoading) {
         App.rootContext.showMessage(message: "Invalid url config");
         return;
@@ -79,7 +131,7 @@ class AnimeSourceSettings extends StatelessWidget {
     }
     try {
       var res = await AppDio().get<String>(
-        source.url,
+        target,
         options: Options(
           responseType: ResponseType.plain,
           headers: {"cache-time": "no"},
@@ -184,14 +236,14 @@ class _BodyState extends State<_Body> {
     if (_enabledFilter != 'all') {
       final wantEnabled = _enabledFilter == 'enabled';
       list = list
-          .where(
-            (s) => AnimeSourceManager().isEnabled(s.key) == wantEnabled,
-          )
+          .where((s) => AnimeSourceManager().isEnabled(s.key) == wantEnabled)
           .toList();
     }
     switch (_sort) {
       case 'name':
-        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        list.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
       case 'id':
         list.sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
     }
@@ -227,8 +279,8 @@ class _BodyState extends State<_Body> {
           style: AppbarStyle.shadow,
           actions: const [_CheckUpdatesAction()],
         ),
-        SliverToBoxAdapter(child: _buildFilterBar(context)),
         buildCard(context),
+        SliverToBoxAdapter(child: _buildFilterBar(context)),
         // SliverList 惰性构建：只构建视口内的源卡片，
         // 避免进入页面时一次性构建所有源导致首帧卡顿、跳转动画消失
         if (sources.isEmpty)
@@ -265,48 +317,65 @@ class _BodyState extends State<_Body> {
     );
   }
 
-  /// 筛选栏：搜索 + 番组筛选 + 启用筛选 + 排序
+  /// 筛选栏：搜索（含源数量）+ 番组/启用分段筛选 + 排序
   Widget _buildFilterBar(BuildContext context) {
-    final chips = <Widget>[
-      for (final (key, label) in [
-        ('all', t.filterAll),
-        ('yes', t.bangumi),
-        ('no', t.filterNonBangumi),
-      ])
-        ChoiceChip(
-          label: Text(label),
-          selected: _isBangumiFilter == key,
-          onSelected: (_) => _setFilter(() => _isBangumiFilter = key),
-        ),
-      for (final (key, label) in [
-        ('all', t.filterAll),
-        ('enabled', t.enabled),
-        ('disabled', t.disabled),
-      ])
-        ChoiceChip(
-          label: Text(label),
-          selected: _enabledFilter == key,
-          onSelected: (_) => _setFilter(() => _enabledFilter = key),
-        ),
-    ];
+    final colorScheme = Theme.of(context).colorScheme;
+    final count = _filteredSources().length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
-            controller: _searchCtrl,
-            decoration: InputDecoration(
-              hintText: t.search,
-              prefixIcon: const Icon(Icons.search),
-              isDense: true,
-              border: const OutlineInputBorder(),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchCtrl,
+                  decoration: InputDecoration(
+                    hintText: t.search,
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                t.sourceCount(count: count),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: Wrap(spacing: 6, runSpacing: 4, children: chips)),
+              Expanded(
+                child: _FilterSegmented(
+                  value: _isBangumiFilter,
+                  options: [
+                    ('all', t.filterAll),
+                    ('yes', t.bangumi),
+                    ('no', t.filterNonBangumi),
+                  ],
+                  onChanged: (v) => _setFilter(() => _isBangumiFilter = v),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FilterSegmented(
+                  value: _enabledFilter,
+                  options: [
+                    ('all', t.filterAll),
+                    ('enabled', t.enabled),
+                    ('disabled', t.disabled),
+                  ],
+                  onChanged: (v) => _setFilter(() => _enabledFilter = v),
+                ),
+              ),
+              const SizedBox(width: 8),
               PopupMenuButton<String>(
                 tooltip: t.sort,
                 initialValue: _sort,
@@ -324,28 +393,14 @@ class _BodyState extends State<_Body> {
                         style: _sort == key
                             ? TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary,
+                                color: colorScheme.primary,
                               )
                             : null,
                       ),
                     ),
                 ],
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.sort, size: 18),
-                      const SizedBox(width: 4),
-                      Text(t.sort, style: const TextStyle(fontSize: 13)),
-                    ],
-                  ),
-                ),
+                icon: Icon(Icons.sort, size: 20),
+                iconColor: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -599,6 +654,71 @@ class _BodyState extends State<_Body> {
   }
 }
 
+/// 紧凑分段选择器（风格同探索页布局切换），用于番剧源筛选：番组/启用。
+class _FilterSegmented extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+  final List<(String, String)> options;
+
+  const _FilterSegmented({
+    required this.value,
+    required this.onChanged,
+    required this.options,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 30,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        children: options.map((opt) {
+          final (key, label) = opt;
+          final selected = value == key;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? colorScheme.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.toOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurface.toOpacity(0.45),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 class _AnimeSourceList extends StatefulWidget {
   const _AnimeSourceList(this.onAdd);
 
@@ -609,66 +729,215 @@ class _AnimeSourceList extends StatefulWidget {
 }
 
 class _AnimeSourceListState extends State<_AnimeSourceList> {
+  static const _reposKey = 'animeSourceRepos';
+  static const _reposCurrentKey = 'animeSourceReposCurrent';
+
+  List<Map<String, dynamic>> _repos = [];
+  int _currentRepo = 0;
   bool loading = true;
   List? json;
-  bool changed = false;
-  var controller = TextEditingController();
 
-  void load() async {
-    if (json != null) {
-      setState(() {
-        json = null;
-      });
+  bool get _isLocalRepo {
+    final url = _currentUrl;
+    if (url.startsWith('file://')) return true;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    if (!uri.hasScheme) return true;
+    // Windows 盘符路径 C:\...
+    if (uri.scheme.length == 1) return true;
+    return false;
+  }
+
+  String get _currentUrl =>
+      _repos.isEmpty ? '' : (_repos[_currentRepo]['url']?.toString() ?? '');
+
+  void _loadRepos() {
+    final raw = appdata.implicitData[_reposKey];
+    if (raw is List && raw.isNotEmpty) {
+      _repos = raw
+          .map(
+            (e) => e is Map
+                ? Map<String, dynamic>.from(e)
+                : <String, dynamic>{'url': e.toString()},
+          )
+          .toList();
+    } else {
+      _repos = [
+        {'url': appdata.settings['animeSourceListUrl'] ?? Api.kostoriConfig},
+      ];
     }
-    if (controller.text.isEmpty) {
+    _currentRepo = appdata.implicitData[_reposCurrentKey] as int? ?? 0;
+    if (_currentRepo < 0 || _currentRepo >= _repos.length) {
+      _currentRepo = 0;
+    }
+  }
+
+  void _saveRepos() {
+    appdata.implicitData[_reposKey] = _repos;
+    appdata.implicitData[_reposCurrentKey] = _currentRepo;
+    appdata.writeImplicitData();
+  }
+
+  Future<void> load() async {
+    if (_repos.isEmpty) _loadRepos();
+    final url = _currentUrl;
+    if (url.trim().isEmpty) {
       setState(() {
         json = [];
+        loading = false;
       });
       return;
     }
-    var dio = AppDio();
+    setState(() {
+      loading = true;
+      json = null;
+    });
     try {
-      dynamic res;
-      if (appdata.settings['animeSourceListUrl'] == Api.kostoriConfig &&
-          appdata.settings['gitMirror']) {
-        res = await dio.get<String>(Api.gitMirror + Api.kostoriConfig);
+      String text;
+      if (_isLocalRepo) {
+        // 本地仓库：直接读 index.json 文件
+        final path = url.replaceFirst('file://', '');
+        final file = io.File(path);
+        if (!await file.exists()) {
+          context.showMessage(message: t.error);
+          setState(() {
+            json = [];
+            loading = false;
+          });
+          return;
+        }
+        text = await file.readAsString();
       } else {
-        res = await dio.get<String>(appdata.settings['animeSourceListUrl']);
+        var dio = AppDio();
+        dynamic res;
+        if (url == Api.kostoriConfig && appdata.settings['gitMirror']) {
+          res = await dio.get<String>(Api.gitMirror + Api.kostoriConfig);
+        } else {
+          res = await dio.get<String>(url);
+        }
+        if (res.statusCode != 200) {
+          context.showMessage(message: t.error);
+          setState(() {
+            json = [];
+            loading = false;
+          });
+          return;
+        }
+        text = res.data!;
       }
-      if (res.statusCode != 200) {
-        context.showMessage(message: t.error);
-        return;
-      }
-      if (mounted) {
-        setState(() {
-          json = jsonDecode(res.data!);
-          loading = false;
-        });
-      }
+      final decoded = jsonDecode(text);
+      setState(() {
+        json = decoded is List ? decoded : [];
+        loading = false;
+      });
     } catch (e) {
       context.showMessage(message: t.error);
-      if (mounted) {
-        setState(() {
-          json = [];
-        });
-      }
+      setState(() {
+        json = [];
+        loading = false;
+      });
     }
+  }
+
+  void _switchRepo(int index) {
+    if (index == _currentRepo) return;
+    _currentRepo = index;
+    _saveRepos();
+    load();
+  }
+
+  Future<void> _addRepo() async {
+    await showInputDialog(
+      context: context,
+      title: t.addRepo,
+      hintText: t.repoUrlHint,
+      onConfirm: (value) {
+        final v = value.toString().trim();
+        if (v.isEmpty) return t.repoUrlHint;
+        setState(() {
+          _repos.add({'url': v});
+          _currentRepo = _repos.length - 1;
+        });
+        _saveRepos();
+        load();
+        return null;
+      },
+    );
+  }
+
+  Future<void> _editRepo(int index) async {
+    final current = _repos[index]['url']?.toString() ?? '';
+    await showInputDialog(
+      context: context,
+      title: t.edit,
+      hintText: t.repoUrlHint,
+      initialValue: current,
+      onConfirm: (value) {
+        final v = value.toString().trim();
+        if (v.isEmpty) return t.repoUrlHint;
+        setState(() {
+          _repos[index]['url'] = v;
+        });
+        _saveRepos();
+        if (index == _currentRepo) {
+          load();
+        }
+        return null;
+      },
+    );
+    if (mounted) setState(() {});
+  }
+
+  void _removeRepo(int index) {
+    showConfirmDialog(
+      context: context,
+      title: t.delete,
+      content: t.deleteAnimeSourceN(n: _repos[index]['url']?.toString() ?? ''),
+      btnColor: context.colorScheme.error,
+      onConfirm: () {
+        setState(() {
+          _repos.removeAt(index);
+          if (_currentRepo >= _repos.length) {
+            _currentRepo = _repos.isEmpty ? 0 : _repos.length - 1;
+          }
+        });
+        _saveRepos();
+        load();
+      },
+    );
+  }
+
+  /// 从仓库下载新版本 JS 并更新已安装的源
+  Future<void> _updateFromRepo(AnimeSource source, Map item) async {
+    var url = item['url']?.toString();
+    if (url == null || !url.isURL) {
+      url = source.url;
+    }
+    await AnimeSourceSettings.update(source, true, url);
+    if (mounted) setState(() {});
+  }
+
+  /// 拼接仓库项的完整 URL（无独立 url 时按仓库目录 + fileName）
+  String _resolveUrl(Map item) {
+    final url = item['url']?.toString();
+    if (url != null && url.isURL) return url;
+    final fileName = item['fileName']?.toString();
+    final base = _currentUrl;
+    if (fileName == null || fileName.isEmpty) return '';
+    if (base
+        .replaceFirst('https://', '')
+        .replaceFirst('http://', '')
+        .contains('/')) {
+      return base.substring(0, base.lastIndexOf('/') + 1) + fileName;
+    }
+    return '$base/$fileName';
   }
 
   @override
   void initState() {
     super.initState();
-    controller.text = appdata.settings['animeSourceListUrl'];
+    _loadRepos();
     load();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    if (changed) {
-      appdata.settings['animeSourceListUrl'] = controller.text;
-      appdata.saveData();
-    }
   }
 
   @override
@@ -677,23 +946,9 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
       title: t.animeSource,
       tailing: [
         IconButton(
-          icon: Icon(Icons.settings),
-          onPressed: () async {
-            await showInputDialog(
-              context: context,
-              title: t.setSourceListUrl,
-              initialValue: appdata.settings['animeSourceListUrl'],
-              onConfirm: (value) {
-                appdata.settings['animeSourceListUrl'] = value;
-                appdata.saveData();
-                setState(() {
-                  loading = true;
-                  json = null;
-                });
-                return null;
-              },
-            );
-          },
+          icon: const Icon(Icons.add_box_outlined),
+          tooltip: t.addRepo,
+          onPressed: _addRepo,
         ),
       ],
       body: buildBody(),
@@ -701,108 +956,169 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
   }
 
   Widget buildBody() {
-    var currentKey = AnimeSource.allSources().map((e) => e.key).toList();
+    final currentKey = AnimeSource.allSources().map((e) => e.key).toSet();
+    final sourcesMap = {for (final s in AnimeSource.allSources()) s.key: s};
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return ListView.builder(
-      itemCount: (json?.length ?? 1) + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                width: 0.6,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  leading: Icon(Icons.source_outlined),
-                  title: Text(t.sourceUrl),
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      children: [
+        // ── 仓库管理区 ──────────────────────────────
+        _SettingPartTitle(title: t.repo, icon: Icons.folder_open),
+        for (var i = 0; i < _repos.length; i++)
+          _SettingCard(
+            children: [
+              ListTile(
+                dense: true,
+                leading: Icon(
+                  _isLocalRepo && i == _currentRepo
+                      ? Icons.folder
+                      : Icons.cloud_outlined,
+                  color: i == _currentRepo
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
                 ),
-                TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: "URL",
-                    border: const UnderlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-                  onChanged: (value) {
-                    changed = true;
-                  },
-                ).paddingHorizontal(16).paddingBottom(8),
-                Text(t.theUrlShouldPointToAIndexJsonFile).paddingLeft(16),
-                Text(
-                  t.doNotReportAnyIssuesRelatedToSourcesToAppRepo,
-                ).paddingLeft(16),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                title: Text(
+                  _repos[i]['name']?.toString() ??
+                      _repos[i]['url']?.toString() ??
+                      '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: i == _currentRepo
+                      ? TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary,
+                        )
+                      : null,
+                ),
+                subtitle: Text(
+                  _repos[i]['url']?.toString() ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextButton(
-                      onPressed: () {
-                        controller.text = Api.kostoriConfig;
-                        changed = true;
-                      },
-                      child: Text(t.reset),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      tooltip: t.edit,
+                      icon: const Icon(Icons.edit_note, size: 18),
+                      onPressed: () => _editRepo(i),
                     ),
-                    FilledButton.tonal(onPressed: load, child: Text(t.refresh)),
-                    const SizedBox(width: 16),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      tooltip: t.delete,
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: colorScheme.error,
+                      ),
+                      onPressed: () => _removeRepo(i),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-              ],
+                onTap: () => _switchRepo(i),
+              ),
+            ],
+          ),
+        const SizedBox(height: 4),
+        OutlinedButton.icon(
+          onPressed: _addRepo,
+          icon: const Icon(Icons.add, size: 18),
+          label: Text(t.addRepo),
+        ),
+        const SizedBox(height: 16),
+
+        // ── 当前仓库的源列表 ─────────────────────────
+        _SettingPartTitle(title: t.animeSource, icon: Icons.source_outlined),
+        if (json == null && loading)
+          const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(child: KostoriRefreshIndicator()),
+          )
+        else if (json != null && json!.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Text(
+                t.repoEmpty,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          );
-        }
+          )
+        else ...[
+          for (final item in json!)
+            _SettingCard(
+              children: [_buildSourceRow(item, currentKey, sourcesMap)],
+            ),
+        ],
+      ],
+    );
+  }
 
-        if (index == 1 && json == null) {
-          return Center(child: KostoriRefreshIndicator());
-        }
+  Widget _buildSourceRow(
+    Map item,
+    Set<String> currentKey,
+    Map<String, AnimeSource> sourcesMap,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final key = item['key']?.toString() ?? '';
+    final name = item['name']?.toString() ?? key;
+    final version = item['version']?.toString() ?? '';
+    final installed = sourcesMap[key];
+    final hasUpdate =
+        installed != null &&
+        version.isNotEmpty &&
+        compareSemVer(version, installed.version);
+    final url = _resolveUrl(item);
 
-        index--;
+    String description = version;
+    final desc = item['description']?.toString();
+    if (desc != null && desc.isNotEmpty) description = '$description\n$desc';
 
-        var key = json![index]["key"];
-        var action = currentKey.contains(key)
-            ? const Icon(Icons.check, size: 20).paddingRight(8)
-            : Button.filled(
-                child: Text(t.add),
-                onPressed: () async {
-                  var fileName = json![index]["fileName"];
-                  var url = json![index]["url"];
-                  if (url == null || !(url.toString()).isURL) {
-                    var listUrl =
-                        appdata.settings['animeSourceListUrl'] as String;
-                    if (listUrl
-                        .replaceFirst("https://", "")
-                        .replaceFirst("http://", "")
-                        .contains("/")) {
-                      url =
-                          listUrl.substring(0, listUrl.lastIndexOf("/") + 1) +
-                          fileName;
-                    } else {
-                      url = '$listUrl/$fileName';
-                    }
-                  }
-                  await widget.onAdd(url);
-                  setState(() {});
-                },
-              ).fixHeight(32);
+    Widget trailing;
+    if (installed != null) {
+      trailing = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasUpdate)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 18,
+              tooltip: t.update,
+              icon: Icon(Icons.update, size: 18, color: colorScheme.primary),
+              onPressed: () => _updateFromRepo(installed, item),
+            ),
+          Icon(Icons.check, size: 20, color: colorScheme.primary),
+        ],
+      );
+    } else {
+      trailing = Button.filled(
+        child: Text(t.add),
+        onPressed: () async {
+          if (url.isEmpty) {
+            context.showMessage(message: t.error);
+            return;
+          }
+          await widget.onAdd(url);
+          if (mounted) setState(() {});
+        },
+      ).fixHeight(32);
+    }
 
-        var description = json![index]["version"];
-        if (json![index]["description"] != null) {
-          description = "$description\n${json![index]["description"]}";
-        }
-
-        return ListTile(
-          title: Text(json![index]["name"]),
-          subtitle: Text(description),
-          trailing: action,
-        );
-      },
+    return ListTile(
+      title: Text(
+        name,
+        style: const TextStyle(fontWeight: FontWeight.w500),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: trailing,
     );
   }
 }
@@ -1067,23 +1383,19 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
       appdata.implicitData['downloadTitleFormats'] as Map? ?? {},
     );
     final current = map[source.key] as String? ?? '';
-    await showInputDialog(
+    final value = await showDialog<String>(
       context: context,
-      title: t.downloadTitleFormat,
-      hintText: t.downloadFormatHint,
-      initialValue: current,
-      onConfirm: (value) {
-        final v = value.toString().trim();
-        if (v.isEmpty) {
-          map.remove(source.key);
-        } else {
-          map[source.key] = v;
-        }
-        appdata.implicitData['downloadTitleFormats'] = map;
-        appdata.writeImplicitData();
-        return null;
-      },
+      builder: (_) => _DownloadFormatDialog(initialValue: current),
     );
+    if (value == null) return;
+    final v = value.trim();
+    if (v.isEmpty) {
+      map.remove(source.key);
+    } else {
+      map[source.key] = v;
+    }
+    appdata.implicitData['downloadTitleFormats'] = map;
+    appdata.writeImplicitData();
   }
 
   @override
@@ -1093,6 +1405,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
         newVersion != null && compareSemVer(newVersion, source.version);
     final enabled = AnimeSourceManager().isEnabled(source.key);
     final logged = source.isLogged;
+    final colorScheme = Theme.of(context).colorScheme;
 
     // 返回 box（非 sliver）：该卡片由 SliverList 惰性构建
     return Padding(
@@ -1100,14 +1413,22 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: _SettingCard(
         children: [
-          // 标题行：源名 + 版本副标题 + 开关
+          // 标题行：源名 + 版本（右侧更新图标）+ 右侧删除/开关
           ListTile(
             title: Text(source.name, style: ts.s18),
             subtitle: Row(
               children: [
                 Text('v${source.version}'),
+                const SizedBox(width: 2),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 18,
+                  tooltip: t.update,
+                  icon: const Icon(Icons.update, size: 18),
+                  onPressed: () => widget.update(source),
+                ),
                 if (hasUpdate) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 2),
                   Tooltip(
                     message: newVersion,
                     child: Container(
@@ -1128,12 +1449,29 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                 ],
               ],
             ),
-            trailing: CustomSwitch(
-              value: enabled,
-              onChanged: (v) {
-                AnimeSourceManager().toggleSource(source.key, v);
-                setState(() {});
-              },
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 18,
+                  tooltip: t.delete,
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: colorScheme.error,
+                  ),
+                  onPressed: () => widget.delete(source),
+                ),
+                const SizedBox(width: 4),
+                CustomSwitch(
+                  value: enabled,
+                  onChanged: (v) {
+                    AnimeSourceManager().toggleSource(source.key, v);
+                    setState(() {});
+                  },
+                ),
+              ],
             ),
           ),
 
@@ -1148,11 +1486,11 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
               runSpacing: 8,
               children: [
                 if (source.account != null)
-                IconTileButton(
-                  icon: logged
-                      ? const Icon(Icons.person_outline)
-                      : const Icon(Icons.person_add_alt_outlined),
-                  label: logged ? t.account : t.logIn,
+                  IconTileButton(
+                    icon: logged
+                        ? const Icon(Icons.person_outline)
+                        : const Icon(Icons.person_add_alt_outlined),
+                    label: logged ? t.account : t.logIn,
                     onTap: () {
                       showPopUpWidget(
                         context,
@@ -1187,22 +1525,115 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                   label: t.downloadTitleFormat,
                   onTap: () => _setDownloadFormat(source),
                 ),
-                IconTileButton(
-                  icon: const Icon(Icons.update),
-                  label: t.update,
-                  onTap: () => widget.update(source),
-                ),
-                IconTileButton(
-                  icon: const Icon(Icons.delete_outline),
-                  label: t.delete,
-                  color: context.colorScheme.error,
-                  onTap: () => widget.delete(source),
-                ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 下载标题格式编辑弹窗：输入框 + 下方提示 + 快捷占位符按钮。
+class _DownloadFormatDialog extends StatefulWidget {
+  const _DownloadFormatDialog({required this.initialValue});
+
+  final String initialValue;
+
+  @override
+  State<_DownloadFormatDialog> createState() => _DownloadFormatDialogState();
+}
+
+class _DownloadFormatDialogState extends State<_DownloadFormatDialog> {
+  late final TextEditingController _ctrl = TextEditingController(
+    text: widget.initialValue,
+  );
+  final FocusNode _focus = FocusNode();
+
+  static const _placeholders = [
+    '{title}',
+    '{episode}',
+    '{author}',
+    '{resolution}',
+    '{source}',
+    '{year}',
+  ];
+
+  /// 在光标位置插入占位符
+  void _insert(String ph) {
+    final text = _ctrl.text;
+    final sel = _ctrl.selection;
+    final start = sel.isValid ? sel.start : text.length;
+    final end = sel.isValid ? sel.end : text.length;
+    _ctrl.value = TextEditingValue(
+      text: text.replaceRange(start, end, ph),
+      selection: TextSelection.collapsed(offset: start + ph.length),
+    );
+    _focus.requestFocus();
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ContentDialog(
+      title: t.downloadTitleFormat,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _ctrl,
+            focusNode: _focus,
+            minLines: 2,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ).paddingHorizontal(12),
+          // 占位符说明放在输入框下方，避免一输入就看不见
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              t.downloadFormatHint,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          // 快捷占位符按钮：点击插入到光标处
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final ph in _placeholders)
+                  ActionChip(
+                    label: Text(ph, style: const TextStyle(fontSize: 12)),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _insert(ph),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Button.filled(
+          onPressed: () => context.pop(_ctrl.text.trim()),
+          child: Text(t.confirm),
+        ),
+      ],
     );
   }
 }

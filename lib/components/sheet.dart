@@ -238,8 +238,8 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
       await ImageSaver.saveOrShareImage(
         bytes: bytes,
         filename: filename,
-        desktopSuccessMessage: '二维码已复制到剪贴板',
-        mobileSuccessMessage: '二维码已保存',
+        desktopSuccessMessage: t.qrCopiedToClipboard,
+        mobileSuccessMessage: t.qrSavedToGallery,
       );
       Navigator.pop(context);
     } catch (e) {

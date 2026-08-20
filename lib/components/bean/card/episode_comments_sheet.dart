@@ -6,6 +6,7 @@ import 'package:kostori/components/bean/card/episode_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 
 class EpisodeCommentsSheet extends StatefulWidget {
@@ -167,7 +168,10 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(' 本集标题  '),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(t.episodeTitleLabel),
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,7 +209,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
               onPressed: () {
                 showEpisodeSelection();
               },
-              child: const Text('手动切换', style: TextStyle(fontSize: 13)),
+              child: Text(t.manualSwitch, style: const TextStyle(fontSize: 13)),
             ),
           ),
         ],
@@ -222,7 +226,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
       barrierDismissible: false, // 禁止点击遮罩关闭
       builder: (context) {
         return ContentDialog(
-          title: '输入集数',
+          title: t.inputEpisodeNumber,
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return TextField(
@@ -233,7 +237,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
                   LengthLimitingTextInputFormatter(3),
                 ],
                 decoration: InputDecoration(
-                  hintText: '请输入1-999之间的集数',
+                  hintText: t.episodeNumberHint,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -245,7 +249,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
             TextButton(
               onPressed: () => Navigator.pop(context), // 使用 Navigator 关闭对话框
               child: Text(
-                '取消',
+                t.cancel,
                 style: TextStyle(color: Theme.of(context).colorScheme.outline),
               ),
             ),
@@ -254,13 +258,15 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
                 final inputText = textController.text.trim();
 
                 if (inputText.isEmpty) {
-                  App.rootContext.showMessage(message: '请输入集数');
+                  App.rootContext.showMessage(message: t.enterEpisodeNumber);
                   return;
                 }
 
                 final episode = int.tryParse(inputText) ?? 0;
                 if (episode <= 0 || episode > 999) {
-                  App.rootContext.showMessage(message: '请输入1-999之间的有效集数');
+                  App.rootContext.showMessage(
+                    message: t.invalidEpisodeNumber,
+                  );
                   return;
                 }
 
@@ -268,7 +274,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
                 _refreshIndicatorKey.currentState?.show();
                 Navigator.pop(context); // 关闭对话框
               },
-              child: const Text('确定'),
+              child: Text(t.confirm),
             ),
           ],
         );

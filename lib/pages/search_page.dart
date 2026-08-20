@@ -356,42 +356,41 @@ class _SearchPageState extends State<SearchPage> {
       useDefaultOptions();
     }
 
-    showDialog(
+    showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStates) {
-            return ContentDialog(
+            return Sheet(
               title: t.searchOptions,
-              content: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-                ),
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(
-                    context,
-                  ).copyWith(scrollbars: false),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (int i = 0; i < searchOptions.length; i++)
-                          SearchOptionWidget(
-                            option: searchOptions[i],
-                            value: options[i],
-                            onChanged: (value) {
-                              options[i] = value;
-                              setStates(() {});
-                              update();
-                            },
-                            sourceKey: searchTarget,
-                          ),
-                      ],
-                    ),
+              icon: Icons.tune,
+              builder: (context, sc) {
+                return SingleChildScrollView(
+                  controller: sc,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (int i = 0; i < searchOptions.length; i++)
+                        SearchOptionWidget(
+                          option: searchOptions[i],
+                          value: options[i],
+                          onChanged: (value) {
+                            options[i] = value;
+                            setStates(() {});
+                            update();
+                          },
+                          sourceKey: searchTarget,
+                        ),
+                    ],
                   ),
-                ),
-              ),
+                );
+              },
             );
           },
         );

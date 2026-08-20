@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -178,7 +179,7 @@ class _AppWebviewState extends State<AppWebview> {
         Positioned.fill(child: body),
         if (_progress < 1.0)
           const Positioned.fill(
-            child: Center(child: PolygonRefreshIndicator()),
+            child: Center(child: KostoriRefreshIndicator()),
           ),
       ],
     );

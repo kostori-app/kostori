@@ -249,7 +249,26 @@ class _PlayerItemState extends State<PlayerItem>
           icon: Icons.article_outlined,
           text: t.log,
           onClick: () {
-            context.to(() => const LogsPage());
+            showModalBottomSheet(
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+                maxWidth: MediaQuery.of(context).size.width <= 600
+                    ? MediaQuery.of(context).size.width
+                    : (App.isDesktop)
+                    ? MediaQuery.of(context).size.width * 9 / 16
+                    : MediaQuery.of(context).size.width,
+              ),
+              clipBehavior: Clip.antiAlias,
+              context: context,
+              builder: (_) => Sheet(
+                title: t.logs,
+                icon: Icons.article_outlined,
+                initialSize: 0.85,
+                builder: (_, _) => const LogsPage(inSheet: true),
+              ),
+            );
           },
         ),
       MenuEntry(

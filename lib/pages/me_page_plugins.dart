@@ -461,7 +461,7 @@ class _SignInButtonState extends State<_SignInButton> {
   Future<void> _onPressed() async {
     final url = widget.m['url']?.toString() ?? '';
     if (url.isEmpty) {
-      App.rootContext.showMessage(message: '缺少 url', level: LogLevel.warning);
+      App.rootContext.showMessage(message: t.missingUrl, level: LogLevel.warning);
       return;
     }
     setState(() => _loading = true);
@@ -477,16 +477,19 @@ class _SignInButtonState extends State<_SignInButton> {
       if (status == 200) {
         final body = res['body']?.toString().trim() ?? '';
         App.rootContext.showMessage(
-          message: successText ?? (body.isEmpty ? '成功' : body),
+          message: successText ?? (body.isEmpty ? t.success : body),
         );
       } else {
         App.rootContext.showMessage(
-          message: '失败 ($status)',
+          message: t.failedWithStatus(status: status),
           level: LogLevel.error,
         );
       }
     } catch (e) {
-      App.rootContext.showMessage(message: '请求失败: $e', level: LogLevel.error);
+      App.rootContext.showMessage(
+          message: t.requestFailedDetail(error: e),
+          level: LogLevel.error,
+        );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -514,7 +517,7 @@ class _SignInButtonState extends State<_SignInButton> {
               height: 16,
               child: PolygonRefreshIndicator(),
             )
-          : Text(widget.m['text']?.toString() ?? '签到'),
+          : Text(widget.m['text']?.toString() ?? t.checkIn),
     );
   }
 }
@@ -536,7 +539,7 @@ class _Button extends StatelessWidget {
               } catch (_) {}
             }
           : null,
-      child: Text(m['text']?.toString() ?? '按钮'),
+      child: Text(m['text']?.toString() ?? t.button),
     );
   }
 }

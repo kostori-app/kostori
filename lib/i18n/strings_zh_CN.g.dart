@@ -84,10 +84,17 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get alsoRemoveFilesOnDisk => '同时删除本地文件';
 	@override String get animeSourceList => '番剧源列表';
 	@override String get animeSource => '番剧源';
+	@override String get addRepo => '添加仓库';
+	@override String get repo => '仓库';
+	@override String get repoUrlHint => '仓库地址：http(s) 链接或本地 index.json 路径（file://）';
+	@override String get repoEmpty => '仓库暂无番剧源';
 	@override String get filterAll => '全部';
 	@override String get noMatchingSource => '未找到匹配的番源';
+	@override String sourceCount({required Object count}) => '${count} 个源';
 	@override String get filterNonBangumi => '其他';
 	@override String get sortByDefault => '默认';
+	@override String get sortAsc => '正序';
+	@override String get sortDesc => '倒序';
 	@override String get sortByName => '名称';
 	@override String get sortById => 'ID';
 	@override String get switchSource => '切换源';
@@ -106,6 +113,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get blue => '蓝色';
 	@override String get brief => '简洁';
 	@override String get masonry => '瀑布流';
+	@override String get poster => '海报';
+	@override String get sourceDisplayModeReset => '跟随全局默认';
+	@override String get followSourceDefault => '跟随源默认';
 	@override String get cacheLimit => '缓存限制';
 	@override String get cacheSize => '缓存大小';
 	@override String get cacheCleared => '缓存已清除';
@@ -2243,6 +2253,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get defaultResolution => '默认';
 	@override String get noResolutionAvailable => '无更多清晰度可选';
 	@override String get series => '系列';
+	@override String get singleEpisode => '单集 · 共 1 集';
 	@override String get playing => '正在播放';
 	@override String get selectNone => '取消全选';
 	@override String get downloadActive => '正在下载';
@@ -2258,6 +2269,81 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get subtitle => '字幕';
 	@override String get subtitleOff => '关闭字幕';
 	@override String get quality => '清晰度';
+	@override String copiedField({required Object x}) => '已复制: ${x}';
+	@override String selectAliasCount({required Object count}) => '选择别名 (${count})';
+	@override String get monthDayFormat => 'M月d日';
+	@override String monthDay({required Object month, required Object day}) => '${month}月${day}日';
+	@override String qrAnimeId({required Object id, required Object source}) => '番剧 ID：${id}\n来源：${source}';
+	@override String qrBangumiId({required Object id}) => 'Bangumi ID：${id}';
+	@override String qrWatchRoom({required Object room, required Object server}) => '一起看房间：${room}\n服务端：${server}';
+	@override String qrDetectedType({required Object type}) => '检测到 ${type} 链接';
+	@override String get qrPasswordResolved => '（口令已解析）\n';
+	@override String reviewedAtTime({required Object time}) => '评价时 ${time}';
+	@override String get qrCopiedToClipboard => '二维码已复制到剪贴板';
+	@override String get qrSavedToGallery => '二维码已保存';
+	@override String get reloadSuccess => '重载成功';
+	@override String get floorOwner => '层主';
+	@override String get postOwner => '贴主';
+	@override String get collapse => '收起';
+	@override String expandCount({required Object total}) => '展开 (${total})';
+	@override String get deletedReply => '删除了回复';
+	@override String get author => '作者';
+	@override String get episodeTitleLabel => '本集标题';
+	@override String get manualSwitch => '手动切换';
+	@override String get inputEpisodeNumber => '输入集数';
+	@override String get episodeNumberHint => '请输入1-999之间的集数';
+	@override String get enterEpisodeNumber => '请输入集数';
+	@override String get invalidEpisodeNumber => '请输入1-999之间的有效集数';
+	@override String episodeN({required Object n}) => '第 ${n} 集';
+	@override String get noViewingRecord => '没有找到该集的观看记录';
+	@override String get viewingRecord => '观看记录';
+	@override String watchDurationLabel({required Object duration}) => '观看时长: ${duration}';
+	@override String completedStatus({required Object status}) => '是否完成: ${status}';
+	@override String get yes => '是';
+	@override String get no => '否';
+	@override String startTimeLabel({required Object time}) => '开始时间: ${time}';
+	@override String endTimeLabel({required Object time}) => '结束时间: ${time}';
+	@override String get appInfo => '应用信息';
+	@override String partRepoFetchFailed({required Object list}) => '部分仓库拉取失败: ${list}';
+	@override String airTimeLabel({required Object time}) => '放送时间：${time}';
+	@override String durationLabel({required Object duration}) => '时长：${duration}';
+	@override String get replyBracket => '[回复]';
+	@override String get wantToWatch => '想看';
+	@override String get watching => '在看';
+	@override String addToFolder({required Object folder}) => '添加到 ${folder}';
+	@override String removeFromFolder({required Object folder}) => '从 ${folder} 删除';
+	@override String movedFromTo({required Object from, required Object to}) => '从 ${from} 移动到 ${to}';
+	@override String get unknownFolder => 'Unknown folder';
+	@override String fetchVideoUrlError({required Object detail}) => '获取视频链接异常: ${detail}';
+	@override String get missingUrl => '缺少 url';
+	@override String get success => '成功';
+	@override String failedWithStatus({required Object status}) => '失败 (${status})';
+	@override String get checkIn => '签到';
+	@override String get button => '按钮';
+	@override String requestFailedDetail({required Object error}) => '请求失败: ${error}';
+	@override String get play => '播放';
+	@override String get nextEpisode => '下一集';
+	@override String trackN({required Object n}) => '第 ${n} 轨';
+	@override String get deviceInfo => '设备信息';
+	@override String get conversationInterrupted => '对话流意外中断';
+	@override String toolExecutionFailed({required Object error}) => '工具执行失败: ${error}';
+	@override String apiKeyNotConfigured({required Object source}) => '${source} API Key 未配置或已禁用';
+	@override String get imageInvalid => '图片无效';
+	@override String get recognizeBusy => '识别服务繁忙，请稍后再试';
+	@override String get connectionTimeout => '连接超时';
+	@override String get pinError => 'PIN 码错误';
+	@override String get connectionClosed => '连接已断开';
+	@override String unknownCommand({required Object type}) => '未知命令类型: ${type}';
+	@override String processingFailed({required Object error}) => '处理失败: ${error}';
+	@override String executionFailed({required Object error}) => '执行失败: ${error}';
+	@override String unknownServiceProvider({required Object provider}) => '未知服务商: ${provider}';
+	@override String sessionNotFound({required Object id}) => '会话不存在: ${id}';
+	@override String get historyTooShort => '历史消息太少，无需压缩';
+	@override String get messageTooLarge => '消息过大，最大允许 64KB';
+	@override String get rateLimit => '请求过于频繁，请稍后再试';
+	@override String portBusy({required Object start, required Object end}) => '端口 ${start} 到 ${end} 全部被占用';
+	@override String get webSocketOnly => '仅支持 WebSocket 连接';
+	@override String toolRoundsExceeded({required Object source}) => '${source} 工具调用轮次过多';
 }
 
 // Path: colors
@@ -2365,10 +2451,17 @@ extension on TranslationsZhCn {
 			'alsoRemoveFilesOnDisk' => '同时删除本地文件',
 			'animeSourceList' => '番剧源列表',
 			'animeSource' => '番剧源',
+			'addRepo' => '添加仓库',
+			'repo' => '仓库',
+			'repoUrlHint' => '仓库地址：http(s) 链接或本地 index.json 路径（file://）',
+			'repoEmpty' => '仓库暂无番剧源',
 			'filterAll' => '全部',
 			'noMatchingSource' => '未找到匹配的番源',
+			'sourceCount' => ({required Object count}) => '${count} 个源',
 			'filterNonBangumi' => '其他',
 			'sortByDefault' => '默认',
+			'sortAsc' => '正序',
+			'sortDesc' => '倒序',
 			'sortByName' => '名称',
 			'sortById' => 'ID',
 			'switchSource' => '切换源',
@@ -2387,6 +2480,9 @@ extension on TranslationsZhCn {
 			'blue' => '蓝色',
 			'brief' => '简洁',
 			'masonry' => '瀑布流',
+			'poster' => '海报',
+			'sourceDisplayModeReset' => '跟随全局默认',
+			'followSourceDefault' => '跟随源默认',
 			'cacheLimit' => '缓存限制',
 			'cacheSize' => '缓存大小',
 			'cacheCleared' => '缓存已清除',
@@ -2822,6 +2918,8 @@ extension on TranslationsZhCn {
 			'wednesday' => '周三',
 			'thursday' => '周四',
 			'friday' => '周五',
+			_ => null,
+		} ?? switch (path) {
 			'saturday' => '周六',
 			'sunday' => '周日',
 			'defaultOrder' => '默认排序',
@@ -2832,8 +2930,6 @@ extension on TranslationsZhCn {
 			'awful' => '极差',
 			'terrible' => '很差',
 			'bad' => '差',
-			_ => null,
-		} ?? switch (path) {
 			'poor' => '较差',
 			'okay' => '不过不失',
 			'fine' => '还行',
@@ -3336,6 +3432,8 @@ extension on TranslationsZhCn {
 			'kostoriChangelog' => 'Kostori 更新日志',
 			'copyPath' => '复制路径',
 			'properties' => '属性',
+			_ => null,
+		} ?? switch (path) {
 			'noEndpoint' => '无端点',
 			'testAll' => '测试全部',
 			'customEndpoint' => '自定义端点',
@@ -3346,8 +3444,6 @@ extension on TranslationsZhCn {
 			'enableService' => '启用服务',
 			'serviceIsStopped' => '服务已停止',
 			'runningOnH' => ({required Object h}) => '运行在 ${h}',
-			_ => null,
-		} ?? switch (path) {
 			'apiKey' => 'API Key',
 			'activeKey' => '当前 Key',
 			'usingFixedKey' => '使用固定 Key',
@@ -3850,6 +3946,8 @@ extension on TranslationsZhCn {
 			'translationErrorModelNotSupported' => '当前配置的模型不被该服务商支持，请到 AI 设置更换模型',
 			'translationErrorApiKeyInvalid' => 'API Key 无效或无权限，请检查 AI 设置中的密钥',
 			'translationErrorRateLimited' => '请求过于频繁或额度不足，请稍后再试',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorRequestFailed' => '翻译请求失败',
 			'writeYourReview' => '写下你的评价',
 			'draft' => '草稿',
@@ -3860,8 +3958,6 @@ extension on TranslationsZhCn {
 			'announcement' => '公告',
 			'image' => '图片',
 			'enterToSendCtrlEnterForNewline' => '回车发送，Ctrl+Enter 换行',
-			_ => null,
-		} ?? switch (path) {
 			'message' => '消息',
 			'stickers' => '贴纸',
 			'noStickersYet' => '还没有贴纸',
@@ -4364,6 +4460,8 @@ extension on TranslationsZhCn {
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集数',
 			'openVideoPreview' => '视频预览',
+			_ => null,
+		} ?? switch (path) {
 			'discussInAi' => 'AI 讨论',
 			'dropImageToRecognize' => '松开即可识别图片',
 			'dropFileToImport' => '松开即可导入 .js 源文件',
@@ -4374,8 +4472,6 @@ extension on TranslationsZhCn {
 			'imageUnderstandingDisabled' => '该助手未启用图片理解',
 			'modelType' => '模型类型',
 			'inputModality' => '输入模态',
-			_ => null,
-		} ?? switch (path) {
 			'outputModality' => '输出模态',
 			'supportsReasoning' => '支持推理',
 			'capabilities' => '能力',
@@ -4574,6 +4670,7 @@ extension on TranslationsZhCn {
 			'defaultResolution' => '默认',
 			'noResolutionAvailable' => '无更多清晰度可选',
 			'series' => '系列',
+			'singleEpisode' => '单集 · 共 1 集',
 			'playing' => '正在播放',
 			'selectNone' => '取消全选',
 			'downloadActive' => '正在下载',
@@ -4589,6 +4686,81 @@ extension on TranslationsZhCn {
 			'subtitle' => '字幕',
 			'subtitleOff' => '关闭字幕',
 			'quality' => '清晰度',
+			'copiedField' => ({required Object x}) => '已复制: ${x}',
+			'selectAliasCount' => ({required Object count}) => '选择别名 (${count})',
+			'monthDayFormat' => 'M月d日',
+			'monthDay' => ({required Object month, required Object day}) => '${month}月${day}日',
+			'qrAnimeId' => ({required Object id, required Object source}) => '番剧 ID：${id}\n来源：${source}',
+			'qrBangumiId' => ({required Object id}) => 'Bangumi ID：${id}',
+			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房间：${room}\n服务端：${server}',
+			'qrDetectedType' => ({required Object type}) => '检测到 ${type} 链接',
+			'qrPasswordResolved' => '（口令已解析）\n',
+			'reviewedAtTime' => ({required Object time}) => '评价时 ${time}',
+			'qrCopiedToClipboard' => '二维码已复制到剪贴板',
+			'qrSavedToGallery' => '二维码已保存',
+			'reloadSuccess' => '重载成功',
+			'floorOwner' => '层主',
+			'postOwner' => '贴主',
+			'collapse' => '收起',
+			'expandCount' => ({required Object total}) => '展开 (${total})',
+			'deletedReply' => '删除了回复',
+			'author' => '作者',
+			'episodeTitleLabel' => '本集标题',
+			'manualSwitch' => '手动切换',
+			'inputEpisodeNumber' => '输入集数',
+			'episodeNumberHint' => '请输入1-999之间的集数',
+			'enterEpisodeNumber' => '请输入集数',
+			'invalidEpisodeNumber' => '请输入1-999之间的有效集数',
+			'episodeN' => ({required Object n}) => '第 ${n} 集',
+			'noViewingRecord' => '没有找到该集的观看记录',
+			'viewingRecord' => '观看记录',
+			'watchDurationLabel' => ({required Object duration}) => '观看时长: ${duration}',
+			'completedStatus' => ({required Object status}) => '是否完成: ${status}',
+			'yes' => '是',
+			'no' => '否',
+			'startTimeLabel' => ({required Object time}) => '开始时间: ${time}',
+			'endTimeLabel' => ({required Object time}) => '结束时间: ${time}',
+			'appInfo' => '应用信息',
+			'partRepoFetchFailed' => ({required Object list}) => '部分仓库拉取失败: ${list}',
+			'airTimeLabel' => ({required Object time}) => '放送时间：${time}',
+			'durationLabel' => ({required Object duration}) => '时长：${duration}',
+			'replyBracket' => '[回复]',
+			'wantToWatch' => '想看',
+			'watching' => '在看',
+			'addToFolder' => ({required Object folder}) => '添加到 ${folder}',
+			'removeFromFolder' => ({required Object folder}) => '从 ${folder} 删除',
+			'movedFromTo' => ({required Object from, required Object to}) => '从 ${from} 移动到 ${to}',
+			'unknownFolder' => 'Unknown folder',
+			'fetchVideoUrlError' => ({required Object detail}) => '获取视频链接异常: ${detail}',
+			'missingUrl' => '缺少 url',
+			'success' => '成功',
+			'failedWithStatus' => ({required Object status}) => '失败 (${status})',
+			'checkIn' => '签到',
+			'button' => '按钮',
+			'requestFailedDetail' => ({required Object error}) => '请求失败: ${error}',
+			'play' => '播放',
+			'nextEpisode' => '下一集',
+			'trackN' => ({required Object n}) => '第 ${n} 轨',
+			'deviceInfo' => '设备信息',
+			'conversationInterrupted' => '对话流意外中断',
+			'toolExecutionFailed' => ({required Object error}) => '工具执行失败: ${error}',
+			'apiKeyNotConfigured' => ({required Object source}) => '${source} API Key 未配置或已禁用',
+			'imageInvalid' => '图片无效',
+			'recognizeBusy' => '识别服务繁忙，请稍后再试',
+			'connectionTimeout' => '连接超时',
+			'pinError' => 'PIN 码错误',
+			'connectionClosed' => '连接已断开',
+			'unknownCommand' => ({required Object type}) => '未知命令类型: ${type}',
+			'processingFailed' => ({required Object error}) => '处理失败: ${error}',
+			'executionFailed' => ({required Object error}) => '执行失败: ${error}',
+			'unknownServiceProvider' => ({required Object provider}) => '未知服务商: ${provider}',
+			'sessionNotFound' => ({required Object id}) => '会话不存在: ${id}',
+			'historyTooShort' => '历史消息太少，无需压缩',
+			'messageTooLarge' => '消息过大，最大允许 64KB',
+			'rateLimit' => '请求过于频繁，请稍后再试',
+			'portBusy' => ({required Object start, required Object end}) => '端口 ${start} 到 ${end} 全部被占用',
+			'webSocketOnly' => '仅支持 WebSocket 连接',
+			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具调用轮次过多',
 			_ => null,
 		};
 	}

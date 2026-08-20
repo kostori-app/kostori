@@ -1,5 +1,30 @@
 part of 'anime_source.dart';
 
+/// 解析 option 条目，兼容两种写法：
+/// 1. 旧写法：字符串 "value-label"（以最后一个 - 分隔）
+/// 2. 新写法：对象 {value, label} 或 {key, text}
+MapEntry<String, String>? parseOptionEntry(dynamic option) {
+  if (option is Map) {
+    final value = option['value'] ?? option['key'];
+    final label = option['label'] ?? option['text'];
+    if (value != null && label != null) {
+      return MapEntry(value.toString(), label.toString());
+    }
+    return null;
+  }
+  if (option is String) {
+    if (option.isEmpty || !option.contains("-")) {
+      return null;
+    }
+    final lastIndex = option.lastIndexOf("-");
+    return MapEntry(
+      option.substring(0, lastIndex),
+      option.substring(lastIndex + 1),
+    );
+  }
+  return null;
+}
+
 /// return true if ver1 > ver2
 bool compareSemVer(String ver1, String ver2) {
   ver1 = ver1.replaceFirst("-", ".");
@@ -558,15 +583,9 @@ class AnimeSourceParser {
       for (var element in _getValue("categoryAnimes.optionList") ?? []) {
         LinkedHashMap<String, String> map = LinkedHashMap<String, String>();
         for (var option in element["options"]) {
-          if (option.isEmpty || !option.contains("-")) {
-            continue;
-          }
-
-          int lastIndex = option.lastIndexOf("-");
-          var key = option.substring(0, lastIndex);
-          var value = option.substring(lastIndex + 1);
-
-          map[key] = value;
+          final entry = parseOptionEntry(option);
+          if (entry == null) continue;
+          map[entry.key] = entry.value;
         }
 
         options.add(
@@ -605,13 +624,9 @@ class AnimeSourceParser {
             }
             LinkedHashMap<String, String> map = LinkedHashMap<String, String>();
             for (var option in element["options"] ?? []) {
-              if (option.isEmpty || !option.contains("-")) {
-                continue;
-              }
-              int lastIndex = option.lastIndexOf("-");
-              var key = option.substring(0, lastIndex);
-              var value = option.substring(lastIndex + 1);
-              map[key] = value;
+              final entry = parseOptionEntry(option);
+              if (entry == null) continue;
+              map[entry.key] = entry.value;
             }
             options.add(
               CategoryAnimesOptions(
@@ -639,13 +654,9 @@ class AnimeSourceParser {
     if (_checkExists("categoryAnimes.ranking")) {
       var options = <String, String>{};
       for (var option in _getValue("categoryAnimes.ranking.options")) {
-        if (option.isEmpty || !option.contains("-")) {
-          continue;
-        }
-        var split = option.split("-");
-        var key = split.removeAt(0);
-        var value = split.join("-");
-        options[key] = value;
+        final entry = parseOptionEntry(option);
+        if (entry == null) continue;
+        options[entry.key] = entry.value;
       }
       Future<Res<List<Anime>>> Function(String option, int page)? load;
       Future<Res<List<Anime>>> Function(String option, String? next)?
@@ -730,13 +741,9 @@ class AnimeSourceParser {
     for (var element in _getValue("search.optionList") ?? []) {
       LinkedHashMap<String, String> map = LinkedHashMap<String, String>();
       for (var option in element["options"]) {
-        if (option.isEmpty || !option.contains("-")) {
-          continue;
-        }
-        int lastIndex = option.lastIndexOf("-");
-        var key = option.substring(0, lastIndex);
-        var value = option.substring(lastIndex + 1);
-        map[key] = value;
+        final entry = parseOptionEntry(option);
+        if (entry == null) continue;
+        map[entry.key] = entry.value;
       }
       options.add(
         SearchOptions(

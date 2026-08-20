@@ -111,7 +111,7 @@ class TranslationService {
       if (text.trim().isEmpty) return const Res('');
 
       final ai = AiFactory.create(provider);
-      if (ai == null) return Res.error('未知服务商: $provider');
+      if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
 
       await PromptInjectionStore.instance.ensureLoaded();
       final injection = PromptInjectionStore.instance.findById(
@@ -236,7 +236,7 @@ class TranslationService {
       return res;
     } on DioException catch (e) {
       final message =
-          e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
+          e.response?.data?['message']?.toString() ?? e.message ?? t.networkRequestFailed;
       App.rootContext.showMessage(message: message);
       rethrow;
     }
@@ -293,7 +293,7 @@ class TranslationService {
       return res;
     } on DioException catch (e) {
       final message =
-          e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
+          e.response?.data?['message']?.toString() ?? e.message ?? t.networkRequestFailed;
       App.rootContext.showMessage(message: message);
       rethrow;
     }
@@ -344,7 +344,7 @@ class TranslationService {
       return res;
     } on DioException catch (e) {
       final message =
-          e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
+          e.response?.data?['message']?.toString() ?? e.message ?? t.networkRequestFailed;
       App.rootContext.showMessage(message: message);
       rethrow;
     }

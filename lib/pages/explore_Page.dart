@@ -144,7 +144,10 @@ class _ExplorePageState extends State<ExplorePage>
       String currentSource = sources[sourceController.index];
       int pageIndex = pageControllers[currentSource]?.index ?? 0;
       String currentPageId = sourcePages[currentSource]![pageIndex];
-      GlobalState.find<_SingleExplorePageState>(currentPageId).toTop();
+      // 页面可能尚未构建或已销毁，找不到时静默跳过
+      GlobalState.findOrNull<_SingleExplorePageState>(
+        currentPageId,
+      )?.toTop();
     }
   }
 
@@ -228,7 +231,7 @@ class _ExplorePageState extends State<ExplorePage>
     String currentSource = sources[sourceController.index];
     int pageIndex = pageControllers[currentSource]?.index ?? 0;
     String currentPageId = sourcePages[currentSource]![pageIndex];
-    GlobalState.find<_SingleExplorePageState>(currentPageId).refresh();
+    GlobalState.findOrNull<_SingleExplorePageState>(currentPageId)?.refresh();
   }
 
   Tab buildSourceTab(String sourceKey) {
@@ -359,9 +362,9 @@ class _ExplorePageState extends State<ExplorePage>
                                 pageControllers[currentSource]?.index ?? 0;
                             String currentPageId =
                                 sourcePages[currentSource]![pageIndex];
-                            GlobalState.find<_SingleExplorePageState>(
+                            GlobalState.findOrNull<_SingleExplorePageState>(
                               currentPageId,
-                            ).toTop();
+                            )?.toTop();
                           },
                         ),
                       ],
@@ -524,8 +527,18 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    // 每源布局覆盖（null = 用探索设置里的全局默认）
+    final sourceMode = ExploreSourceDisplayMode.of(animeSourceKey);
+    final modeBar = SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Center(child: _SourceDisplayModeBar(sourceKey: animeSourceKey)),
+      ),
+    );
+
+    Widget child;
     if (data.loadMultiPart != null) {
-      return _MultiPartExplorePage(
+      child = _MultiPartExplorePage(
         key: PageStorageKey("anime_list_${widget.title}"),
         data: data,
         controller: scrollController,
@@ -534,9 +547,10 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
           refreshHandler = c;
         },
         horizontalLayout: widget.horizontalLayout,
+        leadingSliver: modeBar,
       );
     } else if (data.loadPage != null || data.loadNext != null) {
-      return AnimeList(
+      child = AnimeList(
         enablePageStorage: true,
         loadPage: data.loadPage,
         loadNext: data.loadNext,
@@ -544,12 +558,13 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         controller: scrollController,
         // 探索页用页面级 GridSpeedDial，避免多 tab 浮动按钮叠加
         enableFloatingMenu: false,
+        leadingSliver: modeBar,
         refreshHandlerCallback: (c) {
           refreshHandler = c;
         },
       );
     } else if (data.loadMixed != null) {
-      return AppScrollBar(
+      child = AppScrollBar(
         // topPadding: 10,
         controller: scrollController,
         child: ScrollConfiguration(
@@ -562,12 +577,14 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
             refreshHandlerCallback: (c) {
               refreshHandler = c;
             },
+            leadingSliver: modeBar,
           ),
         ),
       );
     } else {
-      return const Center(child: Text("Empty Page"));
+      child = const Center(child: Text("Empty Page"));
     }
+    return AnimeDisplayModeScope(mode: sourceMode, child: child);
   }
 
   @override
@@ -599,6 +616,7 @@ class _MixedExplorePage extends StatefulWidget {
     super.key,
     this.controller,
     required this.refreshHandlerCallback,
+    this.leadingSliver,
   });
 
   final ExplorePageData data;
@@ -608,6 +626,8 @@ class _MixedExplorePage extends StatefulWidget {
   final ScrollController? controller;
 
   final void Function(VoidCallback c) refreshHandlerCallback;
+
+  final Widget? leadingSliver;
 
   @override
   State<_MixedExplorePage> createState() => _MixedExplorePageState();
@@ -652,6 +672,7 @@ class _MixedExplorePageState
     return SmoothCustomScrollView(
       controller: widget.controller,
       slivers: [
+        if (widget.leadingSliver != null) widget.leadingSliver!,
         ...buildSlivers(context, data),
         const SliverListLoadingIndicator(),
       ],
@@ -727,6 +748,7 @@ class _MultiPartExplorePage extends StatefulWidget {
     required this.animeSourceKey,
     required this.refreshHandlerCallback,
     this.horizontalLayout = false,
+    this.leadingSliver,
   });
 
   final ExplorePageData data;
@@ -738,6 +760,8 @@ class _MultiPartExplorePage extends StatefulWidget {
   final void Function(VoidCallback c) refreshHandlerCallback;
 
   final bool horizontalLayout;
+
+  final Widget? leadingSliver;
 
   @override
   State<_MultiPartExplorePage> createState() => _MultiPartExplorePageState();
@@ -831,7 +855,10 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
     return SmoothCustomScrollView(
       key: const PageStorageKey('scroll'),
       controller: widget.controller,
-      slivers: _buildPage().toList(),
+      slivers: [
+        if (widget.leadingSliver != null) widget.leadingSliver!,
+        ..._buildPage(),
+      ],
     );
   }
 
@@ -918,4 +945,99 @@ class _SourceExplorePageState extends State<_SourceExplorePage>
 
   @override
   bool get wantKeepAlive => true;
+}
+
+/// 每源显示模式覆盖的持久化（存 implicitData['animeSourceDisplayModes']）。
+class ExploreSourceDisplayMode {
+  /// 返回该源的覆盖模式；无覆盖时返回 null（跟随探索设置里的全局默认）。
+  static String? of(String sourceKey) => sourceDisplayModeOf(sourceKey);
+
+  /// 设置覆盖模式；传 null 清除覆盖（恢复全局默认）。
+  static void set(String sourceKey, String? mode) =>
+      setSourceDisplayMode(sourceKey, mode);
+}
+
+/// 探索页每源布局切换条：简洁 / 详细 / 瀑布流。
+/// 已自定义该源时显示覆盖模式并附「跟随全局」重置按钮；
+/// 未自定义时高亮全局默认模式。
+class _SourceDisplayModeBar extends StatelessWidget {
+  const _SourceDisplayModeBar({required this.sourceKey});
+
+  final String sourceKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final override = ExploreSourceDisplayMode.of(sourceKey);
+    final value = override ?? appdata.settings['animeDisplayMode'];
+    final colorScheme = Theme.of(context).colorScheme;
+    final modes = [
+      ('brief', t.brief),
+      ('detailed', t.detailed),
+      ('masonry', t.masonry),
+      ('poster', t.poster),
+    ];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.all(3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: modes.map((mode) {
+              final (key, label) = mode;
+              final selected = value == key;
+              return GestureDetector(
+                onTap: () => ExploreSourceDisplayMode.set(sourceKey, key),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected ? colorScheme.surface : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.toOpacity(0.08),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                      color: selected
+                          ? colorScheme.onSurface
+                          : colorScheme.onSurface.toOpacity(0.45),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        if (override != null) ...[
+          const SizedBox(width: 4),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            tooltip: t.sourceDisplayModeReset,
+            icon: Icon(Icons.restore, color: colorScheme.outline),
+            onPressed: () => ExploreSourceDisplayMode.set(sourceKey, null),
+          ),
+        ],
+      ],
+    );
+  }
 }

@@ -3,6 +3,7 @@ import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 
 class ReviewsCommentsCard extends StatelessWidget {
@@ -102,9 +103,9 @@ class ReviewsCommentsCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            '删除了回复',
-                            style: TextStyle(color: Colors.grey),
+                          Text(
+                            t.deletedReply,
+                            style: const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
@@ -223,7 +224,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                                       ).colorScheme.secondaryContainer,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Text('作者'),
+child: Text(t.author),
                                   ),
                                 if (reply.creatorID == widget.id)
                                   Container(
@@ -240,7 +241,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                                       ).colorScheme.secondaryContainer,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Text('层主'),
+                                    child: Text(t.floorOwner),
                                   ),
                               ],
                             ),
@@ -267,7 +268,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
               children: [
                 TextButton(
                   onPressed: () => setState(() => _showAll = !_showAll),
-                  child: Text(_showAll ? '收起' : '展开 ($total)'),
+                  child: Text(_showAll ? t.collapse : t.expandCount(total: total)),
                 ),
               ],
             ),
