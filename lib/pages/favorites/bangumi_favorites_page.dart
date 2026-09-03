@@ -26,7 +26,21 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
 
   final List<String> tab = [t.dropped, t.wantToWatch, t.watching, t.onHold, t.completed];
 
-  bool useBriefMode = true;
+  bool get useBriefMode => _layoutMode == 'brief';
+
+  /// bangumi 收藏布局：独立 override（favoritesBangumiLayout），缺省跟随
+  /// bangumi 全局（bangumiDisplayMode），再回落 brief
+  String get _layoutMode {
+    final v = appdata.implicitData['favoritesBangumiLayout'] as String?;
+    if (v != null && v.isNotEmpty) return v;
+    return appdata.implicitData['bangumiDisplayMode'] as String? ?? 'brief';
+  }
+
+  void _setLayoutMode(String v) {
+    appdata.implicitData['favoritesBangumiLayout'] = v;
+    appdata.writeImplicitData();
+    setState(() {});
+  }
 
   bool doingIsLoading = false;
   bool collectIsLoading = false;
@@ -44,7 +58,6 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
   void initState() {
     super.initState();
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
-    useBriefMode = appdata.settings['animeDisplayMode'] == 'brief';
     controller = TabController(length: 5, vsync: this, initialIndex: 2);
     controller.addListener(() {
       int index = controller.index;
@@ -148,21 +161,30 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
     }
   }
 
-  Widget _bangumiListSliver(List<BangumiItem> bangumiItems) {
+  Widget _bangumiListSliver(BuildContext context, List<BangumiItem> bangumiItems) {
+    if (!useBriefMode) {
+      final columns =
+          ((MediaQuery.of(context).size.width / 140).floor()).clamp(2, 6);
+      return SliverMasonryGrid.count(
+        crossAxisCount: columns,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childCount: bangumiItems.length,
+        itemBuilder: (context, index) => BangumiBriefCard(
+          bangumiItem: bangumiItems[index],
+          heroTag: 'favorite',
+          masonryFactor: 1.35,
+        ),
+      );
+    }
     return SliverGrid(
       delegate: SliverChildBuilderDelegate((context, index) {
-        var bangumi = useBriefMode
-            ? BangumiBriefCard(
-                bangumiItem: bangumiItems[index],
-                heroTag: 'favorite',
-              )
-            : BangumiDetailedCard(
-                bangumiItem: bangumiItems[index],
-                heroTag: 'favorite',
-              );
-        return bangumi;
+        return BangumiBriefCard(
+          bangumiItem: bangumiItems[index],
+          heroTag: 'favorite',
+        );
       }, childCount: bangumiItems.length),
-      gridDelegate: SliverGridDelegateWithBangumiItems(useBriefMode),
+      gridDelegate: SliverGridDelegateWithBangumiItems(true),
     );
   }
 
@@ -190,7 +212,7 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
               ? (useBriefMode
                     ? BangumiWidget.bangumiSkeletonSliverBrief()
                     : BangumiWidget.bangumiSkeletonSliverDetailed())
-              : _bangumiListSliver(list),
+              : _bangumiListSliver(context, list),
           if (isLoading)
             SliverToBoxAdapter(
               child: Padding(
@@ -255,6 +277,35 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
               : const SizedBox(),
         ),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: t.displayModeOfAnimeTile,
+            icon: const Icon(Icons.grid_view_outlined),
+            onSelected: _setLayoutMode,
+            itemBuilder: (_) => [
+              for (final (key, label) in [
+                ('brief', t.brief),
+                ('masonry', t.masonry),
+              ])
+                PopupMenuItem(
+                  value: key,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _layoutMode == key
+                            ? Icons.check
+                            : Icons.circle_outlined,
+                        size: 18,
+                        color: _layoutMode == key
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(label),
+                    ],
+                  ),
+                ),
+            ],
+          ),
           Tooltip(
             message: t.refresh,
             child: IconButton(
