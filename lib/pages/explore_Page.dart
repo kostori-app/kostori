@@ -702,24 +702,24 @@ class _MixedExplorePageState
         ...buildSlivers(context, data),
       ],
     );
-    // 加载下一页时在视口底部悬浮转圈（不占内容流，避免触发时被截半；
-    // 加载完成/无更多页时自动消失）
+    // 结构保持稳定（始终同一 Stack），避免加载指示器出现时重建 scroll
+    // 导致滚动位置被重置跳回顶部；加载下一页时才显示底部悬浮转圈
     final showLoader = isLoading && !isFirstLoading;
-    if (!showLoader) return scroll;
     return Stack(
       children: [
         scroll,
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: MediaQuery.of(context).padding.bottom + 12,
-          child: IgnorePointer(
-            child: SizedBox(
-              height: 64,
-              child: Center(child: const PolygonRefreshIndicator(size: 44)),
+        if (showLoader)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).padding.bottom + 12,
+            child: IgnorePointer(
+              child: SizedBox(
+                height: 64,
+                child: Center(child: const PolygonRefreshIndicator(size: 44)),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
