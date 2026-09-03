@@ -23,6 +23,7 @@ class FavoriteFolders extends Table {
 /// 收藏条目单表：一行为"某分组里的某部番"。
 /// 同一部番可出现在多个分组（PK = folderId,id,type），
 /// display_order 表示组内顺序（非全局）。
+@DataClassName('FavoriteItemRow')
 class FavoriteItems extends Table {
   TextColumn get folderId => text().references(
     FavoriteFolders,

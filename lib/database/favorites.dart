@@ -1,20 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
-import 'dart:isolate';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/database/favorite_database.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
-import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:path/path.dart' as path;
-import 'package:sqlite3/sqlite3.dart';
 
 String _getTimeString(DateTime time) {
   return time.toIso8601String().replaceFirst("T", " ").substring(0, 19);
@@ -45,21 +42,6 @@ class FavoriteItem implements Anime {
   }) {
     var t = favoriteTime ?? DateTime.now();
     time = _getTimeString(t);
-  }
-
-  FavoriteItem.fromRow(Row row)
-    : name = row["name"],
-      author = row["author"],
-      type = AnimeType(row["type"]),
-      tags = (row["tags"] as String).split(","),
-      id = row["id"],
-      coverPath = row["cover_path"],
-      viewMore =
-          row["viewMore"] != null && (row["viewMore"] as String).isNotEmpty
-          ? PageJumpTarget.fromJsonString(row["viewMore"] as String)
-          : null,
-      time = row["time"] {
-    tags.remove("");
   }
 
   @override
@@ -183,8 +165,8 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
     this.hasNewUpdate,
     int? lastCheckTime,
   ) : lastCheckTime = lastCheckTime == null
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(lastCheckTime),
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(lastCheckTime),
       super(
         id: item.id,
         name: item.name,
@@ -218,6 +200,15 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
       super.hashCode ^ updateTime.hashCode ^ hasNewUpdate.hashCode;
 }
 
+/// 内存条目（同步外观的数据载体）：携带组内顺序与最近观看时间，
+/// 便于在 UI 上同步读取，同时后台持久化到 drift。
+class _FavEntry {
+  FavoriteItem item;
+  String? recentlyWatched;
+
+  _FavEntry(this.item, [this.recentlyWatched]);
+}
+
 class LocalFavoritesManager with ChangeNotifier {
   factory LocalFavoritesManager() =>
       cache ?? (cache = LocalFavoritesManager._create());
@@ -226,86 +217,91 @@ class LocalFavoritesManager with ChangeNotifier {
 
   static LocalFavoritesManager? cache;
 
-  late Database _db;
+  FavoriteDatabase? _db;
 
-  late Map<String, int> counts;
+  final Map<String, List<_FavEntry>> _byFolder = {};
+
+  final List<String> _folderOrder = [];
 
   var _hashedIds = <int, int>{};
 
-  /// 缓存的分组名列表（按 folder_order 排序）。
-  /// 增删改分组时调用 [_invalidateFolderCache] 失效，避免每次访问都查库。
-  List<String>? _folderNamesCache;
+  Timer? _persistTimer;
 
-  int get totalAnimes {
-    return _hashedIds.length;
-  }
+  bool _persistScheduled = false;
 
-  int folderAnimes(String folder) {
-    return counts[folder] ?? 0;
-  }
+  int get totalAnimes => _hashedIds.length;
+
+  int folderAnimes(String folder) => _byFolder[_resolveFolder(folder)]?.length ?? 0;
+
+  List<String> get folderNames => List.unmodifiable(_folderOrder);
+
+  String _resolveFolder(String folder) => folder == '默认' ? 'default' : folder;
+
+  bool existsFolder(String name) => _byFolder.containsKey(_resolveFolder(name));
 
   Future<void> init() async {
-    counts = {};
-    _folderNamesCache = null;
-    final dbPath = path.join(App.dataPath, 'local_favorite.db');
-    _db = sqlite3.open(dbPath);
-    _db.execute("""
-      create table if not exists folder_order (
-        folder_name text primary key,
-        order_value int
-      );
-    """);
-    _db.execute("""
-      create table if not exists folder_sync (
-        folder_name text primary key,
-        source_key text,
-        source_folder text
-      );
-    """);
-    //遍历增加列
-    var folderNames = _getFolderNamesWithDB();
-    for (var folder in folderNames) {
-      var columns = _db.select('pragma table_info("$folder");');
-
-      if (!columns.any((element) => element["name"] == "recently_watched")) {
-        _db.execute('alter table "$folder" add column recently_watched TEXT;');
-      }
-
-      if (!columns.any((element) => element["name"] == "viewMore")) {
-        _db.execute('alter table "$folder" add column viewMore TEXT;');
-      }
-    }
-
+    _byFolder.clear();
+    _folderOrder.clear();
+    _hashedIds.clear();
     await appdata.ensureInit();
-    initCounts();
+    final db = FavoriteDatabase.open(FavoriteDatabase.defaultPath());
+    _db = db;
+    await _loadFromDrift(db);
   }
 
-  void initCounts() {
-    for (var folder in folderNames) {
-      counts[folder] = count(folder);
+  Future<void> _loadFromDrift(FavoriteDatabase db) async {
+    final folders = await (db.select(db.favoriteFolders)
+          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
+        .get();
+    for (final f in folders) {
+      final rows = await (db.select(db.favoriteItems)
+            ..where((t) => t.folderId.equals(f.id))
+            ..orderBy([(t) => OrderingTerm.asc(t.displayOrder)]))
+          .get();
+      _byFolder[f.name] = [
+        for (final r in rows)
+          _FavEntry(
+            _rowToFavoriteItem(r),
+            r.recentlyWatched,
+          ),
+      ];
+      _folderOrder.add(f.name);
     }
-    _initHashedIds(folderNames, _db.handle).then((value) {
-      _hashedIds = value;
-      notifyListeners();
-    });
+    _rebuildHashedIds();
   }
 
-  /// 单条新增后的增量更新：只更新目标分组的计数与 hash 索引，
-  /// 避免每次 add 都全量重扫。
+  FavoriteItem _rowToFavoriteItem(FavoriteItemRow r) {
+    return FavoriteItem(
+      id: r.id,
+      name: r.name,
+      author: r.author ?? '',
+      coverPath: r.coverPath ?? '',
+      type: AnimeType(r.type),
+      tags: (r.tags ?? '').split(',').where((e) => e.isNotEmpty).toList(),
+      viewMore: (r.viewMore ?? '').isEmpty
+          ? null
+          : PageJumpTarget.fromJsonString(r.viewMore!),
+    )..time = r.time ?? '';
+  }
+
+  void _rebuildHashedIds() {
+    final map = <int, int>{};
+    for (final list in _byFolder.values) {
+      for (final e in list) {
+        final hash = e.item.id.hashCode ^ e.item.type.value;
+        map[hash] = (map[hash] ?? 0) + 1;
+      }
+    }
+    _hashedIds = map;
+  }
+
   void _incrementHashedId(String id, int type) {
-    var hash = id.hashCode ^ type;
+    final hash = id.hashCode ^ type;
     _hashedIds[hash] = (_hashedIds[hash] ?? 0) + 1;
   }
 
-  void refreshHashedIds() {
-    _initHashedIds(folderNames, _db.handle).then((value) {
-      _hashedIds = value;
-      notifyListeners();
-    });
-  }
-
   void reduceHashedId(String id, int type) {
-    var hash = id.hashCode ^ type;
+    final hash = id.hashCode ^ type;
     if (_hashedIds.containsKey(hash)) {
       if (_hashedIds[hash]! > 1) {
         _hashedIds[hash] = _hashedIds[hash]! - 1;
@@ -315,206 +311,105 @@ class LocalFavoritesManager with ChangeNotifier {
     }
   }
 
-  static Future<Map<int, int>> _initHashedIds(
-    List<String> folders,
-    Pointer<void> p,
-  ) {
-    return Isolate.run(() {
-      var db = sqlite3.fromPointer(p, borrowed: true);
-      var hashedIds = <int, int>{};
-      for (var folder in folders) {
-        var rows = db.select("""
-          select id, type from "$folder";
-        """);
-        for (var row in rows) {
-          var id = row["id"] as String;
-          var type = row["type"] as int;
-          var hash = id.hashCode ^ type;
-          hashedIds[hash] = (hashedIds[hash] ?? 0) + 1;
-        }
-      }
-      return hashedIds;
-    });
-  }
-
-  List<String> find(String id, AnimeType type) {
-    var res = <String>[];
-    for (var folder in folderNames) {
-      var rows = _db.select(
-        """
-        select * from "$folder"
-        where id == ? and type == ?;
-      """,
-        [id, type.value],
-      );
-      if (rows.isNotEmpty) {
-        res.add(folder);
-      }
-    }
-    return res;
-  }
-
-  Future<List<String>> findWithModel(FavoriteItem item) async {
-    var res = <String>[];
-    for (var folder in folderNames) {
-      var rows = _db.select(
-        """
-        select * from "$folder"
-        where id == ? and type == ?;
-      """,
-        [item.id, item.type.value],
-      );
-      if (rows.isNotEmpty) {
-        res.add(folder);
-      }
-    }
-    return res;
-  }
-
-  List<String> _getTablesWithDB() {
-    try {
-      final tables = _db
-          .select("SELECT name FROM sqlite_master WHERE type='table';")
-          .map((element) => element["name"] as String)
-          .toList();
-      return tables;
-    } catch (e) {
-      throw Exception(e);
-    }
-  }
-
-  /// 分组列表变更后调用，使缓存失效
-  void _invalidateFolderCache() {
-    _folderNamesCache = null;
-  }
-
-  List<String> _getFolderNamesWithDB() {
-    final cached = _folderNamesCache;
-    if (cached != null) return cached;
-    final folders = _getTablesWithDB();
-    folders.remove('folder_sync');
-    folders.remove('folder_order');
-    // 一次查询拿全部排序，避免逐文件夹查询 folder_order
-    final orderMap = <String, int>{};
-    try {
-      final orderRows = _db.select('select * from folder_order;');
-      for (final row in orderRows) {
-        orderMap[row["folder_name"] as String] =
-            row["order_value"] as int? ?? 0;
-      }
-    } catch (_) {}
-    for (final folder in folders) {
-      orderMap[folder] = orderMap[folder] ?? 0;
-    }
-    folders.sort((a, b) => orderMap[a]! - orderMap[b]!);
-    _folderNamesCache = List.unmodifiable(folders);
-    return _folderNamesCache!;
-  }
-
-  void updateOrder(List<String> folders) {
-    for (int i = 0; i < folders.length; i++) {
-      _db.execute(
-        """
-        insert or replace into folder_order (folder_name, order_value)
-        values (?, ?);
-      """,
-        [folders[i], i],
-      );
-    }
-    _invalidateFolderCache();
+  void _notify() {
     notifyListeners();
   }
 
-  int count(String folderName) {
-    return _db.select("""
-      select count(*) as c
-      from "$folderName"
-    """).first["c"];
+  /// 计划一次后台整库持久化（数据量小，直接全量重写，简单可靠）。
+  /// 内存同步更新后 UI 立即可用；落盘延迟合并，避免高频写库。
+  void _schedulePersist() {
+    _persistScheduled = true;
+    _persistTimer ??= Timer(const Duration(milliseconds: 250), _persistNow);
   }
 
-  List<String> get folderNames => _getFolderNamesWithDB();
-
-  int maxValue(String folder) {
-    return _db.select("""
-        SELECT MAX(display_order) AS max_value
-        FROM "$folder";
-      """).firstOrNull?["max_value"] ??
-        0;
+  Future<void> _persistNow() async {
+    _persistTimer = null;
+    if (!_persistScheduled) return;
+    _persistScheduled = false;
+    final db = _db;
+    if (db == null) return;
+    try {
+      await db.transaction(() async {
+        await db.delete(db.favoriteItems).go();
+        await db.delete(db.favoriteFolders).go();
+        var orderIndex = 0;
+        for (final folder in _folderOrder) {
+          await db.into(db.favoriteFolders).insert(
+            FavoriteFoldersCompanion.insert(
+              id: folder,
+              name: folder,
+              sortOrder: orderIndex++,
+            ),
+          );
+          final entries = _byFolder[folder] ?? const [];
+          for (var i = 0; i < entries.length; i++) {
+            final e = entries[i];
+            final it = e.item;
+            await db.into(db.favoriteItems).insert(
+              FavoriteItemsCompanion.insert(
+                folderId: folder,
+                id: it.id,
+                name: it.name,
+                author: Value(it.author.isEmpty ? null : it.author),
+                type: it.type.value,
+                tags: Value(it.tags.isEmpty ? null : it.tags.join(',')),
+                coverPath: Value(it.coverPath.isEmpty ? null : it.coverPath),
+                time: Value(it.time),
+                displayOrder: Value(i),
+                recentlyWatched: Value(e.recentlyWatched),
+                viewMore: Value(
+                  it.viewMore is PageJumpTarget
+                      ? (it.viewMore as PageJumpTarget).toJsonString()
+                      : null,
+                ),
+              ),
+            );
+          }
+        }
+      });
+    } catch (e) {
+      Log.error('FavoritePersist', 'write failed: $e');
+    }
   }
 
-  int minValue(String folder) {
-    return _db.select("""
-        SELECT MIN(display_order) AS min_value
-        FROM "$folder";
-      """).firstOrNull?["min_value"] ??
-        0;
-  }
+  // ─── 查询 ─────────────────────────────────────────────
 
   List<FavoriteItem> getFolderAnimes(String folder) {
-    var rows = _db.select("""
-        select * from "$folder"
-        ORDER BY display_order;
-      """);
-    return rows.map((element) => FavoriteItem.fromRow(element)).toList();
+    return getAllAnimes(folder);
   }
 
-  static Future<List<FavoriteItem>> _getFolderAnimesAsync(
-    String folder,
-    Pointer<void> p,
-    FavoriteSortType sortType,
-  ) {
-    return Isolate.run(() {
-      var db = sqlite3.fromPointer(p, borrowed: true);
-      var rows = db.select("""
-        select * from "$folder"
-        ORDER BY ${sortType.orderBy};
-      """);
-      return rows.map((element) => FavoriteItem.fromRow(element)).toList();
-    });
-  }
-
-  /// Start a new isolate to get the animes in the folder
   Future<List<FavoriteItem>> getFolderAnimesAsync(
     String folder,
     FavoriteSortType sortType,
-  ) {
-    return _getFolderAnimesAsync(folder, _db.handle, sortType);
+  ) async {
+    return getAllAnimes(folder, sortType);
   }
 
   List<FavoriteItem> getAllAnimes(
     String folder, [
     FavoriteSortType sortType = FavoriteSortType.displayOrderAsc,
   ]) {
-    if (folder == '默认') {
-      folder = 'default';
-    }
-
-    var rows = _db.select("""
-        select * from "$folder"
-        ORDER BY ${sortType.orderBy};
-      """);
-    var items = rows.map((element) => FavoriteItem.fromRow(element)).toList();
-
-    return items;
+    final list = _byFolder[_resolveFolder(folder)] ?? const [];
+    return _sortEntries(list, sortType)
+        .map((e) => e.item)
+        .toList(growable: false);
   }
 
-  /// 收集所有 folder 的收藏（用于字段级合并导出）
   List<FavoriteItem> getAllFavoriteItemsForMerge() {
     final result = <FavoriteItem>[];
-    for (var folder in folderNames) {
+    for (final folder in _folderOrder) {
       result.addAll(getAllAnimes(folder));
     }
     return result;
   }
 
-  /// 字段级合并（并集）：远端有、本地无的收藏添加到默认 folder；
-  /// 已存在的跳过。用于 WebDAV 多端同步（收藏是集合，无覆盖语义）。
   void mergeFavoriteList(List<FavoriteItem> remote) {
     if (remote.isEmpty) return;
-    var defaultFolder = folderNames.contains('默认') ? '默认' : folderNames.first;
+    var defaultFolder = _folderOrder.contains('默认')
+        ? '默认'
+        : (_folderOrder.isNotEmpty ? _folderOrder.first : '默认');
     var changed = false;
     for (final r in remote) {
-      // 已存在（任意 folder）则跳过
       if (findWithModelSync(r)) continue;
       try {
         addAnime(defaultFolder, r);
@@ -523,55 +418,151 @@ class LocalFavoritesManager with ChangeNotifier {
         DebugLog.error('mergeFavoriteList', '添加收藏 ${r.id} 失败：$e');
       }
     }
-    if (changed) notifyListeners();
+    if (changed) _notify();
   }
 
   bool findWithModelSync(FavoriteItem item) {
-    for (var folder in folderNames) {
-      final rows = _db.select(
-        """
-        select 1 from "$folder" where id == ? and type == ?;
-      """,
-        [item.id, item.type.value],
-      );
-      if (rows.isNotEmpty) return true;
+    for (final folder in _folderOrder) {
+      final list = _byFolder[folder] ?? const [];
+      if (list.any((e) => e.item.id == item.id && e.item.type == item.type)) {
+        return true;
+      }
     }
     return false;
   }
 
-  void addTagTo(String folder, String id, String tag) {
-    _db.execute(
-      """
-      update "$folder"
-      set tags = ? || ',' || tags
-      where id == ?
-    """,
-      [tag, id],
-    );
-    notifyListeners();
-  }
-
-  List<FavoriteItemWithFolderInfo> allAnimes() {
-    var res = <FavoriteItemWithFolderInfo>[];
-    for (final folder in folderNames) {
-      var animes = _db.select("""
-        select * from "$folder";
-      """);
-      res.addAll(
-        animes.map(
-          (element) =>
-              FavoriteItemWithFolderInfo(FavoriteItem.fromRow(element), folder),
-        ),
-      );
+  List<String> find(String id, AnimeType type) {
+    final res = <String>[];
+    for (final folder in _folderOrder) {
+      final list = _byFolder[folder] ?? const [];
+      if (list.any((e) => e.item.id == id && e.item.type == type)) {
+        res.add(folder);
+      }
     }
     return res;
   }
 
-  bool existsFolder(String name) {
-    return folderNames.contains(name);
+  Future<List<String>> findWithModel(FavoriteItem item) async => find(
+    item.id,
+    item.type,
+  );
+
+  List<FavoriteItemWithFolderInfo> allAnimes() {
+    final res = <FavoriteItemWithFolderInfo>[];
+    for (final folder in _folderOrder) {
+      for (final e in _byFolder[folder] ?? const []) {
+        res.add(FavoriteItemWithFolderInfo(e.item, folder));
+      }
+    }
+    return res;
   }
 
-  /// create a folder
+  FavoriteItem getAnime(String folder, String id, AnimeType type) {
+    final e = _findEntry(folder, id, type);
+    if (e == null) throw Exception("Anime not found");
+    return e.item;
+  }
+
+  FavoriteItem? findAnime(String id, AnimeType type) {
+    for (final folder in _folderOrder) {
+      final e = _findEntry(folder, id, type);
+      if (e != null) return e.item;
+    }
+    return null;
+  }
+
+  _FavEntry? _findEntry(String folder, String id, AnimeType type) {
+    for (final e in _byFolder[_resolveFolder(folder)] ?? const []) {
+      if (e.item.id == id && e.item.type == type) return e;
+    }
+    return null;
+  }
+
+  bool isExist(String id, AnimeType type) {
+    return _hashedIds.containsKey(id.hashCode ^ type.value);
+  }
+
+  List<FavoriteItem> searchInFolder(String folder, String keyword) {
+    final list = _byFolder[_resolveFolder(folder)] ?? const [];
+    final kw = keyword.split(' ').first.toLowerCase();
+    final results = list
+        .where((e) => _matches(e.item, kw))
+        .map((e) => e.item)
+        .toList();
+    final rest = keyword.split(' ').skip(1).toList();
+    return _filterWords(results, rest);
+  }
+
+  List<FavoriteItemWithFolderInfo> search(
+    String keyword, [
+    FavoriteSortType sortType = FavoriteSortType.displayOrderAsc,
+  ]) {
+    final kw = keyword.split(' ').first.toLowerCase();
+    final results = <FavoriteItemWithFolderInfo>[];
+    for (final folder in _folderOrder) {
+      for (final e in _byFolder[folder] ?? const []) {
+        if (_matches(e.item, kw)) {
+          results.add(FavoriteItemWithFolderInfo(e.item, folder));
+        }
+        if (results.length >= 200) break;
+      }
+      if (results.length >= 200) break;
+    }
+    final rest = keyword.split(' ').skip(1).toList();
+    if (rest.isEmpty) return results;
+    return results.where((e) => _matches(e, rest.first.toLowerCase())).toList();
+  }
+
+  bool _matches(FavoriteItem item, String kw) {
+    if (item.name.toLowerCase().contains(kw)) return true;
+    if (item.author.toLowerCase().contains(kw)) return true;
+    return item.tags.any((e) => e.toLowerCase().contains(kw));
+  }
+
+  List<FavoriteItem> _filterWords(
+    List<FavoriteItem> items,
+    List<String> words,
+  ) {
+    var result = items;
+    for (final w in words) {
+      final k = w.toLowerCase();
+      result = result
+          .where((e) => _matches(e, k))
+          .toList();
+    }
+    return result;
+  }
+
+  List<_FavEntry> _sortEntries(
+    List<_FavEntry> list,
+    FavoriteSortType sortType,
+  ) {
+    final copy = List<_FavEntry>.from(list);
+    copy.sort((a, b) {
+      final int cmp;
+      switch (sortType) {
+        case FavoriteSortType.nameAsc:
+          cmp = a.item.name.compareTo(b.item.name);
+        case FavoriteSortType.nameDesc:
+          cmp = b.item.name.compareTo(a.item.name);
+        case FavoriteSortType.timeAsc:
+          cmp = a.item.time.compareTo(b.item.time);
+        case FavoriteSortType.timeDesc:
+          cmp = b.item.time.compareTo(a.item.time);
+        case FavoriteSortType.recentlyWatchedAsc:
+          cmp = (a.recentlyWatched ?? '').compareTo(b.recentlyWatched ?? '');
+        case FavoriteSortType.recentlyWatchedDesc:
+          cmp = (b.recentlyWatched ?? '').compareTo(a.recentlyWatched ?? '');
+        default:
+          cmp = 0;
+      }
+      return cmp != 0 ? cmp : a.item.time.compareTo(b.item.time);
+    });
+    return copy;
+  }
+
+  // ─── 分组管理 ─────────────────────────────────────────
+
   String createFolder(String name, [bool renameWhenInvalidName = false]) {
     if (name.isEmpty) {
       if (renameWhenInvalidName) {
@@ -588,177 +579,101 @@ class LocalFavoritesManager with ChangeNotifier {
       if (renameWhenInvalidName) {
         var prevName = name;
         int i = 0;
-        while (existsFolder(i.toString())) {
+        while (existsFolder('$prevName$i')) {
           i++;
         }
-        name = prevName + i.toString();
+        name = '$prevName$i';
       } else {
         throw Exception("Folder is existing");
       }
     }
-    _db.execute("""
-      create table "$name"(
-        id text,
-        name TEXT,
-        author TEXT,
-        type int,
-        tags TEXT,
-        cover_path TEXT,
-        time TEXT,
-        display_order int,
-        recently_watched TEXT,
-        viewMore Text,
-        primary key (id, type)
-      );
-    """);
-    _invalidateFolderCache();
-    notifyListeners();
-    counts[name] = 0;
+    _byFolder[_resolveFolder(name)] = <_FavEntry>[];
+    _folderOrder.add(name);
+    _notify();
+    _schedulePersist();
     return name;
   }
 
-  FavoriteItem getAnime(String folder, String id, AnimeType type) {
-    var res = _db.select(
-      """
-      select * from "$folder"
-      where id == ? and type == ?;
-    """,
-      [id, type.value],
-    );
-    if (res.isEmpty) {
-      throw Exception("Anime not found");
-    }
-    return FavoriteItem.fromRow(res.first);
+  void updateOrder(List<String> folders) {
+    final current = folders.toList();
+    _folderOrder
+      ..clear()
+      ..addAll(current);
+    _notify();
+    _schedulePersist();
   }
 
-  FavoriteItem? findAnime(String id, AnimeType type) {
-    for (final folder in folderNames) {
-      final res = _db.select(
-        """
-      select * from "$folder"
-      where id == ? and type == ?;
-      """,
-        [id, type.value],
-      );
-
-      if (res.isNotEmpty) {
-        return FavoriteItem.fromRow(res.first);
-      }
+  void rename(String before, String after) {
+    if (folderNames.contains(after)) {
+      throw "Name already exists!";
     }
-
-    return null;
+    if (after.contains('"')) {
+      throw "Invalid name";
+    }
+    final key = _resolveFolder(before);
+    final entries = _byFolder.remove(key) ?? <_FavEntry>[];
+    _byFolder[_resolveFolder(after)] = entries;
+    _folderOrder[_folderOrder.indexOf(before)] = after;
+    _notify();
+    _schedulePersist();
   }
 
-  /// add anime to a folder
-  ///
-  /// This method will download cover to local, to avoid problems like changing url
+  void deleteFolder(String name) {
+    if (name == "default") return;
+    _byFolder.remove(name);
+    _folderOrder.remove(name);
+    _rebuildHashedIds();
+    _notify();
+    _schedulePersist();
+  }
+
+  // ─── 增删改 ───────────────────────────────────────────
+
   bool addAnime(String folder, FavoriteItem anime, [int? order]) {
-    if (!existsFolder(folder)) {
+    final key = _resolveFolder(folder);
+    final list = _byFolder[key];
+    if (list == null) {
       throw Exception("Folder does not exists");
     }
-    var res = _db.select(
-      """
-      select * from "$folder"
-      where id == ? and type == ?;
-    """,
-      [anime.id, anime.type.value],
-    );
-    if (res.isNotEmpty) {
+    if (list.any((e) => e.item.id == anime.id && e.item.type == anime.type)) {
       return false;
     }
-    final params = [
-      anime.id,
-      anime.name,
-      anime.author,
-      anime.type.value,
-      anime.tags.join(","),
-      anime.coverPath,
-      anime.viewMore is PageJumpTarget
-          ? (anime.viewMore as PageJumpTarget).toJsonString()
-          : anime.viewMore,
-      anime.time,
-      anime.time,
-    ];
+    final entry = _FavEntry(anime);
     if (order != null) {
-      _db.execute(
-        """
-        insert into "$folder" (id, name, author, type, tags, cover_path, viewMore, time, recently_watched, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """,
-        [...params, order],
-      );
+      final idx = order.clamp(0, list.length);
+      list.insert(idx, entry);
     } else if (appdata.settings['newFavoriteAddTo'] == "end") {
-      _db.execute(
-        """
-        insert into "$folder" (id, name, author, type, tags, cover_path, viewMore, time, recently_watched, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """,
-        [...params, maxValue(folder) + 1],
-      );
+      list.add(entry);
     } else {
-      _db.execute(
-        """
-        insert into "$folder" (id, name, author, type, tags, cover_path, viewMore, time, recently_watched, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """,
-        [...params, minValue(folder) - 1],
-      );
+      list.insert(0, entry);
     }
-
     StatsManager().addFavoriteRecord(
       id: anime.id,
       type: anime.type.value,
       folder: folder,
       action: FavoriteAction.add,
     );
-
-    // 增量更新计数与 hash 索引（避免全量重扫）
-    counts[folder] = (counts[folder] ?? 0) + 1;
     _incrementHashedId(anime.id, anime.type.value);
-    notifyListeners();
+    _notify();
+    _schedulePersist();
     return true;
   }
 
-  void _copyFavoriteIfNotExist(
-    String sourceFolder,
-    String targetFolder,
-    String id,
-    AnimeType type,
-  ) {
-    if (sourceFolder == targetFolder) return;
-    if (!existsFolder(sourceFolder) || !existsFolder(targetFolder)) return;
-
-    final src = _db.select(
-      'select * from "$sourceFolder" where id == ? and type == ?;',
-      [id, type.value],
-    );
-    if (src.isEmpty) return;
-
-    final dst = _db.select(
-      'select * from "$targetFolder" where id == ? and type == ?;',
-      [id, type.value],
-    );
-    if (dst.isNotEmpty) return;
-
-    _db.execute(
-      '''
-    insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order, recently_watched, viewMore)
-    select id, name, author, type, tags, cover_path, time, ?, recently_watched, viewMore
-    from "$sourceFolder"
-    where id == ? and type == ?;
-    ''',
-      [minValue(targetFolder) - 1, id, type.value],
-    );
+  void addTagTo(String folder, String id, String tag) {
+    for (final entry in _byFolder[_resolveFolder(folder)] ?? const []) {
+      if (entry.item.id == id) {
+        entry.item.tags = [tag, ...entry.item.tags];
+      }
+    }
+    _notify();
+    _schedulePersist();
   }
 
   void removeFavoriteFromFolder(String folder, String id, AnimeType type) {
-    if (!existsFolder(folder)) return;
-    _db.execute(
-      '''
-    delete from "$folder"
-    where id == ? and type == ?;
-    ''',
-      [id, type.value],
+    final list = _byFolder[_resolveFolder(folder)];
+    if (list == null) return;
+    list.removeWhere(
+      (e) => e.item.id == id && e.item.type == type,
     );
   }
 
@@ -769,32 +684,16 @@ class LocalFavoritesManager with ChangeNotifier {
     AnimeType type,
   ) {
     if (sources.isEmpty || targets.isEmpty) return;
-
-    _db.execute('BEGIN TRANSACTION;');
-
-    try {
-      for (final source in sources) {
-        if (!existsFolder(source)) continue;
-        final has = _db.select(
-          'select 1 from "$source" where id == ? and type == ? limit 1;',
-          [id, type.value],
-        );
-        if (has.isEmpty) continue;
-
-        for (final target in targets) {
-          if (target == source) continue;
-          _copyFavoriteIfNotExist(source, target, id, type);
-        }
+    for (final source in sources) {
+      final e = _findEntry(source, id, type);
+      if (e == null) continue;
+      for (final target in targets) {
+        if (target == source) continue;
+        _copyInto(target, e);
       }
-
-      for (final source in sources) {
-        removeFavoriteFromFolder(source, id, type);
-      }
-
-      _db.execute('COMMIT;');
-    } catch (e) {
-      _db.execute('ROLLBACK;');
-      rethrow;
+    }
+    for (final source in sources) {
+      removeFavoriteFromFolder(source, id, type);
     }
     final uniqueTargets = targets.where((t) => !sources.contains(t)).toList();
     StatsManager().addFavoriteRecord(
@@ -803,10 +702,31 @@ class LocalFavoritesManager with ChangeNotifier {
       folder: '${sources.join("|")},${uniqueTargets.join("|")}',
       action: FavoriteAction.move,
     );
-
-    initCounts();
-    notifyListeners();
+    _rebuildHashedIds();
+    _notify();
+    _schedulePersist();
   }
+
+  void _copyInto(String targetFolder, _FavEntry src) {
+    final list = _byFolder[_resolveFolder(targetFolder)];
+    if (list == null) return;
+    if (list.any(
+      (e) => e.item.id == src.item.id && e.item.type == src.item.type,
+    )) {
+      return;
+    }
+    list.add(_FavEntry(_cloneItem(src.item), src.recentlyWatched));
+  }
+
+  FavoriteItem _cloneItem(FavoriteItem src) => FavoriteItem(
+    id: src.id,
+    name: src.name,
+    coverPath: src.coverPath,
+    author: src.author,
+    type: src.type,
+    tags: List<String>.from(src.tags),
+    viewMore: src.viewMore,
+  );
 
   void batchMoveFavorites(
     String sourceFolder,
@@ -819,48 +739,13 @@ class LocalFavoritesManager with ChangeNotifier {
     if (!existsFolder(targetFolder)) {
       throw Exception("Target folder does not exist");
     }
-
-    _db.execute("BEGIN TRANSACTION");
-    var displayOrder = maxValue(targetFolder) + 1;
-    try {
-      for (var item in items) {
-        if (targetFolder != sourceFolder) {
-          _db.execute(
-            """
-          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order, viewMore)
-          select id, name, author, type, tags, cover_path, time, recently_watched, ?, viewMore
-          from "$sourceFolder"
-          where id == ? and type == ?;
-        """,
-            [displayOrder, item.id, item.type.value],
-          );
-        }
-
-        if (targetFolder == sourceFolder) {
-          _db.execute(
-            """
-          delete from "$sourceFolder"
-          where id == ? and type == ?;
-        """,
-            [item.id, item.type.value],
-          );
-        }
-
-        displayOrder++;
+    for (var item in items) {
+      final e = _findEntry(sourceFolder, item.id, item.type);
+      if (e != null && sourceFolder != targetFolder) {
+        _copyInto(targetFolder, e);
       }
-      // notifyListeners();
-    } catch (e) {
-      Log.error("Batch Move Favorites", e.toString());
-      _db.execute("ROLLBACK");
-      return;
+      removeFavoriteFromFolder(sourceFolder, item.id, item.type);
     }
-    _db.execute("COMMIT");
-
-    // Update counts
-    counts[targetFolder] = count(targetFolder);
-    counts[sourceFolder] = count(sourceFolder);
-    refreshHashedIds();
-
     for (var i in items) {
       if (sourceFolder != targetFolder) {
         StatsManager().addFavoriteRecord(
@@ -871,8 +756,9 @@ class LocalFavoritesManager with ChangeNotifier {
         );
       }
     }
-
-    // notifyListeners();
+    _rebuildHashedIds();
+    _notify();
+    _schedulePersist();
   }
 
   void batchCopyFavorites(
@@ -886,36 +772,10 @@ class LocalFavoritesManager with ChangeNotifier {
     if (!existsFolder(targetFolder)) {
       throw Exception("Target folder does not exist");
     }
-
-    _db.execute("BEGIN TRANSACTION");
-    var displayOrder = maxValue(targetFolder) + 1;
-    try {
-      for (var item in items) {
-        _db.execute(
-          """
-          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order, viewMore)
-          select id, name, author, type, tags, cover_path, time, recently_watched, ?, viewMore
-          from "$sourceFolder"
-          where id == ? and type == ?;
-        """,
-          [displayOrder, item.id, item.type.value],
-        );
-
-        displayOrder++;
-      }
-      notifyListeners();
-    } catch (e) {
-      Log.error("Batch Copy Favorites", e.toString());
-      _db.execute("ROLLBACK");
-      return;
+    for (var item in items) {
+      final e = _findEntry(sourceFolder, item.id, item.type);
+      if (e != null) _copyInto(targetFolder, e);
     }
-
-    _db.execute("COMMIT");
-
-    // Update counts
-    counts[targetFolder] = count(targetFolder);
-    refreshHashedIds();
-
     for (var i in items) {
       StatsManager().addFavoriteRecord(
         id: i.id,
@@ -924,38 +784,21 @@ class LocalFavoritesManager with ChangeNotifier {
         action: FavoriteAction.add,
       );
     }
-
-    notifyListeners();
+    _rebuildHashedIds();
+    _notify();
+    _schedulePersist();
   }
 
   void batchDeleteAnimes(String folder, List<FavoriteItem> animes) {
-    _db.execute("BEGIN TRANSACTION");
-    try {
-      for (var anime in animes) {
-        LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
-        _db.execute(
-          """
-          delete from "$folder"
-          where id == ? and type == ?;
-        """,
-          [anime.id, anime.type.value],
-        );
-      }
-      if (counts[folder] != null) {
-        counts[folder] = counts[folder]! - animes.length;
-      } else {
-        counts[folder] = count(folder);
-      }
-    } catch (e) {
-      Log.error("Batch Delete Animes", e.toString());
-      _db.execute("ROLLBACK");
-      return;
-    }
-    _db.execute("COMMIT");
+    final list = _byFolder[_resolveFolder(folder)];
     for (var anime in animes) {
-      reduceHashedId(anime.id, anime.type.value);
+      LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
+      list?.removeWhere(
+        (e) => e.item.id == anime.id && e.item.type == anime.type,
+      );
     }
     for (var i in animes) {
+      reduceHashedId(i.id, i.type.value);
       StatsManager().addFavoriteRecord(
         id: i.id,
         type: i.type.value,
@@ -963,274 +806,118 @@ class LocalFavoritesManager with ChangeNotifier {
         action: FavoriteAction.remove,
       );
     }
-    notifyListeners();
+    _notify();
+    _schedulePersist();
   }
 
   void batchDeleteAnimesInAllFolders(List<AnimeID> animes) {
-    _db.execute("BEGIN TRANSACTION");
-    var folderNames = _getFolderNamesWithDB();
-    try {
-      for (var anime in animes) {
-        LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
-        for (var folder in folderNames) {
-          _db.execute(
-            """
-            delete from "$folder"
-            where id == ? and type == ?;
-          """,
-            [anime.id, anime.type.value],
-          );
-        }
-      }
-    } catch (e) {
-      Log.error("Batch Delete Animes in All Folders", e.toString());
-      _db.execute("ROLLBACK");
-      return;
-    }
-    initCounts();
-    _db.execute("COMMIT");
     for (var anime in animes) {
-      var hash = anime.id.hashCode ^ anime.type.value;
-      _hashedIds.remove(hash);
+      LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
+      for (final folder in _folderOrder) {
+        _byFolder[folder]?.removeWhere(
+          (e) => e.item.id == anime.id && e.item.type == anime.type,
+        );
+      }
+      _hashedIds.remove(anime.id.hashCode ^ anime.type.value);
     }
-    notifyListeners();
-  }
-
-  /// delete a folder
-  void deleteFolder(String name) {
-    if (name == "default") return;
-    _db.execute("""
-      drop table "$name";
-    """);
-    _db.execute(
-      """
-      delete from folder_order
-      where folder_name == ?;
-    """,
-      [name],
-    );
-    counts.remove(name);
-    _invalidateFolderCache();
-    refreshHashedIds();
-    notifyListeners();
+    _notify();
+    _schedulePersist();
   }
 
   void deleteAnimeWithId(String folder, String id, AnimeType type) {
     LocalFavoriteImageProvider.delete(id, type.value);
-    _db.execute(
-      """
-      delete from "$folder"
-      where id == ? and type == ?;
-    """,
-      [id, type.value],
-    );
+    removeFavoriteFromFolder(folder, id, type);
     StatsManager().addFavoriteRecord(
       id: id,
       type: type.value,
       folder: folder,
       action: FavoriteAction.remove,
     );
-    if (counts[folder] != null) {
-      counts[folder] = counts[folder]! - 1;
-    } else {
-      counts[folder] = count(folder);
-    }
     reduceHashedId(id, type.value);
-    notifyListeners();
+    _notify();
+    _schedulePersist();
   }
 
   Future<int> removeInvalid() async {
-    int count = 0;
-    await Future.microtask(() {
-      var all = allAnimes();
-      for (var c in all) {
-        var animeSource = c.type.animeSource;
-        if ((animeSource == null)) {
-          deleteAnimeWithId(c.folder, c.id, c.type);
-          count++;
-        }
+    var count = 0;
+    final all = allAnimes();
+    for (var c in all) {
+      if (c.type.animeSource == null) {
+        deleteAnimeWithId(c.folder, c.id, c.type);
+        count++;
       }
-    });
+    }
     return count;
   }
 
   Future<void> clearAll() async {
-    _db.close();
-    File("${App.dataPath}/local_favorite.db").deleteSync();
+    await _persistNow();
+    await _db?.close();
+    _db = null;
+    final file = File(FavoriteDatabase.defaultPath());
+    if (file.existsSync()) file.deleteSync();
     await init();
-  }
-
-  void rename(String before, String after) {
-    if (folderNames.contains(after)) {
-      throw "Name already exists!";
-    }
-    if (after.contains('"')) {
-      throw "Invalid name";
-    }
-    _db.execute("""
-      ALTER TABLE "$before"
-      RENAME TO "$after";
-    """);
-    _db.execute(
-      """
-      update folder_order
-      set folder_name = ?
-      where folder_name == ?;
-    """,
-      [after, before],
-    );
-    _db.execute(
-      """
-      update folder_sync
-      set folder_name = ?
-      where folder_name == ?;
-    """,
-      [after, before],
-    );
-    _invalidateFolderCache();
-    counts[after] = counts[before] ?? 0;
-    counts.remove(before);
-    notifyListeners();
-  }
-
-  List<FavoriteItem> searchInFolder(String folder, String keyword) {
-    var keywordList = keyword.split(" ");
-    keyword = keywordList.first;
-    keyword = "%$keyword%";
-    var res = _db.select(
-      """
-      SELECT * FROM "$folder" 
-      WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?
-      """,
-      [keyword, keyword, keyword],
-    );
-    var animes = res.map((e) => FavoriteItem.fromRow(e)).toList();
-    bool test(FavoriteItem anime, String keyword) {
-      if (anime.name.contains(keyword)) {
-        return true;
-      } else if (anime.author.contains(keyword)) {
-        return true;
-      } else if (anime.tags.any((element) => element.contains(keyword))) {
-        return true;
-      }
-      return false;
-    }
-
-    for (var i = 1; i < keywordList.length; i++) {
-      animes = animes
-          .where((element) => test(element, keywordList[i]))
-          .toList();
-    }
-    return animes;
-  }
-
-  List<FavoriteItemWithFolderInfo> search(
-    String keyword, [
-    FavoriteSortType sortType = FavoriteSortType.displayOrderAsc,
-  ]) {
-    var keywordList = keyword.split(" ");
-    keyword = keywordList.first;
-    var animes = <FavoriteItemWithFolderInfo>[];
-
-    for (var table in folderNames) {
-      keyword = "%$keyword%";
-      var res = _db.select(
-        """
-        SELECT * FROM "$table" 
-        WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?
-        ORDER BY ${sortType.orderBy};
-      """,
-        [keyword, keyword, keyword],
-      );
-      for (var anime in res) {
-        animes.add(
-          FavoriteItemWithFolderInfo(FavoriteItem.fromRow(anime), table),
-        );
-      }
-      if (animes.length > 200) {
-        break;
-      }
-    }
-
-    bool test(FavoriteItemWithFolderInfo anime, String keyword) {
-      if (anime.name.contains(keyword)) {
-        return true;
-      } else if (anime.author.contains(keyword)) {
-        return true;
-      } else if (anime.tags.any((element) => element.contains(keyword))) {
-        return true;
-      }
-      return false;
-    }
-
-    for (var i = 1; i < keywordList.length; i++) {
-      animes = animes
-          .where((element) => test(element, keywordList[i]))
-          .toList();
-    }
-
-    return animes;
+    _notify();
   }
 
   void editTags(String id, String folder, List<String> tags) {
-    _db.execute(
-      """
-        update "$folder"
-        set tags = ?
-        where id == ?;
-      """,
-      [tags.join(","), id],
-    );
-    notifyListeners();
-  }
-
-  bool isExist(String id, AnimeType type) {
-    var hash = id.hashCode ^ type.value;
-    return _hashedIds.containsKey(hash);
+    for (final e in _byFolder[_resolveFolder(folder)] ?? const []) {
+      if (e.item.id == id) e.item.tags = List<String>.from(tags);
+    }
+    _notify();
+    _schedulePersist();
   }
 
   void updateInfo(String folder, FavoriteItem anime) {
-    _db.execute(
-      """
-      update "$folder"
-      set name = ?, author = ?, cover_path = ?, tags = ?
-      where id == ? and type == ?;
-    """,
-      [
-        anime.name,
-        anime.author,
-        anime.coverPath,
-        anime.tags.join(","),
-        anime.id,
-        anime.type.value,
-      ],
-    );
-    notifyListeners();
+    for (final e in _byFolder[_resolveFolder(folder)] ?? const []) {
+      if (e.item.id == anime.id && e.item.type == anime.type) {
+        e.item.name = anime.name;
+        e.item.author = anime.author;
+        e.item.coverPath = anime.coverPath;
+        e.item.tags = List<String>.from(anime.tags);
+      }
+    }
+    _notify();
+    _schedulePersist();
   }
 
+  void updateRecentlyWatched(String id, AnimeType type) {
+    if (!isExist(id, type)) return;
+    final now = _getTimeString(DateTime.now());
+    for (final folder in _folderOrder) {
+      for (final e in _byFolder[folder] ?? const []) {
+        if (e.item.id == id && e.item.type == type) {
+          e.recentlyWatched = now;
+        }
+      }
+    }
+    _notify();
+    _schedulePersist();
+  }
+
+  // ─── 导出/导入 ────────────────────────────────────────
+
   String folderToJson(String folder) {
-    var res = _db.select("""
-      select * from "$folder";
-    """);
+    final list = _byFolder[_resolveFolder(folder)] ?? const [];
     return jsonEncode({
       "info": "Generated by Kostori",
       "name": folder,
-      "animes": res.map((e) => FavoriteItem.fromRow(e).toJson()).toList(),
+      "animes": list.map((e) => e.item.toJson()).toList(),
     });
   }
 
   void fromJson(String json) {
-    var data = jsonDecode(json);
+    final data = jsonDecode(json);
     var folder = data["name"];
     if (folder == null || folder is! String) {
       throw "Invalid data";
     }
     if (existsFolder(folder)) {
       int i = 0;
-      while (existsFolder("$folder($i)")) {
+      while (existsFolder('$folder($i)')) {
         i++;
       }
-      folder = "$folder($i)";
+      folder = '$folder($i)';
     }
     createFolder(folder);
     for (var anime in data["animes"]) {
@@ -1242,72 +929,32 @@ class LocalFavoritesManager with ChangeNotifier {
     }
   }
 
-  void prepareTableForFollowUpdates(String table, [bool clearData = true]) {
-    // check if the table has the column "last_update_time" "has_new_update" "last_check_time"
-    var columns = _db.select("""
-      pragma table_info("$table");
-    """);
-    if (!columns.any((element) => element["name"] == "last_update_time")) {
-      _db.execute("""
-        alter table "$table"
-        add column last_update_time TEXT;
-      """);
-    }
-    if (!columns.any((element) => element["name"] == "has_new_update")) {
-      _db.execute("""
-        alter table "$table"
-        add column has_new_update int;
-      """);
-    }
-    if (clearData) {
-      _db.execute("""
-        update "$table"
-        set has_new_update = 0;
-      """);
-    }
-    if (!columns.any((element) => element["name"] == "last_check_time")) {
-      _db.execute("""
-        alter table "$table"
-        add column last_check_time int;
-      """);
-    }
-  }
-
-  void updateRecentlyWatched(String id, AnimeType type) {
-    if (isExist(id, type)) {
-      final now = DateTime.now();
-      var folderNames = _getFolderNamesWithDB();
-      for (var folder in folderNames) {
-        var row = _db.select(
-          """
-        select * from "$folder"
-        where id == ? and type == ?;
-      """,
-          [id, type.value],
-        );
-        if (row.isNotEmpty) {
-          _db.execute(
-            """
-        update "$folder"
-        set recently_watched = ?
-        where id == ? and type == ?;
-      """,
-            [_getTimeString(now), id, type.value],
-          );
-        }
-      }
-      notifyListeners();
-    }
-  }
+  /// 兼容旧 API：跟随更新列已由 drift 表固定提供，无需动态 ALTER
+  void prepareTableForFollowUpdates(String table, [bool clearData = true]) {}
 
   final _favoritesStream = StreamController<void>.broadcast();
 
   Stream<void> get onChanged => _favoritesStream.stream;
 
   void close() {
+    _persistTimer?.cancel();
+    _persistTimer = null;
     _favoritesStream.close();
-    _db.close();
+    _db?.close();
+    _db = null;
   }
+
+  // 兼容旧字段读取（迁移期间内部使用）
+  void initCounts() {}
+
+  int count(String folderName) => folderAnimes(folderName);
+
+  int maxValue(String folder) {
+    final list = _byFolder[_resolveFolder(folder)];
+    return (list?.length ?? 0) > 0 ? list!.length : 0;
+  }
+
+  int minValue(String folder) => 0;
 }
 
 final favoritesChangedProvider = StreamProvider<void>((ref) {

@@ -264,7 +264,7 @@ class FavoriteFoldersCompanion extends UpdateCompanion<FavoriteFolder> {
 }
 
 class $FavoriteItemsTable extends FavoriteItems
-    with TableInfo<$FavoriteItemsTable, FavoriteItem> {
+    with TableInfo<$FavoriteItemsTable, FavoriteItemRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -403,7 +403,7 @@ class $FavoriteItemsTable extends FavoriteItems
   static const String $name = 'favorite_items';
   @override
   VerificationContext validateIntegrity(
-    Insertable<FavoriteItem> instance, {
+    Insertable<FavoriteItemRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -491,9 +491,9 @@ class $FavoriteItemsTable extends FavoriteItems
   @override
   Set<GeneratedColumn> get $primaryKey => {folderId, id, type};
   @override
-  FavoriteItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+  FavoriteItemRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return FavoriteItem(
+    return FavoriteItemRow(
       folderId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}folder_id'],
@@ -547,7 +547,7 @@ class $FavoriteItemsTable extends FavoriteItems
   }
 }
 
-class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
+class FavoriteItemRow extends DataClass implements Insertable<FavoriteItemRow> {
   final String folderId;
   final String id;
   final String name;
@@ -559,7 +559,7 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
   final int displayOrder;
   final String? recentlyWatched;
   final String? viewMore;
-  const FavoriteItem({
+  const FavoriteItemRow({
     required this.folderId,
     required this.id,
     required this.name,
@@ -625,12 +625,12 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
     );
   }
 
-  factory FavoriteItem.fromJson(
+  factory FavoriteItemRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return FavoriteItem(
+    return FavoriteItemRow(
       folderId: serializer.fromJson<String>(json['folderId']),
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
@@ -662,7 +662,7 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
     };
   }
 
-  FavoriteItem copyWith({
+  FavoriteItemRow copyWith({
     String? folderId,
     String? id,
     String? name,
@@ -674,7 +674,7 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
     int? displayOrder,
     Value<String?> recentlyWatched = const Value.absent(),
     Value<String?> viewMore = const Value.absent(),
-  }) => FavoriteItem(
+  }) => FavoriteItemRow(
     folderId: folderId ?? this.folderId,
     id: id ?? this.id,
     name: name ?? this.name,
@@ -689,8 +689,8 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
         : this.recentlyWatched,
     viewMore: viewMore.present ? viewMore.value : this.viewMore,
   );
-  FavoriteItem copyWithCompanion(FavoriteItemsCompanion data) {
-    return FavoriteItem(
+  FavoriteItemRow copyWithCompanion(FavoriteItemsCompanion data) {
+    return FavoriteItemRow(
       folderId: data.folderId.present ? data.folderId.value : this.folderId,
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
@@ -711,7 +711,7 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
 
   @override
   String toString() {
-    return (StringBuffer('FavoriteItem(')
+    return (StringBuffer('FavoriteItemRow(')
           ..write('folderId: $folderId, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
@@ -744,7 +744,7 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is FavoriteItem &&
+      (other is FavoriteItemRow &&
           other.folderId == this.folderId &&
           other.id == this.id &&
           other.name == this.name &&
@@ -758,7 +758,7 @@ class FavoriteItem extends DataClass implements Insertable<FavoriteItem> {
           other.viewMore == this.viewMore);
 }
 
-class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItem> {
+class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItemRow> {
   final Value<String> folderId;
   final Value<String> id;
   final Value<String> name;
@@ -802,7 +802,7 @@ class FavoriteItemsCompanion extends UpdateCompanion<FavoriteItem> {
        id = Value(id),
        name = Value(name),
        type = Value(type);
-  static Insertable<FavoriteItem> custom({
+  static Insertable<FavoriteItemRow> custom({
     Expression<String>? folderId,
     Expression<String>? id,
     Expression<String>? name,
@@ -979,7 +979,7 @@ final class $$FavoriteFoldersTableReferences
     super.$_typedResult,
   );
 
-  static MultiTypedResultKey<$FavoriteItemsTable, List<FavoriteItem>>
+  static MultiTypedResultKey<$FavoriteItemsTable, List<FavoriteItemRow>>
   _favoriteItemsRefsTable(_$FavoriteDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.favoriteItems,
@@ -1191,7 +1191,7 @@ class $$FavoriteFoldersTableTableManager
                     await $_getPrefetchedData<
                       FavoriteFolder,
                       $FavoriteFoldersTable,
-                      FavoriteItem
+                      FavoriteItemRow
                     >(
                       currentTable: table,
                       referencedTable: $$FavoriteFoldersTableReferences
@@ -1261,7 +1261,11 @@ typedef $$FavoriteItemsTableUpdateCompanionBuilder =
 
 final class $$FavoriteItemsTableReferences
     extends
-        BaseReferences<_$FavoriteDatabase, $FavoriteItemsTable, FavoriteItem> {
+        BaseReferences<
+          _$FavoriteDatabase,
+          $FavoriteItemsTable,
+          FavoriteItemRow
+        > {
   $$FavoriteItemsTableReferences(
     super.$_db,
     super.$_table,
@@ -1525,14 +1529,14 @@ class $$FavoriteItemsTableTableManager
         RootTableManager<
           _$FavoriteDatabase,
           $FavoriteItemsTable,
-          FavoriteItem,
+          FavoriteItemRow,
           $$FavoriteItemsTableFilterComposer,
           $$FavoriteItemsTableOrderingComposer,
           $$FavoriteItemsTableAnnotationComposer,
           $$FavoriteItemsTableCreateCompanionBuilder,
           $$FavoriteItemsTableUpdateCompanionBuilder,
-          (FavoriteItem, $$FavoriteItemsTableReferences),
-          FavoriteItem,
+          (FavoriteItemRow, $$FavoriteItemsTableReferences),
+          FavoriteItemRow,
           PrefetchHooks Function({bool folderId})
         > {
   $$FavoriteItemsTableTableManager(
@@ -1607,7 +1611,7 @@ class $$FavoriteItemsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable<$FavoriteItemsTable, FavoriteItem>(table),
+                  e.readTable<$FavoriteItemsTable, FavoriteItemRow>(table),
                   $$FavoriteItemsTableReferences(db, table, e),
                 ),
               )
@@ -1659,14 +1663,14 @@ typedef $$FavoriteItemsTableProcessedTableManager =
     ProcessedTableManager<
       _$FavoriteDatabase,
       $FavoriteItemsTable,
-      FavoriteItem,
+      FavoriteItemRow,
       $$FavoriteItemsTableFilterComposer,
       $$FavoriteItemsTableOrderingComposer,
       $$FavoriteItemsTableAnnotationComposer,
       $$FavoriteItemsTableCreateCompanionBuilder,
       $$FavoriteItemsTableUpdateCompanionBuilder,
-      (FavoriteItem, $$FavoriteItemsTableReferences),
-      FavoriteItem,
+      (FavoriteItemRow, $$FavoriteItemsTableReferences),
+      FavoriteItemRow,
       PrefetchHooks Function({bool folderId})
     >;
 
