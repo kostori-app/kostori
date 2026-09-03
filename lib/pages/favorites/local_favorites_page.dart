@@ -17,6 +17,20 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final ScrollController scrollController = ScrollController();
 
+  /// 每个分组的独立滚动控制器：内容实际滚动在各 Tab 的内层网格里，
+  /// 滚动条/“回到顶部”都要指向当前分组的这个控制器，而不是外层 NestedScroll
+  final Map<String, ScrollController> _folderControllers = {};
+
+  ScrollController _controllerFor(String name) =>
+      _folderControllers.putIfAbsent(name, () => ScrollController());
+
+  ScrollController get _activeController {
+    final name = favState.folder.isNotEmpty
+        ? favState.folder
+        : (favState.folders.isNotEmpty ? favState.folders.first : '');
+    return _controllerFor(name);
+  }
+
   late _FavoritesPageState favPage;
   late FavoriteSortType sortType;
 
@@ -55,6 +69,10 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   void dispose() {
     manager.removeListener(updateAnimes);
     favoritesController.tabController?.dispose();
+    for (final c in _folderControllers.values) {
+      c.dispose();
+    }
+    _folderControllers.clear();
     scrollController.dispose();
     super.dispose();
   }
@@ -597,8 +615,9 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }
 
   void scrollToTop() {
-    if (scrollController.hasClients) {
-      scrollController.animateTo(
+    final c = _activeController;
+    if (c.hasClients) {
+      c.animateTo(
         0,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
@@ -759,6 +778,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               children: favState.folders.map((name) {
                 return SliverGridAnimes(
                   key: PageStorageKey('local_$name'),
+                  controller: _controllerFor(name),
                   asSliver: false,
                   animes: searchAllMode
                       ? (searchResults[name] ?? [])
@@ -813,7 +833,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     body = AppScrollBar(
       topPadding:
           52.0 + MediaQuery.of(context).padding.top + tab.preferredSize.height,
-      controller: scrollController,
+      // 绑定当前分组的内部滚动控制器，使滚动条能驱动实际内容
+      controller: _activeController,
       isNested: true,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),

@@ -1374,6 +1374,7 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
     this.minCrossAxisCount,
     this.horizontal = false,
     this.disableMasonry = false,
+    this.controller,
   });
 
   final List<Anime> animes;
@@ -1381,6 +1382,9 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
   /// 屏蔽瀑布流：某些容器（如 SliverAnimatedSwitcher 内）与
   /// SliverMasonryGrid 布局不兼容，此时即使全局是瀑布流也回退普通网格
   final bool disableMasonry;
+
+  /// 非 sliver 网格的滚动控制器（如收藏页按 tab 提供，让外层滚动条可驱动）
+  final ScrollController? controller;
 
   final Map<Anime, bool>? selections;
 
@@ -1599,6 +1603,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
       minCrossAxisCount: widget.minCrossAxisCount,
       horizontal: widget.horizontal,
       displayMode: mode,
+      controller: widget.controller,
     );
   }
 }
@@ -1626,6 +1631,7 @@ class _SliverGridAnimes extends StatelessWidget {
     this.minCrossAxisCount,
     this.horizontal = false,
     this.displayMode,
+    this.controller,
   });
 
   final List<Anime> animes;
@@ -1663,6 +1669,9 @@ class _SliverGridAnimes extends StatelessWidget {
 
   /// 显示模式（brief/detailed/masonry），null 时用全局设置
   final String? displayMode;
+
+  /// 非 sliver 网格的滚动控制器（外层滚动条/滚到顶部驱动用）
+  final ScrollController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -1809,6 +1818,7 @@ class _SliverGridAnimes extends StatelessWidget {
       return GridView.builder(
         padding: EdgeInsets.zero,
         physics: const ClampingScrollPhysics(),
+        controller: controller,
         itemCount: animes.length,
         gridDelegate: SliverGridDelegateWithAnimes(
           fixedCrossAxisCount: crossAxisCount,
