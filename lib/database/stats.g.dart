@@ -847,42 +847,40 @@ abstract class _$_StatsDb extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [statsTable];
 }
 
-typedef $$StatsTableTableCreateCompanionBuilder =
-    StatsTableCompanion Function({
-      required String id,
-      Value<String?> title,
-      Value<String?> cover,
-      Value<int?> bangumiId,
-      required int type,
-      Value<bool> liked,
-      Value<bool> isBangumi,
-      Value<String?> comment,
-      Value<String?> totalClickCount,
-      Value<String?> firstClickTime,
-      Value<String?> lastClickTime,
-      Value<String?> totalWatchDurations,
-      Value<String?> rating,
-      Value<String?> favorite,
-      Value<int> rowid,
-    });
-typedef $$StatsTableTableUpdateCompanionBuilder =
-    StatsTableCompanion Function({
-      Value<String> id,
-      Value<String?> title,
-      Value<String?> cover,
-      Value<int?> bangumiId,
-      Value<int> type,
-      Value<bool> liked,
-      Value<bool> isBangumi,
-      Value<String?> comment,
-      Value<String?> totalClickCount,
-      Value<String?> firstClickTime,
-      Value<String?> lastClickTime,
-      Value<String?> totalWatchDurations,
-      Value<String?> rating,
-      Value<String?> favorite,
-      Value<int> rowid,
-    });
+typedef $$StatsTableTableCreateCompanionBuilder = StatsTableCompanion Function({
+  required String id,
+  Value<String?> title,
+  Value<String?> cover,
+  Value<int?> bangumiId,
+  required int type,
+  Value<bool> liked,
+  Value<bool> isBangumi,
+  Value<String?> comment,
+  Value<String?> totalClickCount,
+  Value<String?> firstClickTime,
+  Value<String?> lastClickTime,
+  Value<String?> totalWatchDurations,
+  Value<String?> rating,
+  Value<String?> favorite,
+  Value<int> rowid,
+});
+typedef $$StatsTableTableUpdateCompanionBuilder = StatsTableCompanion Function({
+  Value<String> id,
+  Value<String?> title,
+  Value<String?> cover,
+  Value<int?> bangumiId,
+  Value<int> type,
+  Value<bool> liked,
+  Value<bool> isBangumi,
+  Value<String?> comment,
+  Value<String?> totalClickCount,
+  Value<String?> firstClickTime,
+  Value<String?> lastClickTime,
+  Value<String?> totalWatchDurations,
+  Value<String?> rating,
+  Value<String?> favorite,
+  Value<int> rowid,
+});
 
 class $$StatsTableTableFilterComposer
     extends Composer<_$_StatsDb, $StatsTableTable> {
@@ -1202,7 +1200,16 @@ class $$StatsTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$StatsTableTable, StatsTableData>(table),
+                  BaseReferences<_$_StatsDb, $StatsTableTable, StatsTableData>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

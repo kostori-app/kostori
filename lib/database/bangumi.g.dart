@@ -2757,7 +2757,18 @@ class $$BangumiDataTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$BangumiDataTableTable, BangumiDataTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$_BangumiDb,
+                    $BangumiDataTableTable,
+                    BangumiDataTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -3123,7 +3134,19 @@ class $$BangumiCalendarTableTableTableManager
                 collection: collection,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $BangumiCalendarTableTable,
+                    BangumiCalendarTableData
+                  >(table),
+                  BaseReferences<
+                    _$_BangumiDb,
+                    $BangumiCalendarTableTable,
+                    BangumiCalendarTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -3548,7 +3571,19 @@ class $$BangumiBindingTableTableTableManager
                 alias: alias,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $BangumiBindingTableTable,
+                    BangumiBindingTableData
+                  >(table),
+                  BaseReferences<
+                    _$_BangumiDb,
+                    $BangumiBindingTableTable,
+                    BangumiBindingTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -3687,18 +3722,28 @@ class $$BangumiAllEpInfoTableTableTableManager
                 $db: db,
                 $table: table,
               ),
-          updateCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                Value<String?> data = const Value.absent(),
-              }) => BangumiAllEpInfoTableCompanion(id: id, data: data),
-          createCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                Value<String?> data = const Value.absent(),
-              }) => BangumiAllEpInfoTableCompanion.insert(id: id, data: data),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String?> data = const Value.absent(),
+          }) => BangumiAllEpInfoTableCompanion(id: id, data: data),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String?> data = const Value.absent(),
+          }) => BangumiAllEpInfoTableCompanion.insert(id: id, data: data),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $BangumiAllEpInfoTableTable,
+                    BangumiAllEpInfoTableData
+                  >(table),
+                  BaseReferences<
+                    _$_BangumiDb,
+                    $BangumiAllEpInfoTableTable,
+                    BangumiAllEpInfoTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

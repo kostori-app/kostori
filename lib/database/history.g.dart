@@ -1651,7 +1651,16 @@ class $$HistoryTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$HistoryTableTable, HistoryTableData>(table),
+                  BaseReferences<
+                    _$_HistoryDb,
+                    $HistoryTableTable,
+                    HistoryTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -1916,7 +1925,16 @@ class $$ProgressTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ProgressTableTable, ProgressTableData>(table),
+                  BaseReferences<
+                    _$_HistoryDb,
+                    $ProgressTableTable,
+                    ProgressTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

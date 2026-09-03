@@ -435,7 +435,18 @@ class $$SearchHistoryTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$SearchHistoryTableTable, SearchHistoryTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$_SearchHistoryDb,
+                    $SearchHistoryTableTable,
+                    SearchHistoryTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

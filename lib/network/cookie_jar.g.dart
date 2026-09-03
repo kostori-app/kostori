@@ -683,7 +683,16 @@ class $$CookiesTableTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$CookiesTableTable, CookiesTableData>(table),
+                  BaseReferences<
+                    _$_CookieDb,
+                    $CookiesTableTable,
+                    CookiesTableData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

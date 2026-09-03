@@ -5566,34 +5566,32 @@ abstract class _$AiDatabase extends GeneratedDatabase {
   ];
 }
 
-typedef $$AiApiKeysTableCreateCompanionBuilder =
-    AiApiKeysCompanion Function({
-      required String provider,
-      required String apiKey,
-      Value<String?> baseUrl,
-      Value<String?> model,
-      Value<String?> balanceUrl,
-      Value<String?> balanceKey,
-      Value<String?> apiFormat,
-      Value<String?> modelsUrl,
-      Value<bool> isEnabled,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
-typedef $$AiApiKeysTableUpdateCompanionBuilder =
-    AiApiKeysCompanion Function({
-      Value<String> provider,
-      Value<String> apiKey,
-      Value<String?> baseUrl,
-      Value<String?> model,
-      Value<String?> balanceUrl,
-      Value<String?> balanceKey,
-      Value<String?> apiFormat,
-      Value<String?> modelsUrl,
-      Value<bool> isEnabled,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$AiApiKeysTableCreateCompanionBuilder = AiApiKeysCompanion Function({
+  required String provider,
+  required String apiKey,
+  Value<String?> baseUrl,
+  Value<String?> model,
+  Value<String?> balanceUrl,
+  Value<String?> balanceKey,
+  Value<String?> apiFormat,
+  Value<String?> modelsUrl,
+  Value<bool> isEnabled,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$AiApiKeysTableUpdateCompanionBuilder = AiApiKeysCompanion Function({
+  Value<String> provider,
+  Value<String> apiKey,
+  Value<String?> baseUrl,
+  Value<String?> model,
+  Value<String?> balanceUrl,
+  Value<String?> balanceKey,
+  Value<String?> apiFormat,
+  Value<String?> modelsUrl,
+  Value<bool> isEnabled,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 class $$AiApiKeysTableFilterComposer
     extends Composer<_$AiDatabase, $AiApiKeysTable> {
@@ -5838,7 +5836,16 @@ class $$AiApiKeysTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiApiKeysTable, AiApiKey>(table),
+                  BaseReferences<_$AiDatabase, $AiApiKeysTable, AiApiKey>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -5859,36 +5866,34 @@ typedef $$AiApiKeysTableProcessedTableManager =
       AiApiKey,
       PrefetchHooks Function()
     >;
-typedef $$AiSessionsTableCreateCompanionBuilder =
-    AiSessionsCompanion Function({
-      required String sessionId,
-      required String type,
-      Value<String> title,
-      Value<String?> configKey,
-      Value<String?> profileId,
-      required String provider,
-      Value<String?> compressedContent,
-      Value<String?> skillKeys,
-      Value<String?> followUps,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
-typedef $$AiSessionsTableUpdateCompanionBuilder =
-    AiSessionsCompanion Function({
-      Value<String> sessionId,
-      Value<String> type,
-      Value<String> title,
-      Value<String?> configKey,
-      Value<String?> profileId,
-      Value<String> provider,
-      Value<String?> compressedContent,
-      Value<String?> skillKeys,
-      Value<String?> followUps,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$AiSessionsTableCreateCompanionBuilder = AiSessionsCompanion Function({
+  required String sessionId,
+  required String type,
+  Value<String> title,
+  Value<String?> configKey,
+  Value<String?> profileId,
+  required String provider,
+  Value<String?> compressedContent,
+  Value<String?> skillKeys,
+  Value<String?> followUps,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$AiSessionsTableUpdateCompanionBuilder = AiSessionsCompanion Function({
+  Value<String> sessionId,
+  Value<String> type,
+  Value<String> title,
+  Value<String?> configKey,
+  Value<String?> profileId,
+  Value<String> provider,
+  Value<String?> compressedContent,
+  Value<String?> skillKeys,
+  Value<String?> followUps,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 class $$AiSessionsTableFilterComposer
     extends Composer<_$AiDatabase, $AiSessionsTable> {
@@ -6151,7 +6156,16 @@ class $$AiSessionsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiSessionsTable, AiSession>(table),
+                  BaseReferences<_$AiDatabase, $AiSessionsTable, AiSession>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -6172,36 +6186,34 @@ typedef $$AiSessionsTableProcessedTableManager =
       AiSession,
       PrefetchHooks Function()
     >;
-typedef $$AiTasksTableCreateCompanionBuilder =
-    AiTasksCompanion Function({
-      Value<int> id,
-      required String sessionId,
-      required String taskType,
-      Value<String> role,
-      required String inputContent,
-      Value<String?> inputImages,
-      Value<String?> outputContent,
-      Value<String?> thought,
-      required String provider,
-      Value<String?> modelName,
-      Value<int> tokenConsumed,
-      Value<DateTime> createdAt,
-    });
-typedef $$AiTasksTableUpdateCompanionBuilder =
-    AiTasksCompanion Function({
-      Value<int> id,
-      Value<String> sessionId,
-      Value<String> taskType,
-      Value<String> role,
-      Value<String> inputContent,
-      Value<String?> inputImages,
-      Value<String?> outputContent,
-      Value<String?> thought,
-      Value<String> provider,
-      Value<String?> modelName,
-      Value<int> tokenConsumed,
-      Value<DateTime> createdAt,
-    });
+typedef $$AiTasksTableCreateCompanionBuilder = AiTasksCompanion Function({
+  Value<int> id,
+  required String sessionId,
+  required String taskType,
+  Value<String> role,
+  required String inputContent,
+  Value<String?> inputImages,
+  Value<String?> outputContent,
+  Value<String?> thought,
+  required String provider,
+  Value<String?> modelName,
+  Value<int> tokenConsumed,
+  Value<DateTime> createdAt,
+});
+typedef $$AiTasksTableUpdateCompanionBuilder = AiTasksCompanion Function({
+  Value<int> id,
+  Value<String> sessionId,
+  Value<String> taskType,
+  Value<String> role,
+  Value<String> inputContent,
+  Value<String?> inputImages,
+  Value<String?> outputContent,
+  Value<String?> thought,
+  Value<String> provider,
+  Value<String?> modelName,
+  Value<int> tokenConsumed,
+  Value<DateTime> createdAt,
+});
 
 class $$AiTasksTableFilterComposer
     extends Composer<_$AiDatabase, $AiTasksTable> {
@@ -6480,7 +6492,16 @@ class $$AiTasksTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiTasksTable, AiTask>(table),
+                  BaseReferences<_$AiDatabase, $AiTasksTable, AiTask>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -6501,24 +6522,22 @@ typedef $$AiTasksTableProcessedTableManager =
       AiTask,
       PrefetchHooks Function()
     >;
-typedef $$AiConfigsTableCreateCompanionBuilder =
-    AiConfigsCompanion Function({
-      Value<int> id,
-      required String configKey,
-      required String systemPrompt,
-      Value<double> temperature,
-      Value<String?> memo,
-      Value<bool> isSystem,
-    });
-typedef $$AiConfigsTableUpdateCompanionBuilder =
-    AiConfigsCompanion Function({
-      Value<int> id,
-      Value<String> configKey,
-      Value<String> systemPrompt,
-      Value<double> temperature,
-      Value<String?> memo,
-      Value<bool> isSystem,
-    });
+typedef $$AiConfigsTableCreateCompanionBuilder = AiConfigsCompanion Function({
+  Value<int> id,
+  required String configKey,
+  required String systemPrompt,
+  Value<double> temperature,
+  Value<String?> memo,
+  Value<bool> isSystem,
+});
+typedef $$AiConfigsTableUpdateCompanionBuilder = AiConfigsCompanion Function({
+  Value<int> id,
+  Value<String> configKey,
+  Value<String> systemPrompt,
+  Value<double> temperature,
+  Value<String?> memo,
+  Value<bool> isSystem,
+});
 
 class $$AiConfigsTableFilterComposer
     extends Composer<_$AiDatabase, $AiConfigsTable> {
@@ -6691,7 +6710,16 @@ class $$AiConfigsTableTableManager
                 isSystem: isSystem,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiConfigsTable, AiConfig>(table),
+                  BaseReferences<_$AiDatabase, $AiConfigsTable, AiConfig>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -6712,34 +6740,32 @@ typedef $$AiConfigsTableProcessedTableManager =
       AiConfig,
       PrefetchHooks Function()
     >;
-typedef $$AiModelsTableCreateCompanionBuilder =
-    AiModelsCompanion Function({
-      required String modelId,
-      required String provider,
-      required String label,
-      Value<String> modelType,
-      Value<String> inputModality,
-      Value<String> outputModality,
-      Value<bool> supportsVision,
-      Value<bool> supportsTools,
-      Value<bool> supportsReasoning,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
-typedef $$AiModelsTableUpdateCompanionBuilder =
-    AiModelsCompanion Function({
-      Value<String> modelId,
-      Value<String> provider,
-      Value<String> label,
-      Value<String> modelType,
-      Value<String> inputModality,
-      Value<String> outputModality,
-      Value<bool> supportsVision,
-      Value<bool> supportsTools,
-      Value<bool> supportsReasoning,
-      Value<bool> isActive,
-      Value<int> rowid,
-    });
+typedef $$AiModelsTableCreateCompanionBuilder = AiModelsCompanion Function({
+  required String modelId,
+  required String provider,
+  required String label,
+  Value<String> modelType,
+  Value<String> inputModality,
+  Value<String> outputModality,
+  Value<bool> supportsVision,
+  Value<bool> supportsTools,
+  Value<bool> supportsReasoning,
+  Value<bool> isActive,
+  Value<int> rowid,
+});
+typedef $$AiModelsTableUpdateCompanionBuilder = AiModelsCompanion Function({
+  Value<String> modelId,
+  Value<String> provider,
+  Value<String> label,
+  Value<String> modelType,
+  Value<String> inputModality,
+  Value<String> outputModality,
+  Value<bool> supportsVision,
+  Value<bool> supportsTools,
+  Value<bool> supportsReasoning,
+  Value<bool> isActive,
+  Value<int> rowid,
+});
 
 class $$AiModelsTableFilterComposer
     extends Composer<_$AiDatabase, $AiModelsTable> {
@@ -6990,7 +7016,16 @@ class $$AiModelsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiModelsTable, AiModel>(table),
+                  BaseReferences<_$AiDatabase, $AiModelsTable, AiModel>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -7174,7 +7209,16 @@ class $$AiProviderStatsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiProviderStatsTable, AiProviderStat>(table),
+                  BaseReferences<
+                    _$AiDatabase,
+                    $AiProviderStatsTable,
+                    AiProviderStat
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -7522,7 +7566,16 @@ class $$AiCustomProvidersTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiCustomProvidersTable, AiCustomProvider>(table),
+                  BaseReferences<
+                    _$AiDatabase,
+                    $AiCustomProvidersTable,
+                    AiCustomProvider
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -7546,28 +7599,26 @@ typedef $$AiCustomProvidersTableProcessedTableManager =
       AiCustomProvider,
       PrefetchHooks Function()
     >;
-typedef $$AiSkillsTableCreateCompanionBuilder =
-    AiSkillsCompanion Function({
-      Value<int> id,
-      required String key,
-      required String name,
-      Value<String?> description,
-      required String systemPrompt,
-      Value<bool> isBuiltin,
-      Value<bool> isEnabled,
-      Value<DateTime> createdAt,
-    });
-typedef $$AiSkillsTableUpdateCompanionBuilder =
-    AiSkillsCompanion Function({
-      Value<int> id,
-      Value<String> key,
-      Value<String> name,
-      Value<String?> description,
-      Value<String> systemPrompt,
-      Value<bool> isBuiltin,
-      Value<bool> isEnabled,
-      Value<DateTime> createdAt,
-    });
+typedef $$AiSkillsTableCreateCompanionBuilder = AiSkillsCompanion Function({
+  Value<int> id,
+  required String key,
+  required String name,
+  Value<String?> description,
+  required String systemPrompt,
+  Value<bool> isBuiltin,
+  Value<bool> isEnabled,
+  Value<DateTime> createdAt,
+});
+typedef $$AiSkillsTableUpdateCompanionBuilder = AiSkillsCompanion Function({
+  Value<int> id,
+  Value<String> key,
+  Value<String> name,
+  Value<String?> description,
+  Value<String> systemPrompt,
+  Value<bool> isBuiltin,
+  Value<bool> isEnabled,
+  Value<DateTime> createdAt,
+});
 
 class $$AiSkillsTableFilterComposer
     extends Composer<_$AiDatabase, $AiSkillsTable> {
@@ -7774,7 +7825,16 @@ class $$AiSkillsTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiSkillsTable, AiSkill>(table),
+                  BaseReferences<_$AiDatabase, $AiSkillsTable, AiSkill>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -8079,7 +8139,16 @@ class $$AiMcpServersTableTableManager
                 updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiMcpServersTable, AiMcpServer>(table),
+                  BaseReferences<_$AiDatabase, $AiMcpServersTable, AiMcpServer>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -8201,13 +8270,11 @@ class $$AiAuxSettingsTableTableManager
               $$AiAuxSettingsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$AiAuxSettingsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> key = const Value.absent(),
-                Value<String?> value = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) =>
-                  AiAuxSettingsCompanion(key: key, value: value, rowid: rowid),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String?> value = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => AiAuxSettingsCompanion(key: key, value: value, rowid: rowid),
           createCompanionCallback:
               ({
                 required String key,
@@ -8219,7 +8286,16 @@ class $$AiAuxSettingsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$AiAuxSettingsTable, AiAuxSetting>(table),
+                  BaseReferences<
+                    _$AiDatabase,
+                    $AiAuxSettingsTable,
+                    AiAuxSetting
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
