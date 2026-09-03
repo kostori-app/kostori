@@ -373,6 +373,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         ),
       ),
       actions: [
+        AnimeSourceLayoutMenu(sourceKey: 'local_favorites'),
         Tooltip(
           message: t.search,
           child: IconButton(
@@ -776,24 +777,29 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               key: PageStorageKey('${favState.folders}'),
               controller: widget.favoritesController.tabController,
               children: favState.folders.map((name) {
-                return SliverGridAnimes(
+                return CustomScrollView(
                   key: PageStorageKey('local_$name'),
                   controller: _controllerFor(name),
-                  asSliver: false,
-                  animes: searchAllMode
-                      ? (searchResults[name] ?? [])
-                      : (favState.animes[name] ?? []),
-                  selections: selectedAnimes,
-                  enableFavorite: false,
-                  // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
-                  menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
-                  onTap: multiSelectMode
-                      ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
-                      : _onAnimeTap,
-                  // 多选模式下长按保留范围选择
-                  onLongPressed: multiSelectMode
-                      ? (a, heroID) => _rangeSelect(a, name)
-                      : null,
+                  physics: const ClampingScrollPhysics(),
+                  slivers: [
+                    SliverGridAnimes(
+                      asSliver: true,
+                      animes: searchAllMode
+                          ? (searchResults[name] ?? [])
+                          : (favState.animes[name] ?? []),
+                      selections: selectedAnimes,
+                      enableFavorite: false,
+                      // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
+                      menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
+                      onTap: multiSelectMode
+                          ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
+                          : _onAnimeTap,
+                      // 多选模式下长按保留范围选择
+                      onLongPressed: multiSelectMode
+                          ? (a, heroID) => _rangeSelect(a, name)
+                          : null,
+                    ),
+                  ],
                 );
               }).toList(),
             ),
@@ -842,21 +848,25 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       ),
     );
 
-    return PopScope(
-      key: PageStorageKey('${favState.folders}'),
-      canPop: !multiSelectMode && !searchAllMode,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        if (multiSelectMode) {
-          setState(() {
-            multiSelectMode = false;
-            selectedAnimes.clear();
-          });
-        } else if (searchAllMode) {
-          _exitSearchAllMode();
-        }
-      },
-      child: body,
+    return AnimeDisplayModeScope(
+      mode: sourceDisplayModeOf('local_favorites') ??
+          appdata.settings['animeDisplayMode'],
+      child: PopScope(
+        key: PageStorageKey('${favState.folders}'),
+        canPop: !multiSelectMode && !searchAllMode,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          if (multiSelectMode) {
+            setState(() {
+              multiSelectMode = false;
+              selectedAnimes.clear();
+            });
+          } else if (searchAllMode) {
+            _exitSearchAllMode();
+          }
+        },
+        child: body,
+      ),
     );
   }
 }
