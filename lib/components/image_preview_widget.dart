@@ -281,6 +281,12 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
     final imageList = ref.watch(imageListProvider);
 
     if (imageList.length > 1) {
+      // 本地多图：按屏幕长边 1.5×（≤3072）限幅解码，避免翻页整幅原图解码卡顿
+      final mq = MediaQuery.of(context);
+      final maxLogical =
+          mq.size.width > mq.size.height ? mq.size.width : mq.size.height;
+      final t = (maxLogical * mq.devicePixelRatio * 1.5).round();
+      final decodeWidth = t < 200 ? 200 : (t > 3072 ? 3072 : t);
       return PhotoViewGallery.builder(
         itemCount: imageList.length,
         pageController: widget.pageController,
@@ -291,7 +297,11 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
           return PhotoViewGalleryPageOptions(
             controller: _controllerForIndex(i),
             scaleStateController: _scaleControllerForIndex(i),
-            imageProvider: FileImage(file),
+            imageProvider: ResizeImage.resizeIfNeeded(
+              decodeWidth,
+              null,
+              FileImage(file),
+            ),
             heroAttributes: PhotoViewHeroAttributes(
               tag: file.path.split(Platform.pathSeparator).last,
             ),
@@ -304,7 +314,11 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       );
     }
 
-    return PhotoView.customChild(
+    // 单图：直接给 PhotoView 用 imageProvider（网络原图 / 本地文件）。
+    // 只有 imageProvider 方式 photo_view 才知道图片真实尺寸，hero 终点几何才准；
+    // customChild+AnimatedImage 测不到尺寸，hero 会按全屏猜测导致动画从中间飞
+    return PhotoView(
+      imageProvider: widget.img,
       controller: _controllerForIndex(0),
       scaleStateController: _scaleControllerForIndex(0),
       initialScale: PhotoViewComputedScale.contained,
@@ -313,10 +327,20 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       heroAttributes: PhotoViewHeroAttributes(tag: widget.heroTag),
       backgroundDecoration: const BoxDecoration(color: Colors.transparent),
       onTapUp: (ctx, details, _) => _handleTap(0, details),
-      // SizedBox.expand 保证图片加载完成前 hero 目标也有固定尺寸，
-      // 否则首次进入（图片未缓存）时 target hero 尺寸为 0，hero flight 不触发
-      child: SizedBox.expand(
-        child: AnimatedImage(image: widget.img, fit: BoxFit.contain),
+      filterQuality: FilterQuality.medium,
+      loadingBuilder: (context, event) => const ColoredBox(
+        color: Colors.black26,
+        child: Center(child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2))),
+      ),
+      errorBuilder: (context, error, stackTrace, retry) => ColoredBox(
+        color: Colors.black26,
+        child: Center(
+          child: Icon(
+            Icons.broken_image_outlined,
+            size: 48,
+            color: Colors.white54,
+          ),
+        ),
       ),
     );
   }

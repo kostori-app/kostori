@@ -58,7 +58,7 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                               ).colorScheme.secondaryContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text('贴主'),
+                            child: Text(t.topicsPoster),
                           ),
                       ],
                     ),

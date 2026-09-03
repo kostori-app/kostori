@@ -95,7 +95,7 @@ Generate a $rangeLabel anime watch report based on the following data:
         App.rootContext.showMessage(message: result.errorMessage ?? 'Error');
       }
     } catch (e) {
-      App.rootContext.showMessage(message: 'Error: $e');
+      App.rootContext.showMessage(message: '${t.error}: $e');
       Log.error('Summary', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -172,7 +172,10 @@ Generate a $rangeLabel anime watch report based on the following data:
                     onChanged: (v) => setState(() => _source = v),
                   ),
                   const SizedBox(height: 8),
-                  _ModelSelector(provider: _source),
+                  _ModelSelector(
+                    provider: _source,
+                    onProviderChanged: (v) => setState(() => _source = v),
+                  ),
                 ],
               ),
             ),

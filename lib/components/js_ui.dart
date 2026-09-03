@@ -17,6 +17,10 @@ mixin class JsUiApi {
 
   static bool get captchaEnabled => _captchaSuppressed <= 0;
 
+  /// 被抑制的验证码请求计数：自动搜索期间源 JS 请求验证码弹窗的次数，
+  /// 用于让调用方识别"该源可能需要验证码"。
+  static int suppressedCaptchaRequests = 0;
+
   final Map<int, LoadingDialogController> _loadingDialogControllers = {};
 
   dynamic handleUIMessage(Map<String, dynamic> message) {
@@ -102,7 +106,7 @@ mixin class JsUiApi {
           onPressed: () {
             dialogContext?.pop();
           },
-          child: Text('OK'),
+          child: Text(t.ok),
         ),
       );
     }
@@ -154,7 +158,10 @@ mixin class JsUiApi {
     // 带图片（验证码场景）时走专用验证码对话框，支持 AI 识别；
     // 批量自动搜索期间抑制，不自动弹出
     if (image != null) {
-      if (!captchaEnabled) return null;
+      if (!captchaEnabled) {
+        suppressedCaptchaRequests++;
+        return null;
+      }
       var func = validator == null ? null : JSAutoFreeFunction(validator);
       return showCaptchaDialog(
         context: App.rootContext,
@@ -193,7 +200,10 @@ mixin class JsUiApi {
   }
 
   Future<String?> _showCaptchaDialog(String title, String image) {
-    if (!captchaEnabled) return Future.value(null);
+    if (!captchaEnabled) {
+      suppressedCaptchaRequests++;
+      return Future.value(null);
+    }
     return showCaptchaDialog(
       context: App.rootContext,
       title: title,

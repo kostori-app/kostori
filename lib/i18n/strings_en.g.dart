@@ -1805,12 +1805,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Drag to adjust clip range'
 	String get rangePickerDragHint => 'Drag to adjust clip range';
 
-	/// en: 'Parsing playlist…'
-	String get hlsParsing => 'Parsing playlist…';
-
-	/// en: 'Downloading chunks ${done}/${total}…'
-	String hlsDownloadingChunks({required Object done, required Object total}) => 'Downloading chunks ${done}/${total}…';
-
 	/// en: 'Start watching'
 	String get bangumiStartWatch => 'Start watching';
 
@@ -2072,8 +2066,23 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No headers, click "Add" to create one'
 	String get vtNoHeaders => 'No headers, click "Add" to create one';
 
+	/// en: 'No request headers'
+	String get playerNoRequestHeaders => 'No request headers';
+
 	/// en: 'Apply and load'
 	String get vtApplyAndLoad => 'Apply and load';
+
+	/// en: 'Main title (Anime name)'
+	String get downloadMainTitle => 'Main title (Anime name)';
+
+	/// en: 'Ignore episode titles'
+	String get downloadIgnoreEpisodeTitle => 'Ignore episode titles';
+
+	/// en: 'Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names'
+	String get downloadIgnoreEpisodeTitleDesc => 'Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names';
+
+	/// en: 'Merging'
+	String get downloadMerging => 'Merging';
 
 	/// en: 'Rational'
 	String get aiTagRational => 'Rational';
@@ -6954,6 +6963,111 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: '${source} has too many tool call rounds'
 	String toolRoundsExceeded({required Object source}) => '${source} has too many tool call rounds';
+
+	/// en: 'Headers'
+	String get requestHeaders => 'Headers';
+
+	/// en: 'Direct'
+	String get direct => 'Direct';
+
+	/// en: 'Manual'
+	String get manual => 'Manual';
+
+	/// en: '${n} votes'
+	String votes({required Object n}) => '${n} votes';
+
+	/// en: '${n} pages'
+	String pagesCount({required Object n}) => '${n} pages';
+
+	/// en: 'Empty Page'
+	String get emptyPage => 'Empty Page';
+
+	/// en: 'Copy text command'
+	String get copyTextCommand => 'Copy text command';
+
+	/// en: 'Save failed: permission or directory error'
+	String get saveFailedPermissionOrDirectory => 'Save failed: permission or directory error';
+
+	/// en: 'Biometrics not supported'
+	String get biometricsNotSupported => 'Biometrics not supported';
+
+	/// en: 'Invalid file type: ${ext}'
+	String invalidFileType({required Object ext}) => 'Invalid file type: ${ext}';
+
+	/// en: 'Download canceled'
+	String get downloadCanceled => 'Download canceled';
+
+	/// en: 'Token invalid or expired'
+	String get tokenInvalidOrExpired => 'Token invalid or expired';
+
+	/// en: 'Errors: ${n}'
+	String errorsLabel({required Object n}) => 'Errors: ${n}';
+
+	/// en: 'Enter connection PIN'
+	String get inputPinTitle => 'Enter connection PIN';
+
+	/// en: 'Enter PIN code'
+	String get inputPinHint => 'Enter PIN code';
+
+	/// en: 'Post author'
+	String get topicsPoster => 'Post author';
+
+	/// en: '${timetable} (${count})'
+	String timetableCount({required Object timetable, required Object count}) => '${timetable} (${count})';
+
+	/// en: '${fetchPlugins}: ${count}'
+	String fetchPluginsCount({required Object fetchPlugins, required Object count}) => '${fetchPlugins}: ${count}';
+
+	/// en: 'Connect to ${device}'
+	String connectToDevice({required Object device}) => 'Connect to ${device}';
+
+	/// en: 'Receive Timeout: This indicates that the server is too busy to respond'
+	String get receiveTimeout => 'Receive Timeout: This indicates that the server is too busy to respond';
+
+	/// en: 'Connection terminated during handshake: This may be caused by the firewall blocking the connection or your requests are too frequent.'
+	String get connectionTerminatedDuringHandshake => 'Connection terminated during handshake: This may be caused by the firewall blocking the connection or your requests are too frequent.';
+
+	/// en: 'Connection reset by peer: The error is unrelated to the app, please check your network.'
+	String get connectionResetByPeer => 'Connection reset by peer: The error is unrelated to the app, please check your network.';
+
+	/// en: 'Started download'
+	String get downloadStarted => 'Started download';
+
+	/// en: 'Force merge'
+	String get forceMerge => 'Force merge';
+
+	/// en: 'Merging downloaded segments...'
+	String get mergeProcessing => 'Merging downloaded segments...';
+
+	/// en: 'Applied to both the base service and Hub server (shared certificate)'
+	String get tlsSharedHint => 'Applied to both the base service and Hub server (shared certificate)';
+
+	/// en: 'Login expired, please re-login'
+	String get loginExpiredReLogin => 'Login expired, please re-login';
+
+	/// en: 'View error'
+	String get viewError => 'View error';
+
+	/// en: 'Export log file'
+	String get exportLogFile => 'Export log file';
+
+	/// en: 'Delete log file'
+	String get deleteLogFile => 'Delete log file';
+
+	/// en: 'Delete the saved log files (logs.txt / logs.old.txt)?'
+	String get clearLogsFileConfirm => 'Delete the saved log files (logs.txt / logs.old.txt)?';
+
+	/// en: 'Clear logs'
+	String get clearLog => 'Clear logs';
+
+	/// en: 'Log settings'
+	String get logSettings => 'Log settings';
+
+	/// en: 'Keep archived log files'
+	String get logRetainCount => 'Keep archived log files';
+
+	/// en: 'Log file size limit (MB)'
+	String get logFileSizeMb => 'Log file size limit (MB)';
 }
 
 // Path: colors
@@ -7692,8 +7806,6 @@ extension on Translations {
 			'watcherDetailsLogs' => 'Details & Logs',
 			'watcherMiniWindow' => 'Mini window',
 			'rangePickerDragHint' => 'Drag to adjust clip range',
-			'hlsParsing' => 'Parsing playlist…',
-			'hlsDownloadingChunks' => ({required Object done, required Object total}) => 'Downloading chunks ${done}/${total}…',
 			'bangumiStartWatch' => 'Start watching',
 			'bangumiLastSeen' => ({required Object episode}) => 'Last seen: episode ${episode}',
 			'bangumiMyRating' => ({required Object score}) => 'My rating: ${score}',
@@ -7781,7 +7893,12 @@ extension on Translations {
 			'vtLoad' => 'Load',
 			'vtHeaders' => 'Request Headers',
 			'vtNoHeaders' => 'No headers, click "Add" to create one',
+			'playerNoRequestHeaders' => 'No request headers',
 			'vtApplyAndLoad' => 'Apply and load',
+			'downloadMainTitle' => 'Main title (Anime name)',
+			'downloadIgnoreEpisodeTitle' => 'Ignore episode titles',
+			'downloadIgnoreEpisodeTitleDesc' => 'Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names',
+			'downloadMerging' => 'Merging',
 			'aiTagRational' => 'Rational',
 			'aiTagHumorous' => 'Humorous',
 			'aiTagSarcastic' => 'Sarcastic',
@@ -8125,11 +8242,11 @@ extension on Translations {
 			'statsCalendar' => 'Stats Calendar',
 			'todaysRecords' => 'Today\'s Records',
 			'dailyStats' => 'Daily Stats',
+			_ => null,
+		} ?? switch (path) {
 			'viewAll' => 'View All',
 			'kostoriChangelog' => 'Kostori Changelog',
 			'copyPath' => 'Copy Path',
-			_ => null,
-		} ?? switch (path) {
 			'properties' => 'Properties',
 			'noEndpoint' => 'No endpoint',
 			'testAll' => 'Test All',
@@ -8639,11 +8756,11 @@ extension on Translations {
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
 			'translationFailedPleaseTryAgainLater' => 'Translation failed, please try again later',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'The AI translation provider does not support your current region. Please switch provider or use a different network',
 			'translationErrorModelNotSupported' => 'The configured model is not supported by this provider. Please change it in AI settings',
 			'translationErrorApiKeyInvalid' => 'The API key is invalid or lacks permission. Please check it in AI settings',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorRateLimited' => 'Too many requests or insufficient quota. Please try again later',
 			'translationErrorRequestFailed' => 'Translation request failed',
 			'writeYourReview' => 'Write your review',
@@ -9153,11 +9270,11 @@ extension on Translations {
 			'noAnimeFound' => 'No anime recognized, this may not be an anime image',
 			'chooseAnotherImage' => 'Try another image',
 			'recognizeResult' => 'Recognition results',
+			_ => null,
+		} ?? switch (path) {
 			'episodeLabel' => 'EP',
 			'unknownEpisode' => 'Unknown episode',
 			'openVideoPreview' => 'Video preview',
-			_ => null,
-		} ?? switch (path) {
 			'discussInAi' => 'Discuss in AI',
 			'dropImageToRecognize' => 'Drop an image to recognize',
 			'dropFileToImport' => 'Drop a .js file to import',
@@ -9457,6 +9574,41 @@ extension on Translations {
 			'portBusy' => ({required Object start, required Object end}) => 'Ports ${start} to ${end} are all occupied',
 			'webSocketOnly' => 'Only WebSocket connections are supported',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} has too many tool call rounds',
+			'requestHeaders' => 'Headers',
+			'direct' => 'Direct',
+			'manual' => 'Manual',
+			'votes' => ({required Object n}) => '${n} votes',
+			'pagesCount' => ({required Object n}) => '${n} pages',
+			'emptyPage' => 'Empty Page',
+			'copyTextCommand' => 'Copy text command',
+			'saveFailedPermissionOrDirectory' => 'Save failed: permission or directory error',
+			'biometricsNotSupported' => 'Biometrics not supported',
+			'invalidFileType' => ({required Object ext}) => 'Invalid file type: ${ext}',
+			'downloadCanceled' => 'Download canceled',
+			'tokenInvalidOrExpired' => 'Token invalid or expired',
+			'errorsLabel' => ({required Object n}) => 'Errors: ${n}',
+			'inputPinTitle' => 'Enter connection PIN',
+			'inputPinHint' => 'Enter PIN code',
+			'topicsPoster' => 'Post author',
+			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable} (${count})',
+			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}: ${count}',
+			'connectToDevice' => ({required Object device}) => 'Connect to ${device}',
+			'receiveTimeout' => 'Receive Timeout: This indicates that the server is too busy to respond',
+			'connectionTerminatedDuringHandshake' => 'Connection terminated during handshake: This may be caused by the firewall blocking the connection or your requests are too frequent.',
+			'connectionResetByPeer' => 'Connection reset by peer: The error is unrelated to the app, please check your network.',
+			'downloadStarted' => 'Started download',
+			'forceMerge' => 'Force merge',
+			'mergeProcessing' => 'Merging downloaded segments...',
+			'tlsSharedHint' => 'Applied to both the base service and Hub server (shared certificate)',
+			'loginExpiredReLogin' => 'Login expired, please re-login',
+			'viewError' => 'View error',
+			'exportLogFile' => 'Export log file',
+			'deleteLogFile' => 'Delete log file',
+			'clearLogsFileConfirm' => 'Delete the saved log files (logs.txt / logs.old.txt)?',
+			'clearLog' => 'Clear logs',
+			'logSettings' => 'Log settings',
+			'logRetainCount' => 'Keep archived log files',
+			'logFileSizeMb' => 'Log file size limit (MB)',
 			_ => null,
 		};
 	}

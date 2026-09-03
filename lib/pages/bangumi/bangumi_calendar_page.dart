@@ -26,6 +26,7 @@ import 'package:kostori/utils/utils.dart';
 
 Future<List<List<BangumiItem>>> loadBangumiCalendar({
   bool isFetchEpisodes = true,
+  bool fetchEpisodeInfo = true,
   List<int>? days,
 }) async {
   try {
@@ -55,9 +56,16 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           )) {
             return false;
           }
-          // 在播（end 为空/在未来）或最近 60 天内完结
+          // 在播（end 为空/在未来）或最近 60 天内完结。
+          // 无 end 的条目只有"近期开播"才补：开播已久仍未标 end 的多是
+          // 漏标/已无更新的单集条目（周更在播番本就在 bgm 每周 API 里，
+          // 不需要靠补全进来），避免旧番长期按周重复出现
           final end = DateTime.tryParse(e.value.end ?? '');
-          if (end == null) return true;
+          if (end == null) {
+            return begin.isAfter(
+              DateTime.now().subtract(const Duration(days: 90)),
+            );
+          }
           return end.isAfter(DateTime.now().subtract(const Duration(days: 60)));
         })
         .map((e) => e.key);
@@ -123,7 +131,9 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
         .toList();
 
     final fetchEpisodes = appdata.settings['calendarFetchEpisodes'] ?? false;
-    final allEpisodesMap = fetchEpisodes && isFetchEpisodes
+    final shouldFetchEpisodes =
+        fetchEpisodes && isFetchEpisodes && fetchEpisodeInfo;
+    final allEpisodesMap = shouldFetchEpisodes
         ? await _fetchEpisodesInBatches(validItems)
         : <int, List<EpisodeInfo>>{};
 
@@ -142,7 +152,7 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
         final weekday = parsedTime.weekday;
         final episodes = allEpisodesMap[item.id];
 
-        final episodeResult = fetchEpisodes && isFetchEpisodes
+        final episodeResult = shouldFetchEpisodes
             ? await _processEpisodeInfo(
                 episodes: episodes,
                 now: now,
@@ -572,7 +582,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
             ).copyWith(scrollbars: false),
             child: Scaffold(
               appBar: Appbar(
-                title: Text('${t.timetable}（${_allCount()}）'),
+                title: Text(t.timetableCount(timetable: t.timetable, count: _allCount())),
                 actions: [
                   IconButton(
                     onPressed: () {
@@ -841,12 +851,15 @@ class _ScoreRow extends StatelessWidget {
 
 class _ScreenshotPreviewSheet extends StatefulWidget {
   const _ScreenshotPreviewSheet({
+    super.key,
     required this.bangumiCalendar,
     required this.captureTime,
+    required this.scrollController,
   });
 
   final List<List<BangumiItem>> bangumiCalendar;
   final DateTime captureTime;
+  final ScrollController scrollController;
 
   @override
   State<_ScreenshotPreviewSheet> createState() =>
@@ -864,37 +877,17 @@ class _ScreenshotPreviewSheetState extends State<_ScreenshotPreviewSheet> {
     );
   }
 
+  void popWithValue() {
+    Navigator.pop(context, _showWeekly ? 'weekly' : 'today');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // 顶部操作栏
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            children: [
-              Text(
-                t.calScreenshotPreview,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t.cancel),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: () =>
-                    Navigator.pop(context, _showWeekly ? 'weekly' : 'today'),
-                icon: const Icon(Icons.save_alt, size: 18),
-                label: Text(t.save),
-              ),
-            ],
-          ),
-        ),
         // 切换按钮
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: SegmentedButton<bool>(
             segments: [
               ButtonSegment(
@@ -917,6 +910,7 @@ class _ScreenshotPreviewSheetState extends State<_ScreenshotPreviewSheet> {
         // 预览内容
         Expanded(
           child: SingleChildScrollView(
+            controller: widget.scrollController,
             padding: const EdgeInsets.all(16),
             child: Container(
               decoration: BoxDecoration(
@@ -1068,16 +1062,26 @@ Future<void> captureBangumiCalendarScreenshot(
     if (!context.mounted) return;
 
     final captureTime = DateTime.now();
+    final previewKey = GlobalKey<_ScreenshotPreviewSheetState>();
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => _ScreenshotPreviewSheet(
-        bangumiCalendar: bangumiCalendar,
-        captureTime: captureTime,
+      builder: (context) => Sheet(
+        title: t.calScreenshotPreview,
+        icon: Icons.screenshot_outlined,
+        initialSize: 0.6,
+        headerTrailing: FilledButton.icon(
+          onPressed: () => previewKey.currentState?.popWithValue(),
+          icon: const Icon(Icons.save_alt, size: 18),
+          label: Text(t.save),
+        ),
+        builder: (ctx, sc) => _ScreenshotPreviewSheet(
+          key: previewKey,
+          scrollController: sc,
+          bangumiCalendar: bangumiCalendar,
+          captureTime: captureTime,
+        ),
       ),
     );
 

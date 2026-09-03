@@ -23,6 +23,7 @@ import 'package:kostori/foundation/m3u8_proxy_server.dart';
 import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
@@ -265,6 +266,11 @@ class _WatcherState extends State<Watcher>
     _completedSub?.cancel();
     updateHistoryTimer?.cancel();
     _stopPlaybackReporting();
+    // 先暂停（停止解码/渲染）再释放播放器，避免播放中直接 dispose 时
+    // media_kit 停止解码阻塞主线程导致退出卡顿
+    try {
+      playerController.player.pause();
+    } catch (_) {}
     playerController.dispose();
     playerController.disposeWindow();
     super.dispose();
@@ -475,15 +481,34 @@ class _WatcherState extends State<Watcher>
       if (!mounted) return;
       final actualPlayUrl = await _resolvePlayUrl(res);
 
+      // 播放直链时把 cookie jar 中匹配该域名 cookie 附加到请求头（部分 CDN 校验）
+      Map<String, String>? playHeaders;
+      if (actualPlayUrl == res && headers != null) {
+        playHeaders = Map<String, String>.from(headers!);
+        final uri = Uri.tryParse(actualPlayUrl);
+        if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+          try {
+            final cookieHeader = await SingleInstanceCookieJar.instance
+                ?.loadForRequestCookieHeader(uri);
+            if (cookieHeader != null && cookieHeader.isNotEmpty) {
+              playHeaders['Cookie'] = cookieHeader;
+            }
+          } catch (_) {}
+        }
+      }
+
       playerController.playUrl = actualPlayUrl;
-      playerController.videoHeaders = actualPlayUrl == res ? headers : null;
-      PlayLog.info('_play', 'httpHraders: $headers');
+      playerController.videoHeaders = actualPlayUrl == res ? playHeaders : null;
+      PlayLog.info('_play', '播放地址: $actualPlayUrl\n请求头: $playHeaders');
 
       // 步骤2：加载媒体数据
       playerController.loadingStep = 2;
 
       await playerController.player.open(
-        Media(actualPlayUrl, httpHeaders: actualPlayUrl == res ? headers : {}),
+        Media(
+          actualPlayUrl,
+          httpHeaders: actualPlayUrl == res ? playHeaders : const {},
+        ),
       );
     } catch (e, s) {
       PlayLog.error("openMedia", "$e\n$s");

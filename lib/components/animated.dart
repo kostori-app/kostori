@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:markdown_widget/config/all.dart';
+import 'package:material3_expressive_loading_indicator/material3_expressive_loading_indicator.dart';
 
 class AnimatedPlayIconWave extends StatefulWidget {
   final double size;
@@ -157,257 +158,28 @@ class _RoundedEquilateralTrianglePainter extends CustomPainter {
   ) => oldDelegate.color != color || oldDelegate.opacity != opacity;
 }
 
-class PolygonRefreshIndicator extends StatefulWidget {
+/// 加载/刷新指示器：使用 Material 3 Expressive 形变加载器。
+/// 对外保留原组件名与 [size]，内部渲染 M3LoadingIndicator
+class PolygonRefreshIndicator extends StatelessWidget {
   final double? size;
 
   const PolygonRefreshIndicator({super.key, this.size});
 
   @override
-  _PolygonRefreshIndicatorState createState() =>
-      _PolygonRefreshIndicatorState();
-}
-
-class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final List<int> _shapeSides = [4, 2, 6, 5, 8, 4, 1, 5, 10, 6, 2];
-
-  final Map<int, Path> _polygonCache = {};
-  final Path _capsulePath = Path();
-  final Path _footballPath = Path();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 9),
-    )..repeat();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    Widget loader(double effectiveSize) => SizedBox(
+      width: effectiveSize,
+      height: effectiveSize,
+      child: const ExpressiveLoadingIndicator(),
+    );
+    if (size != null) return loader(size!);
     return LayoutBuilder(
       builder: (context, constraints) {
-        double effectiveSize =
-            widget.size ?? min(constraints.maxWidth, constraints.maxHeight);
-        if (effectiveSize == double.infinity) effectiveSize = 50.0;
-
-        _prepareCapsulePath(effectiveSize);
-        _prepareFootballPath(effectiveSize);
-
-        return AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            double v = _controller.value;
-            int totalStages = _shapeSides.length - 1;
-            double stageInterval = 1.0 / totalStages;
-
-            int index = (v / stageInterval).floor().clamp(0, totalStages - 1);
-            double stageProgress = (v % stageInterval) / stageInterval;
-
-            // 形状阶段颜色渐变：每个阶段一个主色，阶段内平滑过渡
-            final cs = Theme.of(context).colorScheme;
-            final stageColors = [
-              cs.primary,
-              cs.tertiary,
-              cs.secondary,
-              cs.primary,
-              cs.tertiary,
-              cs.secondary,
-              cs.primary,
-              cs.secondary,
-              cs.tertiary,
-              cs.primary,
-              cs.tertiary,
-            ];
-            final color = Color.lerp(
-              stageColors[index % stageColors.length],
-              stageColors[(index + 1) % stageColors.length],
-              stageProgress,
-            )!;
-
-            double rotateT = (stageProgress / 0.7).clamp(0.0, 1.0);
-            double rotateCurve = const _CustomBackOutCurve(
-              0.8,
-            ).transform(rotateT);
-            double rotationStep = 1.5 * pi;
-            double rotation =
-                (index * rotationStep) + (rotateCurve * rotationStep);
-
-            bool isNextShape = stageProgress > 0.2;
-            double currentSides = isNextShape
-                ? _shapeSides[index + 1].toDouble()
-                : _shapeSides[index].toDouble();
-
-            double scaleT = (stageProgress / 0.8).clamp(0.0, 1.0);
-            double scaleCurve = Curves.easeOutBack.transform(scaleT);
-            double scale = 0.95 + (0.05 * scaleCurve);
-
-            return Transform.scale(
-              scale: scale,
-              child: Transform.rotate(
-                angle: rotation,
-                child: SizedBox(
-                  width: effectiveSize,
-                  height: effectiveSize,
-                  child: CustomPaint(
-                    painter: _OptimizedShapePainter(
-                      sides: currentSides,
-                      color: color,
-                      polygonCache: _polygonCache,
-                      capsulePath: _capsulePath,
-                      footballPath: _footballPath,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
+        double effectiveSize = min(constraints.maxWidth, constraints.maxHeight);
+        if (effectiveSize == double.infinity) effectiveSize = 36.0;
+        return loader(effectiveSize);
       },
     );
-  }
-
-  void _prepareCapsulePath(double size) {
-    final w = size * 0.65;
-    final h = size * 0.45;
-    final center = Offset(size / 2, size / 2);
-    _capsulePath.reset();
-    final rect = Rect.fromCenter(center: center, width: w, height: h);
-    _capsulePath.addRRect(
-      RRect.fromRectAndRadius(rect, Radius.circular(h / 2)),
-    );
-  }
-
-  void _prepareFootballPath(double size) {
-    final w = size * 0.68;
-    final h = size * 0.52;
-    final center = Offset(size / 2, size / 2);
-    _footballPath.reset();
-    _footballPath.moveTo(center.dx - w / 2, center.dy);
-    _footballPath.cubicTo(
-      center.dx - w / 2,
-      center.dy - h * 0.62,
-      center.dx + w / 2,
-      center.dy - h * 0.62,
-      center.dx + w / 2,
-      center.dy,
-    );
-    _footballPath.cubicTo(
-      center.dx + w / 2,
-      center.dy + h * 0.62,
-      center.dx - w / 2,
-      center.dy + h * 0.62,
-      center.dx - w / 2,
-      center.dy,
-    );
-    _footballPath.close();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-}
-
-class _OptimizedShapePainter extends CustomPainter {
-  final double sides;
-  final Color color;
-
-  final Map<int, Path> polygonCache;
-  final Path capsulePath;
-  final Path footballPath;
-
-  _OptimizedShapePainter({
-    required this.sides,
-    required this.color,
-    required this.polygonCache,
-    required this.capsulePath,
-    required this.footballPath,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..isAntiAlias = true;
-    canvas.save();
-    if (sides == 2) {
-      canvas.drawPath(capsulePath, paint);
-    } else if (sides == 1) {
-      canvas.drawPath(footballPath, paint);
-    } else {
-      final int intSides = sides.toInt();
-      if (!polygonCache.containsKey(intSides)) {
-        polygonCache[intSides] = _buildPolygonPath(intSides, size);
-      }
-      canvas.drawPath(polygonCache[intSides]!, paint);
-    }
-    canvas.restore();
-  }
-
-  Path _buildPolygonPath(int sides, Size size) {
-    final path = Path();
-    final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = size.width / 2 * 0.85;
-    final innerRadius = outerRadius * 0.55;
-    int vertexCount = (sides * 2).round();
-    if (vertexCount < 6) vertexCount = 6;
-    double angleStep = (2 * pi) / vertexCount;
-
-    for (int i = 0; i < vertexCount; i++) {
-      double angle = (angleStep * i) - pi / 2;
-      double r = (i % 2 == 0) ? outerRadius : innerRadius;
-      final pCurr = Offset(
-        center.dx + r * cos(angle),
-        center.dy + r * sin(angle),
-      );
-
-      double anglePrev = (angleStep * (i - 1)) - pi / 2;
-      double rPrev = ((i - 1) % 2 == 0) ? outerRadius : innerRadius;
-      final pPrev = Offset(
-        center.dx + rPrev * cos(anglePrev),
-        center.dy + rPrev * sin(anglePrev),
-      );
-
-      double angleNext = (angleStep * (i + 1)) - pi / 2;
-      double rNext = ((i + 1) % 2 == 0) ? outerRadius : innerRadius;
-      final pNext = Offset(
-        center.dx + rNext * cos(angleNext),
-        center.dy + rNext * sin(angleNext),
-      );
-
-      const double cornerSize = 0.7;
-      final start = Offset.lerp(pCurr, pPrev, cornerSize)!;
-      final end = Offset.lerp(pCurr, pNext, cornerSize)!;
-
-      if (i == 0) {
-        path.moveTo(start.dx, start.dy);
-      } else {
-        path.lineTo(start.dx, start.dy);
-      }
-      path.quadraticBezierTo(pCurr.dx, pCurr.dy, end.dx, end.dy);
-    }
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldRepaint(covariant _OptimizedShapePainter oldDelegate) =>
-      oldDelegate.sides != sides || oldDelegate.color != color;
-}
-
-class _CustomBackOutCurve extends Curve {
-  final double s;
-
-  const _CustomBackOutCurve(this.s);
-
-  @override
-  double transformInternal(double t) {
-    t = t - 1.0;
-    return t * t * ((s + 1) * t + s) + 1.0;
   }
 }
 
@@ -514,7 +286,6 @@ class CustomSwitch extends StatelessWidget {
   }
 }
 
-
 /// 竖向图标按钮：上面图标，下面文字。
 /// 用于详情页操作栏、番源设置页操作按钮等（统一复用）。
 class IconTileButton extends StatelessWidget {
@@ -561,7 +332,8 @@ class IconTileButton extends StatelessWidget {
     final enabled = onTap != null;
     final active = isActive ?? false;
     final loading = isLoading ?? false;
-    final iconColor = color ??
+    final iconColor =
+        color ??
         (active
             ? (activeColor ?? cs.primary)
             : (enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.3)));

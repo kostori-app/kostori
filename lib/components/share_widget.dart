@@ -818,7 +818,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                                 style: ts.s12,
                               ),
                             ),
-                            Text('${bangumiItem.total} votes'),
+                            Text(t.votes(n: bangumiItem.total)),
                           ],
                         ),
                       ],

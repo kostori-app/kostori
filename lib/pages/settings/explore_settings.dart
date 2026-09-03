@@ -321,7 +321,7 @@ class _SourceReorderableList extends StatelessWidget {
 
         return ListTile(
           title: Text(sourceName),
-          subtitle: Text('$pageCount pages'),
+          subtitle: Text(t.pagesCount(n: pageCount)),
           trailing: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [Icon(Icons.chevron_right), Icon(Icons.drag_handle)],

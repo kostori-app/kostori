@@ -538,6 +538,24 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                 ),
               ],
             ),
+            // 时间行：当前 / 总时长（集中显示，方便看清）
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+              child: Row(
+                children: [
+                  const Spacer(),
+                  Text(
+                    '${_fmtDuration(state.position)} / ${_fmtDuration(state.duration)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
           ],
         ),
       ),

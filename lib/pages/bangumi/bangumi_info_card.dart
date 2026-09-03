@@ -869,7 +869,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                   style: TextStyle(fontSize: 12),
                                 ),
                                 const SizedBox(width: 24),
-                                Text('${widget.bangumiItem.total} votes'),
+                                Text(t.votes(n: widget.bangumiItem.total)),
                               ],
                             ),
                           ),

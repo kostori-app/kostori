@@ -480,7 +480,9 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
     }
     return switch (_apiFormat) {
       'claude' => '$base/v1/models',
-      'gemini' => '$base/models?key=${_keyCtrl.text.trim()}',
+      // key 只走 x-goog-api-key 请求头（_probeHeaders），不放进 URL，
+      // 避免 key 随 URL 泄漏到访问日志/代理
+      'gemini' => '$base/models',
       _ => '$base/models',
     };
   }
@@ -2412,9 +2414,6 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     final selected = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (ctx) => Sheet(
         title: t.profilePersona,
         icon: Icons.face_outlined,
@@ -2479,9 +2478,6 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     final selected = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (ctx) => Sheet(
         title: t.profileTone,
         icon: Icons.format_quote_outlined,

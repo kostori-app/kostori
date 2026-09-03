@@ -224,7 +224,7 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
                 const SizedBox(height: 4),
                 Text("$value/${animes.length}"),
                 const SizedBox(height: 4),
-                if (errors > 0) Text("Errors: $errors"),
+                if (errors > 0) Text(t.errorsLabel(n: errors)),
               ],
             ).paddingHorizontal(16),
             actions: [

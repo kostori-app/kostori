@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/image_loader/history_image_provider.dart'
     as image_provider;
 import 'package:kostori/network/images.dart';
@@ -26,6 +27,14 @@ class HistoryImageProvider
       history.id,
     )) {
       checkStop();
+      // 网络失败：与 CachedImageProvider 一致直接抛出，由 ImageStream 显示
+      // 错误占位，避免返回透明 PNG 透出卡片蓝调背景（看起来像蓝色色块）
+      if (progress.error != null) {
+        throw ImageLoadException(
+          url,
+          'Network error loading image: ${progress.error}',
+        );
+      }
       chunkEvents.add(
         ImageChunkEvent(
           cumulativeBytesLoaded: progress.currentBytes,
@@ -36,8 +45,7 @@ class HistoryImageProvider
         return progress.imageBytes!;
       }
     }
-    // 空响应体/加载失败：返回 1×1 透明 PNG 占位，避免抛 Empty response body 刷屏
-    return BaseImageProvider.kTransparentPng;
+    throw ImageLoadException(url, 'Empty response body');
   }
 
   @override

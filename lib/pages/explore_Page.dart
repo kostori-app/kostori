@@ -50,6 +50,8 @@ class _ExplorePageState extends State<ExplorePage>
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
+      // 源已关闭时不在探索页显示（AnimeSource.find 不过滤禁用）
+      if (!AnimeSourceManager().isEnabled(key)) continue;
       var allPagesForSource = source.explorePages.map((e) => e.title).toList();
       var pagesForSource = (pagesMap[key] ?? [])
           .where((p) => allPagesForSource.contains(p))
@@ -124,10 +126,15 @@ class _ExplorePageState extends State<ExplorePage>
   }
 
   void _rebuildPageControllers([Map<String, int>? prevIndices]) {
-    for (var source in sourcePages.keys) {
+    final persisted = _loadPageIndices();
+    for (final source in sources) {
       var pages = sourcePages[source] ?? [];
+      // 恢复顺序：内存中的上次索引 > 持久化索引 > 0
       var prevIndex =
-          prevIndices?[source] ?? pageControllers[source]?.index ?? 0;
+          prevIndices?[source] ??
+          pageControllers[source]?.index ??
+          (persisted[source] as num?)?.toInt() ??
+          0;
       pageControllers[source]?.dispose();
       pageControllers[source] = TabController(
         length: pages.length,
@@ -183,6 +190,8 @@ class _ExplorePageState extends State<ExplorePage>
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
+      // 源已关闭时不在探索页显示（AnimeSource.find 不过滤禁用）
+      if (!AnimeSourceManager().isEnabled(key)) continue;
       var allPagesForSource = source.explorePages.map((e) => e.title).toList();
       var pagesForSource = (pagesMap[key] ?? [])
           .where((p) => allPagesForSource.contains(p))
@@ -217,6 +226,10 @@ class _ExplorePageState extends State<ExplorePage>
 
   @override
   void dispose() {
+    // 写盘延到下一帧：writeImplicitData 会 notifyListeners，dispose 期调用会崩
+    final savedIndices = <String, dynamic>{
+      for (final s in pageControllers.keys) s: pageControllers[s]?.index ?? 0,
+    };
     sourceController.dispose();
     for (var c in pageControllers.values) {
       c.dispose();
@@ -224,7 +237,20 @@ class _ExplorePageState extends State<ExplorePage>
     appdata.settings.removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
     exploreController.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      appdata.implicitData['explorePageIndices'] = savedIndices;
+      appdata.writeImplicitData();
+    });
     super.dispose();
+  }
+
+  /// 读取持久化的二级 tab 索引
+  Map<String, dynamic> _loadPageIndices() {
+    final v = appdata.implicitData['explorePageIndices'];
+    if (v is Map) {
+      return Map<String, dynamic>.from(v);
+    }
+    return <String, dynamic>{};
   }
 
   void refresh() {
@@ -582,7 +608,7 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         ),
       );
     } else {
-      child = const Center(child: Text("Empty Page"));
+      child = Center(child: Text(t.emptyPage));
     }
     return AnimeDisplayModeScope(mode: sourceMode, child: child);
   }
@@ -669,12 +695,31 @@ class _MixedExplorePageState
 
   @override
   Widget buildContent(BuildContext context, List<Object> data) {
-    return SmoothCustomScrollView(
+    final scroll = SmoothCustomScrollView(
       controller: widget.controller,
       slivers: [
         if (widget.leadingSliver != null) widget.leadingSliver!,
         ...buildSlivers(context, data),
-        const SliverListLoadingIndicator(),
+      ],
+    );
+    // 加载下一页时在视口底部悬浮转圈（不占内容流，避免触发时被截半；
+    // 加载完成/无更多页时自动消失）
+    final showLoader = isLoading && !isFirstLoading;
+    if (!showLoader) return scroll;
+    return Stack(
+      children: [
+        scroll,
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: MediaQuery.of(context).padding.bottom + 12,
+          child: IgnorePointer(
+            child: SizedBox(
+              height: 64,
+              child: Center(child: const PolygonRefreshIndicator(size: 44)),
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -689,43 +689,30 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetCtx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  sheetCtx,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (sheetCtx) => Sheet(
+        title: t.more,
+        icon: Icons.more_horiz,
+        initialSize: 0.4,
+        builder: (context, sc) => SingleChildScrollView(
+          controller: sc,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final o in options)
+                  _MoreActionTile(
+                    icon: o.icon,
+                    label: o.label,
+                    onTap: () {
+                      Navigator.pop(sheetCtx);
+                      o.onTap();
+                    },
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final o in options)
-                    _MoreActionTile(
-                      icon: o.icon,
-                      label: o.label,
-                      onTap: () {
-                        Navigator.pop(sheetCtx);
-                        o.onTap();
-                      },
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
       ),
     );
@@ -879,7 +866,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ProviderModelSheet(
+      builder: (_) => ProviderModelSheet(
         provider: _source,
         onProviderChanged: _onProviderChanged,
       ),
@@ -1739,8 +1726,9 @@ class _ChatSessionSheet extends StatelessWidget {
   }
 }
 
-class _ProviderModelSheet extends StatefulWidget {
-  const _ProviderModelSheet({
+class ProviderModelSheet extends StatefulWidget {
+  const ProviderModelSheet({
+    super.key,
     required this.provider,
     required this.onProviderChanged,
   });
@@ -1749,10 +1737,10 @@ class _ProviderModelSheet extends StatefulWidget {
   final ValueChanged<String> onProviderChanged;
 
   @override
-  State<_ProviderModelSheet> createState() => _ProviderModelSheetState();
+  State<ProviderModelSheet> createState() => _ProviderModelSheetState();
 }
 
-class _ProviderModelSheetState extends State<_ProviderModelSheet> {
+class _ProviderModelSheetState extends State<ProviderModelSheet> {
   late String _provider = widget.provider;
 
   @override
@@ -1799,23 +1787,23 @@ class _ProviderModelSheetState extends State<_ProviderModelSheet> {
             ),
           ),
           const Divider(height: 1),
-          Expanded(child: _ProviderModelList(provider: _provider)),
+          Expanded(child: ProviderModelList(provider: _provider)),
         ],
       ),
     );
   }
 }
 
-class _ProviderModelList extends StatefulWidget {
-  const _ProviderModelList({required this.provider});
+class ProviderModelList extends StatefulWidget {
+  const ProviderModelList({super.key, required this.provider});
 
   final String provider;
 
   @override
-  State<_ProviderModelList> createState() => _ProviderModelListState();
+  State<ProviderModelList> createState() => _ProviderModelListState();
 }
 
-class _ProviderModelListState extends State<_ProviderModelList> {
+class _ProviderModelListState extends State<ProviderModelList> {
   /// 当前类型筛选（null = 全部）
   String? _typeFilter;
 

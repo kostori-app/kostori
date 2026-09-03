@@ -354,8 +354,11 @@ class _AnimatedImageState extends State<AnimatedImage>
         );
       }
     } else {
-      // 加载中显示骨架屏（不显示线性进度）
+      // 加载中骨架屏：用无动画 SolidColorEffect（滚动时大量 loading 卡各自
+      // shimmer 是掉帧来源），就绪后仍由 AnimatedSwitcher 淡入
+      final cs = Theme.of(context).colorScheme;
       result = Skeletonizer.zone(
+        effect: SolidColorEffect(color: cs.surfaceContainerHighest),
         child: Bone(height: widget.height, width: widget.width ?? 100),
       );
     }
@@ -364,13 +367,15 @@ class _AnimatedImageState extends State<AnimatedImage>
       duration: const Duration(milliseconds: 200),
       reverseDuration: const Duration(milliseconds: 200),
       child: KeyedSubtree(
-        // 以加载状态为 key，保证 骨架屏/错误/成图 之间有切换动画
+        // 以加载状态为 key，保证 骨架屏/错误/成图 之间有切换动画。
+        // loading 态带 provider 标识：AnimatedSwitcher 会同时保留旧/新 child，
+        // 若固定 'loading' 会在切换图片时出现两个同 key 的 loading（Duplicate keys）
         key: ValueKey<String>(
           _imageInfo != null
               ? 'image:${widget.image}'
               : (_lastException != null
                     ? 'error:${_lastException.toString().contains('404')}'
-                    : 'loading'),
+                    : 'loading:${widget.image.hashCode}'),
         ),
         child: result,
       ),

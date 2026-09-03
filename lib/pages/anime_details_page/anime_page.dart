@@ -27,6 +27,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
@@ -48,6 +49,7 @@ import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/services/download/download_manager.dart';
+import 'package:kostori/services/download/download_task.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/translations.dart';
@@ -229,6 +231,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       title: widget.title,
       sourceKey: _sourceKey,
       aid: _animeId,
+      heroTag: widget.heroTag,
       heroID: widget.heroID,
     );
   }
@@ -256,6 +259,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     watcherController.anime = data;
     if (history == null) {
       history = History.fromModel(model: data!);
+      // 详情接口未返回 cover 时，回退用入口 cover（来自列表卡片），
+      // 避免历史记录里封面为空
+      if (history!.cover.isEmpty &&
+          widget.cover != null &&
+          widget.cover!.isNotEmpty) {
+        history!.cover = widget.cover!;
+      }
       await HistoryManager().addHistory(history!);
     }
     if (history?.bangumiId != null) {
@@ -314,14 +324,29 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   void dispose() {
+    // 退出页面时清除媒体会话通知（clearController→stop 会移除通知栏常驻条）
+    unawaited(() async {
+      await Future<void>.delayed(Duration.zero);
+      final handler = AudioServiceManager().handlerOrNull;
+      if (handler != null) {
+        try {
+          await handler.clearController();
+        } catch (_) {}
+      }
+    }());
     HistoryManager().removeListener(updateHistory);
     providerContainer
         .read(bangumiManagerProvider)
         .removeListener(updateBangumiBind);
     StatsManager().removeListener(updateStats);
-    Future.microtask(() {
-      DataSync().onDataChanged();
-    });
+    // 仅当详情加载完成（data != null）才触发数据同步：
+    // 误点进入即退出 / 加载失败时未产生数据变化，不应上传。
+    // 同步本身还有 5s 防抖 + 30s 最小间隔兜底，避免频繁进出反复上传。
+    if (data != null) {
+      Future.microtask(() {
+        DataSync().onDataChanged();
+      });
+    }
     tabController.dispose();
     infoScrollCtrl.dispose();
     episodesScrollCtrl.dispose();
@@ -620,24 +645,21 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
                             onTap: () {
-                              (history?.bangumiId == null ||
-                                      bangumiItem == null)
-                                  ? BangumiWidget.showImagePreview(
-                                      context: context,
-                                      url: widget.cover ?? anime.cover,
-                                      title: anime.title,
-                                      heroTag:
-                                          widget.heroTag ??
-                                          "cover${widget.heroID}",
-                                    )
-                                  : BangumiWidget.showImagePreview(
-                                      context: context,
-                                      url: bangumiItem.images['large']!,
-                                      title: bangumiItem.nameCn,
-                                      heroTag:
-                                          widget.heroTag ??
-                                          "cover${widget.heroID}",
-                                    );
+                              final coverUrl = (widget.cover != null &&
+                                      widget.cover!.isNotEmpty)
+                                  ? widget.cover!
+                                  : anime.cover;
+                              BangumiWidget.showImagePreview(
+                                context: context,
+                                url: coverUrl,
+                                title: anime.title,
+                                heroTag:
+                                    widget.heroTag ?? "cover${widget.heroID}",
+                                // 与封面显示的 provider 同 key，保证点击即命中缓存
+                                imageProvider: coverUrl.isNotEmpty
+                                    ? _coverProvider(coverUrl)
+                                    : null,
+                              );
                             },
                             child: Hero(
                               tag: widget.heroTag ?? "cover${widget.heroID}",
@@ -668,18 +690,25 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   ],
                                 ),
                                 clipBehavior: Clip.antiAlias,
-                                child:
-                                    widget.cover != null ||
-                                        anime.cover.isNotEmpty
-                                    ? AnimatedImage(
-                                        image: _coverProvider(
-                                          widget.cover ?? anime.cover,
-                                        ),
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                      )
-                                    : SizedBox(),
+                                child: Builder(
+                                  builder: (context) {
+                                    // cover 为空（null 或空串）时回退到详情数据
+                                    // anime.cover，避免空串不走 ?? 导致加载空 URL
+                                    final coverUrl =
+                                        (widget.cover != null &&
+                                                widget.cover!.isNotEmpty)
+                                        ? widget.cover!
+                                        : anime.cover;
+                                    return coverUrl.isNotEmpty
+                                        ? AnimatedImage(
+                                            image: _coverProvider(coverUrl),
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          )
+                                        : const SizedBox();
+                                  },
+                                ),
                               ),
                             ),
                           ),
@@ -712,7 +741,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   child: Text(
                                     anime.title,
                                     style: ts.s18,
-                                    maxLines: 2,
+                                    // bangumi 下方还有评分/收藏等占空间，标题限 2 行；
+                                    // 非 bangumi 内容较空，放宽到 5 行完整展示标题
+                                    maxLines: animeSource.isBangumi ? 2 : 5,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -940,53 +971,56 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           ),
           color: Theme.of(context).colorScheme.inversePrimary,
         ),
-        IconTileButton(
-          icon: const Icon(Icons.favorite_border),
-          activeIcon: const Icon(Icons.favorite),
-          isActive: isLiked,
-          label: t.liked,
-          onTap: () {
-            liked();
-            setState(() {
-              isLiked = !isLiked;
-            });
-            if (isLiked) {
-              App.rootContext.showMessage(message: t.likeSuccess);
-            } else {
-              App.rootContext.showMessage(message: t.unlikeSuccess);
-            }
-          },
-          color: Colors.redAccent,
-        ),
-        IconTileButton(
-          icon: Icon((ratingValue != 0) ? Icons.star_rounded : Icons.comment),
-          // 评分后 label 显示评分值（与其他按钮一致：单图标 + 文字）
-          label: (ratingValue != 0)
-              ? Utils.getRatingLabel(ratingValue ?? 0)
-              : t.rating,
-          onTap: () async {
-            await showRatingDialog(statsDataImpl!).then((_) {
-              setState(() {});
-            });
-          },
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        IconTileButton(
-          icon: ClipOval(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: SvgPicture.asset(
-                'assets/img/bangumi_icon.svg',
-                fit: BoxFit.fill,
+        if (isBangumi) ...[
+          IconTileButton(
+            icon: const Icon(Icons.favorite_border),
+            activeIcon: const Icon(Icons.favorite),
+            isActive: isLiked,
+            label: t.liked,
+            onTap: () {
+              liked();
+              setState(() {
+                isLiked = !isLiked;
+              });
+              if (isLiked) {
+                App.rootContext.showMessage(message: t.likeSuccess);
+              } else {
+                App.rootContext.showMessage(message: t.unlikeSuccess);
+              }
+            },
+            color: Colors.redAccent,
+          ),
+          IconTileButton(
+            icon: Icon((ratingValue != 0) ? Icons.star_rounded : Icons.comment),
+            // 评分后 label 显示评分值（与其他按钮一致：单图标 + 文字）
+            label: (ratingValue != 0)
+                ? Utils.getRatingLabel(ratingValue ?? 0)
+                : t.rating,
+            onTap: () async {
+              await showRatingDialog(statsDataImpl!).then((_) {
+                setState(() {});
+              });
+            },
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ],
+        if (isBangumi)
+          IconTileButton(
+            icon: ClipOval(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: SvgPicture.asset(
+                  'assets/img/bangumi_icon.svg',
+                  fit: BoxFit.fill,
+                ),
               ),
             ),
+            label: t.bangumi,
+            onTap: () async {
+              bangumiBottomInfo(context);
+            },
           ),
-          label: t.bangumi,
-          onTap: () async {
-            bangumiBottomInfo(context);
-          },
-        ),
         if (anime.url != null)
           IconTileButton(
             icon: const Icon(Icons.open_in_browser),
@@ -1097,11 +1131,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         () {
           final title = AnimeDetails.episodeTitleOf(e.value);
           final name = title.isEmpty ? t.episodeN(n: e.key) : title;
+          final keyStr = e.key.toString();
           return _DownloadItem(
-            key: e.key,
+            key: keyStr,
             title: name,
             subtitle: '',
             episodeName: name,
+            episodeNo: int.tryParse(keyStr) != null ? keyStr : null,
             sourceKey: _sourceKey,
           );
         }(),
@@ -1154,12 +1190,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }) async {
     final result = await showModalBottomSheet<List<_DownloadPick>>(
       context: context,
-      showDragHandle: true,
       isScrollControlled: true,
       builder: (_) => _EpisodeDownloadPicker(
         items: items,
         downloaded: downloaded,
         resolvePlay: _resolvePlayResult,
+        animeTitle: data!.title,
       ),
     );
     if (result == null || result.isEmpty || !mounted) return;
@@ -1169,6 +1205,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         item.episodeName,
         url: item.url,
         resolution: item.resolution,
+        animeTitle: item.animeTitle,
+        episodeNo: item.episodeNo,
       );
     }
   }
@@ -1192,6 +1230,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     String epName, {
     String? url,
     String? resolution,
+    String? animeTitle,
+    String? episodeNo,
   }) async {
     final source = AnimeSource.find(_sourceKey);
     if (source == null || source.loadAnimePages == null) {
@@ -1214,20 +1254,28 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       App.rootContext.showMessage(message: t.downloadFailed);
       return;
     }
-    await DownloadManager.instance.enqueue(
+    final task = await DownloadManager.instance.enqueue(
       url: targetUrl,
-      title: data!.title,
+      title: animeTitle ?? data!.title,
       subtitle: epName,
       cover: data!.cover,
       sourceKey: data!.sourceKey,
       animeId: _animeId,
-      animeTitle: data!.title,
+      animeTitle: animeTitle ?? data!.title,
       episode: epName,
+      episodeNo: episodeNo,
       author: data!.uploader,
       headers: source.httpHeaders ?? const {},
       resolution: resolution,
     );
-    if (mounted) App.rootContext.showMessage(message: t.downloadQueued);
+    if (!mounted) return;
+    // 并发未满时任务已立即开始（status 已切 downloading），
+    // 排队中则提示等待，给用户明确反馈
+    App.rootContext.showMessage(
+      message: task != null && task.status == DownloadStatus.queued
+          ? t.downloadQueued
+          : t.downloadStarted,
+    );
   }
 
   /// 从 AnimePlayResult Map 取默认播放地址
@@ -1615,6 +1663,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
     this.title,
     required this.sourceKey,
     required this.aid,
+    this.heroTag,
     this.heroID,
   });
 
@@ -1625,6 +1674,9 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
   final String sourceKey;
 
   final String aid;
+
+  /// 与正文封面 Hero 相同的 tag（转场期间占住目标，避免飞行丢失）
+  final String? heroTag;
 
   final int? heroID;
 
@@ -1697,32 +1749,48 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
   }
 
   Widget _buildInfoArea(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 与正文一致的封面尺寸：宽 ≤ 30%，高 ≤ 300，宽/高比 0.72
+          final maxImageWidth = constraints.maxWidth * 0.3;
+          final calculatedHeight = maxImageWidth / 0.72;
+          final imageHeight = math.min(calculatedHeight, 300.0);
+          final imageWidth = imageHeight * 0.72;
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              buildImage(context),
-              const SizedBox(width: 16),
-              Expanded(child: _buildTitleSkeleton(context)),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  buildImage(context, width: imageWidth, height: imageHeight),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SizedBox(
+                      height: imageHeight,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTitleSkeleton(context),
+                          const Spacer(),
+                          _buildActionBarSkeleton(context),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildTagChips(context),
+              const SizedBox(height: 24),
+              _buildDescriptionSkeleton(context),
+              const SizedBox(height: 24),
             ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildTagChips(context),
-        ),
-        const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildDescriptionSkeleton(context),
-        ),
-        const SizedBox(height: 24),
-      ],
+          );
+        },
+      ),
     );
   }
 
@@ -1743,6 +1811,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
   }
 
   Widget _buildTitleSkeleton(BuildContext context) {
+    final isBangumi = AnimeSource.find(sourceKey)?.isBangumi ?? false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1750,17 +1819,32 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
           Text(
             title!,
             style: ts.s18,
-            maxLines: 2,
+            // 与正文一致：非 bangumi 标题不因评分等占位而被限 2 行
+            maxLines: isBangumi ? 2 : 5,
             overflow: TextOverflow.ellipsis,
           )
         else
           _block(context, width: double.infinity, height: 22),
-        const SizedBox(height: 10),
-        _block(context, width: 150, height: 14),
-        const SizedBox(height: 10),
-        _block(context, width: 90, height: 12),
-        const SizedBox(height: 14),
-        _block(context, width: 180, height: 12),
+        const SizedBox(height: 8),
+        // 源名（bangumi 显示为可点击的切换卡占位）
+        _block(
+          context,
+          width: isBangumi ? 70 : 56,
+          height: isBangumi ? 26 : 12,
+          radius: isBangumi ? 13 : 6,
+        ),
+      ],
+    );
+  }
+
+  /// 底部操作栏（收藏/分享/喜欢/评分等）占位，与正文高度对齐避免加载后跳动
+  Widget _buildActionBarSkeleton(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < 4; i++) ...[
+          _block(context, width: 22, height: 22, radius: 11),
+          const SizedBox(width: 20),
+        ],
       ],
     );
   }
@@ -1840,7 +1924,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
     );
   }
 
-  Widget buildImage(BuildContext context) {
+  Widget buildImage(BuildContext context, {required double width, required double height}) {
     Widget child;
     if (cover != null) {
       child = AnimatedImage(
@@ -1853,9 +1937,10 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
       child = const SizedBox();
     }
 
-    // 骨架屏不参与 Hero 转场（避免与真实内容的 Hero tag 冲突导致
-    // "multiple heroes share the same tag"），加载完成后由真实 Hero 接管
-    return Container(
+    // 占位封面参与 Hero 转场：数据异步加载期间先占住与正文封面相同的
+    // tag，保证从列表飞入的目标在过渡帧已存在（否则数据晚到会丢失飞行）；
+    // 数据就绪后同 tag 的正文封面原位接管（同一时刻页内只有一个同 tag Hero）
+    Widget coverBox = Container(
       decoration: BoxDecoration(
         color: context.colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(8),
@@ -1867,11 +1952,16 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
           ),
         ],
       ),
-      height: 144,
-      width: 144 * 0.72,
+      width: width,
+      height: height,
       clipBehavior: Clip.antiAlias,
       child: child,
     );
+    final tag = heroTag ?? (heroID != null ? 'cover$heroID' : null);
+    if (tag != null) {
+      coverBox = Hero(tag: tag, child: coverBox);
+    }
+    return coverBox;
   }
 }
 
@@ -1943,12 +2033,16 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
     }
   }
 
-  Future<void> _searchSource(AnimeSource source) async {
+  Future<void> _searchSource(
+    AnimeSource source, {
+    bool allowCaptchaDialog = false,
+  }) async {
     final st = _states[source.key]!;
     st.loading = true;
     st.results = [];
     st.success = false;
     st.cf = null;
+    if (!allowCaptchaDialog) st.needsCaptcha = false;
     setState(() {});
     final data = source.searchPageData;
     if (data == null || data.loadPage == null) {
@@ -1956,9 +2050,10 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
       setState(() {});
       return;
     }
+    final beforeSuppressed = JsUiApi.suppressedCaptchaRequests;
     try {
       // 批量自动搜索：抑制源 JS 的验证码弹窗，验证码只在该源被主动触发时弹出
-      JsUiApi.suppressCaptcha();
+      if (!allowCaptchaDialog) JsUiApi.suppressCaptcha();
       final options = (data.searchOptions ?? const [])
           .map((e) => e.defaultValue)
           .toList();
@@ -1976,7 +2071,11 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
           !st.needsCaptcha &&
           (msg.toLowerCase().contains('captcha') || msg.contains('验证码'));
     } finally {
-      JsUiApi.restoreCaptcha();
+      if (!allowCaptchaDialog) JsUiApi.restoreCaptcha();
+      // 搜索期间源 JS 请求过验证码弹窗（被抑制）→ 标记该源需要验证码
+      if (JsUiApi.suppressedCaptchaRequests > beforeSuppressed) {
+        st.needsCaptcha = true;
+      }
     }
     setState(() {});
   }
@@ -1989,7 +2088,7 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
       if (mounted) {
         setState(() => _verifying = null);
         final s = AnimeSource.find(sourceKey);
-        if (s != null) _searchSource(s);
+        if (s != null) _searchSource(s, allowCaptchaDialog: true);
       }
     });
   }
@@ -2022,7 +2121,8 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
                 final cfe = _states[s.key]!.cf;
                 if (cfe != null) _verifySource(s.key, cfe);
               },
-              onRetry: () => _searchSource(s),
+              onRetry: () => _searchSource(s, allowCaptchaDialog: true),
+              onCaptcha: () => _searchSource(s, allowCaptchaDialog: true),
               onPick: (a) => Navigator.pop(ctx, a),
             ),
         ],
@@ -2043,6 +2143,7 @@ class _SourceCard extends StatelessWidget {
     required this.onToggle,
     required this.onVerify,
     required this.onRetry,
+    required this.onCaptcha,
     required this.onPick,
   });
 
@@ -2063,6 +2164,8 @@ class _SourceCard extends StatelessWidget {
   final VoidCallback onVerify;
 
   final VoidCallback onRetry;
+
+  final VoidCallback onCaptcha;
 
   final void Function(Anime) onPick;
 
@@ -2159,6 +2262,21 @@ class _SourceCard extends StatelessWidget {
                               : Icon(Icons.chevron_right, color: cs.outline),
                           onTap: onVerify,
                         ),
+                      if (needsCaptcha && !needsCf)
+                        ListTile(
+                          dense: true,
+                          leading: Icon(Icons.password_outlined, color: Colors.orange),
+                          title: Text(t.needVerification),
+                          subtitle: Text(t.tapToVerify),
+                          trailing: state.loading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: PolygonRefreshIndicator(),
+                                )
+                              : Icon(Icons.chevron_right, color: cs.outline),
+                          onTap: onCaptcha,
+                        ),
                       for (final a in state.results)
                         ListTile(
                           dense: true,
@@ -2193,7 +2311,10 @@ class _SourceCard extends StatelessWidget {
                               : null,
                           onTap: () => onPick(a),
                         ),
-                      if (state.results.isEmpty && !state.loading && !needsCf)
+                      if (state.results.isEmpty &&
+                          !state.loading &&
+                          !needsCf &&
+                          !needsCaptcha)
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -2293,6 +2414,9 @@ class _DownloadItem {
   /// 下载记录里的 episode 字段（用于已下载标记）
   final String episodeName;
 
+  /// 纯集号（数字索引时才有），用于“不使用集标题”命名
+  final String? episodeNo;
+
   /// 封面所属源 key
   final String sourceKey;
 
@@ -2301,6 +2425,7 @@ class _DownloadItem {
     required this.title,
     this.subtitle = '',
     required this.episodeName,
+    this.episodeNo,
     required this.sourceKey,
   });
 }
@@ -2311,6 +2436,12 @@ class _DownloadPick {
 
   final String episodeName;
 
+  /// 选定的番剧主标题（用户可在弹窗顶部编辑，覆盖文件名的 {title} 部分）
+  final String? animeTitle;
+
+  /// 纯集号（“不使用集标题”命名用）
+  final String? episodeNo;
+
   /// 选定分辨率的 url（null = 使用默认）
   final String? url;
 
@@ -2320,6 +2451,8 @@ class _DownloadPick {
   const _DownloadPick({
     required this.key,
     required this.episodeName,
+    this.animeTitle,
+    this.episodeNo,
     this.url,
     this.resolution,
   });
@@ -2331,6 +2464,7 @@ class _EpisodeDownloadPicker extends StatefulWidget {
     required this.items,
     required this.downloaded,
     required this.resolvePlay,
+    required this.animeTitle,
   });
 
   final List<_DownloadItem> items;
@@ -2340,6 +2474,9 @@ class _EpisodeDownloadPicker extends StatefulWidget {
 
   /// 解析单集/系列条目的播放结果（获取多分辨率）
   final Future<AnimePlayResult?> Function(String key) resolvePlay;
+
+  /// 番剧主标题（用于文件名的 {title}，可在弹窗内修改）
+  final String animeTitle;
 
   @override
   State<_EpisodeDownloadPicker> createState() => _EpisodeDownloadPickerState();
@@ -2352,14 +2489,26 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   final Map<String, String?> _resolutionByKey = {};
   final Map<String, String?> _resolutionLabelByKey = {};
 
+  /// key → 自定义标题（用于文件名；默认用 item.title）
+  final Map<String, String> _nameOverrides = {};
+
+  /// 番剧主标题（顶部输入框，可编辑，覆盖文件名的 {title} 部分）
+  late String _animeTitle;
+  late final TextEditingController _titleCtrl;
+
   @override
   void initState() {
     super.initState();
-    // 默认全选未下载的项
-    selected = widget.items
-        .where((e) => !widget.downloaded.contains(e.episodeName))
-        .map((e) => e.key)
-        .toSet();
+    // 默认不选择任何集，避免误下载整部（尤其是大批量番剧）
+    selected = <String>{};
+    _animeTitle = widget.animeTitle;
+    _titleCtrl = TextEditingController(text: widget.animeTitle);
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
   }
 
   void _toggle(String key) {
@@ -2368,13 +2517,58 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     });
   }
 
+  /// 编辑下载标题（用于生成文件名，避免超长标题导致无法创建文件）
+  Future<void> _editItemName(_DownloadItem item) async {
+    final ctrl = TextEditingController(
+      text: _nameOverrides[item.key] ?? item.title,
+    );
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.rename,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLines: 2,
+          decoration: InputDecoration(labelText: t.fileName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = ctrl.text.trim();
+              setState(() {
+                if (name.isEmpty) {
+                  _nameOverrides.remove(item.key);
+                } else {
+                  _nameOverrides[item.key] = name;
+                }
+              });
+              Navigator.of(ctx).pop();
+            },
+            child: Text(t.apply),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+  }
+
   void _confirm() {
     final picks = <_DownloadPick>[
       for (final item in widget.items)
         if (selected.contains(item.key))
           _DownloadPick(
             key: item.key,
-            episodeName: item.episodeName,
+            // 用户编辑过标题时用它（用于文件名），否则用原始集名
+            episodeName: _nameOverrides[item.key] ?? item.episodeName,
+            animeTitle: _animeTitle.trim().isEmpty
+                ? null
+                : _animeTitle.trim(),
+            episodeNo: item.episodeNo,
             url: _resolutionByKey[item.key],
             resolution: _resolutionLabelByKey[item.key],
           ),
@@ -2385,62 +2579,70 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   @override
   Widget build(BuildContext context) {
     final allSelected = selected.length == widget.items.length;
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    t.downloadEpisode,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => setState(() {
-                    if (allSelected) {
-                      selected.clear();
-                    } else {
-                      selected.addAll(widget.items.map((e) => e.key));
-                    }
-                  }),
-                  child: Text(allSelected ? t.selectNone : t.selectAll),
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                for (final item in widget.items)
-                  _DownloadItemCard(
-                    item: item,
-                    isDownloaded: widget.downloaded.contains(item.episodeName),
-                    isSelected: selected.contains(item.key),
-                    resolutionLabel: _resolutionLabelByKey[item.key],
-                    onToggle: () => _toggle(item.key),
-                    onResolution: (url, label) => setState(() {
-                      _resolutionByKey[item.key] = url;
-                      _resolutionLabelByKey[item.key] = label;
-                    }),
-                    resolvePlay: widget.resolvePlay,
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    return Sheet(
+      title: t.downloadEpisode,
+      icon: Icons.download_outlined,
+      initialSize: 0.7,
+      headerTrailing: TextButton(
+        onPressed: () => setState(() {
+          if (allSelected) {
+            selected.clear();
+          } else {
+            selected.addAll(widget.items.map((e) => e.key));
+          }
+        }),
+        child: Text(allSelected ? t.selectNone : t.selectAll),
+      ),
+      footer: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: SizedBox(
+            width: double.infinity,
             child: FilledButton(
               onPressed: selected.isEmpty ? null : _confirm,
               child: Text(t.downloadSelectedCount(n: selected.length)),
             ),
           ),
+        ),
+      ),
+      builder: (context, sc) => ListView(
+        controller: sc,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        children: [
+          // 番剧主标题：可编辑，作为所有选中项文件名的 {title} 前缀
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: TextField(
+              controller: _titleCtrl,
+              onChanged: (v) => _animeTitle = v,
+              maxLines: 2,
+              minLines: 1,
+              decoration: InputDecoration(
+                labelText: t.downloadMainTitle,
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.title, size: 18),
+              ),
+            ),
+          ),
+          for (final item in widget.items)
+            _DownloadItemCard(
+              item: item,
+              displayTitle: _nameOverrides[item.key] ?? item.title,
+              isDownloaded: widget.downloaded.contains(item.episodeName),
+              isSelected: selected.contains(item.key),
+              resolutionLabel: _resolutionLabelByKey[item.key],
+              onToggle: () => _toggle(item.key),
+              onEditName: () => _editItemName(item),
+              onResolution: (url, label) => setState(() {
+                _resolutionByKey[item.key] = url;
+                _resolutionLabelByKey[item.key] = label;
+              }),
+              resolvePlay: widget.resolvePlay,
+            ),
         ],
       ),
     );
@@ -2451,15 +2653,20 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
 class _DownloadItemCard extends StatefulWidget {
   const _DownloadItemCard({
     required this.item,
+    required this.displayTitle,
     required this.isDownloaded,
     required this.isSelected,
     required this.resolutionLabel,
     required this.onToggle,
+    required this.onEditName,
     required this.onResolution,
     required this.resolvePlay,
   });
 
   final _DownloadItem item;
+
+  /// 显示标题（用户编辑后为其自定义名）
+  final String displayTitle;
 
   final bool isDownloaded;
 
@@ -2468,6 +2675,9 @@ class _DownloadItemCard extends StatefulWidget {
   final String? resolutionLabel;
 
   final VoidCallback onToggle;
+
+  /// 编辑标题（改文件名用）
+  final VoidCallback onEditName;
 
   final void Function(String url, String label) onResolution;
 
@@ -2496,18 +2706,15 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
     }
     final index = await showModalBottomSheet<int>(
       context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.selectResolution,
+        icon: Icons.high_quality_outlined,
+        initialSize: 0.45,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          padding: const EdgeInsets.symmetric(vertical: 4),
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                t.selectResolution,
-                style: Theme.of(ctx).textTheme.titleMedium,
-              ),
-            ),
             for (var i = 0; i < options.length; i++)
               ListTile(
                 dense: true,
@@ -2576,7 +2783,7 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.title,
+                        widget.displayTitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -2621,6 +2828,15 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                       widget.resolutionLabel ?? t.defaultResolution,
                       style: const TextStyle(fontSize: 12),
                     ),
+                  ),
+                // 编辑标题（超长标题影响建文件名时改短）
+                if (!widget.isDownloaded)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: t.rename,
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    color: colorScheme.onSurfaceVariant,
+                    onPressed: widget.onEditName,
                   ),
               ],
             ),

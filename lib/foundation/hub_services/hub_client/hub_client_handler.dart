@@ -212,13 +212,13 @@ extension HubClientHandler on HubClient {
       case HubSystemKickedFromRoom():
         if (event.permanent) {
           App.rootContext.showMessage(
-            message: 'Kicked from server by ${event.byName}',
+            message: t.kickedFromServerByP(p: event.byName),
             level: LogLevel.error,
             style: ToastStyle.topRight,
           );
         } else {
           App.rootContext.showMessage(
-            message: 'Kicked from room by ${event.byName}',
+            message: t.kickedFromRoomByP(p: event.byName),
             level: LogLevel.warning,
             style: ToastStyle.topRight,
           );

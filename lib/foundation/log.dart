@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 
 enum LogSource {
@@ -54,7 +53,14 @@ class Log {
 
   static const maxLogNumber = 500;
 
-  static bool ignoreLimitation = false;
+  /// 是否忽略内容长度限制（持久化设置：日志长度限制开关）
+  static bool get ignoreLimitation =>
+      appdata.implicitData['logIgnoreLimitation'] as bool? ?? false;
+
+  static set ignoreLimitation(bool v) {
+    appdata.implicitData['logIgnoreLimitation'] = v;
+    appdata.writeImplicitData();
+  }
 
   static bool isMuted = false;
 
@@ -120,6 +126,100 @@ class Log {
 
   static IOSink? _file;
 
+  /// 已写入文件的字节数（用于触发轮转）
+  static int _bytesWritten = 0;
+
+  /// 日志文件轮转大小上限（字节），超过触发归档。
+  /// 持久化设置 `logFileSizeMb`（默认 4MB）。
+  static int get maxLogFileBytes {
+    final mb = appdata.implicitData['logFileSizeMb'] as num? ?? 4;
+    return (mb <= 0 ? 4 : mb.toInt()) * 1024 * 1024;
+  }
+
+  /// 归档保留份数（logs.1.txt ~ logs.N.txt）。持久化设置 `logRetainCount`（默认 2）。
+  static int get _retainCount {
+    final n = appdata.implicitData['logRetainCount'] as num? ?? 2;
+    return n.toInt().clamp(1, 20);
+  }
+
+  static Directory get _logDir {
+    if (App.isAndroid) {
+      return Directory(App.externalStoragePath!);
+    }
+    return Directory(App.dataPath);
+  }
+
+  /// 当前日志文件路径
+  static File get logFile => _logDir.joinFile("logs.txt");
+
+  /// 第 [i] 份归档日志文件路径（i 从 1 开始，1 为最新）
+  static File logArchiveFile(int i) => _logDir.joinFile("logs.$i.txt");
+
+  /// 读取落盘的完整日志（当前文件 + 归档，按时间旧→新）。
+  /// 供"导出完整日志文件"使用；必要时先 flush 缓冲。
+  static Future<String> readAllLogs() async {
+    try {
+      await _file?.flush();
+    } catch (_) {}
+    final buf = StringBuffer();
+    for (var i = _retainCount; i >= 1; i--) {
+      try {
+        final f = logArchiveFile(i);
+        if (f.existsSync()) buf.write(f.readAsStringSync());
+      } catch (_) {}
+    }
+    try {
+      if (logFile.existsSync()) buf.write(logFile.readAsStringSync());
+    } catch (_) {}
+    return buf.toString();
+  }
+
+  /// 删除落盘的日志文件（logs.txt + 各归档），并关闭当前写入句柄。
+  static Future<void> deleteLogFiles() async {
+    try {
+      await _file?.close();
+    } catch (_) {}
+    _file = null;
+    _bytesWritten = 0;
+    try {
+      if (logFile.existsSync()) logFile.deleteSync();
+    } catch (_) {}
+    for (var i = 1; i <= _retainCount; i++) {
+      try {
+        final f = logArchiveFile(i);
+        if (f.existsSync()) f.deleteSync();
+      } catch (_) {}
+    }
+  }
+
+  /// 确保日志文件已打开；必要时按大小轮转归档旧文件。
+  static void _ensureLogFile() {
+    if (_file != null) return;
+    if (!App.isInitialized) return;
+    try {
+      final dir = _logDir;
+      if (!dir.existsSync()) dir.createSync(recursive: true);
+      final file = logFile;
+      // 超阈值（大小上限）：logrotate 式轮转。
+      // 删除最旧归档 → 依次后移 logs.N-1→logs.N … → logs.txt→logs.1
+      if (file.existsSync() && file.lengthSync() > maxLogFileBytes) {
+        try {
+          final last = logArchiveFile(_retainCount);
+          if (last.existsSync()) last.deleteSync();
+          for (var i = _retainCount - 1; i >= 1; i--) {
+            final f = logArchiveFile(i);
+            if (f.existsSync()) {
+              f.renameSync(logArchiveFile(i + 1).path);
+            }
+          }
+          file.renameSync(logArchiveFile(1).path);
+        } catch (_) {}
+      }
+      _file = file.openWrite();
+      _bytesWritten = 0;
+    } catch (_) {}
+  }
+
   static void addLog(
     LogLevel level,
     String title,
@@ -127,16 +227,7 @@ class Log {
     LogSource source = LogSource.normal,
   }) {
     if (isMuted) return;
-    if (_file == null && App.isInitialized) {
-      Directory dir;
-      if (App.isAndroid) {
-        dir = Directory(App.externalStoragePath!);
-      } else {
-        dir = Directory(App.dataPath);
-      }
-      var file = dir.joinFile("logs.txt");
-      _file = file.openWrite();
-    }
+    _ensureLogFile();
 
     if (redactSensitive) {
       title = redact(title);
@@ -167,15 +258,21 @@ class Log {
     _logs.add(newLog);
     _controller.add(List.unmodifiable(_logs));
     if (_file != null) {
-      _file!.write(newLog.toString());
-    }
-    if (_logs.length > maxLogNumber) {
-      var res = _logs.remove(
-        _logs.firstWhereOrNull((element) => element.level == LogLevel.info),
-      );
-      if (!res) {
-        _logs.removeAt(0);
+      final text = newLog.toString();
+      _file!.write(text);
+      _bytesWritten += text.length;
+      // 达到阈值：关闭当前文件并置空，下次 _ensureLogFile 会自动归档重建
+      if (_bytesWritten > maxLogFileBytes) {
+        try {
+          _file!.close();
+        } catch (_) {}
+        _file = null;
       }
+    }
+    // 超过上限按 FIFO 清理最旧日志：不要优先移除 info，
+    // 否则日志量大时 info 会被持续清空导致"暂无 info"
+    while (_logs.length > maxLogNumber) {
+      _logs.removeAt(0);
     }
   }
 

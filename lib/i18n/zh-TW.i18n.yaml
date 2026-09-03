@@ -578,8 +578,6 @@ vceCropInfo: "${w}×${h}px  起點(${x}, ${y})  [${pct}]"
 watcherDetailsLogs: 詳情 & 日誌
 watcherMiniWindow: 小窗模式
 rangePickerDragHint: 拖拽調整剪輯範圍
-hlsParsing: 解析播放清單…
-hlsDownloadingChunks: "下載分片 ${done}/${total}…"
 bangumiStartWatch: 開始觀看
 bangumiLastSeen: "上次看到: 第 ${episode} 話"
 bangumiMyRating: "我的評分: ${score}"
@@ -667,7 +665,12 @@ vtInputUrlHint: 輸入播放連結…
 vtLoad: 載入
 vtHeaders: 請求標頭 (Headers)
 vtNoHeaders: 尚無請求標頭，點擊「新增」建立
+playerNoRequestHeaders: 無請求頭
 vtApplyAndLoad: 套用並載入
+downloadMainTitle: 主標題（番劇名）
+downloadIgnoreEpisodeTitle: 不使用集標題
+downloadIgnoreEpisodeTitleDesc: 部分集標題無意義（如 1 / video），開啟後用集號命名檔案
+downloadMerging: 正在合併
 aiTagRational: 理性
 aiTagHumorous: 幽默
 aiTagSarcastic: 毒舌
@@ -2370,3 +2373,38 @@ rateLimit: "請求過於頻繁，請稍後再試"
 portBusy: "連接埠 ${start} 到 ${end} 全部被佔用"
 webSocketOnly: "僅支援 WebSocket 連線"
 toolRoundsExceeded: "${source} 工具呼叫輪次過多"
+requestHeaders: 請求頭
+direct: 直連
+manual: 手動
+votes: "${n} 票"
+pagesCount: "${n} 頁"
+emptyPage: 空頁面
+copyTextCommand: 複製文字口令
+saveFailedPermissionOrDirectory: 保存失敗：權限或目錄異常
+biometricsNotSupported: 不支援生物辨識
+invalidFileType: "無效的檔案類型：${ext}"
+downloadCanceled: 下載已取消
+tokenInvalidOrExpired: Token 無效或已過期
+errorsLabel: "錯誤：${n}"
+inputPinTitle: 輸入連接 PIN 碼
+inputPinHint: 請輸入 PIN 碼
+topicsPoster: 貼主
+timetableCount: "${timetable}（${count}）"
+fetchPluginsCount: "${fetchPlugins}：${count}"
+connectToDevice: "連線到 ${device}"
+receiveTimeout: "接收逾時：伺服器過於繁忙，可能無法及時回應"
+connectionTerminatedDuringHandshake: "握手期間連線被終止：可能是防火牆攔截，或請求過於頻繁"
+connectionResetByPeer: "對端重置了連線：與應用無關，請檢查網路"
+downloadStarted: 開始下載
+forceMerge: 強制合併
+mergeProcessing: 正在合併已下載的分片...
+tlsSharedHint: "同時應用於基礎服務與 Hub 服務端（共用同一份憑證）"
+loginExpiredReLogin: "登入已過期，請重新登入"
+viewError: 查看錯誤
+exportLogFile: 匯出日誌檔案
+deleteLogFile: 刪除日誌檔案
+clearLogsFileConfirm: 確定刪除已儲存的日誌檔案（logs.txt / logs.old.txt）？
+clearLog: 清空日誌
+logSettings: 日誌設定
+logRetainCount: 保留歸檔日誌份數
+logFileSizeMb: 日誌檔案大小上限(MB)

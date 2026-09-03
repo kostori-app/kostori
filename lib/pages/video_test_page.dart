@@ -1026,20 +1026,47 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
   }
 
   void _openHeaderSheet() {
+    final headerState = GlobalKey<_HeaderSheetState>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _HeaderSheet(
-        initialHeaders: ref.read(videoTestProvider).headers,
-        onApply: (headers) {
-          ref
-              .read(videoTestProvider.notifier)
-              .load(_urlCtrl.text.trim(), headers);
-        },
+      builder: (_) => Sheet(
+        title: t.vtHeaders,
+        icon: Icons.tune_rounded,
+        initialSize: 0.6,
+        headerTrailing: TextButton.icon(
+          onPressed: () => headerState.currentState?.addRow(),
+          icon: const Icon(Icons.add, size: 16),
+          label: Text(t.add),
+        ),
+        footer: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              OutlinedButton(
+                onPressed: () => headerState.currentState?.clearAll(),
+                child: Text(t.clear),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () => headerState.currentState?.apply(),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(t.vtApplyAndLoad),
+              ),
+            ],
+          ),
+        ),
+        builder: (ctx, sc) => _HeaderSheet(
+          key: headerState,
+          scrollController: sc,
+          initialHeaders: ref.read(videoTestProvider).headers,
+          onApply: (headers) {
+            ref
+                .read(videoTestProvider.notifier)
+                .load(_urlCtrl.text.trim(), headers);
+          },
+        ),
       ),
     );
   }
@@ -1094,7 +1121,7 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
             child: IconButton(
               onPressed: _openHeaderSheet,
               icon: const Icon(Icons.tune_rounded),
-              tooltip: 'Headers',
+              tooltip: t.requestHeaders,
               style: IconButton.styleFrom(
                 foregroundColor: headerCount > 0 ? cs.primary : null,
                 backgroundColor: headerCount > 0
@@ -1121,10 +1148,16 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
 }
 
 class _HeaderSheet extends StatefulWidget {
-  const _HeaderSheet({required this.initialHeaders, required this.onApply});
+  const _HeaderSheet({
+    super.key,
+    required this.initialHeaders,
+    required this.onApply,
+    required this.scrollController,
+  });
 
   final List<HeaderEntry> initialHeaders;
   final void Function(List<HeaderEntry>) onApply;
+  final ScrollController scrollController;
 
   @override
   State<_HeaderSheet> createState() => _HeaderSheetState();
@@ -1144,10 +1177,10 @@ class _HeaderSheetState extends State<_HeaderSheet> {
           ),
         )
         .toList();
-    if (_rows.isEmpty) _addRow();
+    if (_rows.isEmpty) addRow();
   }
 
-  void _addRow() {
+  void addRow() {
     setState(() {
       _rows.add(
         _HeaderRow(
@@ -1165,13 +1198,22 @@ class _HeaderSheetState extends State<_HeaderSheet> {
     });
   }
 
-  void _apply() {
+  void apply() {
     final headers = _rows
         .map((r) => HeaderEntry(r.keyCtrl.text.trim(), r.valueCtrl.text.trim()))
         .where((h) => h.key.isNotEmpty)
         .toList();
     widget.onApply(headers);
     Navigator.of(context).pop();
+  }
+
+  void clearAll() {
+    setState(() {
+      for (final r in _rows) {
+        r.dispose();
+      }
+      _rows.clear();
+    });
   }
 
   static const _presets = {
@@ -1205,38 +1247,13 @@ class _HeaderSheetState extends State<_HeaderSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Icon(Icons.tune_rounded, color: cs.primary),
-                const SizedBox(width: 10),
-                Text(
-                  t.vtHeaders,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _addRow,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: Text(t.add),
-                ),
-              ],
-            ),
-          ),
-
           SizedBox(
             height: 36,
             child: ListView(
@@ -1260,21 +1277,13 @@ class _HeaderSheetState extends State<_HeaderSheet> {
                   .toList(),
             ),
           ),
-
           const SizedBox(height: 8),
           const Divider(height: 1),
-
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.45,
-            ),
+          Expanded(
             child: _rows.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(t.vtNoHeaders, textAlign: TextAlign.center),
-                  )
+                ? Center(child: Text(t.vtNoHeaders, textAlign: TextAlign.center))
                 : ListView.separated(
-                    shrinkWrap: true,
+                    controller: widget.scrollController,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
@@ -1286,32 +1295,6 @@ class _HeaderSheetState extends State<_HeaderSheet> {
                       onRemove: () => _removeRow(i),
                     ),
                   ),
-          ),
-
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      for (final r in _rows) {
-                        r.dispose();
-                      }
-                      _rows.clear();
-                    });
-                  },
-                  child: Text(t.clear),
-                ),
-                const Spacer(),
-                FilledButton.icon(
-                  onPressed: _apply,
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(t.vtApplyAndLoad),
-                ),
-              ],
-            ),
           ),
         ],
       ),

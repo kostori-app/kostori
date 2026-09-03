@@ -683,6 +683,94 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
     if (selected != null) setState(() => _selectedLanguage = selected);
   }
 
+  String get _currentSourceName {
+    final key = appdata.settings['translationSource'] as String? ?? 'bing';
+    return translationSourceDisplayMap[key] ?? key;
+  }
+
+  Future<void> _showSourceSelector() async {
+    final current =
+        appdata.settings['translationSource'] as String? ?? 'bing';
+    await showDialog<String>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.translationService,
+        displayButton: false,
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 400),
+          child: SingleChildScrollView(
+            child: RadioGroup<String>(
+              groupValue: current,
+              onChanged: (_) {},
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final entry in translationSourceList.entries)
+                    ListTile(
+                      dense: true,
+                      title: Text(entry.key),
+                      subtitle: Text(
+                        translationSourceDisplayMap[entry.key] ?? '',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: Radio<String>(value: entry.key),
+                      onTap: () {
+                        final source = entry.key;
+                        final isAi = [
+                          'siliconFlow',
+                          'doubao',
+                          'gemini',
+                          'qiniu',
+                          'deepseek',
+                          'openrouter',
+                          'ohmygpt',
+                        ].contains(source);
+                        if (source == 'deepl') {
+                          final key = appdata.settings['deeplKey'] as String?;
+                          if (key == null || key.isEmpty) {
+                            Navigator.pop(ctx);
+                            showPopUpWidget(
+                              App.rootContext,
+                              const DeepLConfigPage(),
+                            );
+                            return;
+                          }
+                        }
+                        if (isAi) {
+                          AiDatabase.instance.aiApiKeyDao
+                              .getByProvider(source)
+                              .then((keyRow) {
+                            if (keyRow == null ||
+                                keyRow.apiKey.isEmpty ||
+                                !keyRow.isEnabled) {
+                              App.rootContext.showMessage(
+                                message:
+                                    t.pleaseConfigureApiKeyInAiSettingsFirst,
+                              );
+                              return;
+                            }
+                            appdata.settings['translationSource'] = source;
+                            appdata.saveData();
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            App.rootContext.showMessage(message: t.saved);
+                          });
+                        } else {
+                          appdata.settings['translationSource'] = source;
+                          appdata.saveData();
+                          Navigator.pop(ctx);
+                          App.rootContext.showMessage(message: t.saved);
+                        }
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -765,6 +853,30 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                     ],
                   ),
                 ),
+                // ── 翻译源选择 ──
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _showSourceSelector,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.sync_alt, size: 18),
+                        const SizedBox(width: 8),
+                        Text(t.translationService, style: ts.s14),
+                        const Spacer(),
+                        Text(
+                          _currentSourceName,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: scheme.primary,
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
                 const Divider(indent: 16, endIndent: 16),
                 // ── 输入区 ──
                 Padding(
@@ -787,7 +899,7 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                   child: Row(
                     children: [
                       Text(
-                        '${_inputController.text.length} ${t.characters}',
+                        t.charCount(count: _inputController.text.length),
                         style: TextStyle(fontSize: 12, color: scheme.outline),
                       ),
                       const Spacer(),
@@ -928,7 +1040,7 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                           ),
                           const Spacer(),
                           Text(
-                            '${result.length} ${t.characters}',
+                            t.charCount(count: result.length),
                             style: TextStyle(
                               fontSize: 11,
                               color: scheme.outline,

@@ -252,8 +252,12 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
               child: Expanded(child: widget.body),
             ),
           ),
-          // 键盘偏移
-          SizedBox(height: keyboardOffset),
+          // 键盘偏移（AnimatedContainer 平滑跟随键盘动画，避免硬跳变）
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            height: keyboardOffset,
+          ),
         ],
       ),
     );

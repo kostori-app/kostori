@@ -95,9 +95,32 @@ class GeminiAi extends AiBase {
   @override
   String parseContent(dynamic responseData) {
     final json = responseData as Map<String, dynamic>;
-    final candidates = json['candidates'] as List;
-    final parts = candidates.first['content']['parts'] as List;
-    return parts.first['text'] as String;
+    final candidates = json['candidates'];
+    if (candidates is! List || candidates.isEmpty) {
+      throw Exception('Gemini 返回为空');
+    }
+    final candidate = candidates.first;
+    if (candidate is! Map<String, dynamic>) {
+      throw Exception('Gemini 返回格式异常');
+    }
+    // 非正常终止（安全拦截/内容违规等）：content 可能为空，给出友好提示
+    final finishReason = candidate['finishReason'] as String?;
+    if (finishReason != null && finishReason != 'STOP') {
+      throw Exception('Gemini 生成被终止（$finishReason）');
+    }
+    final content = candidate['content'];
+    if (content is! Map<String, dynamic>) {
+      throw Exception('Gemini 未返回内容');
+    }
+    final parts = content['parts'];
+    if (parts is! List || parts.isEmpty) {
+      throw Exception('Gemini 未返回内容');
+    }
+    final text = (parts.first as Map)['text'];
+    if (text is! String) {
+      throw Exception('Gemini 未返回内容');
+    }
+    return text;
   }
 
   /// 解析 Gemini usageMetadata
@@ -119,6 +142,8 @@ class GeminiAi extends AiBase {
   @override
   Map<String, String> buildHeaders(AiProviderConfig config) => {
     'Content-Type': 'application/json',
+    // key 走 header 不进 URL，避免泄漏到访问日志/代理
+    if (config.apiKey.isNotEmpty) 'x-goog-api-key': config.apiKey,
   };
 
   @override
@@ -141,7 +166,7 @@ class GeminiAi extends AiBase {
       }
       final config = buildConfig(keyRow, modelOverride: modelOverride);
       final response = await AppDio().request(
-        '${buildUrl(config)}?key=${config.apiKey}',
+        buildUrl(config),
         data: buildRequest(
           messages,
           config: config,
@@ -181,7 +206,7 @@ class GeminiAi extends AiBase {
       final config = buildConfig(keyRow, modelOverride: modelOverride);
       final response = await AppDio().request(
         '${buildUrl(config).replaceFirst(':generateContent', ':streamGenerateContent')}'
-        '?alt=sse&key=${config.apiKey}',
+        '?alt=sse',
         data: buildRequest(
           messages,
           config: config,

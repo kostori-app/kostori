@@ -17,7 +17,6 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:kostori/utils/io.dart';
@@ -106,32 +105,6 @@ Future<void> showVideoClipEditor({
   );
 }
 
-class _Semaphore {
-  _Semaphore(this.maxCount);
-
-  final int maxCount;
-  int _count = 0;
-  final _queue = <Completer<void>>[];
-
-  Future<void> acquire() async {
-    if (_count < maxCount) {
-      _count++;
-      return;
-    }
-    final c = Completer<void>();
-    _queue.add(c);
-    await c.future;
-  }
-
-  void release() {
-    if (_queue.isNotEmpty) {
-      _queue.removeAt(0).complete();
-    } else {
-      _count--;
-    }
-  }
-}
-
 class VideoClipEditorPage extends StatefulWidget {
   final String videoUrl;
   final Map<String, String>? httpHeaders;
@@ -177,7 +150,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
   int _videoWidth = 0;
   int _videoHeight = 0;
-  Duration _hlsOffset = Duration.zero;
 
   Player? _previewPlayer;
   VideoController? _previewController;
@@ -195,7 +167,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   bool _exportCancelled = false;
   bool _atScrollTop = true;
   Directory? _hlsTempDir;
-  int _previewDownloadStartMs = 0;
 
   double? _estimatedBytes;
   bool _sampling = false;
@@ -291,9 +262,9 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       final localPath = _getSampleInputPath();
       if (localPath == null) return;
 
-      // 本地已下载片段的时间轴从 0 开始，需减去预览下载起点偏移
+      // 采样位置与输入文件同轴：本地下载片段是本地时间轴，远程全片是绝对时间轴，
+      // 因此不需要再做偏移换算
       final isLocal = localPath != widget.videoUrl;
-      final offset = isLocal ? _hlsOffset : Duration.zero;
 
       final (_, encodeArgs) = _buildEncodeArgs(
         outputDir: tempDir.path,
@@ -301,7 +272,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         exportUrl: localPath,
         exportHeaders: {},
         proxyUrl: null,
-        startMsOverride: (sampleStartMs - offset.inMilliseconds).clamp(
+        startMsOverride: sampleStartMs.clamp(
           0,
           isLocal ? _previewWindowMs : _videoDuration.inMilliseconds - 1000,
         ),
@@ -395,30 +366,27 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         0,
         widget.duration.inMilliseconds,
       );
-      _previewDownloadStartMs = downloadStartMs;
       final downloadEndMs = (startTime.inMilliseconds + halfWindowMs).clamp(
         0,
         widget.duration.inMilliseconds,
       );
-      final isHls = _HlsDownloader._isHls(widget.videoUrl);
       String mediaUrl = widget.videoUrl;
 
-      if (isHls) {
-        setState(() => _previewStatus = t.downloadingPreviewClip);
-        final local = await _HlsDownloader.download(
-          url: widget.videoUrl,
-          headers: widget.httpHeaders ?? {},
-          startMs: downloadStartMs,
-          endMs: downloadEndMs,
-          onProgress: (p, msg) {
-            if (mounted) setState(() => _previewStatus = msg);
-          },
-        );
-        if (!mounted) return;
-        if (local != null) {
-          mediaUrl = local;
-          _previewHlsTempDir = File(local).parent;
-        }
+      // mp4 / HLS 统一窗口下载：只获取目标位置上下共 3 分钟的预览窗口
+      setState(() => _previewStatus = t.downloadingPreviewClip);
+      final local = await _HlsDownloader.downloadWindow(
+        url: widget.videoUrl,
+        headers: widget.httpHeaders ?? {},
+        startMs: downloadStartMs,
+        endMs: downloadEndMs,
+        onProgress: (p, msg) {
+          if (mounted) setState(() => _previewStatus = msg);
+        },
+      );
+      if (!mounted) return;
+      if (local != null) {
+        mediaUrl = local;
+        _previewHlsTempDir = File(local).parent;
       }
 
       if (!mounted) return;
@@ -430,7 +398,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       await player.open(
         Media(
           mediaUrl,
-          httpHeaders: isHls && mediaUrl != widget.videoUrl
+          httpHeaders: mediaUrl != widget.videoUrl
               ? {}
               : (widget.httpHeaders ?? {}),
         ),
@@ -453,7 +421,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         }
       });
 
-      final seekTarget = isHls && mediaUrl != widget.videoUrl
+      final seekTarget = mediaUrl != widget.videoUrl
           ? Duration(milliseconds: startTime.inMilliseconds - downloadStartMs)
           : startTime;
 
@@ -480,17 +448,12 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         if (!mounted) return;
 
         final playing = player.state.playing;
-        final needsOffset = isHls && mediaUrl != widget.videoUrl;
-        final offset = needsOffset
-            ? Duration(milliseconds: _previewDownloadStartMs)
-            : Duration.zero;
 
-        final localStart = _startTime - offset;
-        final localEnd = _endTime - offset;
-
-        if (_isPlaying && !isSeeking && (pos >= localEnd || pos < localStart)) {
+        // _startTime/_endTime 与播放器 position 同轴（本地窗口文件或全片），
+        // 直接比较即可，无需偏移换算
+        if (_isPlaying && !isSeeking && (pos >= _endTime || pos < _startTime)) {
           isSeeking = true;
-          player.seek(localStart).then((_) {
+          player.seek(_startTime).then((_) {
             Future.delayed(const Duration(milliseconds: 200), () {
               isSeeking = false;
             });
@@ -514,9 +477,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _previewController = controller;
         _previewLoading = false;
         _previewStatus = '';
-        _hlsOffset = (isHls && mediaUrl != widget.videoUrl)
-            ? Duration(milliseconds: _previewDownloadStartMs)
-            : Duration.zero;
       });
 
       _generateThumbnails();
@@ -880,7 +840,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
       if (doPreDownload) {
         setState(() => _exportStatus = t.downloadingVideoSegments);
-        final localM3u8 = await _HlsDownloader.download(
+        final localClip = await _HlsDownloader.downloadWindow(
           url: exportUrl,
           headers: exportHeaders,
           startMs: _startTime.inMilliseconds,
@@ -894,9 +854,9 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
             }
           },
         );
-        if (localM3u8 != null) {
-          exportUrl = localM3u8;
-          _hlsTempDir = File(localM3u8).parent;
+        if (localClip != null) {
+          exportUrl = localClip;
+          _hlsTempDir = File(localClip).parent;
         }
       }
 
@@ -1413,10 +1373,9 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   IconButton(
                     icon: const Icon(Icons.replay_5),
                     onPressed: () {
-                      final localStart = _startTime - _hlsOffset;
                       final newPos = position - const Duration(seconds: 5);
                       _previewPlayer?.seek(
-                        newPos < localStart ? localStart : newPos,
+                        newPos < _startTime ? _startTime : newPos,
                       );
                     },
                   ),
@@ -1464,11 +1423,9 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   IconButton(
                     icon: const Icon(Icons.forward_5),
                     onPressed: () {
-                      final localStart = _startTime - _hlsOffset;
-                      final localEnd = _endTime - _hlsOffset;
                       final newPos = position + const Duration(seconds: 5);
                       _previewPlayer?.seek(
-                        newPos >= localEnd ? localStart : newPos,
+                        newPos >= _endTime ? _startTime : newPos,
                       );
                     },
                   ),

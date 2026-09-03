@@ -35,6 +35,9 @@ class DownloadTask {
 
   final String? episode;
 
+  /// 纯集号（如 "5"），用于开启“不使用集标题”时替代无意义的集标题做文件名
+  final String? episodeNo;
+
   final String? author;
 
   final String? resolution;
@@ -44,10 +47,28 @@ class DownloadTask {
   /// 进度 0~1
   double progress;
 
+  /// 总大小（字节），未知为 0
+  int totalBytes;
+
+  /// 已下载字节（运行时更新，不持久化）
+  int downloadedBytes;
+
+  /// 下载速度（字节/秒，运行时更新，不持久化）
+  double downloadSpeed;
+
+  /// m3u8 已下载分片数（运行时；非 m3u8 恒为 -1）
+  int segDone;
+
+  /// m3u8 总分片数（运行时；非 m3u8 恒为 -1）
+  int segTotal;
+
   /// 下载完成后的文件路径
   String? filePath;
 
   String? error;
+
+  /// 正在合并分片 / 强制合并中（运行时状态，不持久化）
+  bool isMerging = false;
 
   final DateTime createdAt;
 
@@ -62,10 +83,16 @@ class DownloadTask {
     this.animeId,
     this.animeTitle,
     this.episode,
+    this.episodeNo,
     this.author,
     this.resolution,
     this.status = DownloadStatus.queued,
     this.progress = 0,
+    this.totalBytes = 0,
+    this.downloadedBytes = 0,
+    this.downloadSpeed = 0,
+    this.segDone = -1,
+    this.segTotal = -1,
     this.filePath,
     this.error,
     required this.createdAt,
@@ -91,10 +118,12 @@ class DownloadTask {
     'animeId': animeId,
     'animeTitle': animeTitle,
     'episode': episode,
+    'episodeNo': episodeNo,
     'author': author,
     'resolution': resolution,
     'status': status.name,
     'progress': progress,
+    'totalBytes': totalBytes,
     'filePath': filePath,
     'error': error,
     'createdAt': createdAt.toIso8601String(),
@@ -114,6 +143,7 @@ class DownloadTask {
     animeId: json['animeId'] as String?,
     animeTitle: json['animeTitle'] as String?,
     episode: json['episode'] as String?,
+    episodeNo: json['episodeNo'] as String?,
     author: json['author'] as String?,
     resolution: json['resolution'] as String?,
     status: DownloadStatus.values.firstWhere(
@@ -121,6 +151,7 @@ class DownloadTask {
       orElse: () => DownloadStatus.failed,
     ),
     progress: (json['progress'] as num?)?.toDouble() ?? 0,
+    totalBytes: (json['totalBytes'] as num?)?.toInt() ?? 0,
     filePath: json['filePath'] as String?,
     error: json['error'] as String?,
     createdAt:

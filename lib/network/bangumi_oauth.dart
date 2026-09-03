@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/foundation/context.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
@@ -85,8 +84,15 @@ Future<bool> bangumiRefreshToken() async {
         return true;
       }
     }
+    // 刷新失败（refresh_token 已过期/被撤销等）：清除令牌并提示重新登录，
+    // 避免继续用失效 token 请求且无任何反馈
+    bangumiOAuthLogout();
+    try {
+      App.rootContext.showMessage(message: t.loginExpiredReLogin);
+    } catch (_) {}
   } catch (e) {
     Log.error('BangumiOAuth', '刷新token失败: $e');
+    // 网络异常时不清除令牌（可能是临时网络问题），避免误登出
   }
   return false;
 }

@@ -249,7 +249,7 @@ class LanDiscoveryService {
         LanPairingResponse(
           targetId: _deviceId ?? '',
           accepted: false,
-          errorMessage: 'Token 无效或已过期',
+          errorMessage: t.tokenInvalidOrExpired,
         ),
       );
       return;

@@ -118,7 +118,7 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
       crossAxisCount = fixedCrossAxisCount!;
     } else {
       // 卡片更大，列数更少，保证图上部分有足够空间
-      final maxCrossAxisExtent = 280.0 * scale;
+      final maxCrossAxisExtent = 320.0 * scale;
       const crossAxisSpacing = 0.0;
       crossAxisCount =
           (constraints.crossAxisExtent /
@@ -126,8 +126,9 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
               .ceil();
       crossAxisCount = math.max(minCrossAxisCount ?? 1, crossAxisCount);
     }
-    // 宽比高多一点（横卡）
-    const childAspectRatio = 1.25;
+    // 宽高比接近正方形（略宽）：海报模式下方还有标题/作者/信息行，
+    // 若卡片过矮（如 1.25）信息区会挤压图片空间，故提高高度占比
+    const childAspectRatio = 1.05;
     final double usableCrossAxisExtent = math.max(
       0.0,
       constraints.crossAxisExtent,
@@ -277,7 +278,8 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
     SliverConstraints constraints,
     double scale,
   ) {
-    final maxCrossAxisExtent = 192.0 * scale;
+    // 每格宽度上限 ~240：宽屏自动切更多列但卡不过小，避免原 192 切出细长小卡
+    final maxCrossAxisExtent = 240.0 * scale;
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
 

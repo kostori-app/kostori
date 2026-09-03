@@ -67,6 +67,20 @@ class _PlayerItemState extends State<PlayerItem>
 
   int? hoveredIndex;
 
+  /// 音量滑动节流：连续滑动时按固定间隔应用 media_kit 音量，
+  /// 避免每帧高频调用 player.setVolume 造成播放卡顿
+  DateTime? _lastVolumeApply;
+
+  void _applyVolumeThrottled(double value) {
+    final now = DateTime.now();
+    if (_lastVolumeApply == null ||
+        now.difference(_lastVolumeApply!) >= const Duration(milliseconds: 30)) {
+      _lastVolumeApply = now;
+      // 不 await，避免连续触发时 Future 堆积
+      playerController.setVolume(value);
+    }
+  }
+
   void glimmerEffectMode() {
     appdata.implicitData['glimmerEffect'] = !playerController.glimmerEffect;
     appdata.writeImplicitData();
@@ -873,12 +887,26 @@ class _PlayerItemState extends State<PlayerItem>
                                   final double level = (totalHeight) * 0.03;
                                   final double volume =
                                       playerController.volume - delta / level;
-                                  playerController.setVolume(volume);
+                                  // HUD 即时反馈：先更新 observable，播放器实际
+                                  // 音量节流应用，避免连续滑动时每帧高频调用
+                                  // media_kit setVolume 造成视频播放卡顿
+                                  playerController.volume = volume.clamp(
+                                    0.0,
+                                    playerController.volumeUpperBound,
+                                  );
+                                  _applyVolumeThrottled(
+                                    playerController.volume,
+                                  );
                                 }
                               },
                           onVerticalDragEnd: (_) {
                             if (playerController.volumeSeeking) {
                               playerController.volumeSeeking = false;
+                              // 节流窗口内被跳过的最后一次音量变化在此补上，
+                              // 确保实际音量与 HUD 显示一致
+                              playerController.setVolume(
+                                playerController.volume,
+                              );
                               Future.delayed(const Duration(seconds: 1), () {
                                 FlutterVolumeController.updateShowSystemUI(
                                   true,

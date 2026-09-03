@@ -81,7 +81,10 @@ class MainIsolateRunner {
     return handler(payload);
   }
 
-  /// 从后台 isolate 发起请求：在主 isolate 上执行 [name] 并返回结果
+  /// 从后台 isolate 发起请求：在主 isolate 上执行 [name] 并返回结果。
+  ///
+  /// 带超时兜底：若主 isolate 因热重载等被中断而不再应答，后台 isolate
+  /// 不会永久挂起（否则会出现 "Computation ended without result" / 卡死）。
   static Future<Object?> run(String name, Object? payload) async {
     final port = _mainSendPort;
     if (port == null) {
@@ -101,6 +104,12 @@ class MainIsolateRunner {
       }
     });
     port.send(MainIsolateTask(id, name, payload, reply.sendPort));
-    return completer.future;
+    return completer.future.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        reply.close();
+        throw Exception('Main isolate task "$name" timed out');
+      },
+    );
   }
 }

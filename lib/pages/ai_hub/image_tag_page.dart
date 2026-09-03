@@ -57,7 +57,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
         });
       }
     } catch (e) {
-      App.rootContext.showMessage(message: 'Error: $e');
+      App.rootContext.showMessage(message: '${t.error}: $e');
       Log.error('ImageTag', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -99,7 +99,10 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                     onChanged: (v) => setState(() => _source = v),
                   ),
                   const SizedBox(height: 8),
-                  _ModelSelector(provider: _source),
+                  _ModelSelector(
+                    provider: _source,
+                    onProviderChanged: (v) => setState(() => _source = v),
+                  ),
                 ],
               ),
             ),

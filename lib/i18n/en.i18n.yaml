@@ -590,8 +590,6 @@ vceCropInfo: "${w}×${h}px  start(${x}, ${y})  [${pct}]"
 watcherDetailsLogs: Details & Logs
 watcherMiniWindow: Mini window
 rangePickerDragHint: Drag to adjust clip range
-hlsParsing: Parsing playlist…
-hlsDownloadingChunks: "Downloading chunks ${done}/${total}…"
 bangumiStartWatch: Start watching
 bangumiLastSeen: "Last seen: episode ${episode}"
 bangumiMyRating: "My rating: ${score}"
@@ -679,7 +677,12 @@ vtInputUrlHint: Enter playback link…
 vtLoad: Load
 vtHeaders: Request Headers
 vtNoHeaders: No headers, click "Add" to create one
+playerNoRequestHeaders: No request headers
 vtApplyAndLoad: Apply and load
+downloadMainTitle: Main title (Anime name)
+downloadIgnoreEpisodeTitle: Ignore episode titles
+downloadIgnoreEpisodeTitleDesc: Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names
+downloadMerging: Merging
 aiTagRational: Rational
 aiTagHumorous: Humorous
 aiTagSarcastic: Sarcastic
@@ -2369,3 +2372,38 @@ rateLimit: "Too many requests, please try again later"
 portBusy: "Ports ${start} to ${end} are all occupied"
 webSocketOnly: "Only WebSocket connections are supported"
 toolRoundsExceeded: "${source} has too many tool call rounds"
+requestHeaders: Headers
+direct: Direct
+manual: Manual
+votes: "${n} votes"
+pagesCount: "${n} pages"
+emptyPage: Empty Page
+copyTextCommand: Copy text command
+saveFailedPermissionOrDirectory: "Save failed: permission or directory error"
+biometricsNotSupported: Biometrics not supported
+invalidFileType: "Invalid file type: ${ext}"
+downloadCanceled: Download canceled
+tokenInvalidOrExpired: Token invalid or expired
+errorsLabel: "Errors: ${n}"
+inputPinTitle: Enter connection PIN
+inputPinHint: Enter PIN code
+topicsPoster: Post author
+timetableCount: "${timetable} (${count})"
+fetchPluginsCount: "${fetchPlugins}: ${count}"
+connectToDevice: "Connect to ${device}"
+receiveTimeout: "Receive Timeout: This indicates that the server is too busy to respond"
+connectionTerminatedDuringHandshake: "Connection terminated during handshake: This may be caused by the firewall blocking the connection or your requests are too frequent."
+connectionResetByPeer: "Connection reset by peer: The error is unrelated to the app, please check your network."
+downloadStarted: Started download
+forceMerge: Force merge
+mergeProcessing: Merging downloaded segments...
+tlsSharedHint: "Applied to both the base service and Hub server (shared certificate)"
+loginExpiredReLogin: "Login expired, please re-login"
+viewError: View error
+exportLogFile: Export log file
+deleteLogFile: Delete log file
+clearLogsFileConfirm: Delete the saved log files (logs.txt / logs.old.txt)?
+clearLog: Clear logs
+logSettings: Log settings
+logRetainCount: Keep archived log files
+logFileSizeMb: Log file size limit (MB)

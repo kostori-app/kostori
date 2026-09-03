@@ -557,11 +557,8 @@ class _LoadingInfoCard extends StatelessWidget {
         final buffering =
             playerController.isBuffering || playerController.playerBuffering;
         final step = playerController.loadingStep;
-        final setName = playerController.currentSetName.trim();
-        // 简洁提示：第x集 · 正在加载（不带百分比）
-        final loadingText = setName.isNotEmpty
-            ? '$setName · ${t.loadingVideo}'
-            : t.loadingVideo;
+        // 只显示"正在加载"（不显示集名：部分集名过长影响观感）
+        final loadingText = t.loadingVideo;
 
         // 当前加载步骤文案（只显示一条：正在进行的步骤）
         final stepText = switch (step) {

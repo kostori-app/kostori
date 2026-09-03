@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/bbcode/bbcode_precache.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
@@ -34,6 +35,9 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   late Animation<double> _fadeAnimation;
   int count = 0;
 
+  /// 页面级图片缓存保持：跳转到详情页/返回时图片不因 ImageCache 逐出而重载
+  final BangumiPageImageCache _imageCache = BangumiPageImageCache();
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +66,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     scrollController.removeListener(onScroll);
     scrollController.dispose();
     _controller.dispose();
+    _imageCache.dispose();
     super.dispose();
   }
 
@@ -102,6 +107,19 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     );
     count += 1;
     bangumiItems.addAll(result);
+    // 保持本页所有条目封面，避免跳详情页加载新图后逐出列表页缓存
+    if (mounted) {
+      final columns = _getFixedCrossAxisCount() ?? _resolveMasonryColumns();
+      final cardW = (MediaQuery.of(context).size.width - 32) / columns;
+      _imageCache.precacheAll(
+        context,
+        bangumiItems
+            .map((e) => e.images['large'] ?? '')
+            .where((u) => u.isNotEmpty),
+        sourceKey: 'bangumi',
+        cacheWidth: (cardW * MediaQuery.devicePixelRatioOf(context)).round(),
+      );
+    }
     isLoadingMore = false;
     if (mounted) setState(() {});
   }
@@ -120,10 +138,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     return null;
   }
 
-  /// 瀑布流封面高度系数：按索引循环错落
-  static const _masonryFactors = [1.3, 1.55, 1.15, 1.45, 1.65, 1.25];
-
-  /// bangumi 趋势列表瀑布流（错落封面）
+  /// bangumi 趋势列表瀑布流（统一封面比例，与简洁布局一致）
   Widget _buildMasonryGrid() {
     final perRow = _getFixedCrossAxisCount();
     final columns = perRow ?? _resolveMasonryColumns();
@@ -136,7 +151,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
         return BangumiBriefCard(
           bangumiItem: bangumiItems[index],
           heroTag: 'Trending$index',
-          masonryFactor: _masonryFactors[index % _masonryFactors.length],
+          masonryFactor: 1.35,
         );
       },
     );
@@ -204,14 +219,18 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
                 ),
               ),
       ),
-      // 加载更多指示器
-      if (isLoadingMore)
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Center(child: PolygonRefreshIndicator(size: 40)),
+      // 底部固定高度区域：加载更多指示器常驻不增删，避免 maxScrollExtent
+      // 随指示器出现/消失反复突变（下滑触发翻页时滚动条上下摆动的来源）
+      SliverToBoxAdapter(
+        child: SizedBox(
+          height: 64,
+          child: Center(
+            child: isLoadingMore
+                ? const PolygonRefreshIndicator(size: 32)
+                : const SizedBox.shrink(),
           ),
         ),
+      ),
     ];
   }
 
@@ -403,13 +422,13 @@ class _TimetableState extends State<_Timetable> {
 
   Future<void> filterTodayBangumiItems() async {
     try {
-      // 与 bangumi_calendar_page 当天保持一致：用同一 loadBangumiCalendar
-      // （含深夜番跨天处理，parseBangumiAirTime 会把昨天 25:00 的条目归到今天组）。
-      // 用昨天+今天两天拉取，避免 getWeeks 按原始 airWeekday 过滤时漏掉深夜番
+      // 与日历页同一 loadBangumiCalendar（含深夜番跨天）；主页仅展示封面标题，
+      // fetchEpisodeInfo:false 避免打开主页就批量拉剧集数据（每日同步仍进行）
       final todayWeekday = weekday;
       final yesterdayWeekday = todayWeekday == 1 ? 7 : todayWeekday - 1;
       final calendar = await loadBangumiCalendar(
         days: [yesterdayWeekday, todayWeekday],
+        fetchEpisodeInfo: false,
       );
       final todayItems = calendar[todayWeekday - 1];
 

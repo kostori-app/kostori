@@ -3,6 +3,7 @@
 #include <optional>
 #include <winhttp.h>
 #include <Windows.h>
+#include <shellapi.h>
 #include <winbase.h>
 #include <flutter/method_channel.h>
 #include <flutter/event_channel.h>
@@ -98,6 +99,31 @@ bool FlutterWindow::OnCreate() {
         else
           result->Success(flutter::EncodableValue("No Proxy"));
         delete(res);
+        return;
+      }
+      else if (call.method_name() == "openWithMime") {
+        const auto* arguments = std::get_if<flutter::EncodableMap>(call.arguments());
+        std::string path;
+        if (arguments) {
+          auto it = arguments->find(flutter::EncodableValue("url"));
+          if (it != arguments->end()) {
+            path = std::get<std::string>(it->second);
+          }
+        }
+        if (!path.empty()) {
+          // 打开本地视频文件：ShellExecuteEx 走系统默认关联的播放器
+          std::wstring wpath(path.begin(), path.end());
+          SHELLEXECUTEINFO execInfo = {0};
+          execInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+          execInfo.fMask = SEE_MASK_INVOKEIDLIST;
+          execInfo.lpVerb = L"open";
+          execInfo.lpFile = wpath.c_str();
+          execInfo.nShow = SW_SHOWNORMAL;
+          ShellExecuteEx(&execInfo);
+          result->Success(true);
+        } else {
+          result->Error("InvalidArguments", "Missing 'url' argument", nullptr);
+        }
         return;
       }
 #ifdef NDEBUG

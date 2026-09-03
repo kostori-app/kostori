@@ -55,7 +55,7 @@ class ReviewsCommentsCard extends StatelessWidget {
                               ).colorScheme.secondaryContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text('作者'),
+                            child: Text(t.author),
                           ),
                       ],
                     ),

@@ -93,7 +93,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return Skeletonizer.zone(child: Bone.multiText(lines: 3));
+      return _buildSkeleton(context);
     }
     final cs = Theme.of(context).colorScheme;
     return Container(
@@ -145,6 +145,100 @@ class _StatsViewPageState extends State<StatsViewPage> {
             child: buildViewWidget(context),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 加载骨架：复刻真实卡片的边框/头部/统计瓦片/图表布局，与项目风格一致
+  Widget _buildSkeleton(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 850;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 0.6,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 56,
+            child: Row(
+              children: [
+                Skeletonizer.zone(child: Bone.square(size: 20, uniRadius: 6)),
+                const SizedBox(width: 8),
+                Skeletonizer.zone(child: Bone.text(width: 56, fontSize: 16)),
+                const Spacer(),
+                Skeletonizer.zone(child: Bone.square(size: 28, uniRadius: 8)),
+                const SizedBox(width: 8),
+                Skeletonizer.zone(child: Bone.square(size: 28, uniRadius: 8)),
+              ],
+            ),
+          ).paddingHorizontal(16),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: isWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _skeletonStatsCards(context)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _skeletonChart(context)),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _skeletonStatsCards(context),
+                      const SizedBox(height: 24),
+                      _skeletonChart(context),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _skeletonStatsCards(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const double spacing = 8;
+        const double cardHeight = 80;
+        final cardWidth = (constraints.maxWidth - spacing * 2) / 3;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List.generate(
+            6,
+            (index) => SizedBox(
+              width: cardWidth,
+              height: cardHeight,
+              child: Skeletonizer.zone(
+                child: Bone(
+                  width: double.infinity,
+                  height: double.infinity,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _skeletonChart(BuildContext context) {
+    return Skeletonizer.zone(
+      child: Bone(
+        width: double.infinity,
+        height: 220,
+        borderRadius: BorderRadius.circular(12),
       ),
     );
   }
@@ -351,7 +445,6 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 3 / 4,
         maxWidth: MediaQuery.of(context).size.width < 600
@@ -360,64 +453,34 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
             ? MediaQuery.of(context).size.width * 9 / 16
             : MediaQuery.of(context).size.width,
       ),
-      builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (_) => Sheet(
+        title: word,
+        icon: Icons.tag,
+        headerTrailing: Text(
+          t.statsItemCountSuffix(n: items.length),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.outline,
           ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+        ),
+        builder: (context, sc) => SmoothCustomScrollView(
+          controller: sc,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(8),
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final item = items[index];
+                  return BangumiBriefCard(
+                    bangumiItem: item,
+                    heroTag: 'TagCloud$word$index',
+                  );
+                }, childCount: items.length),
+                gridDelegate: SliverGridDelegateWithBangumiItems(true),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Row(
-                  children: [
-                    Text(word, style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(width: 8),
-                    Text(
-                      t.statsItemCountSuffix(n: items.length),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: SmoothCustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.all(8),
-                      sliver: SliverGrid(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final item = items[index];
-                          return BangumiBriefCard(
-                            bangumiItem: item,
-                            heroTag: 'TagCloud$word$index',
-                          );
-                        }, childCount: items.length),
-                        gridDelegate: SliverGridDelegateWithBangumiItems(true),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -489,24 +552,26 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
                   final minSize = (w * 0.01).clamp(5.0, 12.0);
                   final maxSize = (w * 0.08).clamp(20.0, 120.0);
 
-                  return WordCloudView(
-                    key: ValueKey('$w-$h'),
-                    data: WordCloudData(data: wordCloudData),
-                    mapwidth: w,
-                    mapheight: h,
-                    mintextsize: minSize,
-                    maxtextsize: maxSize,
-                    attempt: 8,
-                    colorlist: standardColorMap.keys.toList(),
-                    onWordTap: (word) {
-                      final entry = wordCloudData.firstWhere(
-                        (e) => e['word'] == word,
-                        orElse: () => <String, Object>{},
-                      );
-                      if (entry.isEmpty) return;
-                      final items = entry['items'] as List<dynamic>;
-                      _showTagBottomSheet(word, items);
-                    },
+                  return RepaintBoundary(
+                    child: WordCloudView(
+                      key: ValueKey('$w-$h'),
+                      data: WordCloudData(data: wordCloudData),
+                      mapwidth: w,
+                      mapheight: h,
+                      mintextsize: minSize,
+                      maxtextsize: maxSize,
+                      attempt: 8,
+                      colorlist: standardColorMap.keys.toList(),
+                      onWordTap: (word) {
+                        final entry = wordCloudData.firstWhere(
+                          (e) => e['word'] == word,
+                          orElse: () => <String, Object>{},
+                        );
+                        if (entry.isEmpty) return;
+                        final items = entry['items'] as List<dynamic>;
+                        _showTagBottomSheet(word, items);
+                      },
+                    ),
                   );
                 },
               ),

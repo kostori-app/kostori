@@ -217,7 +217,10 @@ class OpenAiCompatibleAi extends AiBase {
     required this.defaultBaseUrl,
     bool supportsVision = true,
     bool supportsTools = true,
+    // 私有命名参数无法用初始化形参（this._x），属合理例外
+    // ignore: prefer_initializing_formals
   }) : _supportsVision = supportsVision,
+       // ignore: prefer_initializing_formals
        _supportsTools = supportsTools;
 
   @override

@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
@@ -322,27 +321,37 @@ class BangumiWidget {
     required String heroTag,
     List<File>? allUrls,
     int? initialIndex,
+    ImageProvider? imageProvider,
   }) async {
     try {
       final isLocal = File(url).existsSync();
       final initIndex = _resolveInitIndex(url, allUrls, initialIndex);
       final pageController = PageController(initialPage: initIndex);
-      final img = isLocal
-          ? FileImage(File(url)) as ImageProvider
-          : CachedImageProvider(url);
+      // 优先使用调用方传入的 provider（与被点击封面同 key，缓存必命中）；
+      // 缺省用 bangumi 源构造，保证 ImageCache key 与 kostoriImage 一致
+      final img = imageProvider ??
+          (isLocal
+              ? FileImage(File(url)) as ImageProvider
+              : CachedImageProvider(url, sourceKey: 'bangumi'));
 
-      if (!isLocal) {
-        // 预加载图片：2 秒内加载完成则 hero 目标立即有图；
-        // 超时只解除阻塞（后台继续加载，不进 ImageCache 的图取消掉），
-        // 不阻塞进入预览页，预览页内继续显示加载/骨架屏
+      // 本地文件推入前预热“与预览画廊一致的 ResizeImage 解码”，
+      // 保证目标首帧已有图（否则首次无 hero 飞行，二次缓存后才正常）
+      if (isLocal) {
         try {
-          await precacheImage(img, context).timeout(
-            const Duration(seconds: 2),
-            onTimeout: () {},
+          final mq = MediaQuery.of(context);
+          final maxLogical =
+              mq.size.width > mq.size.height ? mq.size.width : mq.size.height;
+          final t = (maxLogical * mq.devicePixelRatio * 1.5).round();
+          final decodeWidth = t < 200 ? 200 : (t > 3072 ? 3072 : t);
+          await precacheImage(
+            ResizeImage.resizeIfNeeded(
+              decodeWidth,
+              null,
+              FileImage(File(url)),
+            ),
+            context,
           );
-        } catch (e, s) {
-          Log.error('precacheImage', '$e\n$s');
-        }
+        } catch (_) {}
       }
 
       await App.rootContext.toBlurFade(
@@ -377,13 +386,13 @@ class BangumiWidget {
         allUrls.indexWhere((f) => f.path == url).clamp(0, allUrls.length - 1);
   }
 
-  ///sourcekey写死了bangumi所以可想而知是用在哪的
   static Widget kostoriImage(
     BuildContext context,
     String imageUrl, {
     double width = 100,
     double height = 100,
     bool enableDefaultSize = true,
+    int? cacheWidth,
   }) {
     ImageProvider? findImageProvider() {
       ImageProvider image;
@@ -404,12 +413,14 @@ class BangumiWidget {
         height: height,
         fit: BoxFit.cover,
         filterQuality: FilterQuality.high,
+        cacheWidth: cacheWidth,
       );
     }
     return AnimatedImage(
       image: image,
       fit: BoxFit.cover,
       filterQuality: FilterQuality.high,
+      cacheWidth: cacheWidth,
     );
   }
 }
@@ -883,11 +894,11 @@ class BangumiBriefCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            RatingBarIndicator(
-              itemCount: 5,
-              rating: bangumiItem.score.toDouble() / 2,
-              itemBuilder: (context, index) => const Icon(Icons.star_rounded),
-              itemSize: App.isAndroid ? 12 : 14.0,
+            // 轻量静态星级（替代 flutter_rating_bar：列表滚动时大量卡片
+            // 反复构建动画星级组件是滑动卡顿的主要来源）
+            _StaticStars(
+              rating: bangumiItem.score / 2,
+              size: App.isAndroid ? 12 : 14.0,
             ),
             Text(
               t.tReviews(t: bangumiItem.total),
@@ -933,8 +944,10 @@ class BangumiBriefCard extends StatelessWidget {
     }
 
     Widget backdropFilter(Widget child) {
+      // blur 半径直接影响每帧合成开销：卡片滚动时覆盖层实时模糊下层，
+      // sigma 10 是滑动卡顿的主要来源，降到 4 视觉仍清晰
       return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -945,11 +958,14 @@ class BangumiBriefCard extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final useMarquee = appdata.settings['tileTitleMarquee'] == true;
+    // RepaintBoundary：隔离每张卡片的合成层，滚动时复用缓存的图片+覆盖层
+    // 位图，避免每帧重绘半透明叠加导致的合成开销
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final useMarquee = appdata.settings['tileTitleMarquee'] == true;
           // 瀑布流：封面高度 = 卡片宽 × 系数；规整网格：由网格高度决定
           final masonry = masonryFactor != null;
           final height = masonry
@@ -972,11 +988,29 @@ class BangumiBriefCard extends StatelessWidget {
               tag: heroTag != null
                   ? '$heroTag-${bangumiItem.id}'
                   : bangumiItem.id.toString(),
+              // 飞行全程显示图片本身（来源/目标侧的原生图像 widget），
+              // 避免两端控件结构差异导致交叉淡变产生的"从中间飞/闪白"
+              flightShuttleBuilder:
+                  (
+                    flightContext,
+                    animation,
+                    direction,
+                    fromContext,
+                    toContext,
+                  ) {
+                    return direction == HeroFlightDirection.pop
+                        ? (fromContext.widget as Hero).child
+                        : (toContext.widget as Hero).child;
+                  },
               child: BangumiWidget.kostoriImage(
                 context,
                 bangumiItem.images['large']!,
                 width: constraints.maxWidth,
                 height: height,
+                // 按显示宽度解码（非原图尺寸），减小缓存占用并加快重新加载
+                cacheWidth: (constraints.maxWidth *
+                        MediaQuery.devicePixelRatioOf(context))
+                    .round(),
               ),
             ),
           );
@@ -1161,9 +1195,83 @@ class BangumiBriefCard extends StatelessWidget {
             ).paddingHorizontal(2).paddingVertical(2),
           );
         },
+        ),
       ),
     );
   }
+}
+
+class _StaticStars extends StatelessWidget {
+  const _StaticStars({required this.rating, this.size = 12});
+
+  final double rating;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final filledColor = cs.primary;
+    final emptyColor = cs.onSurface.withValues(alpha: 0.2);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < 5; i++) ...[
+          _Star(
+            size: size,
+            fill: (rating - i).clamp(0.0, 1.0),
+            filledColor: filledColor,
+            emptyColor: emptyColor,
+          ),
+          if (i < 4) const SizedBox(width: 1),
+        ],
+      ],
+    );
+  }
+}
+
+class _Star extends StatelessWidget {
+  const _Star({
+    required this.size,
+    required this.fill,
+    required this.filledColor,
+    required this.emptyColor,
+  });
+
+  final double size;
+
+  final double fill;
+  final Color filledColor;
+  final Color emptyColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        children: [
+          Icon(Icons.star_rounded, size: size, color: emptyColor),
+          if (fill > 0)
+            ClipRect(
+              clipper: _FillClipper(fill),
+              child: Icon(Icons.star_rounded, size: size, color: filledColor),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FillClipper extends CustomClipper<Rect> {
+  const _FillClipper(this.fill);
+
+  final double fill;
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(0, 0, size.width * fill, size.height);
+
+  @override
+  bool shouldReclip(_FillClipper oldClipper) => oldClipper.fill != fill;
 }
 
 class BangumiDetailedCard extends StatelessWidget {
@@ -1342,13 +1450,7 @@ class BangumiDetailedCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  RatingBarIndicator(
-                    itemCount: 5,
-                    rating: bangumiItem.score.toDouble() / 2,
-                    itemBuilder: (context, index) =>
-                        const Icon(Icons.star_rounded),
-                    itemSize: 16.0,
-                  ),
+                  _StaticStars(rating: bangumiItem.score / 2, size: 16.0),
                   Text(
                     t.tReviewsR(r: bangumiItem.rank, t: bangumiItem.total),
                     style: const TextStyle(fontSize: 10),
@@ -1414,8 +1516,10 @@ class BangumiCharacterCard extends StatelessWidget {
     }
 
     Widget backdropFilter(Widget child) {
+      // blur 半径直接影响每帧合成开销：卡片滚动时覆盖层实时模糊下层，
+      // sigma 10 是滑动卡顿的主要来源，降到 4 视觉仍清晰
       return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -1611,11 +1715,9 @@ class _BangumiCardState extends State<BangumiCard> {
               ),
             ),
 
-            RatingBarIndicator(
-              itemCount: 5,
+            _StaticStars(
               rating: bangumiItem.score / 2,
-              itemBuilder: (context, index) => const Icon(Icons.star_rounded),
-              itemSize: App.isAndroid ? 12 : 14,
+              size: App.isAndroid ? 12 : 14,
             ),
             Text(
               t.tReviews(t: bangumiItem.total),
@@ -1632,7 +1734,10 @@ class _BangumiCardState extends State<BangumiCard> {
 
   @override
   Widget build(BuildContext context) {
-    String? image = widget.bangumiItem.images['large'];
+    // 各尺寸封面回退，避免某尺寸缺失时 image 为 null 崩溃
+    String? image = widget.bangumiItem.images['large'] ??
+        widget.bangumiItem.images['common'] ??
+        widget.bangumiItem.images['medium'];
     final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
     final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
     final useMarquee = appdata.settings['tileTitleMarquee'] == true;
@@ -1657,8 +1762,10 @@ class _BangumiCardState extends State<BangumiCard> {
     }
 
     Widget backdropFilter(Widget child) {
+      // blur 半径直接影响每帧合成开销：卡片滚动时覆盖层实时模糊下层，
+      // sigma 10 是滑动卡顿的主要来源，降到 4 视觉仍清晰
       return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -1679,12 +1786,16 @@ class _BangumiCardState extends State<BangumiCard> {
         clipBehavior: Clip.antiAlias,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            Widget backgroundImage = BangumiWidget.kostoriImage(
-              context,
-              image!,
-              width: constraints.maxWidth,
-              height: constraints.maxHeight,
-            );
+            // 无图时用占位色块，避免空指针
+            final hasImage = image != null && image.isNotEmpty;
+            Widget backgroundImage = hasImage
+                ? BangumiWidget.kostoriImage(
+                    context,
+                    image,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                  )
+                : const SizedBox.shrink();
 
             backgroundImage = Container(
               decoration: BoxDecoration(
@@ -1696,12 +1807,14 @@ class _BangumiCardState extends State<BangumiCard> {
             );
             Widget foregroundImage = Hero(
               tag: '${widget.heroTag}-${widget.bangumiItem.id}',
-              child: BangumiWidget.kostoriImage(
-                context,
-                image,
-                width: constraints.maxWidth,
-                height: constraints.maxHeight * 0.85,
-              ),
+              child: hasImage
+                  ? BangumiWidget.kostoriImage(
+                      context,
+                      image,
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight * 0.85,
+                    )
+                  : const SizedBox.shrink(),
             );
 
             foregroundImage = Container(

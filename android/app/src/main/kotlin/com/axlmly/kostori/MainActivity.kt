@@ -126,6 +126,27 @@ class MainActivity : AudioServiceFragmentActivity() {
         context.startActivity(intent)
     }
 
+    /// 用系统默认播放器打开本地视频（FileProvider content URI + ACTION_VIEW + mimeType）
+    private fun openWithMime(path: String, mimeType: String) {
+        val context = applicationContext
+        val file = File(path)
+        if (!file.exists()) return
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            FileProvider.getUriForFile(context, "$packageName.fileprovider", file)
+        } else {
+            Uri.fromFile(file)
+        }
+        intent.setDataAndType(uri, mimeType)
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // 没有能处理该 mimeType 的应用时忽略
+            Log.e("Kostori", "openWithMime failed: ${e.message}")
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         GeneratedPluginRegistrant.registerWith(flutterEngine)
@@ -135,6 +156,15 @@ class MainActivity : AudioServiceFragmentActivity() {
         ).setMethodCallHandler { call, res ->
             when (call.method) {
                 "getProxy" -> res.success(getProxy())
+                "openWithMime" -> {
+                    val path = call.argument<String>("url") ?: ""
+                    if (path.isNotEmpty()) {
+                        openWithMime(path, call.argument<String>("mimeType") ?: "video/*")
+                        res.success(true)
+                    } else {
+                        res.error("INVALID_PATH", "path is empty", null)
+                    }
+                }
                 "setScreenOn" -> {
                     val set = call.argument<Boolean>("set") ?: false
                     if (set) {

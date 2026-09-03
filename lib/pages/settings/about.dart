@@ -857,7 +857,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           });
           if (CancelToken.isCancel(e)) {
             App.rootContext.showMessage(
-              message: "Download canceled",
+              message: t.downloadCanceled,
               level: LogLevel.warning,
             );
           } else {

@@ -107,6 +107,30 @@ class BangumiItem {
     return match?.group(0); // 返回匹配到的第一个日期字符串
   }
 
+  /// 兼容名称字段为字符串或多语言 Map（如 {"zh-hans":["穹顶下的魔女"]}）
+  static String _nameString(dynamic v) {
+    if (v == null) return '';
+    if (v is String) return v;
+    if (v is Map) {
+      // 优先取简体中文
+      for (final key in ['zh-hans', 'zh-Hans', 'zh-CN', 'zh_cn', 'zhHans']) {
+        final val = v[key];
+        if (val is String && val.isNotEmpty) return val;
+        if (val is List && val.isNotEmpty && val.first is String) {
+          return val.first as String;
+        }
+      }
+      // 兜底：任一非空字符串值
+      for (final val in v.values) {
+        if (val is String && val.isNotEmpty) return val;
+        if (val is List && val.isNotEmpty && val.first is String) {
+          return val.first as String;
+        }
+      }
+    }
+    return v.toString();
+  }
+
   factory BangumiItem.fromJson(Map<String, dynamic> json) {
     List<String> parseBangumiAliases(Map<String, dynamic> jsonData) {
       if (jsonData.containsKey('infobox') && jsonData['infobox'] is List) {
@@ -139,10 +163,10 @@ class BangumiItem {
     return BangumiItem(
       id: json['id'],
       type: json['type'] ?? 2,
-      name: json['name'] ?? '',
-      nameCn: (json['name_cn'] ?? json['nameCN'] ?? '') == ''
-          ? (json['name'] ?? '')
-          : json['name_cn'] ?? json['nameCN'],
+      name: _nameString(json['name']),
+      nameCn: _nameString(json['name_cn'] ?? json['nameCN']) == ''
+          ? _nameString(json['name'])
+          : _nameString(json['name_cn'] ?? json['nameCN']),
       summary: json['summary'] ?? '',
       airDate:
           json['air_date'] ??
@@ -253,7 +277,7 @@ class EpisodeResult {
     required this.hasNextEpisodes,
   });
 
-  /// fetchEpisodes=false 时，根据 end 字段判断是否完结
+  /// fetchEpisodes=false 时根据 end 字段判断是否完结
   factory EpisodeResult.fromEndDate(String? endDateStr) {
     final endDate = endDateStr != null ? DateTime.tryParse(endDateStr) : null;
     final hasEnded = endDate != null && endDate.isBefore(DateTime.now());

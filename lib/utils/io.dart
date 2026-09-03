@@ -306,7 +306,7 @@ Future<FileSelectResult?> selectFile({required List<String> ext}) async {
 
     final fileExt = file.path!.split('.').last;
     if (!ext.contains(fileExt)) {
-      App.rootContext.showMessage(message: "Invalid file type: $fileExt");
+      App.rootContext.showMessage(message: t.invalidFileType(ext: fileExt));
       return null;
     }
 
@@ -532,7 +532,7 @@ class ImageSaver {
 
   static Future<void> saveImageToGallery(String imageUrl) async {
     try {
-      App.rootContext.showMessage(message: '正在保存图片...');
+      App.rootContext.showMessage(message: t.savingImage);
 
       final response = await AppDio().request<Uint8List>(
         imageUrl,
@@ -545,8 +545,8 @@ class ImageSaver {
         showResult(success: true);
         Log.info('saveImageToGallery', savedPath);
       } else {
-        showResult(success: false, message: '保存失败：权限或目录异常');
-        Log.error('保存失败：权限或目录异常', '');
+        showResult(success: false, message: t.saveFailedPermissionOrDirectory);
+        Log.error('saveFailedPermissionOrDirectory', '');
       }
     } catch (e, s) {
       showResult(

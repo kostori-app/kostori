@@ -511,6 +511,9 @@ abstract class VideoInfoSource {
   String get audioBitrate;
 
   List<PlayerLogEntry> get logs;
+
+  /// 播放该视频实际使用的请求头（含自动附加的 cookie）
+  Map<String, String>? get videoHeaders;
 }
 
 class PlayerControllerInfoSource implements VideoInfoSource {
@@ -541,6 +544,9 @@ class PlayerControllerInfoSource implements VideoInfoSource {
 
   @override
   List<PlayerLogEntry> get logs => controller.playerLog;
+
+  @override
+  Map<String, String>? get videoHeaders => controller.videoHeaders;
 }
 
 class RawPlayerInfoSource implements VideoInfoSource {
@@ -549,11 +555,14 @@ class RawPlayerInfoSource implements VideoInfoSource {
   final String videoUrl;
   @override
   final List<PlayerLogEntry> logs;
+  @override
+  final Map<String, String>? videoHeaders;
 
   const RawPlayerInfoSource({
     required this.player,
     required this.videoUrl,
     required this.logs,
+    this.videoHeaders,
   });
 
   @override
@@ -817,8 +826,14 @@ class VideoInfoSheet extends StatefulWidget {
     required Player player,
     required String videoUrl,
     required List<PlayerLogEntry> logs,
+    Map<String, String>? videoHeaders,
   }) => VideoInfoSheet._(
-    source: RawPlayerInfoSource(player: player, videoUrl: videoUrl, logs: logs),
+    source: RawPlayerInfoSource(
+      player: player,
+      videoUrl: videoUrl,
+      logs: logs,
+      videoHeaders: videoHeaders,
+    ),
   );
 
   const VideoInfoSheet._({required this.source});
@@ -893,6 +908,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
             children: [
               if (widget.source.medias.isNotEmpty)
                 MediaWidget(media: widget.source.medias.first),
+              const SizedBox(height: 12),
               Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -927,6 +943,8 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 ),
               ),
               const SizedBox(height: 12),
+              _buildRequestHeadersCard(context),
+              const SizedBox(height: 12),
               MediaInfoWidget(
                 videoParams: widget.source.videoParams,
                 audioParams: widget.source.audioParams,
@@ -934,6 +952,63 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 videoTrack: widget.source.videoTrack,
                 audioBitrate: widget.source.audioBitrate,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequestHeadersCard(BuildContext context) {
+    final headers = widget.source.videoHeaders;
+    final entries =
+        headers?.entries.toList() ?? const <MapEntry<String, String>>[];
+    final allText = [
+      t.requestHeaders,
+      if (entries.isEmpty)
+        t.playerNoRequestHeaders
+      else
+        ...entries.map((e) => '${e.key}: ${e.value}'),
+    ].join('\n');
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: allText));
+          App.rootContext.showMessage(message: t.copySuccess);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                t.requestHeaders,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                scrollPhysics: const NeverScrollableScrollPhysics(),
+              ),
+              const SizedBox(height: 8),
+              if (entries.isEmpty)
+                SelectableText(
+                  t.playerNoRequestHeaders,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  scrollPhysics: const NeverScrollableScrollPhysics(),
+                )
+              else
+                ...entries.map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    child: SelectableText(
+                      '${e.key}: ${e.value}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

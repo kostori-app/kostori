@@ -91,7 +91,7 @@ Future<void> runHeadlessMode(List<String> args) async {
   try {
     switch (serviceName) {
       case 'hub':
-        await _startHubService(port, mode, noAuth, started);
+        await _startHubService(port, mode, noAuth, cert, key, started);
       case 'lan':
         await _startLanService(port, started);
       case 'headless':
@@ -147,6 +147,7 @@ Future<void> _startHeadlessService(
   final service = HeadlessService();
   service.setHubNoAuth(noAuth);
   final preferred = port ?? 9001;
+  // 命令行 --cert/--key 优先；否则读应用内 TLS 配置（与 hub 服务一致）
   if (cert != null && key != null) {
     await service.startServerSecure(
       preferredPort: preferred,
@@ -154,29 +155,48 @@ Future<void> _startHeadlessService(
       certificatePath: cert,
       privateKeyPath: key,
     );
+    started['https'] = true;
+  } else if (service.tlsEnabled && service.tlsConfigured) {
+    await service.startServerSecure(
+      preferredPort: preferred,
+      mode: mode,
+      certificatePath: service.tlsCertificatePath!,
+      privateKeyPath: service.tlsPrivateKeyPath!,
+      password: service.tlsPassword ?? '',
+    );
+    started['https'] = true;
   } else {
     await service.startServer(preferredPort: preferred, mode: mode);
+    started['https'] = false;
   }
   started['port'] = service.port;
   started['bound'] = service.boundAddresses;
   started['userKey'] = ApiKeyManager().activeKey;
   started['adminKey'] = ApiKeyManager().adminActiveKey;
-  started['https'] = cert != null && key != null;
 }
 
 Future<void> _startHubService(
   int? port,
   BindMode mode,
   bool noAuth,
+  String? cert,
+  String? key,
   Map<String, dynamic> started,
 ) async {
   final service = HubService();
   service.setHubNoAuth(noAuth);
+  // 命令行 --cert/--key 优先：显式指定时强制启用 HTTPS（覆盖应用内配置）
+  if (cert != null && key != null) {
+    service.setTlsEnabled(true);
+    service.setTlsCertificatePath(cert);
+    service.setTlsPrivateKeyPath(key);
+  }
   await service.init(preferredPort: port, mode: mode);
   started['port'] = service.port;
   started['bound'] = service.boundAddresses;
   started['userKey'] = ApiKeyManager().activeKey;
   started['adminKey'] = ApiKeyManager().adminActiveKey;
+  started['https'] = cert != null && key != null;
 }
 
 Future<void> _startLanService(int? port, Map<String, dynamic> started) async {

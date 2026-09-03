@@ -424,13 +424,13 @@ class _PinInputDialogState extends State<_PinInputDialog> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return AlertDialog(
-      title: const Text('输入连接 PIN 码'),
+      title: Text(t.inputPinTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '连接到 ${widget.deviceName}',
+            t.connectToDevice(device: widget.deviceName),
             style: ts.s14.copyWith(color: cs.outline),
           ),
           const SizedBox(height: 12),
@@ -441,7 +441,7 @@ class _PinInputDialogState extends State<_PinInputDialog> {
             keyboardType: TextInputType.number,
             maxLength: 6,
             decoration: InputDecoration(
-              hintText: '请输入 PIN 码',
+              hintText: t.inputPinHint,
               errorText: _error,
               border: const OutlineInputBorder(),
             ),
@@ -452,9 +452,9 @@ class _PinInputDialogState extends State<_PinInputDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
+          child: Text(t.cancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('确定')),
+        FilledButton(onPressed: _submit, child: Text(t.confirm)),
       ],
     );
   }

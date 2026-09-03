@@ -676,19 +676,41 @@ class HistoryManager with ChangeNotifier {
       }
       // 本地较新或相等：保持本地
     }
-    if (toWrite.isEmpty) return;
 
-    // 批量写入（单事务，避免逐条 SQL）
+    // 远端为该端全量快照：删除"本地有但远端没有"的条目（另一端已删除），
+    // 否则同步后已删除的历史会重新出现
+    final remoteIds = remote.map((h) => h.id).toSet();
+    final toDelete = local.where((h) => !remoteIds.contains(h.id)).toList();
+
+    if (toWrite.isEmpty && toDelete.isEmpty) return;
+
     await _db.transaction(() async {
-      await _db.batch((batch) {
-        for (final h in toWrite) {
-          batch.insert(
-            _db.historyTable,
-            h.toCompanion(),
-            mode: InsertMode.insertOrReplace,
-          );
-        }
-      });
+      if (toDelete.isNotEmpty) {
+        await _db.batch((batch) {
+          for (final h in toDelete) {
+            batch.deleteWhere(
+              _db.historyTable,
+              (tbl) => tbl.id.equals(h.id),
+            );
+            // 级联删除该历史关联的进度记录，避免残留
+            batch.deleteWhere(
+              _db.progressTable,
+              (tbl) => tbl.historyId.equals(h.id),
+            );
+          }
+        });
+      }
+      if (toWrite.isNotEmpty) {
+        await _db.batch((batch) {
+          for (final h in toWrite) {
+            batch.insert(
+              _db.historyTable,
+              h.toCompanion(),
+              mode: InsertMode.insertOrReplace,
+            );
+          }
+        });
+      }
     });
     // 合并后统一刷新缓存并通知一次
     await _updateCache();

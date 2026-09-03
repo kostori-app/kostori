@@ -22,11 +22,17 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
   final _hubClientNameController = TextEditingController();
   final _hubTokenController = TextEditingController();
   final _pingIntervalController = TextEditingController();
+  final _tlsCertCtrl = TextEditingController();
+  final _tlsKeyCtrl = TextEditingController();
+  final _tlsPasswordCtrl = TextEditingController();
 
   bool _keyManagerReady = false;
 
   late final HubClient _hubClient;
   late final HubService _hub;
+
+  /// TLS 状态（与 Hub 服务共享同一套配置，读写 _service 的 setter）
+  bool get _tlsEnabled => _service.tlsEnabled;
 
   @override
   void initState() {
@@ -40,6 +46,9 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
     _hubClientNameController.text = _hubClient.savedName ?? '';
     _hubTokenController.text = _hubClient.savedToken ?? '';
     _pingIntervalController.text = _hub.pingInterval.inMilliseconds.toString();
+    _tlsCertCtrl.text = _service.tlsCertificatePath ?? '';
+    _tlsKeyCtrl.text = _service.tlsPrivateKeyPath ?? '';
+    _tlsPasswordCtrl.text = _service.tlsPassword ?? '';
     _initKeyManager();
   }
 
@@ -51,7 +60,22 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
     _hubClientNameController.dispose();
     _hubTokenController.dispose();
     _pingIntervalController.dispose();
+    _tlsCertCtrl.dispose();
+    _tlsKeyCtrl.dispose();
+    _tlsPasswordCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickTlsFile(
+    TextEditingController ctrl,
+    void Function(String) save,
+  ) async {
+    final r = await FilePicker.pickFiles();
+    if (r != null && r.files.isNotEmpty && r.files.first.path != null) {
+      ctrl.text = r.files.first.path!;
+      save(r.files.first.path!);
+      if (mounted) setState(() {});
+    }
   }
 
   Future<void> _initKeyManager() async {
@@ -159,7 +183,6 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => Sheet(
         title: t.savedServers,
         icon: Icons.history_outlined,
@@ -291,6 +314,162 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
               ],
             ),
           ),
+          // ── HTTPS（服务端与 Hub 服务共享同一份证书配置）────────────────
+          _BuildSectionPadding(
+            _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.enableTls,
+                  icon: Icons.lock_outline,
+                  subtitle: t.tlsSharedHint,
+                ),
+                _SettingRow(
+                  title: t.enableTls,
+                  subtitle: _tlsEnabled
+                      ? t.tlsEnabledDesc
+                      : t.tlsDisabledDesc,
+                  trailing: CustomSwitch(
+                    value: _tlsEnabled,
+                    onChanged: (val) {
+                      _service.setTlsEnabled(val);
+                      setState(() {});
+                    },
+                  ),
+                ),
+                if (_tlsEnabled) ...[
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Text(
+                      t.tlsCertificate,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+                    child: Text(
+                      t.tlsCertificateHint,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _tlsCertCtrl,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (v) {
+                              _service.setTlsCertificatePath(v.trim());
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.folder_open, size: 18),
+                          tooltip: t.browse,
+                          onPressed: () => _pickTlsFile(
+                            _tlsCertCtrl,
+                            _service.setTlsCertificatePath,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Text(
+                      t.tlsPrivateKey,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+                    child: Text(
+                      t.tlsPrivateKeyHint,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _tlsKeyCtrl,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (v) {
+                              _service.setTlsPrivateKeyPath(v.trim());
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.folder_open, size: 18),
+                          tooltip: t.browse,
+                          onPressed: () => _pickTlsFile(
+                            _tlsKeyCtrl,
+                            _service.setTlsPrivateKeyPath,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Text(
+                      t.tlsPassword,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+                    child: Text(
+                      t.tlsPasswordHint,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: TextField(
+                      controller: _tlsPasswordCtrl,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (v) {
+                        _service.setTlsPassword(v);
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           // ── AppService ───────────────────────────────────────────────────
           _BuildSectionPadding(
             _SettingCard(
@@ -399,13 +578,6 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                       if (v >= 1000) _hub.setPingInterval(v);
                     },
                   ),
-                ),
-                _PopupWindowSetting(
-                  title: t.enableTls,
-                  builder: () => _HubTlsPage(hub: _hub),
-                  onClosed: () {
-                    if (mounted) setState(() {});
-                  },
                 ),
                 if (_hubEnabled)
                   _PopupWindowSetting(
@@ -525,7 +697,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
 class _HubTlsPage extends ConsumerStatefulWidget {
   const _HubTlsPage({required this.hub});
 
-  final HubService hub;
+  final BaseHttpService hub;
 
   @override
   ConsumerState<_HubTlsPage> createState() => _HubTlsPageState();
@@ -536,7 +708,7 @@ class _HubTlsPageState extends ConsumerState<_HubTlsPage> {
   late final TextEditingController _keyCtrl;
   late final TextEditingController _passwordCtrl;
 
-  HubService get _hub => widget.hub;
+  BaseHttpService get _hub => widget.hub;
 
   @override
   void initState() {

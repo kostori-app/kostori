@@ -4,45 +4,6 @@ part of 'settings_page.dart';
 //  公共组件
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// 底部 Sheet 统一标题栏
-class _SheetHeader extends StatelessWidget {
-  const _SheetHeader({required this.title, this.icon});
-
-  final String title;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 8, 10),
-          child: Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-      ],
-    );
-  }
-}
-
 /// 成员头像 + 名称 Tile
 class _ClientTile extends StatelessWidget {
   const _ClientTile({required this.name, this.avatarUrl, this.trailing});
@@ -870,16 +831,21 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   void _showBlacklistSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SheetHeader(title: t.blacklist, icon: Icons.block_outlined),
-            if (_hub.blacklist.isEmpty)
-              _EmptyHint(t.noBannedUsers)
-            else
-              ..._hub.blacklist.map(
-                (id) => _ClientTile(
+        builder: (context, setSS) => Sheet(
+          title: t.blacklist,
+          icon: Icons.block_outlined,
+          builder: (context, sc) {
+            if (_hub.blacklist.isEmpty) {
+              return Center(child: _EmptyHint(t.noBannedUsers));
+            }
+            return ListView.builder(
+              controller: sc,
+              itemCount: _hub.blacklist.length,
+              itemBuilder: (context, i) {
+                final id = _hub.blacklist[i];
+                return _ClientTile(
                   name: id,
                   trailing: IconButton(
                     icon: const Icon(Icons.remove_circle_outline, size: 18),
@@ -890,10 +856,10 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                       setState(() {});
                     },
                   ),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
+                );
+              },
+            );
+          },
         ),
       ),
     );
@@ -905,7 +871,6 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSS) => Sheet(
           title: t.rooms,
@@ -983,39 +948,33 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SheetHeader(
-              title: "${t.roomAdmins} · ${room.roomName}",
-              icon: Icons.manage_accounts_outlined,
-            ),
-            Expanded(
-              child: ListView(
-                children: _hub.clients.map((client) {
-                  final isAdmin = room.isModerator(client.userId);
-                  return _ClientTile(
-                    name: client.displayName ?? client.userId,
-                    avatarUrl: client.avatarUrl,
-                    trailing: CustomSwitch(
-                      value: isAdmin,
-                      onChanged: (val) async {
-                        await _hub.setClientRoomAdmin(
-                          client.userId,
-                          room.roomId,
-                          val,
-                        );
-                        setSS(() {});
-                        setParent(() {});
-                      },
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
+        builder: (context, setSS) => Sheet(
+          title: "${t.roomAdmins} · ${room.roomName}",
+          icon: Icons.manage_accounts_outlined,
+          builder: (context, sc) => ListView(
+            controller: sc,
+            children: _hub.clients.map((client) {
+              final isAdmin = room.isModerator(client.userId);
+              return _ClientTile(
+                name: client.displayName ?? client.userId,
+                avatarUrl: client.avatarUrl,
+                trailing: CustomSwitch(
+                  value: isAdmin,
+                  onChanged: (val) async {
+                    await _hub.setClientRoomAdmin(
+                      client.userId,
+                      room.roomId,
+                      val,
+                    );
+                    setSS(() {});
+                    setParent(() {});
+                  },
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ),
     );

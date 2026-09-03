@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
@@ -731,7 +732,7 @@ class Bangumi {
         return;
       }
       App.rootContext.showMessage(
-        message: 'bangumiData更新失败...',
+        message: t.bangumiDataUpdateFailed,
         level: LogLevel.error,
       );
       NetLog.error('checkBangumiData', '$e\n$s');
@@ -766,7 +767,7 @@ class Bangumi {
       );
     } catch (e, s) {
       App.rootContext.showMessage(
-        message: 'bangumiData重置失败...',
+        message: t.bangumiDataResetFailed,
         level: LogLevel.error,
       );
       NetLog.error('resetBangumiData', '$e\n$s');

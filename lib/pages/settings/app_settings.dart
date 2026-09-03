@@ -195,7 +195,7 @@ class _AppSettingsState extends State<AppSettings> {
                             await auth.isDeviceSupported();
                         if (!canAuthenticate) {
                           context.showMessage(
-                            message: "Biometrics not supported",
+                            message: t.biometricsNotSupported,
                           );
                           setState(() {
                             appdata.settings['authorizationRequired'] = false;

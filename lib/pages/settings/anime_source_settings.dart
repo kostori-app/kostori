@@ -113,7 +113,7 @@ class AnimeSourceSettings extends StatelessWidget {
     final target = urlOverride ?? source.url;
     if (!target.isURL) {
       if (showLoading) {
-        App.rootContext.showMessage(message: "Invalid url config");
+        App.rootContext.showMessage(message: t.invalidUrlConfig);
         return;
       } else {
         throw Exception("Invalid url config");
@@ -322,7 +322,8 @@ class _BodyState extends State<_Body> {
     final colorScheme = Theme.of(context).colorScheme;
     final count = _filteredSources().length;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      // 与源卡片外边界(16+卡片自带4)对齐
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -333,9 +334,35 @@ class _BodyState extends State<_Body> {
                   controller: _searchCtrl,
                   decoration: InputDecoration(
                     hintText: t.search,
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _searchCtrl.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => _searchCtrl.clear(),
+                          ),
                     isDense: true,
-                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHigh,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -968,67 +995,65 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         for (var i = 0; i < _repos.length; i++)
           _SettingCard(
             children: [
-              ListTile(
-                dense: true,
-                leading: Icon(
-                  _isLocalRepo && i == _currentRepo
-                      ? Icons.folder
-                      : Icons.cloud_outlined,
-                  color: i == _currentRepo
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                ),
-                title: Text(
-                  _repos[i]['name']?.toString() ??
-                      _repos[i]['url']?.toString() ??
-                      '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: i == _currentRepo
-                      ? TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.primary,
-                        )
-                      : null,
-                ),
-                subtitle: Text(
-                  _repos[i]['url']?.toString() ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      iconSize: 18,
-                      tooltip: t.edit,
-                      icon: const Icon(Icons.edit_note, size: 18),
-                      onPressed: () => _editRepo(i),
-                    ),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      iconSize: 18,
-                      tooltip: t.delete,
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: colorScheme.error,
-                      ),
-                      onPressed: () => _removeRepo(i),
-                    ),
-                  ],
-                ),
+              // 点击/长按高亮覆盖整张卡片（圆角），而不是只盖住 ListTile 矩形
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
                 onTap: () => _switchRepo(i),
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(
+                    _isLocalRepo && i == _currentRepo
+                        ? Icons.folder
+                        : Icons.cloud_outlined,
+                    color: i == _currentRepo
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(
+                    _repos[i]['name']?.toString() ??
+                        _repos[i]['url']?.toString() ??
+                        '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: i == _currentRepo
+                        ? TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
+                          )
+                        : null,
+                  ),
+                  subtitle: Text(
+                    _repos[i]['url']?.toString() ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 18,
+                        tooltip: t.edit,
+                        icon: const Icon(Icons.edit_note, size: 18),
+                        onPressed: () => _editRepo(i),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 18,
+                        tooltip: t.delete,
+                        icon: Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: colorScheme.error,
+                        ),
+                        onPressed: () => _removeRepo(i),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-        const SizedBox(height: 4),
-        OutlinedButton.icon(
-          onPressed: _addRepo,
-          icon: const Icon(Icons.add, size: 18),
-          label: Text(t.addRepo),
-        ),
         const SizedBox(height: 16),
 
         // ── 当前仓库的源列表 ─────────────────────────
@@ -2217,7 +2242,13 @@ class _PingTestPageState extends State<_PingTestPage> {
                         }
                       });
                     },
-                    onTap: enabled ? () => _runTest(endpoint, endpoint) : null,
+                    onTap: () {
+                      // 点卡片即测试；未启用时先自动启用
+                      if (!_enabledEndpoints.contains(endpoint)) {
+                        _enabledEndpoints.add(endpoint);
+                      }
+                      _runTest(endpoint, endpoint);
+                    },
                     onDelete: () {
                       setState(() {
                         e.value.dispose();
@@ -2263,8 +2294,14 @@ class _PingTestPageState extends State<_PingTestPage> {
                   }
                 });
               },
-              onTap: enabled && endpoint != null
-                  ? () => _runTest(e['name']!, endpoint)
+              onTap: endpoint != null
+                  ? () {
+                      // 点卡片即测试；未启用时先自动启用
+                      if (!_enabledEndpoints.contains(endpoint)) {
+                        _enabledEndpoints.add(endpoint);
+                      }
+                      _runTest(e['name']!, endpoint);
+                    }
                   : null,
               onDelete: null,
             );
@@ -2312,6 +2349,7 @@ class _PingListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     Widget statusWidget;
 
     if (!enabled || endpoint == null || endpoint!.isEmpty) {
@@ -2358,35 +2396,72 @@ class _PingListTile extends StatelessWidget {
           );
           break;
         default:
-          statusWidget = IconButton(
-            icon: const Icon(Icons.play_arrow, size: 20),
-            onPressed: onTap,
-            tooltip: 'Test',
+          statusWidget = Icon(
+            Icons.play_arrow_rounded,
+            size: 22,
+            color: cs.primary,
           );
       }
     }
 
-    return ListTile(
-      leading: CustomSwitch(value: enabled, onChanged: (_) => onToggle()),
-      title: Text(name),
-      subtitle: endpoint != null && endpoint!.isNotEmpty
-          ? Text(endpoint!)
-          : Text(t.noAddress, style: TextStyle(color: Colors.grey[500])),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          statusWidget,
-          if (onDelete != null) ...[
-            const SizedBox(width: 4),
-            IconButton(
-              icon: const Icon(Icons.close, size: 18),
-              tooltip: t.delete,
-              onPressed: onDelete,
+    // 卡片布局：整卡点击测试（大热区），右上角开关独立控制启用
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: Material(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (endpoint != null && endpoint!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          endpoint!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                statusWidget,
+                const SizedBox(width: 4),
+                CustomSwitch(value: enabled, onChanged: (_) => onToggle()),
+                if (onDelete != null)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(Icons.close, size: 18, color: cs.outline),
+                    tooltip: t.delete,
+                    onPressed: onDelete,
+                  ),
+              ],
             ),
-          ],
-        ],
+          ),
+        ),
       ),
-      onTap: enabled && onTap != null ? onTap : null,
     );
   }
 }

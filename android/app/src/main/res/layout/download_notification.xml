@@ -36,6 +36,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:baselineAligned="false"
             android:gravity="center_vertical">
             <ProgressBar
                 android:id="@+id/task_progress_1"
@@ -49,6 +50,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="11sp"
+                android:includeFontPadding="false"
+                android:layout_gravity="center_vertical"
                 android:paddingStart="8dp"
                 android:text="0%"/>
         </LinearLayout>
@@ -72,6 +75,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:baselineAligned="false"
             android:gravity="center_vertical">
             <ProgressBar
                 android:id="@+id/task_progress_2"
@@ -85,6 +89,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="11sp"
+                android:includeFontPadding="false"
+                android:layout_gravity="center_vertical"
                 android:paddingStart="8dp"
                 android:text="0%"/>
         </LinearLayout>
@@ -108,6 +114,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:baselineAligned="false"
             android:gravity="center_vertical">
             <ProgressBar
                 android:id="@+id/task_progress_3"
@@ -121,6 +128,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="11sp"
+                android:includeFontPadding="false"
+                android:layout_gravity="center_vertical"
                 android:paddingStart="8dp"
                 android:text="0%"/>
         </LinearLayout>

@@ -380,7 +380,6 @@ class HubClientDetailPageState extends ConsumerState<HubClientDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSS) {
           final blocked = _hubClient.blockedUsers;

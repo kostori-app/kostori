@@ -588,13 +588,11 @@ class BangumiUtils {
     BangumiItem bangumiItem, [
     bool calendar = false,
   ]) async {
-    DebugLog.info('findCurrentWeekEpisode', allEpisodes.toString());
     if (allEpisodes.isEmpty) return {false: null};
 
     final now = DateTime.now();
     final currentWeek = Utils.getISOWeekNumber(now);
     final targetEpisodes = allEpisodes.where((e) => e.type == 0).toList();
-    DebugLog.info('findCurrentWeekEpisode', targetEpisodes.toString());
     if (targetEpisodes.isEmpty) return {false: null};
 
     String? bangumiDataAirTime = await providerContainer

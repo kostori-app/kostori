@@ -9,10 +9,62 @@ class LogSettings extends StatefulWidget {
 
 class _LogSettingsState extends State<LogSettings> {
   @override
+  void initState() {
+    super.initState();
+    // 预置归档设置默认值（与 Log 读取一致，保证滑块与行为同步）。
+    // 延迟到帧后再写，避免 build 阶段 notify 触发 setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      appdata.implicitData.putIfAbsent('logRetainCount', () => 2);
+      appdata.implicitData.putIfAbsent('logFileSizeMb', () => 4);
+      appdata.writeImplicitData();
+    });
+  }
+
+  Future<void> _exportLogFile() async {
+    final content = await Log.readAllLogs();
+    if (content.trim().isEmpty) {
+      context.showMessage(message: t.noData);
+      return;
+    }
+    saveLog(content);
+  }
+
+  void saveLog(String log) async {
+    saveFile(data: utf8.encode(log), filename: 'log.txt');
+  }
+
+  /// 清空日志（内存列表 + 落盘文件）
+  Future<void> _clearAllLogs() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.clear),
+        content: Text(t.clearLogsFileConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(t.delete),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      Log.clear();
+      await Log.deleteLogFiles();
+      if (mounted) context.showMessage(message: t.cleared);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text(t.log)),
+        // ── 日志管理 ──────────────────────────────────────────────
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
@@ -23,6 +75,47 @@ class _LogSettingsState extends State<LogSettings> {
                   title: t.openLog,
                   actionTitle: t.open,
                   callback: () => context.to(() => const LogsPage()),
+                ),
+                _CallbackSetting(
+                  title: t.exportLogFile,
+                  actionTitle: t.export,
+                  callback: _exportLogFile,
+                ),
+                _CallbackSetting(
+                  title: t.clearLog,
+                  actionTitle: t.clear,
+                  callback: _clearAllLogs,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // ── 日志设置 ──────────────────────────────────────────────
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.logSettings,
+                  icon: Icons.settings_outlined,
+                ),
+                _SwitchSetting(
+                  title: t.disableLengthLimitation,
+                  settingKey: "logIgnoreLimitation",
+                  dataSource: SwitchDataSource.implicit,
+                ),
+                _IntSliderSetting(
+                  title: t.logRetainCount,
+                  settingsIndex: "logRetainCount",
+                  dataSource: SwitchDataSource.implicit,
+                  options: const [1, 2, 3, 5, 10],
+                ),
+                _IntSliderSetting(
+                  title: t.logFileSizeMb,
+                  settingsIndex: "logFileSizeMb",
+                  dataSource: SwitchDataSource.implicit,
+                  options: const [1, 2, 4, 8, 16, 32],
                 ),
                 _SwitchSetting(title: t.debugInfo, settingKey: "debugInfo"),
                 _SwitchSetting(
@@ -86,11 +179,6 @@ class _LogsPageState extends State<LogsPage> {
                 Expanded(child: TabBar(tabs: tabs)),
                 _LogMenuButton(
                   onClear: () => setState(() => Log.clear()),
-                  onDisableLimit: () {
-                    Log.ignoreLimitation = true;
-                    context.showMessage(message: t.onlyValidForThisRun);
-                  },
-                  onExport: () => saveLog(Log.logs.toString()),
                 ),
               ],
             ),
@@ -108,11 +196,6 @@ class _LogsPageState extends State<LogsPage> {
           actions: [
             _LogMenuButton(
               onClear: () => setState(() => Log.clear()),
-              onDisableLimit: () {
-                Log.ignoreLimitation = true;
-                context.showMessage(message: t.onlyValidForThisRun);
-              },
-              onExport: () => saveLog(Log.logs.toString()),
             ),
           ],
         ),
@@ -261,15 +344,9 @@ class _LogsPageState extends State<LogsPage> {
 
 /// 日志页右上角"更多"按钮：菜单锚定在按钮处弹出（在 Sheet 内也定位正确）
 class _LogMenuButton extends StatelessWidget {
-  const _LogMenuButton({
-    required this.onClear,
-    required this.onDisableLimit,
-    required this.onExport,
-  });
+  const _LogMenuButton({required this.onClear});
 
   final VoidCallback onClear;
-  final VoidCallback onDisableLimit;
-  final VoidCallback onExport;
 
   @override
   Widget build(BuildContext context) {
@@ -277,25 +354,10 @@ class _LogMenuButton extends StatelessWidget {
       tooltip: t.more,
       icon: const Icon(Icons.more_horiz),
       onSelected: (value) {
-        switch (value) {
-          case 'clear':
-            onClear();
-            break;
-          case 'disableLimit':
-            onDisableLimit();
-            break;
-          case 'export':
-            onExport();
-            break;
-        }
+        if (value == 'clear') onClear();
       },
       itemBuilder: (context) => [
         PopupMenuItem(value: 'clear', child: Text(t.clear)),
-        PopupMenuItem(
-          value: 'disableLimit',
-          child: Text(t.disableLengthLimitation),
-        ),
-        PopupMenuItem(value: 'export', child: Text(t.export)),
       ],
     );
   }

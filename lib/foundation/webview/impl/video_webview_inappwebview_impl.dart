@@ -74,7 +74,7 @@ class VideoWebviewInAppWebviewImpl
         );
       },
       // 原生拦截：请求阶段即可看到 header，能捕获不带 .m3u8/.mp4 后缀、
-      // 但带 Range 头的视频请求（借鉴 kazumi）
+      // 但带 Range 头的视频请求
       shouldInterceptRequest: (controller, request) async {
         final url = request.url.toString();
         final lower = url.toLowerCase();

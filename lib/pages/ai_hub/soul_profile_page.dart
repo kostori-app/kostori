@@ -49,7 +49,7 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
         App.rootContext.showMessage(message: result.errorMessage ?? 'Error');
       }
     } catch (e) {
-      App.rootContext.showMessage(message: 'Error: $e');
+      App.rootContext.showMessage(message: '${t.error}: $e');
       Log.error('SoulProfile', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -126,7 +126,10 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
                     onChanged: (v) => setState(() => _source = v),
                   ),
                   const SizedBox(height: 8),
-                  _ModelSelector(provider: _source),
+                  _ModelSelector(
+                    provider: _source,
+                    onProviderChanged: (v) => setState(() => _source = v),
+                  ),
                 ],
               ),
             ),

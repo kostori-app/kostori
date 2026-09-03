@@ -9,10 +9,20 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/services/download/download_keep_alive.dart';
 import 'package:kostori/services/download/download_task.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:path/path.dart' as p;
+
+/// 下载直链的永久性 HTTP 错误（403/404/410 等）：地址失效，重试无意义。
+class _DownloadHttpError implements Exception {
+  final int code;
+  const _DownloadHttpError(this.code);
+
+  @override
+  String toString() => 'HTTP $code';
+}
 
 /// 视频下载管理器：任务队列 + 并发控制 + 进度通知 + 本地持久化。
 ///
@@ -39,6 +49,10 @@ class DownloadManager extends ChangeNotifier {
 
   /// 进行中任务的取消句柄
   final Map<String, FfmpegCancelToken> _cancelTokens = {};
+
+  /// 速度采样（任务 id → 上次采样时间/字节数）
+  final Map<String, DateTime> _speedSampleTime = {};
+  final Map<String, int> _speedSampleBytes = {};
 
   List<DownloadTask> get tasks => List.unmodifiable(_tasks);
 
@@ -131,8 +145,44 @@ class DownloadManager extends ChangeNotifier {
       Directory(_downloadDir).createSync(recursive: true);
       _persist();
       notifyListeners();
+      // 兜底：清理残留分片（已完成/失败/孤儿任务的分片目录），
+      // 避免旧版本未清理的 TS 切片占用体积越来越大
+      unawaited(_cleanupOrphanSegments());
     } catch (e, s) {
       Log.error('DownloadManager.init', '$e\n$s');
+    }
+  }
+
+  /// 清理非进行中任务目录下的 segments 分片。
+  /// 保留 queued/downloading/paused 任务的切片（断点续传用），
+  /// 清理孤儿残留：非可恢复任务（completed/无任务对应）的分片目录 +
+  /// 各目录残留的 video.mp4 半成品（合并中断/强关遗留，避免损坏与占空间）。
+  /// 保留 queued/downloading/paused/failed 任务的切片（断点续传 / 重新合并用）。
+  Future<void> _cleanupOrphanSegments() async {
+    try {
+      final dir = Directory(_downloadDir);
+      if (!await dir.exists()) return;
+      final keepDirs = <String>{
+        for (final t in _tasks)
+          if (t.status == DownloadStatus.queued ||
+              t.status == DownloadStatus.downloading ||
+              t.status == DownloadStatus.paused ||
+              t.status == DownloadStatus.failed)
+            p.join(_downloadDir, _safeTaskName(t)),
+      };
+      await for (final entry in dir.list()) {
+        if (entry is! Directory) continue;
+        // 清理残留的半成品 video.mp4（合并中断遗留；正常流程已被 rename 走）
+        await _deleteQuiet(File(p.join(entry.path, 'video.mp4')));
+        if (keepDirs.contains(entry.path)) continue;
+        final segDir = Directory(p.join(entry.path, 'segments'));
+        if (!await segDir.exists()) continue;
+        try {
+          await segDir.delete(recursive: true);
+        } catch (_) {}
+      }
+    } catch (e) {
+      Log.error('DownloadManager.cleanupOrphanSegments', '$e');
     }
   }
 
@@ -147,17 +197,32 @@ class DownloadManager extends ChangeNotifier {
     String? animeTitle,
     String? episode,
     String? author,
+    String? episodeNo,
     String? resolution,
     Map<String, String> headers = const {},
   }) async {
     if (url.isEmpty) return null;
     if (url.startsWith('blob:')) return null;
-    // 无 UA 时补浏览器 UA：缺省会被 rhttp 填成 "kostori/..."，
+    // 无 UA 时补浏览器 UA：优先用播放时 WebView 记录的真实 UA
+    // （签名 CDN 如 beeg 会校验 UA，与播放不一致会导致 403 Wrong key），
+    // 再回落固定浏览器 UA；缺省会被 rhttp 填成 "kostori/..."，
     // 部分 CDN（moedot 等）拒绝该 UA 返回 400，而浏览器可直下
     var effectiveHeaders = Map<String, String>.from(headers);
     if (effectiveHeaders['User-Agent'] == null &&
         effectiveHeaders['user-agent'] == null) {
-      effectiveHeaders['User-Agent'] = _browserUA;
+      effectiveHeaders['User-Agent'] =
+          appdata.implicitData['ua'] as String? ?? _browserUA;
+    }
+    // 附加 cookie jar 匹配该域名的 cookie，与播放端一致（否则校验会话的源会 403/410）
+    final dlUri = Uri.tryParse(url);
+    if (dlUri != null && (dlUri.scheme == 'http' || dlUri.scheme == 'https')) {
+      try {
+        final cookieHeader = await SingleInstanceCookieJar.instance
+            ?.loadForRequestCookieHeader(dlUri);
+        if (cookieHeader != null && cookieHeader.isNotEmpty) {
+          effectiveHeaders['Cookie'] = cookieHeader;
+        }
+      } catch (_) {}
     }
     final task = DownloadTask(
       id: '${DateTime.now().millisecondsSinceEpoch}_${url.hashCode}',
@@ -169,16 +234,53 @@ class DownloadManager extends ChangeNotifier {
       animeId: animeId,
       animeTitle: animeTitle,
       episode: episode,
+      episodeNo: episodeNo,
       author: author,
       resolution: resolution,
       headers: effectiveHeaders,
       createdAt: DateTime.now(),
     );
-    _tasks.insert(0, task);
+    _tasks.add(task);
     _persist();
     notifyListeners();
     _schedule();
     return task;
+  }
+
+  /// 把某个刚恢复的任务提升到队首（正在下载之后），
+  /// 使其在下一个空闲并发位优先开始（用于单任务“重试/继续”）
+  void _prioritizeQueued(DownloadTask task) {
+    final i = _tasks.indexOf(task);
+    if (i <= 0) return;
+    _tasks.removeAt(i);
+    final afterRunning = _tasks.lastIndexWhere(
+      (t) => t.status == DownloadStatus.downloading,
+    );
+    _tasks.insert(afterRunning + 1, task);
+  }
+
+  /// 每个任务的“自动续传”次数（临时性错误失败后自动重新排队）
+  final Map<String, int> _autoRetryCounts = {};
+
+  static const int _maxAutoRetries = 3;
+
+  /// 临时性错误（连接中断/超时/握手失败等）值得自动续传；
+  /// 永久性错误（HTTP 403/404/410、ffmpeg 失败等）需人工重新解析
+  bool _isTransient(Object e) {
+    final s = e.toString();
+    if (e is _DownloadHttpError) return false;
+    if (s.contains('HTTP ')) return false;
+    if (s.contains('中断') ||
+        s.contains('Connection closed') ||
+        s.contains('SocketException') ||
+        s.contains('HandshakeException') ||
+        s.contains('connectionError') ||
+        s.contains('connectionTimeout') ||
+        s.contains('receiveTimeout') ||
+        s.contains('sendTimeout')) {
+      return true;
+    }
+    return false;
   }
 
   void _schedule() {
@@ -211,7 +313,8 @@ class DownloadManager extends ChangeNotifier {
     final taskDir = p.join(_downloadDir, safeName);
     await Directory(taskDir).create(recursive: true);
     final tmpPath = p.join(taskDir, 'video.mp4');
-    final finalPath = p.join(taskDir, '$safeName.mp4');
+    // 最终文件名用标题基名（不带唯一 id 数字后缀），目录仍按 taskDir 隔离
+    final finalPath = p.join(taskDir, '${_fileBaseName(task)}.mp4');
 
     try {
       if (task.isHls) {
@@ -233,10 +336,14 @@ class DownloadManager extends ChangeNotifier {
       if (await dst.exists()) await _deleteQuiet(dst);
       await tmp.rename(finalPath);
       task.filePath = finalPath;
+      // 补全实际文件大小（m3u8 下载时无法预知总大小，合并后取真实值）
+      task.totalBytes = await File(finalPath).length();
       task.status = DownloadStatus.completed;
       task.progress = 1;
       task.error = null;
       await _writeRecord(task);
+      // 合并完成即清理分片，避免 TS 切片残留占用体积
+      await _cleanupSegments(taskDir);
       try {
         App.rootContext.showMessage(
           message: '${t.downloadCompleted}: ${task.title}',
@@ -249,16 +356,44 @@ class DownloadManager extends ChangeNotifier {
           task.status = DownloadStatus.failed;
           task.error = 'cancelled';
         }
+      } else if (_isTransient(e)) {
+        // 临时性失败（断线/超时）：自动重新排队续传，避免用户反复手动重试
+        final n = (_autoRetryCounts[task.id] ?? 0) + 1;
+        if (n <= _maxAutoRetries && _tasks.contains(task)) {
+          _autoRetryCounts[task.id] = n;
+          task.status = DownloadStatus.queued;
+          task.error = null;
+          task.progress = task.progress.clamp(0.0, 1.0);
+          _persist();
+          notifyListeners();
+          // 指数退避后回到队列（有并发位则自动开始，未占满立即续传）
+          unawaited(() async {
+            await Future.delayed(Duration(seconds: n * 3));
+            if (_tasks.contains(task) &&
+                task.status == DownloadStatus.queued) {
+              _schedule();
+            }
+          }());
+          Log.warning('DownloadManager', '自动续传 ${task.title} (第$n次)');
+          return;
+        }
+        if (_tasks.contains(task)) {
+          task.status = DownloadStatus.failed;
+          task.error = e.toString();
+        }
+        _notifyDownloadFailed(task, e);
       } else {
         Log.error('DownloadManager', '下载失败 ${task.title}: $e\n$s');
         if (_tasks.contains(task)) {
           task.status = DownloadStatus.failed;
           task.error = e.toString();
         }
+        _notifyDownloadFailed(task, e);
       }
     } finally {
       _runningIds.remove(task.id);
       _cancelTokens.remove(task.id);
+      _clearSpeedSamples(task.id);
       _persist();
       notifyListeners();
       _syncKeepAlive(force: true);
@@ -266,71 +401,138 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
-  /// mp4 直链：dart:io HttpClient 流式下载（断点续传 + 取消）。
+  /// 计算并上报下载进度（含速度采样，500ms 间隔平滑）。
+  /// 依赖 [DownloadTask.downloadedBytes] 已更新。
+  void _updateDownloadProgress(DownloadTask task) {
+    final now = DateTime.now();
+    final lastTime = _speedSampleTime[task.id];
+    final lastBytes = _speedSampleBytes[task.id];
+    if (lastTime != null && lastBytes != null) {
+      final dt = now.difference(lastTime).inMilliseconds;
+      final db = task.downloadedBytes - lastBytes;
+      if (dt >= 500 && db >= 0) {
+        task.downloadSpeed = db / (dt / 1000);
+        _speedSampleTime[task.id] = now;
+        _speedSampleBytes[task.id] = task.downloadedBytes;
+      }
+    } else {
+      _speedSampleTime[task.id] = now;
+      _speedSampleBytes[task.id] = task.downloadedBytes;
+    }
+    notifyListeners();
+    _syncKeepAlive();
+  }
+
+  /// 永久失败时提示原因（签名过期/网络/403 等），便于用户判断
+  void _notifyDownloadFailed(DownloadTask task, Object e) {
+    try {
+      var reason = e.toString().replaceFirst('Exception: ', '');
+      reason = reason.split('\n').first.trim();
+      if (reason.length > 60) reason = '${reason.substring(0, 60)}...';
+      App.rootContext.showMessage(
+        message: '${t.downloadFailed}: $reason',
+        level: LogLevel.error,
+      );
+    } catch (_) {}
+  }
+
+  void _clearSpeedSamples(String id) {
+    _speedSampleTime.remove(id);
+    _speedSampleBytes.remove(id);
+  }
+
+  /// mp4 直链：dart:io HttpClient 流式下载（断点续传 + 取消 + 连接中断重试）。
   ///
   /// 不用 dio/rhttp：部分 CDN（moedet 等）拒绝 reqwest 的请求特征
   /// （默认头/HTTP2 等），但 curl/浏览器（dart:io 与之一致）可正常下载。
+  /// 大文件传输中连接被服务端断开（HttpException: Connection closed）较常见，
+  /// 失败后基于已写入字节用 Range 续传，避免整个重下。
   Future<void> _downloadDirect(
     DownloadTask task,
     FfmpegCancelToken cancelToken,
     String tmpPath,
   ) async {
     final tmp = File(tmpPath);
-    final downloaded = await tmp.exists() ? await tmp.length() : 0;
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 20);
-    var received = 0;
-    int? total;
-    try {
-      final request = await client.getUrl(Uri.parse(task.url));
-      request.headers.set(
-        'User-Agent',
-        task.headers['User-Agent'] ??
-            task.headers['user-agent'] ??
-            _browserUA,
-      );
-      // 始终带 Range（首次 bytes=0-）
-      request.headers.set('Range', 'bytes=$downloaded-');
-      task.headers.forEach((k, v) {
-        final lk = k.toLowerCase();
-        if (lk != 'user-agent' && lk != 'range') {
-          request.headers.set(k, v);
-        }
-      });
-      final response = await request.close();
-      if (response.statusCode != 200 && response.statusCode != 206) {
-        throw Exception('HTTP ${response.statusCode}');
-      }
-      total = response.contentLength;
-      final sink = tmp.openWrite(mode: FileMode.append);
-      try {
-        await for (final chunk in response) {
-          if (cancelToken.isCancelled) {
-            await sink.close();
-            throw FfmpegCancelledException();
-          }
-          sink.add(chunk);
-          received += chunk.length;
-          if (total > 0) {
-            task.progress = ((downloaded + received) / (downloaded + total))
-                .clamp(0.0, 1.0);
-            notifyListeners();
-            _syncKeepAlive();
-          }
-        }
-        await sink.close();
-      } catch (e) {
-        try {
-          await sink.close();
-        } catch (_) {}
-        rethrow;
-      }
+    const maxAttempts = 5;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       if (cancelToken.isCancelled) throw FfmpegCancelledException();
-      task.progress = 1;
-      notifyListeners();
-    } finally {
-      client.close(force: true);
+      final downloaded = await tmp.exists() ? await tmp.length() : 0;
+      task.downloadedBytes = downloaded;
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 20);
+      var received = 0;
+      int total = -1;
+      var interrupted = false;
+      try {
+        final request = await client.getUrl(Uri.parse(task.url));
+        request.headers.set(
+          'User-Agent',
+          task.headers['User-Agent'] ??
+              task.headers['user-agent'] ??
+              _browserUA,
+        );
+        // 始终带 Range（首次 bytes=0-，续传从已下载处继续）
+        request.headers.set('Range', 'bytes=$downloaded-');
+        task.headers.forEach((k, v) {
+          final lk = k.toLowerCase();
+          if (lk != 'user-agent' && lk != 'range') {
+            request.headers.set(k, v);
+          }
+        });
+        final response = await request.close();
+        if (response.statusCode != 200 && response.statusCode != 206) {
+          // 4xx/5xx（含 410 链接失效）不可通过 Range 续传恢复，直接失败不重试
+          throw _DownloadHttpError(response.statusCode);
+        }
+        total = response.contentLength;
+        if (downloaded == 0 && total >= 0) {
+          task.totalBytes = total;
+        }
+        final sink = tmp.openWrite(mode: FileMode.append);
+        try {
+          await for (final chunk in response) {
+            if (cancelToken.isCancelled) {
+              await sink.close();
+              throw FfmpegCancelledException();
+            }
+            sink.add(chunk);
+            received += chunk.length;
+            task.downloadedBytes = downloaded + received;
+            if (total > 0) {
+              task.progress = ((downloaded + received) / (downloaded + total))
+                  .clamp(0.0, 1.0);
+            }
+            _updateDownloadProgress(task);
+          }
+          await sink.close();
+        } catch (e) {
+          try {
+            await sink.close();
+          } catch (_) {}
+          // 取消不重试；其余（连接中断等）走断点续传
+          if (cancelToken.isCancelled || e is FfmpegCancelledException) {
+            rethrow;
+          }
+          // 永久性 HTTP 错误（403/404/410 地址失效）不当作断线重试
+          if (e is _DownloadHttpError) rethrow;
+          interrupted = true;
+        }
+        if (interrupted) {
+          if (attempt >= maxAttempts) {
+            throw Exception('下载中断：连接多次断开，请重试');
+          }
+          // 短暂等待后续传（已下载部分保留在临时文件）
+          await Future.delayed(Duration(seconds: attempt));
+          continue;
+        }
+        if (cancelToken.isCancelled) throw FfmpegCancelledException();
+        task.progress = 1;
+        break;
+      } finally {
+        client.close(force: true);
+      }
     }
+    notifyListeners();
   }
 
   /// m3u8：dio 并发下载分片（已下载跳过实现断点），ffmpeg 合并转 mp4
@@ -344,8 +546,17 @@ class DownloadManager extends ChangeNotifier {
     final segDir = p.join(taskDir, 'segments');
     await Directory(segDir).create(recursive: true);
 
+    // 断点续传：已有分片字节计入已下载（避免重复统计）
+    var existingBytes = 0;
+    await for (final f in Directory(segDir).list()) {
+      existingBytes += await File(f.path).length();
+    }
+    task.downloadedBytes = existingBytes;
+
     // 1. 解析 m3u8（含变体选择）
     final segUrls = await _resolveHlsSegments(dio, task);
+    task.segTotal = segUrls.length;
+    task.segDone = 0;
 
     // 2. 并发下载分片（信号量限流；已存在的跳过实现断点）
     final sem = _SimpleSemaphore(_segmentConcurrent);
@@ -364,26 +575,40 @@ class DownloadManager extends ChangeNotifier {
             segPaths[i] = segFile.path;
             completed++;
           } else {
-            final resp = await dio.get<List<int>>(
-              segUrls[i],
-              options: Options(
-                headers: task.headers,
-                responseType: ResponseType.bytes,
-                extra: const {'httpVersion11': true},
-              ),
-            );
-            if (resp.data == null || resp.data!.isEmpty) {
+            // 分片下载带重试：签名 CDN（如 beeg）偶发 403/断连，重试可缓解
+            List<int>? data;
+            for (var attempt = 0; attempt < 3; attempt++) {
+              try {
+                final resp = await dio.get<List<int>>(
+                  segUrls[i],
+                  options: Options(
+                    headers: task.headers,
+                    responseType: ResponseType.bytes,
+                    extra: const {'httpVersion11': true},
+                  ),
+                );
+                data = resp.data;
+                if (data != null && data.isNotEmpty) break;
+              } catch (e) {
+                if (attempt >= 2) rethrow;
+              }
+              if (attempt < 2) {
+                await Future.delayed(const Duration(seconds: 1));
+              }
+            }
+            if (data == null || data.isEmpty) {
               throw Exception('分片 $i 下载为空');
             }
-            await segFile.writeAsBytes(resp.data!, flush: true);
+            await segFile.writeAsBytes(data, flush: true);
             segPaths[i] = segFile.path;
+            task.downloadedBytes += data.length;
             completed++;
           }
           task.progress = segUrls.isEmpty
               ? 1
               : completed / segUrls.length;
-          notifyListeners();
-          _syncKeepAlive();
+          task.segDone = completed;
+          _updateDownloadProgress(task);
         } catch (e) {
           errors.add('分片 $i: $e');
         } finally {
@@ -394,15 +619,31 @@ class DownloadManager extends ChangeNotifier {
 
     if (cancelToken.isCancelled) throw FfmpegCancelledException();
     if (errors.isNotEmpty) {
-      throw Exception('部分分片下载失败：${errors.length} 个');
+      // 带上首个失败分片的原因，便于用户判断（签名过期/网络/403 等）
+      final first = errors.first.split('\n').first.trim();
+      final reason = first.length > 80 ? '${first.substring(0, 80)}...' : first;
+      throw Exception('部分分片下载失败：${errors.length} 个（$reason）');
     }
 
-    // 3. ffmpeg 合并 ts → mp4
-    await FfmpegEncoder.mergeTs(
-      tsPaths: segPaths.where((p) => p.isNotEmpty).toList(),
-      outputPath: tmpPath,
-      cancelToken: cancelToken,
-    );
+    // 3. ffmpeg 合并 ts → mp4（合并进度实时反映到 task.progress）
+    task.isMerging = true;
+    task.progress = 0;
+    task.error = null;
+    notifyListeners();
+    try {
+      await FfmpegEncoder.mergeTs(
+        tsPaths: segPaths.where((p) => p.isNotEmpty).toList(),
+        outputPath: tmpPath,
+        cancelToken: cancelToken,
+        onProgress: (p) {
+          task.progress = p.clamp(0.0, 1.0);
+          notifyListeners();
+        },
+      );
+    } finally {
+      task.isMerging = false;
+      notifyListeners();
+    }
   }
 
   /// 分片下载并发数（设置可调）
@@ -458,6 +699,13 @@ class DownloadManager extends ChangeNotifier {
 
     final segBase = _baseOf(targetUrl);
     final segs = <String>[];
+    // fMP4（av1/hevc）流的 init segment：由 #EXT-X-MAP 提供 moov，
+    // 必须放在分片最前面，否则合并时缺初始化信息无法解析
+    final mapMatch = RegExp(r'#EXT-X-MAP:URI="([^"]+)"').firstMatch(content);
+    if (mapMatch != null) {
+      final initUri = mapMatch.group(1)!;
+      segs.add(initUri.startsWith('http') ? initUri : '$segBase$initUri');
+    }
     for (final line in content.split('\n')) {
       final l = line.trim();
       if (l.isNotEmpty && !l.startsWith('#')) {
@@ -471,6 +719,100 @@ class DownloadManager extends ChangeNotifier {
   static String _baseOf(String url) {
     final idx = url.lastIndexOf('/');
     return idx >= 0 ? url.substring(0, idx + 1) : '$url/';
+  }
+
+  /// 强行合并已成功下载的分片（跳过失败分片）。
+  /// 仅适用于 m3u8 任务：缺失分片不参与合并，合并后可播放但对应内容缺失。
+  /// 合并进度实时写入 task.progress（卡片进度条显示，不弹窗）。
+  Future<void> forceMerge(String id) async {
+    final task = _tasks.where((e) => e.id == id).firstOrNull;
+    if (task == null || task.status != DownloadStatus.failed) return;
+    if (!task.isHls) {
+      App.rootContext.showMessage(message: t.downloadFailed);
+      return;
+    }
+    final safeName = _safeTaskName(task);
+    final taskDir = p.join(_downloadDir, safeName);
+    final segDir = p.join(taskDir, 'segments');
+    if (!await Directory(segDir).exists()) {
+      App.rootContext.showMessage(message: t.downloadFailed);
+      return;
+    }
+    final segPaths = Directory(segDir)
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.ts') && f.lengthSync() > 0)
+        .map((f) => f.path)
+        .toList()
+      ..sort();
+    if (segPaths.isEmpty) {
+      App.rootContext.showMessage(message: t.downloadFailed);
+      return;
+    }
+    final tmpPath = p.join(taskDir, 'video.mp4');
+    final finalPath = p.join(taskDir, '${_fileBaseName(task)}.mp4');
+    final cancelToken = FfmpegCancelToken();
+    _cancelTokens[id] = cancelToken;
+    // 进入合并中状态：卡片进度条驱动显示
+    task.status = DownloadStatus.downloading;
+    task.isMerging = true;
+    task.progress = 0;
+    task.error = null;
+    _persist();
+    notifyListeners();
+    try {
+      await FfmpegEncoder.mergeTs(
+        tsPaths: segPaths,
+        outputPath: tmpPath,
+        cancelToken: cancelToken,
+        onProgress: (p) {
+          task.progress = p.clamp(0.0, 1.0);
+          notifyListeners();
+        },
+      );
+      final tmp = File(tmpPath);
+      if (!await tmp.exists() || await tmp.length() == 0) {
+        throw Exception('合并结果为空');
+      }
+      final dst = File(finalPath);
+      if (await dst.exists()) await _deleteQuiet(dst);
+      await tmp.rename(finalPath);
+      task.filePath = finalPath;
+      task.totalBytes = await File(finalPath).length();
+      task.status = DownloadStatus.completed;
+      task.isMerging = false;
+      task.progress = 1;
+      task.error = null;
+      await _writeRecord(task);
+      // 强合完成后同样清理分片
+      await _cleanupSegments(taskDir);
+      _persist();
+      notifyListeners();
+      try {
+        App.rootContext.showMessage(
+          message: '${t.downloadCompleted}: ${task.title}',
+        );
+      } catch (_) {}
+    } catch (e, s) {
+      Log.error('DownloadManager.forceMerge', '$e\n$s');
+      // 合并失败/取消：回到 failed 状态（保留分片供重试），清理半成品临时文件
+      task.status = DownloadStatus.failed;
+      task.isMerging = false;
+      task.error = e.toString();
+      await _deleteQuiet(File(tmpPath));
+      _persist();
+      notifyListeners();
+      if (!cancelToken.isCancelled) {
+        try {
+          App.rootContext.showMessage(
+            message: '${t.downloadFailed}: $e',
+            level: LogLevel.error,
+          );
+        } catch (_) {}
+      }
+    } finally {
+      _cancelTokens.remove(id);
+    }
   }
 
   /// 暂停下载（终止 ffmpeg 进程；恢复时从头重新下载）
@@ -493,8 +835,8 @@ class DownloadManager extends ChangeNotifier {
       return;
     }
     t.status = DownloadStatus.queued;
-    t.progress = 0;
     t.error = null;
+    _prioritizeQueued(t);
     _persist();
     notifyListeners();
     _schedule();
@@ -512,7 +854,6 @@ class DownloadManager extends ChangeNotifier {
     for (final t in _tasks) {
       if (t.status == DownloadStatus.failed) {
         t.status = DownloadStatus.queued;
-        t.progress = 0;
         t.error = null;
         changed = true;
       }
@@ -529,7 +870,6 @@ class DownloadManager extends ChangeNotifier {
     for (final t in _tasks) {
       if (t.status == DownloadStatus.paused) {
         t.status = DownloadStatus.queued;
-        t.progress = 0;
         t.error = null;
         changed = true;
       }
@@ -608,7 +948,8 @@ class DownloadManager extends ChangeNotifier {
     if (t.filePath != null) {
       await _deleteQuiet(File(t.filePath!));
     }
-    final safeName = '${_sanitize(t.title)}_${t.id}';
+    // 用与创建一致的目录名（_safeTaskName），否则删不到残留目录
+    final safeName = _safeTaskName(t);
     final dir = Directory(p.join(_downloadDir, safeName));
     if (await dir.exists()) {
       try {
@@ -659,6 +1000,18 @@ class DownloadManager extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// 删除任务目录下的分片目录（segments），合并完成后清理，避免 TS 切片残留
+  static Future<void> _cleanupSegments(String taskDir) async {
+    final segDir = Directory(p.join(taskDir, 'segments'));
+    try {
+      if (await segDir.exists()) {
+        await segDir.delete(recursive: true);
+      }
+    } catch (_) {}
+    // 顺带清理已重命名的临时文件（video.mp4 已被 rename，若有残留则删除）
+    await _deleteQuiet(File(p.join(taskDir, 'video.mp4')));
+  }
+
   static String _sanitize(String name) {
     final cleaned = name
         .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
@@ -675,21 +1028,36 @@ class DownloadManager extends ChangeNotifier {
     return '{title} {episode}';
   }
 
-  /// 按标题格式模板生成安全文件名
-  String _safeTaskName(DownloadTask task) {
+  /// 按标题格式模板生成文件名基名（不含唯一 id 后缀）
+  String _fileBaseName(DownloadTask task) {
     final format = _formatFor(task.sourceKey);
+    // “不使用集标题”时优先用纯集号（部分源集标题是无意义的 1/视频 等）
+    final ignoreTitle = appdata.implicitData['downloadIgnoreEpisodeTitle'] ==
+        true;
+    final episodeText = ignoreTitle && (task.episodeNo?.isNotEmpty ?? false)
+        ? task.episodeNo!
+        : (task.episode ?? '');
     var name = format
         .replaceAll('{title}', task.animeTitle ?? task.title)
-        .replaceAll('{episode}', task.episode ?? '')
+        .replaceAll('{episode}', episodeText)
         .replaceAll('{author}', task.author ?? '')
         .replaceAll('{resolution}', task.resolution ?? '')
         .replaceAll('{source}', task.sourceKey ?? '')
         .replaceAll('{year}', DateTime.now().year.toString())
         .trim();
     name = _sanitize(name);
-    if (name.isEmpty) name = 'video';
-    return '${name}_${task.id}'.replaceAll(' ', '_');
+    if (name.isEmpty) return 'video';
+    // 文件名过长会导致创建文件失败（文件系统路径/名称长度限制），
+    // 截断到安全长度（UTF-16 码元，Android ext4 文件名上限 255 字节内）
+    if (name.length > 100) {
+      name = name.substring(0, 100);
+    }
+    return name;
   }
+
+  /// 任务目录名（含唯一 id，保证同名任务隔离）
+  String _safeTaskName(DownloadTask task) =>
+      '${_fileBaseName(task)}_${task.id}'.replaceAll(' ', '_');
 
   /// 下载记录：完成时写入 download_records.json
   Future<void> _writeRecord(DownloadTask task) async {
@@ -716,7 +1084,9 @@ class DownloadManager extends ChangeNotifier {
         'sourceKey': task.sourceKey,
         'title': task.title,
         'episode': task.episode,
+        'resolution': task.resolution,
         'filePath': task.filePath,
+        'totalBytes': task.totalBytes,
         'time': DateTime.now().toIso8601String(),
       },
     );

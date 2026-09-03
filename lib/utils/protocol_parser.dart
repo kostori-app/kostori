@@ -151,7 +151,7 @@ void showKostoriShareSheet(
         children: [
           ListTile(
             leading: const Icon(Icons.text_fields_outlined),
-            title: const Text('复制文本口令'),
+            title: Text(t.copyTextCommand),
             onTap: () {
               Navigator.pop(ctx);
               final token = ProtocolParser.encodeWithBase64Payload(

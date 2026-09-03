@@ -89,13 +89,14 @@ class ExtensionSettingsPage extends StatelessWidget {
 Future<void> _importSkills(BuildContext context) async {
   final action = await showModalBottomSheet<String>(
     context: context,
-    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
     builder: (_) => Sheet(
       title: t.importSkills,
       icon: Icons.file_open_outlined,
       initialSize: 0.38,
-      builder: (ctx, sc) => Column(
-        mainAxisSize: MainAxisSize.min,
+      builder: (ctx, sc) => ListView(
+        controller: sc,
+        shrinkWrap: true,
         children: [
           ListTile(
             leading: const Icon(Icons.description_outlined),

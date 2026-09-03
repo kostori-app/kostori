@@ -99,11 +99,8 @@ class AnimeSourceLayoutMenu extends StatelessWidget {
     return PopupMenuButton<String>(
       tooltip: t.displayModeOfAnimeTile,
       icon: const Icon(Icons.grid_view_outlined),
-      onSelected: (v) => setSourceDisplayMode(
-        sourceKey,
-        v == '_default' ? null : v,
-        subKey,
-      ),
+      onSelected: (v) =>
+          setSourceDisplayMode(sourceKey, v == '_default' ? null : v, subKey),
       itemBuilder: (_) => [
         for (final (key, label) in modes)
           PopupMenuItem(
@@ -471,9 +468,10 @@ class AnimeTile extends ConsumerWidget {
       'detailed' => _buildDetailedMode(context, ref),
       'poster' => _buildPosterMode(context, ref),
       // 瀑布流需要封面高度系数（由瀑布流网格传入）；无系数时回退简洁布局
-      'masonry' => masonryFactor != null
-          ? _buildMasonryMode(context, ref)
-          : _buildBriefMode(context, ref),
+      'masonry' =>
+        masonryFactor != null
+            ? _buildMasonryMode(context, ref)
+            : _buildBriefMode(context, ref),
       _ => _buildBriefMode(context, ref),
     };
 
@@ -694,10 +692,7 @@ class AnimeTile extends ConsumerWidget {
   List<(String, Color?)>? _overlayLines() {
     final structured = anime.descriptionLines;
     if (structured != null && structured.isNotEmpty) {
-      return [
-        for (final l in structured)
-          (l.text, _parseColor(l.color)),
-      ];
+      return [for (final l in structured) (l.text, _parseColor(l.color))];
     }
     final subtitle = anime.subtitle?.replaceAll('\n', '').trim();
     final text = anime.description.isNotEmpty
@@ -880,11 +875,7 @@ class AnimeTile extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
                   // 瀑布流卡片高：标题不限制行数，按内容自然换行完整显示
-                  child: Text(
-                    title,
-                    style: style,
-                    textAlign: TextAlign.center,
-                  ),
+                  child: Text(title, style: style, textAlign: TextAlign.center),
                 ),
               ],
             ).paddingHorizontal(2).paddingVertical(2),
@@ -948,7 +939,8 @@ class AnimeTile extends ConsumerWidget {
               : (anime.tags != null && anime.tags!.isNotEmpty
                     ? anime.tags!.first
                     : anime.language);
-          final bottomRight = timeText ??
+          final bottomRight =
+              timeText ??
               (hasStars ? '★ ${anime.stars!.toStringAsFixed(1)}' : '');
 
           Offset pressPosition = Offset.zero;
@@ -1039,15 +1031,20 @@ class AnimeTile extends ConsumerWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(6, 5, 6, 0),
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
+                  // 标题固定占两行高度（fontSize 13 × height 1.2 × 2 行），
+                  // 避免标题行数变化挤压图片空间
+                  child: SizedBox(
+                    height: 13 * 2 * 1.2,
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (authorText != null && authorText.isNotEmpty)
@@ -1457,9 +1454,6 @@ class SliverMasonryAnimes extends ConsumerStatefulWidget {
   /// 触底加载回调：瀑布流滑到最后一个 item 构建时触发
   final void Function()? onLastItemBuild;
 
-  /// 封面高度系数：按索引循环错落，形成瀑布流
-  static const _factors = [1.25, 1.5, 1.1, 1.4, 1.6, 1.2];
-
   static int _heroSeedCounter = 0;
 
   @override
@@ -1492,16 +1486,17 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
           enableHistory: widget.enableHistory,
           badge: widget.badgeBuilder?.call(anime),
           menuOptions: widget.menuBuilder?.call(anime),
-          onTap:
-              widget.onTap == null ? null : () => widget.onTap!(anime, index),
-          onLongPressed:
-              widget.onLongPressed == null
-                  ? null
-                  : () => widget.onLongPressed!(anime, index),
+          onTap: widget.onTap == null
+              ? null
+              : () => widget.onTap!(anime, index),
+          onLongPressed: widget.onLongPressed == null
+              ? null
+              : () => widget.onLongPressed!(anime, index),
           heroID: index,
           heroTag: "cover${_heroSeed}_h$index",
-          masonryFactor: SliverMasonryAnimes._factors[
-              index % SliverMasonryAnimes._factors.length],
+          // 统一封面比例（与简洁布局接近，不再错落排列），
+          // 避免瀑布流图片高低参差
+          masonryFactor: 1.35,
         );
       },
     );
@@ -1566,7 +1561,8 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
 
   @override
   Widget build(BuildContext context) {
-    final mode = AnimeDisplayModeScope.of(context) ??
+    final mode =
+        AnimeDisplayModeScope.of(context) ??
         appdata.settings['animeDisplayMode'];
     // 瀑布流模式：sliver 场景委托瀑布流网格（错落封面）
     if (widget.asSliver &&
@@ -1784,7 +1780,8 @@ class _SliverGridAnimes extends StatelessWidget {
                   )
                 : null,
             heroID: _SliverGridAnimes.heroIDOf(animes[index]),
-                                    heroTag: "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
+            heroTag:
+                "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
           );
           if (selection == null) return anime;
           return AnimatedContainer(
@@ -1847,7 +1844,8 @@ class _SliverGridAnimes extends StatelessWidget {
                   )
                 : null,
             heroID: _SliverGridAnimes.heroIDOf(animes[index]),
-                                    heroTag: "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
+            heroTag:
+                "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
           );
           if (selection == null) return anime;
           return AnimatedContainer(

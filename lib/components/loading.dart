@@ -97,8 +97,16 @@ class SliverListLoadingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     // SliverToBoxAdapter can not been lazy loaded.
     // Use SliverList to make sure the animation can be lazy loaded.
-    return SliverList.list(
-      children: const [SizedBox(), ListLoadingIndicator()],
+    // 末尾预留底部安全区：避免滚到底时转圈被手势条/底部导航压到屏幕外
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverList.list(
+          children: const [SizedBox(), ListLoadingIndicator()],
+        ),
+        if (bottomPad > 0)
+          SliverToBoxAdapter(child: SizedBox(height: bottomPad)),
+      ],
     );
   }
 }
@@ -236,7 +244,8 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
   void nextPage() {
     if (_maxPage != null && _page > _maxPage!) return;
     if (_isLoading) return;
-    _isLoading = true;
+    // 开始时立即重建：让"加载更多"指示器在请求期间可见
+    if (mounted) setState(() => _isLoading = true);
     loadData(_page).then((value) {
       _isLoading = false;
       if (mounted) {
@@ -253,6 +262,7 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
           if (message.length > 20) {
             message = "${message.substring(0, 20)}...";
           }
+          setState(() {});
           context.showMessage(message: message);
         }
       }

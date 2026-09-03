@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider 可暴露的路径：覆盖下载目录（默认在应用私有 files 的 downloads/，
+  也可能被用户改为外部存储或 Android/data 下）。
+  manifest 中 FileProvider authorities 为 ${applicationId}.fileprovider。
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 应用私有 files 目录（getApplicationSupportDirectory / downloads） -->
+    <files-path name="files" path="." />
+    <!-- 外部存储根目录（用户自定义下载目录） -->
+    <external-path name="external" path="." />
+    <!-- 应用专属外部目录 Android/data/<pkg>/files -->
+    <external-files-path name="external_files" path="." />
+    <!-- 应用缓存目录 -->
+    <cache-path name="cache" path="." />
+</paths>

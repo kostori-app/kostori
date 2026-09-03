@@ -10,8 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/ai_model_card.dart';
-import 'package:kostori/components/bangumi_widget.dart';
-import 'package:kostori/components/components.dart';
+import 'package:kostori/components/bangumi_widget.dart';import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/bangumi.dart';
@@ -451,7 +450,7 @@ class _PluginModulePageState extends State<PluginModulePage> {
           Row(
             children: [
               Text(
-                '${_inputController.text.length} ${t.characters}',
+                t.charCount(count: _inputController.text.length),
                 style: TextStyle(fontSize: 12, color: scheme.outline),
               ),
               const Spacer(),
@@ -1070,9 +1069,24 @@ class _RangeChip extends StatelessWidget {
 }
 
 class _ModelSelector extends StatelessWidget {
-  const _ModelSelector({required this.provider});
+  const _ModelSelector({required this.provider, this.onProviderChanged});
 
   final String provider;
+
+  /// 切换服务商回调（内置插件页用它同步 _source）
+  final ValueChanged<String>? onProviderChanged;
+
+  void _showSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderModelSheet(
+        provider: provider,
+        onProviderChanged: onProviderChanged ?? (_) {},
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1131,60 +1145,10 @@ class _ModelSelector extends StatelessWidget {
               ),
             );
 
-            if (models.length <= 1) return chip;
-
-            return PopupMenuButton<String>(
-              offset: const Offset(0, -160),
-              onSelected: (modelId) async {
-                await AiDatabase.instance.aiApiKeyDao.updateModel(
-                  provider,
-                  modelId,
-                );
-              },
+            return InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => _showSheet(context),
               child: chip,
-              itemBuilder: (_) => models.map((m) {
-                final isSelected = m.modelId == currentModel;
-                return PopupMenuItem(
-                  value: m.modelId,
-                  child: Row(
-                    children: [
-                      Icon(
-                        isSelected ? Icons.check : Icons.circle_outlined,
-                        size: 16,
-                        color: isSelected
-                            ? scheme.primary
-                            : scheme.outlineVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              m.label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                            Text(
-                              m.modelId,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: scheme.outline,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
             );
           },
         );

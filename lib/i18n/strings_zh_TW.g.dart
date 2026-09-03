@@ -619,8 +619,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get watcherDetailsLogs => '詳情 & 日誌';
 	@override String get watcherMiniWindow => '小窗模式';
 	@override String get rangePickerDragHint => '拖拽調整剪輯範圍';
-	@override String get hlsParsing => '解析播放清單…';
-	@override String hlsDownloadingChunks({required Object done, required Object total}) => '下載分片 ${done}/${total}…';
 	@override String get bangumiStartWatch => '開始觀看';
 	@override String bangumiLastSeen({required Object episode}) => '上次看到: 第 ${episode} 話';
 	@override String bangumiMyRating({required Object score}) => '我的評分: ${score}';
@@ -708,7 +706,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtLoad => '載入';
 	@override String get vtHeaders => '請求標頭 (Headers)';
 	@override String get vtNoHeaders => '尚無請求標頭，點擊「新增」建立';
+	@override String get playerNoRequestHeaders => '無請求頭';
 	@override String get vtApplyAndLoad => '套用並載入';
+	@override String get downloadMainTitle => '主標題（番劇名）';
+	@override String get downloadIgnoreEpisodeTitle => '不使用集標題';
+	@override String get downloadIgnoreEpisodeTitleDesc => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案';
+	@override String get downloadMerging => '正在合併';
 	@override String get aiTagRational => '理性';
 	@override String get aiTagHumorous => '幽默';
 	@override String get aiTagSarcastic => '毒舌';
@@ -2343,6 +2346,41 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String portBusy({required Object start, required Object end}) => '連接埠 ${start} 到 ${end} 全部被佔用';
 	@override String get webSocketOnly => '僅支援 WebSocket 連線';
 	@override String toolRoundsExceeded({required Object source}) => '${source} 工具呼叫輪次過多';
+	@override String get requestHeaders => '請求頭';
+	@override String get direct => '直連';
+	@override String get manual => '手動';
+	@override String votes({required Object n}) => '${n} 票';
+	@override String pagesCount({required Object n}) => '${n} 頁';
+	@override String get emptyPage => '空頁面';
+	@override String get copyTextCommand => '複製文字口令';
+	@override String get saveFailedPermissionOrDirectory => '保存失敗：權限或目錄異常';
+	@override String get biometricsNotSupported => '不支援生物辨識';
+	@override String invalidFileType({required Object ext}) => '無效的檔案類型：${ext}';
+	@override String get downloadCanceled => '下載已取消';
+	@override String get tokenInvalidOrExpired => 'Token 無效或已過期';
+	@override String errorsLabel({required Object n}) => '錯誤：${n}';
+	@override String get inputPinTitle => '輸入連接 PIN 碼';
+	@override String get inputPinHint => '請輸入 PIN 碼';
+	@override String get topicsPoster => '貼主';
+	@override String timetableCount({required Object timetable, required Object count}) => '${timetable}（${count}）';
+	@override String fetchPluginsCount({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}';
+	@override String connectToDevice({required Object device}) => '連線到 ${device}';
+	@override String get receiveTimeout => '接收逾時：伺服器過於繁忙，可能無法及時回應';
+	@override String get connectionTerminatedDuringHandshake => '握手期間連線被終止：可能是防火牆攔截，或請求過於頻繁';
+	@override String get connectionResetByPeer => '對端重置了連線：與應用無關，請檢查網路';
+	@override String get downloadStarted => '開始下載';
+	@override String get forceMerge => '強制合併';
+	@override String get mergeProcessing => '正在合併已下載的分片...';
+	@override String get tlsSharedHint => '同時應用於基礎服務與 Hub 服務端（共用同一份憑證）';
+	@override String get loginExpiredReLogin => '登入已過期，請重新登入';
+	@override String get viewError => '查看錯誤';
+	@override String get exportLogFile => '匯出日誌檔案';
+	@override String get deleteLogFile => '刪除日誌檔案';
+	@override String get clearLogsFileConfirm => '確定刪除已儲存的日誌檔案（logs.txt / logs.old.txt）？';
+	@override String get clearLog => '清空日誌';
+	@override String get logSettings => '日誌設定';
+	@override String get logRetainCount => '保留歸檔日誌份數';
+	@override String get logFileSizeMb => '日誌檔案大小上限(MB)';
 }
 
 // Path: colors
@@ -2987,8 +3025,6 @@ extension on TranslationsZhTw {
 			'watcherDetailsLogs' => '詳情 & 日誌',
 			'watcherMiniWindow' => '小窗模式',
 			'rangePickerDragHint' => '拖拽調整剪輯範圍',
-			'hlsParsing' => '解析播放清單…',
-			'hlsDownloadingChunks' => ({required Object done, required Object total}) => '下載分片 ${done}/${total}…',
 			'bangumiStartWatch' => '開始觀看',
 			'bangumiLastSeen' => ({required Object episode}) => '上次看到: 第 ${episode} 話',
 			'bangumiMyRating' => ({required Object score}) => '我的評分: ${score}',
@@ -3076,7 +3112,12 @@ extension on TranslationsZhTw {
 			'vtLoad' => '載入',
 			'vtHeaders' => '請求標頭 (Headers)',
 			'vtNoHeaders' => '尚無請求標頭，點擊「新增」建立',
+			'playerNoRequestHeaders' => '無請求頭',
 			'vtApplyAndLoad' => '套用並載入',
+			'downloadMainTitle' => '主標題（番劇名）',
+			'downloadIgnoreEpisodeTitle' => '不使用集標題',
+			'downloadIgnoreEpisodeTitleDesc' => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案',
+			'downloadMerging' => '正在合併',
 			'aiTagRational' => '理性',
 			'aiTagHumorous' => '幽默',
 			'aiTagSarcastic' => '毒舌',
@@ -3428,11 +3469,11 @@ extension on TranslationsZhTw {
 			'statsCalendar' => '統計日曆',
 			'todaysRecords' => '當天的記錄',
 			'dailyStats' => '天統計',
+			_ => null,
+		} ?? switch (path) {
 			'viewAll' => '查看全部',
 			'kostoriChangelog' => 'Kostori 更新日誌',
 			'copyPath' => '複製路徑',
-			_ => null,
-		} ?? switch (path) {
 			'properties' => '屬性',
 			'noEndpoint' => '無端點',
 			'testAll' => '全部測試',
@@ -3942,11 +3983,11 @@ extension on TranslationsZhTw {
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '資料源',
 			'translationFailedPleaseTryAgainLater' => '翻譯失敗，請稍後重試',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'AI 翻譯來源不支援目前所在地區，請更換翻譯來源或改用其他地區的網路',
 			'translationErrorModelNotSupported' => '目前設定的模型不受該服務商支援，請到 AI 設定更換模型',
 			'translationErrorApiKeyInvalid' => 'API Key 無效或無權限，請檢查 AI 設定中的金鑰',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorRateLimited' => '請求過於頻繁或額度不足，請稍後再試',
 			'translationErrorRequestFailed' => '翻譯請求失敗',
 			'writeYourReview' => '寫下你的評價',
@@ -4456,11 +4497,11 @@ extension on TranslationsZhTw {
 			'chooseAnotherImage' => '換一張圖片試試',
 			'recognizeResult' => '識別結果',
 			'episodeLabel' => '第',
+			_ => null,
+		} ?? switch (path) {
 			'unknownEpisode' => '未知集數',
 			'openVideoPreview' => '影片預覽',
 			'discussInAi' => 'AI 討論',
-			_ => null,
-		} ?? switch (path) {
 			'dropImageToRecognize' => '放開即可識別圖片',
 			'dropFileToImport' => '放開即可匯入 .js 來源檔',
 			'viewOnBangumi' => '查看 Bangumi',
@@ -4759,6 +4800,41 @@ extension on TranslationsZhTw {
 			'portBusy' => ({required Object start, required Object end}) => '連接埠 ${start} 到 ${end} 全部被佔用',
 			'webSocketOnly' => '僅支援 WebSocket 連線',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具呼叫輪次過多',
+			'requestHeaders' => '請求頭',
+			'direct' => '直連',
+			'manual' => '手動',
+			'votes' => ({required Object n}) => '${n} 票',
+			'pagesCount' => ({required Object n}) => '${n} 頁',
+			'emptyPage' => '空頁面',
+			'copyTextCommand' => '複製文字口令',
+			'saveFailedPermissionOrDirectory' => '保存失敗：權限或目錄異常',
+			'biometricsNotSupported' => '不支援生物辨識',
+			'invalidFileType' => ({required Object ext}) => '無效的檔案類型：${ext}',
+			'downloadCanceled' => '下載已取消',
+			'tokenInvalidOrExpired' => 'Token 無效或已過期',
+			'errorsLabel' => ({required Object n}) => '錯誤：${n}',
+			'inputPinTitle' => '輸入連接 PIN 碼',
+			'inputPinHint' => '請輸入 PIN 碼',
+			'topicsPoster' => '貼主',
+			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable}（${count}）',
+			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}',
+			'connectToDevice' => ({required Object device}) => '連線到 ${device}',
+			'receiveTimeout' => '接收逾時：伺服器過於繁忙，可能無法及時回應',
+			'connectionTerminatedDuringHandshake' => '握手期間連線被終止：可能是防火牆攔截，或請求過於頻繁',
+			'connectionResetByPeer' => '對端重置了連線：與應用無關，請檢查網路',
+			'downloadStarted' => '開始下載',
+			'forceMerge' => '強制合併',
+			'mergeProcessing' => '正在合併已下載的分片...',
+			'tlsSharedHint' => '同時應用於基礎服務與 Hub 服務端（共用同一份憑證）',
+			'loginExpiredReLogin' => '登入已過期，請重新登入',
+			'viewError' => '查看錯誤',
+			'exportLogFile' => '匯出日誌檔案',
+			'deleteLogFile' => '刪除日誌檔案',
+			'clearLogsFileConfirm' => '確定刪除已儲存的日誌檔案（logs.txt / logs.old.txt）？',
+			'clearLog' => '清空日誌',
+			'logSettings' => '日誌設定',
+			'logRetainCount' => '保留歸檔日誌份數',
+			'logFileSizeMb' => '日誌檔案大小上限(MB)',
 			_ => null,
 		};
 	}

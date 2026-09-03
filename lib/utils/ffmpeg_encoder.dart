@@ -266,6 +266,97 @@ class FfmpegEncoder {
 
   // ── 完整下载（流复制，不重编码） ──────────────────────────────────────
 
+  /// 从网络/本地媒体截取 [startMs, endMs] 窗口，流复制为 mp4。
+  /// 用于视频剪辑器的预览窗口下载：只拉取目标位置附近的数据。
+  static Future<void> cutWindow({
+    required String inputUrl,
+    required String outputPath,
+    required int startMs,
+    required int endMs,
+    Map<String, String> headers = const {},
+    String? proxyUrl,
+    void Function(double progress)? onProgress,
+  }) async {
+    final safeInput = inputUrl.replaceAll('\\', '/');
+    final safeOutput = outputPath.replaceAll('\\', '/');
+    final isNetwork =
+        inputUrl.startsWith('http://') || inputUrl.startsWith('https://');
+    final isHls =
+        safeInput.toLowerCase().contains('.m3u8') ||
+        safeInput.toLowerCase().contains('m3u8');
+    final startSec = startMs / 1000.0;
+    final durSec = (endMs - startMs).clamp(1, 1 << 30) / 1000.0;
+
+    String buildCmd({required bool inputSeek}) {
+      final buf = StringBuffer();
+      if (proxyUrl != null && proxyUrl.isNotEmpty && isNetwork) {
+        String proxy = proxyUrl;
+        if (!proxy.startsWith('http://')) proxy = 'http://$proxy';
+        buf.write('-http_proxy "$proxy" ');
+      }
+
+      if (headers.isNotEmpty && isNetwork) {
+        for (final e in headers.entries) {
+          buf.write('-headers "${e.key}: ${e.value}" ');
+        }
+      }
+
+      if (inputSeek) {
+        buf.write('-y -ss $startSec -i "$safeInput" -t $durSec -c copy ');
+      } else {
+        // output seek：读流到目标点再截取。加密 HLS 的 input seek 会失败
+        buf.write('-y -i "$safeInput" -ss $startSec -t $durSec -c copy ');
+      }
+
+      if (isNetwork) {
+        buf.write('-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 ');
+      }
+
+      buf.write('-f mp4 "$safeOutput"');
+      return buf.toString();
+    }
+
+    Future<void> run(String cmd) {
+      if (Platform.isWindows) {
+        return _runWindows(
+          cmd,
+          totalMs: 0,
+          isDownload: true,
+          outputPath: safeOutput,
+          onProgress: onProgress,
+        );
+      }
+      return _runMobile(
+        cmd,
+        totalMs: 0,
+        isDownload: true,
+        outputPath: safeOutput,
+        onProgress: onProgress,
+      );
+    }
+
+    final cmd = buildCmd(inputSeek: true);
+    Log.info('FfmpegEncoder', 'cutWindow: $cmd');
+
+    if (isNetwork && isHls) {
+      try {
+        await run(cmd);
+      } catch (e) {
+        if (e.toString().contains('could not seek') ||
+            e.toString().contains('Error seeking')) {
+          // 加密 HLS 的 input seek 不可靠，降级为 output seek
+          final fallback = buildCmd(inputSeek: false);
+          Log.warning('FfmpegEncoder', 'HLS input seek failed, fallback: $fallback');
+          await run(fallback);
+        } else {
+          rethrow;
+        }
+      }
+    } else {
+      await run(cmd);
+    }
+  }
+
   static Future<void> download(FfmpegDownloadArgs args) async {
     final safeInput = args.inputUrl.replaceAll('\\', '/');
     final safeOutput = args.outputPath.replaceAll('\\', '/');
@@ -338,8 +429,12 @@ class FfmpegEncoder {
 
   // ── 媒体探测（解析视频详情） ─────────────────────────────────────────
 
-  /// 本地 ts 分片合并转 mp4（concat demuxer + 流复制）。
+  /// 本地 ts/fMP4 分片合并转 mp4（concat demuxer + 流复制）。
   /// 供 m3u8 分片下载后合并使用。
+  /// 本地 ts / fMP4 分片合并转 mp4。
+  /// 纯 TS 分片用 concat demuxer；fMP4（fragmented MP4，av1/hevc 常见）分片
+  /// 单个无法独立解析（moov 只在首个分片），需用 concat protocol 字节拼接，
+  /// 把分片顺序连成完整 fMP4 后再 -c copy 输出。
   static Future<void> mergeTs({
     required List<String> tsPaths,
     required String outputPath,
@@ -349,44 +444,80 @@ class FfmpegEncoder {
     if (tsPaths.isEmpty) {
       throw Exception('没有可合并的 ts 分片');
     }
-    final tmpDir = Directory.systemTemp;
-    final listFile = File(
-      p.join(
-        tmpDir.path,
-        'kostori_concat_${DateTime.now().millisecondsSinceEpoch}.txt',
-      ),
-    );
-    final lines = tsPaths
-        .map((path) => "file '${path.replaceAll("'", r"'\''")}'")
-        .join('\n');
-    await listFile.writeAsString(lines);
-
-    final safeList = listFile.path.replaceAll('\\', '/');
     final safeOutput = outputPath.replaceAll('\\', '/');
-    final cmd = '-y -f concat -safe 0 -i "$safeList" -c copy "$safeOutput"';
+    // 全部分片是否为 MPEG-TS（fMP4 分片首字节不是 0x47）
+    final allTs = tsPaths.every(_isMpegTs);
 
-    try {
-      if (Platform.isWindows) {
-        await _runWindows(
-          cmd,
-          totalMs: 0,
-          outputPath: outputPath,
-          onProgress: onProgress,
-          cancelToken: cancelToken,
-        );
-      } else {
-        await _runMobile(
-          cmd,
-          totalMs: 0,
-          outputPath: outputPath,
-          onProgress: onProgress,
-          cancelToken: cancelToken,
-        );
-      }
-    } finally {
+    String cmd;
+    if (allTs) {
+      final tmpDir = Directory.systemTemp;
+      final listFile = File(
+        p.join(
+          tmpDir.path,
+          'kostori_concat_${DateTime.now().millisecondsSinceEpoch}.txt',
+        ),
+      );
+      final lines = tsPaths
+          .map(
+            (path) =>
+                "file '${path.replaceAll('\\', '/').replaceAll("'", r"'\''")}'",
+          )
+          .join('\n');
+      await listFile.writeAsString(lines);
+      final safeList = listFile.path.replaceAll('\\', '/');
+      cmd = '-y -f concat -safe 0 -i "$safeList" -c copy "$safeOutput"';
       try {
-        await listFile.delete();
-      } catch (_) {}
+        await _run(cmd, outputPath, onProgress, cancelToken);
+      } finally {
+        try {
+          await listFile.delete();
+        } catch (_) {}
+      }
+    } else {
+      // fMP4：concat protocol 字节拼接（分片路径用 | 分隔，须不含 | 字符）
+      final concatInput = tsPaths
+          .map((p) => p.replaceAll('\\', '/'))
+          .join('|');
+      cmd = '-y -i "concat:$concatInput" -c copy "$safeOutput"';
+      await _run(cmd, outputPath, onProgress, cancelToken);
+    }
+  }
+
+  static Future<void> _run(
+    String cmd,
+    String outputPath,
+    void Function(double progress)? onProgress,
+    FfmpegCancelToken? cancelToken,
+  ) async {
+    if (Platform.isWindows) {
+      await _runWindows(
+        cmd,
+        totalMs: 0,
+        outputPath: outputPath,
+        onProgress: onProgress,
+        cancelToken: cancelToken,
+      );
+    } else {
+      await _runMobile(
+        cmd,
+        totalMs: 0,
+        outputPath: outputPath,
+        onProgress: onProgress,
+        cancelToken: cancelToken,
+      );
+    }
+  }
+
+  /// 判断分片是否为 MPEG-TS（首字节 0x47 同步字节）。
+  /// fMP4 分片以 ftyp/styp box 开头，需要先转 mpegts 才能 concat。
+  static bool _isMpegTs(String path) {
+    try {
+      final raf = File(path).openSync();
+      final header = raf.readSync(4);
+      raf.closeSync();
+      return header.isNotEmpty && header[0] == 0x47;
+    } catch (_) {
+      return true;
     }
   }
 
@@ -746,6 +877,29 @@ class FfmpegEncoder {
   }
 
   /// 桌面端执行。下载模式（无 time 输出）用文件大小估算进度。
+  /// 引号感知的命令行拆分：保留双引号包裹的参数为一个整体，
+  /// 避免 `-headers "User-Agent: xxx"` 这类带空格的值被拆散。
+  static List<String> _splitCommandLine(String cmd) {
+    final args = <String>[];
+    final buf = StringBuffer();
+    var inQuote = false;
+    for (var i = 0; i < cmd.length; i++) {
+      final c = cmd[i];
+      if (c == '"') {
+        inQuote = !inQuote;
+      } else if (c == ' ' && !inQuote) {
+        if (buf.isNotEmpty) {
+          args.add(buf.toString());
+          buf.clear();
+        }
+      } else {
+        buf.write(c);
+      }
+    }
+    if (buf.isNotEmpty) args.add(buf.toString());
+    return args;
+  }
+
   static Future<void> _runWindows(
     String cmd, {
     required int totalMs,
@@ -763,13 +917,7 @@ class FfmpegEncoder {
     }
     Log.info('FfmpegEncoder', 'Using FFmpeg at: $ffmpegPath');
 
-    final raw = cmd.split(' ').where((s) => s.isNotEmpty).toList();
-    final processedArgs = raw.map((a) {
-      if (a.startsWith('"') && a.endsWith('"')) {
-        return a.substring(1, a.length - 1);
-      }
-      return a;
-    }).toList();
+    final processedArgs = _splitCommandLine(cmd);
 
     final process = await Process.start(ffmpegPath, processedArgs);
 

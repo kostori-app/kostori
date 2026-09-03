@@ -733,6 +733,10 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
     Widget body = NestedScrollView(
       controller: scrollController,
+      // 收藏页不弹跳：Clamping + 内容不足时仍可下拉刷新
+      physics: const ClampingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       headerSliverBuilder: (context, _) => [
         if (!searchAllMode && !searchMode && !multiSelectMode)
           _buildNormalAppbar(tab)

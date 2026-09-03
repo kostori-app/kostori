@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/network/cloudflare.dart';
 
 class AnimeList extends StatefulWidget {
   const AnimeList({
@@ -440,6 +442,11 @@ class AnimeListState extends State<AnimeList>
     final gen = _generation;
 
     _loading[page] = true;
+    // 立即刷新让底部转圈可见；onLastItemBuild 会在 build 期同步调用，
+    // 需延到微任务（当前帧结束后）再 setState，避免 build 中 setState
+    scheduleMicrotask(() {
+      if (mounted) setState(() {});
+    });
     try {
       if (widget.loadPage != null) {
         var res = await widget.loadPage!(page);
@@ -710,49 +717,87 @@ class AnimeListState extends State<AnimeList>
         ],
       );
     }
-    return SmoothCustomScrollView(
-      key: enablePageStorage ? PageStorageKey('scroll$_page') : null,
-      controller: widget.controller ?? scrollController,
-      slivers: [
-        if (widget.leadingSliver != null) widget.leadingSliver!,
-        SliverGridAnimes(
-          animes: _data.values.expand((element) => element).toList(),
-          menuBuilder: widget.menuBuilder,
-          onLastItemBuild: () {
-            if (_error == null &&
-                (_maxPage == null || _data.length < _maxPage!)) {
-              _loadPage(_data.length + 1);
-            }
-          },
-        ),
-        if (_error != null)
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.error_outline),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(_error!, maxLines: 3)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      setState(() {
-                        _error = null;
-                      });
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: SmoothCustomScrollView(
+            key: enablePageStorage ? PageStorageKey('scroll$_page') : null,
+            controller: widget.controller ?? scrollController,
+            slivers: [
+              if (widget.leadingSliver != null) widget.leadingSliver!,
+              SliverGridAnimes(
+                animes: _data.values.expand((element) => element).toList(),
+                menuBuilder: widget.menuBuilder,
+                onLastItemBuild: () {
+                  if (_error == null &&
+                      (_maxPage == null || _data.length < _maxPage!)) {
+                    _loadPage(_data.length + 1);
+                  }
+                },
+              ),
+              if (_error != null)
+                SliverToBoxAdapter(
+                  child: Builder(
+                    builder: (context) {
+                      var cfe = CloudflareException.fromString(_error!);
+                      return Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.error_outline),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  cfe == null
+                                      ? _error!
+                                      : "Cloudflare verification required",
+                                  maxLines: 3,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Center(
+                            child: cfe != null
+                                ? FilledButton(
+                                    onPressed: () => passCloudflare(cfe, () {
+                                      setState(() {
+                                        _error = null;
+                                      });
+                                    }),
+                                    child: Text(t.check),
+                                  )
+                                : OutlinedButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _error = null;
+                                      });
+                                    },
+                                    child: Text(t.retry),
+                                  ),
+                          ),
+                        ],
+                      ).paddingHorizontal(16).paddingVertical(8);
                     },
-                    child: Text(t.retry),
                   ),
                 ),
-              ],
-            ).paddingHorizontal(16).paddingVertical(8),
-          )
-        else if (_maxPage == null || _data.length < _maxPage!)
-          const SliverListLoadingIndicator(),
-        if (widget.trailingSliver != null) widget.trailingSliver!,
+              if (widget.trailingSliver != null) widget.trailingSliver!,
+            ],
+          ),
+        ),
+        // 加载更多转圈悬浮在视口底部：不占内容流，避免触发瞬间在屏幕外被截
+        if (_loading.values.any((v) => v) && _data[1] != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).padding.bottom + 12,
+            child: IgnorePointer(
+              child: SizedBox(
+                height: 64,
+                child: Center(child: PolygonRefreshIndicator(size: 44)),
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -654,7 +654,7 @@ abstract class _PlayerController with Store {
       audioHandler.setController(this as PlayerController);
     }
 
-    if (App.isDesktop) {
+    if (App.isWindows) {
       SMTCManagerWindows.instance.setController(this as PlayerController);
       TaskbarManager.instance.setController(this as PlayerController);
     }
@@ -747,7 +747,7 @@ abstract class _PlayerController with Store {
         PlayLog.error("clearController", e.toString());
       }
     }
-    if (App.isDesktop) {
+    if (App.isWindows) {
       SMTCManagerWindows.instance.hideSmtcButKeepSession();
       TaskbarManager.instance.dispose();
     }

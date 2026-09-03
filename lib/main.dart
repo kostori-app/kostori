@@ -41,6 +41,12 @@ void main(List<String> args) {
         WidgetsFlutterBinding.ensureInitialized();
         MediaKit.ensureInitialized();
 
+        // 增大图片缓存容量：番剧列表/详情页图片量大，默认 1000 张/100MB
+        // 在跳转详情页加载新图时容易把列表页缓存逐出，返回后图片重新解码导致卡顿
+        PaintingBinding.instance.imageCache.maximumSize = 2000;
+        PaintingBinding.instance.imageCache.maximumSizeBytes =
+            200 * 1024 * 1024;
+
         // 注册主 isolate 任务通道：WebView2 等平台操作需在主线程执行
         MainIsolateRunner.register();
         WebViewResolver.registerMainIsolateHandler();
@@ -249,7 +255,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ? ColorScheme.fromSeed(
               seedColor: color,
               brightness: Brightness.dark,
-            ).copyWith(surface: Colors.black).harmonized()
+            ).copyWith(surface: Colors.black)
           : SeedColorScheme.fromSeeds(
               primaryKey: primary,
               secondaryKey: secondary,

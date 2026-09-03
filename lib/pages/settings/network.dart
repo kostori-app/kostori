@@ -146,7 +146,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                 child: Column(
                 children: [
                   RadioListTile<String>(
-                    title: Text('Direct'),
+                    title: Text(t.direct),
                     value: 'direct',
                   ),
                   RadioListTile<String>(
@@ -154,7 +154,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                     value: 'system',
                   ),
                   RadioListTile<String>(
-                    title: Text('Manual'),
+                    title: Text(t.manual),
                     value: 'manual',
                   ),
                 ],

@@ -69,6 +69,8 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
   late bool _aggregated;
   late String _singleKey;
   late Set<String> _selected;
+  final _searchCtrl = TextEditingController();
+  String _keyword = '';
 
   @override
   void initState() {
@@ -79,16 +81,39 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
     _selected = Set.of(widget.aggregatedKeys ?? {});
   }
 
-  List<AnimeSource> get _sources => enabledSearchSources(_group);
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// 当前分组全部源（未过滤，供切换分组等逻辑用）
+  List<AnimeSource> get _groupSources => enabledSearchSources(_group);
+
+  /// 按关键词过滤后的源列表（显示用）
+  List<AnimeSource> get _sources {
+    final k = _keyword.trim().toLowerCase();
+    final list = _groupSources;
+    if (k.isEmpty) return list;
+    return list
+        .where(
+          (s) =>
+              s.name.toLowerCase().contains(k) ||
+              s.key.toLowerCase().contains(k),
+        )
+        .toList();
+  }
 
   void _switchGroup(String group) {
     if (group == _group) return;
     setState(() {
       _group = group;
-      final keys = _sources.map((e) => e.key).toSet();
+      _keyword = '';
+      _searchCtrl.clear();
+      final keys = _groupSources.map((e) => e.key).toSet();
       _selected.removeWhere((k) => !keys.contains(k));
       if (!_aggregated) {
-        final sources = _sources;
+        final sources = _groupSources;
         if (sources.isNotEmpty && !sources.any((e) => e.key == _singleKey)) {
           _singleKey = sources.first.key;
         }
@@ -189,6 +214,23 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
             ),
           ),
           const Divider(height: 1),
+          // 源搜索筛选
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _keyword = v),
+              decoration: InputDecoration(
+                hintText: t.search,
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
           Expanded(
             child: sources.isEmpty
                 ? Center(

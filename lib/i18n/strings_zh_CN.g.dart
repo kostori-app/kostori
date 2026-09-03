@@ -620,8 +620,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get watcherDetailsLogs => '详情 & 日志';
 	@override String get watcherMiniWindow => '小窗模式';
 	@override String get rangePickerDragHint => '拖拽调整剪辑范围';
-	@override String get hlsParsing => '解析播放列表…';
-	@override String hlsDownloadingChunks({required Object done, required Object total}) => '下载分片 ${done}/${total}…';
 	@override String get bangumiStartWatch => '开始观看';
 	@override String bangumiLastSeen({required Object episode}) => '上次看到: 第 ${episode} 话';
 	@override String bangumiMyRating({required Object score}) => '我的评分: ${score}';
@@ -709,7 +707,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtLoad => '加载';
 	@override String get vtHeaders => '请求头 (Headers)';
 	@override String get vtNoHeaders => '暂无请求头，点击"添加"新增';
+	@override String get playerNoRequestHeaders => '无请求头';
 	@override String get vtApplyAndLoad => '应用并加载';
+	@override String get downloadMainTitle => '主标题（番剧名）';
+	@override String get downloadIgnoreEpisodeTitle => '不使用集标题';
+	@override String get downloadIgnoreEpisodeTitleDesc => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件';
+	@override String get downloadMerging => '正在合并';
 	@override String get aiTagRational => '理性';
 	@override String get aiTagHumorous => '幽默';
 	@override String get aiTagSarcastic => '毒舌';
@@ -2344,6 +2347,41 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String portBusy({required Object start, required Object end}) => '端口 ${start} 到 ${end} 全部被占用';
 	@override String get webSocketOnly => '仅支持 WebSocket 连接';
 	@override String toolRoundsExceeded({required Object source}) => '${source} 工具调用轮次过多';
+	@override String get requestHeaders => '请求头';
+	@override String get direct => '直连';
+	@override String get manual => '手动';
+	@override String votes({required Object n}) => '${n} 票';
+	@override String pagesCount({required Object n}) => '${n} 页';
+	@override String get emptyPage => '空页面';
+	@override String get copyTextCommand => '复制文本口令';
+	@override String get saveFailedPermissionOrDirectory => '保存失败：权限或目录异常';
+	@override String get biometricsNotSupported => '不支持生物识别';
+	@override String invalidFileType({required Object ext}) => '无效的文件类型：${ext}';
+	@override String get downloadCanceled => '下载已取消';
+	@override String get tokenInvalidOrExpired => 'Token 无效或已过期';
+	@override String errorsLabel({required Object n}) => '错误：${n}';
+	@override String get inputPinTitle => '输入连接 PIN 码';
+	@override String get inputPinHint => '请输入 PIN 码';
+	@override String get topicsPoster => '贴主';
+	@override String timetableCount({required Object timetable, required Object count}) => '${timetable}（${count}）';
+	@override String fetchPluginsCount({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}';
+	@override String connectToDevice({required Object device}) => '连接到 ${device}';
+	@override String get receiveTimeout => '接收超时：服务器过于繁忙，可能无法及时响应';
+	@override String get connectionTerminatedDuringHandshake => '握手期间连接被终止：可能是防火墙拦截，或请求过于频繁';
+	@override String get connectionResetByPeer => '对端重置了连接：与应用无关，请检查网络';
+	@override String get downloadStarted => '开始下载';
+	@override String get forceMerge => '强行合并';
+	@override String get mergeProcessing => '正在合并已下载的分片...';
+	@override String get tlsSharedHint => '同时应用于基础服务与 Hub 服务端（共享同一份证书）';
+	@override String get loginExpiredReLogin => '登录已过期，请重新登录';
+	@override String get viewError => '查看错误';
+	@override String get exportLogFile => '导出日志文件';
+	@override String get deleteLogFile => '删除日志文件';
+	@override String get clearLogsFileConfirm => '确定删除已保存的日志文件（logs.txt / logs.old.txt）？';
+	@override String get clearLog => '清空日志';
+	@override String get logSettings => '日志设置';
+	@override String get logRetainCount => '保留归档日志份数';
+	@override String get logFileSizeMb => '日志文件大小上限(MB)';
 }
 
 // Path: colors
@@ -2989,8 +3027,6 @@ extension on TranslationsZhCn {
 			'watcherDetailsLogs' => '详情 & 日志',
 			'watcherMiniWindow' => '小窗模式',
 			'rangePickerDragHint' => '拖拽调整剪辑范围',
-			'hlsParsing' => '解析播放列表…',
-			'hlsDownloadingChunks' => ({required Object done, required Object total}) => '下载分片 ${done}/${total}…',
 			'bangumiStartWatch' => '开始观看',
 			'bangumiLastSeen' => ({required Object episode}) => '上次看到: 第 ${episode} 话',
 			'bangumiMyRating' => ({required Object score}) => '我的评分: ${score}',
@@ -3078,7 +3114,12 @@ extension on TranslationsZhCn {
 			'vtLoad' => '加载',
 			'vtHeaders' => '请求头 (Headers)',
 			'vtNoHeaders' => '暂无请求头，点击"添加"新增',
+			'playerNoRequestHeaders' => '无请求头',
 			'vtApplyAndLoad' => '应用并加载',
+			'downloadMainTitle' => '主标题（番剧名）',
+			'downloadIgnoreEpisodeTitle' => '不使用集标题',
+			'downloadIgnoreEpisodeTitleDesc' => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件',
+			'downloadMerging' => '正在合并',
 			'aiTagRational' => '理性',
 			'aiTagHumorous' => '幽默',
 			'aiTagSarcastic' => '毒舌',
@@ -3429,11 +3470,11 @@ extension on TranslationsZhCn {
 			'todaysRecords' => '当天的记录',
 			'dailyStats' => '天统计',
 			'viewAll' => '查看全部',
+			_ => null,
+		} ?? switch (path) {
 			'kostoriChangelog' => 'Kostori 更新日志',
 			'copyPath' => '复制路径',
 			'properties' => '属性',
-			_ => null,
-		} ?? switch (path) {
 			'noEndpoint' => '无端点',
 			'testAll' => '测试全部',
 			'customEndpoint' => '自定义端点',
@@ -3943,11 +3984,11 @@ extension on TranslationsZhCn {
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
 			'translationErrorRegionNotSupported' => 'AI 翻译源不支持当前网络地区，请更换翻译源或使用其他地区的网络',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorModelNotSupported' => '当前配置的模型不被该服务商支持，请到 AI 设置更换模型',
 			'translationErrorApiKeyInvalid' => 'API Key 无效或无权限，请检查 AI 设置中的密钥',
 			'translationErrorRateLimited' => '请求过于频繁或额度不足，请稍后再试',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorRequestFailed' => '翻译请求失败',
 			'writeYourReview' => '写下你的评价',
 			'draft' => '草稿',
@@ -4457,11 +4498,11 @@ extension on TranslationsZhCn {
 			'noAnimeFound' => '未识别到动漫，可能是非动漫图片',
 			'chooseAnotherImage' => '换一张图片试试',
 			'recognizeResult' => '识别结果',
+			_ => null,
+		} ?? switch (path) {
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集数',
 			'openVideoPreview' => '视频预览',
-			_ => null,
-		} ?? switch (path) {
 			'discussInAi' => 'AI 讨论',
 			'dropImageToRecognize' => '松开即可识别图片',
 			'dropFileToImport' => '松开即可导入 .js 源文件',
@@ -4761,6 +4802,41 @@ extension on TranslationsZhCn {
 			'portBusy' => ({required Object start, required Object end}) => '端口 ${start} 到 ${end} 全部被占用',
 			'webSocketOnly' => '仅支持 WebSocket 连接',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具调用轮次过多',
+			'requestHeaders' => '请求头',
+			'direct' => '直连',
+			'manual' => '手动',
+			'votes' => ({required Object n}) => '${n} 票',
+			'pagesCount' => ({required Object n}) => '${n} 页',
+			'emptyPage' => '空页面',
+			'copyTextCommand' => '复制文本口令',
+			'saveFailedPermissionOrDirectory' => '保存失败：权限或目录异常',
+			'biometricsNotSupported' => '不支持生物识别',
+			'invalidFileType' => ({required Object ext}) => '无效的文件类型：${ext}',
+			'downloadCanceled' => '下载已取消',
+			'tokenInvalidOrExpired' => 'Token 无效或已过期',
+			'errorsLabel' => ({required Object n}) => '错误：${n}',
+			'inputPinTitle' => '输入连接 PIN 码',
+			'inputPinHint' => '请输入 PIN 码',
+			'topicsPoster' => '贴主',
+			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable}（${count}）',
+			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}',
+			'connectToDevice' => ({required Object device}) => '连接到 ${device}',
+			'receiveTimeout' => '接收超时：服务器过于繁忙，可能无法及时响应',
+			'connectionTerminatedDuringHandshake' => '握手期间连接被终止：可能是防火墙拦截，或请求过于频繁',
+			'connectionResetByPeer' => '对端重置了连接：与应用无关，请检查网络',
+			'downloadStarted' => '开始下载',
+			'forceMerge' => '强行合并',
+			'mergeProcessing' => '正在合并已下载的分片...',
+			'tlsSharedHint' => '同时应用于基础服务与 Hub 服务端（共享同一份证书）',
+			'loginExpiredReLogin' => '登录已过期，请重新登录',
+			'viewError' => '查看错误',
+			'exportLogFile' => '导出日志文件',
+			'deleteLogFile' => '删除日志文件',
+			'clearLogsFileConfirm' => '确定删除已保存的日志文件（logs.txt / logs.old.txt）？',
+			'clearLog' => '清空日志',
+			'logSettings' => '日志设置',
+			'logRetainCount' => '保留归档日志份数',
+			'logFileSizeMb' => '日志文件大小上限(MB)',
 			_ => null,
 		};
 	}

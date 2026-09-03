@@ -107,7 +107,7 @@ String buildEarlyScript(
   return buffer.toString();
 }
 
-/// 通用视频链接扫描（借鉴 Kazumi 的思路）：
+/// 通用视频链接扫描：
 /// - 按 URL 后缀捕获 .m3u8/.mp4；
 /// - 更关键：重写 Response.text 与 XHR，当响应体以 #EXTM3U 开头（HLS 清单）
 ///   时上报来源 URL —— 不要求 URL 带 .m3u8，可覆盖"API 返回清单"的播放器；

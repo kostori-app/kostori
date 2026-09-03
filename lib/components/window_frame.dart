@@ -149,9 +149,9 @@ class _WindowFrameState extends State<WindowFrame> {
                             ),
                           ),
                           if (kDebugMode)
-                            const TextButton(
+                            TextButton(
                               onPressed: debug,
-                              child: Text('Debug'),
+                              child: const Text('debug'),
                             ),
                           if (!App.isMacOS) _WindowButtons(onClose: _onClose),
                         ],

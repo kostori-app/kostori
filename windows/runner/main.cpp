@@ -1,6 +1,7 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
+#include <objbase.h>
 
 #include "flutter_window.h"
 #include "utils.h"
@@ -16,6 +17,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // Initialize COM, so that it is available for use in the library and/or
   // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  // OLE 初始化：desktop_drop 的 RegisterDragDrop 依赖 OLE（CoInitializeEx 只初始化
+  // COM 不初始化 OLE），不初始化会导致所有文件拖拽事件失效。
+  ::OleInitialize(nullptr);
 
   flutter::DartProject project(L"data");
 

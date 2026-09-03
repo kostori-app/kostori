@@ -781,11 +781,13 @@ class _SettingPartTitle extends StatelessWidget {
     required this.title,
     required this.icon,
     this.trailing,
+    this.subtitle,
   });
 
   final String title;
   final IconData icon;
   final Widget? trailing;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -798,12 +800,30 @@ class _SettingPartTitle extends StatelessWidget {
           ),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 24),
-          const SizedBox(width: 8),
-          Text(title, style: ts.s18),
-          if (trailing != null) ...[const Spacer(), trailing!],
+          Row(
+            children: [
+              Icon(icon, size: 24),
+              const SizedBox(width: 8),
+              Text(title, style: ts.s18),
+              if (trailing != null) ...[const Spacer(), trailing!],
+            ],
+          ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 32),
+              child: Text(
+                subtitle!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

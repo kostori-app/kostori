@@ -44,24 +44,56 @@ class BangumiPageImageCache {
   final List<ImageProvider> _providers = [];
   bool _disposed = false;
 
+  /// 保持的图片数量上限：触底加载无限增长时，超出部分释放最旧，
+  /// 避免滑多了保持几百张图导致内存/缓存膨胀卡顿。
+  static const int _maxKeep = 100;
+
   /// 预加载图片。已预加载过 / 已销毁时忽略。
-  void precache(BuildContext context, String url) {
+  /// [cacheWidth] 与卡片显示一致时（ResizeImage 包装）ImageCache key 才匹配，
+  /// 否则预加载的图无法被显示复用。
+  void precache(
+    BuildContext context,
+    String url, {
+    String? sourceKey,
+    int? cacheWidth,
+  }) {
     if (_disposed || url.isEmpty) return;
-    final existing = _providers.whereType<CachedImageProvider>().any(
-      (p) => p.url == url,
+    final base = CachedImageProvider(url, sourceKey: sourceKey);
+    final ImageProvider provider = cacheWidth != null && cacheWidth > 0
+        ? ResizeImage.resizeIfNeeded(cacheWidth, null, base)
+        : base;
+    final existing = _providers.any(
+      (p) =>
+          p == provider ||
+          (p is ResizeImage &&
+              p.imageProvider is CachedImageProvider &&
+              (p.imageProvider as CachedImageProvider).url == url &&
+              (p.imageProvider as CachedImageProvider).sourceKey == sourceKey &&
+              p.width == cacheWidth),
     );
     if (existing) return;
-    final provider = CachedImageProvider(url);
     _providers.add(provider);
     // 预加载到 ImageCache；返回的 ImageStream 由 ImageCache 持有，
     // provider 也由本类持有，防止滚动离开视口后被回收
     precacheImage(provider, context);
+    // 超出上限：释放最旧的保持，避免无限累积
+    while (_providers.length > _maxKeep) {
+      final oldest = _providers.removeAt(0);
+      try {
+        PaintingBinding.instance.imageCache.evict(oldest);
+      } catch (_) {}
+    }
   }
 
   /// 批量预加载
-  void precacheAll(BuildContext context, Iterable<String> urls) {
+  void precacheAll(
+    BuildContext context,
+    Iterable<String> urls, {
+    String? sourceKey,
+    int? cacheWidth,
+  }) {
     for (final url in urls) {
-      precache(context, url);
+      precache(context, url, sourceKey: sourceKey, cacheWidth: cacheWidth);
     }
   }
 

@@ -301,9 +301,28 @@ class NaviPaneState extends State<NaviPane>
   /// 避免启动时 5 个主页面全部加载；非当前页用 HeroMode 禁用 Hero 动画。
   /// 页面切换滑入：新页按导航方向从侧边滑入（IndexedStack 单树实现，
   /// 不能做双树交叉滑动——页面内 TabBarView 在双树并存时会崩
-  /// "_DragAnimation.parent is null"）
+  /// "_DragAnimation.parent is null"）。
+  /// 仅窄屏（移动布局）滑入；桌面宽布局直接切换，避免整体平移动画的开销
   Widget buildPageStack() {
     final loaded = [..._loadedPages]..sort();
+    Widget stack = IndexedStack(
+      index: loaded.indexOf(currentPage),
+      children: [
+        for (final i in loaded)
+          // RepaintBoundary：把每个页面缓存成独立图层，
+          // 切换动画期间只做图层位移，避免每帧重绘整棵页面树导致卡顿
+          RepaintBoundary(
+            child: HeroMode(
+              enabled: i == currentPage,
+              child: buildMainViewContent(i),
+            ),
+          ),
+      ],
+    );
+    final isMobileLayout = MediaQuery.of(context).size.width <= changePoint;
+    if (!isMobileLayout) {
+      return stack;
+    }
     return TweenAnimationBuilder<double>(
       key: ValueKey(currentPage),
       tween: Tween(begin: _slideInOffset, end: 0),
@@ -313,20 +332,7 @@ class NaviPaneState extends State<NaviPane>
         translation: Offset(value, 0),
         child: child,
       ),
-      child: IndexedStack(
-        index: loaded.indexOf(currentPage),
-        children: [
-          for (final i in loaded)
-            // RepaintBoundary：把每个页面缓存成独立图层，
-            // 切换动画期间只做图层位移，避免每帧重绘整棵页面树导致卡顿
-            RepaintBoundary(
-              child: HeroMode(
-                enabled: i == currentPage,
-                child: buildMainViewContent(i),
-              ),
-            ),
-        ],
-      ),
+      child: stack,
     );
   }
 

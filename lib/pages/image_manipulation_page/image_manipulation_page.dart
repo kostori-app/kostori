@@ -326,64 +326,55 @@ class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: App.isAndroid ? 4 : 5,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
           childAspectRatio: 1,
         ),
         delegate: SliverChildBuilderDelegate((context, index) {
           final file = images[index];
           final isSelected = selectedIndexes.contains(index);
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              clipBehavior: Clip.antiAlias,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.outline.toOpacity(0.72)
-                      : null,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 4,
-                    horizontal: 4,
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => _onTapImage(index),
-                      onLongPress: () => _onLongPressImage(index),
-                      child: Hero(
-                        tag: App.isAndroid
-                            ? file.path.split('/').last
-                            : file.path.split('\\').last,
-                        flightShuttleBuilder:
-                            (
-                              flightContext,
-                              animation,
-                              direction,
-                              fromContext,
-                              toContext,
-                            ) {
-                              return direction == HeroFlightDirection.pop
-                                  ? (fromContext.widget as Hero).child
-                                  : (toContext.widget as Hero).child;
-                            },
-                        child: Image.file(
-                          file,
-                          fit: BoxFit.cover,
-                          cacheWidth: 360,
-                        ),
-                      ),
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            clipBehavior: Clip.antiAlias,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.outline.toOpacity(0.72)
+                    : null,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _onTapImage(index),
+                  onLongPress: () => _onLongPressImage(index),
+                  child: Hero(
+                    tag: App.isAndroid
+                        ? file.path.split('/').last
+                        : file.path.split('\\').last,
+                    flightShuttleBuilder:
+                        (
+                          flightContext,
+                          animation,
+                          direction,
+                          fromContext,
+                          toContext,
+                        ) {
+                          return direction == HeroFlightDirection.pop
+                              ? (fromContext.widget as Hero).child
+                              : (toContext.widget as Hero).child;
+                        },
+                    child: Image.file(
+                      file,
+                      fit: BoxFit.cover,
+                      cacheWidth: 360,
                     ),
                   ),
                 ),

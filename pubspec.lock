@@ -17,6 +17,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "10.0.1"
+  analyzer_buffer:
+    dependency: transitive
+    description:
+      name: analyzer_buffer
+      sha256: "445b77e2054fa3e8c8a8ef1b5e9e6b23bb8028fffd34b5e60eaef315b7750674"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.3"
   animated_text_kit:
     dependency: "direct main"
     description:
@@ -37,10 +45,10 @@ packages:
     dependency: "direct main"
     description:
       name: app_links
-      sha256: "3462d9defc61565fde4944858b59bec5be2b9d5b05f20aed190adb3ad08a7abc"
+      sha256: f8db46d2ea9ff6f3a37191a7fd5b7813da1253ace8c32c1b9eadace41d1188ea
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "7.2.1"
   app_links_linux:
     dependency: transitive
     description:
@@ -53,10 +61,10 @@ packages:
     dependency: transitive
     description:
       name: app_links_platform_interface
-      sha256: "05f5379577c513b534a29ddea68176a4d4802c46180ee8e2e966257158772a3f"
+      sha256: "7546f09a6e93f4a2df2fe2bd40a5c6c64310ac461b036d82b43033be7a59f809"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.2"
+    version: "2.0.4"
   app_links_web:
     dependency: transitive
     description:
@@ -141,10 +149,10 @@ packages:
     dependency: "direct main"
     description:
       name: battery_plus
-      sha256: ad16fcb55b7384be6b4bbc763d5e2031ac7ea62b2d9b6b661490c7b9741155bf
+      sha256: "3853aa1e18ea1d15493dd1d3edac05770b4b95c1e691fb85934c5fd3b1ac0fcc"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "7.1.1"
   battery_plus_platform_interface:
     dependency: transitive
     description:
@@ -369,6 +377,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  cupertino_ui:
+    dependency: transitive
+    description:
+      name: cupertino_ui
+      sha256: e9dfe7fac704028f8928cbe4028a0be5e8a709498e8daf8247de99e99a32aef3
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   dart_style:
     dependency: transitive
     description:
@@ -389,10 +405,10 @@ packages:
     dependency: "direct main"
     description:
       name: desktop_drop
-      sha256: aa1e797255bfbc76f9eb5aa4f61e5b68dbf69962ab1be6495816d2f251bc0d1f
+      sha256: c5bb71519b873411e4c8208376c51cad740bf2218612f5ab7d2f4101298cf182
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.1"
+    version: "0.8.1"
   desktop_webview_window:
     dependency: "direct main"
     description:
@@ -470,10 +486,10 @@ packages:
     dependency: "direct main"
     description:
       name: dynamic_color
-      sha256: "4aeb76de323e8eb660bab5557d826ad7ebbf1434a598f0c6aa8a11a9696a6757"
+      sha256: "869b3bce0100eb519768ecd71c0111f0b5ea679f5f62e1f59c49d80067e730c5"
       url: "https://pub.dev"
     source: hosted
-    version: "1.9.0"
+    version: "2.1.0"
   ensemble_table_calendar:
     dependency: "direct main"
     description:
@@ -958,10 +974,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_volume_controller
-      sha256: "78297fd48ce6330d39a11a4c1ae219a3256249f99dec34cfbe9323d2cbb5ebb9"
+      sha256: f9ba12aa17880c1ee3e1668f14eefbc6704e2fed90ed0b2ca97b7dee71133240
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "2.0.2"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -971,10 +987,10 @@ packages:
     dependency: "direct dev"
     description:
       name: freezed
-      sha256: f23ea33b3863f119b58ed1b586e881a46bd28715ddcc4dbc33104524e3434131
+      sha256: "27585a6c2b9ac28ffb7b45d87fd1502332af1eb90e1c9f5eb1acb24c71d26e17"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.5"
+    version: "4.0.0"
   freezed_annotation:
     dependency: "direct main"
     description:
@@ -1353,6 +1369,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.12.20"
+  material3_expressive_loading_indicator:
+    dependency: "direct main"
+    description:
+      name: material3_expressive_loading_indicator
+      sha256: "3d5940dcdf02f488bc41c01e3105b355de59443ea89122f73500eeca83ebacc0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   material_color_utilities:
     dependency: transitive
     description:
@@ -1361,6 +1385,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.13.0"
+  material_new_shapes:
+    dependency: transitive
+    description:
+      name: material_new_shapes
+      sha256: e4bc375205e187e8fb232573387112dd8c0dd45b03af8aa2b3c79eb4b9e3e0dc
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  material_ui:
+    dependency: transitive
+    description:
+      name: material_ui
+      sha256: "9c0156b0cf8b3f56d365c8ffe051a720be3cae9eec55119f01e01b986ffb7101"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   media_kit:
     dependency: "direct main"
     description:
@@ -1453,10 +1493,10 @@ packages:
     dependency: "direct main"
     description:
       name: mobx
-      sha256: "25ea9a3ee69243d578fb6288721d8eeb18550d0391c32f896d377d994154bff2"
+      sha256: a14558d22e2d3b0edf9151c75b67638c3907123046e96e1d1ee05e23c6a82a56
       url: "https://pub.dev"
     source: hosted
-    version: "2.6.0"
+    version: "2.6.1"
   mobx_codegen:
     dependency: "direct dev"
     description:
@@ -1621,10 +1661,10 @@ packages:
     dependency: "direct main"
     description:
       name: permission_handler
-      sha256: "06149cba29bc46206f8b54b56065fe74b07602d2454a281287685ae66b5ab7b5"
+      sha256: e7317eb2eb611d1bf0386b6b974be9c50449f975f19a90a7b8ea013550302b30
       url: "https://pub.dev"
     source: hosted
-    version: "13.0.0"
+    version: "13.0.1"
   permission_handler_android:
     dependency: transitive
     description:
@@ -1895,10 +1935,10 @@ packages:
     dependency: "direct main"
     description:
       name: scrollview_observer
-      sha256: "5ce907c5757d0805de974de8b17c0185f982dfe805dde22a0acb016b39182ece"
+      sha256: dade0a94815a105fe8b24df706e9945b9b9b4039f509220a988d1e0c3f8dabd5
       url: "https://pub.dev"
     source: hosted
-    version: "1.27.0"
+    version: "1.27.1"
   serial_csv:
     dependency: transitive
     description:
@@ -2044,26 +2084,26 @@ packages:
     dependency: "direct main"
     description:
       name: slang
-      sha256: "76dbf1f8e87ed1c417026e93a57512f6b6b597104ce72eed99b24a3ed08f0ba2"
+      sha256: "430749837528bb692b5ee03699fadab90d0d4a6dfbf42aab28e81df8da4c2fb8"
       url: "https://pub.dev"
     source: hosted
-    version: "4.18.0"
+    version: "4.19.0"
   slang_build_runner:
     dependency: "direct dev"
     description:
       name: slang_build_runner
-      sha256: e24f5ab540c2078db20a1e3292b9bae11ef4ed07bef1c235ae000b0a6113267e
+      sha256: f2b6c5fc1f5bc41de80b05e95e7d5d03b5c3041082877ce931fc7ba61cd08afe
       url: "https://pub.dev"
     source: hosted
-    version: "4.18.0"
+    version: "4.19.0"
   slang_flutter:
     dependency: "direct main"
     description:
       name: slang_flutter
-      sha256: "7523a9389b44210eabcfd58412d9131f284b9b3c22d731614f0016e9582ee996"
+      sha256: "2348a39432c48d7c890a2a1e3409b9faae3e49f117fe56d390d4236de8d064f4"
       url: "https://pub.dev"
     source: hosted
-    version: "4.18.0"
+    version: "4.19.0"
   sliver_tools:
     dependency: "direct main"
     description:
@@ -2613,5 +2653,5 @@ packages:
     source: hosted
     version: "0.2.4"
 sdks:
-  dart: ">=3.12.0 <4.0.0"
-  flutter: ">=3.47.0"
+  dart: ">=3.13.2 <4.0.0"
+  flutter: "3.47.2"

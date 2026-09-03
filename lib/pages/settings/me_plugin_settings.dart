@@ -105,7 +105,7 @@ class _PluginSettingsState extends State<PluginSettings> {
       final count = await MePagePluginManager().fetchFromUrl(url);
       if (mounted) setState(() {});
       App.rootContext.showMessage(
-        message: '$t.fetchPlugins：$count',
+        message: t.fetchPluginsCount(fetchPlugins: t.fetchPlugins, count: count),
         level: LogLevel.info,
       );
     } catch (e) {
