@@ -60,7 +60,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get titleCopied => '標題已複製';
 	@override String get imageFormat => '格式';
 	@override String get confirmDeleteImage => '確認刪除圖片？';
-	@override String get bangumiPlan => 'Bangumi 計畫';
+	@override String get bangumiPlan => 'bangumi';
 	@override String get switchFavoriteUser => '切換收藏使用者';
 	@override String get add => '新增';
 	@override String addedCountAnimesToDownloadQueue({required Object count}) => '已將 ${count} 部動漫加入下載隊列';
@@ -2464,7 +2464,7 @@ extension on TranslationsZhTw {
 			'titleCopied' => '標題已複製',
 			'imageFormat' => '格式',
 			'confirmDeleteImage' => '確認刪除圖片？',
-			'bangumiPlan' => 'Bangumi 計畫',
+			'bangumiPlan' => 'bangumi',
 			'switchFavoriteUser' => '切換收藏使用者',
 			'add' => '新增',
 			'addedCountAnimesToDownloadQueue' => ({required Object count}) => '已將 ${count} 部動漫加入下載隊列',

@@ -60,7 +60,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get titleCopied => '标题已复制';
 	@override String get imageFormat => '格式';
 	@override String get confirmDeleteImage => '确认删除图片？';
-	@override String get bangumiPlan => 'Bangumi 计划';
+	@override String get bangumiPlan => 'bangumi';
 	@override String get switchFavoriteUser => '切换收藏用户';
 	@override String get enterBangumiUserName => '输入 Bangumi 用户名';
 	@override String get add => '添加';
@@ -2465,7 +2465,7 @@ extension on TranslationsZhCn {
 			'titleCopied' => '标题已复制',
 			'imageFormat' => '格式',
 			'confirmDeleteImage' => '确认删除图片？',
-			'bangumiPlan' => 'Bangumi 计划',
+			'bangumiPlan' => 'bangumi',
 			'switchFavoriteUser' => '切换收藏用户',
 			'enterBangumiUserName' => '输入 Bangumi 用户名',
 			'add' => '添加',

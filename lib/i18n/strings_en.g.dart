@@ -104,8 +104,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Confirm delete this image?'
 	String get confirmDeleteImage => 'Confirm delete this image?';
 
-	/// en: 'Bangumi Plan'
-	String get bangumiPlan => 'Bangumi Plan';
+	/// en: 'bangumi'
+	String get bangumiPlan => 'bangumi';
 
 	/// en: 'Switch Favorite User'
 	String get switchFavoriteUser => 'Switch Favorite User';
@@ -7237,7 +7237,7 @@ extension on Translations {
 			'titleCopied' => 'Title copied',
 			'imageFormat' => 'Format',
 			'confirmDeleteImage' => 'Confirm delete this image?',
-			'bangumiPlan' => 'Bangumi Plan',
+			'bangumiPlan' => 'bangumi',
 			'switchFavoriteUser' => 'Switch Favorite User',
 			'enterBangumiUserName' => 'Enter Bangumi User Name',
 			'add' => 'Add',

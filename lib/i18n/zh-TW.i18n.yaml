@@ -19,7 +19,7 @@ path: 路徑
 titleCopied: 標題已複製
 imageFormat: 格式
 confirmDeleteImage: 確認刪除圖片？
-bangumiPlan: Bangumi 計畫
+bangumiPlan: bangumi
 switchFavoriteUser: 切換收藏使用者
 add: 新增
 addedCountAnimesToDownloadQueue: 已將 ${count} 部動漫加入下載隊列
