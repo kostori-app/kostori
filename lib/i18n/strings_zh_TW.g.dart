@@ -50,7 +50,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get addAnimeSource => '新增動漫源';
 	@override String get addNewFavoriteTo => '新增收藏至';
 	@override String get addToFavorites => '加入收藏';
-	@override String get addToDefault => '加入預設';
+	@override String get addToDefault => '加入未分類';
 	@override String get removeFromFavorites => '取消收藏';
 	@override String get imageProperties => '圖片屬性';
 	@override String get fileName => '檔案名稱';
@@ -2454,7 +2454,7 @@ extension on TranslationsZhTw {
 			'addAnimeSource' => '新增動漫源',
 			'addNewFavoriteTo' => '新增收藏至',
 			'addToFavorites' => '加入收藏',
-			'addToDefault' => '加入預設',
+			'addToDefault' => '加入未分類',
 			'removeFromFavorites' => '取消收藏',
 			'imageProperties' => '圖片屬性',
 			'fileName' => '檔案名稱',

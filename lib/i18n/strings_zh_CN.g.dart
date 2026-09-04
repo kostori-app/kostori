@@ -50,7 +50,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get addAnimeSource => '添加番剧源';
 	@override String get addNewFavoriteTo => '添加新收藏到';
 	@override String get addToFavorites => '添加到收藏';
-	@override String get addToDefault => '添加到默认';
+	@override String get addToDefault => '添加到未分类';
 	@override String get removeFromFavorites => '取消收藏';
 	@override String get imageProperties => '图片属性';
 	@override String get fileName => '文件名';
@@ -2455,7 +2455,7 @@ extension on TranslationsZhCn {
 			'addAnimeSource' => '添加番剧源',
 			'addNewFavoriteTo' => '添加新收藏到',
 			'addToFavorites' => '添加到收藏',
-			'addToDefault' => '添加到默认',
+			'addToDefault' => '添加到未分类',
 			'removeFromFavorites' => '取消收藏',
 			'imageProperties' => '图片属性',
 			'fileName' => '文件名',

@@ -74,8 +74,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Add to favorites'
 	String get addToFavorites => 'Add to favorites';
 
-	/// en: 'Add to Default'
-	String get addToDefault => 'Add to Default';
+	/// en: 'Add to Unsorted'
+	String get addToDefault => 'Add to Unsorted';
 
 	/// en: 'Remove from favorites'
 	String get removeFromFavorites => 'Remove from favorites';
@@ -7227,7 +7227,7 @@ extension on Translations {
 			'addAnimeSource' => 'Add anime source',
 			'addNewFavoriteTo' => 'Add new favorite to',
 			'addToFavorites' => 'Add to favorites',
-			'addToDefault' => 'Add to Default',
+			'addToDefault' => 'Add to Unsorted',
 			'removeFromFavorites' => 'Remove from favorites',
 			'imageProperties' => 'Image Properties',
 			'fileName' => 'File Name',
