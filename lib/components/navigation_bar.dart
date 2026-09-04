@@ -923,16 +923,10 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ],
       );
       final bottomPad = MediaQuery.of(context).padding.bottom + 12;
-      final Widget bottomBar;
-      if (_minimized) {
-        bottomBar = Center(
-          child: _MiniBar(
-            onTap: () => setState(() => _minimized = false),
-          ),
-        );
-      } else {
-        // 主悬浮导航保持居中，动作坞紧贴其右侧（不合并成整行居中）
-        bottomBar = LayoutBuilder(
+      // 完整态：主悬浮导航居中 + 动作坞紧贴其右侧（不合并成整行居中）
+      final Widget fullBars = SizedBox(
+        height: NaviPaneState._kBottomBarHeight,
+        child: LayoutBuilder(
           builder: (context, constraints) {
             final navW = state.floatingNavWidth;
             final dockW = state.floatingActionWidth;
@@ -953,19 +947,48 @@ class _NaviMainViewState extends State<_NaviMainView> {
               ],
             );
           },
-        );
-      }
+        ),
+      );
+      // 完整态 ↔ 收缩横线 走与窄屏一致的动画，且整体底部对齐（横条不会悬高）
+      final Widget floating = AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        layoutBuilder: (currentChild, previousChildren) {
+          return Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          );
+        },
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.6, end: 1).animate(animation),
+              alignment: Alignment.bottomCenter,
+              child: child,
+            ),
+          );
+        },
+        child: _minimized
+            ? _MiniBar(
+                key: const ValueKey('mini'),
+                onTap: () => setState(() => _minimized = false),
+              )
+            : KeyedSubtree(key: const ValueKey('full'), child: fullBars),
+      );
       return Stack(
         children: [
           Positioned.fill(child: page),
+          // 只约束左右到边并锚定底部，子内容（含 mini 横线）自然贴底
           Positioned(
             left: 0,
             right: 0,
             bottom: bottomPad,
-            child: SizedBox(
-              height: NaviPaneState._kBottomBarHeight,
-              child: bottomBar,
-            ),
+            child: Center(child: floating),
           ),
         ],
       );
