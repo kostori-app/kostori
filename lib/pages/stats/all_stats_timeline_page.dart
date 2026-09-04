@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/timeline_tree.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:timeline_tile/timeline_tile.dart';
 
 /// 某一天某个「条目」的粗略汇总（多来源已按 bangumi 归并为一条）
 class _DayUnitSummary {
@@ -228,7 +228,6 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final lineColor = colorScheme.outlineVariant;
 
     Widget body;
     if (_loading) {
@@ -238,77 +237,80 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
     } else {
       final days = _byDay.keys.toList()..sort((a, b) => b.compareTo(a));
 
+      final years = days.map((d) => d.year).toSet().toList()
+        ..sort((a, b) => b.compareTo(a));
+      final monthsOf = <int, List<int>>{};
+      final daysOf = <String, List<DateTime>>{};
+      for (final d in days) {
+        final ys = monthsOf.putIfAbsent(d.year, () => []);
+        if (!ys.contains(d.month)) ys.add(d.month);
+        daysOf.putIfAbsent('${d.year}-${d.month}', () => []).add(d);
+      }
+      for (final l in monthsOf.values) {
+        l.sort((a, b) => b.compareTo(a));
+      }
+      for (final l in daysOf.values) {
+        l.sort((a, b) => b.compareTo(a));
+      }
 
-      // 年/月/日都是竖线上的节点：level 0=年 1=月 2=日
-      final elements = <({int level, Widget child})>[];
-      DateTime? lastYearDate;
-      (int, int)? lastMonth;
-      for (final date in days) {
-        if (lastYearDate == null || date.year != lastYearDate.year) {
-          elements.add((
-            level: 0,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                t.statsYearSuffix(year: date.year),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-          ));
-          lastYearDate = date;
-        }
-        if (lastMonth == null || lastMonth != (date.year, date.month)) {
-          elements.add((
-            level: 1,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text(
-                '${date.year}-${date.month.toString().padLeft(2, '0')}',
+      final yearNodes = <Widget>[];
+      for (var y = 0; y < years.length; y++) {
+        final year = years[y];
+        final yearMonths = monthsOf[year]!;
+        final monthNodes = <Widget>[];
+        for (var m = 0; m < yearMonths.length; m++) {
+          final month = yearMonths[m];
+          final monthDays = daysOf['$year-$month']!;
+          monthNodes.add(
+            TimelineTreeNode(
+              title: Text(
+                '$year-${month.toString().padLeft(2, '0')}',
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              color: colorScheme.secondary,
+              dotSize: 12,
+              isFirst: m == 0,
+              isLast: m == yearMonths.length - 1,
+              childrenIndent: 32,
+              children: [
+                for (var d = 0; d < monthDays.length; d++)
+                  TimelineTreeNode(
+                    title: _dayContent(context, monthDays[d], _byDay[monthDays[d]]!),
+                    color: colorScheme.tertiary,
+                    dotSize: 10,
+                    isFirst: d == 0,
+                    isLast: d == monthDays.length - 1,
+                  ),
+              ],
             ),
-          ));
-          lastMonth = (date.year, date.month);
+          );
         }
-        elements.add((
-          level: 2,
-          child: _dayContent(context, date, _byDay[date]!),
-        ));
-      }
-
-      final tiles = <Widget>[];
-      for (var i = 0; i < elements.length; i++) {
-        final el = elements[i];
-        final level = el.level;
-        final color = level == 0
-            ? colorScheme.primary
-            : level == 1
-            ? colorScheme.secondary
-            : colorScheme.primary;
-        final width = level == 0 ? 16.0 : level == 1 ? 13.0 : 12.0;
-        tiles.add(
-          TimelineTile(
-            alignment: TimelineAlign.start,
-            isFirst: i == 0,
-            isLast: i == elements.length - 1,
-            indicatorStyle: IndicatorStyle(color: color, width: width),
-            beforeLineStyle: LineStyle(color: lineColor, thickness: 1.6),
-            afterLineStyle: LineStyle(color: lineColor, thickness: 1.6),
-            endChild: el.child,
+        yearNodes.add(
+          TimelineTreeNode(
+            title: Text(
+              t.statsYearSuffix(year: year),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+              ),
+            ),
+            color: colorScheme.primary,
+            dotSize: 16,
+            isFirst: y == 0,
+            isLast: y == years.length - 1,
+            childrenIndent: 32,
+            children: monthNodes,
           ),
         );
       }
 
       body = ListView(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
-        children: tiles,
+        children: yearNodes,
       );
     }
 
