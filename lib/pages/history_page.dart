@@ -613,10 +613,7 @@ class _HistoryHeatmapCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => onToggleNumbers(!showNumbers),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
                       color: showNumbers
                           ? colorScheme.primary
@@ -628,28 +625,12 @@ class _HistoryHeatmapCard extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.numbers,
-                          size: 15,
-                          color: showNumbers
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          t.activityHeatNumbers,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: showNumbers
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      Icons.numbers,
+                      size: 18,
+                      color: showNumbers
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
