@@ -1090,22 +1090,57 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
                 ? t.statsTimelineCommentUpdated(n: n)
                 : t.statsTimelineRatingUpdated(n: n);
           }
-          final String? content = record.comment?.isNotEmpty == true
-              ? record.comment
-              : record.rating != null
-              ? '${record.rating}'
-              : null;
-          final Widget? below = content == null
-              ? null
-              : Text(
-                  content,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant,
+          final int? rating = record.rating;
+          final String? commentText =
+              record.comment?.isNotEmpty == true ? record.comment : null;
+          final Widget? below;
+          if (!isComment && rating != null) {
+            final cs = Theme.of(context).colorScheme;
+            below = Row(
+              children: [
+                Text(
+                  '$rating',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
                   ),
-                );
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.secondaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    Utils.getRatingLabel(rating),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                RatingBarIndicator(
+                  itemCount: 5,
+                  rating: rating / 2,
+                  itemBuilder: (context, index) =>
+                      const Icon(Icons.star_rounded),
+                  itemSize: 18.0,
+                ),
+              ],
+            );
+          } else if (commentText != null) {
+            below = Text(
+              commentText,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            );
+          } else {
+            below = null;
+          }
           entries.add(
             _TimelineEntry(
               time,

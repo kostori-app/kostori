@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/components/timeline_tree.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -248,7 +249,7 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
 
     Widget body;
     if (_loading) {
-      body = const Center(child: CircularProgressIndicator());
+      body = const Center(child: KostoriRefreshIndicator());
     } else if (_failed || _byDay.isEmpty) {
       body = Center(child: Text(t.statsTimelineNoRecords));
     } else {
