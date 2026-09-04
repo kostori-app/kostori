@@ -579,6 +579,7 @@ class _HistoryHeatmapCard extends StatelessWidget {
 }
 
 /// 全年热力图：53 周横排铺满整行，7 行（周一~周日），纵向也一次放完，无滚动
+/// 全年热力图：53 周横排铺满整行，7 行（周一~周日），附月份与星期标签，无滚动
 class _YearActivityHeatmap extends StatelessWidget {
   const _YearActivityHeatmap({required this.year, required this.counts});
 
@@ -590,30 +591,39 @@ class _YearActivityHeatmap extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final maxCount = counts.values.isEmpty
         ? 1
-        : counts.values.reduce((a, b) => a > b ? a : b).clamp(1, 2147483647).toInt();
+        : counts.values
+              .reduce((a, b) => a > b ? a : b)
+              .clamp(1, 2147483647)
+              .toInt();
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        const leftGutter = 16.0;
+        const topLabel = 13.0;
+        final gridWidth = width - leftGutter;
         final first = DateTime(year, 1, 1);
         final last = DateTime(year, 12, 31);
-        final leading = first.weekday - 1; // 0=周一
+        final leading = first.weekday - 1;
         final lastAbs = leading + last.difference(first).inDays;
         final colCount = (lastAbs ~/ 7) + 1;
         const gap = 1.6;
-        final cellW = (width - (colCount - 1) * gap) / colCount;
-        final height = cellW * 7 + gap * 6;
+        final cell = (gridWidth - (colCount - 1) * gap) / colCount;
+        final height = topLabel + cell * 7 + gap * 6 + 6;
         return SizedBox(
           width: width,
           height: height,
           child: CustomPaint(
             painter: _YearHeatmapPainter(
               year: year,
-              colCount: colCount,
               counts: counts,
               maxCount: maxCount,
               gap: gap,
+              leftGutter: leftGutter,
+              topLabel: topLabel,
+              cell: cell,
               emptyColor: colorScheme.surfaceContainerHighest,
               primary: colorScheme.primary,
+              labelColor: colorScheme.onSurfaceVariant,
             ),
           ),
         );
@@ -625,29 +635,72 @@ class _YearActivityHeatmap extends StatelessWidget {
 class _YearHeatmapPainter extends CustomPainter {
   _YearHeatmapPainter({
     required this.year,
-    required this.colCount,
     required this.counts,
     required this.maxCount,
     required this.gap,
+    required this.leftGutter,
+    required this.topLabel,
+    required this.cell,
     required this.emptyColor,
     required this.primary,
+    required this.labelColor,
   });
 
   final int year;
-  final int colCount;
   final Map<DateTime, int> counts;
   final int maxCount;
   final double gap;
+  final double leftGutter;
+  final double topLabel;
+  final double cell;
   final Color emptyColor;
   final Color primary;
+  final Color labelColor;
+
+  static const monthLetters = [
+    'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D',
+  ];
+  static const weekdayLabels = ['M', 'W', 'F'];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cellW = (size.width - (colCount - 1) * gap) / colCount;
-    final cellH = (size.height - 6 * gap) / 7;
     final first = DateTime(year, 1, 1);
     final leading = first.weekday - 1;
-    final paint = Paint();
+    final rowStep = cell + gap;
+    final colStep = cell + gap;
+
+    // 左侧星期标签（周一 / 周三 / 周五）
+    final weekdayRows = [0, 2, 4];
+    for (var i = 0; i < weekdayRows.length; i++) {
+      final row = weekdayRows[i];
+      final centerY = topLabel + row * rowStep + cell / 2;
+      _text(
+        canvas,
+        weekdayLabels[i],
+        Offset(leftGutter / 2, centerY),
+        font: cell < 7 ? 7 : cell.clamp(7.0, 9.0),
+        color: labelColor.withValues(alpha: 0.8),
+        centerAlign: true,
+      );
+    }
+
+    // 顶部月份标签
+    for (var m = 1; m <= 12; m++) {
+      final monthStart = DateTime(year, m, 1);
+      final dayOfYear = monthStart.difference(first).inDays;
+      final col = (leading + dayOfYear) ~/ 7;
+      final x = leftGutter + col * colStep + cell / 2;
+      _text(
+        canvas,
+        monthLetters[m - 1],
+        Offset(x, topLabel / 2),
+        font: cell < 7 ? 7 : cell.clamp(7.0, 9.0),
+        color: labelColor.withValues(alpha: 0.85),
+        centerAlign: true,
+      );
+    }
+
+    // 全年格子（圆角 / 圆形）
     for (var d = DateTime(year, 1, 1);
         d.year == year;
         d = d.add(const Duration(days: 1))) {
@@ -663,15 +716,39 @@ class _YearHeatmapPainter extends CustomPainter {
         final t = (count / maxCount).clamp(0.0, 1.0);
         color = primary.withValues(alpha: 0.25 + t * 0.7);
       }
-      paint.color = color;
-      final left = col * (cellW + gap);
-      final top = row * (cellH + gap);
-      final rrect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(left, top, cellW, cellH),
-        const Radius.circular(2),
+      final cx = leftGutter + col * colStep + cell / 2;
+      final cy = topLabel + row * rowStep + cell / 2;
+      canvas.drawCircle(
+        Offset(cx, cy),
+        cell / 2 - 0.4,
+        Paint()..color = color,
       );
-      canvas.drawRRect(rrect, paint);
     }
+  }
+
+  void _text(
+    Canvas canvas,
+    String text,
+    Offset center, {
+    required double font,
+    required Color color,
+    required bool centerAlign,
+  }) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: font,
+          color: color,
+          height: 1,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(
+      canvas,
+      Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
+    );
   }
 
   @override
@@ -679,5 +756,7 @@ class _YearHeatmapPainter extends CustomPainter {
       oldDelegate.year != year ||
       oldDelegate.counts != counts ||
       oldDelegate.maxCount != maxCount ||
-      oldDelegate.primary != primary;
+      oldDelegate.cell != cell ||
+      oldDelegate.primary != primary ||
+      oldDelegate.labelColor != labelColor;
 }
