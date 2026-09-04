@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/timeline_tree.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/log.dart';
@@ -8,9 +9,10 @@ import 'package:kostori/utils/utils.dart';
 
 /// 某一天某个「条目」的粗略汇总（多来源已按 bangumi 归并为一条）
 class _DayUnitSummary {
-  _DayUnitSummary({required this.title});
+  _DayUnitSummary({required this.title, this.cover});
 
   final String title;
+  final String? cover;
   int watchSeconds = 0;
   int clicks = 0;
   int ratingCount = 0;
@@ -76,7 +78,10 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
         void unitOf(DateTime day, void Function(_DayUnitSummary) update) {
           final unit = _byDay
               .putIfAbsent(_dayOf(day), () => {})
-              .putIfAbsent(unitKey, () => _DayUnitSummary(title: title));
+              .putIfAbsent(
+                unitKey,
+                () => _DayUnitSummary(title: title, cover: master.cover),
+              );
           update(unit);
         }
 
@@ -131,7 +136,7 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
     }
   }
 
-  Widget _summaryChips(BuildContext context, _DayUnitSummary u) {
+  Widget _unitCard(BuildContext context, _DayUnitSummary u) {
     final colorScheme = Theme.of(context).colorScheme;
     final chips = <Widget>[];
 
@@ -171,21 +176,69 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
       add(Icons.bookmark_add_outlined, 'x${u.favoriteCount}');
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          u.title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+    final cover = u.cover;
+    final Widget thumb;
+    if (cover?.isNotEmpty == true) {
+      thumb = ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: BangumiWidget.kostoriImage(
+          context,
+          cover!,
+          width: 42,
+          height: 58,
         ),
-        if (chips.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Wrap(spacing: 2, runSpacing: 2, children: chips),
+      );
+    } else {
+      thumb = Container(
+        width: 42,
+        height: 58,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(
+          Icons.image_outlined,
+          size: 20,
+          color: colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border.all(color: colorScheme.outlineVariant, width: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          thumb,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  u.title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (chips.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Wrap(spacing: 2, runSpacing: 2, children: chips),
+                  ),
+              ],
+            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -215,7 +268,7 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
               children: units
                   .map((u) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: _summaryChips(context, u),
+                        child: _unitCard(context, u),
                       ))
                   .toList(),
             ),
