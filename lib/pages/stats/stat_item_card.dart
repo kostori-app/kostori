@@ -115,6 +115,161 @@ class _StatItemWidgetState extends State<StatItemWidget> {
     );
   }
 
+  Widget _buildCommentTile({
+    required int dailyIndex,
+    required int recordIndex,
+    required List<DailyEvent> dailyList,
+    required PlatformEventRecord record,
+  }) {
+    if (dailyList.length == 1 || dailyIndex == 0) {
+      final text = recordIndex == 0
+          ? t.statsCreatedComment(
+              time: record.date!.hhmmss,
+              duration: formatHMSForRating(seconds: record.watchDuration),
+            )
+          : t.statsModifiedComment(
+              time: record.date!.hhmmss,
+              n: record.value - 1,
+              duration: formatHMSForRating(seconds: record.watchDuration),
+            );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(text, style: const TextStyle(fontSize: 14)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  record.comment ?? '',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+      );
+    } else {
+      int sum = 0;
+      for (int i = 0; i < dailyIndex; i++) {
+        final rList = dailyList[i].platformEventRecords;
+        if (rList.isNotEmpty) sum += rList.last.value;
+      }
+      final text = t.statsModifiedComment(
+        time: record.date!.hhmmss,
+        n: sum + record.value - 1,
+        duration: formatHMSForRating(seconds: record.watchDuration),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(text, style: const TextStyle(fontSize: 14)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  record.comment ?? '',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+      );
+    }
+  }
+
+  Widget _buildRatingTile({
+    required int dailyIndex,
+    required int recordIndex,
+    required List<DailyEvent> dailyList,
+    required PlatformEventRecord record,
+  }) {
+    final String text;
+    if (dailyList.length == 1 || dailyIndex == 0) {
+      text = recordIndex == 0
+          ? t.statsCreatedRating(
+              time: record.date!.hhmmss,
+              duration: formatHMSForRating(seconds: record.watchDuration),
+            )
+          : t.statsModifiedRating(
+              time: record.date!.hhmmss,
+              n: record.value - 1,
+              duration: formatHMSForRating(seconds: record.watchDuration),
+            );
+    } else {
+      int sum = 0;
+      for (int i = 0; i < dailyIndex; i++) {
+        final rList = dailyList[i].platformEventRecords;
+        if (rList.isNotEmpty) sum += rList.last.value;
+      }
+      text = t.statsModifiedRating(
+        time: record.date!.hhmmss,
+        n: sum + record.value - 1,
+        duration: formatHMSForRating(seconds: record.watchDuration),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(text, style: const TextStyle(fontSize: 14)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Text(
+              record.rating.toString(),
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(Utils.getRatingLabel(record.rating!)),
+            ),
+            const SizedBox(width: 4),
+            RatingBarIndicator(
+              itemCount: 5,
+              rating: record.rating! / 2,
+              itemBuilder: (context, index) => const Icon(Icons.star_rounded),
+              itemSize: 20.0,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
   Widget buildAllEventsWidget(BuildContext context) {
     final allRecords = <Map<String, dynamic>>[];
 
@@ -188,212 +343,20 @@ class _StatItemWidgetState extends State<StatItemWidget> {
 
           switch (type) {
             case DailyEventType.comment:
-              if (dailyList.length == 1 || dailyIndex == 0) {
-                final text = recordIndex == 0
-                    ? t.statsCreatedComment(
-                        time: record.date!.hhmmss,
-                        duration: formatHMSForRating(
-                          seconds: record.watchDuration,
-                        ),
-                      )
-                    : t.statsModifiedComment(
-                        time: record.date!.hhmmss,
-                        n: record.value - 1,
-                        duration: formatHMSForRating(
-                          seconds: record.watchDuration,
-                        ),
-                      );
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            text,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            record.comment ?? '',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              } else {
-                int sum = 0;
-                for (int i = 0; i < dailyIndex; i++) {
-                  final rList = dailyList[i].platformEventRecords;
-                  if (rList.isNotEmpty) sum += rList.last.value;
-                }
-                final text = t.statsModifiedComment(
-                  time: record.date!.hhmmss,
-                  n: sum + record.value - 1,
-                  duration: formatHMSForRating(seconds: record.watchDuration),
-                );
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            text,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            record.comment ?? '',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              }
+              return _buildCommentTile(
+                dailyIndex: dailyIndex,
+                recordIndex: recordIndex,
+                dailyList: dailyList,
+                record: record,
+              );
 
             case DailyEventType.rating:
-              if (dailyList.length == 1 || dailyIndex == 0) {
-                final text = recordIndex == 0
-                    ? t.statsCreatedRating(
-                        time: record.date!.hhmmss,
-                        duration: formatHMSForRating(
-                          seconds: record.watchDuration,
-                        ),
-                      )
-                    : t.statsModifiedRating(
-                        time: record.date!.hhmmss,
-                        n: record.value - 1,
-                        duration: formatHMSForRating(
-                          seconds: record.watchDuration,
-                        ),
-                      );
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            text,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          record.rating.toString(),
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(Utils.getRatingLabel(record.rating!)),
-                        ),
-                        const SizedBox(width: 4),
-                        RatingBarIndicator(
-                          itemCount: 5,
-                          rating: record.rating! / 2,
-                          itemBuilder: (context, index) =>
-                              const Icon(Icons.star_rounded),
-                          itemSize: 20.0,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              } else {
-                int sum = 0;
-                for (int i = 0; i < dailyIndex; i++) {
-                  final rList = dailyList[i].platformEventRecords;
-                  if (rList.isNotEmpty) sum += rList.last.value;
-                }
-                final text = t.statsModifiedRating(
-                  time: record.date!.hhmmss,
-                  n: sum + record.value - 1,
-                  duration: formatHMSForRating(seconds: record.watchDuration),
-                );
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            text,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          record.rating.toString(),
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(Utils.getRatingLabel(record.rating!)),
-                        ),
-                        const SizedBox(width: 4),
-                        RatingBarIndicator(
-                          itemCount: 5,
-                          rating: record.rating! / 2,
-                          itemBuilder: (context, index) =>
-                              const Icon(Icons.star_rounded),
-                          itemSize: 20.0,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              }
+              return _buildRatingTile(
+                dailyIndex: dailyIndex,
+                recordIndex: recordIndex,
+                dailyList: dailyList,
+                record: record,
+              );
 
             case DailyEventType.favorite:
               return _buildFavoriteTile(record);
