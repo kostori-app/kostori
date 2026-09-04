@@ -372,7 +372,9 @@ class _AnimatedImageState extends State<AnimatedImage>
         // 若固定 'loading' 会在切换图片时出现两个同 key 的 loading（Duplicate keys）
         key: ValueKey<String>(
           _imageInfo != null
-              ? 'image:${widget.image}'
+              // ResizeImage 的 toString 是通用 ResizeImage()，不同尺寸/来源会撞 key；
+              // 用 provider hashCode（含 url 与解码尺寸）保证新旧帧唯一
+              ? 'image:${widget.image.hashCode}'
               : (_lastException != null
                     ? 'error:${_lastException.toString().contains('404')}'
                     : 'loading:${widget.image.hashCode}'),
