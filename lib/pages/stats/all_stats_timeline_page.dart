@@ -271,71 +271,73 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
         l.sort((a, b) => b.compareTo(a));
       }
 
-      final yearNodes = <Widget>[];
-      for (var y = 0; y < years.length; y++) {
-        final year = years[y];
-        final yearMonths = monthsOf[year]!;
-        final monthNodes = <Widget>[];
-        for (var m = 0; m < yearMonths.length; m++) {
-          final month = yearMonths[m];
-          final monthDays = daysOf['$year-$month']!;
-          final dayNodes = <Widget>[];
-          for (var d = 0; d < monthDays.length; d++) {
-            final day = monthDays[d];
-            final units = _byDay[day]!.values.toList()
-              ..sort((a, b) => a.title.compareTo(b.title));
-            dayNodes.add(
+      // 按年懒加载：滚动到哪年才构建那一年的树，避免一次性建全量造成卡顿
+      body = ListView.builder(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        itemCount: years.length,
+        itemBuilder: (context, yIndex) {
+          final year = years[yIndex];
+          final yearMonths = monthsOf[year]!;
+          final monthNodes = <Widget>[];
+          for (var m = 0; m < yearMonths.length; m++) {
+            final month = yearMonths[m];
+            final monthDays = daysOf['$year-$month']!;
+            final dayNodes = <Widget>[];
+            for (var d = 0; d < monthDays.length; d++) {
+              final day = monthDays[d];
+              final units = _byDay[day]!.values.toList()
+                ..sort((a, b) => a.title.compareTo(b.title));
+              dayNodes.add(
+                TimelineTreeNode(
+                  title: Text(
+                    t.statsTimelineDay(month: day.month, day: day.day),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  color: colorScheme.tertiary,
+                  dotSize: 10,
+                  isFirst: d == 0,
+                  isLast: d == monthDays.length - 1,
+                  childrenIndent: 36,
+                  children: [
+                    for (var u = 0; u < units.length; u++)
+                      TimelineTreeNode(
+                        title: Padding(
+                          padding: const EdgeInsets.only(right: 12, bottom: 6),
+                          child: _unitCard(context, units[u]),
+                        ),
+                        color: colorScheme.primary.withValues(alpha: 0.85),
+                        dotSize: 8,
+                        titleIndent: 22,
+                        isFirst: u == 0,
+                        isLast: u == units.length - 1,
+                      ),
+                  ],
+                ),
+              );
+            }
+            monthNodes.add(
               TimelineTreeNode(
                 title: Text(
-                  t.statsTimelineDay(month: day.month, day: day.day),
-                  style: TextStyle(
-                    fontSize: 13,
+                  '$year-${month.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                color: colorScheme.tertiary,
-                dotSize: 10,
-                isFirst: d == 0,
-                isLast: d == monthDays.length - 1,
-                childrenIndent: 36,
-                children: [
-                  for (var u = 0; u < units.length; u++)
-                    TimelineTreeNode(
-                      title: Padding(
-                        padding: const EdgeInsets.only(right: 12, bottom: 6),
-                        child: _unitCard(context, units[u]),
-                      ),
-                      color: colorScheme.primary.withValues(alpha: 0.85),
-                      dotSize: 8,
-                      titleIndent: 22,
-                      isFirst: u == 0,
-                      isLast: u == units.length - 1,
-                    ),
-                ],
+                color: colorScheme.secondary,
+                dotSize: 12,
+                isFirst: m == 0,
+                isLast: m == yearMonths.length - 1,
+                childrenIndent: 32,
+                children: dayNodes,
               ),
             );
           }
-          monthNodes.add(
-            TimelineTreeNode(
-              title: Text(
-                '$year-${month.toString().padLeft(2, '0')}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              color: colorScheme.secondary,
-              dotSize: 12,
-              isFirst: m == 0,
-              isLast: m == yearMonths.length - 1,
-              childrenIndent: 32,
-              children: dayNodes,
-            ),
-          );
-        }
-        yearNodes.add(
-          TimelineTreeNode(
+          return TimelineTreeNode(
             title: Text(
               t.statsYearSuffix(year: year),
               style: TextStyle(
@@ -346,16 +348,12 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
             ),
             color: colorScheme.primary,
             dotSize: 16,
-            isFirst: y == 0,
-            isLast: y == years.length - 1,
+            isFirst: yIndex == 0,
+            isLast: yIndex == years.length - 1,
             childrenIndent: 32,
             children: monthNodes,
-          ),
-        );
-      }
-      body = ListView(
-        padding: const EdgeInsets.only(top: 4, bottom: 12),
-        children: yearNodes,
+          );
+        },
       );
     }
 
