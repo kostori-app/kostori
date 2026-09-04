@@ -1905,6 +1905,7 @@ statsYearly: Yearly
 statsDaily: Daily
 statsSourceList: Source list
 statsSelectDate: Select date
+statsTimelineTitle: Entry stats
 statsDayRecords: Today's records
 statsYearSuffix: "${year}"
 statsCopiedToClipboard: Copied to clipboard

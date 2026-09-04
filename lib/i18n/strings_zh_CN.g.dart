@@ -1887,6 +1887,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get statsDaily => '天统计';
 	@override String get statsSourceList => '来源清单';
 	@override String get statsSelectDate => '选择日期';
+	@override String get statsTimelineTitle => '条目统计';
 	@override String get statsDayRecords => '当天的记录';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
 	@override String get statsCopiedToClipboard => '已复制到剪贴板';
@@ -4341,6 +4342,7 @@ extension on TranslationsZhCn {
 			'statsDaily' => '天统计',
 			'statsSourceList' => '来源清单',
 			'statsSelectDate' => '选择日期',
+			'statsTimelineTitle' => '条目统计',
 			'statsDayRecords' => '当天的记录',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
 			'statsCopiedToClipboard' => '已复制到剪贴板',
@@ -4498,9 +4500,9 @@ extension on TranslationsZhCn {
 			'chooseImage' => '选择图片',
 			'recognizing' => '识别中...',
 			'noAnimeFound' => '未识别到动漫，可能是非动漫图片',
-			'chooseAnotherImage' => '换一张图片试试',
 			_ => null,
 		} ?? switch (path) {
+			'chooseAnotherImage' => '换一张图片试试',
 			'recognizeResult' => '识别结果',
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集数',

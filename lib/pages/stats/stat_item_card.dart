@@ -928,3 +928,88 @@ class _StatItemWidgetState extends State<StatItemWidget> {
     );
   }
 }
+
+/// 点击记录卡片后展示该条目全部历史统计（按天分组的时间线）
+class StatsTimelinePage extends StatelessWidget {
+  StatsTimelinePage({super.key, required this.group});
+
+  final List<StatsDataImpl> group;
+
+  List<MapEntry<DateTime, List<StatsDataImpl>>> _buildDays() {
+    final byDay = <DateTime, List<StatsDataImpl>>{};
+    DateTime norm(DateTime d) => DateTime(d.year, d.month, d.day);
+    for (final stat in group) {
+      final lists = <List<DailyEvent>>[
+        stat.comment,
+        stat.rating,
+        stat.favorite,
+        stat.totalWatchDurations,
+        stat.totalClickCount,
+      ];
+      final dates = <DateTime>{};
+      for (final list in lists) {
+        for (final ev in list) {
+          dates.add(norm(ev.date));
+        }
+      }
+      for (final day in dates) {
+        byDay.putIfAbsent(day, () => []).add(stat);
+      }
+    }
+    final entries = byDay.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return entries;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = _buildDays();
+    Widget body = Scaffold(
+      appBar: Appbar(title: Text(t.statsTimelineTitle)),
+      body: days.isEmpty
+          ? const Center(child: Text(''))
+          : ListView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: days.length,
+              itemBuilder: (context, index) {
+                final day = days[index].key;
+                final dayGroup = days[index].value;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
+                      child: Text(
+                        '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: StatEntryCard(
+                        onTap: () {},
+                        child: StatItemWidget(
+                          statsGroup: dayGroup,
+                          selectedDay: day,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+    );
+    body = AppScrollBar(
+      topPadding: 82,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: body,
+      ),
+    );
+    return body;
+  }
+
+  final ScrollController scrollController = ScrollController();
+}

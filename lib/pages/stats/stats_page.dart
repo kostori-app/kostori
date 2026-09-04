@@ -558,9 +558,10 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 8,
                                   ),
-                                  child: StatEntryCard(
-                                    onTap: () {},
-                                    child: StatItemWidget(
+                  child: StatEntryCard(
+                    onTap: () =>
+                        context.to(() => StatsTimelinePage(group: statGroup)),
+                    child: StatItemWidget(
                                       statsGroup: statGroup,
                                       selectedDay:
                                           controller.selectedDay ??
@@ -611,7 +612,9 @@ class FullStatsPage extends StatelessWidget {
               key: ValueKey(statGroup.first.id),
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: StatEntryCard(
-                onTap: () {},
+                onTap: () => context.to(
+                  () => StatsTimelinePage(group: statGroup),
+                ),
                 child: StatItemWidget(
                   statsGroup: statGroup,
                   selectedDay: selectedDay,

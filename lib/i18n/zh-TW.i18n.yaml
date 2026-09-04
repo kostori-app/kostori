@@ -1906,6 +1906,7 @@ statsYearly: 年統計
 statsDaily: 日統計
 statsSourceList: 來源清單
 statsSelectDate: 選擇日期
+statsTimelineTitle: 條目統計
 statsDayRecords: 當天的記錄
 statsYearSuffix: "${year} 年"
 statsCopiedToClipboard: 已複製到剪貼簿

@@ -5584,6 +5584,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Select date'
 	String get statsSelectDate => 'Select date';
 
+	/// en: 'Entry stats'
+	String get statsTimelineTitle => 'Entry stats';
+
 	/// en: 'Today's records'
 	String get statsDayRecords => 'Today\'s records';
 
@@ -9115,6 +9118,7 @@ extension on Translations {
 			'statsDaily' => 'Daily',
 			'statsSourceList' => 'Source list',
 			'statsSelectDate' => 'Select date',
+			'statsTimelineTitle' => 'Entry stats',
 			'statsDayRecords' => 'Today\'s records',
 			'statsYearSuffix' => ({required Object year}) => '${year}',
 			'statsCopiedToClipboard' => 'Copied to clipboard',
@@ -9272,9 +9276,9 @@ extension on Translations {
 			'chooseImage' => 'Choose image',
 			'recognizing' => 'Recognizing...',
 			'noAnimeFound' => 'No anime recognized, this may not be an anime image',
-			'chooseAnotherImage' => 'Try another image',
 			_ => null,
 		} ?? switch (path) {
+			'chooseAnotherImage' => 'Try another image',
 			'recognizeResult' => 'Recognition results',
 			'episodeLabel' => 'EP',
 			'unknownEpisode' => 'Unknown episode',

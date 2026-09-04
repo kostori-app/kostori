@@ -1886,6 +1886,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get statsDaily => '日統計';
 	@override String get statsSourceList => '來源清單';
 	@override String get statsSelectDate => '選擇日期';
+	@override String get statsTimelineTitle => '條目統計';
 	@override String get statsDayRecords => '當天的記錄';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
 	@override String get statsCopiedToClipboard => '已複製到剪貼簿';
@@ -4339,6 +4340,7 @@ extension on TranslationsZhTw {
 			'statsDaily' => '日統計',
 			'statsSourceList' => '來源清單',
 			'statsSelectDate' => '選擇日期',
+			'statsTimelineTitle' => '條目統計',
 			'statsDayRecords' => '當天的記錄',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
 			'statsCopiedToClipboard' => '已複製到剪貼簿',
@@ -4497,9 +4499,9 @@ extension on TranslationsZhTw {
 			'recognizing' => '識別中...',
 			'noAnimeFound' => '未識別到動漫，可能不是動漫圖片',
 			'chooseAnotherImage' => '換一張圖片試試',
-			'recognizeResult' => '識別結果',
 			_ => null,
 		} ?? switch (path) {
+			'recognizeResult' => '識別結果',
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集數',
 			'openVideoPreview' => '影片預覽',
