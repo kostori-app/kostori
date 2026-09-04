@@ -772,10 +772,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         title: t.compressHistory,
         content: Text(t.compressHistoryConfirm),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(t.cancel),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(t.confirm),

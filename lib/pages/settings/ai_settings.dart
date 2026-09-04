@@ -1593,10 +1593,6 @@ Future<List<String>?> _showModelImportDialog(
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text(t.cancel),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(
               dialogCtx,

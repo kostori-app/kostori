@@ -492,10 +492,6 @@ class _ColorPickPageState extends State<ColorPickPage> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.cancel),
-        ),
-        TextButton(
           onPressed: () => Navigator.of(context).pop(pickerColor),
           child: Text(t.apply),
         ),

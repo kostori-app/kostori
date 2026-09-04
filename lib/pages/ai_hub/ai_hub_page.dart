@@ -161,10 +161,6 @@ class _AiHubPageState extends State<AiHubPage> {
           '${t.areYouSureYouWantToDeleteGeneric} "${plugin.name}"?',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(t.cancel),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(t.delete),

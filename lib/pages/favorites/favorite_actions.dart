@@ -227,15 +227,17 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
                 if (errors > 0) Text(t.errorsLabel(n: errors)),
               ],
             ).paddingHorizontal(16),
+            cancel: () {
+              isCanceled = true;
+            },
             actions: [
-              Button.filled(
-                color: isFinished ? null : context.colorScheme.error,
-                onPressed: () {
-                  isCanceled = true;
-                  context.pop();
-                },
-                child: isFinished ? Text(t.ok) : Text(t.cancel),
-              ),
+              if (isFinished)
+                Button.filled(
+                  onPressed: () {
+                    context.pop();
+                  },
+                  child: Text(t.ok),
+                ),
             ],
           );
         },

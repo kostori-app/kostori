@@ -2533,10 +2533,6 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
           decoration: InputDecoration(labelText: t.fileName),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(t.cancel),
-          ),
           FilledButton(
             onPressed: () {
               final name = ctrl.text.trim();

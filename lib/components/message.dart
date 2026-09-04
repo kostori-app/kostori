@@ -712,14 +712,10 @@ Future<int?> showSelectDialog({
                 ],
               ),
             ),
+            cancel: () {
+              current = null;
+            },
             actions: [
-              TextButton(
-                onPressed: () {
-                  current = null;
-                  context.pop();
-                },
-                child: Text(t.cancel),
-              ),
               FilledButton(
                 onPressed: current == null ? null : context.pop,
                 child: Text(t.confirm),
