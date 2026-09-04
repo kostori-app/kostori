@@ -416,6 +416,50 @@ class NaviPaneState extends State<NaviPane>
     );
   }
 
+  /// 桌面侧边栏是否处于展开态（供悬浮栏判断）
+  bool get sidebarExpanded => _sidebarOpen;
+
+  /// 搜索/分类/设置等动作的悬浮操作坞（与窄屏悬浮导航同风格）
+  Widget buildActionDock() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.82),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < widget.paneActions.length; i++) ...[
+                if (i > 0) const SizedBox(width: 2),
+                Tooltip(
+                  message: widget.paneActions[i].label,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: widget.paneActions[i].onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Icon(widget.paneActions[i].icon, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget buildLeft() {
     final value = controller.value;
     const paddingHorizontal = 12.0;
@@ -842,10 +886,49 @@ class _NaviMainViewState extends State<_NaviMainView> {
 
   @override
   Widget build(BuildContext context) {
+    final mqSize = MediaQuery.of(context).size;
+    final isWide = mqSize.width > changePoint;
     // 仅移动端（窄屏）显示顶部/底部导航栏；桌面端即使侧边栏收起也不显示
     var shouldShowAppBar =
         state.controller.value < 2 &&
         MediaQuery.of(context).size.width <= changePoint;
+
+    // 宽屏下侧边栏被完全收起：显示窄屏风格的悬浮导航 + 独立动作坞
+    final wideCollapsed =
+        isWide && !state.sidebarExpanded && state.controller.value < 1.02;
+    if (wideCollapsed) {
+      Widget page = Column(
+        children: [
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: false,
+              child: state.buildPageStack(),
+            ),
+          ),
+        ],
+      );
+      final bottomPad = MediaQuery.of(context).padding.bottom + 12;
+      return Stack(
+        children: [
+          Positioned.fill(child: page),
+          // 窄屏风格悬浮主导航（居中）
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: bottomPad,
+            child: Center(child: state.buildBottom()),
+          ),
+          // 独立的搜索/分类/设置 悬浮操作坞（右下角）
+          Positioned(
+            right: 12,
+            bottom: bottomPad,
+            child: state.buildActionDock(),
+          ),
+        ],
+      );
+    }
+
     if (!shouldShowAppBar) {
       return Column(
         children: [
