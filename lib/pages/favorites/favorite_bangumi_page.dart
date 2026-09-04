@@ -20,7 +20,6 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
   List<BangumiItem> favoriteBind = [];
 
   bool loading = false;
-  bool useBriefMode = true;
 
   Future<void> loadFavorites() async {
     setState(() {
@@ -44,28 +43,61 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
     });
   }
 
-  Widget _bangumiListSliver(List<BangumiItem> bangumiItems) {
+  bool get useBriefMode => _layoutMode == 'brief';
+
+  String get _layoutMode {
+    final v = appdata.implicitData['favoritesBangumiBindingLayout'] as String?;
+    if (v != null && v.isNotEmpty) return v;
+    return appdata.implicitData['bangumiDisplayMode'] as String? ?? 'brief';
+  }
+
+  void _setLayoutMode(String v) {
+    appdata.implicitData['favoritesBangumiBindingLayout'] = v;
+    appdata.writeImplicitData();
+    setState(() {});
+  }
+
+  Widget _bangumiListSliver(BuildContext context, List<BangumiItem> bangumiItems) {
+    if (_layoutMode == 'detailed') {
+      return SliverGrid(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          return BangumiDetailedCard(
+            bangumiItem: bangumiItems[index],
+            heroTag: 'favorite_bind',
+          );
+        }, childCount: bangumiItems.length),
+        gridDelegate: SliverGridDelegateWithBangumiItems(false),
+      );
+    }
+    if (!useBriefMode) {
+      final columns =
+          ((MediaQuery.of(context).size.width / 140).floor()).clamp(2, 6);
+      return SliverMasonryGrid.count(
+        crossAxisCount: columns,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childCount: bangumiItems.length,
+        itemBuilder: (context, index) => BangumiBriefCard(
+          bangumiItem: bangumiItems[index],
+          heroTag: 'favorite_bind',
+          masonryFactor: 1.35,
+        ),
+      );
+    }
     return SliverGrid(
       delegate: SliverChildBuilderDelegate((context, index) {
-        var bangumi = useBriefMode
-            ? BangumiBriefCard(
-                bangumiItem: bangumiItems[index],
-                heroTag: 'favorite_bind',
-              )
-            : BangumiDetailedCard(
-                bangumiItem: bangumiItems[index],
-                heroTag: 'favorite_bind',
-              );
-        return bangumi;
+        return BangumiBriefCard(
+          bangumiItem: bangumiItems[index],
+          heroTag: 'favorite_bind',
+        );
       }, childCount: bangumiItems.length),
-      gridDelegate: SliverGridDelegateWithBangumiItems(useBriefMode),
+      gridDelegate: SliverGridDelegateWithBangumiItems(true),
     );
   }
 
   @override
   void initState() {
     super.initState();
-    useBriefMode = appdata.settings['animeDisplayMode'] == 'brief';
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
     loadFavorites();
   }
@@ -90,12 +122,44 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
                 : const SizedBox(),
           ),
           title: Text(favoriteBind.length.toString()),
+          actions: [
+            PopupMenuButton<String>(
+              tooltip: t.displayModeOfAnimeTile,
+              icon: const Icon(Icons.grid_view_outlined),
+              onSelected: _setLayoutMode,
+              itemBuilder: (_) => [
+                for (final (key, label) in [
+                  ('brief', t.brief),
+                  ('detailed', t.detailed),
+                  ('masonry', t.masonry),
+                ])
+                  PopupMenuItem(
+                    value: key,
+                    child: Row(
+                      children: [
+                        Icon(
+                          _layoutMode == key
+                              ? Icons.check
+                              : Icons.circle_outlined,
+                          size: 18,
+                          color: _layoutMode == key
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(label),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ),
         loading
-            ? (useBriefMode
-                  ? BangumiWidget.bangumiSkeletonSliverBrief()
-                  : BangumiWidget.bangumiSkeletonSliverDetailed())
-            : _bangumiListSliver(favoriteBind),
+            ? _layoutMode == 'detailed'
+                  ? BangumiWidget.bangumiSkeletonSliverDetailed()
+                  : BangumiWidget.bangumiSkeletonSliverBrief()
+            : _bangumiListSliver(context, favoriteBind),
       ],
     );
     body = AppScrollBar(

@@ -162,6 +162,17 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
   }
 
   Widget _bangumiListSliver(BuildContext context, List<BangumiItem> bangumiItems) {
+    if (_layoutMode == 'detailed') {
+      return SliverGrid(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          return BangumiDetailedCard(
+            bangumiItem: bangumiItems[index],
+            heroTag: 'favorite',
+          );
+        }, childCount: bangumiItems.length),
+        gridDelegate: SliverGridDelegateWithBangumiItems(false),
+      );
+    }
     if (!useBriefMode) {
       final columns =
           ((MediaQuery.of(context).size.width / 140).floor()).clamp(2, 6);
@@ -209,9 +220,9 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
         key: PageStorageKey<String>(storageKey),
         slivers: <Widget>[
           list.isEmpty
-              ? (useBriefMode
-                    ? BangumiWidget.bangumiSkeletonSliverBrief()
-                    : BangumiWidget.bangumiSkeletonSliverDetailed())
+              ? (_layoutMode == 'detailed'
+                    ? BangumiWidget.bangumiSkeletonSliverDetailed()
+                    : BangumiWidget.bangumiSkeletonSliverBrief())
               : _bangumiListSliver(context, list),
           if (isLoading)
             SliverToBoxAdapter(
@@ -284,6 +295,7 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
             itemBuilder: (_) => [
               for (final (key, label) in [
                 ('brief', t.brief),
+                ('detailed', t.detailed),
                 ('masonry', t.masonry),
               ])
                 PopupMenuItem(
