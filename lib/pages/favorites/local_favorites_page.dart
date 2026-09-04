@@ -289,6 +289,35 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
   }
 
+  /// TabBar 与布局胶囊合成一段（胶囊紧贴 TabBar 下方，无 header/body 间隙）
+  PreferredSizeWidget _buildTabWithCapsule(PreferredSizeWidget tab) {
+    final capsule = favoritesLayoutCapsule(
+      context,
+      value: sourceDisplayModeOf('local_favorites') ??
+          appdata.settings['animeDisplayMode'],
+      onChanged: (v) => setSourceDisplayMode('local_favorites', v),
+      modes: [
+        ('brief', t.brief),
+        ('detailed', t.detailed),
+        ('masonry', t.masonry),
+        ('poster', t.poster),
+      ],
+    );
+    return PreferredSize(
+      preferredSize: Size.fromHeight(tab.preferredSize.height + 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          tab,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Center(child: capsule),
+          ),
+        ],
+      ),
+    );
+  }
+
   MenuButton _buildSortMenu() {
     IconData? endIcon(FavoriteSortType asc, FavoriteSortType desc) {
       if (sortType == asc) return Icons.arrow_upward;
@@ -407,7 +436,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           ],
         ),
       ],
-      tab: tab,
+      tab: _buildTabWithCapsule(tab),
     );
   }
 
@@ -766,71 +795,44 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         else if (searchAllMode)
           _buildSearchAppbar(tab),
       ],
-      body: Column(
-        children: [
-          if (!searchAllMode && !searchMode && !multiSelectMode)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Center(
-                child: favoritesLayoutCapsule(
-                  context,
-                  value: sourceDisplayModeOf('local_favorites') ??
-                      appdata.settings['animeDisplayMode'],
-                  onChanged: (v) => setSourceDisplayMode('local_favorites', v),
-                  modes: [
-                    ('brief', t.brief),
-                    ('detailed', t.detailed),
-                    ('masonry', t.masonry),
-                    ('poster', t.poster),
-                  ],
-                ),
+      body: isLoading
+          ? const Center(
+              child: SizedBox(
+                height: 200,
+                width: 200,
+                child: KostoriRefreshIndicator(),
               ),
-            ),
-          Expanded(
-            child: isLoading
-                ? const Center(
-                    child: SizedBox(
-                      height: 200,
-                      width: 200,
-                      child: KostoriRefreshIndicator(),
+            )
+          : TabBarView(
+              key: PageStorageKey('${favState.folders}'),
+              controller: widget.favoritesController.tabController,
+              children: favState.folders.map((name) {
+                return CustomScrollView(
+                  key: PageStorageKey('local_$name'),
+                  controller: _controllerFor(name),
+                  physics: const ClampingScrollPhysics(),
+                  slivers: [
+                    SliverGridAnimes(
+                      asSliver: true,
+                      animes: searchAllMode
+                          ? (searchResults[name] ?? [])
+                          : (favState.animes[name] ?? []),
+                      selections: selectedAnimes,
+                      enableFavorite: false,
+                      // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
+                      menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
+                      onTap: multiSelectMode
+                          ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
+                          : _onAnimeTap,
+                      // 多选模式下长按保留范围选择
+                      onLongPressed: multiSelectMode
+                          ? (a, heroID) => _rangeSelect(a, name)
+                          : null,
                     ),
-                  )
-                : TabBarView(
-                    key: PageStorageKey('${favState.folders}'),
-                    controller: widget.favoritesController.tabController,
-                    children: favState.folders.map((name) {
-                      return CustomScrollView(
-                        key: PageStorageKey('local_$name'),
-                        controller: _controllerFor(name),
-                        physics: const ClampingScrollPhysics(),
-                        slivers: [
-                          SliverGridAnimes(
-                            asSliver: true,
-                            animes: searchAllMode
-                                ? (searchResults[name] ?? [])
-                                : (favState.animes[name] ?? []),
-                            selections: selectedAnimes,
-                            enableFavorite: false,
-                            // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
-                            menuBuilder: multiSelectMode
-                                ? null
-                                : _buildLongPressMenu,
-                            onTap: multiSelectMode
-                                ? (a, heroID) =>
-                                      _onAnimeMultiTap(a, heroID, name)
-                                : _onAnimeTap,
-                            // 多选模式下长按保留范围选择
-                            onLongPressed: multiSelectMode
-                                ? (a, heroID) => _rangeSelect(a, name)
-                                : null,
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-          ),
-        ],
-      ),
+                  ],
+                );
+              }).toList(),
+            ),
     );
 
     body = Stack(
