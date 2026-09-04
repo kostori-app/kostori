@@ -135,18 +135,16 @@ class DownloadManager extends ChangeNotifier {
           } catch (_) {}
         }
       }
-      // 重启后中断的任务回到队列自动续传：
-      // mp4 用已写入的临时文件 + Range 续传，m3u8 用已下载分片续传
+      // 重启后中断的任务置为“已暂停”：保留断点文件，由用户手动点继续续传
       for (final t in _tasks) {
         if (t.isActive) {
-          t.status = DownloadStatus.queued;
+          t.status = DownloadStatus.paused;
           t.error = null;
         }
       }
       Directory(_downloadDir).createSync(recursive: true);
       _persist();
       notifyListeners();
-      _schedule();
       // 兜底：清理残留分片（已完成/失败/孤儿任务的分片目录），
       // 避免旧版本未清理的 TS 切片占用体积越来越大
       unawaited(_cleanupOrphanSegments());
@@ -174,9 +172,12 @@ class DownloadManager extends ChangeNotifier {
       };
       await for (final entry in dir.list()) {
         if (entry is! Directory) continue;
-        // 清理残留的半成品 video.mp4（合并中断遗留；正常流程已被 rename 走）
+        if (keepDirs.contains(entry.path)) {
+          // 保留目录：不清 video.mp4（mp4 断点续传依赖它），也不删分片
+          continue;
+        }
+        // 孤儿目录：清理残留半成品 + 分片
         await _deleteQuiet(File(p.join(entry.path, 'video.mp4')));
-        if (keepDirs.contains(entry.path)) continue;
         final segDir = Directory(p.join(entry.path, 'segments'));
         if (!await segDir.exists()) continue;
         try {
