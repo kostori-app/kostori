@@ -1217,149 +1217,125 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final entries = _collectEntries();
     final colorScheme = Theme.of(context).colorScheme;
     final lineColor = colorScheme.outlineVariant;
 
-    final emptyState = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
-      child: Center(
-        child: Text(
-          t.statsTimelineNoRecords,
-          style: TextStyle(color: colorScheme.onSurfaceVariant),
+    Widget body;
+    if (entries.isEmpty) {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Text(
+            t.statsTimelineNoRecords,
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
         ),
-      ),
-    );
-
-    // 按 年 > 月 > 日 组织：最新在前，日内记录按时间正序
-    Widget timeline = const SizedBox.shrink();
-    if (entries.isNotEmpty) {
+      );
+    } else {
+      // 按天聚合，日内记录按时间升序
       final byDate = <DateTime, List<_TimelineEntry>>{};
       for (final e in entries) {
         final day = DateTime(e.time.year, e.time.month, e.time.day);
         byDate.putIfAbsent(day, () => []).add(e);
       }
-      for (final list in byDate.values) {
-        list.sort((a, b) => a.time.compareTo(b.time));
+      for (final l in byDate.values) {
+        l.sort((a, b) => a.time.compareTo(b.time));
       }
-
       final dates = byDate.keys.toList()..sort((a, b) => b.compareTo(a));
-      final years = <int>[];
-      final months = <(int, int)>[];
-      final monthDays = <String, List<DateTime>>{};
-      for (final d in dates) {
-        if (!years.contains(d.year)) years.add(d.year);
-        if (!months.contains((d.year, d.month))) months.add((d.year, d.month));
-        monthDays
-            .putIfAbsent('${d.year}-${d.month}', () => [])
-            .add(d);
-      }
-      years.sort((a, b) => b.compareTo(a));
-      months.sort((a, b) {
-        if (a.$1 != b.$1) return b.$1.compareTo(a.$1);
-        return b.$2.compareTo(a.$2);
-      });
 
-      Widget monthHeader(int year, int month) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(4, 18, 4, 4),
-          child: Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorScheme.secondary,
-                ),
-              ),
-              Text(
-                '$year-${month.toString().padLeft(2, '0')}',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
-      Widget dayBlock(DateTime day, List<_TimelineEntry> dayEntries) {
-        final dayTiles = <Widget>[];
-        for (var i = 0; i < dayEntries.length; i++) {
-          dayTiles.add(
-            TimelineTile(
-              alignment: TimelineAlign.start,
-              isFirst: i == 0,
-              isLast: i == dayEntries.length - 1,
-              indicatorStyle: IndicatorStyle(
-                color: colorScheme.primary,
-                width: 12,
-              ),
-              beforeLineStyle: LineStyle(color: lineColor, thickness: 1.6),
-              afterLineStyle: LineStyle(color: lineColor, thickness: 1.6),
-              endChild: Padding(
-                padding: EdgeInsets.only(
-                  bottom: i == dayEntries.length - 1 ? 6 : 0,
-                  right: 12,
-                ),
-                child: dayEntries[i].child,
-              ),
-            ),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 2, left: 4),
+      // level: 0=年 1=月 2=日 3=记录。年/月/日本身也是线上的节点。
+      final elements = <({int level, Widget child})>[];
+      DateTime? lastYearDate;
+      (int, int)? lastMonth;
+      for (final date in dates) {
+        if (lastYearDate == null || date.year != lastYearDate.year) {
+          elements.add((
+            level: 0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
-                t.statsTimelineDay(month: day.month, day: day.day),
+                t.statsYearSuffix(year: date.year),
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: dayTiles,
-              ),
-            ),
-          ],
-        );
-      }
-
-      final blocks = <Widget>[];
-      for (final (year, month) in months) {
-        blocks.add(monthHeader(year, month));
-        for (final day in monthDays['$year-$month']!) {
-          blocks.add(dayBlock(day, byDate[day]!));
+          ));
+          lastYearDate = date;
         }
-      }
-      timeline = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 2),
+        if (lastMonth == null ||
+            lastMonth != (date.year, date.month)) {
+          elements.add((
+            level: 1,
             child: Text(
-              t.statsYearSuffix(year: years.first),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
-              ),
+              '${date.year}-${date.month.toString().padLeft(2, '0')}',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ));
+          lastMonth = (date.year, date.month);
+        }
+        elements.add((
+          level: 2,
+          child: Text(
+            t.statsTimelineDay(month: date.month, day: date.day),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
-          ...blocks,
-        ],
+        ));
+        for (final e in byDate[date]!) {
+          elements.add((level: 3, child: e.child));
+        }
+      }
+
+      final tiles = <Widget>[];
+      for (var i = 0; i < elements.length; i++) {
+        final el = elements[i];
+        final level = el.level;
+        final color = level == 0
+            ? colorScheme.primary
+            : level == 1
+            ? colorScheme.secondary
+            : level == 2
+            ? colorScheme.tertiary
+            : colorScheme.primary;
+        final width = level == 0
+            ? 16.0
+            : level == 1
+            ? 13.0
+            : level == 2
+            ? 12.0
+            : 9.0;
+        tiles.add(
+          TimelineTile(
+            alignment: TimelineAlign.start,
+            isFirst: i == 0,
+            isLast: i == elements.length - 1,
+            indicatorStyle: IndicatorStyle(color: color, width: width),
+            beforeLineStyle: LineStyle(color: lineColor, thickness: 1.6),
+            afterLineStyle: LineStyle(color: lineColor, thickness: 1.6),
+            endChild: Padding(
+              padding: EdgeInsets.only(
+                left: level == 3 ? 16 : 4,
+                right: 12,
+                bottom: level == 3 ? 12 : 4,
+                top: level == 3 ? 2 : 0,
+              ),
+              child: el.child,
+            ),
+          ),
+        );
+      }
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: tiles,
       );
     }
 
@@ -1374,7 +1350,7 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
-        if (entries.isEmpty) emptyState else timeline,
+        body,
       ],
     );
   }

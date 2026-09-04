@@ -238,48 +238,72 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
     } else {
       final days = _byDay.keys.toList()..sort((a, b) => b.compareTo(a));
 
-      // 按年份切段：年标签 + 该年内所有日节点
-      final tiles = <Widget>[];
-      var startIndex = 0;
-      while (startIndex < days.length) {
-        final year = days[startIndex].year;
-        var endIndex = startIndex;
-        while (endIndex < days.length && days[endIndex].year == year) {
-          endIndex++;
-        }
-        final yearDays = days.sublist(startIndex, endIndex);
 
-        tiles.add(
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
-            child: Text(
-              t.statsYearSuffix(year: year),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
+      // 年/月/日都是竖线上的节点：level 0=年 1=月 2=日
+      final elements = <({int level, Widget child})>[];
+      DateTime? lastYearDate;
+      (int, int)? lastMonth;
+      for (final date in days) {
+        if (lastYearDate == null || date.year != lastYearDate.year) {
+          elements.add((
+            level: 0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                t.statsYearSuffix(year: date.year),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                ),
               ),
             ),
+          ));
+          lastYearDate = date;
+        }
+        if (lastMonth == null || lastMonth != (date.year, date.month)) {
+          elements.add((
+            level: 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                '${date.year}-${date.month.toString().padLeft(2, '0')}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ));
+          lastMonth = (date.year, date.month);
+        }
+        elements.add((
+          level: 2,
+          child: _dayContent(context, date, _byDay[date]!),
+        ));
+      }
+
+      final tiles = <Widget>[];
+      for (var i = 0; i < elements.length; i++) {
+        final el = elements[i];
+        final level = el.level;
+        final color = level == 0
+            ? colorScheme.primary
+            : level == 1
+            ? colorScheme.secondary
+            : colorScheme.primary;
+        final width = level == 0 ? 16.0 : level == 1 ? 13.0 : 12.0;
+        tiles.add(
+          TimelineTile(
+            alignment: TimelineAlign.start,
+            isFirst: i == 0,
+            isLast: i == elements.length - 1,
+            indicatorStyle: IndicatorStyle(color: color, width: width),
+            beforeLineStyle: LineStyle(color: lineColor, thickness: 1.6),
+            afterLineStyle: LineStyle(color: lineColor, thickness: 1.6),
+            endChild: el.child,
           ),
         );
-        for (var j = 0; j < yearDays.length; j++) {
-          final day = yearDays[j];
-          tiles.add(
-            TimelineTile(
-              alignment: TimelineAlign.start,
-              isFirst: j == 0,
-              isLast: j == yearDays.length - 1,
-              indicatorStyle: IndicatorStyle(
-                color: colorScheme.primary,
-                width: 12,
-              ),
-              beforeLineStyle: LineStyle(color: lineColor, thickness: 1.6),
-              afterLineStyle: LineStyle(color: lineColor, thickness: 1.6),
-              endChild: _dayContent(context, day, _byDay[day]!),
-            ),
-          );
-        }
-        startIndex = endIndex;
       }
 
       body = ListView(
