@@ -415,7 +415,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get viewMore => '查看更多';
 	@override String get view => '查看';
 	@override String get webDavAutoSync => 'WebDAV 自动同步';
-	@override String get kDefault => '默认';
+	@override String get kDefault => '未分类';
 	@override String defaultValue({required Object v}) => '默认：${v}';
 	@override String lastWatchTimeTime({required Object time}) => '上次观看时间：${time}';
 	@override String minAppVersionRequired({required Object version}) => '需要最低应用版本 ${version}';
@@ -2820,7 +2820,7 @@ extension on TranslationsZhCn {
 			'viewMore' => '查看更多',
 			'view' => '查看',
 			'webDavAutoSync' => 'WebDAV 自动同步',
-			'kDefault' => '默认',
+			'kDefault' => '未分类',
 			'defaultValue' => ({required Object v}) => '默认：${v}',
 			'lastWatchTimeTime' => ({required Object time}) => '上次观看时间：${time}',
 			'minAppVersionRequired' => ({required Object version}) => '需要最低应用版本 ${version}',

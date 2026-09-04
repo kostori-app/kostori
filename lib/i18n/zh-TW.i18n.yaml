@@ -373,7 +373,7 @@ viewList: 查看列表
 viewMore: 查看更多
 view: 查看
 webDavAutoSync: WebDAV 自動同步
-default: 預設
+default: 未分類
 defaultValue: '預設：${v}'
 lastWatchTimeTime: 上次觀看時間 ${time}
 minAppVersionRequired: 需要最低應用版本 ${version}

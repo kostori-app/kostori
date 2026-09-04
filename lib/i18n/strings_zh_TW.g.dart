@@ -414,7 +414,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get viewMore => '查看更多';
 	@override String get view => '查看';
 	@override String get webDavAutoSync => 'WebDAV 自動同步';
-	@override String get kDefault => '預設';
+	@override String get kDefault => '未分類';
 	@override String defaultValue({required Object v}) => '預設：${v}';
 	@override String lastWatchTimeTime({required Object time}) => '上次觀看時間 ${time}';
 	@override String minAppVersionRequired({required Object version}) => '需要最低應用版本 ${version}';
@@ -2818,7 +2818,7 @@ extension on TranslationsZhTw {
 			'viewMore' => '查看更多',
 			'view' => '查看',
 			'webDavAutoSync' => 'WebDAV 自動同步',
-			'kDefault' => '預設',
+			'kDefault' => '未分類',
 			'defaultValue' => ({required Object v}) => '預設：${v}',
 			'lastWatchTimeTime' => ({required Object time}) => '上次觀看時間 ${time}',
 			'minAppVersionRequired' => ({required Object version}) => '需要最低應用版本 ${version}',

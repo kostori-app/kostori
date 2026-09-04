@@ -1190,8 +1190,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'WebDAV Auto Sync'
 	String get webDavAutoSync => 'WebDAV Auto Sync';
 
-	/// en: 'default'
-	String get kDefault => 'default';
+	/// en: 'Unsorted'
+	String get kDefault => 'Unsorted';
 
 	/// en: 'Default: ${v}'
 	String defaultValue({required Object v}) => 'Default: ${v}';
@@ -7599,7 +7599,7 @@ extension on Translations {
 			'viewMore' => 'View more',
 			'view' => 'View',
 			'webDavAutoSync' => 'WebDAV Auto Sync',
-			'kDefault' => 'default',
+			'kDefault' => 'Unsorted',
 			'defaultValue' => ({required Object v}) => 'Default: ${v}',
 			'lastWatchTimeTime' => ({required Object time}) => 'lastWatchTime ${time}',
 			'minAppVersionRequired' => ({required Object version}) => 'minAppVersion ${version} is required',

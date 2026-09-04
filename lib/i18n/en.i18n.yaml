@@ -385,7 +385,7 @@ viewList: View list
 viewMore: View more
 view: View
 webDavAutoSync: WebDAV Auto Sync
-default: default
+default: Unsorted
 defaultValue: 'Default: ${v}'
 lastWatchTimeTime: lastWatchTime ${time}
 minAppVersionRequired: minAppVersion ${version} is required
