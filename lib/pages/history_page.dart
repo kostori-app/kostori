@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
@@ -92,6 +93,112 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   }
 
   void onUpdate() => _loadHistory();
+
+  void _showDaySheet(DateTime day, List<History> items) {
+    if (items.isEmpty || !mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Sheet(
+        title: t.statsTimelineDay(month: day.month, day: day.day),
+        icon: Icons.history,
+        initialSize: 0.7,
+        builder: (context, sc) {
+          return ListView.builder(
+            controller: sc,
+            padding: const EdgeInsets.all(8),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final h = items[index];
+              final cs = Theme.of(context).colorScheme;
+              String two(int v) => v.toString().padLeft(2, '0');
+              Widget cover;
+              if (h.cover.trim().isNotEmpty) {
+                cover = ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: BangumiWidget.kostoriImage(
+                    context,
+                    h.cover,
+                    width: 44,
+                    height: 62,
+                  ),
+                );
+              } else {
+                cover = Container(
+                  width: 44,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(Icons.image_outlined, size: 20),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    Navigator.pop(context);
+                    App.mainNavigatorKey?.currentContext?.to<dynamic>(
+                      () => AnimePage(
+                        id: h.id,
+                        sourceKey: h.sourceKey,
+                        cover: h.cover,
+                        title: h.title,
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        cover,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                h.title,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${two(h.time.hour)}:${two(h.time.minute)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
 
   void scrollToTop() {
     if (scrollController.hasClients) {
@@ -386,13 +493,13 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     }
 
     // 全年活跃热力图数据（按观看历史更新时间统计每天活跃次数）
-    final heatCounts = <DateTime, int>{};
+    final dayEntries = <DateTime, List<History>>{};
     var minYear = DateTime.now().year;
     for (final h in animes) {
       if (h.time.year < minYear) minYear = h.time.year;
       if (h.time.year == heatYear) {
         final key = DateTime(h.time.year, h.time.month, h.time.day);
-        heatCounts[key] = (heatCounts[key] ?? 0) + 1;
+        dayEntries.putIfAbsent(key, () => []).add(h);
       }
     }
 
@@ -423,11 +530,12 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
         SliverToBoxAdapter(
           child: _HistoryHeatmapCard(
             year: heatYear,
-            counts: heatCounts,
+            dayEntries: dayEntries,
             minYear: minYear,
             maxYear: DateTime.now().year,
             onPrev: () => setState(() => heatYear -= 1),
             onNext: () => setState(() => heatYear += 1),
+            onDayTap: _showDaySheet,
           ),
         ),
         ...buildGroupedSlivers(groups),
@@ -502,22 +610,26 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 }
 
 /// 历史页顶部：年切换 + 全年（无滑动）活跃热力图
+
+/// 历史页顶部：年切换 + 全年活跃热力图（可横向滚动，格子可点）
 class _HistoryHeatmapCard extends StatelessWidget {
   const _HistoryHeatmapCard({
     required this.year,
-    required this.counts,
+    required this.dayEntries,
     required this.minYear,
     required this.maxYear,
     required this.onPrev,
     required this.onNext,
+    required this.onDayTap,
   });
 
   final int year;
-  final Map<DateTime, int> counts;
+  final Map<DateTime, List<History>> dayEntries;
   final int minYear;
   final int maxYear;
   final VoidCallback onPrev;
   final VoidCallback onNext;
+  final void Function(DateTime, List<History>) onDayTap;
 
   @override
   Widget build(BuildContext context) {
@@ -571,192 +683,173 @@ class _HistoryHeatmapCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _YearActivityHeatmap(year: year, counts: counts),
+          _YearActivityHeatmap(
+            year: year,
+            dayEntries: dayEntries,
+            onDayTap: onDayTap,
+          ),
         ],
       ),
     );
   }
 }
 
-/// 全年热力图：53 周横排铺满整行，7 行（周一~周日），纵向也一次放完，无滚动
-/// 全年热力图：53 周横排铺满整行，7 行（周一~周日），附月份与星期标签，无滚动
+/// 全年热力图：可横向滚动，格子固定大小（不会因屏窄缩得看不清）
 class _YearActivityHeatmap extends StatelessWidget {
-  const _YearActivityHeatmap({required this.year, required this.counts});
+  const _YearActivityHeatmap({
+    required this.year,
+    required this.dayEntries,
+    required this.onDayTap,
+  });
 
   final int year;
-  final Map<DateTime, int> counts;
+  final Map<DateTime, List<History>> dayEntries;
+  final void Function(DateTime, List<History>) onDayTap;
+
+  static const _cell = 15.0;
+  static const _gap = 2.0;
+  static const _gutter = 16.0;
+  static const _topLabel = 16.0;
+  static const _monthLetters = [
+    'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final maxCount = counts.values.isEmpty
-        ? 1
-        : counts.values
-              .reduce((a, b) => a > b ? a : b)
-              .clamp(1, 2147483647)
-              .toInt();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        const leftGutter = 16.0;
-        const topLabel = 13.0;
-        final gridWidth = width - leftGutter;
-        final first = DateTime(year, 1, 1);
-        final last = DateTime(year, 12, 31);
-        final leading = first.weekday - 1;
-        final lastAbs = leading + last.difference(first).inDays;
-        final colCount = (lastAbs ~/ 7) + 1;
-        const gap = 1.6;
-        final cell = (gridWidth - (colCount - 1) * gap) / colCount;
-        final height = topLabel + cell * 7 + gap * 6 + 6;
-        return SizedBox(
-          width: width,
-          height: height,
-          child: CustomPaint(
-            painter: _YearHeatmapPainter(
-              year: year,
-              counts: counts,
-              maxCount: maxCount,
-              gap: gap,
-              leftGutter: leftGutter,
-              topLabel: topLabel,
-              cell: cell,
-              emptyColor: colorScheme.surfaceContainerHighest,
-              primary: colorScheme.primary,
-              labelColor: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _YearHeatmapPainter extends CustomPainter {
-  _YearHeatmapPainter({
-    required this.year,
-    required this.counts,
-    required this.maxCount,
-    required this.gap,
-    required this.leftGutter,
-    required this.topLabel,
-    required this.cell,
-    required this.emptyColor,
-    required this.primary,
-    required this.labelColor,
-  });
-
-  final int year;
-  final Map<DateTime, int> counts;
-  final int maxCount;
-  final double gap;
-  final double leftGutter;
-  final double topLabel;
-  final double cell;
-  final Color emptyColor;
-  final Color primary;
-  final Color labelColor;
-
-  static const monthLetters = [
-    'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D',
-  ];
-  static const weekdayLabels = ['M', 'W', 'F'];
-
-  @override
-  void paint(Canvas canvas, Size size) {
     final first = DateTime(year, 1, 1);
+    final last = DateTime(year, 12, 31);
     final leading = first.weekday - 1;
-    final rowStep = cell + gap;
-    final colStep = cell + gap;
+    final lastAbs = leading + last.difference(first).inDays;
+    final colCount = (lastAbs ~/ 7) + 1;
 
-    // 左侧星期标签（周一 / 周三 / 周五）
-    final weekdayRows = [0, 2, 4];
-    for (var i = 0; i < weekdayRows.length; i++) {
-      final row = weekdayRows[i];
-      final centerY = topLabel + row * rowStep + cell / 2;
-      _text(
-        canvas,
-        weekdayLabels[i],
-        Offset(leftGutter / 2, centerY),
-        font: cell < 7 ? 7 : cell.clamp(7.0, 9.0),
-        color: labelColor.withValues(alpha: 0.8),
-        centerAlign: true,
-      );
-    }
-
-    // 顶部月份标签
+    // 每个日期对应 (col,row)
+    final cells = <DateTime, (int, int)>{};
+    final colHasMonthStart = <int, int>{};
     for (var m = 1; m <= 12; m++) {
-      final monthStart = DateTime(year, m, 1);
-      final dayOfYear = monthStart.difference(first).inDays;
-      final col = (leading + dayOfYear) ~/ 7;
-      final x = leftGutter + col * colStep + cell / 2;
-      _text(
-        canvas,
-        monthLetters[m - 1],
-        Offset(x, topLabel / 2),
-        font: cell < 7 ? 7 : cell.clamp(7.0, 9.0),
-        color: labelColor.withValues(alpha: 0.85),
-        centerAlign: true,
-      );
+      final start = DateTime(year, m, 1);
+      final dayOfYear = start.difference(first).inDays;
+      final abs = leading + dayOfYear;
+      colHasMonthStart[abs ~/ 7] = m - 1;
     }
-
-    // 全年格子（圆角 / 圆形）
     for (var d = DateTime(year, 1, 1);
         d.year == year;
         d = d.add(const Duration(days: 1))) {
-      final dayOfYear = d.difference(first).inDays;
-      final abs = leading + dayOfYear;
-      final col = abs ~/ 7;
-      final row = abs % 7;
-      final count = counts[d] ?? 0;
-      final Color color;
-      if (count <= 0) {
-        color = emptyColor;
-      } else {
-        final t = (count / maxCount).clamp(0.0, 1.0);
-        color = primary.withValues(alpha: 0.25 + t * 0.7);
-      }
-      final cx = leftGutter + col * colStep + cell / 2;
-      final cy = topLabel + row * rowStep + cell / 2;
-      canvas.drawCircle(
-        Offset(cx, cy),
-        cell / 2 - 0.4,
-        Paint()..color = color,
+      final abs = leading + d.difference(first).inDays;
+      cells[d] = (abs ~/ 7, abs % 7);
+    }
+
+    final rowStep = _cell + _gap;
+    final colStep = _cell + _gap;
+    final contentWidth = _gutter + colCount * colStep - _gap + 4;
+    final contentHeight = _topLabel + 7 * _cell + 6 * _gap + 6;
+
+    DateTime dayOf(int col, int row) {
+      final daysFromStart = (col * 7 + row) - leading;
+      final d = first.add(Duration(days: daysFromStart));
+      return DateTime(d.year, d.month, d.day);
+    }
+
+    Color cellColor(DateTime day) {
+      final count = dayEntries[day]?.length ?? 0;
+      if (count <= 0) return colorScheme.surfaceContainerHighest;
+      final max = dayEntries.values
+              .map((l) => l.length)
+              .fold(0, (a, b) => a > b ? a : b)
+              .clamp(1, 2147483647)
+              .toInt();
+      final t = (count / max).clamp(0.0, 1.0);
+      return colorScheme.primary.withValues(alpha: 0.25 + t * 0.7);
+    }
+
+    Widget columnContent(BuildContext context, int col) {
+      return SizedBox(
+        width: _cell,
+        child: Column(
+          children: [
+            SizedBox(
+              height: _topLabel,
+              child: Center(
+                child: Text(
+                  colHasMonthStart[col] == null
+                      ? ''
+                      : _monthLetters[colHasMonthStart[col]!],
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+            for (var row = 0; row < 7; row++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: _gap),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    final day = DateTime(year, 1, 1)
+                        .add(Duration(days: (col * 7 + row) - leading));
+                    final items = dayEntries[day];
+                    if (items != null && items.isNotEmpty) {
+                      onDayTap(day, items);
+                    }
+                  },
+                  child: Container(
+                    width: _cell,
+                    height: _cell,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: cellColor(dayOf(col, row)),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       );
     }
-  }
 
-  void _text(
-    Canvas canvas,
-    String text,
-    Offset center, {
-    required double font,
-    required Color color,
-    required bool centerAlign,
-  }) {
-    final tp = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          fontSize: font,
-          color: color,
-          height: 1,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: contentWidth,
+        height: contentHeight,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: _gutter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: _topLabel),
+                child: Column(
+                  children: [
+                    for (var row = 0; row < 7; row++)
+                      SizedBox(
+                        height: rowStep,
+                        child: Center(
+                          child: Text(
+                            row == 0
+                                ? 'M'
+                                : row == 2
+                                ? 'W'
+                                : row == 4
+                                ? 'F'
+                                : '',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            for (var col = 0; col < colCount; col++) columnContent(context, col),
+          ],
         ),
       ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(
-      canvas,
-      Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
     );
   }
-
-  @override
-  bool shouldRepaint(covariant _YearHeatmapPainter oldDelegate) =>
-      oldDelegate.year != year ||
-      oldDelegate.counts != counts ||
-      oldDelegate.maxCount != maxCount ||
-      oldDelegate.cell != cell ||
-      oldDelegate.primary != primary ||
-      oldDelegate.labelColor != labelColor;
 }
