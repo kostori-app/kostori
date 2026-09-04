@@ -371,46 +371,54 @@ class NaviPaneState extends State<NaviPane>
     );
   }
 
-  Widget buildBottom() {
+  /// 与窄屏底部导航完全一致的磨砂圆角胶囊容器
+  Widget _frostedPill({required Widget child}) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      height: _kBottomBarHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(22)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surface.withValues(alpha: 0.82),
-              border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(22),
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(22)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withValues(alpha: 0.82),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+              width: 1,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (
-                  var index = 0;
-                  index < widget.paneItems.length;
-                  index++
-                ) ...[
-                  if (index > 0) const SizedBox(width: 4),
-                  _SingleBottomNaviWidget(
-                    enabled: currentPage == index,
-                    entry: widget.paneItems[index],
-                    onTap: () {
-                      updatePage(index);
-                    },
-                    key: ValueKey(index),
-                  ),
-                ],
-              ],
-            ),
+            borderRadius: BorderRadius.circular(22),
           ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget buildBottom() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: SizedBox(
+        height: _kBottomBarHeight,
+        child: _frostedPill(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (
+              var index = 0;
+              index < widget.paneItems.length;
+              index++
+            ) ...[
+              if (index > 0) const SizedBox(width: 4),
+              _SingleBottomNaviWidget(
+                enabled: currentPage == index,
+                entry: widget.paneItems[index],
+                onTap: () {
+                  updatePage(index);
+                },
+                key: ValueKey(index),
+              ),
+            ],
+          ],
+        ),
         ),
       ),
     );
@@ -419,43 +427,28 @@ class NaviPaneState extends State<NaviPane>
   /// 桌面侧边栏是否处于展开态（供悬浮栏判断）
   bool get sidebarExpanded => _sidebarOpen;
 
-  /// 搜索/分类/设置等动作的悬浮操作坞（与窄屏悬浮导航同风格）
+  /// 搜索/分类/设置等动作的悬浮操作坞（与窄屏悬浮导航同风格，
+  /// 通常紧挨在主悬浮导航右侧一起出现）
   Widget buildActionDock() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.82),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < widget.paneActions.length; i++) ...[
-                if (i > 0) const SizedBox(width: 2),
-                Tooltip(
-                  message: widget.paneActions[i].label,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: widget.paneActions[i].onTap,
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Icon(widget.paneActions[i].icon, size: 20),
-                    ),
-                  ),
+    return _frostedPill(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < widget.paneActions.length; i++) ...[
+            if (i > 0) const SizedBox(width: 2),
+            Tooltip(
+              message: widget.paneActions[i].label,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: widget.paneActions[i].onTap,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(widget.paneActions[i].icon, size: 20),
                 ),
-              ],
-            ],
-          ),
-        ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -893,7 +886,8 @@ class _NaviMainViewState extends State<_NaviMainView> {
         state.controller.value < 2 &&
         MediaQuery.of(context).size.width <= changePoint;
 
-    // 宽屏下侧边栏被完全收起：显示窄屏风格的悬浮导航 + 独立动作坞
+    // 宽屏下侧边栏被完全收起：显示窄屏风格悬浮导航 + 紧邻其右侧的动作坞；
+    // 与窄屏一致，跟随滚动收缩成横线（点一下展开）
     final wideCollapsed =
         isWide && !state.sidebarExpanded && state.controller.value < 1.02;
     if (wideCollapsed) {
@@ -903,27 +897,65 @@ class _NaviMainViewState extends State<_NaviMainView> {
             child: MediaQuery.removePadding(
               context: context,
               removeTop: false,
-              child: state.buildPageStack(),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScrollNotification,
+                child: state.buildPageStack(),
+              ),
             ),
           ),
         ],
       );
       final bottomPad = MediaQuery.of(context).padding.bottom + 12;
+      final dock = AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        layoutBuilder: (currentChild, previousChildren) {
+          return Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          );
+        },
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.6, end: 1).animate(animation),
+              alignment: Alignment.bottomCenter,
+              child: child,
+            ),
+          );
+        },
+        child: _minimized
+            ? _MiniBar(
+                key: const ValueKey('mini'),
+                onTap: () => setState(() => _minimized = false),
+              )
+            : KeyedSubtree(
+                key: const ValueKey('full'),
+                // 主导航与动作坞左右并排，动作坞紧挨在主悬浮栏右侧
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    state.buildBottom(),
+                    const SizedBox(width: 10),
+                    state.buildActionDock(),
+                  ],
+                ),
+              ),
+      );
       return Stack(
         children: [
           Positioned.fill(child: page),
-          // 窄屏风格悬浮主导航（居中）
           Positioned(
             left: 0,
             right: 0,
             bottom: bottomPad,
-            child: Center(child: state.buildBottom()),
-          ),
-          // 独立的搜索/分类/设置 悬浮操作坞（右下角）
-          Positioned(
-            right: 12,
-            bottom: bottomPad,
-            child: state.buildActionDock(),
+            child: Center(child: dock),
           ),
         ],
       );
