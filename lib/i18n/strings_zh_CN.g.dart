@@ -1908,6 +1908,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsCreatedComment({required Object time, required Object duration}) => '${time} 创建了评论 ${duration}:';
 	@override String statsModifiedComment({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评论 ${duration}:';
 	@override String statsCreatedRating({required Object time, required Object duration}) => '${time} 创建了评级 ${duration}:';
+	@override String get statsRateAndComment => '评分并评论';
 	@override String statsModifiedRating({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评级 ${duration}:';
 	@override String statsClickAt({required Object source, required Object platform, required Object value}) => '${source} ${platform}点击${value}次';
 	@override String statsDailyClicks({required Object total}) => '本日点击次数: ${total}';
@@ -4361,6 +4362,7 @@ extension on TranslationsZhCn {
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} 创建了评论 ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评论 ${duration}:',
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} 创建了评级 ${duration}:',
+			'statsRateAndComment' => '评分并评论',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评级 ${duration}:',
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}点击${value}次',
 			'statsDailyClicks' => ({required Object total}) => '本日点击次数: ${total}',
@@ -4497,9 +4499,9 @@ extension on TranslationsZhCn {
 			'recognizing' => '识别中...',
 			'noAnimeFound' => '未识别到动漫，可能是非动漫图片',
 			'chooseAnotherImage' => '换一张图片试试',
-			'recognizeResult' => '识别结果',
 			_ => null,
 		} ?? switch (path) {
+			'recognizeResult' => '识别结果',
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集数',
 			'openVideoPreview' => '视频预览',

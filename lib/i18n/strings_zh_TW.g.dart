@@ -1907,6 +1907,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsCreatedComment({required Object time, required Object duration}) => '${time} 建立了評論 ${duration}:';
 	@override String statsModifiedComment({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評論 ${duration}:';
 	@override String statsCreatedRating({required Object time, required Object duration}) => '${time} 建立了評級 ${duration}:';
+	@override String get statsRateAndComment => '評分並評論';
 	@override String statsModifiedRating({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評級 ${duration}:';
 	@override String statsClickAt({required Object source, required Object platform, required Object value}) => '${source} ${platform}點擊${value}次';
 	@override String statsDailyClicks({required Object total}) => '本日點擊次數: ${total}';
@@ -4359,6 +4360,7 @@ extension on TranslationsZhTw {
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} 建立了評論 ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評論 ${duration}:',
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} 建立了評級 ${duration}:',
+			'statsRateAndComment' => '評分並評論',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評級 ${duration}:',
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}點擊${value}次',
 			'statsDailyClicks' => ({required Object total}) => '本日點擊次數: ${total}',
@@ -4496,9 +4498,9 @@ extension on TranslationsZhTw {
 			'noAnimeFound' => '未識別到動漫，可能不是動漫圖片',
 			'chooseAnotherImage' => '換一張圖片試試',
 			'recognizeResult' => '識別結果',
-			'episodeLabel' => '第',
 			_ => null,
 		} ?? switch (path) {
+			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集數',
 			'openVideoPreview' => '影片預覽',
 			'discussInAi' => 'AI 討論',

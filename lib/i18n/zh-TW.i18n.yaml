@@ -1927,6 +1927,7 @@ statsRatedAt: "(評價時 ${duration})"
 statsCreatedComment: "${time} 建立了評論 ${duration}:"
 statsModifiedComment: "${time} 第${n}次修改了評論 ${duration}:"
 statsCreatedRating: "${time} 建立了評級 ${duration}:"
+statsRateAndComment: 評分並評論
 statsModifiedRating: "${time} 第${n}次修改了評級 ${duration}:"
 statsClickAt: "${source} ${platform}點擊${value}次"
 statsDailyClicks: "本日點擊次數: ${total}"

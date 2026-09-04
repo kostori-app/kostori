@@ -1926,6 +1926,7 @@ statsRatedAt: "(at rating ${duration})"
 statsCreatedComment: "${time} created a comment ${duration}:"
 statsModifiedComment: "${time} modified the comment ${n} times ${duration}:"
 statsCreatedRating: "${time} rated ${duration}:"
+statsRateAndComment: rated & commented
 statsModifiedRating: "${time} changed the rating ${n} times ${duration}:"
 statsClickAt: "${source} clicked ${platform} ${value} times"
 statsDailyClicks: "Today's clicks: ${total}"

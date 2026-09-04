@@ -290,6 +290,68 @@ class _StatItemWidgetState extends State<StatItemWidget> {
     );
   }
 
+  /// 同一时刻“创建评分 + 创建评论”合并展示：
+  /// 标题 = 时间 + “评分并评论”；下面是原有评分区，再是评论内容
+  Widget _buildMergedRatingComment(
+    Map<String, dynamic> ratingEntry,
+    Map<String, dynamic> commentEntry,
+  ) {
+    final rating = ratingEntry['record'] as PlatformEventRecord;
+    final comment = commentEntry['record'] as PlatformEventRecord;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${rating.date!.hhmmss} ${t.statsRateAndComment}',
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Text(
+              rating.rating.toString(),
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(Utils.getRatingLabel(rating.rating!)),
+            ),
+            const SizedBox(width: 4),
+            RatingBarIndicator(
+              itemCount: 5,
+              rating: rating.rating! / 2,
+              itemBuilder: (context, index) => const Icon(Icons.star_rounded),
+              itemSize: 20.0,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                comment.comment ?? '',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
   Widget buildAllEventsWidget(BuildContext context) {
     final allRecords = <Map<String, dynamic>>[];
 
@@ -349,15 +411,51 @@ class _StatItemWidgetState extends State<StatItemWidget> {
       ),
     );
 
-    final rows = <Widget>[];
-    for (final entry in allRecords) {
-      final type = entry['type'] as DailyEventType;
-      final dailyIndex = entry['dailyIndex'] as int;
-      final recordIndex = entry['recordIndex'] as int;
-      final dailyList = entry['dailyList'] as List<DailyEvent>;
-      final record = entry['record'] as PlatformEventRecord;
+    Widget rowOf(Color dotColor, Widget content) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 18,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(child: content),
+        ],
+      );
+    }
 
-      final Widget tile = switch (type) {
+    bool isCreated(Map<String, dynamic> e) {
+      final ri = e['recordIndex'] as int;
+      final di = e['dailyIndex'] as int;
+      final len = (e['dailyList'] as List).length;
+      return ri == 0 && (len == 1 || di == 0);
+    }
+
+    bool sameTime(Map<String, dynamic> a, Map<String, dynamic> b) =>
+        (a['record'] as PlatformEventRecord).date ==
+        (b['record'] as PlatformEventRecord).date;
+
+    Widget tileFor(Map<String, dynamic> e) {
+      final type = e['type'] as DailyEventType;
+      final dailyIndex = e['dailyIndex'] as int;
+      final recordIndex = e['recordIndex'] as int;
+      final dailyList = e['dailyList'] as List<DailyEvent>;
+      final record = e['record'] as PlatformEventRecord;
+      return switch (type) {
         DailyEventType.comment => _buildCommentTile(
           dailyIndex: dailyIndex,
           recordIndex: recordIndex,
@@ -373,41 +471,48 @@ class _StatItemWidgetState extends State<StatItemWidget> {
         DailyEventType.favorite => _buildFavoriteTile(record),
         _ => const SizedBox.shrink(),
       };
-      final Color dotColor = switch (type) {
-        DailyEventType.rating => Theme.of(
-          context,
-        ).colorScheme.primary,
-        DailyEventType.favorite => Theme.of(
-          context,
-        ).colorScheme.tertiary,
-        _ => Theme.of(context).colorScheme.secondary,
-      };
-      rows.add(
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 18,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: dotColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
+    }
+
+    Color dotFor(DailyEventType type) => switch (type) {
+      DailyEventType.rating => Theme.of(context).colorScheme.primary,
+      DailyEventType.favorite => Theme.of(
+        context,
+      ).colorScheme.tertiary,
+      _ => Theme.of(context).colorScheme.secondary,
+    };
+
+    final rows = <Widget>[];
+    for (var i = 0; i < allRecords.length; i++) {
+      final entry = allRecords[i];
+      final type = entry['type'] as DailyEventType;
+
+      final canMergeRatingComment =
+          type == DailyEventType.rating || type == DailyEventType.comment;
+      if (canMergeRatingComment && i + 1 < allRecords.length) {
+        final next = allRecords[i + 1];
+        final nextType = next['type'] as DailyEventType;
+        final pair = (type == DailyEventType.rating &&
+                nextType == DailyEventType.comment) ||
+            (type == DailyEventType.comment &&
+                nextType == DailyEventType.rating);
+        if (pair &&
+            sameTime(entry, next) &&
+            isCreated(entry) &&
+            isCreated(next)) {
+          final ratingE = type == DailyEventType.rating ? entry : next;
+          final commentE = type == DailyEventType.comment ? entry : next;
+          rows.add(
+            rowOf(
+              Theme.of(context).colorScheme.primary,
+              _buildMergedRatingComment(ratingE, commentE),
             ),
-            const SizedBox(width: 6),
-            Expanded(child: tile),
-          ],
-        ),
-      );
+          );
+          i++; // 两条已合并，跳过下一条
+          continue;
+        }
+      }
+
+      rows.add(rowOf(dotFor(type), tileFor(entry)));
     }
 
     // 左侧贯穿时间轴

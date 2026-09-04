@@ -5647,6 +5647,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${time} rated ${duration}:'
 	String statsCreatedRating({required Object time, required Object duration}) => '${time} rated ${duration}:';
 
+	/// en: 'rated & commented'
+	String get statsRateAndComment => 'rated & commented';
+
 	/// en: '${time} changed the rating ${n} times ${duration}:'
 	String statsModifiedRating({required Object time, required Object n, required Object duration}) => '${time} changed the rating ${n} times ${duration}:';
 
@@ -9133,6 +9136,7 @@ extension on Translations {
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} created a comment ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} modified the comment ${n} times ${duration}:',
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} rated ${duration}:',
+			'statsRateAndComment' => 'rated & commented',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} changed the rating ${n} times ${duration}:',
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} clicked ${platform} ${value} times',
 			'statsDailyClicks' => ({required Object total}) => 'Today\'s clicks: ${total}',
@@ -9269,9 +9273,9 @@ extension on Translations {
 			'recognizing' => 'Recognizing...',
 			'noAnimeFound' => 'No anime recognized, this may not be an anime image',
 			'chooseAnotherImage' => 'Try another image',
-			'recognizeResult' => 'Recognition results',
 			_ => null,
 		} ?? switch (path) {
+			'recognizeResult' => 'Recognition results',
 			'episodeLabel' => 'EP',
 			'unknownEpisode' => 'Unknown episode',
 			'openVideoPreview' => 'Video preview',
