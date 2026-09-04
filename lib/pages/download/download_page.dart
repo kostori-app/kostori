@@ -879,9 +879,8 @@ class _DownloadTile extends StatelessWidget {
       }
       final pct = (task.progress * 100).clamp(0.0, 100.0).toStringAsFixed(0);
       final speed = _formatSpeed(task.downloadSpeed);
-      final resLabel = task.resolution?.trim().isNotEmpty == true
-          ? task.resolution!.trim()
-          : '-';
+      final res = task.resolution?.trim();
+      final hasRes = res != null && res.isNotEmpty;
       // 百分比组件：容器内 = 多边形加载动画(左) + 百分比(右)，
       // 右侧用 `·` 分隔显示速度；最左侧显示分辨率
       final pctBox = Container(
@@ -916,14 +915,16 @@ class _DownloadTile extends StatelessWidget {
       );
       return Row(
         children: [
-          Text(
-            resLabel,
-            style: TextStyle(
-              fontSize: 11,
-              color: colorScheme.onSurfaceVariant,
+          if (hasRes) ...[
+            Text(
+              res,
+              style: TextStyle(
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
           pctBox,
           if (speed.isNotEmpty) ...[
             const SizedBox(width: 6),
