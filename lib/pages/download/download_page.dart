@@ -837,19 +837,14 @@ class _DownloadTile extends StatelessWidget {
     );
   }
 
-  /// 来源/分辨率元信息行（无来源且无分辨率时隐藏）
+  /// 来源元信息行（无来源时隐藏；分辨率在状态行左侧展示，避免重复）
   Widget _buildMetaRow(BuildContext context) {
     final String? src = task.sourceKey == null
         ? null
         : AnimeSource.find(task.sourceKey!)?.name;
-    final res = task.resolution?.trim();
-    final parts = <String>[
-      if (src != null && src.isNotEmpty) src,
-      if (res != null && res.isNotEmpty) res,
-    ];
-    if (parts.isEmpty) return const SizedBox.shrink();
+    if (src == null || src.isEmpty) return const SizedBox.shrink();
     return Text(
-      parts.join(' · '),
+      src,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
@@ -884,20 +879,56 @@ class _DownloadTile extends StatelessWidget {
       }
       final pct = (task.progress * 100).clamp(0.0, 100.0).toStringAsFixed(0);
       final speed = _formatSpeed(task.downloadSpeed);
+      final resLabel = task.resolution?.trim().isNotEmpty == true
+          ? task.resolution!.trim()
+          : '-';
+      // 百分比组件：容器内 = 多边形加载动画(左) + 百分比(右)，
+      // 右侧用 `·` 分隔显示速度；最左侧显示分辨率
+      final pctBox = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        decoration: BoxDecoration(
+          color: colorScheme.secondaryContainer.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: colorScheme.outlineVariant,
+            width: 0.6,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: PolygonRefreshIndicator(size: 16),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$pct%',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      );
       return Row(
         children: [
           Text(
-            '$pct%',
+            resLabel,
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.primary,
+              fontSize: 11,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(width: 8),
+          pctBox,
           if (speed.isNotEmpty) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: 6),
             Text(
-              speed,
+              '·  $speed',
               style: TextStyle(
                 fontSize: 11,
                 color: colorScheme.onSurfaceVariant,
