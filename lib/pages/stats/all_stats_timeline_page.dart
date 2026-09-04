@@ -144,16 +144,16 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
     void add(IconData icon, String text, [Color? color]) {
       chips.add(
         Padding(
-          padding: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.only(right: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 13, color: color ?? colorScheme.primary),
-              const SizedBox(width: 2),
+              Icon(icon, size: 15, color: color ?? colorScheme.primary),
+              const SizedBox(width: 3),
               Text(
                 text,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -181,42 +181,42 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
     final Widget thumb;
     if (cover?.isNotEmpty == true) {
       thumb = ClipRRect(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         child: BangumiWidget.kostoriImage(
           context,
           cover!,
-          width: 42,
-          height: 58,
+          width: 64,
+          height: 92,
         ),
       );
     } else {
       thumb = Container(
-        width: 42,
-        height: 58,
+        width: 64,
+        height: 92,
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           Icons.image_outlined,
-          size: 20,
+          size: 28,
           color: colorScheme.onSurfaceVariant,
         ),
       );
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         border: Border.all(color: colorScheme.outlineVariant, width: 0.6),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           thumb,
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,16 +224,16 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
                 Text(
                   u.title,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (chips.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: Wrap(spacing: 2, runSpacing: 2, children: chips),
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(spacing: 4, runSpacing: 4, children: chips),
                   ),
               ],
             ),
