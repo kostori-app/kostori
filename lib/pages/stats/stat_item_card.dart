@@ -71,6 +71,50 @@ class _StatItemWidgetState extends State<StatItemWidget> {
     return t.statsRatedAt(duration: Utils.formatHMS(seconds));
   }
 
+  Widget _buildFavoriteTile(PlatformEventRecord record) {
+    String actionText;
+    switch (record.favoriteAction) {
+      case FavoriteAction.add:
+        actionText = t.addToFolder(folder: _statFolderLabel(record.favorite));
+        break;
+      case FavoriteAction.remove:
+        actionText = t.removeFromFolder(
+          folder: _statFolderLabel(record.favorite),
+        );
+        break;
+      case FavoriteAction.move:
+        if (record.favorite != null && record.favorite!.contains(',')) {
+          final parts = record.favorite!.split(',');
+          actionText = t.movedFromTo(
+            from: _statFolderLabel(parts[0]),
+            to: _statFolderLabel(parts[1]),
+          );
+        } else {
+          actionText = t.moveOperationTargetUnknown;
+        }
+        break;
+      default:
+        actionText = t.operationUnknown;
+        break;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${record.date!.hhmmss} $actionText',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
   Widget buildAllEventsWidget(BuildContext context) {
     final allRecords = <Map<String, dynamic>>[];
 
@@ -352,50 +396,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
               }
 
             case DailyEventType.favorite:
-              String actionText;
-              switch (record.favoriteAction) {
-                case FavoriteAction.add:
-                  actionText = t.addToFolder(
-                    folder: _statFolderLabel(record.favorite),
-                  );
-                  break;
-                case FavoriteAction.remove:
-                  actionText = t.removeFromFolder(
-                    folder: _statFolderLabel(record.favorite),
-                  );
-                  break;
-                case FavoriteAction.move:
-                  if (record.favorite != null &&
-                      record.favorite!.contains(',')) {
-                    final parts = record.favorite!.split(',');
-                    actionText = t.movedFromTo(
-                      from: _statFolderLabel(parts[0]),
-                      to: _statFolderLabel(parts[1]),
-                    );
-                  } else {
-                    actionText = t.moveOperationTargetUnknown;
-                  }
-                  break;
-                default:
-                  actionText = t.operationUnknown;
-                  break;
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${record.date!.hhmmss} $actionText',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                ],
-              );
+              return _buildFavoriteTile(record);
 
             default:
               return const SizedBox.shrink();
