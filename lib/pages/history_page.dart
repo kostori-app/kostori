@@ -634,6 +634,7 @@ class _HistoryHeatmapCard extends StatelessWidget {
 }
 
 /// 全年热力图：可横向滚动，格子固定偏大；只铺真实日期（首尾周不补占位）
+/// 全年热力图：可横向滚动，格子固定偏大；顶部完整月名（i18n）；只铺真实日期
 class _YearActivityHeatmap extends StatelessWidget {
   const _YearActivityHeatmap({
     required this.year,
@@ -649,9 +650,35 @@ class _YearActivityHeatmap extends StatelessWidget {
   static const double gap = 4;
   static const double gutter = 22;
   static const double topLabel = 24;
-  static const List<String> monthLetters = [
-    'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D',
-  ];
+
+  String monthName(BuildContext context, int m) {
+    switch (m) {
+      case 1:
+        return t.monthNames.jan;
+      case 2:
+        return t.monthNames.feb;
+      case 3:
+        return t.monthNames.mar;
+      case 4:
+        return t.monthNames.apr;
+      case 5:
+        return t.monthNames.may;
+      case 6:
+        return t.monthNames.jun;
+      case 7:
+        return t.monthNames.jul;
+      case 8:
+        return t.monthNames.aug;
+      case 9:
+        return t.monthNames.sep;
+      case 10:
+        return t.monthNames.oct;
+      case 11:
+        return t.monthNames.nov;
+      default:
+        return t.monthNames.dec;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -661,6 +688,7 @@ class _YearActivityHeatmap extends StatelessWidget {
     final leading = first.weekday - 1;
     final lastAbs = leading + last.difference(first).inDays;
     final colCount = (lastAbs ~/ 7) + 1;
+    final colStep = cell + gap;
 
     final maxCount = dayEntries.values
             .map((l) => l.length)
@@ -673,116 +701,154 @@ class _YearActivityHeatmap extends StatelessWidget {
       return DateTime(d.year, d.month, d.day);
     }
 
-    // 每个起始列显示该月的首字母
-    final colMonthLetter = <int, String>{};
-    for (var m = 1; m <= 12; m++) {
-      final start = DateTime(year, m, 1);
-      final abs = leading + start.difference(first).inDays;
-      colMonthLetter[abs ~/ 7] = monthLetters[m - 1];
-    }
-
     Color colorOf(DateTime day) {
       final count = dayEntries[day]?.length ?? 0;
-      if (count <= 0) return colorScheme.surfaceContainerHighest;
+      if (count <= 0) return colorScheme.primary;
       final t = (count / maxCount).clamp(0.0, 1.0);
       return colorScheme.primary.withValues(alpha: 0.45 + t * 0.5);
     }
 
-    Widget columnContent(int col) {
-      return Column(
-        children: [
-          SizedBox(
-            height: topLabel,
-            child: Center(
-              child: Text(
-                colMonthLetter[col] ?? '',
-                style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-              ),
-            ),
-          ),
-          for (var row = 0; row < 7; row++)
-            Container(
-              width: cell,
-              height: cell,
-              margin: EdgeInsets.only(bottom: gap, right: col == colCount - 1 ? 0 : gap),
-              alignment: Alignment.center,
-              child: (() {
-                final d = dayOf(col, row);
-                if (d.year != year) return const SizedBox.shrink();
-                final items = dayEntries[d];
-                final count = items?.length ?? 0;
-                if (count <= 0) {
-                  return const SizedBox.shrink();
-                }
-                String two(int v) => v.toString().padLeft(2, '0');
-                final tip =
-                    '${d.year}-${two(d.month)}-${two(d.day)} · $count';
-                return Tooltip(
-                  message: tip,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onDayTap(d, items!),
-                    child: Container(
-                      width: cell,
-                      height: cell,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        color: colorOf(d),
-                      ),
+    // 顶部完整月名：各月起于哪个列，按该月跨的列数给标题宽度
+    final monthStartCol = <int, int>{};
+    for (var m = 1; m <= 12; m++) {
+      final start = DateTime(year, m, 1);
+      final abs = leading + start.difference(first).inDays;
+      monthStartCol[m] = abs ~/ 7;
+    }
+    final months = List.generate(12, (i) => i + 1);
+    Widget monthLabels() {
+      return SizedBox(
+        height: topLabel,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            for (var i = 0; i < months.length; i++)
+              Builder(builder: (context) {
+                final m = months[i];
+                final col = monthStartCol[m]!;
+                final endCol = i + 1 < months.length
+                    ? monthStartCol[months[i + 1]]!
+                    : colCount;
+                final span = (endCol - col).clamp(1, colCount);
+                final left = gutter + col * colStep;
+                final width = span * colStep - gap;
+                return Positioned(
+                  left: left,
+                  top: 0,
+                  width: width < 10 ? 10 : width,
+                  child: SizedBox(
+                    height: topLabel,
+                    child: Center(
                       child: Text(
-                        '$count',
+                        monthName(context, m),
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
                   ),
                 );
-              })(),
-            ),
-        ],
+              }),
+          ],
+        ),
       );
     }
 
-    final contentWidth = gutter + colCount * cell + (colCount - 1) * gap;
-    final contentHeight = topLabel + 7 * cell + 7 * gap;
+    Widget cellOf(int col, int row) {
+      final d = dayOf(col, row);
+      if (d.year != year) return const SizedBox.shrink();
+      final items = dayEntries[d];
+      final count = items?.length ?? 0;
+      if (count <= 0) return const SizedBox.shrink();
+      String two(int v) => v.toString().padLeft(2, '0');
+      final tip = '${d.year}-${two(d.month)}-${two(d.day)} · $count';
+      return Tooltip(
+        message: tip,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onDayTap(d, items!),
+          child: Container(
+            width: cell,
+            height: cell,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              color: colorOf(d),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final contentWidth = gutter + colCount * colStep - gap;
+    final rowsHeight = 7 * cell + 6 * gap;
+
+    Widget grid = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: gutter,
+          child: Column(
+            children: [
+              for (var r = 0; r < 7; r++)
+                Container(
+                  width: gutter,
+                  height: cell,
+                  margin: EdgeInsets.only(bottom: r == 6 ? 0 : gap),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '${r + 1}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        for (var col = 0; col < colCount; col++)
+          Column(
+            children: [
+              for (var row = 0; row < 7; row++)
+                Container(
+                  width: cell,
+                  height: cell,
+                  margin: EdgeInsets.only(
+                    bottom: row == 6 ? 0 : gap,
+                    right: col == colCount - 1 ? 0 : gap,
+                  ),
+                  alignment: Alignment.center,
+                  child: cellOf(col, row),
+                ),
+            ],
+          ),
+      ],
+    );
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: SizedBox(
         width: contentWidth,
-        height: contentHeight,
-        child: Row(
+        height: topLabel + rowsHeight,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: gutter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: topLabel),
-                child: Column(
-                  children: [
-                    for (var r = 0; r < 7; r++)
-                      Container(
-                        width: gutter,
-                        height: cell,
-                        margin: const EdgeInsets.only(bottom: gap),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '${r + 1}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            for (var col = 0; col < colCount; col++) columnContent(col),
+            SizedBox(width: contentWidth, child: monthLabels()),
+            grid,
           ],
         ),
       ),

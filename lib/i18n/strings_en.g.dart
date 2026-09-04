@@ -7104,6 +7104,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Log file size limit (MB)'
 	String get logFileSizeMb => 'Log file size limit (MB)';
+
+	late final Translations$monthNames$en monthNames = Translations$monthNames$en.internal(_root);
 }
 
 // Path: colors
@@ -7242,6 +7244,51 @@ class Translations$colors$en {
 
 	/// en: 'Purple'
 	String get purple => 'Purple';
+}
+
+// Path: monthNames
+class Translations$monthNames$en {
+	Translations$monthNames$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'January'
+	String get jan => 'January';
+
+	/// en: 'February'
+	String get feb => 'February';
+
+	/// en: 'March'
+	String get mar => 'March';
+
+	/// en: 'April'
+	String get apr => 'April';
+
+	/// en: 'May'
+	String get may => 'May';
+
+	/// en: 'June'
+	String get jun => 'June';
+
+	/// en: 'July'
+	String get jul => 'July';
+
+	/// en: 'August'
+	String get aug => 'August';
+
+	/// en: 'September'
+	String get sep => 'September';
+
+	/// en: 'October'
+	String get oct => 'October';
+
+	/// en: 'November'
+	String get nov => 'November';
+
+	/// en: 'December'
+	String get dec => 'December';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -9657,6 +9704,18 @@ extension on Translations {
 			'logSettings' => 'Log settings',
 			'logRetainCount' => 'Keep archived log files',
 			'logFileSizeMb' => 'Log file size limit (MB)',
+			'monthNames.jan' => 'January',
+			'monthNames.feb' => 'February',
+			'monthNames.mar' => 'March',
+			'monthNames.apr' => 'April',
+			'monthNames.may' => 'May',
+			'monthNames.jun' => 'June',
+			'monthNames.jul' => 'July',
+			'monthNames.aug' => 'August',
+			'monthNames.sep' => 'September',
+			'monthNames.oct' => 'October',
+			'monthNames.nov' => 'November',
+			'monthNames.dec' => 'December',
 			_ => null,
 		};
 	}

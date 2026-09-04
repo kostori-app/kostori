@@ -2394,6 +2394,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get logSettings => '日志设置';
 	@override String get logRetainCount => '保留归档日志份数';
 	@override String get logFileSizeMb => '日志文件大小上限(MB)';
+	@override late final Translations$monthNames$zh_CN monthNames = Translations$monthNames$zh_CN.internal(_root);
 }
 
 // Path: colors
@@ -2446,6 +2447,27 @@ class Translations$colors$zh_CN extends Translations$colors$en {
 	@override String get green => '绿色';
 	@override String get red => '红色';
 	@override String get purple => '紫色';
+}
+
+// Path: monthNames
+class Translations$monthNames$zh_CN extends Translations$monthNames$en {
+	Translations$monthNames$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+	final TranslationsZhCn _root; // ignore: unused_field
+
+	// Translations
+	@override String get jan => '一月';
+	@override String get feb => '二月';
+	@override String get mar => '三月';
+	@override String get apr => '四月';
+	@override String get may => '五月';
+	@override String get jun => '六月';
+	@override String get jul => '七月';
+	@override String get aug => '八月';
+	@override String get sep => '九月';
+	@override String get oct => '十月';
+	@override String get nov => '十一月';
+	@override String get dec => '十二月';
 }
 
 /// The flat map containing all translations for locale <zh-CN>.
@@ -4861,6 +4883,18 @@ extension on TranslationsZhCn {
 			'logSettings' => '日志设置',
 			'logRetainCount' => '保留归档日志份数',
 			'logFileSizeMb' => '日志文件大小上限(MB)',
+			'monthNames.jan' => '一月',
+			'monthNames.feb' => '二月',
+			'monthNames.mar' => '三月',
+			'monthNames.apr' => '四月',
+			'monthNames.may' => '五月',
+			'monthNames.jun' => '六月',
+			'monthNames.jul' => '七月',
+			'monthNames.aug' => '八月',
+			'monthNames.sep' => '九月',
+			'monthNames.oct' => '十月',
+			'monthNames.nov' => '十一月',
+			'monthNames.dec' => '十二月',
 			_ => null,
 		};
 	}

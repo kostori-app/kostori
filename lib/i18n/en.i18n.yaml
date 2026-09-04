@@ -2419,3 +2419,17 @@ clearLog: Clear logs
 logSettings: Log settings
 logRetainCount: Keep archived log files
 logFileSizeMb: Log file size limit (MB)
+
+monthNames:
+  jan: January
+  feb: February
+  mar: March
+  apr: April
+  may: May
+  jun: June
+  jul: July
+  aug: August
+  sep: September
+  oct: October
+  nov: November
+  dec: December
