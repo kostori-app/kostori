@@ -329,42 +329,86 @@ class _StatItemWidgetState extends State<StatItemWidget> {
       ),
     );
 
+    final rows = <Widget>[];
+    for (final entry in allRecords) {
+      final type = entry['type'] as DailyEventType;
+      final dailyIndex = entry['dailyIndex'] as int;
+      final recordIndex = entry['recordIndex'] as int;
+      final dailyList = entry['dailyList'] as List<DailyEvent>;
+      final record = entry['record'] as PlatformEventRecord;
+
+      final Widget tile = switch (type) {
+        DailyEventType.comment => _buildCommentTile(
+          dailyIndex: dailyIndex,
+          recordIndex: recordIndex,
+          dailyList: dailyList,
+          record: record,
+        ),
+        DailyEventType.rating => _buildRatingTile(
+          dailyIndex: dailyIndex,
+          recordIndex: recordIndex,
+          dailyList: dailyList,
+          record: record,
+        ),
+        DailyEventType.favorite => _buildFavoriteTile(record),
+        _ => const SizedBox.shrink(),
+      };
+      final Color dotColor = switch (type) {
+        DailyEventType.rating => Theme.of(
+          context,
+        ).colorScheme.primary,
+        DailyEventType.favorite => Theme.of(
+          context,
+        ).colorScheme.tertiary,
+        _ => Theme.of(context).colorScheme.secondary,
+      };
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 18,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: dotColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(child: tile),
+          ],
+        ),
+      );
+    }
+
+    // 左侧贯穿时间轴
+    final railColor = Theme.of(
+      context,
+    ).colorScheme.outlineVariant.withValues(alpha: 0.7);
     return buildMaterialWidget(
       context: context,
-      widget: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-
-        children: allRecords.map((entry) {
-          final type = entry['type'] as DailyEventType;
-          final dailyIndex = entry['dailyIndex'] as int;
-          final recordIndex = entry['recordIndex'] as int;
-          final dailyList = entry['dailyList'] as List<DailyEvent>;
-          final record = entry['record'] as PlatformEventRecord;
-
-          switch (type) {
-            case DailyEventType.comment:
-              return _buildCommentTile(
-                dailyIndex: dailyIndex,
-                recordIndex: recordIndex,
-                dailyList: dailyList,
-                record: record,
-              );
-
-            case DailyEventType.rating:
-              return _buildRatingTile(
-                dailyIndex: dailyIndex,
-                recordIndex: recordIndex,
-                dailyList: dailyList,
-                record: record,
-              );
-
-            case DailyEventType.favorite:
-              return _buildFavoriteTile(record);
-
-            default:
-              return const SizedBox.shrink();
-          }
-        }).toList(),
+      widget: Stack(
+        children: [
+          Positioned(
+            left: 8,
+            top: 6,
+            bottom: 6,
+            child: Container(width: 1.5, color: railColor),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: rows,
+          ),
+        ],
       ),
     );
   }
