@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kostori/components/timeline_tree.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/ui_components.dart';
@@ -271,87 +270,93 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
         l.sort((a, b) => b.compareTo(a));
       }
 
-      // 按年懒加载：滚动到哪年才构建那一年的树，避免一次性建全量造成卡顿
-      body = ListView.builder(
-        padding: const EdgeInsets.only(top: 4, bottom: 12),
-        itemCount: years.length,
-        itemBuilder: (context, yIndex) {
-          final year = years[yIndex];
-          final yearMonths = monthsOf[year]!;
-          final monthNodes = <Widget>[];
-          for (var m = 0; m < yearMonths.length; m++) {
-            final month = yearMonths[m];
-            final monthDays = daysOf['$year-$month']!;
-            final dayNodes = <Widget>[];
-            for (var d = 0; d < monthDays.length; d++) {
-              final day = monthDays[d];
-              final units = _byDay[day]!.values.toList()
-                ..sort((a, b) => a.title.compareTo(b.title));
-              dayNodes.add(
-                TimelineTreeNode(
-                  title: Text(
-                    t.statsTimelineDay(month: day.month, day: day.day),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  color: colorScheme.tertiary,
-                  dotSize: 10,
-                  isFirst: d == 0,
-                  isLast: d == monthDays.length - 1,
-                  childrenIndent: 36,
-                  children: [
-                    for (var u = 0; u < units.length; u++)
-                      TimelineTreeNode(
-                        title: Padding(
-                          padding: const EdgeInsets.only(right: 12, bottom: 6),
-                          child: _unitCard(context, units[u]),
-                        ),
-                        color: colorScheme.primary.withValues(alpha: 0.85),
-                        dotSize: 8,
-                        titleIndent: 22,
-                        isFirst: u == 0,
-                        isLast: u == units.length - 1,
-                      ),
-                  ],
+      // 扁平化所有行（每行独立渲染，进入视口附近才构建，封面图随之懒加载）
+      final specs = <_RowSpec>[];
+      for (final year in years) {
+        specs.add(
+          _RowSpec(
+            type: _RowType.year,
+            depth: 0,
+            open: const [0],
+            year: year,
+          ),
+        );
+        final yearMonths = monthsOf[year]!;
+        for (final month in yearMonths) {
+          specs.add(
+            _RowSpec(
+              type: _RowType.month,
+              depth: 1,
+              open: const [0, 1],
+              year: year,
+              month: month,
+            ),
+          );
+          final monthDays = daysOf['$year-$month']!;
+          for (final day in monthDays) {
+            specs.add(
+              _RowSpec(
+                type: _RowType.day,
+                depth: 2,
+                open: const [0, 1, 2],
+                date: day,
+              ),
+            );
+            final units = _byDay[day]!.values.toList()
+              ..sort((a, b) => a.title.compareTo(b.title));
+            for (final unit in units) {
+              specs.add(
+                _RowSpec(
+                  type: _RowType.card,
+                  depth: 3,
+                  open: const [0, 1, 2, 3],
+                  unit: unit,
                 ),
               );
             }
-            monthNodes.add(
-              TimelineTreeNode(
-                title: Text(
-                  '$year-${month.toString().padLeft(2, '0')}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                color: colorScheme.secondary,
-                dotSize: 12,
-                isFirst: m == 0,
-                isLast: m == yearMonths.length - 1,
-                childrenIndent: 32,
-                children: dayNodes,
-              ),
-            );
           }
-          return TimelineTreeNode(
-            title: Text(
-              t.statsYearSuffix(year: year),
+        }
+      }
+
+      Widget contentOf(BuildContext context, _RowSpec spec) {
+        switch (spec.type) {
+          case _RowType.year:
+            return Text(
+              t.statsYearSuffix(year: spec.year!),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: colorScheme.primary,
               ),
-            ),
-            color: colorScheme.primary,
-            dotSize: 16,
-            isFirst: yIndex == 0,
-            isLast: yIndex == years.length - 1,
-            childrenIndent: 32,
-            children: monthNodes,
+            );
+          case _RowType.month:
+            return Text(
+              '${spec.year}-${spec.month.toString().padLeft(2, '0')}',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            );
+          case _RowType.day:
+            return Text(
+              t.statsTimelineDay(month: spec.date!.month, day: spec.date!.day),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            );
+          case _RowType.card:
+            return _unitCard(context, spec.unit!);
+        }
+      }
+
+      body = ListView.builder(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        itemCount: specs.length,
+        itemBuilder: (context, index) {
+          final spec = specs[index];
+          return _TimelineFlatRow(
+            depth: spec.depth,
+            openDepths: spec.open,
+            child: contentOf(context, spec),
           );
         },
       );
@@ -362,4 +367,148 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
       body: body,
     );
   }
+}
+
+/// 扁平化时间线单行：只负责画这一行需要延续的各层竖线与本行圆点
+class _TimelineFlatRow extends StatelessWidget {
+  const _TimelineFlatRow({
+    required this.depth,
+    required this.openDepths,
+    required this.child,
+  });
+
+  final int depth;
+  final List<int> openDepths;
+  final Widget child;
+
+  static const double base = 10;
+  static const double step = 18;
+
+  Color colorFor(int d, ColorScheme cs) {
+    switch (d) {
+      case 0:
+        return cs.primary;
+      case 1:
+        return cs.secondary;
+      case 2:
+        return cs.tertiary;
+      default:
+        return cs.primary.withValues(alpha: 0.85);
+    }
+  }
+
+  double dotSizeFor(int d) {
+    switch (d) {
+      case 0:
+        return 15;
+      case 1:
+        return 13;
+      case 2:
+        return 11;
+      default:
+        return 8;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final lineColors = <Color>[];
+    for (final d in openDepths) {
+      lineColors.add(colorFor(d, cs).withValues(alpha: 0.4));
+    }
+    final xs = openDepths.map((d) => base + d * step).toList();
+    final ownX = base + depth * step;
+    final contentLeft = base + (depth + 1) * step;
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _FlatRowPainter(
+              lineXs: xs,
+              lineColors: lineColors,
+              ownX: ownX,
+              ownY: 12,
+              ownSize: dotSizeFor(depth),
+              ownColor: colorFor(depth, cs),
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            contentLeft,
+            7,
+            14,
+            depth == 3 ? 8 : 3,
+          ),
+          child: SizedBox(width: double.infinity, child: child),
+        ),
+      ],
+    );
+  }
+}
+
+class _FlatRowPainter extends CustomPainter {
+  _FlatRowPainter({
+    required this.lineXs,
+    required this.lineColors,
+    required this.ownX,
+    required this.ownY,
+    required this.ownSize,
+    required this.ownColor,
+  });
+
+  final List<double> lineXs;
+  final List<Color> lineColors;
+  final double ownX;
+  final double ownY;
+  final double ownSize;
+  final Color ownColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < lineXs.length; i++) {
+      paint.color = lineColors[i];
+      canvas.drawLine(
+        Offset(lineXs[i], 0),
+        Offset(lineXs[i], size.height),
+        paint,
+      );
+    }
+    canvas.drawCircle(
+      Offset(ownX, ownY),
+      ownSize / 2,
+      Paint()..color = ownColor,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FlatRowPainter oldDelegate) =>
+      oldDelegate.ownX != ownX ||
+      oldDelegate.ownY != ownY ||
+      oldDelegate.ownColor != ownColor;
+}
+enum _RowType { year, month, day, card }
+
+class _RowSpec {
+  _RowSpec({
+    required this.type,
+    required this.depth,
+    required this.open,
+    this.year,
+    this.month,
+    this.date,
+    this.unit,
+  });
+
+  final _RowType type;
+  final int depth;
+  final List<int> open;
+  final int? year;
+  final int? month;
+  final DateTime? date;
+  final _DayUnitSummary? unit;
 }
