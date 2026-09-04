@@ -645,10 +645,10 @@ class _YearActivityHeatmap extends StatelessWidget {
   final Map<DateTime, List<History>> dayEntries;
   final void Function(DateTime, List<History>) onDayTap;
 
-  static const double cell = 20;
-  static const double gap = 3;
-  static const double gutter = 18;
-  static const double topLabel = 20;
+  static const double cell = 26;
+  static const double gap = 4;
+  static const double gutter = 22;
+  static const double topLabel = 24;
   static const List<String> monthLetters = [
     'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D',
   ];
@@ -696,7 +696,7 @@ class _YearActivityHeatmap extends StatelessWidget {
             child: Center(
               child: Text(
                 colMonthLetter[col] ?? '',
-                style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
+                style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -709,18 +709,28 @@ class _YearActivityHeatmap extends StatelessWidget {
               child: (() {
                 final d = dayOf(col, row);
                 if (d.year != year) return const SizedBox.shrink();
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    final items = dayEntries[d];
-                    if (items != null && items.isNotEmpty) onDayTap(d, items);
-                  },
-                  child: Container(
-                    width: cell,
-                    height: cell,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorOf(d),
+                final items = dayEntries[d];
+                final count = items?.length ?? 0;
+                String two(int v) => v.toString().padLeft(2, '0');
+                final tip =
+                    '${d.year}-${two(d.month)}-${two(d.day)}'
+                    '${count > 0 ? ' · $count' : ''}';
+                return Tooltip(
+                  message: tip,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      if (items != null && items.isNotEmpty) {
+                        onDayTap(d, items);
+                      }
+                    },
+                    child: Container(
+                      width: cell,
+                      height: cell,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        color: colorOf(d),
+                      ),
                     ),
                   ),
                 );
@@ -756,7 +766,7 @@ class _YearActivityHeatmap extends StatelessWidget {
                         child: Text(
                           '${r + 1}',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 12,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
