@@ -1,5 +1,14 @@
 part of 'stats_page.dart';
 
+/// 统计里展示收藏分组：未分类伪组(_default/default/默认)显示为“未分类”
+String _statFolderLabel(String? folder) {
+  if (folder == null || folder.isEmpty) return t.unknownFolder;
+  if (folder == '_default' || folder == 'default' || folder == '默认') {
+    return t.kDefault;
+  }
+  return folder;
+}
+
 class StatItemWidget extends StatefulWidget {
   final List<StatsDataImpl> statsGroup;
   final DateTime selectedDay;
@@ -349,12 +358,12 @@ class _StatItemWidgetState extends State<StatItemWidget> {
               switch (record.favoriteAction) {
                 case FavoriteAction.add:
                   actionText = t.addToFolder(
-                    folder: record.favorite ?? t.unknownFolder,
+                    folder: _statFolderLabel(record.favorite),
                   );
                   break;
                 case FavoriteAction.remove:
                   actionText = t.removeFromFolder(
-                    folder: record.favorite ?? t.unknownFolder,
+                    folder: _statFolderLabel(record.favorite),
                   );
                   break;
                 case FavoriteAction.move:
@@ -362,8 +371,8 @@ class _StatItemWidgetState extends State<StatItemWidget> {
                       record.favorite!.contains(',')) {
                     final parts = record.favorite!.split(',');
                     actionText = t.movedFromTo(
-                      from: parts[0],
-                      to: parts[1],
+                      from: _statFolderLabel(parts[0]),
+                      to: _statFolderLabel(parts[1]),
                     );
                   } else {
                     actionText = t.moveOperationTargetUnknown;

@@ -1434,7 +1434,11 @@ class SliverMasonryAnimes extends ConsumerStatefulWidget {
     this.onTap,
     this.onLongPressed,
     this.onLastItemBuild,
+    this.selection,
   });
+
+  /// 选中集合（多选模式），与普通网格一致：命中的卡片高亮背景
+  final Map<Anime, bool>? selection;
 
   final List<Anime> animes;
 
@@ -1483,7 +1487,10 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
           widget.onLastItemBuild?.call();
         }
         final anime = animes[index];
-        return AnimeTile(
+        final isSelected = widget.selection == null
+            ? false
+            : (widget.selection![anime] ?? false);
+        Widget card = AnimeTile(
           anime: anime,
           isRecommend: widget.isRecommend,
           enableFavorite: widget.enableFavorite,
@@ -1492,15 +1499,30 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
           menuOptions: widget.menuBuilder?.call(anime),
           onTap: widget.onTap == null
               ? null
-              : () => widget.onTap!(anime, index),
+              : () => widget.onTap!(anime, _SliverGridAnimes.heroIDOf(anime)),
           onLongPressed: widget.onLongPressed == null
               ? null
-              : () => widget.onLongPressed!(anime, index),
-          heroID: index,
-          heroTag: "cover${_heroSeed}_h$index",
+              : () =>
+                    widget.onLongPressed!(anime, _SliverGridAnimes.heroIDOf(anime)),
+          heroID: _SliverGridAnimes.heroIDOf(anime),
+          heroTag: "cover${_heroSeed}_h${_SliverGridAnimes.heroIDOf(anime)}",
           // 统一封面比例（与简洁布局接近，不再错落排列），
           // 避免瀑布流图片高低参差
           masonryFactor: 1.35,
+        );
+        if (widget.selection == null) return card;
+        return AnimatedContainer(
+          key: ValueKey(anime.id),
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).colorScheme.secondaryContainer.toOpacity(
+                    0.72,
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: card,
         );
       },
     );
@@ -1580,6 +1602,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
         enableHistory: widget.enableHistory ?? false,
         badgeBuilder: widget.badgeBuilder,
         menuBuilder: widget.menuBuilder,
+        selection: widget.selections,
         onTap: widget.onTap,
         onLongPressed: widget.onLongPressed,
         onLastItemBuild: widget.onLastItemBuild,
