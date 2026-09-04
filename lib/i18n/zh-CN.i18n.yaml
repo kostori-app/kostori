@@ -1907,6 +1907,10 @@ statsSelectDate: 选择日期
 statsTimelineTitle: 条目统计
 statsTimelineWatch: "观看了 ${duration}"
 statsTimelineClick: "点击 ${value} 次"
+statsTimelineCommentCreated: 创建了评论
+statsTimelineCommentUpdated: "第 ${n} 次修改评论"
+statsTimelineRatingCreated: 创建了评分
+statsTimelineRatingUpdated: "第 ${n} 次修改评分"
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线
 statsTimelineDay: "${month} 月 ${day} 日"

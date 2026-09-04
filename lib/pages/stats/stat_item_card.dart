@@ -983,12 +983,6 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
   }
 
 
-  String _durationSuffix(int? seconds) {
-    seconds ??= 0;
-    if (seconds <= 0) return '';
-    return t.statsRatedAt(duration: Utils.formatHMS(seconds));
-  }
-
   String _favoriteActionText(PlatformEventRecord record) {
     switch (record.favoriteAction) {
       case FavoriteAction.add:
@@ -1010,6 +1004,53 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
     }
   }
 
+  Widget _timeBadge(BuildContext context, DateTime t) {
+    final cs = Theme.of(context).colorScheme;
+    String two(int v) => v.toString().padLeft(2, '0');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: cs.secondaryContainer.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '${two(t.hour)}:${two(t.minute)}:${two(t.second)}',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: cs.onSecondaryContainer,
+        ),
+      ),
+    );
+  }
+
+  Widget _recordBody(
+    BuildContext context,
+    DateTime time,
+    String message, {
+    Widget? below,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _timeBadge(context, time),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message, style: const TextStyle(fontSize: 14)),
+              if (below != null) ...[
+                const SizedBox(height: 4),
+                below,
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   List<_TimelineEntry> _collectEntries() {
     final entries = <_TimelineEntry>[];
 
@@ -1027,17 +1068,12 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
           final record = records[recordIndex];
           final time = record.date ??
               dailyList[dailyIndex].date.add(const Duration(hours: 12));
-          String text;
-          if (dailyIndex == 0 && recordIndex == 0) {
-            text = isComment
-                ? t.statsCreatedComment(
-                    time: time.hhmmss,
-                    duration: _durationSuffix(record.watchDuration),
-                  )
-                : t.statsCreatedRating(
-                    time: time.hhmmss,
-                    duration: _durationSuffix(record.watchDuration),
-                  );
+          final bool isCreated = dailyIndex == 0 && recordIndex == 0;
+          final String message;
+          if (isCreated) {
+            message = isComment
+                ? t.statsTimelineCommentCreated
+                : t.statsTimelineRatingCreated;
           } else {
             int n;
             if (dailyIndex == 0) {
@@ -1050,44 +1086,30 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
               }
               n = sum + record.value - 1;
             }
-            text = isComment
-                ? t.statsModifiedComment(
-                    time: time.hhmmss,
-                    n: n,
-                    duration: _durationSuffix(record.watchDuration),
-                  )
-                : t.statsModifiedRating(
-                    time: time.hhmmss,
-                    n: n,
-                    duration: _durationSuffix(record.watchDuration),
-                  );
+            message = isComment
+                ? t.statsTimelineCommentUpdated(n: n)
+                : t.statsTimelineRatingUpdated(n: n);
           }
           final String? content = record.comment?.isNotEmpty == true
               ? record.comment
               : record.rating != null
               ? '${record.rating}'
               : null;
+          final Widget? below = content == null
+              ? null
+              : Text(
+                  content,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
+                  ),
+                );
           entries.add(
             _TimelineEntry(
               time,
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(text, style: const TextStyle(fontSize: 14)),
-                  if (content != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      content,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              _recordBody(context, time, message, below: below),
             ),
           );
         }
@@ -1112,10 +1134,7 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
           entries.add(
             _TimelineEntry(
               time,
-              Text(
-                '${time.hhmmss} ${_favoriteActionText(record)}',
-                style: const TextStyle(fontSize: 14),
-              ),
+              _recordBody(context, time, _favoriteActionText(record)),
             ),
           );
         }
@@ -1144,13 +1163,7 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
           }
           final time = last ?? daily.date.add(const Duration(hours: 12));
           entries.add(
-            _TimelineEntry(
-              time,
-              Text(
-                '${time.hhmmss} ${labelOf(total)}',
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
+            _TimelineEntry(time, _recordBody(context, time, labelOf(total))),
           );
         }
       }

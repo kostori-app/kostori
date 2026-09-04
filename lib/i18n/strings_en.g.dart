@@ -5593,6 +5593,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${value} clicks'
 	String statsTimelineClick({required Object value}) => '${value} clicks';
 
+	/// en: 'Comment created'
+	String get statsTimelineCommentCreated => 'Comment created';
+
+	/// en: 'Comment modified (${n})'
+	String statsTimelineCommentUpdated({required Object n}) => 'Comment modified (${n})';
+
+	/// en: 'Rating created'
+	String get statsTimelineRatingCreated => 'Rating created';
+
+	/// en: 'Rating modified (${n})'
+	String statsTimelineRatingUpdated({required Object n}) => 'Rating modified (${n})';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9136,6 +9148,10 @@ extension on Translations {
 			'statsTimelineTitle' => 'Entry stats',
 			'statsTimelineWatch' => ({required Object duration}) => 'Watched ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '${value} clicks',
+			'statsTimelineCommentCreated' => 'Comment created',
+			'statsTimelineCommentUpdated' => ({required Object n}) => 'Comment modified (${n})',
+			'statsTimelineRatingCreated' => 'Rating created',
+			'statsTimelineRatingUpdated' => ({required Object n}) => 'Rating modified (${n})',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'statsTimelineDay' => ({required Object month, required Object day}) => '${month}/${day}',
@@ -9287,12 +9303,12 @@ extension on Translations {
 			'profileTabMemory' => 'Memory',
 			'profileTabRequest' => 'Request',
 			'profileTabMcp' => 'MCP',
+			_ => null,
+		} ?? switch (path) {
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
 			'userNickname' => 'User nickname',
 			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
-			_ => null,
-		} ?? switch (path) {
 			'animeRecognize' => 'Anime recognition',
 			'chooseImageToRecognize' => 'Pick an image to identify the anime source',
 			'chooseImage' => 'Choose image',

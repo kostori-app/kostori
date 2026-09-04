@@ -1889,6 +1889,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get statsTimelineTitle => '條目統計';
 	@override String statsTimelineWatch({required Object duration}) => '觀看了 ${duration}';
 	@override String statsTimelineClick({required Object value}) => '點擊 ${value} 次';
+	@override String get statsTimelineCommentCreated => '建立了評論';
+	@override String statsTimelineCommentUpdated({required Object n}) => '第 ${n} 次修改評論';
+	@override String get statsTimelineRatingCreated => '建立了評分';
+	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改評分';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String statsTimelineDay({required Object month, required Object day}) => '${month} 月 ${day} 日';
@@ -4348,6 +4352,10 @@ extension on TranslationsZhTw {
 			'statsTimelineTitle' => '條目統計',
 			'statsTimelineWatch' => ({required Object duration}) => '觀看了 ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '點擊 ${value} 次',
+			'statsTimelineCommentCreated' => '建立了評論',
+			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改評論',
+			'statsTimelineRatingCreated' => '建立了評分',
+			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改評分',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'statsTimelineDay' => ({required Object month, required Object day}) => '${month} 月 ${day} 日',
@@ -4500,12 +4508,12 @@ extension on TranslationsZhTw {
 			'profileTabRequest' => '請求',
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
+			_ => null,
+		} ?? switch (path) {
 			'profileTabLocalTools' => '工具技能',
 			'userNickname' => '使用者暱稱',
 			'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',
 			'animeRecognize' => '動漫識別',
-			_ => null,
-		} ?? switch (path) {
 			'chooseImageToRecognize' => '選擇一張圖片，識別動漫來源',
 			'chooseImage' => '選擇圖片',
 			'recognizing' => '識別中...',

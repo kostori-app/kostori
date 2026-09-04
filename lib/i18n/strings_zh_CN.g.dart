@@ -1890,6 +1890,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get statsTimelineTitle => '条目统计';
 	@override String statsTimelineWatch({required Object duration}) => '观看了 ${duration}';
 	@override String statsTimelineClick({required Object value}) => '点击 ${value} 次';
+	@override String get statsTimelineCommentCreated => '创建了评论';
+	@override String statsTimelineCommentUpdated({required Object n}) => '第 ${n} 次修改评论';
+	@override String get statsTimelineRatingCreated => '创建了评分';
+	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改评分';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String statsTimelineDay({required Object month, required Object day}) => '${month} 月 ${day} 日';
@@ -4350,6 +4354,10 @@ extension on TranslationsZhCn {
 			'statsTimelineTitle' => '条目统计',
 			'statsTimelineWatch' => ({required Object duration}) => '观看了 ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '点击 ${value} 次',
+			'statsTimelineCommentCreated' => '创建了评论',
+			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改评论',
+			'statsTimelineRatingCreated' => '创建了评分',
+			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改评分',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'statsTimelineDay' => ({required Object month, required Object day}) => '${month} 月 ${day} 日',
@@ -4501,12 +4509,12 @@ extension on TranslationsZhCn {
 			'profileTabMemory' => '记忆',
 			'profileTabRequest' => '请求',
 			'profileTabMcp' => 'MCP',
+			_ => null,
+		} ?? switch (path) {
 			'profileMcpHint' => '绑定本助手的 MCP 服务器（连接后自动导入工具）',
 			'profileTabLocalTools' => '工具技能',
 			'userNickname' => '用户昵称',
 			'userNicknameHint' => '聊天中显示的用户名称，并注入 {{user_nickname}}',
-			_ => null,
-		} ?? switch (path) {
 			'animeRecognize' => '动漫识别',
 			'chooseImageToRecognize' => '选择一张图片，识别动漫来源',
 			'chooseImage' => '选择图片',
