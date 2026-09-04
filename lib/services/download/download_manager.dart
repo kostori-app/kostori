@@ -294,7 +294,14 @@ class DownloadManager extends ChangeNotifier {
 
   Future<void> _runTask(DownloadTask task) async {
     task.status = DownloadStatus.downloading;
-    task.progress = 0;
+    // 断点恢复时先按已下载量还原进度，避免进度条瞬间跳到 0 再恢复
+    if (task.totalBytes > 0 &&
+        task.downloadedBytes > 0 &&
+        task.downloadedBytes <= task.totalBytes) {
+      task.progress = (task.downloadedBytes / task.totalBytes).clamp(0.0, 1.0);
+    } else {
+      task.progress = 0;
+    }
     _runningIds.add(task.id);
     final cancelToken = FfmpegCancelToken();
     _cancelTokens[task.id] = cancelToken;
