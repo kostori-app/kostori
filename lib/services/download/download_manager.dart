@@ -1041,11 +1041,12 @@ class DownloadManager extends ChangeNotifier {
   /// 按标题格式模板生成文件名基名（不含唯一 id 后缀）
   String _fileBaseName(DownloadTask task) {
     final format = _formatFor(task.sourceKey);
-    // “不使用集标题”时优先用纯集号（部分源集标题是无意义的 1/视频 等）
+    // “不使用集标题”时优先用纯集号；没有纯集号就不再拼集标题，
+    // 避免下载完成后文件名仍带 EP 标题
     final ignoreTitle = appdata.implicitData['downloadIgnoreEpisodeTitle'] ==
         true;
-    final episodeText = ignoreTitle && (task.episodeNo?.isNotEmpty ?? false)
-        ? task.episodeNo!
+    final episodeText = ignoreTitle
+        ? (task.episodeNo ?? '')
         : (task.episode ?? '');
     var name = format
         .replaceAll('{title}', task.animeTitle ?? task.title)
