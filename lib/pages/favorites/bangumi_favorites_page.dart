@@ -288,36 +288,6 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
               : const SizedBox(),
         ),
         actions: [
-          PopupMenuButton<String>(
-            tooltip: t.displayModeOfAnimeTile,
-            icon: const Icon(Icons.grid_view_outlined),
-            onSelected: _setLayoutMode,
-            itemBuilder: (_) => [
-              for (final (key, label) in [
-                ('brief', t.brief),
-                ('detailed', t.detailed),
-                ('masonry', t.masonry),
-              ])
-                PopupMenuItem(
-                  value: key,
-                  child: Row(
-                    children: [
-                      Icon(
-                        _layoutMode == key
-                            ? Icons.check
-                            : Icons.circle_outlined,
-                        size: 18,
-                        color: _layoutMode == key
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(label),
-                    ],
-                  ),
-                ),
-            ],
-          ),
           Tooltip(
             message: t.refresh,
             child: IconButton(
@@ -332,14 +302,35 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
           tabAlignment: TabAlignment.center,
         ),
       ),
-      body: TabBarView(
-        controller: controller,
+      body: Column(
         children: [
-          droppedListBody,
-          wishListBody,
-          doingListBody,
-          onHoldListBody,
-          collectListBody,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Center(
+              child: favoritesLayoutCapsule(
+                context,
+                value: _layoutMode,
+                onChanged: _setLayoutMode,
+                modes: [
+                  ('brief', t.brief),
+                  ('detailed', t.detailed),
+                  ('masonry', t.masonry),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: controller,
+              children: [
+                droppedListBody,
+                wishListBody,
+                doingListBody,
+                onHoldListBody,
+                collectListBody,
+              ],
+            ),
+          ),
         ],
       ),
     );

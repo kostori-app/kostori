@@ -44,6 +44,62 @@ part 'local_favorites_page.dart';
 const _kLeftBarWidth = 256.0;
 const _kTwoPanelChangeWidth = 720.0;
 
+/// 分段胶囊选择器（与设置页 _DisplayModeSelector 同风格），
+/// 收藏各页统一用它切换卡片布局。
+Widget favoritesLayoutCapsule(
+  BuildContext context, {
+  required String value,
+  required ValueChanged<String> onChanged,
+  required List<(String, String)> modes,
+}) {
+  final colorScheme = Theme.of(context).colorScheme;
+  return Container(
+    decoration: BoxDecoration(
+      color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    padding: const EdgeInsets.all(3),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: modes.map((mode) {
+        final (key, label) = mode;
+        final selected = value == key;
+        return GestureDetector(
+          onTap: () => onChanged(key),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: selected ? colorScheme.surface : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.toOpacity(0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                color: selected
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurface.toOpacity(0.45),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    ),
+  );
+}
+
 abstract interface class FolderList {
   void update();
 

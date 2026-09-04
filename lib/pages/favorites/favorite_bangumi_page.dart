@@ -122,38 +122,23 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
                 : const SizedBox(),
           ),
           title: Text(favoriteBind.length.toString()),
-          actions: [
-            PopupMenuButton<String>(
-              tooltip: t.displayModeOfAnimeTile,
-              icon: const Icon(Icons.grid_view_outlined),
-              onSelected: _setLayoutMode,
-              itemBuilder: (_) => [
-                for (final (key, label) in [
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Center(
+              child: favoritesLayoutCapsule(
+                context,
+                value: _layoutMode,
+                onChanged: _setLayoutMode,
+                modes: [
                   ('brief', t.brief),
                   ('detailed', t.detailed),
                   ('masonry', t.masonry),
-                ])
-                  PopupMenuItem(
-                    value: key,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _layoutMode == key
-                              ? Icons.check
-                              : Icons.circle_outlined,
-                          size: 18,
-                          color: _layoutMode == key
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(label),
-                      ],
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ],
+          ),
         ),
         loading
             ? _layoutMode == 'detailed'

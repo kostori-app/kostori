@@ -375,7 +375,6 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         ),
       ),
       actions: [
-        AnimeSourceLayoutMenu(sourceKey: 'local_favorites'),
         Tooltip(
           message: t.search,
           child: IconButton(
@@ -760,9 +759,29 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         parent: AlwaysScrollableScrollPhysics(),
       ),
       headerSliverBuilder: (context, _) => [
-        if (!searchAllMode && !searchMode && !multiSelectMode)
-          _buildNormalAppbar(tab)
-        else if (multiSelectMode)
+        if (!searchAllMode && !searchMode && !multiSelectMode) ...[
+          _buildNormalAppbar(tab),
+          SliverToBoxAdapter(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: favoritesLayoutCapsule(
+                  context,
+                  value: sourceDisplayModeOf('local_favorites') ??
+                      appdata.settings['animeDisplayMode'],
+                  onChanged: (v) =>
+                      setSourceDisplayMode('local_favorites', v),
+                  modes: [
+                    ('brief', t.brief),
+                    ('detailed', t.detailed),
+                    ('masonry', t.masonry),
+                    ('poster', t.poster),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ] else if (multiSelectMode)
           _buildMultiSelectAppbar(tab)
         else if (searchAllMode)
           _buildSearchAppbar(tab),
