@@ -1910,6 +1910,8 @@ statsTimelineTitle: 條目統計
 statsTimelineWatch: "觀看了 ${duration}"
 statsTimelineClick: "點擊 ${value} 次"
 statsTimelineNoRecords: "還沒有任何紀錄"
+statsAllTimelineTitle: 全部時間軸
+statsTimelineDay: "${month} 月 ${day} 日"
 statsDayRecords: 當天的記錄
 statsYearSuffix: "${year} 年"
 statsCopiedToClipboard: 已複製到剪貼簿

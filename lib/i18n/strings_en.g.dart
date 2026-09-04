@@ -5596,6 +5596,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
+	/// en: 'All-time timeline'
+	String get statsAllTimelineTitle => 'All-time timeline';
+
+	/// en: '${month}/${day}'
+	String statsTimelineDay({required Object month, required Object day}) => '${month}/${day}';
+
 	/// en: 'Today's records'
 	String get statsDayRecords => 'Today\'s records';
 
@@ -9131,6 +9137,8 @@ extension on Translations {
 			'statsTimelineWatch' => ({required Object duration}) => 'Watched ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '${value} clicks',
 			'statsTimelineNoRecords' => 'No records yet',
+			'statsAllTimelineTitle' => 'All-time timeline',
+			'statsTimelineDay' => ({required Object month, required Object day}) => '${month}/${day}',
 			'statsDayRecords' => 'Today\'s records',
 			'statsYearSuffix' => ({required Object year}) => '${year}',
 			'statsCopiedToClipboard' => 'Copied to clipboard',
@@ -9283,10 +9291,10 @@ extension on Translations {
 			'profileTabLocalTools' => 'Tools',
 			'userNickname' => 'User nickname',
 			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
-			'animeRecognize' => 'Anime recognition',
-			'chooseImageToRecognize' => 'Pick an image to identify the anime source',
 			_ => null,
 		} ?? switch (path) {
+			'animeRecognize' => 'Anime recognition',
+			'chooseImageToRecognize' => 'Pick an image to identify the anime source',
 			'chooseImage' => 'Choose image',
 			'recognizing' => 'Recognizing...',
 			'noAnimeFound' => 'No anime recognized, this may not be an anime image',

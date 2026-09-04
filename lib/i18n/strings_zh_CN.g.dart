@@ -1891,6 +1891,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineWatch({required Object duration}) => '观看了 ${duration}';
 	@override String statsTimelineClick({required Object value}) => '点击 ${value} 次';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
+	@override String get statsAllTimelineTitle => '全部时间线';
+	@override String statsTimelineDay({required Object month, required Object day}) => '${month} 月 ${day} 日';
 	@override String get statsDayRecords => '当天的记录';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
 	@override String get statsCopiedToClipboard => '已复制到剪贴板';
@@ -4349,6 +4351,8 @@ extension on TranslationsZhCn {
 			'statsTimelineWatch' => ({required Object duration}) => '观看了 ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '点击 ${value} 次',
 			'statsTimelineNoRecords' => '还没有任何记录',
+			'statsAllTimelineTitle' => '全部时间线',
+			'statsTimelineDay' => ({required Object month, required Object day}) => '${month} 月 ${day} 日',
 			'statsDayRecords' => '当天的记录',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
 			'statsCopiedToClipboard' => '已复制到剪贴板',
@@ -4501,10 +4505,10 @@ extension on TranslationsZhCn {
 			'profileTabLocalTools' => '工具技能',
 			'userNickname' => '用户昵称',
 			'userNicknameHint' => '聊天中显示的用户名称，并注入 {{user_nickname}}',
-			'animeRecognize' => '动漫识别',
-			'chooseImageToRecognize' => '选择一张图片，识别动漫来源',
 			_ => null,
 		} ?? switch (path) {
+			'animeRecognize' => '动漫识别',
+			'chooseImageToRecognize' => '选择一张图片，识别动漫来源',
 			'chooseImage' => '选择图片',
 			'recognizing' => '识别中...',
 			'noAnimeFound' => '未识别到动漫，可能是非动漫图片',

@@ -1908,6 +1908,8 @@ statsTimelineTitle: 条目统计
 statsTimelineWatch: "观看了 ${duration}"
 statsTimelineClick: "点击 ${value} 次"
 statsTimelineNoRecords: "还没有任何记录"
+statsAllTimelineTitle: 全部时间线
+statsTimelineDay: "${month} 月 ${day} 日"
 statsDayRecords: 当天的记录
 statsYearSuffix: "${year} 年"
 statsCopiedToClipboard: 已复制到剪贴板

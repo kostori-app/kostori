@@ -1890,6 +1890,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineWatch({required Object duration}) => '觀看了 ${duration}';
 	@override String statsTimelineClick({required Object value}) => '點擊 ${value} 次';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
+	@override String get statsAllTimelineTitle => '全部時間軸';
+	@override String statsTimelineDay({required Object month, required Object day}) => '${month} 月 ${day} 日';
 	@override String get statsDayRecords => '當天的記錄';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
 	@override String get statsCopiedToClipboard => '已複製到剪貼簿';
@@ -4347,6 +4349,8 @@ extension on TranslationsZhTw {
 			'statsTimelineWatch' => ({required Object duration}) => '觀看了 ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '點擊 ${value} 次',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
+			'statsAllTimelineTitle' => '全部時間軸',
+			'statsTimelineDay' => ({required Object month, required Object day}) => '${month} 月 ${day} 日',
 			'statsDayRecords' => '當天的記錄',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
 			'statsCopiedToClipboard' => '已複製到剪貼簿',
@@ -4500,10 +4504,10 @@ extension on TranslationsZhTw {
 			'userNickname' => '使用者暱稱',
 			'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',
 			'animeRecognize' => '動漫識別',
-			'chooseImageToRecognize' => '選擇一張圖片，識別動漫來源',
-			'chooseImage' => '選擇圖片',
 			_ => null,
 		} ?? switch (path) {
+			'chooseImageToRecognize' => '選擇一張圖片，識別動漫來源',
+			'chooseImage' => '選擇圖片',
 			'recognizing' => '識別中...',
 			'noAnimeFound' => '未識別到動漫，可能不是動漫圖片',
 			'chooseAnotherImage' => '換一張圖片試試',

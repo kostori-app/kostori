@@ -1909,6 +1909,8 @@ statsTimelineTitle: Entry stats
 statsTimelineWatch: "Watched ${duration}"
 statsTimelineClick: "${value} clicks"
 statsTimelineNoRecords: "No records yet"
+statsAllTimelineTitle: All-time timeline
+statsTimelineDay: "${month}/${day}"
 statsDayRecords: Today's records
 statsYearSuffix: "${year}"
 statsCopiedToClipboard: Copied to clipboard

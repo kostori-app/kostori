@@ -27,11 +27,13 @@ import 'package:kostori/init.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
+import 'package:kostori/pages/stats/all_stats_timeline_page.dart';
 import 'package:kostori/pages/stats/stat_display.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:timeline_tile/timeline_tile.dart';
 import 'package:word_cloud/word_cloud_data.dart';
 import 'package:word_cloud/word_cloud_exporter.dart';
 import 'package:word_cloud/word_cloud_view.dart';
@@ -188,6 +190,15 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                         );
                       },
                       menuChildren: [
+                        MenuItemButton(
+                          onPressed: () => context.to(
+                            () => const AllStatsTimelineScreen(),
+                          ),
+                          child: ListTile(
+                            leading: Icon(Icons.account_tree_outlined, size: 20),
+                            title: Text(t.statsAllTimelineTitle),
+                          ),
+                        ),
                         MenuItemButton(
                           onPressed: () async {
                             showStats(

@@ -1220,54 +1220,162 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
   Widget build(BuildContext context) {
     final entries = _collectEntries();
     final colorScheme = Theme.of(context).colorScheme;
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: entries.length + 2,
-      itemBuilder: (context, index) {
-        if (index == 0) return _header(context);
-        if (index == 1) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Text(
-              t.statsRecords,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    final lineColor = colorScheme.outlineVariant;
+
+    final emptyState = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Center(
+        child: Text(
+          t.statsTimelineNoRecords,
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
+
+    // 按 年 > 月 > 日 组织：最新在前，日内记录按时间正序
+    Widget timeline = const SizedBox.shrink();
+    if (entries.isNotEmpty) {
+      final byDate = <DateTime, List<_TimelineEntry>>{};
+      for (final e in entries) {
+        final day = DateTime(e.time.year, e.time.month, e.time.day);
+        byDate.putIfAbsent(day, () => []).add(e);
+      }
+      for (final list in byDate.values) {
+        list.sort((a, b) => a.time.compareTo(b.time));
+      }
+
+      final dates = byDate.keys.toList()..sort((a, b) => b.compareTo(a));
+      final years = <int>[];
+      final months = <(int, int)>[];
+      final monthDays = <String, List<DateTime>>{};
+      for (final d in dates) {
+        if (!years.contains(d.year)) years.add(d.year);
+        if (!months.contains((d.year, d.month))) months.add((d.year, d.month));
+        monthDays
+            .putIfAbsent('${d.year}-${d.month}', () => [])
+            .add(d);
+      }
+      years.sort((a, b) => b.compareTo(a));
+      months.sort((a, b) {
+        if (a.$1 != b.$1) return b.$1.compareTo(a.$1);
+        return b.$2.compareTo(a.$2);
+      });
+
+      Widget monthHeader(int year, int month) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(4, 18, 4, 4),
+          child: Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.secondary,
+                ),
+              ),
+              Text(
+                '$year-${month.toString().padLeft(2, '0')}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      Widget dayBlock(DateTime day, List<_TimelineEntry> dayEntries) {
+        final dayTiles = <Widget>[];
+        for (var i = 0; i < dayEntries.length; i++) {
+          dayTiles.add(
+            TimelineTile(
+              alignment: TimelineAlign.start,
+              isFirst: i == 0,
+              isLast: i == dayEntries.length - 1,
+              indicatorStyle: IndicatorStyle(
+                color: colorScheme.primary,
+                width: 12,
+              ),
+              beforeLineStyle: LineStyle(color: lineColor, thickness: 1.6),
+              afterLineStyle: LineStyle(color: lineColor, thickness: 1.6),
+              endChild: Padding(
+                padding: EdgeInsets.only(
+                  bottom: i == dayEntries.length - 1 ? 6 : 0,
+                  right: 12,
+                ),
+                child: dayEntries[i].child,
+              ),
             ),
           );
         }
-        if (entries.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Center(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 10, bottom: 2, left: 4),
               child: Text(
-                t.statsTimelineNoRecords,
+                t.statsTimelineDay(month: day.month, day: day.day),
                 style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
-          );
-        }
-        final entry = entries[index - 2];
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 5),
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorScheme.primary,
-                ),
+            Padding(
+              padding: const EdgeInsets.only(left: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: dayTiles,
               ),
-              const SizedBox(width: 12),
-              Expanded(child: entry.child),
-            ],
-          ),
+            ),
+          ],
         );
-      },
+      }
+
+      final blocks = <Widget>[];
+      for (final (year, month) in months) {
+        blocks.add(monthHeader(year, month));
+        for (final day in monthDays['$year-$month']!) {
+          blocks.add(dayBlock(day, byDate[day]!));
+        }
+      }
+      timeline = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 2),
+            child: Text(
+              t.statsYearSuffix(year: years.first),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+              ),
+            ),
+          ),
+          ...blocks,
+        ],
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      children: [
+        _header(context),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          child: Text(
+            t.statsRecords,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        if (entries.isEmpty) emptyState else timeline,
+      ],
     );
   }
 }
