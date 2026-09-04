@@ -79,8 +79,8 @@ class NaviPaneState extends State<NaviPane>
     setState(() {
       _sidebarOpen = !_sidebarOpen;
     });
-    appdata.settings[_kSidebarCollapsedKey] = !_sidebarOpen;
-    appdata.saveData();
+    appdata.implicitData[_kSidebarCollapsedKey] = !_sidebarOpen;
+    appdata.writeImplicitData();
   }
 
   int get currentPage => _currentPage;
@@ -151,7 +151,7 @@ class NaviPaneState extends State<NaviPane>
   @override
   void initState() {
     _sidebarOpen =
-        appdata.settings[_kSidebarCollapsedKey] != true;
+        appdata.implicitData[_kSidebarCollapsedKey] != true;
     _loadedPages.add(_currentPage);
     controller = AnimationController(
       duration: const Duration(milliseconds: 250),
