@@ -685,7 +685,7 @@ class _YearActivityHeatmap extends StatelessWidget {
       final count = dayEntries[day]?.length ?? 0;
       if (count <= 0) return colorScheme.surfaceContainerHighest;
       final t = (count / maxCount).clamp(0.0, 1.0);
-      return colorScheme.primary.withValues(alpha: 0.25 + t * 0.7);
+      return colorScheme.primary.withValues(alpha: 0.45 + t * 0.5);
     }
 
     Widget columnContent(int col) {
@@ -711,25 +711,32 @@ class _YearActivityHeatmap extends StatelessWidget {
                 if (d.year != year) return const SizedBox.shrink();
                 final items = dayEntries[d];
                 final count = items?.length ?? 0;
+                if (count <= 0) {
+                  return const SizedBox.shrink();
+                }
                 String two(int v) => v.toString().padLeft(2, '0');
                 final tip =
-                    '${d.year}-${two(d.month)}-${two(d.day)}'
-                    '${count > 0 ? ' · $count' : ''}';
+                    '${d.year}-${two(d.month)}-${two(d.day)} · $count';
                 return Tooltip(
                   message: tip,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (items != null && items.isNotEmpty) {
-                        onDayTap(d, items);
-                      }
-                    },
+                    onTap: () => onDayTap(d, items!),
                     child: Container(
                       width: cell,
                       height: cell,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(6),
                         color: colorOf(d),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       ),
                     ),
                   ),
