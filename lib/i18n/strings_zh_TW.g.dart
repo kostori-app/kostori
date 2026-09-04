@@ -1887,6 +1887,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get statsSourceList => '來源清單';
 	@override String get statsSelectDate => '選擇日期';
 	@override String get statsTimelineTitle => '條目統計';
+	@override String statsTimelineWatch({required Object duration}) => '觀看了 ${duration}';
+	@override String statsTimelineClick({required Object value}) => '點擊 ${value} 次';
+	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsDayRecords => '當天的記錄';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
 	@override String get statsCopiedToClipboard => '已複製到剪貼簿';
@@ -4341,6 +4344,9 @@ extension on TranslationsZhTw {
 			'statsSourceList' => '來源清單',
 			'statsSelectDate' => '選擇日期',
 			'statsTimelineTitle' => '條目統計',
+			'statsTimelineWatch' => ({required Object duration}) => '觀看了 ${duration}',
+			'statsTimelineClick' => ({required Object value}) => '點擊 ${value} 次',
+			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsDayRecords' => '當天的記錄',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
 			'statsCopiedToClipboard' => '已複製到剪貼簿',
@@ -4496,11 +4502,11 @@ extension on TranslationsZhTw {
 			'animeRecognize' => '動漫識別',
 			'chooseImageToRecognize' => '選擇一張圖片，識別動漫來源',
 			'chooseImage' => '選擇圖片',
+			_ => null,
+		} ?? switch (path) {
 			'recognizing' => '識別中...',
 			'noAnimeFound' => '未識別到動漫，可能不是動漫圖片',
 			'chooseAnotherImage' => '換一張圖片試試',
-			_ => null,
-		} ?? switch (path) {
 			'recognizeResult' => '識別結果',
 			'episodeLabel' => '第',
 			'unknownEpisode' => '未知集數',

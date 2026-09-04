@@ -5587,6 +5587,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Entry stats'
 	String get statsTimelineTitle => 'Entry stats';
 
+	/// en: 'Watched ${duration}'
+	String statsTimelineWatch({required Object duration}) => 'Watched ${duration}';
+
+	/// en: '${value} clicks'
+	String statsTimelineClick({required Object value}) => '${value} clicks';
+
+	/// en: 'No records yet'
+	String get statsTimelineNoRecords => 'No records yet';
+
 	/// en: 'Today's records'
 	String get statsDayRecords => 'Today\'s records';
 
@@ -9119,6 +9128,9 @@ extension on Translations {
 			'statsSourceList' => 'Source list',
 			'statsSelectDate' => 'Select date',
 			'statsTimelineTitle' => 'Entry stats',
+			'statsTimelineWatch' => ({required Object duration}) => 'Watched ${duration}',
+			'statsTimelineClick' => ({required Object value}) => '${value} clicks',
+			'statsTimelineNoRecords' => 'No records yet',
 			'statsDayRecords' => 'Today\'s records',
 			'statsYearSuffix' => ({required Object year}) => '${year}',
 			'statsCopiedToClipboard' => 'Copied to clipboard',
@@ -9273,11 +9285,11 @@ extension on Translations {
 			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
 			'animeRecognize' => 'Anime recognition',
 			'chooseImageToRecognize' => 'Pick an image to identify the anime source',
+			_ => null,
+		} ?? switch (path) {
 			'chooseImage' => 'Choose image',
 			'recognizing' => 'Recognizing...',
 			'noAnimeFound' => 'No anime recognized, this may not be an anime image',
-			_ => null,
-		} ?? switch (path) {
 			'chooseAnotherImage' => 'Try another image',
 			'recognizeResult' => 'Recognition results',
 			'episodeLabel' => 'EP',

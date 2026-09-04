@@ -1906,6 +1906,9 @@ statsDaily: Daily
 statsSourceList: Source list
 statsSelectDate: Select date
 statsTimelineTitle: Entry stats
+statsTimelineWatch: "Watched ${duration}"
+statsTimelineClick: "${value} clicks"
+statsTimelineNoRecords: "No records yet"
 statsDayRecords: Today's records
 statsYearSuffix: "${year}"
 statsCopiedToClipboard: Copied to clipboard

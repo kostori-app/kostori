@@ -1907,6 +1907,9 @@ statsDaily: 日統計
 statsSourceList: 來源清單
 statsSelectDate: 選擇日期
 statsTimelineTitle: 條目統計
+statsTimelineWatch: "觀看了 ${duration}"
+statsTimelineClick: "點擊 ${value} 次"
+statsTimelineNoRecords: "還沒有任何紀錄"
 statsDayRecords: 當天的記錄
 statsYearSuffix: "${year} 年"
 statsCopiedToClipboard: 已複製到剪貼簿

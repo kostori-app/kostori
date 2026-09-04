@@ -931,14 +931,14 @@ class _StatItemWidgetState extends State<StatItemWidget> {
 
 
 
-/// 条目全部历史统计时间线：头部卡片 + 按时间排序的记录流
-class StatsTimelinePage extends StatefulWidget {
-  const StatsTimelinePage({super.key, required this.group});
+// 点击统计记录卡片后展示的条目历史（弹层界面）
+class StatsTimelineView extends StatefulWidget {
+  const StatsTimelineView({super.key, required this.group});
 
   final List<StatsDataImpl> group;
 
   @override
-  State<StatsTimelinePage> createState() => _StatsTimelinePageState();
+  State<StatsTimelineView> createState() => _StatsTimelineViewState();
 }
 
 class _TimelineEntry {
@@ -947,9 +947,7 @@ class _TimelineEntry {
   _TimelineEntry(this.time, this.child);
 }
 
-class _StatsTimelinePageState extends State<StatsTimelinePage> {
-  
-
+class _StatsTimelineViewState extends State<StatsTimelineView> {
   List<StatsDataImpl> get _group => widget.group;
 
   StatsDataImpl get _primaryStat {
@@ -1068,7 +1066,6 @@ class _StatsTimelinePageState extends State<StatsTimelinePage> {
       }
     }
 
-
     for (final stat in _group) {
       addCommentOrRating(
         type: DailyEventType.comment,
@@ -1095,24 +1092,62 @@ class _StatsTimelinePageState extends State<StatsTimelinePage> {
           );
         }
       }
+
+      // 观看 / 点击（按天汇总，一天一条，避免空白）
+      void addDailyTotal(
+        List<DailyEvent> list, {
+        required int Function(PlatformEventRecord) totalOf,
+        required String Function(int) labelOf,
+      }) {
+        for (final daily in list) {
+          final records =
+              daily.platformEventRecords
+                  .where((r) => totalOf(r) > 0)
+                  .toList();
+          if (records.isEmpty) continue;
+          int total = 0;
+          DateTime? last;
+          for (final r in records) {
+            total += totalOf(r);
+            if (r.date != null &&
+                (last == null || r.date!.isAfter(last))) {
+              last = r.date;
+            }
+          }
+          final time = last ?? daily.date.add(const Duration(hours: 12));
+          entries.add(
+            _TimelineEntry(
+              time,
+              Text(
+                '${time.hhmmss} ${labelOf(total)}',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          );
+        }
+      }
+
+      addDailyTotal(
+        stat.totalWatchDurations,
+        totalOf: (r) => r.value,
+        labelOf: (v) =>
+            t.statsTimelineWatch(duration: Utils.formatHMS(v)),
+      );
+      addDailyTotal(
+        stat.totalClickCount,
+        totalOf: (r) => r.value,
+        labelOf: (v) => t.statsTimelineClick(value: v),
+      );
     }
     entries.sort((a, b) => a.time.compareTo(b.time));
     return entries;
   }
 
-  String _title() {
-    final title = _primaryStat.title;
-    return (title?.isNotEmpty == true) ? title! : _primaryStat.id;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final entries = _collectEntries();
+  Widget _header(BuildContext context) {
     final primary = _primaryStat;
     final colorScheme = Theme.of(context).colorScheme;
     final cover = primary.cover;
-
-    final header = Padding(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1135,66 +1170,76 @@ class _StatsTimelinePageState extends State<StatsTimelinePage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _title(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            child: Text(
+              _title(),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       ),
     );
-
-    Widget widget = Scaffold(
-      appBar: Appbar(title: Text(t.statsTimelineTitle)),
-      body: entries.isEmpty
-          ? const Center(child: Text(''))
-          : ListView.builder(
-              controller: scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: entries.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) return header;
-                final entry = entries[index - 1];
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 5),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: entry.child),
-                    ],
-                  ),
-                );
-              },
-            ),
-    );
-    widget = AppScrollBar(
-      topPadding: 82,
-      controller: scrollController,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: widget,
-      ),
-    );
-    return widget;
   }
 
-  final ScrollController scrollController = ScrollController();
+  String _title() {
+    final title = _primaryStat.title;
+    return (title?.isNotEmpty == true) ? title! : _primaryStat.id;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = _collectEntries();
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: entries.length + 2,
+      itemBuilder: (context, index) {
+        if (index == 0) return _header(context);
+        if (index == 1) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(
+              t.statsRecords,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          );
+        }
+        if (entries.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                t.statsTimelineNoRecords,
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        }
+        final entry = entries[index - 2];
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 5),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: entry.child),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
