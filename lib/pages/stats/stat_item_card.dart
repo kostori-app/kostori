@@ -1,6 +1,26 @@
 part of 'stats_page.dart';
 
 /// 统计里展示收藏分组：未分类伪组(_default/default/默认)显示为“未分类”
+/// 来源·观看/点击 记录的胶囊样式（不再用中括号拼文本）
+Widget _statsSourceChip(BuildContext context, String text) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: Theme.of(
+        context,
+      ).colorScheme.secondaryContainer.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.onSecondaryContainer,
+      ),
+    ),
+  );
+}
+
 String _statFolderLabel(String? folder) {
   if (folder == null || folder.isEmpty) return t.unknownFolder;
   if (folder == '_default' || folder == 'default' || folder == '默认') {
@@ -452,7 +472,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
               spacing: 8,
               runSpacing: 4,
               children: recordStrings.map((text) {
-                return Text(text, style: const TextStyle(fontSize: 14));
+                return _statsSourceChip(context, text);
               }).toList(),
             ),
           ),
@@ -508,7 +528,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
               spacing: 8,
               runSpacing: 4,
               children: recordStrings.map((text) {
-                return Text(text, style: const TextStyle(fontSize: 14));
+                return _statsSourceChip(context, text);
               }).toList(),
             ),
           ),

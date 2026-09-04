@@ -1908,9 +1908,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsModifiedComment({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評論 ${duration}:';
 	@override String statsCreatedRating({required Object time, required Object duration}) => '${time} 建立了評級 ${duration}:';
 	@override String statsModifiedRating({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評級 ${duration}:';
-	@override String statsClickAt({required Object source, required Object platform, required Object value}) => '[${source}] ${platform}點擊${value}次';
+	@override String statsClickAt({required Object source, required Object platform, required Object value}) => '${source} ${platform}點擊${value}次';
 	@override String statsDailyClicks({required Object total}) => '本日點擊次數: ${total}';
-	@override String statsWatchAt({required Object source, required Object platform, required Object duration}) => '[${source}] ${platform}觀看: ${duration}';
+	@override String statsWatchAt({required Object source, required Object platform, required Object duration}) => '${source} ${platform}觀看: ${duration}';
 	@override String statsDailyWatch({required Object duration}) => '本日觀看時長: ${duration}';
 	@override String get statsRecords => '記錄';
 	@override String statsLastClickAt({required Object time}) => '當日最後點擊: \n${time}';
@@ -4360,9 +4360,9 @@ extension on TranslationsZhTw {
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評論 ${duration}:',
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} 建立了評級 ${duration}:',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評級 ${duration}:',
-			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '[${source}] ${platform}點擊${value}次',
+			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}點擊${value}次',
 			'statsDailyClicks' => ({required Object total}) => '本日點擊次數: ${total}',
-			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '[${source}] ${platform}觀看: ${duration}',
+			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} ${platform}觀看: ${duration}',
 			'statsDailyWatch' => ({required Object duration}) => '本日觀看時長: ${duration}',
 			'statsRecords' => '記錄',
 			'statsLastClickAt' => ({required Object time}) => '當日最後點擊: \n${time}',

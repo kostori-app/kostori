@@ -5650,14 +5650,14 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${time} changed the rating ${n} times ${duration}:'
 	String statsModifiedRating({required Object time, required Object n, required Object duration}) => '${time} changed the rating ${n} times ${duration}:';
 
-	/// en: '[${source}] clicked ${platform} ${value} times'
-	String statsClickAt({required Object source, required Object platform, required Object value}) => '[${source}] clicked ${platform} ${value} times';
+	/// en: '${source} clicked ${platform} ${value} times'
+	String statsClickAt({required Object source, required Object platform, required Object value}) => '${source} clicked ${platform} ${value} times';
 
 	/// en: 'Today's clicks: ${total}'
 	String statsDailyClicks({required Object total}) => 'Today\'s clicks: ${total}';
 
-	/// en: '[${source}] watched ${platform} ${duration}'
-	String statsWatchAt({required Object source, required Object platform, required Object duration}) => '[${source}] watched ${platform} ${duration}';
+	/// en: '${source} watched ${platform} ${duration}'
+	String statsWatchAt({required Object source, required Object platform, required Object duration}) => '${source} watched ${platform} ${duration}';
 
 	/// en: 'Today's watch time: ${duration}'
 	String statsDailyWatch({required Object duration}) => 'Today\'s watch time: ${duration}';
@@ -9134,9 +9134,9 @@ extension on Translations {
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} modified the comment ${n} times ${duration}:',
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} rated ${duration}:',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} changed the rating ${n} times ${duration}:',
-			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '[${source}] clicked ${platform} ${value} times',
+			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} clicked ${platform} ${value} times',
 			'statsDailyClicks' => ({required Object total}) => 'Today\'s clicks: ${total}',
-			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '[${source}] watched ${platform} ${duration}',
+			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} watched ${platform} ${duration}',
 			'statsDailyWatch' => ({required Object duration}) => 'Today\'s watch time: ${duration}',
 			'statsRecords' => 'Records',
 			'statsLastClickAt' => ({required Object time}) => 'Last click today: \n${time}',
