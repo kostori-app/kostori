@@ -399,9 +399,9 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                       : Icons.favorite_border,
                                                   color: isLiked
                                                       ? Colors.redAccent
-                                                      : Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
+                                                      : Theme.of(context)
+                                                            .colorScheme
+                                                            .primary,
                                                   size: 24,
                                                 ),
                                               ),
@@ -598,10 +598,10 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                       Container(
                                                         padding:
                                                             EdgeInsets.fromLTRB(
-                                                              8,
-                                                              5,
-                                                              8,
-                                                              5,
+                                                              4,
+                                                              3,
+                                                              4,
+                                                              3,
                                                             ),
                                                         decoration: BoxDecoration(
                                                           borderRadius:
@@ -837,9 +837,9 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondaryContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(

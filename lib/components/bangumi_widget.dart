@@ -876,7 +876,7 @@ class BangumiBriefCard extends StatelessWidget {
       children: [
         if (bangumiItem.total >= 20) ...[
           Text(
-            '${bangumiItem.score}',
+            formatScore(bangumiItem.score),
             style: TextStyle(
               fontSize: App.isAndroid ? 13 : 16.0,
               fontWeight: FontWeight.bold,
@@ -1425,7 +1425,7 @@ class BangumiDetailedCard extends StatelessWidget {
             children: [
               if (bangumiItem.total >= 20) ...[
                 Text(
-                  '${bangumiItem.score}',
+                  formatScore(bangumiItem.score),
                   style: const TextStyle(fontSize: 24.0),
                 ),
                 const SizedBox(width: 5),
@@ -1671,6 +1671,12 @@ class BangumiCharacterCard extends StatelessWidget {
   }
 }
 
+
+String formatScore(num value) {
+  final d = value.toDouble();
+  if (d == d.roundToDouble()) return d.toInt().toString();
+  return d.toStringAsFixed(1);
+}
 class BangumiCard extends StatefulWidget {
   const BangumiCard({
     super.key,
@@ -1700,7 +1706,7 @@ class _BangumiCardState extends State<BangumiCard> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          '${bangumiItem.score}',
+          formatScore(bangumiItem.score),
           style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
         ),
         SizedBox(width: 5),
