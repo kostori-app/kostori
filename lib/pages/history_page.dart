@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
@@ -108,96 +107,36 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
         icon: Icons.history,
         initialSize: 0.7,
         builder: (context, sc) {
-          return ListView.builder(
-            controller: sc,
-            padding: const EdgeInsets.all(8),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final h = items[index];
-              final cs = Theme.of(context).colorScheme;
-              String two(int v) => v.toString().padLeft(2, '0');
-              Widget cover;
-              if (h.cover.trim().isNotEmpty) {
-                cover = ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: BangumiWidget.kostoriImage(
-                    context,
-                    h.cover,
-                    width: 44,
-                    height: 62,
-                  ),
-                );
-              } else {
-                cover = Container(
-                  width: 44,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(Icons.image_outlined, size: 20),
-                );
-              }
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    Navigator.pop(context);
-                    App.mainNavigatorKey?.currentContext?.to<dynamic>(
-                      () => AnimePage(
-                        id: h.id,
-                        sourceKey: h.sourceKey,
-                        cover: h.cover,
-                        title: h.title,
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(10),
+        return CustomScrollView(
+          controller: sc,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+              sliver: SliverGridAnimes(
+                animes: items,
+                disableMasonry: true,
+                onTap: (a, heroID) {
+                  final h = a as History;
+                  Navigator.pop(context);
+                  App.mainNavigatorKey?.currentContext?.to<dynamic>(
+                    () => AnimePage(
+                      id: h.id,
+                      sourceKey: h.sourceKey,
+                      cover: h.cover,
+                      title: h.title,
+                      heroID: heroID,
                     ),
-                    child: Row(
-                      children: [
-                        cover,
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                h.title,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${two(h.time.hour)}:${two(h.time.minute)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: cs.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
       ),
     );
   }
+
 
 
   void scrollToTop() {
@@ -694,7 +633,7 @@ class _HistoryHeatmapCard extends StatelessWidget {
   }
 }
 
-/// 全年热力图：可横向滚动，格子固定大小（不会因屏窄缩得看不清）
+/// 全年热力图：可横向滚动，格子固定偏大；只铺真实日期（首尾周不补占位）
 class _YearActivityHeatmap extends StatelessWidget {
   const _YearActivityHeatmap({
     required this.year,
@@ -706,11 +645,11 @@ class _YearActivityHeatmap extends StatelessWidget {
   final Map<DateTime, List<History>> dayEntries;
   final void Function(DateTime, List<History>) onDayTap;
 
-  static const _cell = 15.0;
-  static const _gap = 2.0;
-  static const _gutter = 16.0;
-  static const _topLabel = 16.0;
-  static const _monthLetters = [
+  static const double cell = 20;
+  static const double gap = 3;
+  static const double gutter = 18;
+  static const double topLabel = 20;
+  static const List<String> monthLetters = [
     'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D',
   ];
 
@@ -723,91 +662,76 @@ class _YearActivityHeatmap extends StatelessWidget {
     final lastAbs = leading + last.difference(first).inDays;
     final colCount = (lastAbs ~/ 7) + 1;
 
-    // 每个日期对应 (col,row)
-    final cells = <DateTime, (int, int)>{};
-    final colHasMonthStart = <int, int>{};
-    for (var m = 1; m <= 12; m++) {
-      final start = DateTime(year, m, 1);
-      final dayOfYear = start.difference(first).inDays;
-      final abs = leading + dayOfYear;
-      colHasMonthStart[abs ~/ 7] = m - 1;
-    }
-    for (var d = DateTime(year, 1, 1);
-        d.year == year;
-        d = d.add(const Duration(days: 1))) {
-      final abs = leading + d.difference(first).inDays;
-      cells[d] = (abs ~/ 7, abs % 7);
-    }
-
-    final rowStep = _cell + _gap;
-    final colStep = _cell + _gap;
-    final contentWidth = _gutter + colCount * colStep - _gap + 4;
-    final contentHeight = _topLabel + 7 * _cell + 6 * _gap + 6;
+    final maxCount = dayEntries.values
+            .map((l) => l.length)
+            .fold(0, (a, b) => a > b ? a : b)
+            .clamp(1, 2147483647)
+            .toInt();
 
     DateTime dayOf(int col, int row) {
-      final daysFromStart = (col * 7 + row) - leading;
-      final d = first.add(Duration(days: daysFromStart));
+      final d = first.add(Duration(days: (col * 7 + row) - leading));
       return DateTime(d.year, d.month, d.day);
     }
 
-    Color cellColor(DateTime day) {
+    // 每个起始列显示该月的首字母
+    final colMonthLetter = <int, String>{};
+    for (var m = 1; m <= 12; m++) {
+      final start = DateTime(year, m, 1);
+      final abs = leading + start.difference(first).inDays;
+      colMonthLetter[abs ~/ 7] = monthLetters[m - 1];
+    }
+
+    Color colorOf(DateTime day) {
       final count = dayEntries[day]?.length ?? 0;
       if (count <= 0) return colorScheme.surfaceContainerHighest;
-      final max = dayEntries.values
-              .map((l) => l.length)
-              .fold(0, (a, b) => a > b ? a : b)
-              .clamp(1, 2147483647)
-              .toInt();
-      final t = (count / max).clamp(0.0, 1.0);
+      final t = (count / maxCount).clamp(0.0, 1.0);
       return colorScheme.primary.withValues(alpha: 0.25 + t * 0.7);
     }
 
-    Widget columnContent(BuildContext context, int col) {
-      return SizedBox(
-        width: _cell,
-        child: Column(
-          children: [
-            SizedBox(
-              height: _topLabel,
-              child: Center(
-                child: Text(
-                  colHasMonthStart[col] == null
-                      ? ''
-                      : _monthLetters[colHasMonthStart[col]!],
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
+    Widget columnContent(int col) {
+      return Column(
+        children: [
+          SizedBox(
+            height: topLabel,
+            child: Center(
+              child: Text(
+                colMonthLetter[col] ?? '',
+                style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
               ),
             ),
-            for (var row = 0; row < 7; row++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: _gap),
-                child: GestureDetector(
+          ),
+          for (var row = 0; row < 7; row++)
+            Container(
+              width: cell,
+              height: cell,
+              margin: EdgeInsets.only(bottom: gap, right: col == colCount - 1 ? 0 : gap),
+              alignment: Alignment.center,
+              child: (() {
+                final d = dayOf(col, row);
+                if (d.year != year) return const SizedBox.shrink();
+                return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
-                    final day = DateTime(year, 1, 1)
-                        .add(Duration(days: (col * 7 + row) - leading));
-                    final items = dayEntries[day];
-                    if (items != null && items.isNotEmpty) {
-                      onDayTap(day, items);
-                    }
+                    final items = dayEntries[d];
+                    if (items != null && items.isNotEmpty) onDayTap(d, items);
                   },
                   child: Container(
-                    width: _cell,
-                    height: _cell,
+                    width: cell,
+                    height: cell,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: cellColor(dayOf(col, row)),
+                      color: colorOf(d),
                     ),
                   ),
-                ),
-              ),
-          ],
-        ),
+                );
+              })(),
+            ),
+        ],
       );
     }
+
+    final contentWidth = gutter + colCount * cell + (colCount - 1) * gap;
+    final contentHeight = topLabel + 7 * cell + 7 * gap;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -818,27 +742,22 @@ class _YearActivityHeatmap extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: _gutter,
+              width: gutter,
               child: Padding(
-                padding: const EdgeInsets.only(top: _topLabel),
+                padding: const EdgeInsets.only(top: topLabel),
                 child: Column(
                   children: [
-                    for (var row = 0; row < 7; row++)
-                      SizedBox(
-                        height: rowStep,
-                        child: Center(
-                          child: Text(
-                            row == 0
-                                ? 'M'
-                                : row == 2
-                                ? 'W'
-                                : row == 4
-                                ? 'F'
-                                : '',
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                    for (var r = 0; r < 7; r++)
+                      Container(
+                        width: gutter,
+                        height: cell,
+                        margin: const EdgeInsets.only(bottom: gap),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${r + 1}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -846,7 +765,7 @@ class _YearActivityHeatmap extends StatelessWidget {
                 ),
               ),
             ),
-            for (var col = 0; col < colCount; col++) columnContent(context, col),
+            for (var col = 0; col < colCount; col++) columnContent(col),
           ],
         ),
       ),
