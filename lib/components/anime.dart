@@ -1595,7 +1595,13 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
         !widget.horizontal &&
         !widget.disableMasonry &&
         mode == 'masonry') {
+      // 列表排序/数据变化时用签名 key 强制重建瀑布流布局缓存，
+      // 避免 SliverMasonryGrid 复用过期的行列估算导致空白/单列错乱
+      final sig = animes
+          .map((a) => _SliverGridAnimes.heroIDOf(a))
+          .fold<int>(0, (acc, id) => acc ^ (id * 31 + 7) & 0x7fffffff);
       return SliverMasonryAnimes(
+        key: ValueKey('masonry-$sig'),
         animes: animes,
         isRecommend: widget.isRecommend ?? false,
         enableFavorite: widget.enableFavorite ?? true,

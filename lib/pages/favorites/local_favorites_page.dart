@@ -683,37 +683,44 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     if (a.viewMore != null && a.viewMore?.attributes != null) {
       var context = App.mainNavigatorKey!.currentContext!;
       a.viewMore!.jump(context);
-    } else {
-      App.mainNavigatorKey?.currentContext?.to(
-        () => AnimePage(
-          id: a.id,
-          sourceKey: a.sourceKey,
-          cover: a.cover,
-          title: a.title,
-          heroID: heroID,
-        ),
-      );
-      // 使用 FavoriteItem 自己的 type（而非从 sourceKey 字符串 hash 派生），
-      // 避免源未安装时 sourceKey 变为 "Unknown:xxx" 导致 type 不一致。
-      final item = a is FavoriteItem ? a.type : AnimeType(a.sourceKey.hashCode);
-      final stats = StatsManager();
-      if (!stats.isExist(a.id, item)) {
-        try {
-          stats.addStats(
-            stats.createStatsData(
-              id: a.id,
-              title: a.title,
-              cover: a.cover,
-              type: item.value,
-            ),
-          );
-        } catch (e) {
-          StatsLog.error('addStats', e.toString());
-        }
+      _markRecentlyWatched(a);
+      return;
+    }
+    // 跳转详情后（页面可见时）再更新“最近观看”并触发排序刷新：
+    // 若在详情页盖住期间就重排列表，瀑布流/网格会在不可见视口下
+    // 重新布局，返回后容易出现空白/单列错乱。
+    App.mainNavigatorKey?.currentContext?.to<dynamic>(
+      () => AnimePage(
+        id: a.id,
+        sourceKey: a.sourceKey,
+        cover: a.cover,
+        title: a.title,
+        heroID: heroID,
+      ),
+    ).then((_) {
+      if (mounted) _markRecentlyWatched(a);
+    });
+  }
+
+  void _markRecentlyWatched(Anime a) {
+    // 使用 FavoriteItem 自己的 type（而非从 sourceKey 字符串 hash 派生），
+    // 避免源未安装时 sourceKey 变为 "Unknown:xxx" 导致 type 不一致。
+    final item = a is FavoriteItem ? a.type : AnimeType(a.sourceKey.hashCode);
+    final stats = StatsManager();
+    if (!stats.isExist(a.id, item)) {
+      try {
+        stats.addStats(
+          stats.createStatsData(
+            id: a.id,
+            title: a.title,
+            cover: a.cover,
+            type: item.value,
+          ),
+        );
+      } catch (e) {
+        StatsLog.error('addStats', e.toString());
       }
     }
-
-    final item = a is FavoriteItem ? a.type : AnimeType(a.sourceKey.hashCode);
     manager.updateRecentlyWatched(a.id, item);
   }
 
