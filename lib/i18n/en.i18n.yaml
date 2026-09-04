@@ -1914,6 +1914,7 @@ statsTimelineRatingCreated: Rating created
 statsTimelineRatingUpdated: "Rating modified (${n})"
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
+activityHeatmapTitle: Activity heatmap
 statsTimelineDay: "${month}/${day}"
 statsDayRecords: Today's records
 statsYearSuffix: "${year}"

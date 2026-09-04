@@ -30,6 +30,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   Map<History, bool> selectedAnimes = {};
   final scrollController = ScrollController();
   var controller = FlyoutController();
+  late int heatYear = DateTime.now().year;
 
   Map<String, bool> toJsonMap(Map<HistoryTimeGroup, bool> map) {
     return map.map((key, value) => MapEntry(key.name, value));
@@ -384,6 +385,17 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
       return slivers;
     }
 
+    // 全年活跃热力图数据（按观看历史更新时间统计每天活跃次数）
+    final heatCounts = <DateTime, int>{};
+    var minYear = DateTime.now().year;
+    for (final h in animes) {
+      if (h.time.year < minYear) minYear = h.time.year;
+      if (h.time.year == heatYear) {
+        final key = DateTime(h.time.year, h.time.month, h.time.day);
+        heatCounts[key] = (heatCounts[key] ?? 0) + 1;
+      }
+    }
+
     Widget body = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
@@ -407,6 +419,16 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
               ? Text(selectedAnimes.length.toString())
               : const Text(''),
           actions: multiSelectMode ? selectActions : normalActions,
+        ),
+        SliverToBoxAdapter(
+          child: _HistoryHeatmapCard(
+            year: heatYear,
+            counts: heatCounts,
+            minYear: minYear,
+            maxYear: DateTime.now().year,
+            onPrev: () => setState(() => heatYear -= 1),
+            onNext: () => setState(() => heatYear += 1),
+          ),
         ),
         ...buildGroupedSlivers(groups),
         SliverPadding(
@@ -477,4 +499,185 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
       child: body,
     );
   }
+}
+
+/// 历史页顶部：年切换 + 全年（无滑动）活跃热力图
+class _HistoryHeatmapCard extends StatelessWidget {
+  const _HistoryHeatmapCard({
+    required this.year,
+    required this.counts,
+    required this.minYear,
+    required this.maxYear,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  final int year;
+  final Map<DateTime, int> counts;
+  final int minYear;
+  final int maxYear;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border.all(color: colorScheme.outlineVariant, width: 0.6),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.local_fire_department_outlined,
+                size: 18,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  t.activityHeatmapTitle,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                visualDensity: VisualDensity.compact,
+                onPressed: year > minYear ? onPrev : null,
+              ),
+              Text(
+                t.statsYearSuffix(year: year),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.primary,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                visualDensity: VisualDensity.compact,
+                onPressed: year < maxYear ? onNext : null,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _YearActivityHeatmap(year: year, counts: counts),
+        ],
+      ),
+    );
+  }
+}
+
+/// 全年热力图：53 周横排铺满整行，7 行（周一~周日），纵向也一次放完，无滚动
+class _YearActivityHeatmap extends StatelessWidget {
+  const _YearActivityHeatmap({required this.year, required this.counts});
+
+  final int year;
+  final Map<DateTime, int> counts;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final maxCount = counts.values.isEmpty
+        ? 1
+        : counts.values.reduce((a, b) => a > b ? a : b).clamp(1, 2147483647).toInt();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final first = DateTime(year, 1, 1);
+        final last = DateTime(year, 12, 31);
+        final leading = first.weekday - 1; // 0=周一
+        final lastAbs = leading + last.difference(first).inDays;
+        final colCount = (lastAbs ~/ 7) + 1;
+        const gap = 1.6;
+        final cellW = (width - (colCount - 1) * gap) / colCount;
+        final height = cellW * 7 + gap * 6;
+        return SizedBox(
+          width: width,
+          height: height,
+          child: CustomPaint(
+            painter: _YearHeatmapPainter(
+              year: year,
+              colCount: colCount,
+              counts: counts,
+              maxCount: maxCount,
+              gap: gap,
+              emptyColor: colorScheme.surfaceContainerHighest,
+              primary: colorScheme.primary,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _YearHeatmapPainter extends CustomPainter {
+  _YearHeatmapPainter({
+    required this.year,
+    required this.colCount,
+    required this.counts,
+    required this.maxCount,
+    required this.gap,
+    required this.emptyColor,
+    required this.primary,
+  });
+
+  final int year;
+  final int colCount;
+  final Map<DateTime, int> counts;
+  final int maxCount;
+  final double gap;
+  final Color emptyColor;
+  final Color primary;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cellW = (size.width - (colCount - 1) * gap) / colCount;
+    final cellH = (size.height - 6 * gap) / 7;
+    final first = DateTime(year, 1, 1);
+    final leading = first.weekday - 1;
+    final paint = Paint();
+    for (var d = DateTime(year, 1, 1);
+        d.year == year;
+        d = d.add(const Duration(days: 1))) {
+      final dayOfYear = d.difference(first).inDays;
+      final abs = leading + dayOfYear;
+      final col = abs ~/ 7;
+      final row = abs % 7;
+      final count = counts[d] ?? 0;
+      final Color color;
+      if (count <= 0) {
+        color = emptyColor;
+      } else {
+        final t = (count / maxCount).clamp(0.0, 1.0);
+        color = primary.withValues(alpha: 0.25 + t * 0.7);
+      }
+      paint.color = color;
+      final left = col * (cellW + gap);
+      final top = row * (cellH + gap);
+      final rrect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(left, top, cellW, cellH),
+        const Radius.circular(2),
+      );
+      canvas.drawRRect(rrect, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _YearHeatmapPainter oldDelegate) =>
+      oldDelegate.year != year ||
+      oldDelegate.counts != counts ||
+      oldDelegate.maxCount != maxCount ||
+      oldDelegate.primary != primary;
 }

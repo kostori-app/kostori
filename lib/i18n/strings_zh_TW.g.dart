@@ -1895,6 +1895,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改評分';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
+	@override String get activityHeatmapTitle => '活躍熱力圖';
 	@override String statsTimelineDay({required Object month, required Object day}) => '${month} 月 ${day} 日';
 	@override String get statsDayRecords => '當天的記錄';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
@@ -4358,6 +4359,7 @@ extension on TranslationsZhTw {
 			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改評分',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
+			'activityHeatmapTitle' => '活躍熱力圖',
 			'statsTimelineDay' => ({required Object month, required Object day}) => '${month} 月 ${day} 日',
 			'statsDayRecords' => '當天的記錄',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
@@ -4507,9 +4509,9 @@ extension on TranslationsZhTw {
 			'profileTabMemory' => '記憶',
 			'profileTabRequest' => '請求',
 			'profileTabMcp' => 'MCP',
-			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
 			_ => null,
 		} ?? switch (path) {
+			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
 			'profileTabLocalTools' => '工具技能',
 			'userNickname' => '使用者暱稱',
 			'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',

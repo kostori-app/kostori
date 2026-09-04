@@ -5611,6 +5611,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'All-time timeline'
 	String get statsAllTimelineTitle => 'All-time timeline';
 
+	/// en: 'Activity heatmap'
+	String get activityHeatmapTitle => 'Activity heatmap';
+
 	/// en: '${month}/${day}'
 	String statsTimelineDay({required Object month, required Object day}) => '${month}/${day}';
 
@@ -9154,6 +9157,7 @@ extension on Translations {
 			'statsTimelineRatingUpdated' => ({required Object n}) => 'Rating modified (${n})',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
+			'activityHeatmapTitle' => 'Activity heatmap',
 			'statsTimelineDay' => ({required Object month, required Object day}) => '${month}/${day}',
 			'statsDayRecords' => 'Today\'s records',
 			'statsYearSuffix' => ({required Object year}) => '${year}',
@@ -9302,9 +9306,9 @@ extension on Translations {
 			'profileTabExtensions' => 'Extensions',
 			'profileTabMemory' => 'Memory',
 			'profileTabRequest' => 'Request',
-			'profileTabMcp' => 'MCP',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
 			'userNickname' => 'User nickname',
