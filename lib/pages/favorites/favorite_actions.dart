@@ -84,7 +84,7 @@ String? validateFolderName(String newFolderName) {
 
 void addFavorite(Anime anime) {
   var folders = LocalFavoritesManager().folderNames
-      .where((folder) => folder != "default")
+      .where((folder) => !isUnassignedFolder(folder))
       .toList();
 
   showDialog(
@@ -144,7 +144,7 @@ void addFavorite(Anime anime) {
 
 void defaultFavorite(Anime anime) {
   LocalFavoritesManager().addAnime(
-    'default',
+    kUnassignedFolder,
     FavoriteItem(
       id: anime.id,
       name: anime.title,

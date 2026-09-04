@@ -45,7 +45,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
   late List<String> filteredFolders;
 
   String _displayName(String folder) =>
-      folder == 'default' ? t.kDefault : folder;
+      isUnassignedFolder(folder) ? t.kDefault : folder;
 
   FavoritesController get favoritesController => widget.favoritesController;
 
@@ -60,7 +60,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
         LocalFavoritesManager().find(a.id, AnimeType(a.sourceKey.hashCode)),
       );
     }
-    if (added.contains('default') || added.contains('默认')) {
+    if (added.any((f) => isUnassignedFolder(f))) {
       filteredFolders = localFolders.toList();
     } else {
       filteredFolders = localFolders
@@ -196,7 +196,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
   }
 
   Widget buildLocalContent() {
-    if (added.contains('default') || added.contains('默认')) {
+    if (added.any((f) => isUnassignedFolder(f))) {
       filteredFolders = LocalFavoritesManager().folderNames.toList();
     } else {
       filteredFolders = LocalFavoritesManager().folderNames
@@ -263,7 +263,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
             });
             if (mounted) {
               setState(() {
-                if (added.contains('default') || added.contains('默认')) {
+                if (added.any((f) => isUnassignedFolder(f))) {
                   filteredFolders = LocalFavoritesManager().folderNames
                       .toList();
                 } else {

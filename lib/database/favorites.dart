@@ -23,9 +23,9 @@ const String kUnassignedFolder = '_default';
 /// 历史 token：drift 迁移前未分类一直用 `'default'` 字符串
 const String kUnassignedLegacy = 'default';
 
-/// 判断某分组引用是否指向"未分类/默认收藏"（兼容新旧 token）
+/// 判断某分组引用是否指向"未分类/默认收藏"（伪组；字面 `default` 已释放给用户）
 bool isUnassignedFolder(String? folder) =>
-    folder == kUnassignedFolder || folder == kUnassignedLegacy;
+    folder == kUnassignedFolder || folder == '默认';
 
 class FavoriteItem implements Anime {
   String name;
@@ -245,7 +245,17 @@ class LocalFavoritesManager with ChangeNotifier {
 
   List<String> get folderNames => List.unmodifiable(_folderOrder);
 
-  String _resolveFolder(String folder) => folder == '默认' ? 'default' : folder;
+  String _resolveFolder(String? folder) {
+    if (folder == '默认' || folder == kUnassignedFolder) {
+      return kUnassignedFolder;
+    }
+    // 历史数据里 `default` 曾指未分类；若用户还没真的建过叫 default 的
+    // 自定义分组，仍把它当未分类兼容；建过则以自定义组为准
+    if (folder == kUnassignedLegacy && !_byFolder.containsKey(kUnassignedLegacy)) {
+      return kUnassignedFolder;
+    }
+    return folder ?? kUnassignedFolder;
+  }
 
   bool existsFolder(String name) => _byFolder.containsKey(_resolveFolder(name));
 
@@ -256,7 +266,48 @@ class LocalFavoritesManager with ChangeNotifier {
     await appdata.ensureInit();
     final db = FavoriteDatabase.open(FavoriteDatabase.defaultPath());
     _db = db;
+    await _migrateUnassignedToken(db);
     await _loadFromDrift(db);
+  }
+
+  /// 一次性迁移：把历史上以 `default`/`默认` 存储的“未分类”统一改存到
+  /// 保留 token `_default`，从而把字面 `default` 让给用户自定义分组。
+  Future<void> _migrateUnassignedToken(FavoriteDatabase db) async {
+    const legacy = ['default', '默认'];
+    try {
+      await db.transaction(() async {
+        final canonicalExists = await (db.selectOnly(db.favoriteFolders)
+              ..addColumns([db.favoriteFolders.id])
+              ..where(db.favoriteFolders.id.equals(kUnassignedFolder)))
+            .get()
+            .then((r) => r.isNotEmpty);
+        if (!canonicalExists) {
+          var order = 0;
+          final oldOrder = await (db.selectOnly(db.favoriteFolders)
+                ..addColumns([db.favoriteFolders.sortOrder])
+                ..where(db.favoriteFolders.id.isIn(legacy)))
+              .get();
+          if (oldOrder.isNotEmpty) {
+            order = oldOrder.first.read(db.favoriteFolders.sortOrder) ?? 0;
+          }
+          await db.into(db.favoriteFolders).insert(
+            FavoriteFoldersCompanion.insert(
+              id: kUnassignedFolder,
+              name: kUnassignedFolder,
+              sortOrder: order,
+            ),
+          );
+        }
+        await (db.update(db.favoriteItems)
+              ..where((t) => t.folderId.isIn(legacy)))
+            .write(FavoriteItemsCompanion(folderId: Value(kUnassignedFolder)));
+        await (db.delete(db.favoriteFolders)..where(
+          (t) => t.id.isIn(legacy),
+        )).go();
+      });
+    } catch (e) {
+      Log.error('FavoriteMigrate', 'unassigned token migration failed: $e');
+    }
   }
 
   Future<void> _loadFromDrift(FavoriteDatabase db) async {
@@ -629,7 +680,7 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void deleteFolder(String name) {
-    if (name == "default") return;
+    if (isUnassignedFolder(name)) return;
     _byFolder.remove(name);
     _folderOrder.remove(name);
     _rebuildHashedIds();

@@ -90,23 +90,24 @@ class FavoritesController extends Notifier<FavoritesState> {
     List<String> folders = const [];
     try {
       final mgr = LocalFavoritesManager();
-      if (!mgr.folderNames.contains('default')) {
-        mgr.createFolder('default');
+      if (!mgr.folderNames.contains(kUnassignedFolder)) {
+        mgr.createFolder(kUnassignedFolder);
       }
       // 空 default 分组不显示（与 Tab 列表保持一致）；
       // 若过滤后为空（完全无收藏），保留 default 作为可选中项
       final filtered = mgr.folderNames.where((name) {
-        if (name == 'default') {
-          return mgr
-              .getAllAnimes('default', FavoriteSortType.nameAsc)
-              .isNotEmpty;
+        if (name == kUnassignedFolder) {
+          return mgr.getAllAnimes(
+            kUnassignedFolder,
+            FavoriteSortType.nameAsc,
+          ).isNotEmpty;
         }
         return true;
       }).toList();
-      folders = filtered.isNotEmpty ? filtered : ['default'];
+      folders = filtered.isNotEmpty ? filtered : [kUnassignedFolder];
     } catch (e) {
       Log.error('FavoritesController.build', '$e');
-      folders = ['default'];
+      folders = [kUnassignedFolder];
     }
 
     final data = appdata.implicitData['favoriteFolder'];

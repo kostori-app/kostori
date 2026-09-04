@@ -1,7 +1,7 @@
 part of 'favorites_page.dart';
 
 const _asyncDataFetchLimit = 500;
-const excludedFolders = ['default', '默认'];
+const excludedFolders = [kUnassignedFolder, 'default', '默认'];
 
 class _LocalFavoritesPage extends ConsumerStatefulWidget {
   const _LocalFavoritesPage({required this.favoritesController});
@@ -109,16 +109,18 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     if (isLoading) return;
 
     final newFolders = manager.folderNames.where((name) {
-      if (name == 'default') {
+      if (name == kUnassignedFolder) {
         return manager
-            .getAllAnimes('default', FavoriteSortType.nameAsc)
+            .getAllAnimes(kUnassignedFolder, FavoriteSortType.nameAsc)
             .isNotEmpty;
       }
       return true;
     }).toList();
     // 过滤后为空（完全无收藏）时保留 default 作为可选中项，
     // 与 FavoritesController.build() 兜底逻辑保持一致
-    final effectiveFolders = newFolders.isNotEmpty ? newFolders : ['default'];
+    final effectiveFolders = newFolders.isNotEmpty
+        ? newFolders
+        : [kUnassignedFolder];
 
     final result = <String, List<FavoriteItem>>{};
     isLoading = true;
@@ -251,7 +253,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
             Flexible(
               fit: FlexFit.loose,
               child: Text(
-                name == 'default' ? t.kDefault : name,
+                isUnassignedFolder(name) ? t.kDefault : name,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -385,7 +387,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         _buildSortMenu(),
         MenuButton(
           entries: [
-            if (favState.folder != 'default')
+            if (!isUnassignedFolder(favState.folder))
               MenuEntry(
                 icon: Icons.edit_outlined,
                 text: t.rename,
@@ -396,7 +398,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               text: t.export,
               onClick: _exportFolder,
             ),
-            if (favState.folder != 'default')
+            if (!isUnassignedFolder(favState.folder))
               MenuEntry(
                 icon: Icons.delete_outline,
                 text: t.deleteFolder,

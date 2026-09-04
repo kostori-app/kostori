@@ -142,9 +142,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
         final list = favState.folders.isNotEmpty
             ? favState.folders
             : mgr.folderNames.where((name) {
-                if (name == 'default') {
+                if (name == kUnassignedFolder) {
                   return mgr
-                      .getAllAnimes('default', FavoriteSortType.nameAsc)
+                      .getAllAnimes(kUnassignedFolder, FavoriteSortType.nameAsc)
                       .isNotEmpty;
                 }
                 return true;

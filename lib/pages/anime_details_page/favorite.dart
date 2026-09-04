@@ -56,7 +56,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
     localFolders = LocalFavoritesManager().folderNames;
     // 过滤后的数据源
     added = LocalFavoritesManager().find(widget.cid, widget.type);
-    if (added.contains('default') || added.contains('默认')) {
+    if (added.any((f) => f == '_default' || f == 'default' || f == '默认')) {
       filteredFolders = localFolders.toList();
     } else {
       filteredFolders = localFolders
