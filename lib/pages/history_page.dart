@@ -31,6 +31,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   final scrollController = ScrollController();
   var controller = FlyoutController();
   late int heatYear = DateTime.now().year;
+  bool showHeatNumbers = true;
 
   Map<String, bool> toJsonMap(Map<HistoryTimeGroup, bool> map) {
     return map.map((key, value) => MapEntry(key.name, value));
@@ -472,6 +473,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
             dayEntries: dayEntries,
             minYear: minYear,
             maxYear: DateTime.now().year,
+            showNumbers: showHeatNumbers,
+            onToggleNumbers: (v) => setState(() => showHeatNumbers = v),
             onPrev: () => setState(() => heatYear -= 1),
             onNext: () => setState(() => heatYear += 1),
             onDayTap: _showDaySheet,
@@ -557,6 +560,8 @@ class _HistoryHeatmapCard extends StatelessWidget {
     required this.dayEntries,
     required this.minYear,
     required this.maxYear,
+    required this.showNumbers,
+    required this.onToggleNumbers,
     required this.onPrev,
     required this.onNext,
     required this.onDayTap,
@@ -566,6 +571,8 @@ class _HistoryHeatmapCard extends StatelessWidget {
   final Map<DateTime, List<History>> dayEntries;
   final int minYear;
   final int maxYear;
+  final bool showNumbers;
+  final ValueChanged<bool> onToggleNumbers;
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final void Function(DateTime, List<History>) onDayTap;
@@ -619,12 +626,26 @@ class _HistoryHeatmapCard extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 onPressed: year < maxYear ? onNext : null,
               ),
+              const SizedBox(width: 4),
+              Text(
+                t.activityHeatNumbers,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Switch(
+                value: showNumbers,
+                onChanged: onToggleNumbers,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ],
           ),
           const SizedBox(height: 8),
           _YearActivityHeatmap(
             year: year,
             dayEntries: dayEntries,
+            showNumbers: showNumbers,
             onDayTap: onDayTap,
           ),
         ],
@@ -639,11 +660,13 @@ class _YearActivityHeatmap extends StatelessWidget {
   const _YearActivityHeatmap({
     required this.year,
     required this.dayEntries,
+    required this.showNumbers,
     required this.onDayTap,
   });
 
   final int year;
   final Map<DateTime, List<History>> dayEntries;
+  final bool showNumbers;
   final void Function(DateTime, List<History>) onDayTap;
 
   static const double cell = 26;
@@ -703,7 +726,7 @@ class _YearActivityHeatmap extends StatelessWidget {
 
     Color colorOf(DateTime day) {
       final count = dayEntries[day]?.length ?? 0;
-      if (count <= 0) return colorScheme.primary;
+      if (count <= 0) return colorScheme.surfaceContainerHighest;
       final t = (count / maxCount).clamp(0.0, 1.0);
       return colorScheme.primary.withValues(alpha: 0.45 + t * 0.5);
     }
@@ -763,14 +786,14 @@ class _YearActivityHeatmap extends StatelessWidget {
       if (d.year != year) return const SizedBox.shrink();
       final items = dayEntries[d];
       final count = items?.length ?? 0;
-      if (count <= 0) return const SizedBox.shrink();
       String two(int v) => v.toString().padLeft(2, '0');
-      final tip = '${d.year}-${two(d.month)}-${two(d.day)} · $count';
+      final tip = '${d.year}-${two(d.month)}-${two(d.day)}'
+          '${count > 0 ? ' · $count' : ''}';
       return Tooltip(
         message: tip,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => onDayTap(d, items!),
+          onTap: count > 0 ? () => onDayTap(d, items!) : null,
           child: Container(
             width: cell,
             height: cell,
@@ -779,14 +802,16 @@ class _YearActivityHeatmap extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               color: colorOf(d),
             ),
-            child: Text(
-              '$count',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onPrimary,
-              ),
-            ),
+            child: showNumbers && count > 0
+                ? Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onPrimary,
+                    ),
+                  )
+                : null,
           ),
         ),
       );

@@ -1896,6 +1896,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String get activityHeatmapTitle => '活躍熱力圖';
+	@override String get activityHeatNumbers => '顯示數量';
 	@override String statsTimelineDay({required Object month, required Object day}) => '${month} 月 ${day} 日';
 	@override String get statsDayRecords => '當天的記錄';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
@@ -4382,6 +4383,7 @@ extension on TranslationsZhTw {
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'activityHeatmapTitle' => '活躍熱力圖',
+			'activityHeatNumbers' => '顯示數量',
 			'statsTimelineDay' => ({required Object month, required Object day}) => '${month} 月 ${day} 日',
 			'statsDayRecords' => '當天的記錄',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
@@ -4530,9 +4532,9 @@ extension on TranslationsZhTw {
 			'profileTabExtensions' => '擴充',
 			'profileTabMemory' => '記憶',
 			'profileTabRequest' => '請求',
-			'profileTabMcp' => 'MCP',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
 			'profileTabLocalTools' => '工具技能',
 			'userNickname' => '使用者暱稱',

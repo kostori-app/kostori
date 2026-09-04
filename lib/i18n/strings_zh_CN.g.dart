@@ -1897,6 +1897,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
+	@override String get activityHeatNumbers => '显示数量';
 	@override String statsTimelineDay({required Object month, required Object day}) => '${month} 月 ${day} 日';
 	@override String get statsDayRecords => '当天的记录';
 	@override String statsYearSuffix({required Object year}) => '${year} 年';
@@ -4384,6 +4385,7 @@ extension on TranslationsZhCn {
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
+			'activityHeatNumbers' => '显示数量',
 			'statsTimelineDay' => ({required Object month, required Object day}) => '${month} 月 ${day} 日',
 			'statsDayRecords' => '当天的记录',
 			'statsYearSuffix' => ({required Object year}) => '${year} 年',
@@ -4531,9 +4533,9 @@ extension on TranslationsZhCn {
 			'profileTabBasic' => '基础',
 			'profileTabExtensions' => '扩展',
 			'profileTabMemory' => '记忆',
-			'profileTabRequest' => '请求',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabRequest' => '请求',
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => '绑定本助手的 MCP 服务器（连接后自动导入工具）',
 			'profileTabLocalTools' => '工具技能',

@@ -1914,6 +1914,7 @@ statsTimelineRatingUpdated: "第 ${n} 次修改评分"
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线
 activityHeatmapTitle: 活跃热力图
+activityHeatNumbers: 显示数量
 statsTimelineDay: "${month} 月 ${day} 日"
 statsDayRecords: 当天的记录
 statsYearSuffix: "${year} 年"

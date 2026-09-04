@@ -1916,6 +1916,7 @@ statsTimelineRatingUpdated: "第 ${n} 次修改評分"
 statsTimelineNoRecords: "還沒有任何紀錄"
 statsAllTimelineTitle: 全部時間軸
 activityHeatmapTitle: 活躍熱力圖
+activityHeatNumbers: 顯示數量
 statsTimelineDay: "${month} 月 ${day} 日"
 statsDayRecords: 當天的記錄
 statsYearSuffix: "${year} 年"

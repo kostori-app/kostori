@@ -1915,6 +1915,7 @@ statsTimelineRatingUpdated: "Rating modified (${n})"
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
 activityHeatmapTitle: Activity heatmap
+activityHeatNumbers: Show counts
 statsTimelineDay: "${month}/${day}"
 statsDayRecords: Today's records
 statsYearSuffix: "${year}"
