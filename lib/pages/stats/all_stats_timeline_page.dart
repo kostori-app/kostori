@@ -242,42 +242,6 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
     );
   }
 
-  Widget _dayContent(
-    BuildContext context,
-    DateTime day,
-    Map<String, _DayUnitSummary> dayUnits,
-  ) {
-    final units = dayUnits.values.toList()
-      ..sort((a, b) => a.title.compareTo(b.title));
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, right: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 78,
-            child: Text(
-              t.statsTimelineDay(month: day.month, day: day.day),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: units
-                  .map((u) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _unitCard(context, u),
-                      ))
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -314,6 +278,43 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
         for (var m = 0; m < yearMonths.length; m++) {
           final month = yearMonths[m];
           final monthDays = daysOf['$year-$month']!;
+          final dayNodes = <Widget>[];
+          for (var d = 0; d < monthDays.length; d++) {
+            final day = monthDays[d];
+            final units = _byDay[day]!.values.toList()
+              ..sort((a, b) => a.title.compareTo(b.title));
+            dayNodes.add(
+              TimelineTreeNode(
+                title: Text(
+                  t.statsTimelineDay(month: day.month, day: day.day),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                color: colorScheme.tertiary,
+                dotSize: 10,
+                isFirst: d == 0,
+                isLast: d == monthDays.length - 1,
+                childrenIndent: 36,
+                children: [
+                  for (var u = 0; u < units.length; u++)
+                    TimelineTreeNode(
+                      title: Padding(
+                        padding: const EdgeInsets.only(right: 12, bottom: 6),
+                        child: _unitCard(context, units[u]),
+                      ),
+                      color: colorScheme.primary.withValues(alpha: 0.85),
+                      dotSize: 8,
+                      titleIndent: 22,
+                      isFirst: u == 0,
+                      isLast: u == units.length - 1,
+                    ),
+                ],
+              ),
+            );
+          }
           monthNodes.add(
             TimelineTreeNode(
               title: Text(
@@ -328,16 +329,7 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
               isFirst: m == 0,
               isLast: m == yearMonths.length - 1,
               childrenIndent: 32,
-              children: [
-                for (var d = 0; d < monthDays.length; d++)
-                  TimelineTreeNode(
-                    title: _dayContent(context, monthDays[d], _byDay[monthDays[d]]!),
-                    color: colorScheme.tertiary,
-                    dotSize: 10,
-                    isFirst: d == 0,
-                    isLast: d == monthDays.length - 1,
-                  ),
-              ],
+              children: dayNodes,
             ),
           );
         }
@@ -360,7 +352,6 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
           ),
         );
       }
-
       body = ListView(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
         children: yearNodes,
