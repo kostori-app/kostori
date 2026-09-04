@@ -558,31 +558,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 8,
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Material(
-                                      color:
-                                          context.brightness == Brightness.light
-                                          ? Colors.white.toOpacity(0.72)
-                                          : const Color(
-                                              0xFF1E1E1E,
-                                            ).toOpacity(0.72),
-                                      elevation: 4,
-                                      shadowColor: Theme.of(
-                                        context,
-                                      ).colorScheme.shadow,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: InkWell(
-                                        onTap: () {},
-                                        child: StatItemWidget(
-                                          statsGroup: statGroup,
-                                          selectedDay:
-                                              controller.selectedDay ??
-                                              controller.focusedDay,
-                                        ),
-                                      ),
+                                  child: StatEntryCard(
+                                    onTap: () {},
+                                    child: StatItemWidget(
+                                      statsGroup: statGroup,
+                                      selectedDay:
+                                          controller.selectedDay ??
+                                          controller.focusedDay,
                                     ),
                                   ),
                                 );
@@ -628,24 +610,11 @@ class FullStatsPage extends StatelessWidget {
             return Padding(
               key: ValueKey(statGroup.first.id),
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Material(
-                  color: context.brightness == Brightness.light
-                      ? Colors.white.toOpacity(0.72)
-                      : const Color(0xFF1E1E1E).toOpacity(0.72),
-                  elevation: 4,
-                  shadowColor: Theme.of(context).colorScheme.shadow,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: InkWell(
-                    onTap: () {},
-                    child: StatItemWidget(
-                      statsGroup: statGroup,
-                      selectedDay: selectedDay,
-                    ),
-                  ),
+              child: StatEntryCard(
+                onTap: () {},
+                child: StatItemWidget(
+                  statsGroup: statGroup,
+                  selectedDay: selectedDay,
                 ),
               ),
             );
