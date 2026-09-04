@@ -764,7 +764,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           SliverToBoxAdapter(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: favoritesLayoutCapsule(
                   context,
                   value: sourceDisplayModeOf('local_favorites') ??
