@@ -610,10 +610,10 @@ class _HistoryHeatmapCard extends StatelessWidget {
               Tooltip(
                 message: t.activityHeatNumbers,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   onTap: () => onToggleNumbers(!showNumbers),
                   child: Container(
-                    padding: const EdgeInsets.all(7),
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: showNumbers
                           ? colorScheme.primary
@@ -623,11 +623,11 @@ class _HistoryHeatmapCard extends StatelessWidget {
                             ? colorScheme.primary
                             : colorScheme.outlineVariant,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
                       Icons.numbers,
-                      size: 18,
+                      size: 16,
                       color: showNumbers
                           ? colorScheme.onPrimary
                           : colorScheme.onSurfaceVariant,
