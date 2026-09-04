@@ -17,6 +17,16 @@ String _getTimeString(DateTime time) {
   return time.toIso8601String().replaceFirst("T", " ").substring(0, 19);
 }
 
+/// 未分类（默认收藏）对外 token（新语义，最终用于释放 `default` 组名）
+const String kUnassignedFolder = '_default';
+
+/// 历史 token：drift 迁移前未分类一直用 `'default'` 字符串
+const String kUnassignedLegacy = 'default';
+
+/// 判断某分组引用是否指向"未分类/默认收藏"（兼容新旧 token）
+bool isUnassignedFolder(String? folder) =>
+    folder == kUnassignedFolder || folder == kUnassignedLegacy;
+
 class FavoriteItem implements Anime {
   String name;
   String author;
