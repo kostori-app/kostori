@@ -73,10 +73,14 @@ class NaviPaneState extends State<NaviPane>
   /// 宽屏时侧边栏是否展开（可完全收起，只留一个展开图标）
   bool _sidebarOpen = true;
 
+  static const _kSidebarCollapsedKey = 'sidebarCollapsed';
+
   void toggleSidebar() {
     setState(() {
       _sidebarOpen = !_sidebarOpen;
     });
+    appdata.settings[_kSidebarCollapsedKey] = !_sidebarOpen;
+    appdata.saveData();
   }
 
   int get currentPage => _currentPage;
@@ -146,6 +150,8 @@ class NaviPaneState extends State<NaviPane>
 
   @override
   void initState() {
+    _sidebarOpen =
+        appdata.settings[_kSidebarCollapsedKey] != true;
     _loadedPages.add(_currentPage);
     controller = AnimationController(
       duration: const Duration(milliseconds: 250),
@@ -426,6 +432,17 @@ class NaviPaneState extends State<NaviPane>
 
   /// 桌面侧边栏是否处于展开态（供悬浮栏判断）
   bool get sidebarExpanded => _sidebarOpen;
+
+  /// 悬浮主导航（含两端内边距）的估算宽度
+  double get floatingNavWidth =>
+      16 +
+      widget.paneItems.length * 56 +
+      (widget.paneItems.length - 1) * 4;
+
+  /// 动作坞估算宽度
+  double get floatingActionWidth =>
+      widget.paneActions.length * 44 +
+      (widget.paneActions.length - 1) * 2;
 
   /// 搜索/分类/设置等动作的悬浮操作坞（与窄屏悬浮导航同风格，
   /// 通常紧挨在主悬浮导航右侧一起出现）
@@ -906,48 +923,38 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ],
       );
       final bottomPad = MediaQuery.of(context).padding.bottom + 12;
-      final dock = AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        layoutBuilder: (currentChild, previousChildren) {
-          return Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              ...previousChildren,
-              if (currentChild != null) currentChild,
-            ],
-          );
-        },
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.6, end: 1).animate(animation),
-              alignment: Alignment.bottomCenter,
-              child: child,
-            ),
-          );
-        },
-        child: _minimized
-            ? _MiniBar(
-                key: const ValueKey('mini'),
-                onTap: () => setState(() => _minimized = false),
-              )
-            : KeyedSubtree(
-                key: const ValueKey('full'),
-                // 主导航与动作坞左右并排，动作坞紧挨在主悬浮栏右侧
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    state.buildBottom(),
-                    const SizedBox(width: 10),
-                    state.buildActionDock(),
-                  ],
+      final Widget bottomBar;
+      if (_minimized) {
+        bottomBar = Center(
+          child: _MiniBar(
+            onTap: () => setState(() => _minimized = false),
+          ),
+        );
+      } else {
+        // 主悬浮导航保持居中，动作坞紧贴其右侧（不合并成整行居中）
+        bottomBar = LayoutBuilder(
+          builder: (context, constraints) {
+            final navW = state.floatingNavWidth;
+            final dockW = state.floatingActionWidth;
+            double dockLeft = (constraints.maxWidth - navW) / 2 + navW + 12;
+            final maxLeft = constraints.maxWidth - dockW - 8;
+            dockLeft = math.min(dockLeft, math.max(0.0, maxLeft));
+            return Stack(
+              children: [
+                Align(
+                  alignment: Alignment.center,
+                  child: state.buildBottom(),
                 ),
-              ),
-      );
+                Positioned(
+                  left: dockLeft,
+                  top: (constraints.maxHeight - 44) / 2,
+                  child: state.buildActionDock(),
+                ),
+              ],
+            );
+          },
+        );
+      }
       return Stack(
         children: [
           Positioned.fill(child: page),
@@ -955,7 +962,10 @@ class _NaviMainViewState extends State<_NaviMainView> {
             left: 0,
             right: 0,
             bottom: bottomPad,
-            child: Center(child: dock),
+            child: SizedBox(
+              height: NaviPaneState._kBottomBarHeight,
+              child: bottomBar,
+            ),
           ),
         ],
       );
