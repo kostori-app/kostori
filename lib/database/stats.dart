@@ -553,6 +553,10 @@ class StatsManager with ChangeNotifier {
   final _cachedStatsIds = <String, bool>{};
   bool _modifiedAfterLastCache = true;
 
+  /// 按天事件表缓存：写入后置脏，避免日历切换反复全表扫描
+  Map<DateTime, List<StatsDataImpl>>? _eventMapCache;
+  bool _eventMapDirty = true;
+
   /// 在途数据库操作计数；close/reinit 前等待归零，
   /// 避免数据导入关库打断在途查询（"Channel was closed"）
   int _busy = 0;
@@ -577,6 +581,8 @@ class StatsManager with ChangeNotifier {
     if (isInitialized) return;
     _db = _StatsDb();
     isInitialized = true;
+    _eventMapDirty = true;
+    _eventMapCache = null;
   }
 
   Future<void> close() async {
@@ -584,6 +590,8 @@ class StatsManager with ChangeNotifier {
     await _db.close();
     _cache = null;
     isInitialized = false;
+    _eventMapDirty = true;
+    _eventMapCache = null;
   }
 
   Future<void> reinit([Future<void> Function()? between]) async {
@@ -597,7 +605,15 @@ class StatsManager with ChangeNotifier {
 
     _db = _StatsDb();
     isInitialized = true;
+    _eventMapDirty = true;
+    _eventMapCache = null;
     notifyListeners();
+  }
+
+  /// 通知“按天事件”缓存失效（外部直接改库后可调用）
+  void invalidateEventMapCache() {
+    _eventMapDirty = true;
+    _eventMapCache = null;
   }
 
   // ─── 工具 ──────────────────────────────────
@@ -657,6 +673,7 @@ class StatsManager with ChangeNotifier {
 
   Future<void> addStats(StatsData newItem) => _guard(() async {
     _modifiedAfterLastCache = true;
+    _eventMapDirty = true;
     final c = _toCompanion(newItem);
     await _db.customInsert(
       '''INSERT OR REPLACE INTO stats
@@ -901,6 +918,7 @@ class StatsManager with ChangeNotifier {
       });
 
   Future<Map<DateTime, List<StatsDataImpl>>> getEventMap() async {
+    if (!_eventMapDirty && _eventMapCache != null) return _eventMapCache!;
     final allStats = await getStatsAll();
     final map = <DateTime, List<StatsDataImpl>>{};
     for (var stats in allStats) {
@@ -915,6 +933,8 @@ class StatsManager with ChangeNotifier {
         map.putIfAbsent(date, () => []).add(stats);
       }
     }
+    _eventMapCache = map;
+    _eventMapDirty = false;
     return map;
   }
 
@@ -1216,6 +1236,7 @@ extension StatsHelper on StatsManager {
     required String folder,
     required FavoriteAction action,
   }) async {
+    _eventMapDirty = true;
     final manager = StatsManager();
     if (!manager.isExist(id, AnimeType(type))) {
       try {
