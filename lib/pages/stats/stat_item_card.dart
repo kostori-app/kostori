@@ -929,86 +929,271 @@ class _StatItemWidgetState extends State<StatItemWidget> {
   }
 }
 
-/// 点击记录卡片后展示该条目全部历史统计（按天分组的时间线）
-class StatsTimelinePage extends StatelessWidget {
-  StatsTimelinePage({super.key, required this.group});
+
+
+/// 条目全部历史统计时间线：头部卡片 + 按时间排序的记录流
+class StatsTimelinePage extends StatefulWidget {
+  const StatsTimelinePage({super.key, required this.group});
 
   final List<StatsDataImpl> group;
 
-  List<MapEntry<DateTime, List<StatsDataImpl>>> _buildDays() {
-    final byDay = <DateTime, List<StatsDataImpl>>{};
-    DateTime norm(DateTime d) => DateTime(d.year, d.month, d.day);
-    for (final stat in group) {
-      final lists = <List<DailyEvent>>[
-        stat.comment,
-        stat.rating,
-        stat.favorite,
-        stat.totalWatchDurations,
-        stat.totalClickCount,
-      ];
-      final dates = <DateTime>{};
-      for (final list in lists) {
-        for (final ev in list) {
-          dates.add(norm(ev.date));
+  @override
+  State<StatsTimelinePage> createState() => _StatsTimelinePageState();
+}
+
+class _TimelineEntry {
+  final DateTime time;
+  final Widget child;
+  _TimelineEntry(this.time, this.child);
+}
+
+class _StatsTimelinePageState extends State<StatsTimelinePage> {
+  
+
+  List<StatsDataImpl> get _group => widget.group;
+
+  StatsDataImpl get _primaryStat {
+    final masterItems = _group.where((s) => s.isBangumi).toList();
+    return masterItems.isNotEmpty ? masterItems.first : _group.first;
+  }
+
+  String _durationSuffix(int? seconds) {
+    seconds ??= 0;
+    if (seconds <= 0) return '';
+    return t.statsRatedAt(duration: Utils.formatHMS(seconds));
+  }
+
+  String _favoriteActionText(PlatformEventRecord record) {
+    switch (record.favoriteAction) {
+      case FavoriteAction.add:
+        return t.addToFolder(folder: _statFolderLabel(record.favorite));
+      case FavoriteAction.remove:
+        return t.removeFromFolder(folder: _statFolderLabel(record.favorite));
+      case FavoriteAction.move:
+        final folder = record.favorite;
+        if (folder != null && folder.contains(',')) {
+          final parts = folder.split(',');
+          return t.movedFromTo(
+            from: _statFolderLabel(parts[0]),
+            to: _statFolderLabel(parts[1]),
+          );
+        }
+        return t.moveOperationTargetUnknown;
+      default:
+        return t.operationUnknown;
+    }
+  }
+
+  List<_TimelineEntry> _collectEntries() {
+    final entries = <_TimelineEntry>[];
+
+    void addCommentOrRating({
+      required DailyEventType type,
+      required List<DailyEvent> dailyList,
+    }) {
+      if (dailyList.isEmpty) return;
+      final isComment = type == DailyEventType.comment;
+      for (int dailyIndex = 0; dailyIndex < dailyList.length; dailyIndex++) {
+        final records = dailyList[dailyIndex].platformEventRecords;
+        for (int recordIndex = 0;
+            recordIndex < records.length;
+            recordIndex++) {
+          final record = records[recordIndex];
+          final time = record.date ??
+              dailyList[dailyIndex].date.add(const Duration(hours: 12));
+          String text;
+          if (dailyIndex == 0 && recordIndex == 0) {
+            text = isComment
+                ? t.statsCreatedComment(
+                    time: time.hhmmss,
+                    duration: _durationSuffix(record.watchDuration),
+                  )
+                : t.statsCreatedRating(
+                    time: time.hhmmss,
+                    duration: _durationSuffix(record.watchDuration),
+                  );
+          } else {
+            int n;
+            if (dailyIndex == 0) {
+              n = record.value - 1;
+            } else {
+              int sum = 0;
+              for (int i = 0; i < dailyIndex; i++) {
+                final rl = dailyList[i].platformEventRecords;
+                if (rl.isNotEmpty) sum += rl.last.value;
+              }
+              n = sum + record.value - 1;
+            }
+            text = isComment
+                ? t.statsModifiedComment(
+                    time: time.hhmmss,
+                    n: n,
+                    duration: _durationSuffix(record.watchDuration),
+                  )
+                : t.statsModifiedRating(
+                    time: time.hhmmss,
+                    n: n,
+                    duration: _durationSuffix(record.watchDuration),
+                  );
+          }
+          final String? content = record.comment?.isNotEmpty == true
+              ? record.comment
+              : record.rating != null
+              ? '${record.rating}'
+              : null;
+          entries.add(
+            _TimelineEntry(
+              time,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(text, style: const TextStyle(fontSize: 14)),
+                  if (content != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      content,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
         }
       }
-      for (final day in dates) {
-        byDay.putIfAbsent(day, () => []).add(stat);
+    }
+
+
+    for (final stat in _group) {
+      addCommentOrRating(
+        type: DailyEventType.comment,
+        dailyList: stat.comment,
+      );
+      addCommentOrRating(
+        type: DailyEventType.rating,
+        dailyList: stat.rating,
+      );
+      for (final daily in stat.favorite) {
+        for (final record in daily.platformEventRecords) {
+          if (record.favoriteAction == null && record.favorite == null) {
+            continue;
+          }
+          final time = record.date ?? daily.date.add(const Duration(hours: 12));
+          entries.add(
+            _TimelineEntry(
+              time,
+              Text(
+                '${time.hhmmss} ${_favoriteActionText(record)}',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          );
+        }
       }
     }
-    final entries = byDay.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    entries.sort((a, b) => a.time.compareTo(b.time));
     return entries;
+  }
+
+  String _title() {
+    final title = _primaryStat.title;
+    return (title?.isNotEmpty == true) ? title! : _primaryStat.id;
   }
 
   @override
   Widget build(BuildContext context) {
-    final days = _buildDays();
-    Widget body = Scaffold(
+    final entries = _collectEntries();
+    final primary = _primaryStat;
+    final colorScheme = Theme.of(context).colorScheme;
+    final cover = primary.cover;
+
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: cover?.isNotEmpty == true
+                ? BangumiWidget.kostoriImage(
+                    context,
+                    cover!,
+                    width: 84,
+                    height: 118,
+                  )
+                : Container(
+                    width: 84,
+                    height: 118,
+                    color: colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.image_outlined),
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _title(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Widget widget = Scaffold(
       appBar: Appbar(title: Text(t.statsTimelineTitle)),
-      body: days.isEmpty
+      body: entries.isEmpty
           ? const Center(child: Text(''))
           : ListView.builder(
               controller: scrollController,
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: days.length,
+              itemCount: entries.length + 1,
               itemBuilder: (context, index) {
-                final day = days[index].key;
-                final dayGroup = days[index].value;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
-                      child: Text(
-                        '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: StatEntryCard(
-                        onTap: () {},
-                        child: StatItemWidget(
-                          statsGroup: dayGroup,
-                          selectedDay: day,
+                if (index == 0) return header;
+                final entry = entries[index - 1];
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 5),
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colorScheme.primary,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(child: entry.child),
+                    ],
+                  ),
                 );
               },
             ),
     );
-    body = AppScrollBar(
+    widget = AppScrollBar(
       topPadding: 82,
       controller: scrollController,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: body,
+        child: widget,
       ),
     );
-    return body;
+    return widget;
   }
 
   final ScrollController scrollController = ScrollController();
