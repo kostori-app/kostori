@@ -1258,60 +1258,46 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
         l.sort((a, b) => b.compareTo(a));
       }
 
-      Widget recordRow(_TimelineEntry e, {required bool isFirst, required bool isLast}) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            top: isFirst ? 4 : 10,
-            bottom: isLast ? 6 : 0,
-            right: 14,
+      Widget recordNode(
+        _TimelineEntry e, {
+        required bool isFirst,
+        required bool isLast,
+      }) {
+        return TimelineTreeNode(
+          title: Padding(
+            padding: const EdgeInsets.only(right: 14, top: 1, bottom: 1),
+            child: e.child,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.only(top: 6),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorScheme.primary.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: e.child),
-            ],
-          ),
+          color: colorScheme.primary.withValues(alpha: 0.75),
+          dotSize: 8,
+          titleIndent: 26,
+          isFirst: isFirst,
+          isLast: isLast,
         );
       }
 
       Widget dayNode(DateTime day) {
         final dayRecords = byDate[day]!;
-        final title = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              t.statsTimelineDay(month: day.month, day: day.day),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (dayRecords.isNotEmpty)
-              ...dayRecords.asMap().entries.map(
-                (e) => recordRow(
-                  e.value,
-                  isFirst: e.key == 0,
-                  isLast: e.key == dayRecords.length - 1,
-                ),
-              ),
-          ],
-        );
         return TimelineTreeNode(
-          title: title,
+          title: Text(
+            t.statsTimelineDay(month: day.month, day: day.day),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
           color: colorScheme.tertiary,
           dotSize: 10,
+          childrenIndent: 34,
+          children: [
+            for (var i = 0; i < dayRecords.length; i++)
+              recordNode(
+                dayRecords[i],
+                isFirst: i == 0,
+                isLast: i == dayRecords.length - 1,
+              ),
+          ],
         );
       }
 
