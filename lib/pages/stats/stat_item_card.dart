@@ -948,12 +948,40 @@ class _TimelineEntry {
 }
 
 class _StatsTimelineViewState extends State<StatsTimelineView> {
-  List<StatsDataImpl> get _group => widget.group;
+  List<StatsDataImpl> _stats = const [];
+
+  List<StatsDataImpl> get _group => _stats;
 
   StatsDataImpl get _primaryStat {
     final masterItems = _group.where((s) => s.isBangumi).toList();
     return masterItems.isNotEmpty ? masterItems.first : _group.first;
   }
+
+  @override
+  void initState() {
+    super.initState();
+    _stats = widget.group;
+    _loadRelatedStats();
+  }
+
+  /// 统计按 bangumi id 统一：无论多少不同来源/平台，同一 bangumi 视为一个条目，
+  /// 时间线应包含该 bangumi 在全部统计里的历史，而非只取当天有记录的几条
+  Future<void> _loadRelatedStats() async {
+    final primary = _primaryStat;
+    if (primary.bangumiId == null) return;
+    try {
+      final all = await StatsManager().getStatsAll();
+      final related = all
+          .where((s) => s.bangumiId == primary.bangumiId)
+          .toList();
+      if (related.isEmpty) return;
+      if (!mounted) return;
+      setState(() => _stats = related);
+    } catch (e) {
+      StatsLog.error('StatsTimelineView._loadRelatedStats', e.toString());
+    }
+  }
+
 
   String _durationSuffix(int? seconds) {
     seconds ??= 0;
