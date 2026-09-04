@@ -135,16 +135,18 @@ class DownloadManager extends ChangeNotifier {
           } catch (_) {}
         }
       }
-      // 重启后未完成的任务标记为失败（ffmpeg 无断点续传，需重新下载）
+      // 重启后中断的任务回到队列自动续传：
+      // mp4 用已写入的临时文件 + Range 续传，m3u8 用已下载分片续传
       for (final t in _tasks) {
         if (t.isActive) {
-          t.status = DownloadStatus.failed;
-          t.error = 'interrupted';
+          t.status = DownloadStatus.queued;
+          t.error = null;
         }
       }
       Directory(_downloadDir).createSync(recursive: true);
       _persist();
       notifyListeners();
+      _schedule();
       // 兜底：清理残留分片（已完成/失败/孤儿任务的分片目录），
       // 避免旧版本未清理的 TS 切片占用体积越来越大
       unawaited(_cleanupOrphanSegments());
