@@ -305,7 +305,9 @@ Future<void> sortFolders() async {
             itemHeight: 56,
             itemBuilder: (folder) {
               return ListTile(
-                title: Text(folder),
+                title: Text(
+                  isUnassignedFolder(folder) ? t.kDefault : folder,
+                ),
                 trailing: const Icon(Icons.drag_handle),
               );
             },
