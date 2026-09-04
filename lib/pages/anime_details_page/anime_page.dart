@@ -2557,22 +2557,42 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     ctrl.dispose();
   }
 
-  void _confirm() {
-    final picks = <_DownloadPick>[
-      for (final item in widget.items)
-        if (selected.contains(item.key))
-          _DownloadPick(
-            key: item.key,
-            // 用户编辑过标题时用它（用于文件名），否则用原始集名
-            episodeName: _nameOverrides[item.key] ?? item.episodeName,
-            animeTitle: _animeTitle.trim().isEmpty
-                ? null
-                : _animeTitle.trim(),
-            episodeNo: item.episodeNo,
-            url: _resolutionByKey[item.key],
-            resolution: _resolutionLabelByKey[item.key],
-          ),
-    ];
+  /// 默认清晰度对应的实际标签：解析首个可用视频流（仅用于显示，不改 url）
+  Future<String?> _defaultResLabel(_DownloadItem item) async {
+    try {
+      final res = await widget.resolvePlay(item.key);
+      final streams = res?.videoStreams ?? const <VideoStreamInfo>[];
+      for (final s in streams) {
+        if (s.url != null && s.url!.isNotEmpty) {
+          return s.label.isNotEmpty ? s.label : null;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> _confirm() async {
+    final picks = <_DownloadPick>[];
+    for (final item in widget.items) {
+      if (!selected.contains(item.key)) continue;
+      var resLabel = _resolutionLabelByKey[item.key];
+      // 未手动选清晰度（默认清晰度）：回填实际流标签用于显示
+      if (_resolutionByKey[item.key] == null && resLabel == null) {
+        resLabel = await _defaultResLabel(item);
+      }
+      picks.add(
+        _DownloadPick(
+          key: item.key,
+          // 用户编辑过标题时用它（用于文件名），否则用原始集名
+          episodeName: _nameOverrides[item.key] ?? item.episodeName,
+          animeTitle: _animeTitle.trim().isEmpty ? null : _animeTitle.trim(),
+          episodeNo: item.episodeNo,
+          url: _resolutionByKey[item.key],
+          resolution: resLabel,
+        ),
+      );
+    }
+    if (!mounted) return;
     Navigator.of(context).pop(picks);
   }
 
