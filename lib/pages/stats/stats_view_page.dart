@@ -24,7 +24,6 @@ class _StatsViewPageState extends State<StatsViewPage> {
 
   Future<void> _loadData() async {
     final map = await StatsManager().getRatingsWithBangumiIds();
-    final manager = providerContainer.read(bangumiManagerProvider);
 
     final newMap = <int, List<BangumiItem>>{};
 
@@ -33,8 +32,8 @@ class _StatsViewPageState extends State<StatsViewPage> {
 
       final results = await Future.wait(
         entry.value.map((s) async {
-          // bangumi.db 数据缺失时用统计自带的 title/cover 兜底
-          final item = await manager.getBangumiItem(s.bangumiId!);
+          // bangumi.db 缺失时 resolveStatDisplay 用统计自带 title/cover 兜底
+          final item = await resolveStatDisplay(s);
           return item ?? s.toBangumiItem();
         }),
       );

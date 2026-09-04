@@ -167,10 +167,8 @@ class _StatsOverviewState extends State<StatsOverview> {
     for (final s in _deduplicatedStats) {
       final id = s.bangumiId;
       if (id == null || !seen.add(id)) continue;
-      final item = await providerContainer
-          .read(bangumiManagerProvider)
-          .getBangumiItem(id);
-      // bangumi.db 数据缺失时用统计自带的 title/cover 兜底
+      final item = await resolveStatDisplay(s);
+      // bangumi.db 缺失时 resolveStatDisplay 用统计自带字段兜底
       items.add(item ?? s.toBangumiItem());
     }
     if (mounted) setState(() => _bangumiItems = items);

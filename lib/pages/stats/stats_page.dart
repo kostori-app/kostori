@@ -27,6 +27,7 @@ import 'package:kostori/init.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
+import 'package:kostori/pages/stats/stat_display.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
