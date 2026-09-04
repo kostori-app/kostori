@@ -814,16 +814,25 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               key: PageStorageKey('${favState.folders}'),
               controller: widget.favoritesController.tabController,
               children: favState.folders.map((name) {
+                final list = searchAllMode
+                    ? (searchResults[name] ?? const <FavoriteItem>[])
+                    : (favState.animes[name] ?? const <FavoriteItem>[]);
+                // 内容/排序变化即重建内层滚动视图（瀑布流在数据变化后
+                // 直接原地刷新会残留错误行列，换 tab 恢复正常正是重建所致）
+                final sig = list.fold<int>(
+                  0,
+                  (acc, a) =>
+                      (acc * 31 + a.id.hashCode ^ a.sourceKey.hashCode) &
+                      0x7fffffff,
+                );
                 return CustomScrollView(
-                  key: PageStorageKey('local_$name'),
+                  key: PageStorageKey('local_$name|$sig'),
                   controller: _controllerFor(name),
                   physics: const ClampingScrollPhysics(),
                   slivers: [
                     SliverGridAnimes(
                       asSliver: true,
-                      animes: searchAllMode
-                          ? (searchResults[name] ?? [])
-                          : (favState.animes[name] ?? []),
+                      animes: list,
                       selections: selectedAnimes,
                       enableFavorite: false,
                       // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
