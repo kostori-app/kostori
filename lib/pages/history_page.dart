@@ -599,15 +599,62 @@ class _HistoryHeatmapCard extends StatelessWidget {
                 color: colorScheme.primary,
               ),
               const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  t.activityHeatmapTitle,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+              Text(
+                t.activityHeatmapTitle,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: t.activityHeatNumbers,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => onToggleNumbers(!showNumbers),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: showNumbers
+                          ? colorScheme.primary
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: showNumbers
+                            ? colorScheme.primary
+                            : colorScheme.outlineVariant,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.numbers,
+                          size: 15,
+                          color: showNumbers
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          t.activityHeatNumbers,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: showNumbers
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
+              const Spacer(),
               IconButton(
                 icon: const Icon(Icons.chevron_left),
                 visualDensity: VisualDensity.compact,
@@ -625,19 +672,6 @@ class _HistoryHeatmapCard extends StatelessWidget {
                 icon: const Icon(Icons.chevron_right),
                 visualDensity: VisualDensity.compact,
                 onPressed: year < maxYear ? onNext : null,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                t.activityHeatNumbers,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Switch(
-                value: showNumbers,
-                onChanged: onToggleNumbers,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],
           ),
