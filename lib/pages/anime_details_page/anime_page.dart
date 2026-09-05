@@ -296,6 +296,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       bangumiId: history!.bangumiId,
     );
     await updateStats();
+    // 同 bangumi 其它来源进度更高时继承最高集/时间
+    await inheritBangumiProgress();
     watcherController.anime = data!;
     await initializeProgress();
 

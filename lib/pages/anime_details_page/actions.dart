@@ -68,6 +68,71 @@ abstract mixin class _AnimePageActions {
 
   bool isFavorite = false;
 
+  bool _betterHistory(History a, History b) {
+    final ea = a.lastWatchEpisode ?? 0;
+    final eb = b.lastWatchEpisode ?? 0;
+    if (ea != eb) return ea > eb;
+    return (a.lastWatchTime ?? 0) > (b.lastWatchTime ?? 0);
+  }
+
+  /// 同 bangumi id 的其它来源（番本质上是同一部）进度更高时，
+  /// 继承其集数与观看时间，并把该集进度复制到当前条目，
+  /// 使“续看/时间”能跨来源取最大值。
+  Future<void> inheritBangumiProgress() async {
+    final own = history;
+    if (own == null || own.bangumiId == null) return;
+    try {
+      final list = await HistoryManager().bangumiByIDFind(own.bangumiId!);
+      History? best;
+      for (final h in list) {
+        // 跳过当前条目自身
+        if (h.id == anime.animeId &&
+            h.type.value == anime.sourceKey.hashCode) {
+          continue;
+        }
+        final base = best ?? own;
+        if (_betterHistory(h, base)) best = h;
+      }
+      if (best == null) return;
+
+      final manager = HistoryManager();
+      final inheritedEp = best.lastWatchEpisode ?? 0;
+      final ownEp = own.lastWatchEpisode ?? 0;
+      final inheritedTime = best.lastWatchTime ?? 0;
+      final ownTime = own.lastWatchTime ?? 0;
+      if (inheritedEp <= ownEp && inheritedTime <= ownTime) return;
+
+      // 更新当前条目历史：使用更高集/更新的时间
+      own.lastWatchEpisode = inheritedEp;
+      own.lastWatchTime = inheritedTime;
+      await manager.addHistory(own);
+      watcherController.history = own;
+
+      // 复制最高进度的该集进度到当前条目（road 0，常规单路源）
+      if (inheritedEp > 0) {
+        final sourceProg = await manager.progressFindAsync(
+          best.id,
+          best.type,
+          inheritedEp,
+          0,
+        );
+        if (sourceProg != null) {
+          final p = Progress.fromModel(
+            model: anime,
+            episode: inheritedEp,
+            road: 0,
+            progressInMilli: sourceProg.progressInMilli,
+          );
+          p.isCompleted = sourceProg.isCompleted;
+          await manager.addProgress(p, anime.animeId);
+        }
+      }
+      update();
+    } catch (e, s) {
+      StatsLog.error('inheritBangumiProgress', '$e\n$s');
+    }
+  }
+
   Future<void> initializeProgress() async {
     final allEpisodes = anime.episode ?? {};
 
