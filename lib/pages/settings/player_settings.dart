@@ -79,6 +79,19 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   title: t.hardwareDecoding,
                   settingKey: "haEnable",
                 ),
+                _SwitchSetting(
+                  title: t.playerAutoPlay,
+                  subtitle: t.playerAutoPlayDesc,
+                  settingKey: 'playerAutoPlay',
+                  dataSource: SwitchDataSource.implicit,
+                  defaultValue: true,
+                ),
+                _SwitchSetting(
+                  title: t.playerLoopEpisode,
+                  subtitle: t.playerLoopEpisodeDesc,
+                  settingKey: 'playerLoopEpisode',
+                  dataSource: SwitchDataSource.implicit,
+                ),
                 _CallbackSetting(
                   title: t.hardwareDecoder,
                   actionTitle: t.set,

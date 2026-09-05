@@ -1894,6 +1894,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineCommentUpdated({required Object n}) => '第 ${n} 次修改评论';
 	@override String get statsTimelineRatingCreated => '创建了评分';
 	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改评分';
+	@override String get playerAutoPlay => '自动播放';
+	@override String get playerAutoPlayDesc => '本集结束后自动播放下一集';
+	@override String get playerLoopEpisode => '单集循环';
+	@override String get playerLoopEpisodeDesc => '本集结束后循环播放当前集';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
@@ -4382,6 +4386,10 @@ extension on TranslationsZhCn {
 			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改评论',
 			'statsTimelineRatingCreated' => '创建了评分',
 			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改评分',
+			'playerAutoPlay' => '自动播放',
+			'playerAutoPlayDesc' => '本集结束后自动播放下一集',
+			'playerLoopEpisode' => '单集循环',
+			'playerLoopEpisodeDesc' => '本集结束后循环播放当前集',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
@@ -4529,12 +4537,12 @@ extension on TranslationsZhCn {
 			'profileTabPersona' => '人设',
 			'profileTabPrompt' => '提示词',
 			'profileTabSkills' => '技能',
+			_ => null,
+		} ?? switch (path) {
 			'profileTabParams' => '参数',
 			'profileTabBasic' => '基础',
 			'profileTabExtensions' => '扩展',
 			'profileTabMemory' => '记忆',
-			_ => null,
-		} ?? switch (path) {
 			'profileTabRequest' => '请求',
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => '绑定本助手的 MCP 服务器（连接后自动导入工具）',

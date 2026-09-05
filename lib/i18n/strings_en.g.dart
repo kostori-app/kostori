@@ -5605,6 +5605,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Rating modified (${n})'
 	String statsTimelineRatingUpdated({required Object n}) => 'Rating modified (${n})';
 
+	/// en: 'Auto play next'
+	String get playerAutoPlay => 'Auto play next';
+
+	/// en: 'Auto-play next episode when the current one ends'
+	String get playerAutoPlayDesc => 'Auto-play next episode when the current one ends';
+
+	/// en: 'Loop single episode'
+	String get playerLoopEpisode => 'Loop single episode';
+
+	/// en: 'Repeat the current episode when it ends'
+	String get playerLoopEpisodeDesc => 'Repeat the current episode when it ends';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9205,6 +9217,10 @@ extension on Translations {
 			'statsTimelineCommentUpdated' => ({required Object n}) => 'Comment modified (${n})',
 			'statsTimelineRatingCreated' => 'Rating created',
 			'statsTimelineRatingUpdated' => ({required Object n}) => 'Rating modified (${n})',
+			'playerAutoPlay' => 'Auto play next',
+			'playerAutoPlayDesc' => 'Auto-play next episode when the current one ends',
+			'playerLoopEpisode' => 'Loop single episode',
+			'playerLoopEpisodeDesc' => 'Repeat the current episode when it ends',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9352,12 +9368,12 @@ extension on Translations {
 			'profileTabPersona' => 'Persona',
 			'profileTabPrompt' => 'Prompt',
 			'profileTabSkills' => 'Skills',
+			_ => null,
+		} ?? switch (path) {
 			'profileTabParams' => 'Params',
 			'profileTabBasic' => 'Basic',
 			'profileTabExtensions' => 'Extensions',
 			'profileTabMemory' => 'Memory',
-			_ => null,
-		} ?? switch (path) {
 			'profileTabRequest' => 'Request',
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',

@@ -361,6 +361,24 @@ class _PlayerItemState extends State<PlayerItem>
                 },
               ),
             _MoreSwitchCard(
+              icon: Icons.skip_next_rounded,
+              title: t.playerAutoPlay,
+              value: appdata.implicitData['playerAutoPlay'] ?? true,
+              onChanged: (v) {
+                appdata.implicitData['playerAutoPlay'] = v;
+                appdata.writeImplicitData();
+              },
+            ),
+            _MoreSwitchCard(
+              icon: Icons.repeat_rounded,
+              title: t.playerLoopEpisode,
+              value: appdata.implicitData['playerLoopEpisode'] ?? false,
+              onChanged: (v) {
+                appdata.implicitData['playerLoopEpisode'] = v;
+                appdata.writeImplicitData();
+              },
+            ),
+            _MoreSwitchCard(
               icon: Icons.auto_awesome_outlined,
               title: t.glimmerMode,
               value: playerController.glimmerEffect,

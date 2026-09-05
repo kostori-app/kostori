@@ -1912,6 +1912,10 @@ statsTimelineCommentCreated: Comment created
 statsTimelineCommentUpdated: "Comment modified (${n})"
 statsTimelineRatingCreated: Rating created
 statsTimelineRatingUpdated: "Rating modified (${n})"
+playerAutoPlay: Auto play next
+playerAutoPlayDesc: Auto-play next episode when the current one ends
+playerLoopEpisode: Loop single episode
+playerLoopEpisodeDesc: Repeat the current episode when it ends
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
 activityHeatmapTitle: Activity heatmap

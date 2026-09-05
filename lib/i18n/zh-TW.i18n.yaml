@@ -1913,6 +1913,10 @@ statsTimelineCommentCreated: 建立了評論
 statsTimelineCommentUpdated: "第 ${n} 次修改評論"
 statsTimelineRatingCreated: 建立了評分
 statsTimelineRatingUpdated: "第 ${n} 次修改評分"
+playerAutoPlay: 自動播放
+playerAutoPlayDesc: 本集結束後自動播放下一集
+playerLoopEpisode: 單集循環
+playerLoopEpisodeDesc: 本集結束後循環播放當前集
 statsTimelineNoRecords: "還沒有任何紀錄"
 statsAllTimelineTitle: 全部時間軸
 activityHeatmapTitle: 活躍熱力圖

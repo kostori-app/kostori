@@ -204,9 +204,17 @@ class _WatcherState extends State<Watcher>
     _completedSub = playerController.player.stream.completed.listen((
       completed,
     ) {
-      if (completed) {
+      if (!completed) return;
+      final loopSingle = appdata.implicitData['playerLoopEpisode'] == true;
+      final autoNext = appdata.implicitData['playerAutoPlay'] != false;
+      if (loopSingle) {
+        // 单集循环：重播当前集
+        playerController.player.seek(Duration.zero);
+        playerController.play(showIndicator: false);
+      } else if (autoNext) {
         playNextEpisode();
       }
+      // 两者都关：停在结束状态，不做任何自动动作
     });
     Future.microtask(() async {
       headers = animeSource.httpHeaders;

@@ -1893,6 +1893,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineCommentUpdated({required Object n}) => '第 ${n} 次修改評論';
 	@override String get statsTimelineRatingCreated => '建立了評分';
 	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改評分';
+	@override String get playerAutoPlay => '自動播放';
+	@override String get playerAutoPlayDesc => '本集結束後自動播放下一集';
+	@override String get playerLoopEpisode => '單集循環';
+	@override String get playerLoopEpisodeDesc => '本集結束後循環播放當前集';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String get activityHeatmapTitle => '活躍熱力圖';
@@ -4380,6 +4384,10 @@ extension on TranslationsZhTw {
 			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改評論',
 			'statsTimelineRatingCreated' => '建立了評分',
 			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改評分',
+			'playerAutoPlay' => '自動播放',
+			'playerAutoPlayDesc' => '本集結束後自動播放下一集',
+			'playerLoopEpisode' => '單集循環',
+			'playerLoopEpisodeDesc' => '本集結束後循環播放當前集',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'activityHeatmapTitle' => '活躍熱力圖',
@@ -4528,12 +4536,12 @@ extension on TranslationsZhTw {
 			'profileTabPrompt' => '提示詞',
 			'profileTabSkills' => '技能',
 			'profileTabParams' => '參數',
+			_ => null,
+		} ?? switch (path) {
 			'profileTabBasic' => '基礎',
 			'profileTabExtensions' => '擴充',
 			'profileTabMemory' => '記憶',
 			'profileTabRequest' => '請求',
-			_ => null,
-		} ?? switch (path) {
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
 			'profileTabLocalTools' => '工具技能',

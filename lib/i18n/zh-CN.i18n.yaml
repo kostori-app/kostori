@@ -1911,6 +1911,10 @@ statsTimelineCommentCreated: 创建了评论
 statsTimelineCommentUpdated: "第 ${n} 次修改评论"
 statsTimelineRatingCreated: 创建了评分
 statsTimelineRatingUpdated: "第 ${n} 次修改评分"
+playerAutoPlay: 自动播放
+playerAutoPlayDesc: 本集结束后自动播放下一集
+playerLoopEpisode: 单集循环
+playerLoopEpisodeDesc: 本集结束后循环播放当前集
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线
 activityHeatmapTitle: 活跃热力图
