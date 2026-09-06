@@ -1530,6 +1530,13 @@ class _ForumBoardRow extends StatelessWidget {
     final imgs = item['images'];
     if (imgs is List) images.addAll(imgs.map((e) => e.toString()));
 
+    // Hero tag 必须用稳定值：优先顶层 tid，其次 params.tid，最后条目对象身份
+    final tidObj = item['tid'] ?? _asMap2(item['params'])['tid'];
+    final heroBase =
+        'forum_${plugin.key}_${(tidObj?.toString().isNotEmpty ?? false) ? tidObj.toString() : identityHashCode(item)}';
+    String heroTagFor(int i) => '${heroBase}_$i';
+
+
     Widget avatarWidget;
     if (avatar.isNotEmpty) {
       avatarWidget = ClipOval(
@@ -1556,8 +1563,7 @@ class _ForumBoardRow extends StatelessWidget {
         url: url,
         title: title.isEmpty ? plugin.name : title,
         imageProvider: _siteProvider(url, plugin: plugin),
-        heroTag:
-            'forum_${plugin.key}_${item['tid'] ?? DateTime.now().millisecondsSinceEpoch}_$index',
+        heroTag: heroTagFor(index),
       );
     }
 
@@ -1641,8 +1647,7 @@ class _ForumBoardRow extends StatelessWidget {
                     itemCount: images.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 6),
                     itemBuilder: (context, i) {
-                      final heroTag =
-                          'forum_${plugin.key}_${item['tid'] ?? DateTime.now().millisecondsSinceEpoch}_$i';
+                      final heroTag = heroTagFor(i);
                       return GestureDetector(
                         onTap: () => preview(i),
                         child: Hero(
