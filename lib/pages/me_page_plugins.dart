@@ -1141,76 +1141,84 @@ class _PluginShellPageState extends State<PluginShellPage> {
           if (_nav.isEmpty) {
             return const Center(child: Text(''));
           }
-          // 单导航（如 xsijishe：只有一个板块）不再显示导航条，
-          // 内容直接内联；多导航才显示项目分段风格切换条
-          if (_nav.length == 1) {
-            return FutureBuilder<List<dynamic>>(
-              future: _index < _pageFutures.length
-                  ? _pageFutures[_index]
-                  : null,
-              builder: (context, snap2) {
-                if (snap2.connectionState != ConnectionState.done) {
-                  return const Center(child: PolygonRefreshIndicator());
-                }
-                final modules = snap2.data ?? const [];
-                return _contentOrBoard(widget.plugin, modules);
-              },
-            );
-          }
           return Column(
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                alignment: Alignment.centerLeft,
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (var i = 0; i < _nav.length; i++)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () => _select(i),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _index == i
-                                ? cs.primaryContainer
-                                : cs.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _navIcon(_nav[i]['icon'] ?? ''),
-                                size: 15,
-                                color: _index == i
-                                    ? cs.onPrimaryContainer
-                                    : cs.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                _nav[i]['title'] ?? _nav[i]['key'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: _index == i
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
+              // 项目分段胶囊导航（可横向，未来多个导航页共用）
+              if (_nav.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.toOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < _nav.length; i++)
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => _select(i),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeInOut,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
                                   color: _index == i
-                                      ? cs.onPrimaryContainer
-                                      : cs.onSurfaceVariant,
+                                      ? cs.surface
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(6),
+                                  boxShadow: _index == i
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.black.toOpacity(0.08),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _navIcon(_nav[i]['icon'] ?? ''),
+                                      size: 14,
+                                      color: _index == i
+                                          ? cs.primary
+                                          : cs.onSurface.toOpacity(0.45),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        _nav[i]['title'] ??
+                                            _nav[i]['key'] ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: _index == i
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
+                                          color: _index == i
+                                              ? cs.primary
+                                              : cs.onSurface.toOpacity(0.45),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
               Expanded(
                 child: FutureBuilder<List<dynamic>>(
                   future: _index < _pageFutures.length
@@ -2036,6 +2044,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
 }
 
 /// anime 风格分页器：首页 / 上一页(长按连续) / 页码胶囊(点跳页) / 下一页(长按连续) / 末页
+/// anime 风格分页器（宽/窄屏两套，与番源列表一致）
 class _ForumPager extends StatelessWidget {
   final int page;
   final int totalPages;
@@ -2081,9 +2090,70 @@ class _ForumPager extends StatelessWidget {
     );
   }
 
+  Widget _pagePill(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: t.jumpToPage,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _jump(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.toOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(t.pagePM(p: '$page', m: '$totalPages')),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final compact = MediaQuery.sizeOf(context).width <= 600;
+    final prevBtn = _PagerIcon(
+      icon: Icons.chevron_left,
+      label: t.back,
+      enabled: page > 1 && !busy,
+      onTap: () => onJump(page - 1),
+      onRepeat: () {
+        if (page > 1 && !busy) onJump(page - 1);
+      },
+    );
+    final nextBtn = _PagerIcon(
+      icon: Icons.chevron_right,
+      label: t.next,
+      enabled: page < totalPages && !busy,
+      onTap: () => onJump(page + 1),
+      onRepeat: () {
+        if (page < totalPages && !busy) onJump(page + 1);
+      },
+    );
+
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _pagePill(context),
+            Row(
+              children: [
+                prevBtn,
+                const SizedBox(width: 12),
+                nextBtn,
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
       child: Row(
@@ -2099,50 +2169,11 @@ class _ForumPager extends StatelessWidget {
                 onTap: () => onJump(1),
               ),
               const SizedBox(width: 4),
-              _PagerIcon(
-                icon: Icons.chevron_left,
-                label: t.back,
-                enabled: page > 1 && !busy,
-                onTap: () => onJump(page - 1),
-                onRepeat: () {
-                  if (page > 1 && !busy) onJump(page - 1);
-                },
-              ),
+              prevBtn,
               const SizedBox(width: 8),
-              Tooltip(
-                message: t.jumpToPage,
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => _jump(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.toOpacity(
-                          0.3,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(t.pagePM(p: '$page', m: '$totalPages')),
-                    ),
-                  ),
-                ),
-              ),
+              _pagePill(context),
               const SizedBox(width: 8),
-              _PagerIcon(
-                icon: Icons.chevron_right,
-                label: t.next,
-                enabled: page < totalPages && !busy,
-                onTap: () => onJump(page + 1),
-                onRepeat: () {
-                  if (page < totalPages && !busy) onJump(page + 1);
-                },
-              ),
+              nextBtn,
               const SizedBox(width: 4),
               _PagerIcon(
                 icon: Icons.last_page,
