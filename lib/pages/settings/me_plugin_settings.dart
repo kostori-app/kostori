@@ -11,6 +11,52 @@ class PluginSettings extends StatefulWidget {
 class _PluginSettingsState extends State<PluginSettings> {
   late final TextEditingController _urlCtrl;
 
+  /// 从 .js 直链添加单个插件（与番剧源“添加源”一致）
+  Future<void> _addPluginByUrl(String url) async {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return;
+    String fileName = trimmed.split('/').last.split('?').first;
+    if (!fileName.toLowerCase().endsWith('.js')) {
+      App.rootContext.showMessage(
+        message: t.mustBeJs,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    try {
+      final res = await AppDio().get<String>(
+        trimmed,
+        options: Options(
+          method: 'GET',
+          responseType: ResponseType.plain,
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+      if (res.statusCode != 200) {
+        App.rootContext.showMessage(
+          message: 'HTTP ${res.statusCode}',
+          level: LogLevel.error,
+        );
+        return;
+      }
+      final dir = io.Directory('${App.dataPath}/$mePluginsDirName');
+      if (!await dir.exists()) {
+        await dir.create();
+      }
+      final safe = fileName.split('/').last;
+      if (!RegExp(r'^[A-Za-z0-9_\-]+\.js$').hasMatch(safe)) return;
+      await io.File('${dir.path}/$safe').writeAsString(res.data ?? '');
+      await MePagePluginManager().reload();
+      if (mounted) setState(() {});
+      App.rootContext.showMessage(message: t.switchSuccessful);
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: e.toString(),
+        level: LogLevel.error,
+      );
+    }
+  }
+
   Future<void> _installFromFile(io.File file) async {
     final name = file.uri.pathSegments.last;
     if (!name.toLowerCase().endsWith('.js')) return;
@@ -45,7 +91,7 @@ class _PluginSettingsState extends State<PluginSettings> {
   @override
   void initState() {
     super.initState();
-    _urlCtrl = TextEditingController(text: _sourceUrl);
+    _urlCtrl = TextEditingController();
     MePagePluginManager().ensureInit();
   }
 
@@ -107,52 +153,13 @@ class _PluginSettingsState extends State<PluginSettings> {
     );
   }
 
-  String get _sourceUrl =>
-      (appdata.implicitData['pluginSourceUrl'] as String?)?.trim() ?? '';
-
-  Future<void> _editSourceUrl() async {
-    await showInputDialog(
-      context: context,
-      title: t.pluginSourceUrl,
-      hintText: 'https://example.com/plugins/index.json',
-      initialValue: _sourceUrl,
-      onConfirm: (value) async {
-        final v = value.trim();
-        appdata.implicitData['pluginSourceUrl'] = v;
-        appdata.writeImplicitData();
-        if (mounted) setState(() {});
-        return null;
-      },
-    );
-  }
-
-  Future<void> _fetchPlugins() async {
-    final url = _sourceUrl;
-    if (url.isEmpty) {
-      await _editSourceUrl();
-      return;
-    }
-    try {
-      final count = await MePagePluginManager().fetchFromUrl(url);
-      if (mounted) setState(() {});
-      App.rootContext.showMessage(
-        message: t.fetchPluginsCount(fetchPlugins: t.fetchPlugins, count: count),
-        level: LogLevel.info,
-      );
-    } catch (e) {
-      App.rootContext.showMessage(
-        message: '${t.fetchPlugins} $e',
-        level: LogLevel.error,
-      );
-    }
-  }
-
   static String _pluginTemplate(String name) =>
       '''
 /**
  * 个人页插件：$name
  *
- * 支持的模块类型：card / text / keyValue / link / progress / chips / signIn / button
+ * 支持模块类型：card / text / keyValue / link / progress / chips / signIn / button / list / form
+ * 支持插件导航：plugin.nav + plugin.page(name, params)
  */
 const plugin = {
   name: '$name',
@@ -197,19 +204,16 @@ const plugin = {
               TextField(
                 controller: _urlCtrl,
                 decoration: InputDecoration(
-                  hintText: 'https://example.com/plugins/index.json',
+                  hintText: 'https://example.com/plugin.js',
                   border: const UnderlineInputBorder(),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                   suffix: IconButton(
-                    onPressed: _fetchPlugins,
-                    icon: const Icon(Icons.check),
+                    tooltip: t.add,
+                    onPressed: () => _addPluginByUrl(_urlCtrl.text),
+                    icon: const Icon(Icons.add),
                   ),
                 ),
-                onChanged: (value) {
-                  appdata.implicitData['pluginSourceUrl'] = value.trim();
-                  appdata.writeImplicitData();
-                },
-                onSubmitted: (_) => _fetchPlugins(),
+                onSubmitted: (_) => _addPluginByUrl(_urlCtrl.text),
               ).paddingHorizontal(16).paddingBottom(8),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
@@ -217,11 +221,6 @@ const plugin = {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    IconTileButton(
-                      icon: const Icon(Icons.download_outlined),
-                      label: t.fetchPlugins,
-                      onTap: _fetchPlugins,
-                    ),
                     // 打开目录仅桌面端有意义（移动端无桌面文件管理器）
                     if (App.isDesktop)
                       IconTileButton(

@@ -1901,6 +1901,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get form => '表单';
 	@override String get installPluginByDrop => '拖拽安装';
 	@override String get dropJsPluginHint => '把 .js 插件文件拖到这里即可安装';
+	@override String get mustBeJs => '仅支持 .js 文件';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
@@ -4396,6 +4397,7 @@ extension on TranslationsZhCn {
 			'form' => '表单',
 			'installPluginByDrop' => '拖拽安装',
 			'dropJsPluginHint' => '把 .js 插件文件拖到这里即可安装',
+			'mustBeJs' => '仅支持 .js 文件',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
@@ -4539,9 +4541,9 @@ extension on TranslationsZhCn {
 			'conciseReplies' => '简洁回复',
 			'useMarkdownFormatting' => '使用 Markdown 排版',
 			'codeFirst' => '代码优先',
-			'actionableAdvice' => '给出可执行建议',
 			_ => null,
 		} ?? switch (path) {
+			'actionableAdvice' => '给出可执行建议',
 			'profileTabPersona' => '人设',
 			'profileTabPrompt' => '提示词',
 			'profileTabSkills' => '技能',

@@ -1900,6 +1900,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get form => '表單';
 	@override String get installPluginByDrop => '拖曳安裝';
 	@override String get dropJsPluginHint => '把 .js 插件檔案拖到這裡即可安裝';
+	@override String get mustBeJs => '僅支援 .js 檔案';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String get activityHeatmapTitle => '活躍熱力圖';
@@ -4394,6 +4395,7 @@ extension on TranslationsZhTw {
 			'form' => '表單',
 			'installPluginByDrop' => '拖曳安裝',
 			'dropJsPluginHint' => '把 .js 插件檔案拖到這裡即可安裝',
+			'mustBeJs' => '僅支援 .js 檔案',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'activityHeatmapTitle' => '活躍熱力圖',
@@ -4538,9 +4540,9 @@ extension on TranslationsZhTw {
 			'useMarkdownFormatting' => '使用 Markdown 排版',
 			'codeFirst' => '程式碼優先',
 			'actionableAdvice' => '給出可執行的建議',
-			'profileTabPersona' => '人設',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabPersona' => '人設',
 			'profileTabPrompt' => '提示詞',
 			'profileTabSkills' => '技能',
 			'profileTabParams' => '參數',

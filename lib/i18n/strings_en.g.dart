@@ -5626,6 +5626,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Drop a .js plugin file here to install'
 	String get dropJsPluginHint => 'Drop a .js plugin file here to install';
 
+	/// en: 'Only .js files are supported'
+	String get mustBeJs => 'Only .js files are supported';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9233,6 +9236,7 @@ extension on Translations {
 			'form' => 'Form',
 			'installPluginByDrop' => 'Drag & drop install',
 			'dropJsPluginHint' => 'Drop a .js plugin file here to install',
+			'mustBeJs' => 'Only .js files are supported',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9376,9 +9380,9 @@ extension on Translations {
 			'conciseReplies' => 'Concise replies',
 			'useMarkdownFormatting' => 'Use Markdown formatting',
 			'codeFirst' => 'Code first',
-			'actionableAdvice' => 'Give actionable advice',
 			_ => null,
 		} ?? switch (path) {
+			'actionableAdvice' => 'Give actionable advice',
 			'profileTabPersona' => 'Persona',
 			'profileTabPrompt' => 'Prompt',
 			'profileTabSkills' => 'Skills',

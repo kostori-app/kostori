@@ -1919,6 +1919,7 @@ playerLoopEpisodeDesc: Repeat the current episode when it ends
 form: Form
 installPluginByDrop: Drag & drop install
 dropJsPluginHint: Drop a .js plugin file here to install
+mustBeJs: Only .js files are supported
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
 activityHeatmapTitle: Activity heatmap
