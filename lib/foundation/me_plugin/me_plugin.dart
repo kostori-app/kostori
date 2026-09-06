@@ -170,6 +170,25 @@ class MePagePlugin {
     _saveData();
   }
 
+  /// 插件自定义配置项（uid 等）：存于本插件 `.data['configs']`
+  Map<String, dynamic> get configs {
+    final raw = data['configs'];
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return {};
+  }
+
+  void setConfigValue(String key, String value) {
+    final map = Map<String, dynamic>.from(configs);
+    final v = value.trim();
+    if (v.isEmpty) {
+      map.remove(key);
+    } else {
+      map[key] = v;
+    }
+    data['configs'] = map;
+    _saveData();
+  }
+
   /// 调用插件 render()，返回模块列表（List<Map>）。
   Future<List<dynamic>> render() async {
     try {
@@ -325,9 +344,12 @@ class MePagePlugin {
   ]) async {
     try {
       final paramsJs = _jsJson(params);
-      // 注入“今日已签”状态，供插件的签到页直接展示（无需再次请求）
+      // 注入“今日已签”状态与自定义配置，供插件页直接读取（无需再次请求）
       await JsEngine().runCode(
         "globalThis.__me_plugin_signed_today = ${_jsStr(signedToday)};",
+      );
+      await JsEngine().runCode(
+        "globalThis.__me_plugin_config = ${_jsJson(configs)};",
       );
       final res = await JsEngine().runCode(
         "globalThis.__me_plugins[${_jsStr(key)}]"
@@ -439,6 +461,11 @@ class MePagePluginManager with ChangeNotifier, Init {
   Future<void> reload() async {
     _plugins.clear();
     await doInit();
+    notifyListeners();
+  }
+
+  /// 数据变更后的轻量通知（供界面按需刷新当前页）
+  void touch() {
     notifyListeners();
   }
 

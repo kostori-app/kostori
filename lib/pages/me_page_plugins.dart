@@ -283,6 +283,12 @@ class _ModuleView {
       case 'status':
         // 轻量数据：只展示“标签 + 数字”，不套厚重外壳
         return _PluginCard(child: _Status(m['items']));
+      case 'config':
+        // 手动配置项（uid 等）：持久化到插件 .data['configs'] 并注入 JS
+        return _PluginCard(
+          title: m['title']?.toString(),
+          child: _ConfigFields(plugin: plugin, m: m),
+        );
       case 'signIn':
         return _PluginCard(
           child: _SignInButton(plugin: plugin, m: m),
@@ -384,6 +390,8 @@ class _ModuleView {
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: _Status(m['items']),
         );
+      case 'config':
+        return _ConfigFields(plugin: plugin, m: m);
       case 'signIn':
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -606,6 +614,102 @@ class _Status extends StatelessWidget {
               ),
             ],
           ),
+      ],
+    );
+  }
+}
+
+/// 手动配置表单：字段持久化到插件 `.data['configs']`，保存后注入 JS 供读取
+class _ConfigFields extends StatefulWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> m;
+
+  const _ConfigFields({required this.plugin, required this.m});
+
+  @override
+  State<_ConfigFields> createState() => _ConfigFieldsState();
+}
+
+class _ConfigFieldsState extends State<_ConfigFields> {
+  final Map<String, TextEditingController> _ctrls = {};
+  bool _saving = false;
+
+  List<Map<String, dynamic>> get _fields {
+    final raw = widget.m['fields'] ?? widget.m['items'];
+    final list = <Map<String, dynamic>>[];
+    if (raw is List) {
+      for (final f in raw) {
+        final fm = f is Map ? f.map((k, v) => MapEntry(k.toString(), v)) : <String, dynamic>{};
+        if ((fm['key'] ?? '').toString().isNotEmpty) list.add(fm);
+      }
+    }
+    return list;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    for (final f in _fields) {
+      final key = f['key'].toString();
+      _ctrls[key] = TextEditingController(
+        text: widget.plugin.configs[key]?.toString() ?? '',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _ctrls.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      for (final f in _fields) {
+        final key = f['key'].toString();
+        widget.plugin.setConfigValue(key, _ctrls[key]?.text ?? '');
+      }
+      App.rootContext.showMessage(message: t.saved);
+      // 通知插件壳刷新当前页（status 等读取新配置后重拉）
+      MePagePluginManager().touch();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_fields.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final f in _fields) ...[
+          TextField(
+            controller: _ctrls[f['key'].toString()],
+            keyboardType: (f['kind']?.toString() ?? '') == 'number'
+                ? TextInputType.number
+                : TextInputType.text,
+            decoration: InputDecoration(
+              isDense: true,
+              labelText: f['label']?.toString() ?? '',
+              hintText: f['hint']?.toString(),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Button.filled(
+            isLoading: _saving,
+            onPressed: _save,
+            child: Text(widget.m['saveText']?.toString() ?? t.apply),
+          ),
+        ),
       ],
     );
   }
@@ -1162,6 +1266,7 @@ class PluginShellPage extends StatefulWidget {
 }
 
 class _PluginShellPageState extends State<PluginShellPage> {
+  late final MePagePluginManager _manager;
   late Future<List<Map<String, dynamic>>> _navFuture;
   int _index = 0;
   List<Map<String, dynamic>> _nav = const [];
@@ -1175,6 +1280,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
   @override
   void initState() {
     super.initState();
+    _manager = MePagePluginManager()..addListener(_onManagerChanged);
     _navFuture = widget.plugin.nav().then((nav) {
       _nav = nav;
       int start = 0;
@@ -1191,6 +1297,22 @@ class _PluginShellPageState extends State<PluginShellPage> {
       if (_nav.isNotEmpty) _loadIndex(start);
       return nav;
     });
+  }
+
+  @override
+  void dispose() {
+    _manager.removeListener(_onManagerChanged);
+    super.dispose();
+  }
+
+  /// 配置写入等数据变更后，自动重拉当前子页（如首页积分配置更新即时生效）
+  void _onManagerChanged() {
+    if (!mounted) return;
+    if (_nav.isEmpty || _index >= _pages.length) return;
+    if (_pages[_index] == null || _loading[_index]) return;
+    final idx = _index;
+    setState(() => _pages[idx] = null);
+    _loadIndex(idx);
   }
 
   Future<void> _loadIndex(int index) async {
