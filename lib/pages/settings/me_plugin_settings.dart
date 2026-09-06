@@ -34,7 +34,6 @@ class _PluginSettingsState extends State<PluginSettings> {
   }
 
   Future<void> _onDrop(DropDoneDetails detail) async {
-    if (mounted) setState(() => _dragOver = false);
     for (final file in detail.files) {
       if (!file.name.toLowerCase().endsWith('.js')) continue;
       final path = file.path;
