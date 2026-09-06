@@ -3131,8 +3131,15 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     required Color color,
   }) {
     final cs = Theme.of(context).colorScheme;
+    // 展示前兜底压掉多余空行（多图回复/解析残留常见），避免大片留白
+    final src = text
+        .replaceAll(RegExp(r'\n{2,}'), '\n')
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .join('\n');
     final urls = <String>[];
-    final spans = _linkSpans(text, cs.primary, urls);
+    final spans = _linkSpans(src, cs.primary, urls);
     final rich = SelectableText.rich(
       TextSpan(
         style: TextStyle(fontSize: fontSize, height: height, color: color),
