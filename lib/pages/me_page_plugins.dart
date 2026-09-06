@@ -1769,7 +1769,7 @@ Widget _siteImage(
 Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
   for (final m in modules) {
     if (_asMap2(m)['type'] == 'board') {
-      return PluginBoardContent(plugin: plugin);
+      return PluginBoardContent(plugin: plugin, metaModules: modules);
     }
   }
   return _PluginModulesList(plugin: plugin, modules: modules);
@@ -2005,7 +2005,14 @@ class _ForumBoardRow extends StatelessWidget {
 class PluginBoardContent extends StatefulWidget {
   final MePagePlugin plugin;
 
-  const PluginBoardContent({super.key, required this.plugin});
+  /// 外层（插件导航壳）已经取到的板块 meta 模块，避免再按写死的 'board' 拉一次
+  final List<dynamic>? metaModules;
+
+  const PluginBoardContent({
+    super.key,
+    required this.plugin,
+    this.metaModules,
+  });
 
   @override
   State<PluginBoardContent> createState() => _PluginBoardContentState();
@@ -2054,7 +2061,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   }
 
   Future<void> _loadMeta() async {
-    final modules = await widget.plugin.page('board');
+    final modules = widget.metaModules ?? await widget.plugin.page('board');
     if (!mounted) return;
     for (final m in modules) {
       final mm = _asMap2(m);
@@ -2474,7 +2481,7 @@ class PluginBoardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
       title: meta['title']?.toString() ?? '',
-      body: PluginBoardContent(plugin: plugin),
+      body: PluginBoardContent(plugin: plugin, metaModules: [meta]),
     );
   }
 }
