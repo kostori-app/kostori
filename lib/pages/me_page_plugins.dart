@@ -7,6 +7,7 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -739,12 +740,7 @@ class _PluginListRow extends StatelessWidget {
       child: image != null && image.isNotEmpty
           ? ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: Image.network(
-                image,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    const Icon(Icons.image_outlined, size: 18),
-              ),
+              child: _genericPluginImage(image),
             )
           : const Icon(Icons.image_outlined, size: 18),
     );
@@ -1468,6 +1464,42 @@ Map<String, dynamic> _asMap2(dynamic v) {
   return <String, dynamic>{};
 }
 
+Widget _genericPluginImage(
+  String url, {
+  double? width,
+  double? height,
+  BoxFit fit = BoxFit.cover,
+}) {
+  return AnimatedImage(
+    image: CachedImageProvider(url, sourceKey: 'me_plugin'),
+    width: width,
+    height: height,
+    fit: fit,
+  );
+}
+
+/// 论坛图片：走项目缓存图片组件；Referer/sourceKey 由插件声明（非硬编码）
+Widget _siteImage(
+  String url, {
+  required String sourceKey,
+  String? referer,
+  double? width,
+  double? height,
+  BoxFit fit = BoxFit.cover,
+}) {
+  final provider = CachedImageProvider(
+    url,
+    headers: referer == null || referer.isEmpty ? null : {'referer': referer},
+    sourceKey: sourceKey,
+  );
+  return AnimatedImage(
+    image: provider,
+    width: width,
+    height: height,
+    fit: fit,
+  );
+}
+
 /// 若页面内容本身就是 board 模块，则直接内联板块浏览（不再要求二次点击）
 Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
   for (final m in modules) {
@@ -1506,19 +1538,12 @@ class _ForumBoardRow extends StatelessWidget {
     Widget avatarWidget;
     if (avatar.isNotEmpty) {
       avatarWidget = ClipOval(
-        child: Image.network(
+        child: _siteImage(
           avatar,
           width: 40,
           height: 40,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => CircleAvatar(
-            radius: 20,
-            backgroundColor: cs.primaryContainer,
-            child: Text(
-              name.isEmpty ? '?' : name.characters.first,
-              style: TextStyle(color: cs.onPrimaryContainer),
-            ),
-          ),
+          sourceKey: plugin.key,
+          referer: plugin.referer,
         ),
       );
     } else {
@@ -1627,19 +1652,12 @@ class _ForumBoardRow extends StatelessWidget {
                       onTap: () => preview(i),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
+                        child: _siteImage(
                           images[i],
                           width: 130,
                           height: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => SizedBox(
-                            width: 130,
-                            height: 100,
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
+                          sourceKey: plugin.key,
+                          referer: plugin.referer,
                         ),
                       ),
                     ),
@@ -1979,10 +1997,11 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                         padding: const EdgeInsets.only(top: 8),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
+                          child: _siteImage(
                             url,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            sourceKey: widget.plugin.key,
+                            referer: widget.plugin.referer,
                           ),
                         ),
                       ),

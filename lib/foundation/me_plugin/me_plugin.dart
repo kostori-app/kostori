@@ -39,6 +39,9 @@ class MePagePlugin {
   final String description;
   final String filePath;
 
+  /// 插件声明的站点 Referer（图片防盗链用，可选）
+  final String? referer;
+
   /// 本插件独立状态（对齐番剧源 `.data`），持久化到 `plugins/<key>.data`
   Map<String, dynamic> data;
 
@@ -48,6 +51,7 @@ class MePagePlugin {
     required this.version,
     required this.description,
     required this.filePath,
+    this.referer,
     Map<String, dynamic> initialData = const {},
   }) : data = {...initialData};
 
@@ -598,6 +602,10 @@ class MePagePluginParser {
             .runCode("globalThis.__me_plugins[${_jsStr(key)}]?.description")
             ?.toString() ??
         '';
+    final referer = JsEngine()
+            .runCode("globalThis.__me_plugins[${_jsStr(key)}]?.referer")
+            ?.toString() ??
+        '';
 
     // 各插件独立 `.data`（对齐番剧源）；无文件时从旧 implicitData 迁移一次
     Map<String, dynamic> initialData = const {};
@@ -645,6 +653,7 @@ class MePagePluginParser {
       version: version,
       description: description,
       filePath: filePath,
+      referer: referer.isEmpty ? null : referer,
       initialData: initialData,
     );
   }
