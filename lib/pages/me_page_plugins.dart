@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -1129,7 +1130,6 @@ class _PluginShellPageState extends State<PluginShellPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: Appbar(title: Text(widget.plugin.name)),
       body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -1143,79 +1143,21 @@ class _PluginShellPageState extends State<PluginShellPage> {
           }
           return Column(
             children: [
-              // 项目分段胶囊导航（可横向，未来多个导航页共用）
+              // 子页面导航：项目分段胶囊（常驻，供后续更多导航页使用）
               if (_nav.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.toOpacity(0.5),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < _nav.length; i++)
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _select(i),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                curve: Curves.easeInOut,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _index == i
-                                      ? cs.surface
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                  boxShadow: _index == i
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.black.toOpacity(0.08),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _navIcon(_nav[i]['icon'] ?? ''),
-                                      size: 14,
-                                      color: _index == i
-                                          ? cs.primary
-                                          : cs.onSurface.toOpacity(0.45),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        _nav[i]['title'] ??
-                                            _nav[i]['key'] ?? '',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: _index == i
-                                              ? FontWeight.w600
-                                              : FontWeight.w400,
-                                          color: _index == i
-                                              ? cs.primary
-                                              : cs.onSurface.toOpacity(0.45),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _CapsuleBar(
+                      keys: _nav.map((n) => n['key']?.toString() ?? '').toList(),
+                      titles:
+                          _nav.map((n) => n['title']?.toString() ?? '').toList(),
+                      icons: _nav.map((n) => n['icon']?.toString() ?? '').toList(),
+                      selected: _index < _nav.length
+                          ? (_nav[_index]['key']?.toString() ?? '')
+                          : '',
+                      onChanged: _select,
                     ),
                   ),
                 ),
@@ -1537,6 +1479,7 @@ Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
 }
 
 /// 论坛列表行卡片（封面/标题/标签/摘要/作者时间/浏览回复）
+/// 论坛列表条目卡片：作者行 + 标题 + 条目信息 + 图片(可点击预览) + 辅助信息
 class _ForumBoardRow extends StatelessWidget {
   final MePagePlugin plugin;
   final Map<String, dynamic> item;
@@ -1547,55 +1490,57 @@ class _ForumBoardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final title = item['title']?.toString() ?? '';
+    final name = item['name']?.toString() ?? item['author']?.toString() ?? '';
+    final infoLine =
+        item['infoLine']?.toString() ?? item['meta']?.toString() ?? '';
     final summary =
         item['summary']?.toString() ?? item['subtitle']?.toString() ?? '';
-    final tag = item['tag']?.toString() ?? '';
-    final author = item['author']?.toString() ?? '';
-    final time = item['time']?.toString() ?? '';
+    final avatar =
+        item['avatarUrl']?.toString() ?? item['avatar']?.toString() ?? '';
     final views = item['views']?.toString() ?? '';
     final replies = item['replies']?.toString() ?? '';
-    final cover =
-        item['cover']?.toString() ?? item['image']?.toString() ?? '';
+    final images = <String>[];
+    final imgs = item['images'];
+    if (imgs is List) images.addAll(imgs.map((e) => e.toString()));
 
-    Widget thumb;
-    if (cover.isNotEmpty) {
-      thumb = ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+    Widget avatarWidget;
+    if (avatar.isNotEmpty) {
+      avatarWidget = ClipOval(
         child: Image.network(
-          cover,
-          width: 92,
-          height: 92,
+          avatar,
+          width: 40,
+          height: 40,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(
-            width: 92,
-            height: 92,
-            color: cs.surfaceContainerHighest,
-            child: const Icon(Icons.image_outlined),
+          errorBuilder: (_, _, _) => CircleAvatar(
+            radius: 20,
+            backgroundColor: cs.primaryContainer,
+            child: Text(
+              name.isEmpty ? '?' : name.characters.first,
+              style: TextStyle(color: cs.onPrimaryContainer),
+            ),
           ),
         ),
       );
     } else {
-      thumb = Container(
-        width: 92,
-        height: 92,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(10),
+      avatarWidget = CircleAvatar(
+        radius: 20,
+        backgroundColor: cs.primaryContainer,
+        child: Text(
+          name.isEmpty ? '?' : name.characters.first,
+          style: TextStyle(color: cs.onPrimaryContainer),
         ),
-        child: const Icon(Icons.article_outlined),
       );
     }
 
-    Widget metaLine() {
-      final parts = <String>[];
-      if (tag.isNotEmpty) parts.add('[$tag]');
-      if (author.isNotEmpty) parts.add(author);
-      if (time.isNotEmpty) parts.add(time);
-      return Text(
-        parts.join(' · '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+    // 图片预览（走项目 ImagePreviewWidget）
+    void preview(int index) {
+      if (images.isEmpty) return;
+      BangumiWidget.showImagePreview(
+        context: context,
+        url: images[index],
+        title: title.isEmpty ? plugin.name : title,
+        heroTag:
+            'forum_${plugin.key}_${item['tid'] ?? DateTime.now().millisecondsSinceEpoch}_$index',
       );
     }
 
@@ -1613,76 +1558,126 @@ class _ForumBoardRow extends StatelessWidget {
               ? _asMap2(item['params'])
               : <String, dynamic>{};
           if (item['url'] != null) params['url'] = item['url'].toString();
-          if (page == 'thread') {
-            params['tid'] ??= item['tid'];
-          }
+          if (page == 'thread') params['tid'] ??= item['tid'];
           _pushPluginPage(context, plugin, page, params);
         },
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              thumb,
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (summary.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        summary,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 6),
-                    metaLine(),
-                    if (views.isNotEmpty || replies.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.visibility_outlined,
-                              size: 13, color: cs.onSurfaceVariant),
-                          const SizedBox(width: 3),
-                          Text(
-                            views,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurfaceVariant,
-                            ),
+              Row(
+                children: [
+                  avatarWidget,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(width: 12),
-                          Icon(Icons.mode_comment_outlined,
-                              size: 13, color: cs.onSurfaceVariant),
-                          const SizedBox(width: 3),
+                        ),
+                        if (infoLine.isNotEmpty) ...[
+                          const SizedBox(height: 2),
                           Text(
-                            replies,
+                            infoLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12,
                               color: cs.onSurfaceVariant,
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (summary.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  summary,
+                  style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                ),
+              ],
+              if (images.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: images.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 6),
+                    itemBuilder: (context, i) => GestureDetector(
+                      onTap: () => preview(i),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          images[i],
+                          width: 130,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => SizedBox(
+                            width: 130,
+                            height: 100,
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              if (views.isNotEmpty || replies.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (views.isNotEmpty) ...[
+                      Icon(Icons.visibility_outlined,
+                          size: 13, color: cs.onSurfaceVariant),
+                      const SizedBox(width: 3),
+                      Text(
+                        views,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                    if (replies.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      Icon(Icons.mode_comment_outlined,
+                          size: 13, color: cs.onSurfaceVariant),
+                      const SizedBox(width: 3),
+                      Text(
+                        replies,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ],
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -1690,7 +1685,6 @@ class _ForumBoardRow extends StatelessWidget {
     );
   }
 }
-
 /// 板块内容（可内联进插件页，也可放进弹层页）：
 /// 分类 Tab + 列表 + 页码跳转
 class PluginBoardContent extends StatefulWidget {
@@ -1792,49 +1786,23 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
           const Expanded(child: Center(child: PolygonRefreshIndicator()))
         else ...[
           if (_tabs.isNotEmpty)
-            SizedBox(
-              height: 48,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                children: [
-                  for (var i = 0; i < _tabs.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () {
-                          if (_index == i) return;
-                          setState(() => _index = i);
-                          _go(1);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _index == i
-                                ? cs.secondaryContainer
-                                : cs.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            _tabs[i]['title']?.toString() ?? '',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: _index == i
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: _index == i
-                                  ? cs.onSecondaryContainer
-                                  : cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _CapsuleBar(
+                  keys: _tabs.map((t) => t['key']?.toString() ?? '').toList(),
+                  titles:
+                      _tabs.map((t) => t['title']?.toString() ?? '').toList(),
+                  selected: _index < _tabs.length
+                      ? (_tabs[_index]['key']?.toString() ?? '')
+                      : '',
+                  onChanged: (i) {
+                    if (_index == i) return;
+                    setState(() => _index = i);
+                    _go(1);
+                  },
+                ),
               ),
             ),
           Expanded(
@@ -2274,6 +2242,98 @@ class _PagerIconState extends State<_PagerIcon> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 项目风格分段胶囊切换条（settings/favorites 同款，可横向滚动）
+class _CapsuleBar extends StatelessWidget {
+  final List<String> keys;
+  final List<String> titles;
+  final List<String>? icons;
+  final String selected;
+  final ValueChanged<int> onChanged;
+
+  const _CapsuleBar({
+    required this.keys,
+    required this.titles,
+    required this.selected,
+    required this.onChanged,
+    this.icons,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < keys.length; i++)
+              GestureDetector(
+                onTap: () => onChanged(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeInOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected == keys[i]
+                        ? cs.surface
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: selected == keys[i]
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.toOpacity(0.08),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (icons != null && icons![i].isNotEmpty) ...[
+                        Icon(
+                          _navIcon(icons![i]),
+                          size: 13,
+                          color: selected == keys[i]
+                              ? cs.primary
+                              : cs.onSurface.toOpacity(0.45),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        titles[i],
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: selected == keys[i]
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: selected == keys[i]
+                              ? cs.primary
+                              : cs.onSurface.toOpacity(0.45),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
