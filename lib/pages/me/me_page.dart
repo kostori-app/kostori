@@ -23,7 +23,7 @@ import 'package:kostori/pages/download/download_page.dart';
 import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
-import 'package:kostori/pages/me_page_plugins.dart';
+import 'package:kostori/pages/me/me_page_plugins.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/pages/video_test_page.dart';

@@ -9,7 +9,7 @@ import 'package:kostori/pages/categories_page.dart';
 import 'package:kostori/pages/explore_Page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/history_page.dart';
-import 'package:kostori/pages/me_page.dart';
+import 'package:kostori/pages/me/me_page.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 
