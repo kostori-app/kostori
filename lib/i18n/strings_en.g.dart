@@ -5629,6 +5629,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Only .js files are supported'
 	String get mustBeJs => 'Only .js files are supported';
 
+	/// en: 'Plugin source list'
+	String get pluginSourceList => 'Plugin source list';
+
+	/// en: 'No plugin repo configured yet. Tap the top-right to add one.'
+	String get pluginRepoEmpty => 'No plugin repo configured yet. Tap the top-right to add one.';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9237,6 +9243,8 @@ extension on Translations {
 			'installPluginByDrop' => 'Drag & drop install',
 			'dropJsPluginHint' => 'Drop a .js plugin file here to install',
 			'mustBeJs' => 'Only .js files are supported',
+			'pluginSourceList' => 'Plugin source list',
+			'pluginRepoEmpty' => 'No plugin repo configured yet. Tap the top-right to add one.',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9378,10 +9386,10 @@ extension on Translations {
 			'switchedToProfile' => ({required Object name}) => 'Switched to ${name}',
 			'defaultAssistant' => 'Default',
 			'conciseReplies' => 'Concise replies',
-			'useMarkdownFormatting' => 'Use Markdown formatting',
-			'codeFirst' => 'Code first',
 			_ => null,
 		} ?? switch (path) {
+			'useMarkdownFormatting' => 'Use Markdown formatting',
+			'codeFirst' => 'Code first',
 			'actionableAdvice' => 'Give actionable advice',
 			'profileTabPersona' => 'Persona',
 			'profileTabPrompt' => 'Prompt',

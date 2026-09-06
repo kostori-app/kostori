@@ -221,6 +221,16 @@ const plugin = {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
+                    IconTileButton(
+                      icon: const Icon(Icons.list_alt_outlined),
+                      label: t.pluginSourceList,
+                      onTap: () {
+                        showPopUpWidget(
+                          App.rootContext,
+                          const _PluginSourceList(),
+                        );
+                      },
+                    ),
                     // 打开目录仅桌面端有意义（移动端无桌面文件管理器）
                     if (App.isDesktop)
                       IconTileButton(
@@ -356,6 +366,386 @@ class _PluginSliverCard extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+/// 安装单个插件 JS（供源列表页使用）
+Future<void> _installPluginUrl(String url) async {
+  final trimmed = url.trim();
+  final name = trimmed.split('/').last.split('?').first;
+  final dir = io.Directory('${App.dataPath}/$mePluginsDirName');
+  if (!await dir.exists()) await dir.create();
+  final safe = name.split('/').last;
+  if (!RegExp(r'^[A-Za-z0-9_\-]+\.js$').hasMatch(safe)) return;
+  final res = await AppDio().get<String>(
+    trimmed,
+    options: Options(
+      method: 'GET',
+      responseType: ResponseType.plain,
+      receiveTimeout: const Duration(seconds: 30),
+    ),
+  );
+  if (res.statusCode != 200) {
+    throw Exception('HTTP ${res.statusCode}');
+  }
+  await io.File('${dir.path}/$safe').writeAsString(res.data ?? '');
+  await MePagePluginManager().reload();
+}
+
+/// 插件源列表：与番剧源列表同构（仓库管理 + 仓库内插件行），无内置源。
+class _PluginSourceList extends StatefulWidget {
+  const _PluginSourceList();
+
+  @override
+  State<_PluginSourceList> createState() => _PluginSourceListState();
+}
+
+class _PluginSourceListState extends State<_PluginSourceList> {
+  static const _reposKey = 'pluginRepos';
+  static const _reposCurrentKey = 'pluginReposCurrent';
+
+  List<Map<String, dynamic>> _repos = [];
+  int _currentRepo = 0;
+  bool loading = true;
+  List? json;
+
+  bool get _isLocalRepo {
+    final url = _currentUrl;
+    if (url.startsWith('file://')) return true;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    if (!uri.hasScheme) return true;
+    if (uri.scheme.length == 1) return true;
+    return false;
+  }
+
+  String get _currentUrl =>
+      _repos.isEmpty ? '' : (_repos[_currentRepo]['url']?.toString() ?? '');
+
+  void _loadRepos() {
+    final raw = appdata.implicitData[_reposKey];
+    if (raw is List && raw.isNotEmpty) {
+      _repos = raw
+          .map(
+            (e) => e is Map
+                ? Map<String, dynamic>.from(e)
+                : <String, dynamic>{'url': e.toString()},
+          )
+          .toList();
+    } else {
+      _repos = [];
+    }
+    _currentRepo = appdata.implicitData[_reposCurrentKey] as int? ?? 0;
+    if (_currentRepo < 0 || _currentRepo >= _repos.length) {
+      _currentRepo = 0;
+    }
+  }
+
+  void _saveRepos() {
+    appdata.implicitData[_reposKey] = _repos;
+    appdata.implicitData[_reposCurrentKey] = _currentRepo;
+    appdata.writeImplicitData();
+  }
+
+  Future<void> load() async {
+    _loadRepos();
+    final url = _currentUrl;
+    if (url.trim().isEmpty) {
+      setState(() {
+        json = [];
+        loading = false;
+      });
+      return;
+    }
+    setState(() {
+      loading = true;
+      json = null;
+    });
+    try {
+      String text;
+      if (_isLocalRepo) {
+        final path = url.replaceFirst('file://', '');
+        final file = io.File(path);
+        if (!await file.exists()) {
+          text = '';
+        } else {
+          text = await file.readAsString();
+        }
+      } else {
+        final res = await AppDio().get<String>(url);
+        if (res.statusCode != 200) {
+          text = '';
+        } else {
+          text = res.data ?? '';
+        }
+      }
+      final decoded = jsonDecode(text);
+      setState(() {
+        json = decoded is List ? decoded : [];
+        loading = false;
+      });
+    } catch (_) {
+      setState(() {
+        json = [];
+        loading = false;
+      });
+    }
+  }
+
+  void _switchRepo(int index) {
+    if (index == _currentRepo) return;
+    _currentRepo = index;
+    _saveRepos();
+    load();
+  }
+
+  Future<void> _addRepo() async {
+    await showInputDialog(
+      context: context,
+      title: t.addRepo,
+      hintText: t.repoUrlHint,
+      onConfirm: (value) {
+        final v = value.toString().trim();
+        if (v.isEmpty) return t.repoUrlHint;
+        setState(() {
+          _repos.add({'url': v});
+          _currentRepo = _repos.length - 1;
+        });
+        _saveRepos();
+        load();
+        return null;
+      },
+    );
+  }
+
+  Future<void> _editRepo(int index) async {
+    final current = _repos[index]['url']?.toString() ?? '';
+    await showInputDialog(
+      context: context,
+      title: t.edit,
+      hintText: t.repoUrlHint,
+      initialValue: current,
+      onConfirm: (value) {
+        final v = value.toString().trim();
+        if (v.isEmpty) return t.repoUrlHint;
+        setState(() {
+          _repos[index]['url'] = v;
+        });
+        _saveRepos();
+        if (index == _currentRepo) load();
+        return null;
+      },
+    );
+    if (mounted) setState(() {});
+  }
+
+  void _removeRepo(int index) {
+    showConfirmDialog(
+      context: context,
+      title: t.delete,
+      content: _repos[index]['url']?.toString() ?? '',
+      btnColor: Theme.of(context).colorScheme.error,
+      onConfirm: () {
+        setState(() {
+          _repos.removeAt(index);
+          if (_currentRepo >= _repos.length) {
+            _currentRepo = _repos.isEmpty ? 0 : _repos.length - 1;
+          }
+        });
+        _saveRepos();
+        load();
+      },
+    );
+  }
+
+  /// 仓库项 → 完整 js URL（无独立 url 时用仓库目录 + fileName）
+  String _resolveUrl(Map item) {
+    final url = item['url']?.toString();
+    if (url != null && url.isNotEmpty) return url;
+    final fileName = item['fileName']?.toString() ?? item['key']?.toString() ?? '';
+    if (fileName.isEmpty) return '';
+    final base = _currentUrl;
+    final clean = base.replaceFirst('https://', '').replaceFirst('http://', '');
+    if (clean.contains('/')) {
+      return base.substring(0, base.lastIndexOf('/') + 1) + fileName;
+    }
+    if (!fileName.endsWith('.js')) return '';
+    return base.endsWith('/') ? '$base$fileName' : '$base/$fileName';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRepos();
+    load();
+  }
+
+  Widget _buildRow(Map item, Set<String> installedKeys) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final key = item['key']?.toString() ?? '';
+    final name = item['name']?.toString() ?? key;
+    final version = item['version']?.toString() ?? '';
+    final desc = item['description']?.toString() ?? '';
+    String description = version;
+    if (desc.isNotEmpty) description = '$version\n$desc';
+    final installed = installedKeys.contains(key);
+    final url = _resolveUrl(item);
+
+    Widget trailing;
+    if (installed) {
+      trailing = Icon(Icons.check, size: 20, color: colorScheme.primary);
+    } else {
+      trailing = Button.filled(
+        child: Text(t.add),
+        onPressed: () async {
+          if (url.isEmpty) {
+            App.rootContext.showMessage(message: t.error);
+            return;
+          }
+          try {
+            await _installPluginUrl(url);
+            if (mounted) setState(() {});
+          } catch (e) {
+            App.rootContext.showMessage(
+              message: e.toString(),
+              level: LogLevel.error,
+            );
+          }
+        },
+      ).fixHeight(32);
+    }
+
+    return ListTile(
+      title: Text(
+        name,
+        style: const TextStyle(fontWeight: FontWeight.w500),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(description, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: trailing,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: t.pluginSourceList,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.add_box_outlined),
+          tooltip: t.addRepo,
+          onPressed: _addRepo,
+        ),
+      ],
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: [
+          _SettingPartTitle(title: t.repo, icon: Icons.folder_open),
+          if (_repos.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                t.pluginRepoEmpty,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            )
+          else
+            for (var i = 0; i < _repos.length; i++)
+              _SettingCard(
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _switchRepo(i),
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(
+                        _isLocalRepo && i == _currentRepo
+                            ? Icons.folder
+                            : Icons.cloud_outlined,
+                        color: i == _currentRepo
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      title: Text(
+                        _repos[i]['url']?.toString() ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: i == _currentRepo
+                            ? TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.primary,
+                              )
+                            : null,
+                      ),
+                      subtitle: Text(
+                        _repos[i]['name']?.toString() ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            iconSize: 18,
+                            tooltip: t.edit,
+                            icon: const Icon(Icons.edit_note, size: 18),
+                            onPressed: () => _editRepo(i),
+                          ),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            iconSize: 18,
+                            tooltip: t.delete,
+                            icon: Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            onPressed: () => _removeRepo(i),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          const SizedBox(height: 16),
+          _SettingPartTitle(title: t.pluginSourceList, icon: Icons.source_outlined),
+          if (loading)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: KostoriRefreshIndicator()),
+            )
+          else if (json != null && json!.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Text(
+                  t.repoEmpty,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            )
+          else if (json != null)
+            for (final item in json!)
+              _SettingCard(
+                children: [
+                  _buildRow(
+                    item is Map
+                        ? Map<String, dynamic>.from(item)
+                        : <String, dynamic>{},
+                    MePagePluginManager().all().map((p) => p.key).toSet(),
+                  ),
+                ],
+              ),
         ],
       ),
     );

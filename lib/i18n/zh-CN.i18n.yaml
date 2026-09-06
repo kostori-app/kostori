@@ -1919,6 +1919,8 @@ form: 表单
 installPluginByDrop: 拖拽安装
 dropJsPluginHint: 把 .js 插件文件拖到这里即可安装
 mustBeJs: 仅支持 .js 文件
+pluginSourceList: 插件源列表
+pluginRepoEmpty: 还没有配置插件源仓库，点右上角添加
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线
 activityHeatmapTitle: 活跃热力图

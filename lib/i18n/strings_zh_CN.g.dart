@@ -1902,6 +1902,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get installPluginByDrop => '拖拽安装';
 	@override String get dropJsPluginHint => '把 .js 插件文件拖到这里即可安装';
 	@override String get mustBeJs => '仅支持 .js 文件';
+	@override String get pluginSourceList => '插件源列表';
+	@override String get pluginRepoEmpty => '还没有配置插件源仓库，点右上角添加';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
@@ -4398,6 +4400,8 @@ extension on TranslationsZhCn {
 			'installPluginByDrop' => '拖拽安装',
 			'dropJsPluginHint' => '把 .js 插件文件拖到这里即可安装',
 			'mustBeJs' => '仅支持 .js 文件',
+			'pluginSourceList' => '插件源列表',
+			'pluginRepoEmpty' => '还没有配置插件源仓库，点右上角添加',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
@@ -4539,10 +4543,10 @@ extension on TranslationsZhCn {
 			'switchedToProfile' => ({required Object name}) => '已切换到 ${name}',
 			'defaultAssistant' => '默认',
 			'conciseReplies' => '简洁回复',
-			'useMarkdownFormatting' => '使用 Markdown 排版',
-			'codeFirst' => '代码优先',
 			_ => null,
 		} ?? switch (path) {
+			'useMarkdownFormatting' => '使用 Markdown 排版',
+			'codeFirst' => '代码优先',
 			'actionableAdvice' => '给出可执行建议',
 			'profileTabPersona' => '人设',
 			'profileTabPrompt' => '提示词',
