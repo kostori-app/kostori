@@ -71,6 +71,9 @@ class _PlayerItemState extends State<PlayerItem>
   /// 避免每帧高频调用 player.setVolume 造成播放卡顿
   DateTime? _lastVolumeApply;
 
+  /// 长按 2x 前的原始倍速：结束/取消时恢复，避免倍速漂移卡顿
+  double? _speedHold;
+
   void _applyVolumeThrottled(double value) {
     final now = DateTime.now();
     if (_lastVolumeApply == null ||
@@ -184,6 +187,20 @@ class _PlayerItemState extends State<PlayerItem>
     // playerController.playerTimer = playerController.getPlayerTimer();
     playerController.startPlayerStreams();
     // _hidePreview();
+  }
+
+  /// 结束/取消长按倍速：恢复原始倍速并隐藏 HUD
+  void _restoreHoldSpeed() {
+    final hold = _speedHold;
+    _speedHold = null;
+    if (mounted) {
+      setState(() {
+        playerController.showPlaySpeed = false;
+      });
+    }
+    if (hold != null) {
+      playerController.setPlaybackSpeed(hold);
+    }
   }
 
   void _handleKeyChangingVolume() {
@@ -772,21 +789,27 @@ class _PlayerItemState extends State<PlayerItem>
                         onLongPressStart: (_) {
                           // 一起看房间锁倍速：长按 2x 直接无效，也不显示 HUD
                           if (playerController.speedLocked) return;
+                          // 移动端：开始长按时震动一次
+                          if (!App.isDesktop) {
+                            HapticFeedback.mediumImpact();
+                          }
+                          _speedHold = playerController.playbackSpeed;
                           setState(() {
                             playerController.showPlaySpeed = true;
                           });
+                          // 长按临时 2x：已 >=2 时保持（避免基础倍速被再次翻倍导致卡顿）
+                          final base = _speedHold!;
                           playerController.setPlaybackSpeed(
-                            playerController.playbackSpeed * 2,
+                            base < 2 ? base * 2 : base,
                           );
                         },
                         onLongPressEnd: (_) {
                           if (playerController.speedLocked) return;
-                          setState(() {
-                            playerController.showPlaySpeed = false;
-                          });
-                          playerController.setPlaybackSpeed(
-                            playerController.playbackSpeed / 2,
-                          );
+                          _restoreHoldSpeed();
+                        },
+                        onLongPressCancel: () {
+                          if (playerController.speedLocked) return;
+                          _restoreHoldSpeed();
                         },
                         child: Container(
                           color: Colors.transparent,
@@ -857,17 +880,15 @@ class _PlayerItemState extends State<PlayerItem>
                               milliseconds: ms,
                             );
                           },
-                          onHorizontalDragEnd: (_) {
-                            // 左右滑动 seek 结束：静默播放，不显示覆盖层
-                            playerController.play(showIndicator: false);
-                            playerController.seek(
-                              playerController.currentPosition,
-                            );
+                          onHorizontalDragEnd: (_) async {
+                            // 左右滑动 seek 结束：先定位到目标再静默恢复播放，
+                            // 避免先 play 再 seek 时先播到起点/显示回到 0
+                            final target = playerController.currentPosition;
                             playerController.isSeek = false;
-                            // playerController.playerTimer?.cancel();
-                            playerController.stopPlayerStreams();
-                            // playerController.playerTimer = playerController
-                            //     .getPlayerTimer();
+                            try {
+                              await playerController.seek(target);
+                              await playerController.play(showIndicator: false);
+                            } catch (_) {}
                             playerController.startPlayerStreams();
                             playerController.showSeekTime = false;
                           },
