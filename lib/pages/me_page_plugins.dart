@@ -1500,7 +1500,7 @@ Widget _siteImage(
   );
 }
 
-/// 若页面内容本身就是 board 模块，则直接内联板块浏览（不再要求二次点击）
+/// 若页面内容本身就是 board 模块则直接渲染板块内容
 Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
   for (final m in modules) {
     if (_asMap2(m)['type'] == 'board') {
