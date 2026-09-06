@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1835,18 +1837,29 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   final Map<String, int> _tabPage = {};
   final Map<String, int> _tabTotal = {};
 
+  final ScrollController _scroll = ScrollController();
+
+  // 分页 / 连续滑动两种模式（连续 = 滚动到末尾自动加载下一页，对齐 anime_list 双模式）
+  bool _continuous = false;
+  bool _appending = false;
+  List<Map<String, dynamic>> _merged = const [];
+
   String get _tabKey => _index < _tabs.length
       ? (_tabs[_index]['key']?.toString() ?? '')
       : '';
 
+  String get _modeSettingKey => 'mePluginListMode_${widget.plugin.key}';
+
   @override
   void initState() {
     super.initState();
+    _continuous = appdata.settings[_modeSettingKey] == true;
     _loadMeta();
   }
 
   @override
   void dispose() {
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -1874,38 +1887,31 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       _error = null;
       _page = page;
       _rows = const [];
+      _merged = const [];
     });
     try {
-      final modules = await widget.plugin.page(
-        _listPage,
-        {'tab': tabKey, 'page': page},
+      final parsed = _parseBoard(
+        await widget.plugin.page(
+          _listPage,
+          {'tab': tabKey, 'page': page},
+        ),
+        page,
       );
-      if (!mounted) return;
-      var rows = <Map<String, dynamic>>[];
-      var total = 1;
-      var current = page;
-      for (final m in modules) {
-        final mm = _asMap2(m);
-        if (mm['type'] != 'boardPage') continue;
-        total = _asInt(mm['totalPages'], 1);
-        current = _asInt(mm['page'], page);
-        final raw = mm['items'];
-        if (raw is List) {
-          rows = raw.map((e) => _asMap2(e)).toList();
-        }
-      }
-      total = total < 1 ? 1 : total;
-      (_cache[tabKey] ??= {})[current] = rows;
-      _tabPage[tabKey] = current;
-      _tabTotal[tabKey] = total;
       if (!mounted || token != _reqToken) return;
+      (_cache[tabKey] ??= {})[parsed.current] = parsed.rows;
+      _tabPage[tabKey] = parsed.current;
+      _tabTotal[tabKey] = parsed.total;
+      if (_tabKey != tabKey) return;
       setState(() {
-        if (_tabKey == tabKey) {
-          _rows = rows;
-          _page = current;
-          _totalPages = total;
+        _page = parsed.current;
+        _totalPages = parsed.total;
+        if (_continuous) {
+          _merged = _mergedOf(tabKey);
+        } else {
+          _rows = parsed.rows;
         }
       });
+      if (_continuous) _scheduleFetchMore();
     } catch (e) {
       if (!mounted || token != _reqToken) return;
       if (_tabKey == tabKey) {
@@ -1914,15 +1920,44 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     }
   }
 
+  ({List<Map<String, dynamic>> rows, int total, int current}) _parseBoard(
+    List<dynamic> modules,
+    int page,
+  ) {
+    var rows = <Map<String, dynamic>>[];
+    var total = 1;
+    var current = page;
+    for (final m in modules) {
+      final mm = _asMap2(m);
+      if (mm['type'] != 'boardPage') continue;
+      total = _asInt(mm['totalPages'], total);
+      current = _asInt(mm['page'], page);
+      final raw = mm['items'];
+      if (raw is List) {
+        rows = raw.map((e) => _asMap2(e)).toList();
+      }
+    }
+    if (total < 1) total = 1;
+    return (rows: rows, total: total, current: current);
+  }
+
   static int _asInt(dynamic v, int fallback) {
     final n = int.tryParse('$v');
     return n == null || n < 1 ? fallback : n;
   }
 
-  /// 切到某页：命中缓存直接显示，否则清空并重新拉取
+  /// 切到某页：命中缓存直接显示，否则清空并重新拉取（分页模式）
   void _go(int page) {
     if (page < 1) return;
     final key = _tabKey;
+    if (_continuous) {
+      // 连续模式只从第 1 页顺序累积
+      if (page == 1 && (_cache[key]?[1] == null)) {
+        _cache.remove(key);
+        _fetch(key, 1);
+      }
+      return;
+    }
     final cached = _cache[key]?[page];
     if (cached != null) {
       setState(() {
@@ -1941,11 +1976,147 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     setState(() {
       _index = i;
       _error = null;
-      // 恢复该分类上次停留页码；未访问过则首页
-      _page = _tabPage[_tabKey] ?? 1;
-      _totalPages = _tabTotal[_tabKey] ?? 1;
     });
-    _go(_tabPage[_tabKey] ?? 1);
+    _enterCurrentTab();
+  }
+
+  void _enterCurrentTab() {
+    if (!_continuous) {
+      final p = _tabPage[_tabKey] ?? 1;
+      _go(p);
+      return;
+    }
+    final pages = _cache[_tabKey];
+    if (pages == null || pages.isEmpty || pages[1] == null) {
+      _fetch(_tabKey, 1);
+    } else {
+      setState(() {
+        _merged = _mergedOf(_tabKey);
+        _page = _nextMissing(_tabKey) - 1;
+        _totalPages = _tabTotal[_tabKey] ?? _totalPages;
+      });
+      _scheduleFetchMore();
+    }
+  }
+
+  List<Map<String, dynamic>> _mergedOf(String tabKey) {
+    final pages = _cache[tabKey];
+    final out = <Map<String, dynamic>>[];
+    var i = 1;
+    while (pages != null) {
+      final pageRows = pages[i];
+      if (pageRows == null) break;
+      out.addAll(pageRows);
+      i++;
+    }
+    return out;
+  }
+
+  int _nextMissing(String tabKey) {
+    final pages = _cache[tabKey];
+    var i = 1;
+    while (pages?[i] != null) {
+      i++;
+    }
+    return i;
+  }
+
+  bool get _hasMore {
+    final total = _tabTotal[_tabKey];
+    final next = _nextMissing(_tabKey);
+    return total == null || next <= total;
+  }
+
+  void _scheduleFetchMore() {
+    Future.microtask(() {
+      if (mounted) _fetchMore();
+    });
+  }
+
+  /// 连续模式：滚动到末尾时顺序加载下一页并累积
+  Future<void> _fetchMore() async {
+    if (!_continuous || _appending || _error != null) return;
+    final key = _tabKey;
+    final pages = _cache[key];
+    if (pages == null || pages.isEmpty || pages[1] == null) {
+      await _fetch(key, 1);
+      return;
+    }
+    final next = _nextMissing(key);
+    if (!_hasMore) return;
+    if (pages[next] != null) return;
+    final token = _reqToken;
+    _appending = true;
+    setState(() {});
+    try {
+      final parsed = _parseBoard(
+        await widget.plugin.page(
+          _listPage,
+          {'tab': key, 'page': next},
+        ),
+        next,
+      );
+      if (!mounted || token != _reqToken) {
+        _appending = false;
+        return;
+      }
+      (_cache[key] ??= {})[parsed.current] = parsed.rows;
+      _tabTotal[key] = parsed.total;
+      if (_tabKey == key) {
+        setState(() {
+          _totalPages = parsed.total;
+          _merged = _mergedOf(key);
+        });
+      }
+    } catch (e) {
+      if (!mounted || token != _reqToken) {
+        _appending = false;
+        return;
+      }
+      if (_tabKey == key) {
+        setState(() => _error = '$e');
+      }
+    } finally {
+      if (mounted) {
+        if (token == _reqToken) {
+          setState(() => _appending = false);
+        } else {
+          _appending = false;
+        }
+      }
+    }
+  }
+
+  void _retryContinuous() {
+    setState(() => _error = null);
+    _scheduleFetchMore();
+  }
+
+  void _toggleMode() {
+    setState(() => _continuous = !_continuous);
+    appdata.settings[_modeSettingKey] = _continuous;
+    appdata.saveData();
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+    if (!_continuous) {
+      // 回到分页：从该分类上次停留页展示
+      final p = _tabPage[_tabKey] ?? 1;
+      _go(p);
+    } else {
+      _enterCurrentTab();
+    }
+  }
+
+  void _refreshList() {
+    final key = _tabKey;
+    _cache.remove(key);
+    _tabPage.remove(key);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+    if (_continuous) {
+      _fetch(key, 1);
+    } else {
+      _page = 1;
+      _go(1);
+    }
   }
 
   @override
@@ -1953,6 +2124,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     if (!_metaLoaded) {
       return const Center(child: PolygonRefreshIndicator(size: 24));
     }
+    final cs = Theme.of(context).colorScheme;
     // 留白放在滚动内容自身（anime_list 同款）：网格铺满，行可滚到玻璃条下方产生磨砂
     return Stack(
       children: [
@@ -1983,17 +2155,47 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
               ),
             ),
           ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: _GlassBar(
-            child: _ForumPager(
-              page: _page,
-              totalPages: _totalPages,
-              busy: _isBusy,
-              onJump: _go,
+        if (!_continuous)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _GlassBar(
+              child: _ForumPager(
+                page: _page,
+                totalPages: _totalPages,
+                busy: _isBusy,
+                onJump: _go,
+              ),
             ),
+          ),
+        Positioned(
+          right: 8,
+          bottom: _continuous ? 16 : 80,
+          child: FloatingMenu(
+            controller: _scroll,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: cs.primaryContainer,
+                  foregroundColor: cs.onPrimaryContainer,
+                  onTap: _refreshList,
+                ),
+              ],
+              [
+                SpeedDialChild(
+                  child: Icon(
+                    _continuous
+                        ? Icons.view_cozy_outlined
+                        : Icons.menu,
+                  ),
+                  backgroundColor: cs.primaryContainer,
+                  foregroundColor: cs.onPrimaryContainer,
+                  onTap: _toggleMode,
+                ),
+              ],
+            ],
           ),
         ),
       ],
@@ -2002,7 +2204,11 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
 
   bool get _isBusy {
     if (_error != null) return false;
-    // 当前页无缓存即视为加载中（清空后第一次 build 进入 loader）
+    if (_continuous) {
+      // 连续模式：只要还没拿到第 1 页即为加载中
+      return _cache[_tabKey]?[1] == null;
+    }
+    // 分页：当前页无缓存即视为加载中（清空后第一次 build 进入 loader）
     return _cache[_tabKey]?[_page] == null;
   }
 
@@ -2012,12 +2218,15 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       8,
       _tabs.isNotEmpty ? 62 : 8,
       8,
-      66,
+      _continuous ? 24 : 66,
     );
     if (_error != null) {
       return Padding(
         padding: edge,
-        child: _PluginRetry(message: _error!, onRetry: () => _go(_page)),
+        child: _PluginRetry(
+          message: _error!,
+          onRetry: _continuous ? _retryContinuous : () => _go(_page),
+        ),
       );
     }
     if (_isBusy) {
@@ -2026,7 +2235,8 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
         child: const Center(child: PolygonRefreshIndicator(size: 24)),
       );
     }
-    if (_rows.isEmpty) {
+    final visible = _continuous ? _merged : _rows;
+    if (visible.isEmpty) {
       return Padding(
         padding: edge,
         child: Center(
@@ -2037,12 +2247,28 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
         ),
       );
     }
+    // 连续模式底部追加载器行
+    final showTail = _continuous && _appending;
     return ListView.separated(
+      controller: _scroll,
       padding: edge,
-      itemCount: _rows.length,
+      itemCount: visible.length + (showTail ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, i) =>
-          _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
+      itemBuilder: (context, i) {
+        if (i >= visible.length) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: PolygonRefreshIndicator(size: 22),
+            ),
+          );
+        }
+        // 滑到末尾触发下一页加载（anime_list 连续模式同款）
+        if (_continuous && i == visible.length - 1 && _hasMore) {
+          _scheduleFetchMore();
+        }
+        return _ForumBoardRow(plugin: widget.plugin, item: visible[i]);
+      },
     );
   }
 }
