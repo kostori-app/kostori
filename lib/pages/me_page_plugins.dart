@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_qjs/flutter_qjs.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_qjs/flutter_qjs.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
@@ -2250,7 +2250,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
         padding: edge,
         child: Center(
           child: Text(
-            t.noPluginToSign,
+            t.noData,
             style: TextStyle(color: cs.onSurfaceVariant),
           ),
         ),
@@ -2489,7 +2489,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           padding: const EdgeInsets.only(top: 40),
           child: Center(
             child: Text(
-              t.noPluginToSign,
+              t.noData,
               style: TextStyle(color: cs.onSurfaceVariant),
             ),
           ),
@@ -2499,7 +2499,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         _mainContent(cs, _posts.first),
         const SizedBox(height: 10),
         for (var i = 1; i < _posts.length; i++) ...[
-          _floorCard(context, cs, _posts[i]),
+          _floorCard(cs, _posts[i], i),
           const SizedBox(height: 10),
         ],
       ],
@@ -2706,9 +2706,8 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  /// 单楼层卡片：头像/作者/时间/楼层 + 富文本内容 + 图片预览
-  Widget _floorCard(BuildContext context, ColorScheme cs, _ThreadPost post) {
-    final isFirst = _posts.indexOf(post) == 0;
+  /// 回帖卡片：头像/作者/时间 + 可见序号 + 富文本内容 + 图片预览
+  Widget _floorCard(ColorScheme cs, _ThreadPost post, int visibleNo) {
     return Material(
       color: cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(
@@ -2721,7 +2720,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _floorHeader(context, cs, post, isFirst),
+            _floorHeader(cs, post, visibleNo),
             const SizedBox(height: 10),
             _postContent(context, cs, post),
             if (post.images.isNotEmpty) ...[
@@ -2734,16 +2733,8 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  Widget _floorHeader(
-    BuildContext context,
-    ColorScheme cs,
-    _ThreadPost post,
-    bool isFirst,
-  ) {
-    // 楼主楼层主题页未内置头像时回退列表行头像
-    final avatarUrl = post.avatarUrl.isNotEmpty
-        ? post.avatarUrl
-        : (isFirst ? (widget.row?['avatarUrl']?.toString() ?? '') : '');
+  Widget _floorHeader(ColorScheme cs, _ThreadPost post, int visibleNo) {
+    final avatarUrl = post.avatarUrl;
     return Row(
       children: [
         if (avatarUrl.isNotEmpty)
@@ -2783,25 +2774,6 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  if (isFirst)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: cs.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '楼主',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: cs.onTertiaryContainer,
-                        ),
-                      ),
-                    ),
                 ],
               ),
               if (post.time.isNotEmpty)
@@ -2817,22 +2789,21 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             ],
           ),
         ),
-        if (post.floor > 0)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: cs.primaryContainer.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '#${post.floor}',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: cs.onPrimaryContainer,
-              ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: cs.primaryContainer.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            '#$visibleNo',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: cs.onPrimaryContainer,
             ),
           ),
+        ),
       ],
     );
   }
@@ -2873,7 +2844,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  /// 正文富文本：把 URL 变成可点击链接（原地址等），其余保留可选文本样式
+  /// 正文富文本：可选中复制；长按段落弹出链接菜单（打开/复制），无链接时原生选中
   Widget _richText(
     String text, {
     double fontSize = 14.5,
@@ -2881,7 +2852,28 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     required Color color,
   }) {
     final cs = Theme.of(context).colorScheme;
-    final urlRe = RegExp(r"https?://[^\s<>']+");
+    final urls = <String>[];
+    final spans = _linkSpans(text, cs.primary, urls);
+    final rich = SelectableText.rich(
+      TextSpan(
+        style: TextStyle(fontSize: fontSize, height: height, color: color),
+        children: spans,
+      ),
+    );
+    if (urls.isEmpty) return rich;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () => _showLinkMenu(urls),
+      child: rich,
+    );
+  }
+
+  List<TextSpan> _linkSpans(
+    String text,
+    Color linkColor,
+    List<String> urls,
+  ) {
+    final urlRe = RegExp(r'(?:https?://|magnet:\?)[^\s<>]+');
     final spans = <TextSpan>[];
     var pos = 0;
     for (final m in urlRe.allMatches(text)) {
@@ -2891,48 +2883,90 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
       var url = m.group(0)!;
       while (url.isNotEmpty &&
           RegExp(r'[.,;:)\]}]$').hasMatch(url) &&
-          !url.endsWith('://')) {
+          !url.endsWith(':')) {
         url = url.substring(0, url.length - 1);
       }
-      spans.add(
-        TextSpan(
-          text: url,
-          style: TextStyle(color: cs.primary),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => launchUrlString(url),
-        ),
-      );
+      if (!urls.contains(url)) urls.add(url);
+      spans.add(TextSpan(text: url, style: TextStyle(color: linkColor)));
       pos = m.start + m.group(0)!.length;
     }
     if (pos < text.length) {
       spans.add(TextSpan(text: text.substring(pos)));
     }
-    return Text.rich(
-      TextSpan(
-        style: TextStyle(fontSize: fontSize, height: height, color: color),
-        children: spans,
-      ),
+    if (spans.isEmpty) spans.add(TextSpan(text: text));
+    return spans;
+  }
+
+  /// 长按含链接段落的操作菜单：每行可点打开 + 复制按钮
+  Future<void> _showLinkMenu(List<String> urls) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < urls.length; i++) ...[
+                if (i > 0)
+                  Divider(height: 1, color: cs.outlineVariant),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.link),
+                  title: Text(
+                    urls[i],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    launchUrlString(urls[i]);
+                  },
+                  trailing: IconButton(
+                    tooltip: t.copyLink,
+                    icon: const Icon(Icons.copy, size: 18),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: urls[i]));
+                      App.rootContext.showMessage(message: t.copiedToClipboard);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
+  /// 引用块样式：与项目 bangumi 话题的引用一致（左侧 4 主色条 + 圆角 8 + 文字描边色）
   Widget _quoteBlock(ColorScheme cs, String text) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(10),
-        border: Border(
-          left: BorderSide(color: cs.primary.withValues(alpha: 0.7), width: 3),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainer,
+            border: Border(
+              left: BorderSide(color: cs.primary, width: 4),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: _richText(
+              text,
+              fontSize: 13,
+              height: 1.5,
+              color: cs.outline,
+            ),
+          ),
         ),
       ),
-        child: _richText(
-          text,
-          fontSize: 13,
-          height: 1.5,
-          color: cs.onSurfaceVariant,
-        ),
     );
   }
 
