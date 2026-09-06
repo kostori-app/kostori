@@ -10,6 +10,7 @@ class PluginSettings extends StatefulWidget {
 
 class _PluginSettingsState extends State<PluginSettings> {
   late final TextEditingController _urlCtrl;
+  bool _dragOver = false;
 
   /// 从 .js 直链添加单个插件（与番剧源“添加源”一致）
   Future<void> _addPluginByUrl(String url) async {
@@ -195,7 +196,15 @@ const plugin = {
         _BuildSectionPadding(
           DropTarget(
             onDragDone: _onDrop,
-            child: _SettingCard(
+            onDragEntered: (_) {
+              if (mounted) setState(() => _dragOver = true);
+            },
+            onDragExited: (_) {
+              if (mounted) setState(() => _dragOver = false);
+            },
+            child: Stack(
+              children: [
+                _SettingCard(
             children: [
               _SettingPartTitle(
                 title: t.pluginSourceUrl,
@@ -247,7 +256,66 @@ const plugin = {
                 ),
               ),
             ],
-          ),
+            ),
+            if (_dragOver)
+              Positioned.fill(
+                child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.file_download_outlined,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  t.dropJsPluginHint,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         // 每个插件一个卡片（对齐番源卡片风格）
