@@ -988,7 +988,7 @@ class _PluginSubPageState extends State<PluginSubPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.plugin.titleOf(widget.name))),
+      appBar: Appbar(title: Text(widget.plugin.titleOf(widget.name))),
       body: FutureBuilder<List<dynamic>>(
         future: _future,
         builder: (context, snap) {
@@ -1131,7 +1131,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.plugin.name)),
+      appBar: Appbar(title: Text(widget.plugin.name)),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _navFuture,
         builder: (context, snap) {
@@ -1956,7 +1956,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(_title.isEmpty ? widget.plugin.name : _title)),
+      appBar: Appbar(title: Text(_title.isEmpty ? widget.plugin.name : _title)),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -2083,63 +2083,76 @@ class _ForumPager extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _PagerIcon(
-            icon: Icons.first_page,
-            label: t.first,
-            enabled: page > 1 && !busy,
-            onTap: () => onJump(1),
-          ),
-          _PagerIcon(
-            icon: Icons.chevron_left,
-            label: t.back,
-            enabled: page > 1 && !busy,
-            onTap: () => onJump(page - 1),
-            onRepeat: () {
-              if (page > 1 && !busy) onJump(page - 1);
-            },
-          ),
-          Expanded(
-            child: Center(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => _jump(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.toOpacity(0.3),
+          const SizedBox(),
+          Row(
+            children: [
+              _PagerIcon(
+                icon: Icons.first_page,
+                label: t.first,
+                enabled: page > 1 && !busy,
+                onTap: () => onJump(1),
+              ),
+              const SizedBox(width: 4),
+              _PagerIcon(
+                icon: Icons.chevron_left,
+                label: t.back,
+                enabled: page > 1 && !busy,
+                onTap: () => onJump(page - 1),
+                onRepeat: () {
+                  if (page > 1 && !busy) onJump(page - 1);
+                },
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: t.jumpToPage,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    t.pagePM(p: '$page', m: '$totalPages'),
-                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                    onTap: () => _jump(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.toOpacity(
+                          0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(t.pagePM(p: '$page', m: '$totalPages')),
+                    ),
                   ),
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              _PagerIcon(
+                icon: Icons.chevron_right,
+                label: t.next,
+                enabled: page < totalPages && !busy,
+                onTap: () => onJump(page + 1),
+                onRepeat: () {
+                  if (page < totalPages && !busy) onJump(page + 1);
+                },
+              ),
+              const SizedBox(width: 4),
+              _PagerIcon(
+                icon: Icons.last_page,
+                label: t.last,
+                enabled: page < totalPages && !busy,
+                onTap: () => onJump(totalPages),
+              ),
+            ],
           ),
-          _PagerIcon(
-            icon: Icons.chevron_right,
-            label: t.next,
-            enabled: page < totalPages && !busy,
-            onTap: () => onJump(page + 1),
-            onRepeat: () {
-              if (page < totalPages && !busy) onJump(page + 1);
-            },
-          ),
-          _PagerIcon(
-            icon: Icons.last_page,
-            label: t.last,
-            enabled: page < totalPages && !busy,
-            onTap: () => onJump(totalPages),
-          ),
+          const SizedBox(),
         ],
       ),
     );
@@ -2196,27 +2209,38 @@ class _PagerIconState extends State<_PagerIcon> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Tooltip(
       message: widget.label,
-      child: Material(
-        color: cs.surfaceContainerHigh,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: GestureDetector(
-          onTap: widget.enabled ? widget.onTap : null,
-          onLongPressStart: (_) => _start(),
-          onLongPressEnd: (_) => _end(),
-          onLongPressCancel: _end,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(
-              widget.icon,
-              size: 20,
-              color: widget.enabled
-                  ? cs.onSurface
-                  : cs.onSurfaceVariant.withValues(alpha: 0.4),
+      child: GestureDetector(
+        onLongPressStart: (_) => _start(),
+        onLongPressEnd: (_) => _end(),
+        onLongPressCancel: _end,
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            width: 48,
+            height: 48,
+            child: InkWell(
+              onTap: widget.enabled ? widget.onTap : null,
+              borderRadius: BorderRadius.circular(16),
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.pressed)) {
+                  return colorScheme.primary.toOpacity(0.2);
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return colorScheme.secondary.toOpacity(0.1);
+                }
+                return null;
+              }),
+              child: Center(
+                child: Icon(
+                  widget.icon,
+                  color: widget.enabled
+                      ? colorScheme.primary
+                      : colorScheme.onSurface.toOpacity(0.3),
+                ),
+              ),
             ),
           ),
         ),
