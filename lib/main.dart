@@ -14,6 +14,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/main_isolate_runner.dart';
@@ -58,6 +59,12 @@ void main(List<String> args) {
         );
 
         runApp(ProviderScope(child: MyApp()));
+        // 延迟触发个人页插件的“启动自动签到”（等 JS 引擎/首帧就绪）
+        Future<void>.delayed(const Duration(seconds: 3), () async {
+          try {
+            await MePagePluginManager().autoSigninAtStart();
+          } catch (_) {}
+        });
         if (App.isDesktop) {
           await windowManager.ensureInitialized();
           windowManager.waitUntilReadyToShow().then((_) async {

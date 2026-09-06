@@ -72,6 +72,48 @@ class MePagePlugin {
     }
   }
 
+  /// 是否声明了自动签到：`plugin.autoSignin = true` 或提供了 `plugin.autoSignin()`。
+  bool get autoSigninEnabled {
+    try {
+      final res = JsEngine().runCode(
+        "typeof globalThis.__me_plugins[${_jsStr(key)}]?.autoSignin === 'function'"
+        " || globalThis.__me_plugins[${_jsStr(key)}]?.autoSignin === true",
+      );
+      return res == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 执行自动签到：调用 `plugin.autoSignin()`，期望返回 `{ ok, message? }`。
+  Future<Map<String, dynamic>> autoSignin() async {
+    try {
+      final res = await JsEngine().runCode("""
+        (async () => {
+          const fn = globalThis.__me_plugins[${_jsStr(key)}]?.autoSignin;
+          if (typeof fn !== 'function') {
+            return JSON.stringify({ ok: false, message: '' });
+          }
+          const r = await fn();
+          return JSON.stringify({
+            ok: !!(r && r.ok),
+            message: (r && (r.message || r.error)) || ''
+          });
+        })()
+      """);
+      if (res is String) {
+        try {
+          final data = jsonDecode(res) as Map<String, dynamic>;
+          return {'ok': data['ok'] == true, 'message': data['message'] ?? ''};
+        } catch (_) {}
+      }
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).autoSignin', '$e\n$s');
+      return {'ok': false, 'message': '$e'};
+    }
+    return {'ok': false, 'message': ''};
+  }
+
   /// 是否声明了登录能力：`plugin.login` 是 async 函数，签名
   /// `async login(username, password) => { ok, message? }`（与番源 account.login 对齐）
   bool get hasLogin {
@@ -304,6 +346,28 @@ class MePagePluginManager with ChangeNotifier, Init {
     _plugins.clear();
     await doInit();
     notifyListeners();
+  }
+
+  /// App 启动后自动签到：对“已启用 + 已登录 + 声明 autoSignin”的插件各触发一次。
+  /// 不弹提示；失败仅记录日志（避免启动时打扰）。
+  Future<void> autoSigninAtStart() async {
+    try {
+      await ensureInit();
+    } catch (_) {}
+    for (final p in all()) {
+      if (!isEnabled(p.key) || !p.isLogged || !p.autoSigninEnabled) continue;
+      try {
+        final res = await p.autoSignin();
+        if (res['ok'] != true) {
+          SourceLog.warning(
+            'MePagePlugin.autoSignin',
+            '${p.name}: ${res['message']}',
+          );
+        }
+      } catch (e, s) {
+        SourceLog.error('MePagePlugin.autoSignin', '${p.name}: $e\n$s');
+      }
+    }
   }
 
   /// 从插件源地址拉取插件列表并安装。
