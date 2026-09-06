@@ -42,6 +42,12 @@ class MePagePlugin {
   /// 插件声明的站点 Referer（图片防盗链用，可选）
   final String? referer;
 
+  /// 是否声明了 `plugin.settings`（解析时一次性判定，避免每次探测引擎不稳定）
+  final bool settingsDeclared;
+
+  /// 设置页模块（解析时缓存，打开设置页不依赖运行期引擎状态）
+  final List<Map<String, dynamic>> settingsCache;
+
   /// 本插件独立状态（对齐番剧源 `.data`），持久化到 `plugins/<key>.data`
   Map<String, dynamic> data;
 
@@ -52,6 +58,8 @@ class MePagePlugin {
     required this.description,
     required this.filePath,
     this.referer,
+    this.settingsDeclared = false,
+    this.settingsCache = const [],
     Map<String, dynamic> initialData = const {},
   }) : data = {...initialData};
 
@@ -189,36 +197,12 @@ class MePagePlugin {
     _saveData();
   }
 
-  /// 插件是否声明了“设置页”模块：`plugin.settings = [{ type: 'config', ... }]`
-  /// 或 nav 里含 key 为 settings 的子页（与番源 source.settings 对齐）
-  bool get hasSettings {
-    try {
-      final res = JsEngine().runCode(
-        "const s = globalThis.__me_plugins[${_jsStr(key)}];"
-        "Array.isArray(s?.settings) && s.settings.length > 0",
-      );
-      if (res == true) return true;
-    } catch (_) {}
-    return false;
-  }
+  /// 插件是否声明了“设置页”模块（与番源 source.settings 对齐；解析期已判定）
+  bool get hasSettings => settingsDeclared;
 
-  /// 设置页模块列表（来自 `plugin.settings`）
+  /// 设置页模块列表（来自 `plugin.settings`，缓存）
   Future<List<Map<String, dynamic>>> settingsModules() async {
-    try {
-      final res = await JsEngine().runCode(
-        "globalThis.__me_plugins[${_jsStr(key)}]?.settings ?? []",
-      );
-      if (res is List) {
-        return res
-            .map((e) => (e is Map)
-                ? e.map((k, v) => MapEntry(k.toString(), v))
-                : const <String, dynamic>{})
-            .toList();
-      }
-    } catch (e, s) {
-      SourceLog.error('MePagePlugin($name).settings', '$e\n$s');
-    }
-    return const [];
+    return List.from(settingsCache);
   }
 
   /// 调用插件 render()，返回模块列表（List<Map>）。
@@ -666,6 +650,21 @@ class MePagePluginParser {
             ?.toString() ??
         '';
 
+    // 设置页：解析期缓存（避免运行期引擎状态导致按钮忽有忽无）
+    List<Map<String, dynamic>> settingsCache = const [];
+    try {
+      final raw = JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.settings ?? []",
+      );
+      if (raw is List) {
+        settingsCache = raw
+            .map((e) => (e is Map)
+                ? e.map((k, v) => MapEntry(k.toString(), v))
+                : const <String, dynamic>{})
+            .toList();
+      }
+    } catch (_) {}
+
     // 各插件独立 `.data`（对齐番剧源）；无文件时从旧 implicitData 迁移一次
     Map<String, dynamic> initialData = const {};
     final dataPath = filePath.endsWith('.js')
@@ -713,6 +712,8 @@ class MePagePluginParser {
       description: description,
       filePath: filePath,
       referer: referer.isEmpty ? null : referer,
+      settingsDeclared: settingsCache.isNotEmpty,
+      settingsCache: settingsCache,
       initialData: initialData,
     );
   }
