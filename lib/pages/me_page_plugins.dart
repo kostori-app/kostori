@@ -495,9 +495,10 @@ class _SignInButtonState extends State<_SignInButton> {
       final successText = widget.m['successText']?.toString();
       if (status == 200) {
         final body = res['body']?.toString().trim() ?? '';
-        App.rootContext.showMessage(
-          message: successText ?? (body.isEmpty ? t.success : body),
-        );
+        final show = (successText == null || successText.isEmpty)
+            ? (body.isEmpty ? t.success : body)
+            : successText;
+        App.rootContext.showMessage(message: show);
       } else {
         App.rootContext.showMessage(
           message: t.failedWithStatus(status: status),
