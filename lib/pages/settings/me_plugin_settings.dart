@@ -424,10 +424,7 @@ const plugin = {
                       ? () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => PluginShellPage(
-                                plugin: p,
-                                initialPageKey: 'login',
-                              ),
+                              builder: (_) => _PluginLoginPage(plugin: p),
                             ),
                           );
                         }
@@ -934,6 +931,141 @@ class _PluginSourceListState extends State<_PluginSourceList> {
                 ],
               ),
         ],
+      ),
+    );
+  }
+}
+
+/// 插件登录：像番源一样用 WebView 登录抓取 Cookie 存入 CookieJar，
+/// 不再需要单独的“登录页面”。
+class _PluginLoginPage extends StatefulWidget {
+  const _PluginLoginPage({required this.plugin});
+
+  final MePagePlugin plugin;
+
+  @override
+  State<_PluginLoginPage> createState() => _PluginLoginPageState();
+}
+
+class _PluginLoginPageState extends State<_PluginLoginPage> {
+  bool _success = false;
+
+  bool _isAuthCookie(String name, String value) {
+    if (value.isEmpty || value == 'deleted') return false;
+    final needle = widget.plugin.loginCookieNeedle();
+    if (needle.isEmpty) return true;
+    return name.toLowerCase().contains(needle.toLowerCase());
+  }
+
+  Future<void> _check(InAppWebViewController c, String url) async {
+    final cookies = (await c.getCookies(url)) ?? [];
+    final hit = cookies.any((ck) => _isAuthCookie(ck.name, ck.value));
+    if (!hit) return;
+    final jar = SingleInstanceCookieJar.instance;
+    if (jar != null) {
+      final list = <io.Cookie>[
+        for (final ck in cookies)
+          io.Cookie(ck.name, ck.value)
+            ..domain = ck.domain
+            ..path = ck.path
+            ..httpOnly = ck.httpOnly,
+      ];
+      jar.saveFromResponse(Uri.parse(url), list);
+    }
+    widget.plugin.setLogged(true);
+    _success = true;
+  }
+
+  void _openWebview() async {
+    final url = widget.plugin.loginUrl;
+    if (url == null || url.isEmpty) return;
+    if (App.isLinux) {
+      _openDesktopWebview(url);
+      return;
+    }
+    await context.to(
+      () => AppWebview(
+        initialUrl: url,
+        onNavigation: (u, c) {
+          _check(c, u);
+          return false;
+        },
+        onTitleChange: (_, c) {
+          _check(c, url);
+        },
+      ),
+    );
+    if (_success && mounted) context.pop();
+  }
+
+  Future<void> _openDesktopWebview(String url) async {
+    if (!await DesktopWebview.isAvailable()) {
+      context.showMessage(message: t.webviewIsNotAvailable);
+      return;
+    }
+    void validate(DesktopWebview webview, String currentUrl) async {
+      final map = await webview.getCookies(currentUrl);
+      final hit = map.entries
+          .any((e) => _isAuthCookie(e.key, e.value));
+      if (!hit) return;
+      final jar = SingleInstanceCookieJar.instance;
+      if (jar != null) {
+        jar.saveFromResponse(
+          Uri.parse(currentUrl),
+          [
+            for (final e in map.entries)
+              io.Cookie(e.key, e.value)
+                ..domain = Uri.parse(currentUrl).host,
+          ],
+        );
+      }
+      widget.plugin.setLogged(true);
+      _success = true;
+      webview.close();
+      if (mounted) context.pop();
+    }
+
+    final webview = DesktopWebview(
+      initialUrl: url,
+      onNavigation: (u, w) => validate(w, u),
+      onTitleChange: (_, w) => validate(w, url),
+    );
+    webview.open();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: Appbar(title: Text(widget.plugin.name)),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock_outline, size: 48),
+                const SizedBox(height: 16),
+                Text(t.loginWithWebview, style: const TextStyle(fontSize: 16)),
+                const SizedBox(height: 8),
+                Text(
+                  widget.plugin.loginUrl ?? '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Button.filled(
+                  onPressed: _openWebview,
+                  child: Text(t.loginWithWebview),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

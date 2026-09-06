@@ -71,18 +71,47 @@ class MePagePlugin {
     }
   }
 
-  /// 是否声明了登录能力（login 为函数，或导航里有 key 为 login 的页）
-  bool get hasLogin {
+  /// 是否声明了登录能力（login 为 URL/对象，或导航里有 login 页）
+  bool get hasLogin => loginUrl != null;
+
+  /// 插件 WebView 登录地址：`plugin.login = 'https://…'` 或 `{ url, cookie }`
+  String? get loginUrl {
     try {
       final res = JsEngine().runCode(
-        "typeof globalThis.__me_plugins[${_jsStr(key)}]?.login === 'function'"
-        " || (Array.isArray(globalThis.__me_plugins[${_jsStr(key)}]?.nav)"
-        "    && globalThis.__me_plugins[${_jsStr(key)}].nav.some(n => n && n.key === 'login'))",
+        "(() => { const l = globalThis.__me_plugins[${_jsStr(key)}]?.login;"
+        " if (typeof l === 'string') return l;"
+        " if (l && (l.url || l.webviewUrl)) return l.url || l.webviewUrl;"
+        " return null; })()",
       );
-      return res == true;
-    } catch (_) {
-      return false;
-    }
+      if (res != null && res.toString().isNotEmpty) return res.toString();
+    } catch (_) {}
+    return null;
+  }
+
+  /// 判定“已登录”的 Cookie 名包含串：`plugin.login = { url, cookie: '_auth' }`
+  String loginCookieNeedle() {
+    try {
+      final res = JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.login?.cookie ?? ''",
+      );
+      if (res != null) return res.toString();
+    } catch (_) {}
+    return '_auth';
+  }
+
+  /// 插件是否已登录（WebView 登录成功后标记）
+  bool get isLogged {
+    final map = appdata.implicitData['mePluginLogged'];
+    return map is Map && map[key] == true;
+  }
+
+  void setLogged(bool v) {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData['mePluginLogged'] as Map? ?? {},
+    );
+    map[key] = v;
+    appdata.implicitData['mePluginLogged'] = map;
+    appdata.writeImplicitData();
   }
 
   /// 插件导航项列表：`[{key,title,icon}]`，icon 为 Dart 图标白名单字符串。
