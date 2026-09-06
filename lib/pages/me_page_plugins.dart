@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:kostori/components/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -1139,29 +1141,44 @@ class _PluginShellPageState extends State<PluginShellPage> {
           if (_nav.isEmpty) {
             return const Center(child: Text(''));
           }
+          // 单导航（如 xsijishe：只有一个板块）不再显示导航条，
+          // 内容直接内联；多导航才显示项目分段风格切换条
+          if (_nav.length == 1) {
+            return FutureBuilder<List<dynamic>>(
+              future: _index < _pageFutures.length
+                  ? _pageFutures[_index]
+                  : null,
+              builder: (context, snap2) {
+                if (snap2.connectionState != ConnectionState.done) {
+                  return const Center(child: PolygonRefreshIndicator());
+                }
+                final modules = snap2.data ?? const [];
+                return _contentOrBoard(widget.plugin, modules);
+              },
+            );
+          }
           return Column(
             children: [
-              // 顶部导航（横向滚动）
-              SizedBox(
-                height: 52,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
-                    for (var i = 0; i < _nav.length; i++) ...[
+                    for (var i = 0; i < _nav.length; i++)
                       InkWell(
                         borderRadius: BorderRadius.circular(10),
                         onTap: () => _select(i),
                         child: Container(
-                          alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
-                            vertical: 6,
+                            vertical: 7,
                           ),
                           decoration: BoxDecoration(
                             color: _index == i
-                                ? cs.secondaryContainer
-                                : Colors.transparent,
+                                ? cs.primaryContainer
+                                : cs.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -1171,7 +1188,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
                                 _navIcon(_nav[i]['icon'] ?? ''),
                                 size: 15,
                                 color: _index == i
-                                    ? cs.onSecondaryContainer
+                                    ? cs.onPrimaryContainer
                                     : cs.onSurfaceVariant,
                               ),
                               const SizedBox(width: 5),
@@ -1182,14 +1199,15 @@ class _PluginShellPageState extends State<PluginShellPage> {
                                   fontWeight: _index == i
                                       ? FontWeight.w600
                                       : FontWeight.w400,
+                                  color: _index == i
+                                      ? cs.onPrimaryContainer
+                                      : cs.onSurfaceVariant,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
-                    ],
                   ],
                 ),
               ),
@@ -1198,11 +1216,11 @@ class _PluginShellPageState extends State<PluginShellPage> {
                   future: _index < _pageFutures.length
                       ? _pageFutures[_index]
                       : null,
-                  builder: (context, snap) {
-                    if (snap.connectionState != ConnectionState.done) {
+                  builder: (context, snap2) {
+                    if (snap2.connectionState != ConnectionState.done) {
                       return const Center(child: PolygonRefreshIndicator());
                     }
-                    final modules = snap.data ?? const [];
+                    final modules = snap2.data ?? const [];
                     return _contentOrBoard(widget.plugin, modules);
                   },
                 ),
@@ -1210,20 +1228,6 @@ class _PluginShellPageState extends State<PluginShellPage> {
             ],
           );
         },
-      ),
-      bottomNavigationBar: SizedBox(
-        height: 44,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _nav.isEmpty
-                  ? ''
-                  : '${_index + 1}/${_nav.length} · ${_nav[_index < _nav.length ? _index : 0]['key'] ?? ''}',
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1699,7 +1703,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   int _page = 1;
   int _totalPages = 1;
   List<Map<String, dynamic>> _rows = [];
-  final TextEditingController _jumpCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -1709,7 +1712,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
 
   @override
   void dispose() {
-    _jumpCtrl.dispose();
     super.dispose();
   }
 
@@ -1769,7 +1771,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
 
   void _go(int page) {
     if (page < 1) return;
-    _jumpCtrl.clear();
     _load(page);
   }
 
@@ -1847,56 +1848,11 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
                   ),
           ),
           if (_metaLoaded)
-            Container(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: _page > 1 && !_loading
-                        ? () => _go(_page - 1)
-                        : null,
-                    icon: const Icon(Icons.chevron_left),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        '第 $_page / $_totalPages 页',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 84,
-                    height: 34,
-                    child: TextField(
-                      controller: _jumpCtrl,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: t.page,
-                        border: const OutlineInputBorder(),
-                      ),
-                      onSubmitted: (v) {
-                        final p = int.tryParse(v.trim());
-                        if (p != null && p > 0) _go(p);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: _page < _totalPages && !_loading
-                        ? () => _go(_page + 1)
-                        : null,
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-                ],
-              ),
+            _ForumPager(
+              page: _page,
+              totalPages: _totalPages,
+              busy: _loading,
+              onJump: _go,
             ),
         ],
       ],
@@ -2074,6 +2030,196 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// anime 风格分页器：首页 / 上一页(长按连续) / 页码胶囊(点跳页) / 下一页(长按连续) / 末页
+class _ForumPager extends StatelessWidget {
+  final int page;
+  final int totalPages;
+  final bool busy;
+  final ValueChanged<int> onJump;
+
+  const _ForumPager({
+    required this.page,
+    required this.totalPages,
+    required this.busy,
+    required this.onJump,
+  });
+
+  void _jump(BuildContext context) {
+    String value = '';
+    showDialog(
+      context: App.rootContext,
+      builder: (context) {
+        return ContentDialog(
+          title: t.jumpToPage,
+          content: TextField(
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            decoration: InputDecoration(labelText: t.page),
+            onChanged: (v) => value = v,
+          ).paddingHorizontal(16),
+          actions: [
+            Button.filled(
+              onPressed: () {
+                Navigator.of(context).pop();
+                final p = int.tryParse(value);
+                if (p == null || p <= 0 || p > totalPages) {
+                  App.rootContext.showMessage(message: t.invalidPage);
+                  return;
+                }
+                onJump(p);
+              },
+              child: Text(t.apply),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Row(
+        children: [
+          _PagerIcon(
+            icon: Icons.first_page,
+            label: t.first,
+            enabled: page > 1 && !busy,
+            onTap: () => onJump(1),
+          ),
+          _PagerIcon(
+            icon: Icons.chevron_left,
+            label: t.back,
+            enabled: page > 1 && !busy,
+            onTap: () => onJump(page - 1),
+            onRepeat: () {
+              if (page > 1 && !busy) onJump(page - 1);
+            },
+          ),
+          Expanded(
+            child: Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _jump(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.toOpacity(0.3),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    t.pagePM(p: '$page', m: '$totalPages'),
+                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          _PagerIcon(
+            icon: Icons.chevron_right,
+            label: t.next,
+            enabled: page < totalPages && !busy,
+            onTap: () => onJump(page + 1),
+            onRepeat: () {
+              if (page < totalPages && !busy) onJump(page + 1);
+            },
+          ),
+          _PagerIcon(
+            icon: Icons.last_page,
+            label: t.last,
+            enabled: page < totalPages && !busy,
+            onTap: () => onJump(totalPages),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 分页图标按钮（支持长按连续触发）
+class _PagerIcon extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
+  final VoidCallback? onRepeat;
+
+  const _PagerIcon({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+    this.onRepeat,
+  });
+
+  @override
+  State<_PagerIcon> createState() => _PagerIconState();
+}
+
+class _PagerIconState extends State<_PagerIcon> {
+  Timer? _timer;
+
+  void _start() {
+    if (!widget.enabled) return;
+    widget.onTap();
+    _timer?.cancel();
+    if (widget.onRepeat != null) {
+      _timer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+        if (!widget.enabled || !mounted) {
+          _timer?.cancel();
+          return;
+        }
+        widget.onRepeat!();
+      });
+    }
+  }
+
+  void _end() {
+    _timer?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: widget.label,
+      child: Material(
+        color: cs.surfaceContainerHigh,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: GestureDetector(
+          onTap: widget.enabled ? widget.onTap : null,
+          onLongPressStart: (_) => _start(),
+          onLongPressEnd: (_) => _end(),
+          onLongPressCancel: _end,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              widget.icon,
+              size: 20,
+              color: widget.enabled
+                  ? cs.onSurface
+                  : cs.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
       ),
     );
   }
