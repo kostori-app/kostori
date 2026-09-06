@@ -439,7 +439,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
   ) async {
     // 本路由不再是当前页（如设置页等压在其上）时不处理，
     // 否则 desktop_drop 全局广播会抢走其他页 DropTarget 的拖入
-    if (!ModalRoute.of(context)?.isCurrent ?? false) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
     // 动漫识别页激活时跳过，避免干扰其拖图识别
     if (App.animeRecognizeActive) return;
     final file = details.files.firstOrNull;
@@ -461,7 +461,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
   }
 
   Future<void> _handleDroppedUrl(BuildContext context, String url) async {
-    if (!ModalRoute.of(context)?.isCurrent ?? false) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
     if (App.animeRecognizeActive) return;
     if (!url.startsWith('http')) return;
 
