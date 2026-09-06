@@ -1647,6 +1647,12 @@ class _ForumBoardRow extends StatelessWidget {
                         onTap: () => preview(i),
                         child: Hero(
                           tag: heroTag,
+                          flightShuttleBuilder: (flightContext, animation,
+                              direction, fromContext, toContext) {
+                            return direction == HeroFlightDirection.pop
+                                ? (fromContext.widget as Hero).child
+                                : (toContext.widget as Hero).child;
+                          },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: _siteImage(

@@ -330,7 +330,7 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       filterQuality: FilterQuality.medium,
       loadingBuilder: (context, event) => const ColoredBox(
         color: Colors.black26,
-        child: Center(child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2))),
+        child: Center(child: PolygonRefreshIndicator(size: 28)),
       ),
       errorBuilder: (context, error, stackTrace, retry) => ColoredBox(
         color: Colors.black26,
