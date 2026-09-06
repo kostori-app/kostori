@@ -16,7 +16,6 @@ class _PluginSettingsState extends State<PluginSettings> {
   String _loginFilter = 'all';
   String _enabledFilter = 'all';
   String _sort = 'default';
-  final Set<String> _reloginKeys = {};
 
   List<MePagePlugin> _visible(List<MePagePlugin> all) {
     final manager = MePagePluginManager();
@@ -507,14 +506,15 @@ const plugin = {
                     manager.setEnabled(p.key, v);
                     if (mounted) setState(() {});
                   },
-                  login: p.hasLogin
-                      ? () => _openLogin(p)
+                  account: p.hasLogin
+                      ? () async {
+                          await showPopUpWidget(
+                            App.rootContext,
+                            _PluginAccountPage(plugin: p),
+                          );
+                          if (mounted) setState(() {});
+                        }
                       : null,
-                  logged: p.isLogged,
-                  account: manager.credsOf(p.key)?['username']?.toString(),
-                  reloginLoading: _reloginKeys.contains(p.key),
-                  onRelogin: () => _relogin(p),
-                  onLogout: () => _logout(p),
                   edit: _edit,
                   delete: _delete,
                 );
@@ -529,56 +529,6 @@ const plugin = {
     );
   }
 
-  /// 打开登录表单（记住的账号会预填用户名）
-  Future<void> _openLogin(MePagePlugin p) async {
-    final creds = MePagePluginManager().credsOf(p.key);
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _PluginLoginPage(
-          plugin: p,
-          initialUsername: creds?['username']?.toString() ?? '',
-        ),
-      ),
-    );
-    if (mounted) setState(() {});
-  }
-
-  /// 用记住的账号密码自动重新登录（与番源“重新登录”一致）
-  Future<void> _relogin(MePagePlugin p) async {
-    final creds = MePagePluginManager().credsOf(p.key);
-    if (creds == null) {
-      context.showMessage(message: t.noData);
-      return;
-    }
-    setState(() => _reloginKeys.add(p.key));
-    final res = await p.login(
-      creds['username']?.toString() ?? '',
-      creds['password']?.toString() ?? '',
-    );
-    if (!mounted) return;
-    setState(() => _reloginKeys.remove(p.key));
-    if (res['ok'] == true) {
-      p.setLogged(true);
-      context.showMessage(message: t.switchSuccessful);
-    } else {
-      context.showMessage(
-        message: res['message']?.toString().isNotEmpty == true
-            ? res['message'].toString()
-            : t.loginFailed,
-        level: LogLevel.error,
-      );
-    }
-  }
-
-  Future<void> _logout(MePagePlugin p) async {
-    await p.logout();
-    MePagePluginManager().clearCreds(p.key);
-    p.setLogged(false);
-    if (mounted) setState(() {});
-    context.showMessage(message: t.switchSuccessful);
-  }
-
-  /// 打开插件源码编辑（桌面优先 VS Code，否则内置编辑器）
   Future<void> _edit(MePagePlugin p) async {
     if (App.isDesktop) {
       try {
@@ -596,6 +546,7 @@ const plugin = {
 }
 
 /// 单个插件卡片：与番剧源设置页列表卡片同构（无内置/开关语义）
+/// 单个插件卡片：与番剧源设置页列表卡片同构（启用开关 + 账户/编辑 底部按钮区）
 class _PluginSliverCard extends StatelessWidget {
   const _PluginSliverCard({
     super.key,
@@ -604,12 +555,7 @@ class _PluginSliverCard extends StatelessWidget {
     required this.onToggle,
     required this.edit,
     required this.delete,
-    this.login,
-    this.logged = false,
     this.account,
-    this.reloginLoading = false,
-    this.onRelogin,
-    this.onLogout,
   });
 
   final MePagePlugin plugin;
@@ -617,16 +563,14 @@ class _PluginSliverCard extends StatelessWidget {
   final ValueChanged<bool> onToggle;
   final Future<void> Function(MePagePlugin) edit;
   final Future<void> Function(MePagePlugin) delete;
-  final VoidCallback? login;
-  final bool logged;
-  final String? account;
-  final bool reloginLoading;
-  final VoidCallback? onRelogin;
-  final VoidCallback? onLogout;
+
+  /// 点击“账户/登录”按钮（进入二级账户页）
+  final VoidCallback? account;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final logged = plugin.isLogged;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: _SettingCard(
@@ -667,72 +611,34 @@ class _PluginSliverCard extends StatelessWidget {
                   onPressed: () => delete(plugin),
                 ),
                 const SizedBox(width: 4),
-                CustomSwitch(
-                  value: enabled,
-                  onChanged: onToggle,
-                ),
+                CustomSwitch(value: enabled, onChanged: onToggle),
               ],
             ),
           ),
           const Divider(height: 1, indent: 16, endIndent: 16),
-          if (login != null) ...[
-            if (!logged)
-              ListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.person_outline, size: 20),
-                title: Text(t.logIn),
-                trailing: const Icon(Icons.chevron_right, size: 18),
-                onTap: login,
-              )
-            else ...[
-              ListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: Icon(
-                  Icons.verified_user_outlined,
-                  size: 20,
-                  color: colorScheme.primary,
+          // 底部操作（与番剧源卡片一致：账户/编辑等 IconTileButton）
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (account != null)
+                  IconTileButton(
+                    icon: Icon(
+                      logged
+                          ? Icons.person_outline
+                          : Icons.person_add_alt_outlined,
+                    ),
+                    label: logged ? t.account : t.logIn,
+                    onTap: account,
+                  ),
+                IconTileButton(
+                  icon: const Icon(Icons.edit_note),
+                  label: t.edit,
+                  onTap: () => edit(plugin),
                 ),
-                title: Text(
-                  (account != null && account!.isNotEmpty)
-                      ? account!
-                      : t.loggedIn,
-                ),
-              ),
-              ListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.refresh, size: 20),
-                title: Text(t.reLogin),
-                subtitle: Text(t.clickIfLoginExpired),
-                trailing: reloginLoading
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: PolygonRefreshIndicator(),
-                      )
-                    : null,
-                onTap: onRelogin,
-              ),
-              ListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Icons.logout, size: 20),
-                title: Text(t.logOut),
-                onTap: onLogout,
-              ),
-            ],
-            const Divider(height: 1, indent: 16, endIndent: 16),
-          ],
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: IconTileButton(
-                icon: const Icon(Icons.edit_outlined),
-                label: t.edit,
-                onTap: () => edit(plugin),
-              ),
+              ],
             ),
           ),
         ],
@@ -1291,6 +1197,132 @@ class _PluginFilterSegmented extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+/// 插件“账户”二级页：与番剧源账户页一致（未登录→登录；已登录→重新登录/登出）
+class _PluginAccountPage extends StatefulWidget {
+  const _PluginAccountPage({required this.plugin});
+
+  final MePagePlugin plugin;
+
+  @override
+  State<_PluginAccountPage> createState() => _PluginAccountPageState();
+}
+
+class _PluginAccountPageState extends State<_PluginAccountPage> {
+  bool _reloginLoading = false;
+
+  MePagePlugin get p => widget.plugin;
+
+  Future<void> _openLoginForm() async {
+    final creds = MePagePluginManager().credsOf(p.key);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _PluginLoginPage(
+          plugin: p,
+          initialUsername: creds?['username']?.toString() ?? '',
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _relogin() async {
+    final creds = MePagePluginManager().credsOf(p.key);
+    if (creds == null) {
+      context.showMessage(message: t.noData);
+      return;
+    }
+    setState(() => _reloginLoading = true);
+    final res = await p.login(
+      creds['username']?.toString() ?? '',
+      creds['password']?.toString() ?? '',
+    );
+    if (!mounted) return;
+    setState(() => _reloginLoading = false);
+    if (res['ok'] == true) {
+      p.setLogged(true);
+      context.showMessage(message: t.switchSuccessful);
+    } else {
+      context.showMessage(
+        message: res['message']?.toString().isNotEmpty == true
+            ? res['message'].toString()
+            : t.loginFailed,
+        level: LogLevel.error,
+      );
+    }
+  }
+
+  Future<void> _logout() async {
+    await p.logout();
+    MePagePluginManager().clearCreds(p.key);
+    p.setLogged(false);
+    if (mounted) setState(() {});
+    context.showMessage(message: t.switchSuccessful);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final logged = p.isLogged;
+    final creds = MePagePluginManager().credsOf(p.key);
+    return PopUpWidgetScaffold(
+      title: p.name,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Material(
+            color: colorScheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colorScheme.outlineVariant, width: 0.6),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!logged)
+                  ListTile(
+                    title: Text(t.logIn),
+                    trailing: const Icon(Icons.arrow_right),
+                    onTap: _openLoginForm,
+                  )
+                else ...[
+                  ListTile(
+                    leading: Icon(
+                      Icons.verified_user_outlined,
+                      color: colorScheme.primary,
+                    ),
+                    title: Text(
+                      creds?['username']?.toString().isNotEmpty == true
+                          ? creds!['username'].toString()
+                          : t.loggedIn,
+                    ),
+                  ),
+                  ListTile(
+                    title: Text(t.reLogin),
+                    subtitle: Text(t.clickIfLoginExpired),
+                    trailing: _reloginLoading
+                        ? const SizedBox.square(
+                            dimension: 24,
+                            child: PolygonRefreshIndicator(),
+                          )
+                        : const Icon(Icons.refresh),
+                    onTap: _relogin,
+                  ),
+                  ListTile(
+                    title: Text(t.logOut),
+                    trailing: const Icon(Icons.logout),
+                    onTap: _logout,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

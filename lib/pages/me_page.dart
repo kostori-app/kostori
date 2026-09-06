@@ -630,12 +630,6 @@ class _ToolEntryGrid extends ConsumerWidget {
                     () => context.to(() => const DownloadPage()),
                     t.download,
                   ),
-                  _iconBlock(
-                    context,
-                    Icons.extension_outlined,
-                    () => openMePagePluginManage(context),
-                    t.mePagePlugin,
-                  ),
                   // 已连接服务器时显示聊天室快捷入口（聚合入口内）
                   if (connected)
                     _iconBlock(
