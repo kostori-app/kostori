@@ -1917,6 +1917,8 @@ playerAutoPlayDesc: Auto-play next episode when the current one ends
 playerLoopEpisode: Loop single episode
 playerLoopEpisodeDesc: Repeat the current episode when it ends
 form: Form
+installPluginByDrop: Drag & drop install
+dropJsPluginHint: Drop a .js plugin file here to install
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
 activityHeatmapTitle: Activity heatmap

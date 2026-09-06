@@ -5620,6 +5620,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Form'
 	String get form => 'Form';
 
+	/// en: 'Drag & drop install'
+	String get installPluginByDrop => 'Drag & drop install';
+
+	/// en: 'Drop a .js plugin file here to install'
+	String get dropJsPluginHint => 'Drop a .js plugin file here to install';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9225,6 +9231,8 @@ extension on Translations {
 			'playerLoopEpisode' => 'Loop single episode',
 			'playerLoopEpisodeDesc' => 'Repeat the current episode when it ends',
 			'form' => 'Form',
+			'installPluginByDrop' => 'Drag & drop install',
+			'dropJsPluginHint' => 'Drop a .js plugin file here to install',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9369,10 +9377,10 @@ extension on Translations {
 			'useMarkdownFormatting' => 'Use Markdown formatting',
 			'codeFirst' => 'Code first',
 			'actionableAdvice' => 'Give actionable advice',
-			'profileTabPersona' => 'Persona',
-			'profileTabPrompt' => 'Prompt',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabPersona' => 'Persona',
+			'profileTabPrompt' => 'Prompt',
 			'profileTabSkills' => 'Skills',
 			'profileTabParams' => 'Params',
 			'profileTabBasic' => 'Basic',

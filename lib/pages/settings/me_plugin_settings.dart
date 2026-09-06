@@ -10,6 +10,39 @@ class PluginSettings extends StatefulWidget {
 
 class _PluginSettingsState extends State<PluginSettings> {
   late final TextEditingController _urlCtrl;
+  bool _dragOver = false;
+
+  Future<void> _installFromFile(io.File file) async {
+    final name = file.uri.pathSegments.last;
+    if (!name.toLowerCase().endsWith('.js')) return;
+    final dir = io.Directory('${App.dataPath}/$mePluginsDirName');
+    if (!await dir.exists()) {
+      await dir.create();
+    }
+    final safe = name.split('/').last;
+    if (!RegExp(r'^[A-Za-z0-9_\-]+\.js$').hasMatch(safe)) return;
+    try {
+      await io.File(file.path).copy('${dir.path}/$safe');
+      await MePagePluginManager().reload();
+      if (mounted) setState(() {});
+      App.rootContext.showMessage(message: t.switchSuccessful);
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: e.toString(),
+        level: LogLevel.error,
+      );
+    }
+  }
+
+  Future<void> _onDrop(DropDoneDetails detail) async {
+    if (mounted) setState(() => _dragOver = false);
+    for (final file in detail.files) {
+      if (!file.name.toLowerCase().endsWith('.js')) continue;
+      final path = file.path;
+      if (path.isEmpty) continue;
+      await _installFromFile(io.File(path));
+    }
+  }
 
   @override
   void initState() {
@@ -205,6 +238,72 @@ const plugin = {
                 ),
               ),
             ],
+          ),
+        ),
+        // 拖拽安装 .js 插件
+        _BuildSectionPadding(
+          DropTarget(
+            onDragDone: _onDrop,
+            onDragEntered: (_) {
+              if (mounted) setState(() => _dragOver = true);
+            },
+            onDragExited: (_) {
+              if (mounted) setState(() => _dragOver = false);
+            },
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.installPluginByDrop,
+                  icon: Icons.file_download_outlined,
+                ),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _dragOver
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest.toOpacity(0.4),
+                    border: Border.all(
+                      color: _dragOver
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outlineVariant,
+                      width: _dragOver ? 1.6 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.file_present_outlined,
+                          size: 26,
+                          color: _dragOver
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          t.dropJsPluginHint,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         // 每个插件一个卡片（对齐番源卡片风格）
