@@ -5638,6 +5638,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Show enabled only'
 	String get onlyEnabled => 'Show enabled only';
 
+	/// en: 'Logged in'
+	String get filterLogged => 'Logged in';
+
+	/// en: 'Not logged in'
+	String get filterNotLogged => 'Not logged in';
+
+	/// en: 'Login failed'
+	String get loginFailed => 'Login failed';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9249,6 +9258,9 @@ extension on Translations {
 			'pluginSourceList' => 'Plugin source list',
 			'pluginRepoEmpty' => 'No plugin repo configured yet. Tap the top-right to add one.',
 			'onlyEnabled' => 'Show enabled only',
+			'filterLogged' => 'Logged in',
+			'filterNotLogged' => 'Not logged in',
+			'loginFailed' => 'Login failed',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9386,11 +9398,11 @@ extension on Translations {
 			'confirmDeleteProfile' => 'Are you sure you want to delete this profile?',
 			'noProfilesYet' => 'No profiles yet',
 			'profileSaved' => 'Profile saved',
+			_ => null,
+		} ?? switch (path) {
 			'profileCopiedToClipboard' => 'Profile copied to clipboard',
 			'switchedToProfile' => ({required Object name}) => 'Switched to ${name}',
 			'defaultAssistant' => 'Default',
-			_ => null,
-		} ?? switch (path) {
 			'conciseReplies' => 'Concise replies',
 			'useMarkdownFormatting' => 'Use Markdown formatting',
 			'codeFirst' => 'Code first',

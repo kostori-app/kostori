@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -71,35 +72,48 @@ class MePagePlugin {
     }
   }
 
-  /// 是否声明了登录能力（login 为 URL/对象，或导航里有 login 页）
-  bool get hasLogin => loginUrl != null;
-
-  /// 插件 WebView 登录地址：`plugin.login = 'https://…'` 或 `{ url, cookie }`
-  String? get loginUrl {
+  /// 是否声明了登录能力：`plugin.login` 是 async 函数，签名
+  /// `async login(username, password) => { ok, message? }`（与番源 account.login 对齐）
+  bool get hasLogin {
     try {
       final res = JsEngine().runCode(
-        "(() => { const l = globalThis.__me_plugins[${_jsStr(key)}]?.login;"
-        " if (typeof l === 'string') return l;"
-        " if (l && (l.url || l.webviewUrl)) return l.url || l.webviewUrl;"
-        " return null; })()",
+        "typeof globalThis.__me_plugins[${_jsStr(key)}]?.login === 'function'",
       );
-      if (res != null && res.toString().isNotEmpty) return res.toString();
-    } catch (_) {}
-    return null;
+      return res == true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  /// 判定“已登录”的 Cookie 名包含串：`plugin.login = { url, cookie: '_auth' }`
-  String loginCookieNeedle() {
+  /// 调用插件 login(username, password)，返回 { ok, message }。
+  Future<Map<String, dynamic>> login(String username, String password) async {
     try {
-      final res = JsEngine().runCode(
-        "globalThis.__me_plugins[${_jsStr(key)}]?.login?.cookie ?? ''",
-      );
-      if (res != null) return res.toString();
-    } catch (_) {}
-    return '_auth';
+      final res = await JsEngine().runCode("""
+        (async () => {
+          const r = await globalThis.__me_plugins[${_jsStr(key)}].login(
+            ${_jsStr(username)},
+            ${_jsStr(password)}
+          );
+          return JSON.stringify({
+            ok: !!(r && r.ok),
+            message: (r && (r.message || r.error)) || ''
+          });
+        })()
+      """);
+      if (res is String) {
+        try {
+          final data = jsonDecode(res) as Map<String, dynamic>;
+          return {'ok': data['ok'] == true, 'message': data['message'] ?? ''};
+        } catch (_) {}
+      }
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).login', '$e\n$s');
+      return {'ok': false, 'message': '$e'};
+    }
+    return {'ok': false, 'message': ''};
   }
 
-  /// 插件是否已登录（WebView 登录成功后标记）
+  /// 插件是否已登录（登录成功 / 有效会话后标记）
   bool get isLogged {
     final map = appdata.implicitData['mePluginLogged'];
     return map is Map && map[key] == true;

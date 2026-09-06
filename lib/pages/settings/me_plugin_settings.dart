@@ -13,19 +13,35 @@ class _PluginSettingsState extends State<PluginSettings> {
   final TextEditingController _searchCtrl = TextEditingController();
   bool _dragOver = false;
   String _search = '';
-  bool _onlyEnabled = false;
+  String _loginFilter = 'all';
+  String _enabledFilter = 'all';
+  String _sort = 'default';
 
   List<MePagePlugin> _visible(List<MePagePlugin> all) {
     final manager = MePagePluginManager();
     var list = all.where((p) {
-      if (_onlyEnabled && !manager.isEnabled(p.key)) return false;
+      if (_enabledFilter == 'enabled' && !manager.isEnabled(p.key)) {
+        return false;
+      }
+      if (_enabledFilter == 'disabled' && manager.isEnabled(p.key)) {
+        return false;
+      }
+      if (_loginFilter == 'logged' && !p.isLogged) return false;
+      if (_loginFilter == 'notLogged' &&
+          (!p.hasLogin || p.isLogged)) {
+        return false;
+      }
       if (_search.trim().isEmpty) return true;
       final q = _search.toLowerCase();
       return p.name.toLowerCase().contains(q) ||
           p.key.toLowerCase().contains(q) ||
           p.description.toLowerCase().contains(q);
     }).toList();
-    list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    if (_sort == 'name') {
+      list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    } else if (_sort == 'id') {
+      list.sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+    }
     return list;
   }
   /// 从 .js 直链添加单个插件（与番剧源“添加源”一致）
@@ -336,54 +352,105 @@ const plugin = {
             ),
           ),
         ),
-        // 筛选条（与番剧源设置页一致：搜索 + 只显示已启用）
+        // 筛选条：与番剧源设置页一致（搜索 + 登录/启用分段 + 排序）
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
-                  controller: _searchCtrl,
-                  decoration: InputDecoration(
-                    hintText: t.search,
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _search.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() => _search = '');
-                            },
-                          ),
-                    isDense: true,
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  ),
-                  onChanged: (v) => setState(() => _search = v),
-                ),
-                const SizedBox(height: 8),
                 Row(
                   children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        decoration: InputDecoration(
+                          hintText: t.search,
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: _search.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    setState(() => _search = '');
+                                  },
+                                ),
+                          isDense: true,
+                          filled: true,
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHigh,
+                        ),
+                        onChanged: (v) => setState(() => _search = v),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     Text(
-                      '${visible.length}',
+                      t.sourceCount(count: visible.length),
                       style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      t.onlyEnabled,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PluginFilterSegmented(
+                        value: _loginFilter,
+                        options: [
+                          ('all', t.filterAll),
+                          ('logged', t.filterLogged),
+                          ('notLogged', t.filterNotLogged),
+                        ],
+                        onChanged: (v) => setState(() => _loginFilter = v),
                       ),
                     ),
-                    CustomSwitch(
-                      value: _onlyEnabled,
-                      onChanged: (v) => setState(() => _onlyEnabled = v),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _PluginFilterSegmented(
+                        value: _enabledFilter,
+                        options: [
+                          ('all', t.filterAll),
+                          ('enabled', t.enabled),
+                          ('disabled', t.disabled),
+                        ],
+                        onChanged: (v) => setState(() => _enabledFilter = v),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    PopupMenuButton<String>(
+                      tooltip: t.sort,
+                      initialValue: _sort,
+                      onSelected: (v) => setState(() => _sort = v),
+                      itemBuilder: (_) => [
+                        for (final (key, label) in [
+                          ('default', t.sortByDefault),
+                          ('name', t.sortByName),
+                          ('id', t.sortById),
+                        ])
+                          PopupMenuItem(
+                            value: key,
+                            child: Text(
+                              label,
+                              style: _sort == key
+                                  ? TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                      ],
+                      icon: const Icon(Icons.sort, size: 20),
+                      iconColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -936,8 +1003,8 @@ class _PluginSourceListState extends State<_PluginSourceList> {
   }
 }
 
-/// 插件登录：像番源一样用 WebView 登录抓取 Cookie 存入 CookieJar，
-/// 不再需要单独的“登录页面”。
+/// 插件登录：与番剧源设置页的登录模块一致——账号/密码表单，
+/// 提交后调用插件 `login(username, password)`（JS 内自行发请求、存 Cookie）
 class _PluginLoginPage extends StatefulWidget {
   const _PluginLoginPage({required this.plugin});
 
@@ -948,89 +1015,40 @@ class _PluginLoginPage extends StatefulWidget {
 }
 
 class _PluginLoginPageState extends State<_PluginLoginPage> {
-  bool _success = false;
+  final _userCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _loading = false;
 
-  bool _isAuthCookie(String name, String value) {
-    if (value.isEmpty || value == 'deleted') return false;
-    final needle = widget.plugin.loginCookieNeedle();
-    if (needle.isEmpty) return true;
-    return name.toLowerCase().contains(needle.toLowerCase());
+  @override
+  void dispose() {
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
   }
 
-  Future<void> _check(InAppWebViewController c, String url) async {
-    final cookies = (await c.getCookies(url)) ?? [];
-    final hit = cookies.any((ck) => _isAuthCookie(ck.name, ck.value));
-    if (!hit) return;
-    final jar = SingleInstanceCookieJar.instance;
-    if (jar != null) {
-      final list = <io.Cookie>[
-        for (final ck in cookies)
-          io.Cookie(ck.name, ck.value)
-            ..domain = ck.domain
-            ..path = ck.path
-            ..httpOnly = ck.httpOnly,
-      ];
-      jar.saveFromResponse(Uri.parse(url), list);
-    }
-    widget.plugin.setLogged(true);
-    _success = true;
-  }
-
-  void _openWebview() async {
-    final url = widget.plugin.loginUrl;
-    if (url == null || url.isEmpty) return;
-    if (App.isLinux) {
-      _openDesktopWebview(url);
+  Future<void> _login() async {
+    final username = _userCtrl.text.trim();
+    final password = _passCtrl.text;
+    if (username.isEmpty || password.isEmpty) {
+      context.showMessage(message: t.cannotBeEmpty);
       return;
     }
-    await context.to(
-      () => AppWebview(
-        initialUrl: url,
-        onNavigation: (u, c) {
-          _check(c, u);
-          return false;
-        },
-        onTitleChange: (_, c) {
-          _check(c, url);
-        },
-      ),
-    );
-    if (_success && mounted) context.pop();
-  }
-
-  Future<void> _openDesktopWebview(String url) async {
-    if (!await DesktopWebview.isAvailable()) {
-      context.showMessage(message: t.webviewIsNotAvailable);
-      return;
-    }
-    void validate(DesktopWebview webview, String currentUrl) async {
-      final map = await webview.getCookies(currentUrl);
-      final hit = map.entries
-          .any((e) => _isAuthCookie(e.key, e.value));
-      if (!hit) return;
-      final jar = SingleInstanceCookieJar.instance;
-      if (jar != null) {
-        jar.saveFromResponse(
-          Uri.parse(currentUrl),
-          [
-            for (final e in map.entries)
-              io.Cookie(e.key, e.value)
-                ..domain = Uri.parse(currentUrl).host,
-          ],
-        );
-      }
+    setState(() => _loading = true);
+    final res = await widget.plugin.login(username, password);
+    if (!mounted) return;
+    setState(() => _loading = false);
+    if (res['ok'] == true) {
       widget.plugin.setLogged(true);
-      _success = true;
-      webview.close();
+      App.rootContext.showMessage(message: t.switchSuccessful);
       if (mounted) context.pop();
+    } else {
+      context.showMessage(
+        message: res['message']?.toString().isNotEmpty == true
+            ? res['message'].toString()
+            : t.loginFailed,
+        level: LogLevel.error,
+      );
     }
-
-    final webview = DesktopWebview(
-      initialUrl: url,
-      onNavigation: (u, w) => validate(w, u),
-      onTitleChange: (_, w) => validate(w, url),
-    );
-    webview.open();
   }
 
   @override
@@ -1038,34 +1056,112 @@ class _PluginLoginPageState extends State<_PluginLoginPage> {
     return Scaffold(
       appBar: Appbar(title: Text(widget.plugin.name)),
       body: Center(
-        child: ConstrainedBox(
+        child: Container(
+          padding: const EdgeInsets.all(24),
           constraints: const BoxConstraints(maxWidth: 420),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock_outline, size: 48),
-                const SizedBox(height: 16),
-                Text(t.loginWithWebview, style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 8),
-                Text(
-                  widget.plugin.loginUrl ?? '',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                t.login,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _userCtrl,
+                decoration: InputDecoration(
+                  labelText: t.username,
+                  border: const OutlineInputBorder(),
                 ),
-                const SizedBox(height: 24),
-                Button.filled(
-                  onPressed: _openWebview,
-                  child: Text(t.loginWithWebview),
+                autofillHints: const [AutofillHints.username],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _passCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: t.password,
+                  border: const OutlineInputBorder(),
                 ),
-              ],
-            ),
+                onSubmitted: (_) => _login(),
+                autofillHints: const [AutofillHints.password],
+              ),
+              const SizedBox(height: 24),
+              Button.filled(
+                isLoading: _loading,
+                onPressed: _login,
+                child: Text(t.continueText),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 分段筛选控件（与番剧源设置页 _FilterSegmented 同款式）
+class _PluginFilterSegmented extends StatelessWidget {
+  final String value;
+  final List<(String, String)> options;
+  final ValueChanged<String> onChanged;
+
+  const _PluginFilterSegmented({
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 30,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        children: options.map((opt) {
+          final (key, label) = opt;
+          final selected = value == key;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? colorScheme.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.toOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurface.toOpacity(0.45),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

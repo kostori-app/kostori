@@ -1922,6 +1922,9 @@ mustBeJs: 仅支持 .js 文件
 pluginSourceList: 插件源列表
 pluginRepoEmpty: 还没有配置插件源仓库，点右上角添加
 onlyEnabled: 只显示已启用
+filterLogged: 已登录
+filterNotLogged: 未登录
+loginFailed: 登录失败
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线
 activityHeatmapTitle: 活跃热力图

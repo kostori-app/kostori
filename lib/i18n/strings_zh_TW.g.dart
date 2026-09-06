@@ -1904,6 +1904,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get pluginSourceList => '插件源列表';
 	@override String get pluginRepoEmpty => '還沒有設定插件源倉庫，點右上角新增';
 	@override String get onlyEnabled => '只顯示已啟用';
+	@override String get filterLogged => '已登入';
+	@override String get filterNotLogged => '未登入';
+	@override String get loginFailed => '登入失敗';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String get activityHeatmapTitle => '活躍熱力圖';
@@ -4402,6 +4405,9 @@ extension on TranslationsZhTw {
 			'pluginSourceList' => '插件源列表',
 			'pluginRepoEmpty' => '還沒有設定插件源倉庫，點右上角新增',
 			'onlyEnabled' => '只顯示已啟用',
+			'filterLogged' => '已登入',
+			'filterNotLogged' => '未登入',
+			'loginFailed' => '登入失敗',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'activityHeatmapTitle' => '活躍熱力圖',
@@ -4540,11 +4546,11 @@ extension on TranslationsZhTw {
 			'noProfilesYet' => '暫無檔案',
 			'profileSaved' => '檔案已儲存',
 			'profileCopiedToClipboard' => '檔案已複製到剪貼簿',
+			_ => null,
+		} ?? switch (path) {
 			'switchedToProfile' => ({required Object name}) => '已切換到 ${name}',
 			'defaultAssistant' => '預設',
 			'conciseReplies' => '簡潔回覆',
-			_ => null,
-		} ?? switch (path) {
 			'useMarkdownFormatting' => '使用 Markdown 排版',
 			'codeFirst' => '程式碼優先',
 			'actionableAdvice' => '給出可執行的建議',

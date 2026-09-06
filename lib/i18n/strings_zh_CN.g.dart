@@ -1905,6 +1905,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get pluginSourceList => '插件源列表';
 	@override String get pluginRepoEmpty => '还没有配置插件源仓库，点右上角添加';
 	@override String get onlyEnabled => '只显示已启用';
+	@override String get filterLogged => '已登录';
+	@override String get filterNotLogged => '未登录';
+	@override String get loginFailed => '登录失败';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
@@ -4404,6 +4407,9 @@ extension on TranslationsZhCn {
 			'pluginSourceList' => '插件源列表',
 			'pluginRepoEmpty' => '还没有配置插件源仓库，点右上角添加',
 			'onlyEnabled' => '只显示已启用',
+			'filterLogged' => '已登录',
+			'filterNotLogged' => '未登录',
+			'loginFailed' => '登录失败',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
@@ -4541,11 +4547,11 @@ extension on TranslationsZhCn {
 			'confirmDeleteProfile' => '确定要删除该档案吗？',
 			'noProfilesYet' => '暂无档案',
 			'profileSaved' => '档案已保存',
+			_ => null,
+		} ?? switch (path) {
 			'profileCopiedToClipboard' => '档案已复制到剪贴板',
 			'switchedToProfile' => ({required Object name}) => '已切换到 ${name}',
 			'defaultAssistant' => '默认',
-			_ => null,
-		} ?? switch (path) {
 			'conciseReplies' => '简洁回复',
 			'useMarkdownFormatting' => '使用 Markdown 排版',
 			'codeFirst' => '代码优先',
