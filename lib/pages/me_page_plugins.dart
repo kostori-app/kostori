@@ -1120,7 +1120,9 @@ class _PluginShellPageState extends State<PluginShellPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '${_index + 1}/${_nav.length} · ${_nav[_index]['key'] ?? ''}',
+              _nav.isEmpty
+                  ? ''
+                  : '${_index + 1}/${_nav.length} · ${_nav[_index < _nav.length ? _index : 0]['key'] ?? ''}',
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             ),
           ],
