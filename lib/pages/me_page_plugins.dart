@@ -1132,7 +1132,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
         future: _navFuture,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: PolygonRefreshIndicator());
+            return const Center(child: PolygonRefreshIndicator(size: 24));
           }
           if (_nav.isEmpty) {
             return const Center(child: Text(''));
@@ -1164,7 +1164,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
                       : null,
                   builder: (context, snap2) {
                     if (snap2.connectionState != ConnectionState.done) {
-                      return const Center(child: PolygonRefreshIndicator());
+                      return const Center(child: PolygonRefreshIndicator(size: 24));
                     }
                     final modules = snap2.data ?? const [];
                     return _contentOrBoard(widget.plugin, modules);
@@ -1400,15 +1400,7 @@ class _SignCard extends StatelessWidget {
                       child: Button.filled(
                         isLoading: busy,
                         onPressed: logged ? onSign : () {},
-                        child: busy
-                            ? const SizedBox.square(
-                                dimension: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(t.signAll),
+                        child: Text(t.signAll),
                       ),
                     ),
                 ],
@@ -1478,22 +1470,26 @@ Widget _genericPluginImage(
   );
 }
 
-/// 论坛图片：走项目缓存图片组件；Referer/sourceKey 由插件声明（非硬编码）
+/// 站点图片 provider：headers/sourceKey 取插件声明，与预览/列表同一缓存 key
+CachedImageProvider _siteProvider(String url, {required MePagePlugin plugin}) {
+  final referer = plugin.referer;
+  return CachedImageProvider(
+    url,
+    headers: referer == null || referer.isEmpty ? null : {'referer': referer},
+    sourceKey: plugin.key,
+  );
+}
+
+/// 站点图片：走项目缓存图片组件
 Widget _siteImage(
   String url, {
-  required String sourceKey,
-  String? referer,
+  required MePagePlugin plugin,
   double? width,
   double? height,
   BoxFit fit = BoxFit.cover,
 }) {
-  final provider = CachedImageProvider(
-    url,
-    headers: referer == null || referer.isEmpty ? null : {'referer': referer},
-    sourceKey: sourceKey,
-  );
   return AnimatedImage(
-    image: provider,
+    image: _siteProvider(url, plugin: plugin),
     width: width,
     height: height,
     fit: fit,
@@ -1510,7 +1506,6 @@ Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
   return _PluginModulesList(plugin: plugin, modules: modules);
 }
 
-/// 论坛列表行卡片（封面/标题/标签/摘要/作者时间/浏览回复）
 /// 论坛列表条目卡片：作者行 + 标题 + 条目信息 + 图片(可点击预览) + 辅助信息
 class _ForumBoardRow extends StatelessWidget {
   final MePagePlugin plugin;
@@ -1538,13 +1533,7 @@ class _ForumBoardRow extends StatelessWidget {
     Widget avatarWidget;
     if (avatar.isNotEmpty) {
       avatarWidget = ClipOval(
-        child: _siteImage(
-          avatar,
-          width: 40,
-          height: 40,
-          sourceKey: plugin.key,
-          referer: plugin.referer,
-        ),
+        child: _siteImage(avatar, width: 40, height: 40, plugin: plugin),
       );
     } else {
       avatarWidget = CircleAvatar(
@@ -1558,13 +1547,15 @@ class _ForumBoardRow extends StatelessWidget {
       );
     }
 
-    // 图片预览（走项目 ImagePreviewWidget）
+    // 图片预览：复用被点击的 provider（同 headers/sourceKey，缓存命中），Hero 与列表 tile 同 tag
     void preview(int index) {
       if (images.isEmpty) return;
+      final url = images[index];
       BangumiWidget.showImagePreview(
         context: context,
-        url: images[index],
+        url: url,
         title: title.isEmpty ? plugin.name : title,
+        imageProvider: _siteProvider(url, plugin: plugin),
         heroTag:
             'forum_${plugin.key}_${item['tid'] ?? DateTime.now().millisecondsSinceEpoch}_$index',
       );
@@ -1649,19 +1640,25 @@ class _ForumBoardRow extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     itemCount: images.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 6),
-                    itemBuilder: (context, i) => GestureDetector(
-                      onTap: () => preview(i),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: _siteImage(
-                          images[i],
-                          width: 130,
-                          height: 100,
-                          sourceKey: plugin.key,
-                          referer: plugin.referer,
+                    itemBuilder: (context, i) {
+                      final heroTag =
+                          'forum_${plugin.key}_${item['tid'] ?? DateTime.now().millisecondsSinceEpoch}_$i';
+                      return GestureDetector(
+                        onTap: () => preview(i),
+                        child: Hero(
+                          tag: heroTag,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _siteImage(
+                              images[i],
+                              width: 130,
+                              height: 100,
+                              plugin: plugin,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -1802,7 +1799,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (!_metaLoaded)
-          const Expanded(child: Center(child: PolygonRefreshIndicator()))
+          const Expanded(child: Center(child: PolygonRefreshIndicator(size: 24)))
         else ...[
           if (_tabs.isNotEmpty)
             Padding(
@@ -1826,7 +1823,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
             ),
           Expanded(
             child: _loading && _rows.isEmpty
-                ? const Center(child: PolygonRefreshIndicator())
+                ? const Center(child: PolygonRefreshIndicator(size: 24))
                 : _rows.isEmpty
                 ? Center(
                     child: Text(
@@ -2001,8 +1998,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                           child: _siteImage(
                             url,
                             fit: BoxFit.contain,
-                            sourceKey: widget.plugin.key,
-                            referer: widget.plugin.referer,
+                            plugin: widget.plugin,
                           ),
                         ),
                       ),
@@ -2017,10 +2013,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
               child: TextButton.icon(
                 onPressed: _loading ? null : _load,
                 icon: _loading
-                    ? const SizedBox.square(
-                        dimension: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const PolygonRefreshIndicator(size: 14)
                     : const Icon(Icons.expand_more),
                 label: Text(t.more),
               ),
@@ -2031,7 +2024,6 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   }
 }
 
-/// anime 风格分页器：首页 / 上一页(长按连续) / 页码胶囊(点跳页) / 下一页(长按连续) / 末页
 /// anime 风格分页器（宽/窄屏两套，与番源列表一致）
 class _ForumPager extends StatelessWidget {
   final int page;
