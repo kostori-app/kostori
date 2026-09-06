@@ -76,6 +76,7 @@ class _MePageState extends ConsumerState<MePage> {
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
         const QrClipboardWidget(),
+        const MePagePluginModules(),
         const _ToolEntryGrid(),
         const TodayRecommendation(),
         const _ImageManipulation(),
