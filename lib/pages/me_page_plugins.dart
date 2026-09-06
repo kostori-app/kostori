@@ -86,49 +86,64 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
     final cs = Theme.of(context).colorScheme;
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      sliver: SliverToBoxAdapter(
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: cs.outlineVariant, width: 0.6),
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 标题 + 插件管理入口
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    t.mePagePlugin,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurfaceVariant,
+            // 标题 + 插件管理入口（与个人页其它模块头一致）
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.widgets_outlined, color: cs.primary, size: 24),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      t.mePagePlugin,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                TextButton.icon(
-                  onPressed: _openManage,
-                  icon: const Icon(Icons.settings_outlined, size: 16),
-                  label: Text(t.manage),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
+                  TextButton.icon(
+                    onPressed: _openManage,
+                    icon: const Icon(Icons.settings_outlined, size: 16),
+                    label: Text(t.manage),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            if (_cards.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text(
-                  t.noMePagePlugin,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: cs.onSurfaceVariant.toOpacity(0.7),
-                  ),
-                ),
-              )
-            else
-              ..._cards,
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: _cards.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text(
+                        t.noMePagePlugin,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant.toOpacity(0.7),
+                        ),
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _cards,
+                    ),
+            ),
           ],
         ),
       ),

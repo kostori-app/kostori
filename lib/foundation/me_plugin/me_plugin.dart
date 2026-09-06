@@ -457,5 +457,13 @@ Map<String, dynamic> _jsJsonDecode(Object? o) {
   if (o is Map) {
     return o.map((k, v) => MapEntry(k.toString(), v));
   }
+  if (o is String) {
+    try {
+      final d = jsonDecode(o);
+      if (d is Map) {
+        return d.map((k, v) => MapEntry(k.toString(), v));
+      }
+    } catch (_) {}
+  }
   return {};
 }
