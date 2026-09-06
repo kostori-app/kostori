@@ -12,6 +12,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/utils/io.dart';
@@ -152,6 +153,14 @@ Future<File> exportAppData() async {
     ).listSync()) {
       if (file is File) {
         zipFile.addFile("anime_source/${file.name}", file.path);
+      }
+    }
+    final pluginsDir = FilePath.join(dataPath, mePluginsDirName);
+    if (Directory(pluginsDir).existsSync()) {
+      for (var file in Directory(pluginsDir).listSync()) {
+        if (file is File) {
+          zipFile.addFile("$mePluginsDirName/${file.name}", file.path);
+        }
       }
     }
     zipFile.close();
@@ -343,6 +352,25 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
         }
       }
       await AnimeSourceManager().reload();
+    }
+    var pluginsDir = FilePath.join(cacheDirPath, mePluginsDirName);
+    if (Directory(pluginsDir).existsSync()) {
+      DebugLog.info('importAppData', '开始导入mePlugins');
+      Directory(
+        FilePath.join(App.dataPath, mePluginsDirName),
+      ).deleteIfExistsSync(recursive: true);
+      Directory(FilePath.join(App.dataPath, mePluginsDirName)).createSync();
+      for (var file in Directory(pluginsDir).listSync()) {
+        if (file is File) {
+          var targetFile = FilePath.join(
+            App.dataPath,
+            mePluginsDirName,
+            file.name,
+          );
+          await file.copy(targetFile);
+        }
+      }
+      await MePagePluginManager().reload();
     }
   } catch (e) {
     DebugLog.error('importAppData', '$e');
