@@ -1928,6 +1928,15 @@ filterLogged: 已登入
 filterNotLogged: 未登入
 loginFailed: 登入失敗
 loggedIn: 已登入
+oneKeySign: 一鍵簽到
+signAllSuccess: "已簽到 ${success} 個"
+signAllPartial: "完成 ${success} 個，失敗 ${fail} 個"
+noPluginToSign: 今日無需簽到
+signInManager: 簽到管理
+signAll: 全部簽到
+signedAlready: 今日已簽到
+autoSignAtStart: 啟動時自動簽到
+needLoginFirst: 需要先登入
 statsTimelineNoRecords: "還沒有任何紀錄"
 statsAllTimelineTitle: 全部時間軸
 activityHeatmapTitle: 活躍熱力圖

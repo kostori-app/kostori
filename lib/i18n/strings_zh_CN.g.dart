@@ -1909,6 +1909,15 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get filterNotLogged => '未登录';
 	@override String get loginFailed => '登录失败';
 	@override String get loggedIn => '已登录';
+	@override String get oneKeySign => '一键签到';
+	@override String signAllSuccess({required Object success}) => '已签到 ${success} 个';
+	@override String signAllPartial({required Object success, required Object fail}) => '完成 ${success} 个，失败 ${fail} 个';
+	@override String get noPluginToSign => '今日无需签到';
+	@override String get signInManager => '签到管理';
+	@override String get signAll => '全部签到';
+	@override String get signedAlready => '今日已签到';
+	@override String get autoSignAtStart => '启动时自动签到';
+	@override String get needLoginFirst => '需要先登录';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
@@ -4412,6 +4421,15 @@ extension on TranslationsZhCn {
 			'filterNotLogged' => '未登录',
 			'loginFailed' => '登录失败',
 			'loggedIn' => '已登录',
+			'oneKeySign' => '一键签到',
+			'signAllSuccess' => ({required Object success}) => '已签到 ${success} 个',
+			'signAllPartial' => ({required Object success, required Object fail}) => '完成 ${success} 个，失败 ${fail} 个',
+			'noPluginToSign' => '今日无需签到',
+			'signInManager' => '签到管理',
+			'signAll' => '全部签到',
+			'signedAlready' => '今日已签到',
+			'autoSignAtStart' => '启动时自动签到',
+			'needLoginFirst' => '需要先登录',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
@@ -4539,6 +4557,8 @@ extension on TranslationsZhCn {
 			'profilePersona' => '人设',
 			'profileTone' => '语气',
 			'profilePromptFragments' => '提示片段（每行一条）',
+			_ => null,
+		} ?? switch (path) {
 			'profileKnowledge' => '知识（每行一条）',
 			'profileParams' => '生成参数',
 			'profileBehaviorPrefs' => '行为偏好',
@@ -4548,8 +4568,6 @@ extension on TranslationsZhCn {
 			'deleteProfile' => '删除档案',
 			'confirmDeleteProfile' => '确定要删除该档案吗？',
 			'noProfilesYet' => '暂无档案',
-			_ => null,
-		} ?? switch (path) {
 			'profileSaved' => '档案已保存',
 			'profileCopiedToClipboard' => '档案已复制到剪贴板',
 			'switchedToProfile' => ({required Object name}) => '已切换到 ${name}',

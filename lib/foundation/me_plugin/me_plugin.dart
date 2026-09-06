@@ -74,6 +74,55 @@ class MePagePlugin {
     _saveData();
   }
 
+  /// 是否在“自动签到”名单（默认加入）
+  bool get isAutoSign => data['autoSign'] != false;
+
+  void setAutoSign(bool v) {
+    data['autoSign'] = v;
+    _saveData();
+  }
+
+  /// 是否提供规范的 `plugin.signin()` 签到入口
+  bool get signinAvailable {
+    try {
+      final res = JsEngine().runCode(
+        "typeof globalThis.__me_plugins[${_jsStr(key)}]?.signin === 'function'",
+      );
+      return res == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 调用插件 `signin()`，期望返回 `{ ok, message? }`。
+  Future<Map<String, dynamic>> signin() async {
+    try {
+      final res = await JsEngine().runCode("""
+        (async () => {
+          const fn = globalThis.__me_plugins[${_jsStr(key)}]?.signin;
+          if (typeof fn !== 'function') {
+            return JSON.stringify({ ok: false, message: '' });
+          }
+          const r = await fn();
+          return JSON.stringify({
+            ok: !!(r && r.ok),
+            message: (r && (r.message || r.error)) || ''
+          });
+        })()
+      """);
+      if (res is String) {
+        try {
+          final data = jsonDecode(res) as Map<String, dynamic>;
+          return {'ok': data['ok'] == true, 'message': data['message'] ?? ''};
+        } catch (_) {}
+      }
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).signin', '$e\n$s');
+      return {'ok': false, 'message': '$e'};
+    }
+    return {'ok': false, 'message': ''};
+  }
+
   /// 插件是否已登录
   bool get isLogged => data['logged'] == true;
 
@@ -389,26 +438,64 @@ class MePagePluginManager with ChangeNotifier, Init {
     notifyListeners();
   }
 
-  /// App 启动后自动签到：对“已启用 + 已登录 + 声明 autoSignin”的插件各触发一次。
-  /// 不弹提示；失败仅记录日志（避免启动时打扰）。
+  /// 全局“启动时自动签到”总开关（默认开）
+  bool get autoSigninMaster =>
+      appdata.implicitData['meAutoSignin'] != false;
+
+  /// 自动签到候选：启用 + 在自动名单 + 已登录 + 有签到入口 + 今天还没签
+  List<MePagePlugin> autoCandidates() {
+    return all().where((p) {
+      return isEnabled(p.key) &&
+          p.isAutoSign &&
+          p.isLogged &&
+          p.signinAvailable &&
+          p.signedToday.isEmpty;
+    }).toList();
+  }
+
+  /// 执行单个插件签到并记录结果（成功标记今日已签；写入 lastSign 供卡片展示）
+  Future<Map<String, dynamic>> runSignin(MePagePlugin p) async {
+    try {
+      final res = await p.signin();
+      final ok = res['ok'] == true;
+      p.data['lastSign'] = {
+        'ok': ok,
+        'message': res['message'] ?? '',
+        'time': DateTime.now().toIso8601String(),
+      };
+      p._saveData();
+      if (ok) p.markSignedToday();
+      return {'key': p.key, 'name': p.name, 'ok': ok, 'message': res['message'] ?? ''};
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin.runSignin', '${p.name}: $e\n$s');
+      p.data['lastSign'] = {'ok': false, 'message': '$e', 'time': DateTime.now().toIso8601String()};
+      p._saveData();
+      return {'key': p.key, 'name': p.name, 'ok': false, 'message': '$e'};
+    }
+  }
+
+  /// 集体签到：默认签 autoCandidates；可跳过（不签）未登录/不在名单/已签。
+  /// 返回逐条结果列表。
+  Future<List<Map<String, dynamic>>> runCollectiveSignin() async {
+    await ensureInit();
+    final results = <Map<String, dynamic>>[];
+    for (final p in autoCandidates()) {
+      results.add(await runSignin(p));
+    }
+    notifyListeners();
+    return results;
+  }
+
+  /// App 启动后自动签到（受总开关与每插件自动名单约束；不重复签今日已签者）
   Future<void> autoSigninAtStart() async {
     try {
       await ensureInit();
     } catch (_) {}
-    for (final p in all()) {
-      if (!isEnabled(p.key) || !p.isLogged || !p.autoSigninEnabled) continue;
-      try {
-        final res = await p.autoSignin();
-        if (res['ok'] == true) {
-          p.markSignedToday();
-        } else {
-          SourceLog.warning(
-            'MePagePlugin.autoSignin',
-            '${p.name}: ${res['message']}',
-          );
-        }
-      } catch (e, s) {
-        SourceLog.error('MePagePlugin.autoSignin', '${p.name}: $e\n$s');
+    if (!autoSigninMaster) return;
+    for (final p in autoCandidates()) {
+      final r = await runSignin(p);
+      if (!r['ok']) {
+        SourceLog.warning('MePagePlugin.autoSignin', '${p.name}: ${r['message']}');
       }
     }
   }

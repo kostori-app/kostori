@@ -1908,6 +1908,15 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get filterNotLogged => '未登入';
 	@override String get loginFailed => '登入失敗';
 	@override String get loggedIn => '已登入';
+	@override String get oneKeySign => '一鍵簽到';
+	@override String signAllSuccess({required Object success}) => '已簽到 ${success} 個';
+	@override String signAllPartial({required Object success, required Object fail}) => '完成 ${success} 個，失敗 ${fail} 個';
+	@override String get noPluginToSign => '今日無需簽到';
+	@override String get signInManager => '簽到管理';
+	@override String get signAll => '全部簽到';
+	@override String get signedAlready => '今日已簽到';
+	@override String get autoSignAtStart => '啟動時自動簽到';
+	@override String get needLoginFirst => '需要先登入';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String get activityHeatmapTitle => '活躍熱力圖';
@@ -4410,6 +4419,15 @@ extension on TranslationsZhTw {
 			'filterNotLogged' => '未登入',
 			'loginFailed' => '登入失敗',
 			'loggedIn' => '已登入',
+			'oneKeySign' => '一鍵簽到',
+			'signAllSuccess' => ({required Object success}) => '已簽到 ${success} 個',
+			'signAllPartial' => ({required Object success, required Object fail}) => '完成 ${success} 個，失敗 ${fail} 個',
+			'noPluginToSign' => '今日無需簽到',
+			'signInManager' => '簽到管理',
+			'signAll' => '全部簽到',
+			'signedAlready' => '今日已簽到',
+			'autoSignAtStart' => '啟動時自動簽到',
+			'needLoginFirst' => '需要先登入',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'activityHeatmapTitle' => '活躍熱力圖',
@@ -4538,6 +4556,8 @@ extension on TranslationsZhTw {
 			'profileTone' => '語氣',
 			'profilePromptFragments' => '提示片段（每行一條）',
 			'profileKnowledge' => '知識（每行一條）',
+			_ => null,
+		} ?? switch (path) {
 			'profileParams' => '生成參數',
 			'profileBehaviorPrefs' => '行為偏好',
 			'customParamsHint' => '留空表示跟隨服務商預設值',
@@ -4547,8 +4567,6 @@ extension on TranslationsZhTw {
 			'confirmDeleteProfile' => '確定要刪除該檔案嗎？',
 			'noProfilesYet' => '暫無檔案',
 			'profileSaved' => '檔案已儲存',
-			_ => null,
-		} ?? switch (path) {
 			'profileCopiedToClipboard' => '檔案已複製到剪貼簿',
 			'switchedToProfile' => ({required Object name}) => '已切換到 ${name}',
 			'defaultAssistant' => '預設',

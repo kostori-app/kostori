@@ -1927,6 +1927,15 @@ filterLogged: Logged in
 filterNotLogged: Not logged in
 loginFailed: Login failed
 loggedIn: Logged in
+oneKeySign: Sign in all
+signAllSuccess: "Signed ${success}"
+signAllPartial: "${success} done, ${fail} failed"
+noPluginToSign: Nothing to sign today
+signInManager: Sign-in manager
+signAll: Sign in all
+signedAlready: Signed today
+autoSignAtStart: Auto sign-in on start
+needLoginFirst: Login required
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
 activityHeatmapTitle: Activity heatmap

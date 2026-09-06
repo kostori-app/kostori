@@ -1926,6 +1926,15 @@ filterLogged: 已登录
 filterNotLogged: 未登录
 loginFailed: 登录失败
 loggedIn: 已登录
+oneKeySign: 一键签到
+signAllSuccess: "已签到 ${success} 个"
+signAllPartial: "完成 ${success} 个，失败 ${fail} 个"
+noPluginToSign: 今日无需签到
+signInManager: 签到管理
+signAll: 全部签到
+signedAlready: 今日已签到
+autoSignAtStart: 启动时自动签到
+needLoginFirst: 需要先登录
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线
 activityHeatmapTitle: 活跃热力图

@@ -5650,6 +5650,33 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Logged in'
 	String get loggedIn => 'Logged in';
 
+	/// en: 'Sign in all'
+	String get oneKeySign => 'Sign in all';
+
+	/// en: 'Signed ${success}'
+	String signAllSuccess({required Object success}) => 'Signed ${success}';
+
+	/// en: '${success} done, ${fail} failed'
+	String signAllPartial({required Object success, required Object fail}) => '${success} done, ${fail} failed';
+
+	/// en: 'Nothing to sign today'
+	String get noPluginToSign => 'Nothing to sign today';
+
+	/// en: 'Sign-in manager'
+	String get signInManager => 'Sign-in manager';
+
+	/// en: 'Sign in all'
+	String get signAll => 'Sign in all';
+
+	/// en: 'Signed today'
+	String get signedAlready => 'Signed today';
+
+	/// en: 'Auto sign-in on start'
+	String get autoSignAtStart => 'Auto sign-in on start';
+
+	/// en: 'Login required'
+	String get needLoginFirst => 'Login required';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9265,6 +9292,15 @@ extension on Translations {
 			'filterNotLogged' => 'Not logged in',
 			'loginFailed' => 'Login failed',
 			'loggedIn' => 'Logged in',
+			'oneKeySign' => 'Sign in all',
+			'signAllSuccess' => ({required Object success}) => 'Signed ${success}',
+			'signAllPartial' => ({required Object success, required Object fail}) => '${success} done, ${fail} failed',
+			'noPluginToSign' => 'Nothing to sign today',
+			'signInManager' => 'Sign-in manager',
+			'signAll' => 'Sign in all',
+			'signedAlready' => 'Signed today',
+			'autoSignAtStart' => 'Auto sign-in on start',
+			'needLoginFirst' => 'Login required',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9392,6 +9428,8 @@ extension on Translations {
 			'profilePersona' => 'Persona',
 			'profileTone' => 'Tone',
 			'profilePromptFragments' => 'Prompt Fragments (one per line)',
+			_ => null,
+		} ?? switch (path) {
 			'profileKnowledge' => 'Knowledge (one per line)',
 			'profileParams' => 'Generation Parameters',
 			'profileBehaviorPrefs' => 'Behavior Preferences',
@@ -9401,8 +9439,6 @@ extension on Translations {
 			'deleteProfile' => 'Delete Profile',
 			'confirmDeleteProfile' => 'Are you sure you want to delete this profile?',
 			'noProfilesYet' => 'No profiles yet',
-			_ => null,
-		} ?? switch (path) {
 			'profileSaved' => 'Profile saved',
 			'profileCopiedToClipboard' => 'Profile copied to clipboard',
 			'switchedToProfile' => ({required Object name}) => 'Switched to ${name}',
