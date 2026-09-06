@@ -1549,10 +1549,11 @@ class _ForumBoardRow extends StatelessWidget {
     } else {
       avatarWidget = CircleAvatar(
         radius: 20,
-        backgroundColor: cs.primaryContainer,
-        child: Text(
-          name.isEmpty ? '?' : name.characters.first,
-          style: TextStyle(color: cs.onPrimaryContainer),
+        backgroundColor: cs.surfaceContainerHighest,
+        child: Icon(
+          Icons.person_outline,
+          size: 20,
+          color: cs.onSurfaceVariant,
         ),
       );
     }
