@@ -2484,10 +2484,6 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     }
     final children = <Widget>[
       _header(cs),
-      if (_fields.isNotEmpty) ...[
-        _fieldsPanel(cs),
-        const SizedBox(height: 4),
-      ],
       if (_posts.isEmpty)
         Padding(
           padding: const EdgeInsets.only(top: 40),
@@ -2498,11 +2494,15 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             ),
           ),
         )
-      else
-        for (var i = 0; i < _posts.length; i++) ...[
+      else ...[
+        // 楼主 = 帖子详情主体：分类信息 + 正文 + 图合并成一块，不再当楼层
+        _mainContent(cs, _posts.first),
+        const SizedBox(height: 10),
+        for (var i = 1; i < _posts.length; i++) ...[
           _floorCard(context, cs, _posts[i]),
           const SizedBox(height: 10),
         ],
+      ],
     ];
     if (_hasMore) {
       children.add(
@@ -2641,51 +2641,67 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  /// 分类信息面板（类别/原因或相关线索等，Discuz 分类信息表）
-  Widget _fieldsPanel(ColorScheme cs) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
+  /// 楼主主内容块：分类信息(类别/原因…) + 正文富文本 + 图片，与上方帖子头合并成一屏详情
+  Widget _mainContent(ColorScheme cs, _ThreadPost post) {
+    return Material(
+      color: cs.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant, width: 0.6),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var i = 0; i < _fields.length; i++) ...[
-            if (i > 0)
-              Divider(
-                height: 12,
-                color: cs.outlineVariant.withValues(alpha: 0.4),
-              ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 90,
-                  child: Text(
-                    _fields[i].key,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: cs.onSurfaceVariant,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_fields.isNotEmpty)
+              for (var i = 0; i < _fields.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 14,
+                    color: cs.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 90,
+                      child: Text(
+                        _fields[i].key,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: _richText(
-                    _fields[i].value,
-                    fontSize: 13.5,
-                    height: 1.5,
-                    color: cs.onSurface,
-                  ),
+                    Expanded(
+                      child: _richText(
+                        _fields[i].value,
+                        fontSize: 13.5,
+                        height: 1.5,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
+            if (_fields.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Divider(
+                height: 1,
+                color: cs.outlineVariant.withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: 10),
+            ],
+            _postContent(context, cs, post),
+            if (post.images.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _postImages(context, cs, post),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
