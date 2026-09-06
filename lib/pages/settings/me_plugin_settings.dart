@@ -10,7 +10,6 @@ class PluginSettings extends StatefulWidget {
 
 class _PluginSettingsState extends State<PluginSettings> {
   late final TextEditingController _urlCtrl;
-  bool _dragOver = false;
 
   Future<void> _installFromFile(io.File file) async {
     final name = file.uri.pathSegments.last;
@@ -186,9 +185,11 @@ const plugin = {
             ),
           ],
         ),
-        // 操作卡片：插件源 URL（对齐番源"添加番剧源"组件）
+        // 操作卡片：插件源 URL（对齐番源"添加番剧源"组件），整卡可拖入 .js 安装
         _BuildSectionPadding(
-          _SettingCard(
+          DropTarget(
+            onDragDone: _onDrop,
+            child: _SettingCard(
             children: [
               _SettingPartTitle(
                 title: t.pluginSourceUrl,
@@ -239,71 +240,6 @@ const plugin = {
               ),
             ],
           ),
-        ),
-        // 拖拽安装 .js 插件
-        _BuildSectionPadding(
-          DropTarget(
-            onDragDone: _onDrop,
-            onDragEntered: (_) {
-              if (mounted) setState(() => _dragOver = true);
-            },
-            onDragExited: (_) {
-              if (mounted) setState(() => _dragOver = false);
-            },
-            child: _SettingCard(
-              children: [
-                _SettingPartTitle(
-                  title: t.installPluginByDrop,
-                  icon: Icons.file_download_outlined,
-                ),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _dragOver
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest.toOpacity(0.4),
-                    border: Border.all(
-                      color: _dragOver
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.outlineVariant,
-                      width: _dragOver ? 1.6 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.file_present_outlined,
-                          size: 26,
-                          color: _dragOver
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          t.dropJsPluginHint,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
         // 每个插件一个卡片（对齐番源卡片风格）
