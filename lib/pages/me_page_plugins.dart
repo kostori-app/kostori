@@ -1094,8 +1094,13 @@ class PluginShellPage extends StatefulWidget {
 class _PluginShellPageState extends State<PluginShellPage> {
   late Future<List<Map<String, dynamic>>> _navFuture;
   int _index = 0;
-  final List<Future<List<dynamic>>> _pageFutures = [];
   List<Map<String, dynamic>> _nav = const [];
+
+  // 每个导航子页独立缓存/加载态（对齐 anime_list：目标页未就绪时整块替换，不残留旧内容）
+  List<List<dynamic>?> _pages = const [];
+  List<bool> _loading = const [];
+  List<String?> _errors = const [];
+  int _reqToken = 0;
 
   @override
   void initState() {
@@ -1110,18 +1115,46 @@ class _PluginShellPageState extends State<PluginShellPage> {
         if (found >= 0) start = found;
       }
       _index = start;
-      if (_nav.isNotEmpty) _pageFutures.add(widget.plugin.page(_nav[_index]['key']));
+      _pages = List<List<dynamic>?>.filled(nav.length, null);
+      _loading = List<bool>.filled(nav.length, false);
+      _errors = List<String?>.filled(nav.length, null);
+      if (_nav.isNotEmpty) _loadIndex(start);
       return nav;
     });
   }
 
+  Future<void> _loadIndex(int index) async {
+    if (index < 0 || index >= _nav.length) return;
+    if (_pages[index] != null || _loading[index]) return;
+    final token = ++_reqToken;
+    setState(() {
+      _loading[index] = true;
+      _errors[index] = null;
+    });
+    try {
+      final modules =
+          await widget.plugin.page(_nav[index]['key']?.toString() ?? '');
+      if (!mounted || token != _reqToken) return;
+      setState(() {
+        _pages[index] = modules;
+        _loading[index] = false;
+      });
+    } catch (e) {
+      if (!mounted || token != _reqToken) return;
+      setState(() {
+        _loading[index] = false;
+        _errors[index] = '$e';
+      });
+    }
+  }
+
   void _select(int index) {
+    if (index < 0 || index >= _nav.length || index == _index) return;
     setState(() {
       _index = index;
-      if (index >= _pageFutures.length) {
-        _pageFutures.add(widget.plugin.page(_nav[index]['key'] ?? ''));
-      }
+      _errors[index] = null;
     });
+    _loadIndex(index);
   }
 
   @override
@@ -1135,21 +1168,25 @@ class _PluginShellPageState extends State<PluginShellPage> {
             return const Center(child: PolygonRefreshIndicator(size: 24));
           }
           if (_nav.isEmpty) {
-            return const Center(child: Text(''));
+            return const SizedBox.shrink();
           }
           return Column(
             children: [
-              // 子页面导航：项目分段胶囊（常驻，供后续更多导航页使用）
-              if (_nav.isNotEmpty)
+              if (_nav.length > 1)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: _CapsuleBar(
-                      keys: _nav.map((n) => n['key']?.toString() ?? '').toList(),
-                      titles:
-                          _nav.map((n) => n['title']?.toString() ?? '').toList(),
-                      icons: _nav.map((n) => n['icon']?.toString() ?? '').toList(),
+                      keys: _nav
+                          .map((n) => n['key']?.toString() ?? '')
+                          .toList(),
+                      titles: _nav
+                          .map((n) => n['title']?.toString() ?? '')
+                          .toList(),
+                      icons: _nav
+                          .map((n) => n['icon']?.toString() ?? '')
+                          .toList(),
                       selected: _index < _nav.length
                           ? (_nav[_index]['key']?.toString() ?? '')
                           : '',
@@ -1157,23 +1194,63 @@ class _PluginShellPageState extends State<PluginShellPage> {
                     ),
                   ),
                 ),
-              Expanded(
-                child: FutureBuilder<List<dynamic>>(
-                  future: _index < _pageFutures.length
-                      ? _pageFutures[_index]
-                      : null,
-                  builder: (context, snap2) {
-                    if (snap2.connectionState != ConnectionState.done) {
-                      return const Center(child: PolygonRefreshIndicator(size: 24));
-                    }
-                    final modules = snap2.data ?? const [];
-                    return _contentOrBoard(widget.plugin, modules);
-                  },
-                ),
-              ),
+              Expanded(child: _buildContent()),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    final nav = _nav[_index];
+    final key = nav['key']?.toString() ?? '';
+    final error = _index < _errors.length ? _errors[_index] : null;
+    final data = _index < _pages.length ? _pages[_index] : null;
+    if (error != null) {
+      return _PluginRetry(
+        message: error,
+        onRetry: () => _loadIndex(_index),
+      );
+    }
+    if (data == null) {
+      return const Center(child: PolygonRefreshIndicator(size: 24));
+    }
+    // 同一插件的多个导航页即使渲染相同类型（如多个板块）也要按 key 重建状态
+    return KeyedSubtree(
+      key: ValueKey(key),
+      child: _contentOrBoard(widget.plugin, data),
+    );
+  }
+}
+
+/// 内容加载失败占位（可重试，对齐 anime_list 的错误态）
+class _PluginRetry extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _PluginRetry({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.cloud_off_outlined, size: 40, color: cs.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Button.filled(onPressed: onRetry, child: Text(t.retry)),
+        ],
       ),
     );
   }
@@ -1728,10 +1805,20 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   String _listPage = 'boardList';
   int _index = 0;
   bool _metaLoaded = false;
-  bool _loading = false;
   int _page = 1;
   int _totalPages = 1;
-  List<Map<String, dynamic>> _rows = [];
+  List<Map<String, dynamic>> _rows = const [];
+  String? _error;
+  int _reqToken = 0;
+
+  // 分类缓存：tabKey -> (page -> rows)，页码/总数按分类记住（对齐 anime_list）
+  final Map<String, Map<int, List<Map<String, dynamic>>>> _cache = {};
+  final Map<String, int> _tabPage = {};
+  final Map<String, int> _tabTotal = {};
+
+  String get _tabKey => _index < _tabs.length
+      ? (_tabs[_index]['key']?.toString() ?? '')
+      : '';
 
   @override
   void initState() {
@@ -1758,39 +1845,54 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       _metaLoaded = true;
       _index = 0;
     });
-    if (_tabs.isNotEmpty) await _load(1);
+    if (_tabs.isNotEmpty) _go(_tabPage[_tabKey] ?? 1);
   }
 
-  Future<void> _load(int page) async {
-    if (_loading) return;
+  Future<void> _fetch(String tabKey, int page) async {
+    final token = ++_reqToken;
+    // 立即清空旧内容并进入加载态（anime_list 行为：目标页未就绪时不留旧页）
     setState(() {
-      _loading = true;
+      _error = null;
       _page = page;
+      _rows = const [];
     });
-    final modules = await widget.plugin.page(
-      _listPage,
-      {'tab': _index < _tabs.length ? (_tabs[_index]['key'] ?? '') : '', 'page': page},
-    );
-    if (!mounted) return;
-    var rows = <Map<String, dynamic>>[];
-    var total = 1;
-    var current = page;
-    for (final m in modules) {
-      final mm = _asMap2(m);
-      if (mm['type'] != 'boardPage') continue;
-      total = _asInt(mm['totalPages'], 1);
-      current = _asInt(mm['page'], page);
-      final raw = mm['items'];
-      if (raw is List) {
-        rows = raw.map((e) => _asMap2(e)).toList();
+    try {
+      final modules = await widget.plugin.page(
+        _listPage,
+        {'tab': tabKey, 'page': page},
+      );
+      if (!mounted) return;
+      var rows = <Map<String, dynamic>>[];
+      var total = 1;
+      var current = page;
+      for (final m in modules) {
+        final mm = _asMap2(m);
+        if (mm['type'] != 'boardPage') continue;
+        total = _asInt(mm['totalPages'], 1);
+        current = _asInt(mm['page'], page);
+        final raw = mm['items'];
+        if (raw is List) {
+          rows = raw.map((e) => _asMap2(e)).toList();
+        }
+      }
+      total = total < 1 ? 1 : total;
+      (_cache[tabKey] ??= {})[current] = rows;
+      _tabPage[tabKey] = current;
+      _tabTotal[tabKey] = total;
+      if (!mounted || token != _reqToken) return;
+      setState(() {
+        if (_tabKey == tabKey) {
+          _rows = rows;
+          _page = current;
+          _totalPages = total;
+        }
+      });
+    } catch (e) {
+      if (!mounted || token != _reqToken) return;
+      if (_tabKey == tabKey) {
+        setState(() => _error = '$e');
       }
     }
-    setState(() {
-      _rows = rows;
-      _page = current;
-      _totalPages = total < 1 ? 1 : total;
-      _loading = false;
-    });
   }
 
   static int _asInt(dynamic v, int fallback) {
@@ -1798,14 +1900,37 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     return n == null || n < 1 ? fallback : n;
   }
 
+  /// 切到某页：命中缓存直接显示，否则清空并重新拉取
   void _go(int page) {
     if (page < 1) return;
-    _load(page);
+    final key = _tabKey;
+    final cached = _cache[key]?[page];
+    if (cached != null) {
+      setState(() {
+        _rows = cached;
+        _page = page;
+        _error = null;
+        _totalPages = _tabTotal[key] ?? _totalPages;
+      });
+      return;
+    }
+    _fetch(key, page);
+  }
+
+  void _switchTab(int i) {
+    if (_index == i) return;
+    setState(() {
+      _index = i;
+      _error = null;
+      // 恢复该分类上次停留页码；未访问过则首页
+      _page = _tabPage[_tabKey] ?? 1;
+      _totalPages = _tabTotal[_tabKey] ?? 1;
+    });
+    _go(_tabPage[_tabKey] ?? 1);
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1824,41 +1949,51 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
                   selected: _index < _tabs.length
                       ? (_tabs[_index]['key']?.toString() ?? '')
                       : '',
-                  onChanged: (i) {
-                    if (_index == i) return;
-                    setState(() => _index = i);
-                    _go(1);
-                  },
+                  onChanged: _switchTab,
                 ),
               ),
             ),
-          Expanded(
-            child: _loading && _rows.isEmpty
-                ? const Center(child: PolygonRefreshIndicator(size: 24))
-                : _rows.isEmpty
-                ? Center(
-                    child: Text(
-                      t.noPluginToSign,
-                      style: TextStyle(color: cs.onSurfaceVariant),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: _rows.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) =>
-                        _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
-                  ),
-          ),
+          Expanded(child: _buildList()),
           if (_metaLoaded)
             _ForumPager(
               page: _page,
               totalPages: _totalPages,
-              busy: _loading,
+              busy: _isBusy,
               onJump: _go,
             ),
         ],
       ],
+    );
+  }
+
+  bool get _isBusy {
+    if (_error != null) return false;
+    // 当前页无缓存即视为加载中（清空后第一次 build 进入 loader）
+    return _cache[_tabKey]?[_page] == null;
+  }
+
+  Widget _buildList() {
+    final cs = Theme.of(context).colorScheme;
+    if (_error != null) {
+      return _PluginRetry(message: _error!, onRetry: () => _go(_page));
+    }
+    if (_isBusy) {
+      return const Center(child: PolygonRefreshIndicator(size: 24));
+    }
+    if (_rows.isEmpty) {
+      return Center(
+        child: Text(
+          t.noPluginToSign,
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(8),
+      itemCount: _rows.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, i) =>
+          _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
     );
   }
 }
