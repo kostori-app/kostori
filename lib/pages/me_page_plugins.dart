@@ -140,13 +140,7 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
     App.mainNavigatorKey?.currentContext?.to(
       () => Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        appBar: AppBar(title: Text(t.mePagePlugin)),
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            children: const [PluginSettings()],
-          ),
-        ),
+        body: SafeArea(child: const PluginSettings()),
       ),
     );
   }
@@ -495,11 +489,34 @@ class _SignInButtonState extends State<_SignInButton> {
       final status = res['status'];
       final successText = widget.m['successText']?.toString();
       if (status == 200) {
-        final body = res['body']?.toString().trim() ?? '';
+        final rawBody = res['body']?.toString() ?? '';
+        String body = rawBody;
+        final cdStart = rawBody.indexOf('<![CDATA[');
+        if (cdStart >= 0) {
+          final cdEnd = rawBody.indexOf(']]>', cdStart);
+          if (cdEnd > cdStart) {
+            body = rawBody.substring(cdStart + 9, cdEnd);
+          }
+        }
+        body = body
+            .replaceAll(RegExp(r'<[^>]+>'), '')
+            .trim();
+        if (body.isEmpty) body = rawBody.trim();
+        final needLogin = body.contains('未登录') ||
+            body.contains('请登录') ||
+            body.contains('需要登录') ||
+            body.contains('登录后才能');
         final show = (successText == null || successText.isEmpty)
             ? (body.isEmpty ? t.success : body)
             : successText;
-        App.rootContext.showMessage(message: show);
+        if (needLogin) {
+          App.rootContext.showMessage(
+            message: show,
+            level: LogLevel.error,
+          );
+        } else {
+          App.rootContext.showMessage(message: show);
+        }
       } else {
         App.rootContext.showMessage(
           message: t.failedWithStatus(status: status),
