@@ -629,10 +629,8 @@ class DownloadManager extends ChangeNotifier {
 
     if (cancelToken.isCancelled) throw FfmpegCancelledException();
     if (errors.isNotEmpty) {
-      // 带上首个失败分片的原因，便于用户判断（签名过期/网络/403 等）
-      final first = errors.first.split('\n').first.trim();
-      final reason = first.length > 80 ? '${first.substring(0, 80)}...' : first;
-      throw Exception('部分分片下载失败：${errors.length} 个（$reason）');
+      // 完整列出每个失败分片的编号与原因，便于定位（不省略、不截断）
+      throw Exception('部分分片下载失败（${errors.length} 个）：\n${errors.join('\n')}');
     }
 
     // 3. ffmpeg 合并 ts → mp4（合并进度实时反映到 task.progress）
