@@ -58,6 +58,67 @@ class MePagePlugin {
     return const [];
   }
 
+  /// 是否声明了导航（nav），用于决定是否进入“插件导航壳”浏览。
+  bool get hasNav {
+    try {
+      final res = JsEngine().runCode(
+        "Array.isArray(globalThis.__me_plugins[${_jsStr(key)}]?.nav)",
+      );
+      return res == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 插件导航项列表：`[{key,title,icon}]`，icon 为 Dart 图标白名单字符串。
+  Future<List<Map<String, dynamic>>> nav() async {
+    try {
+      final res = await JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.nav ?? []",
+      );
+      if (res is List) {
+        return res
+            .map((e) => (e is Map)
+                ? e.map((k, v) => MapEntry(k.toString(), v.toString()))
+                : const <String, dynamic>{})
+            .toList();
+      }
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).nav', '$e\n$s');
+    }
+    return const [];
+  }
+
+  /// 子页面标题：优先取 nav 中对应 key 的 title，其次返回 key 本身。
+  String titleOf(String pageName) {
+    try {
+      final res = JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.nav"
+        "?.find(n => n.key === ${_jsStr(pageName)})?.title",
+      );
+      if (res != null && res.toString().isNotEmpty) return res.toString();
+    } catch (_) {}
+    return pageName;
+  }
+
+  /// 调用插件 page(name, params)，返回该页模块列表。
+  Future<List<dynamic>> page(
+    String name, [
+    Map<String, dynamic> params = const {},
+  ]) async {
+    try {
+      final paramsJs = _jsJson(params);
+      final res = await JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]"
+        "?.page(${_jsStr(name)}, $paramsJs) ?? []",
+      );
+      if (res is List) return res;
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).page($name)', '$e\n$s');
+    }
+    return const [];
+  }
+
   /// 发送插件里的 signIn 请求（复用 JS Network，走代理/Cookie）。
   /// 返回 { status, body }。
   static Future<Map<String, dynamic>> request({

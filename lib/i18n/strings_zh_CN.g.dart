@@ -1898,6 +1898,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playerAutoPlayDesc => '本集结束后自动播放下一集';
 	@override String get playerLoopEpisode => '单集循环';
 	@override String get playerLoopEpisodeDesc => '本集结束后循环播放当前集';
+	@override String get form => '表单';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
@@ -4390,6 +4391,7 @@ extension on TranslationsZhCn {
 			'playerAutoPlayDesc' => '本集结束后自动播放下一集',
 			'playerLoopEpisode' => '单集循环',
 			'playerLoopEpisodeDesc' => '本集结束后循环播放当前集',
+			'form' => '表单',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
@@ -4536,9 +4538,9 @@ extension on TranslationsZhCn {
 			'actionableAdvice' => '给出可执行建议',
 			'profileTabPersona' => '人设',
 			'profileTabPrompt' => '提示词',
-			'profileTabSkills' => '技能',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabSkills' => '技能',
 			'profileTabParams' => '参数',
 			'profileTabBasic' => '基础',
 			'profileTabExtensions' => '扩展',

@@ -1897,6 +1897,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playerAutoPlayDesc => '本集結束後自動播放下一集';
 	@override String get playerLoopEpisode => '單集循環';
 	@override String get playerLoopEpisodeDesc => '本集結束後循環播放當前集';
+	@override String get form => '表單';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String get activityHeatmapTitle => '活躍熱力圖';
@@ -4388,6 +4389,7 @@ extension on TranslationsZhTw {
 			'playerAutoPlayDesc' => '本集結束後自動播放下一集',
 			'playerLoopEpisode' => '單集循環',
 			'playerLoopEpisodeDesc' => '本集結束後循環播放當前集',
+			'form' => '表單',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'activityHeatmapTitle' => '活躍熱力圖',
@@ -4535,9 +4537,9 @@ extension on TranslationsZhTw {
 			'profileTabPersona' => '人設',
 			'profileTabPrompt' => '提示詞',
 			'profileTabSkills' => '技能',
-			'profileTabParams' => '參數',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabParams' => '參數',
 			'profileTabBasic' => '基礎',
 			'profileTabExtensions' => '擴充',
 			'profileTabMemory' => '記憶',

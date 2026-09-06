@@ -5617,6 +5617,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Repeat the current episode when it ends'
 	String get playerLoopEpisodeDesc => 'Repeat the current episode when it ends';
 
+	/// en: 'Form'
+	String get form => 'Form';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9221,6 +9224,7 @@ extension on Translations {
 			'playerAutoPlayDesc' => 'Auto-play next episode when the current one ends',
 			'playerLoopEpisode' => 'Loop single episode',
 			'playerLoopEpisodeDesc' => 'Repeat the current episode when it ends',
+			'form' => 'Form',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9367,9 +9371,9 @@ extension on Translations {
 			'actionableAdvice' => 'Give actionable advice',
 			'profileTabPersona' => 'Persona',
 			'profileTabPrompt' => 'Prompt',
-			'profileTabSkills' => 'Skills',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabSkills' => 'Skills',
 			'profileTabParams' => 'Params',
 			'profileTabBasic' => 'Basic',
 			'profileTabExtensions' => 'Extensions',
