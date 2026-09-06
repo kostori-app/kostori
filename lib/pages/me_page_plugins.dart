@@ -275,6 +275,27 @@ class _ModuleView {
           title: m['title']?.toString(),
           child: _PluginList(plugin: plugin, m: m),
         );
+      case 'board':
+        return _PluginCard(
+          title: m['title']?.toString(),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: IconTileButton(
+              icon: const Icon(Icons.forum_outlined),
+              label: m['title']?.toString() ?? '',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => PluginBoardPage(
+                      plugin: plugin,
+                      meta: m,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
       case 'form':
         return _PluginCard(
           title: m['title']?.toString(),
@@ -929,7 +950,9 @@ Future<void> _pushPluginPage(
 ) async {
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => PluginSubPage(plugin: plugin, name: name, params: params),
+      builder: (_) => name == 'thread'
+          ? PluginThreadPage(plugin: plugin, params: params)
+          : PluginSubPage(plugin: plugin, name: name, params: params),
     ),
   );
 }
@@ -1483,6 +1506,334 @@ class _SignCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+Map<String, dynamic> _asMap2(dynamic v) {
+  if (v is Map) {
+    return v.map((k, val) => MapEntry(k.toString(), val));
+  }
+  return <String, dynamic>{};
+}
+
+/// 板块浏览页：顶部 Tab 切换分类，列表行加载 + 加载更多
+class PluginBoardPage extends StatefulWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> meta;
+
+  const PluginBoardPage({super.key, required this.plugin, required this.meta});
+
+  @override
+  State<PluginBoardPage> createState() => _PluginBoardPageState();
+}
+
+class _PluginBoardPageState extends State<PluginBoardPage> {
+  List<Map<String, dynamic>> _tabs = [];
+  String get _listPage => widget.meta['page']?.toString() ?? 'boardList';
+  int _index = 0;
+  late final List<int> _pageNo = [];
+  late final List<bool> _loading = [];
+  late final List<bool> _hasMore = [];
+  late final List<List<Widget>> _loaded = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final raw = widget.meta['tabs'];
+    if (raw is List) {
+      _tabs = raw.map((e) => _asMap2(e)).toList();
+    }
+    for (var i = 0; i < _tabs.length; i++) {
+      _pageNo.add(1);
+      _loading.add(false);
+      _hasMore.add(true);
+      _loaded.add([]);
+    }
+    if (_tabs.isNotEmpty) _fetch(_index, append: false);
+  }
+
+  Future<void> _fetch(int index, {required bool append}) async {
+    if (index >= _tabs.length || _loading[index]) return;
+    setState(() => _loading[index] = true);
+    final tab = _tabs[index];
+    final modules = await widget.plugin.page(
+      _listPage,
+      {
+        'tab': tab['key'] ?? '',
+        'page': append ? _pageNo[index] + 1 : 1,
+      },
+    );
+    if (!mounted) return;
+    final rows = <Widget>[];
+    var lastHasItems = false;
+    for (final m in modules) {
+      final w = _ModuleView.build(context, widget.plugin, m);
+      if (w != null) rows.add(w);
+      final mm = _asMap2(m);
+      final items = mm['items'];
+      if (items is List && items.isNotEmpty) lastHasItems = true;
+    }
+    setState(() {
+      _pageNo[index] = append ? _pageNo[index] + 1 : 1;
+      _loading[index] = false;
+      if (append) {
+        _loaded[index].addAll(rows);
+      } else {
+        _loaded[index] = rows;
+      }
+      _hasMore[index] = lastHasItems;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: widget.meta['title']?.toString() ?? '',
+      body: Column(
+        children: [
+          if (_tabs.isNotEmpty)
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  for (var i = 0; i < _tabs.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          if (_index == i) return;
+                          setState(() => _index = i);
+                          _fetch(i, append: false);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _index == i
+                                ? cs.secondaryContainer
+                                : cs.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _tabs[i]['title']?.toString() ?? '',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: _index == i
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: _index == i
+                                  ? cs.onSecondaryContainer
+                                  : cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: _tabs.isEmpty || _loaded[_index].isEmpty
+                ? (_loading[_index]
+                    ? const Center(child: PolygonRefreshIndicator())
+                    : const SizedBox.shrink())
+                : ListView(
+                    padding: const EdgeInsets.all(8),
+                    children: [
+                      ..._loaded[_index],
+                      if (_hasMore[_index])
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: TextButton.icon(
+                              onPressed: _loading[_index]
+                                  ? null
+                                  : () => _fetch(_index, append: true),
+                              icon: _loading[_index]
+                                  ? const SizedBox.square(
+                                      dimension: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.expand_more),
+                              label: Text(t.more),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThreadPost {
+  final String author;
+  final String time;
+  final String content;
+  final List<String> images;
+  _ThreadPost(this.author, this.time, this.content, this.images);
+}
+
+/// 帖子详情页：主楼 + 楼层，可加载更多楼层
+class PluginThreadPage extends StatefulWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> params;
+
+  const PluginThreadPage({super.key, required this.plugin, required this.params});
+
+  @override
+  State<PluginThreadPage> createState() => _PluginThreadPageState();
+}
+
+class _PluginThreadPageState extends State<PluginThreadPage> {
+  String _title = '';
+  final List<_ThreadPost> _posts = [];
+  bool _loading = false;
+  bool _hasMore = true;
+  int _page = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    final p = Map<String, dynamic>.from(widget.params)..['page'] = _page;
+    final modules = await widget.plugin.page('thread', p);
+    if (!mounted) return;
+    var hasMore = false;
+    final parsed = <_ThreadPost>[];
+    for (final m in modules) {
+      final map = _asMap2(m);
+      if (map['type'] != 'threadPage') continue;
+      if (_title.isEmpty) {
+        _title = map['title']?.toString() ?? '';
+      }
+      hasMore = map['hasMore'] == true;
+      final blocks = map['posts'];
+      if (blocks is List) {
+        for (final b in blocks) {
+          final bm = _asMap2(b);
+          final content = bm['content']?.toString() ?? '';
+          final images = <String>[];
+          final imgs = bm['images'];
+          if (imgs is List) {
+            images.addAll(imgs.map((e) => e.toString()));
+          }
+          parsed.add(
+            _ThreadPost(
+              bm['author']?.toString() ?? '',
+              bm['time']?.toString() ?? '',
+              content,
+              images,
+            ),
+          );
+        }
+      }
+    }
+    setState(() {
+      _posts.addAll(parsed);
+      _page++;
+      _hasMore = hasMore && parsed.isNotEmpty;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text(_title.isEmpty ? widget.plugin.name : _title)),
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          for (var i = 0; i < _posts.length; i++) ...[
+            Material(
+              color: cs.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: cs.outlineVariant, width: 0.6),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _posts[i].author,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (_posts[i].time.isNotEmpty)
+                          Text(
+                            _posts[i].time,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (_posts[i].content.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(_posts[i].content),
+                    ],
+                    for (final url in _posts[i].images)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            url,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_hasMore)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: TextButton.icon(
+                  onPressed: _loading ? null : _load,
+                  icon: _loading
+                      ? const SizedBox.square(
+                          dimension: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.expand_more),
+                  label: Text(t.more),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
