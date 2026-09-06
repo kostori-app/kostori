@@ -1583,7 +1583,7 @@ Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
   return _PluginModulesList(plugin: plugin, modules: modules);
 }
 
-/// 磨砂玻璃容器（对齐 anime_list 底部换页条的 BackdropFilter 样式）
+/// 磨砂玻璃条（样式对齐 anime_list 分页条：BlurEffect + 半透明 surface，直边无圆角）
 class _GlassBar extends StatelessWidget {
   final Widget child;
 
@@ -1593,15 +1593,9 @@ class _GlassBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return BlurEffect(
-      blur: 12,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      blur: 10,
       child: Container(
-        decoration: BoxDecoration(
-          color: cs.surface.toOpacity(0.78),
-          border: Border(
-            top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
-          ),
-        ),
+        decoration: BoxDecoration(color: cs.surface.toOpacity(0.85)),
         child: child,
       ),
     );
@@ -1956,57 +1950,60 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    if (!_metaLoaded) {
+      return const Center(child: PolygonRefreshIndicator(size: 24));
+    }
+    return Stack(
       children: [
-        if (!_metaLoaded)
-          const Expanded(child: Center(child: PolygonRefreshIndicator(size: 24)))
-        else ...[
-          if (_tabs.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _CapsuleBar(
-                  keys: _tabs.map((t) => t['key']?.toString() ?? '').toList(),
-                  titles:
-                      _tabs.map((t) => t['title']?.toString() ?? '').toList(),
-                  selected: _index < _tabs.length
-                      ? (_tabs[_index]['key']?.toString() ?? '')
-                      : '',
-                  onChanged: _switchTab,
+        // 列表铺满，上下留出玻璃条空间，滚动时从玻璃条下方穿过（anime_list 同款）
+        Positioned.fill(
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: _tabs.isNotEmpty ? 62 : 8,
+              bottom: 66,
+            ),
+            child: _buildList(),
+          ),
+        ),
+        if (_tabs.isNotEmpty)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: _GlassBar(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _CapsuleBar(
+                    keys: _tabs
+                        .map((t) => t['key']?.toString() ?? '')
+                        .toList(),
+                    titles: _tabs
+                        .map((t) => t['title']?.toString() ?? '')
+                        .toList(),
+                    selected: _index < _tabs.length
+                        ? (_tabs[_index]['key']?.toString() ?? '')
+                        : '',
+                    onChanged: _switchTab,
+                  ),
                 ),
               ),
             ),
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: _metaLoaded
-                      ? Padding(
-                          padding: const EdgeInsets.only(bottom: 58),
-                          child: _buildList(),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                if (_metaLoaded)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: _GlassBar(
-                      child: _ForumPager(
-                        page: _page,
-                        totalPages: _totalPages,
-                        busy: _isBusy,
-                        onJump: _go,
-                      ),
-                    ),
-                  ),
-              ],
+          ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _GlassBar(
+            child: _ForumPager(
+              page: _page,
+              totalPages: _totalPages,
+              busy: _isBusy,
+              onJump: _go,
             ),
           ),
-        ],
+        ),
       ],
     );
   }
