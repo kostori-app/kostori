@@ -280,6 +280,9 @@ class _ModuleView {
         return _PluginCard(child: _Progress(m));
       case 'chips':
         return _PluginCard(child: _Chips(m['items']));
+      case 'status':
+        // 轻量数据：只展示“标签 + 数字”，不套厚重外壳
+        return _PluginCard(child: _Status(m['items']));
       case 'signIn':
         return _PluginCard(
           child: _SignInButton(plugin: plugin, m: m),
@@ -375,6 +378,11 @@ class _ModuleView {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: _Chips(m['items']),
+        );
+      case 'status':
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: _Status(m['items']),
         );
       case 'signIn':
         return Padding(
@@ -546,6 +554,57 @@ class _Chips extends StatelessWidget {
               text,
               style: TextStyle(fontSize: 12, color: cs.onSecondaryContainer),
             ),
+          ),
+      ],
+    );
+  }
+}
+
+/// 轻量数据状态：一行 `标签 数字`，可多个并用 Wrap 排布
+class _Status extends StatelessWidget {
+  final dynamic items;
+
+  const _Status(this.items);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final raw = items is List ? items as List : const [];
+    final parsed = raw
+        .map((e) {
+          final m = e is Map ? e.map((k, v) => MapEntry(k.toString(), v)) : <String, dynamic>{};
+          return (
+            label: (m['label'] ?? m['key'] ?? m['name'] ?? '').toString(),
+            value: (m['value'] ?? m['text'] ?? '').toString(),
+          );
+        })
+        .where((r) => r.value.isNotEmpty)
+        .toList();
+    if (parsed.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 20,
+      runSpacing: 6,
+      children: [
+        for (final r in parsed)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (r.label.isNotEmpty) ...[
+                Text(
+                  r.label,
+                  style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                r.value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
           ),
       ],
     );
