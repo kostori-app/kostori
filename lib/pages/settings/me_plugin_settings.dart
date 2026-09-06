@@ -256,46 +256,17 @@ const plugin = {
             ),
           )
         else
-          for (final p in plugins)
-            _BuildSectionPadding(
-              _SettingCard(
-                children: [
-                  ListTile(
-                    title: Text(p.name, style: ts.s18),
-                    subtitle: Text('v${p.version}'),
-                    trailing: IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      tooltip: t.delete,
-                      onPressed: () => _delete(p),
-                    ),
-                  ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        IconTileButton(
-                          icon: const Icon(Icons.edit_outlined),
-                          label: t.edit,
-                          onTap: () => _edit(p),
-                        ),
-                        IconTileButton(
-                          icon: const Icon(Icons.delete_outline),
-                          label: t.delete,
-                          color: Theme.of(context).colorScheme.error,
-                          onTap: () => _delete(p),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) => _PluginSliverCard(
+                key: ValueKey(plugins[i].key),
+                plugin: plugins[i],
+                edit: _edit,
+                delete: _delete,
               ),
+              childCount: plugins.length,
             ),
+          ),
         SliverPadding(
           padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
         ),
@@ -316,6 +287,77 @@ const plugin = {
         await MePagePluginManager().reload();
         if (mounted) setState(() {});
       }),
+    );
+  }
+}
+
+/// 单个插件卡片：与番剧源设置页列表卡片同构（无内置/开关语义）
+class _PluginSliverCard extends StatelessWidget {
+  const _PluginSliverCard({
+    super.key,
+    required this.plugin,
+    required this.edit,
+    required this.delete,
+  });
+
+  final MePagePlugin plugin;
+  final Future<void> Function(MePagePlugin) edit;
+  final Future<void> Function(MePagePlugin) delete;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: _SettingCard(
+        children: [
+          ListTile(
+            title: Text(plugin.name, style: ts.s18),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('v${plugin.version}'),
+                if (plugin.description.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      plugin.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            trailing: IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 18,
+              tooltip: t.delete,
+              icon: Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: colorScheme.error,
+              ),
+              onPressed: () => delete(plugin),
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: IconTileButton(
+                icon: const Icon(Icons.edit_outlined),
+                label: t.edit,
+                onTap: () => edit(plugin),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
