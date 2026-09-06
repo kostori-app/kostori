@@ -39,6 +39,13 @@ String _asStr(dynamic v, [String fallback = '']) {
   return v.toString();
 }
 
+/// 安全转 int
+int _asInt(dynamic v, [int fallback = 0]) {
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v.trim()) ?? fallback;
+  return fallback;
+}
+
 /// 个人页插件模块渲染：读取 data/me_plugins 下的插件，渲染其 render() 返回的模块。
 class MePagePluginModules extends ConsumerStatefulWidget {
   const MePagePluginModules({super.key});
@@ -947,12 +954,13 @@ Future<void> _pushPluginPage(
   BuildContext context,
   MePagePlugin plugin,
   String name,
-  Map<String, dynamic> params,
-) async {
+  Map<String, dynamic> params, {
+  Map<String, dynamic>? item,
+}) async {
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => name == 'thread'
-          ? PluginThreadPage(plugin: plugin, params: params)
+          ? PluginThreadPage(plugin: plugin, params: params, row: item)
           : PluginSubPage(plugin: plugin, name: name, params: params),
     ),
   );
@@ -1680,7 +1688,7 @@ class _ForumBoardRow extends StatelessWidget {
               : <String, dynamic>{};
           if (item['url'] != null) params['url'] = item['url'].toString();
           if (page == 'thread') params['tid'] ??= item['tid'];
-          _pushPluginPage(context, plugin, page, params);
+          _pushPluginPage(context, plugin, page, params, item: item);
         },
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -2290,22 +2298,40 @@ class PluginBoardPage extends StatelessWidget {
 }
 
 class _ThreadPost {
+  final int pid;
+  final int floor;
   final String author;
+  final String avatarUrl;
   final String time;
   final String content;
+  final List<Map<String, dynamic>> blocks;
   final List<String> images;
-  _ThreadPost(this.author, this.time, this.content, this.images);
+
+  _ThreadPost({
+    this.pid = 0,
+    this.floor = 0,
+    this.author = '',
+    this.avatarUrl = '',
+    this.time = '',
+    this.content = '',
+    List<Map<String, dynamic>>? blocks,
+    this.images = const [],
+  }) : blocks = blocks ?? const [];
 }
 
-/// 帖子详情页：主楼 + 楼层，可加载更多楼层
+/// 帖子详情页：帖子头部 + 楼层卡片（可加载更多楼层/分页）
 class PluginThreadPage extends StatefulWidget {
   final MePagePlugin plugin;
   final Map<String, dynamic> params;
+
+  /// 来源列表行的元信息（标题/作者/时间/浏览/回复/头像），用于头部展示
+  final Map<String, dynamic>? row;
 
   const PluginThreadPage({
     super.key,
     required this.plugin,
     required this.params,
+    this.row,
   });
 
   @override
@@ -2317,129 +2343,507 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   final List<_ThreadPost> _posts = [];
   bool _loading = false;
   bool _hasMore = true;
+  String? _error;
   int _page = 1;
 
   @override
   void initState() {
     super.initState();
+    _title = widget.row?['title']?.toString() ?? '';
     _load();
   }
 
   Future<void> _load() async {
     if (_loading) return;
-    setState(() => _loading = true);
-    final p = Map<String, dynamic>.from(widget.params)..['page'] = _page;
-    final modules = await widget.plugin.page('thread', p);
-    if (!mounted) return;
-    var hasMore = false;
-    final parsed = <_ThreadPost>[];
-    for (final m in modules) {
-      final map = _asMap2(m);
-      if (map['type'] != 'threadPage') continue;
-      if (_title.isEmpty) _title = map['title']?.toString() ?? '';
-      hasMore = map['hasMore'] == true;
-      final posts = map['posts'];
-      if (posts is List) {
-        for (final b in posts) {
-          final bm = _asMap2(b);
-          final content = bm['content']?.toString() ?? '';
-          final images = <String>[];
-          final imgs = bm['images'];
-          if (imgs is List) images.addAll(imgs.map((e) => e.toString()));
-          parsed.add(
-            _ThreadPost(
-              bm['author']?.toString() ?? '',
-              bm['time']?.toString() ?? '',
-              content,
-              images,
-            ),
-          );
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final p = Map<String, dynamic>.from(widget.params)..['page'] = _page;
+      final modules = await widget.plugin.page('thread', p);
+      if (!mounted) return;
+      var hasMore = false;
+      final parsed = <_ThreadPost>[];
+      for (final m in modules) {
+        final map = _asMap2(m);
+        if (map['type'] != 'threadPage') continue;
+        if (_title.isEmpty) _title = map['title']?.toString() ?? '';
+        hasMore = map['hasMore'] == true;
+        final posts = map['posts'];
+        if (posts is List) {
+          for (final b in posts) {
+            final bm = _asMap2(b);
+            final images = <String>[];
+            final imgs = bm['images'];
+            if (imgs is List) images.addAll(imgs.map((e) => e.toString()));
+            final blocks = <Map<String, dynamic>>[];
+            final rawBlocks = bm['blocks'];
+            if (rawBlocks is List) {
+              for (final rb in rawBlocks) {
+                final rbm = _asMap2(rb);
+                if (rbm.isEmpty) continue;
+                blocks.add(rbm);
+              }
+            }
+            parsed.add(
+              _ThreadPost(
+                pid: _asInt(bm['pid'], 0),
+                floor: _asInt(bm['floor'], 0),
+                author: bm['author']?.toString() ?? '',
+                avatarUrl: bm['avatarUrl']?.toString() ?? '',
+                time: bm['time']?.toString() ?? '',
+                content: bm['content']?.toString() ?? '',
+                blocks: blocks,
+                images: images,
+              ),
+            );
+          }
         }
       }
+      setState(() {
+        _posts.addAll(parsed);
+        _page++;
+        _hasMore = hasMore && parsed.isNotEmpty;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
     }
-    setState(() {
-      _posts.addAll(parsed);
-      _page++;
-      _hasMore = hasMore && parsed.isNotEmpty;
-      _loading = false;
-    });
   }
+
+  double get _topInset => MediaQuery.paddingOf(context).top + 56;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: Appbar(title: Text(_title.isEmpty ? widget.plugin.name : _title)),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
+      backgroundColor: cs.surface,
+      body: Stack(
         children: [
-          for (var i = 0; i < _posts.length; i++) ...[
-            Material(
-              color: cs.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: cs.outlineVariant, width: 0.6),
+          Positioned.fill(
+            child: Padding(
+              padding: EdgeInsets.only(top: _topInset + 4, bottom: 8),
+              child: _body(cs),
+            ),
+          ),
+          Positioned(top: 0, left: 0, right: 0, child: _topBar(cs)),
+        ],
+      ),
+    );
+  }
+
+  Widget _topBar(ColorScheme cs) {
+    return Appbar(
+      title: Text(
+        _title.isEmpty ? widget.plugin.name : _title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _body(ColorScheme cs) {
+    if (_error != null && _posts.isEmpty) {
+      return _PluginRetry(message: _error!, onRetry: _load);
+    }
+    if (_loading && _posts.isEmpty) {
+      return const Center(child: PolygonRefreshIndicator(size: 24));
+    }
+    final children = <Widget>[
+      _header(cs),
+      if (_posts.isEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 40),
+          child: Center(
+            child: Text(
+              t.noPluginToSign,
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
+          ),
+        )
+      else
+        for (var i = 0; i < _posts.length; i++) ...[
+          _floorCard(context, cs, _posts[i]),
+          const SizedBox(height: 10),
+        ],
+    ];
+    if (_hasMore) {
+      children.add(
+        Center(
+          child: TextButton.icon(
+            onPressed: _loading ? null : _load,
+            icon: _loading
+                ? const PolygonRefreshIndicator(size: 14)
+                : const Icon(Icons.expand_more),
+            label: Text(t.more),
+          ),
+        ),
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      children: children,
+    );
+  }
+
+  /// 帖子头部：标题 + 标签 + 作者/浏览/回复元信息
+  Widget _header(ColorScheme cs) {
+    final row = widget.row;
+    final tag = row?['tag']?.toString() ?? '';
+    final name = row?['name']?.toString() ?? row?['author']?.toString() ?? '';
+    final avatar = row?['avatarUrl']?.toString() ?? '';
+    final time = row?['time']?.toString() ?? '';
+    final infoLine = row?['infoLine']?.toString() ?? '';
+    final views = row?['views']?.toString() ?? '';
+    final replies = row?['replies']?.toString() ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _title.isEmpty ? (row?['title']?.toString() ?? '') : _title,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+            color: cs.onSurface,
+          ),
+        ),
+        if (tag.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: cs.secondaryContainer,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              tag,
+              style: TextStyle(
+                fontSize: 12,
+                color: cs.onSecondaryContainer,
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
+            ),
+          ),
+        ],
+        if (name.isNotEmpty || views.isNotEmpty || replies.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (avatar.isNotEmpty)
+                ClipOval(
+                  child: _siteImage(
+                    avatar,
+                    width: 36,
+                    height: 36,
+                    plugin: widget.plugin,
+                  ),
+                )
+              else
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.person_outline,
+                    size: 18,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              const SizedBox(width: 10),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _posts[i].author,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    if (name.isNotEmpty)
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
-                        if (_posts[i].time.isNotEmpty)
-                          Text(
-                            _posts[i].time,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (_posts[i].content.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(_posts[i].content),
-                    ],
-                    for (final url in _posts[i].images)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: _siteImage(
-                            url,
-                            fit: BoxFit.contain,
-                            plugin: widget.plugin,
-                          ),
+                      ),
+                    if (time.isNotEmpty || infoLine.isNotEmpty)
+                      Text(
+                        infoLine.isNotEmpty ? infoLine : time,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
+              if (views.isNotEmpty)
+                _stat(cs, Icons.remove_red_eye_outlined, views),
+              if (replies.isNotEmpty) ...[
+                const SizedBox(width: 14),
+                _stat(cs, Icons.chat_bubble_outline, replies),
+              ],
+            ],
+          ),
+        ],
+        const SizedBox(height: 12),
+        Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.5)),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _stat(ColorScheme cs, IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: cs.onSurfaceVariant),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+
+  /// 单楼层卡片：头像/作者/时间/楼层 + 富文本内容 + 图片预览
+  Widget _floorCard(BuildContext context, ColorScheme cs, _ThreadPost post) {
+    final isFirst = _posts.indexOf(post) == 0;
+    return Material(
+      color: cs.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant, width: 0.6),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _floorHeader(context, cs, post, isFirst),
+            const SizedBox(height: 10),
+            _postContent(context, cs, post),
+            if (post.images.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _postImages(context, cs, post),
+            ],
           ],
-          if (_hasMore)
-            Center(
-              child: TextButton.icon(
-                onPressed: _loading ? null : _load,
-                icon: _loading
-                    ? const PolygonRefreshIndicator(size: 14)
-                    : const Icon(Icons.expand_more),
-                label: Text(t.more),
+        ),
+      ),
+    );
+  }
+
+  Widget _floorHeader(
+    BuildContext context,
+    ColorScheme cs,
+    _ThreadPost post,
+    bool isFirst,
+  ) {
+    return Row(
+      children: [
+        if (post.avatarUrl.isNotEmpty)
+          ClipOval(
+            child: _siteImage(
+              post.avatarUrl,
+              width: 38,
+              height: 38,
+              plugin: widget.plugin,
+            ),
+          )
+        else
+          CircleAvatar(
+            radius: 19,
+            backgroundColor: cs.surfaceContainerHighest,
+            child: Icon(
+              Icons.person_outline,
+              size: 19,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      post.author.isEmpty ? t.unknown : post.author,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  if (isFirst)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.tertiaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '楼主',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: cs.onTertiaryContainer,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (post.time.isNotEmpty)
+                Text(
+                  post.time,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (post.floor > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '#${post.floor}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: cs.onPrimaryContainer,
               ),
             ),
+          ),
+      ],
+    );
+  }
+
+  Widget _postContent(
+    BuildContext context,
+    ColorScheme cs,
+    _ThreadPost post,
+  ) {
+    if (post.blocks.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final b in post.blocks) ...[
+            if (b['type'] == 'quote')
+              _quoteBlock(cs, b['text']?.toString() ?? '')
+            else if (b['text']?.toString().trim().isNotEmpty ?? false)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: _plainText(b['text'].toString()),
+              ),
+          ],
         ],
+      );
+    }
+    if (post.content.trim().isNotEmpty) {
+      return _plainText(post.content);
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _plainText(String text) {
+    return SelectableText(
+      text,
+      style: TextStyle(
+        fontSize: 14.5,
+        height: 1.55,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+    );
+  }
+
+  Widget _quoteBlock(ColorScheme cs, String text) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          left: BorderSide(color: cs.primary.withValues(alpha: 0.7), width: 3),
+        ),
+      ),
+      child: SelectableText(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          height: 1.5,
+          color: cs.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  Widget _postImages(
+    BuildContext context,
+    ColorScheme cs,
+    _ThreadPost post,
+  ) {
+    final pid = post.pid == 0 ? post.floor : post.pid;
+    void preview(int i) {
+      final url = post.images[i];
+      BangumiWidget.showImagePreview(
+        context: context,
+        url: url,
+        title: _title,
+        imageProvider: _siteProvider(url, plugin: widget.plugin),
+        heroTag: 'thread_${widget.plugin.key}_${pid}_$i',
+      );
+    }
+
+    return SizedBox(
+      height: 110,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: post.images.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (context, i) {
+          final heroTag = 'thread_${widget.plugin.key}_${pid}_$i';
+          return GestureDetector(
+            onTap: () => preview(i),
+            child: Hero(
+              tag: heroTag,
+              flightShuttleBuilder: (flightContext, animation, direction,
+                  fromContext, toContext) {
+                return direction == HeroFlightDirection.pop
+                    ? (fromContext.widget as Hero).child
+                    : (toContext.widget as Hero).child;
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: _siteImage(
+                  post.images[i],
+                  width: 150,
+                  height: 110,
+                  plugin: widget.plugin,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
