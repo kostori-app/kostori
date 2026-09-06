@@ -996,7 +996,7 @@ class _PluginSubPageState extends State<PluginSubPage> {
             );
           }
           final modules = snap.data ?? const [];
-          return _PluginModulesList(plugin: widget.plugin, modules: modules);
+          return _contentOrBoard(widget.plugin, modules);
         },
       ),
     );
@@ -1203,10 +1203,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
                       return const Center(child: PolygonRefreshIndicator());
                     }
                     final modules = snap.data ?? const [];
-                    return _PluginModulesList(
-                      plugin: widget.plugin,
-                      modules: modules,
-                    );
+                    return _contentOrBoard(widget.plugin, modules);
                   },
                 ),
               ),
@@ -1517,88 +1514,280 @@ Map<String, dynamic> _asMap2(dynamic v) {
   return <String, dynamic>{};
 }
 
-/// 板块浏览页：顶部 Tab 切换分类，列表行加载 + 加载更多
-class PluginBoardPage extends StatefulWidget {
-  final MePagePlugin plugin;
-  final Map<String, dynamic> meta;
-
-  const PluginBoardPage({super.key, required this.plugin, required this.meta});
-
-  @override
-  State<PluginBoardPage> createState() => _PluginBoardPageState();
+/// 若页面内容本身就是 board 模块，则直接内联板块浏览（不再要求二次点击）
+Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
+  for (final m in modules) {
+    if (_asMap2(m)['type'] == 'board') {
+      return PluginBoardContent(plugin: plugin);
+    }
+  }
+  return _PluginModulesList(plugin: plugin, modules: modules);
 }
 
-class _PluginBoardPageState extends State<PluginBoardPage> {
+/// 论坛列表行卡片（封面/标题/标签/摘要/作者时间/浏览回复）
+class _ForumBoardRow extends StatelessWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> item;
+
+  const _ForumBoardRow({required this.plugin, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final title = item['title']?.toString() ?? '';
+    final summary =
+        item['summary']?.toString() ?? item['subtitle']?.toString() ?? '';
+    final tag = item['tag']?.toString() ?? '';
+    final author = item['author']?.toString() ?? '';
+    final time = item['time']?.toString() ?? '';
+    final views = item['views']?.toString() ?? '';
+    final replies = item['replies']?.toString() ?? '';
+    final cover =
+        item['cover']?.toString() ?? item['image']?.toString() ?? '';
+
+    Widget thumb;
+    if (cover.isNotEmpty) {
+      thumb = ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.network(
+          cover,
+          width: 92,
+          height: 92,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(
+            width: 92,
+            height: 92,
+            color: cs.surfaceContainerHighest,
+            child: const Icon(Icons.image_outlined),
+          ),
+        ),
+      );
+    } else {
+      thumb = Container(
+        width: 92,
+        height: 92,
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.article_outlined),
+      );
+    }
+
+    Widget metaLine() {
+      final parts = <String>[];
+      if (tag.isNotEmpty) parts.add('[$tag]');
+      if (author.isNotEmpty) parts.add(author);
+      if (time.isNotEmpty) parts.add(time);
+      return Text(
+        parts.join(' · '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+      );
+    }
+
+    return Material(
+      color: cs.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: cs.outlineVariant, width: 0.6),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          final page = item['page']?.toString() ?? 'thread';
+          final params = item['params'] is Map
+              ? _asMap2(item['params'])
+              : <String, dynamic>{};
+          if (item['url'] != null) params['url'] = item['url'].toString();
+          if (page == 'thread') {
+            params['tid'] ??= item['tid'];
+          }
+          _pushPluginPage(context, plugin, page, params);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              thumb,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (summary.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        summary,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    metaLine(),
+                    if (views.isNotEmpty || replies.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.visibility_outlined,
+                              size: 13, color: cs.onSurfaceVariant),
+                          const SizedBox(width: 3),
+                          Text(
+                            views,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(Icons.mode_comment_outlined,
+                              size: 13, color: cs.onSurfaceVariant),
+                          const SizedBox(width: 3),
+                          Text(
+                            replies,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 板块内容（可内联进插件页，也可放进弹层页）：
+/// 分类 Tab + 列表 + 页码跳转
+class PluginBoardContent extends StatefulWidget {
+  final MePagePlugin plugin;
+
+  const PluginBoardContent({super.key, required this.plugin});
+
+  @override
+  State<PluginBoardContent> createState() => _PluginBoardContentState();
+}
+
+class _PluginBoardContentState extends State<PluginBoardContent> {
   List<Map<String, dynamic>> _tabs = [];
-  String get _listPage => widget.meta['page']?.toString() ?? 'boardList';
+  String _listPage = 'boardList';
   int _index = 0;
-  late final List<int> _pageNo = [];
-  late final List<bool> _loading = [];
-  late final List<bool> _hasMore = [];
-  late final List<List<Widget>> _loaded = [];
+  bool _metaLoaded = false;
+  bool _loading = false;
+  int _page = 1;
+  int _totalPages = 1;
+  List<Map<String, dynamic>> _rows = [];
+  final TextEditingController _jumpCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    final raw = widget.meta['tabs'];
-    if (raw is List) {
-      _tabs = raw.map((e) => _asMap2(e)).toList();
-    }
-    for (var i = 0; i < _tabs.length; i++) {
-      _pageNo.add(1);
-      _loading.add(false);
-      _hasMore.add(true);
-      _loaded.add([]);
-    }
-    if (_tabs.isNotEmpty) _fetch(_index, append: false);
+    _loadMeta();
   }
 
-  Future<void> _fetch(int index, {required bool append}) async {
-    if (index >= _tabs.length || _loading[index]) return;
-    setState(() => _loading[index] = true);
-    final tab = _tabs[index];
-    final modules = await widget.plugin.page(
-      _listPage,
-      {
-        'tab': tab['key'] ?? '',
-        'page': append ? _pageNo[index] + 1 : 1,
-      },
-    );
+  @override
+  void dispose() {
+    _jumpCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMeta() async {
+    final modules = await widget.plugin.page('board');
     if (!mounted) return;
-    final rows = <Widget>[];
-    var lastHasItems = false;
     for (final m in modules) {
-      final w = _ModuleView.build(context, widget.plugin, m);
-      if (w != null) rows.add(w);
       final mm = _asMap2(m);
-      final items = mm['items'];
-      if (items is List && items.isNotEmpty) lastHasItems = true;
+      if (mm['type'] != 'board') continue;
+      final raw = mm['tabs'];
+      if (raw is List) _tabs = raw.map((e) => _asMap2(e)).toList();
+      _listPage = mm['page']?.toString() ?? 'boardList';
     }
     setState(() {
-      _pageNo[index] = append ? _pageNo[index] + 1 : 1;
-      _loading[index] = false;
-      if (append) {
-        _loaded[index].addAll(rows);
-      } else {
-        _loaded[index] = rows;
-      }
-      _hasMore[index] = lastHasItems;
+      _metaLoaded = true;
+      _index = 0;
     });
+    if (_tabs.isNotEmpty) await _load(1);
+  }
+
+  Future<void> _load(int page) async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _page = page;
+    });
+    final modules = await widget.plugin.page(
+      _listPage,
+      {'tab': _index < _tabs.length ? (_tabs[_index]['key'] ?? '') : '', 'page': page},
+    );
+    if (!mounted) return;
+    var rows = <Map<String, dynamic>>[];
+    var total = 1;
+    var current = page;
+    for (final m in modules) {
+      final mm = _asMap2(m);
+      if (mm['type'] != 'boardPage') continue;
+      total = _asInt(mm['totalPages'], 1);
+      current = _asInt(mm['page'], page);
+      final raw = mm['items'];
+      if (raw is List) {
+        rows = raw.map((e) => _asMap2(e)).toList();
+      }
+    }
+    setState(() {
+      _rows = rows;
+      _page = current;
+      _totalPages = total < 1 ? 1 : total;
+      _loading = false;
+    });
+  }
+
+  static int _asInt(dynamic v, int fallback) {
+    final n = int.tryParse('$v');
+    return n == null || n < 1 ? fallback : n;
+  }
+
+  void _go(int page) {
+    if (page < 1) return;
+    _jumpCtrl.clear();
+    _load(page);
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return PopUpWidgetScaffold(
-      title: widget.meta['title']?.toString() ?? '',
-      body: Column(
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!_metaLoaded)
+          const Expanded(child: Center(child: PolygonRefreshIndicator()))
+        else ...[
           if (_tabs.isNotEmpty)
             SizedBox(
               height: 48,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 children: [
                   for (var i = 0; i < _tabs.length; i++)
                     Padding(
@@ -1608,7 +1797,7 @@ class _PluginBoardPageState extends State<PluginBoardPage> {
                         onTap: () {
                           if (_index == i) return;
                           setState(() => _index = i);
-                          _fetch(i, append: false);
+                          _go(1);
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -1640,39 +1829,93 @@ class _PluginBoardPageState extends State<PluginBoardPage> {
               ),
             ),
           Expanded(
-            child: _tabs.isEmpty || _loaded[_index].isEmpty
-                ? (_loading[_index]
-                    ? const Center(child: PolygonRefreshIndicator())
-                    : const SizedBox.shrink())
-                : ListView(
+            child: _loading && _rows.isEmpty
+                ? const Center(child: PolygonRefreshIndicator())
+                : _rows.isEmpty
+                ? Center(
+                    child: Text(
+                      t.noPluginToSign,
+                      style: TextStyle(color: cs.onSurfaceVariant),
+                    ),
+                  )
+                : ListView.separated(
                     padding: const EdgeInsets.all(8),
-                    children: [
-                      ..._loaded[_index],
-                      if (_hasMore[_index])
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: TextButton.icon(
-                              onPressed: _loading[_index]
-                                  ? null
-                                  : () => _fetch(_index, append: true),
-                              icon: _loading[_index]
-                                  ? const SizedBox.square(
-                                      dimension: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.expand_more),
-                              label: Text(t.more),
-                            ),
-                          ),
-                        ),
-                    ],
+                    itemCount: _rows.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) =>
+                        _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
                   ),
           ),
+          if (_metaLoaded)
+            Container(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _page > 1 && !_loading
+                        ? () => _go(_page - 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '第 $_page / $_totalPages 页',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 84,
+                    height: 34,
+                    child: TextField(
+                      controller: _jumpCtrl,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: t.page,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onSubmitted: (v) {
+                        final p = int.tryParse(v.trim());
+                        if (p != null && p > 0) _go(p);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _page < _totalPages && !_loading
+                        ? () => _go(_page + 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
+              ),
+            ),
         ],
-      ),
+      ],
+    );
+  }
+}
+
+/// 板块弹层页（供 board 模块入口使用）
+class PluginBoardPage extends StatelessWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> meta;
+
+  const PluginBoardPage({super.key, required this.plugin, required this.meta});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: meta['title']?.toString() ?? '',
+      body: PluginBoardContent(plugin: plugin),
     );
   }
 }
@@ -1690,7 +1933,11 @@ class PluginThreadPage extends StatefulWidget {
   final MePagePlugin plugin;
   final Map<String, dynamic> params;
 
-  const PluginThreadPage({super.key, required this.plugin, required this.params});
+  const PluginThreadPage({
+    super.key,
+    required this.plugin,
+    required this.params,
+  });
 
   @override
   State<PluginThreadPage> createState() => _PluginThreadPageState();
@@ -1720,20 +1967,16 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     for (final m in modules) {
       final map = _asMap2(m);
       if (map['type'] != 'threadPage') continue;
-      if (_title.isEmpty) {
-        _title = map['title']?.toString() ?? '';
-      }
+      if (_title.isEmpty) _title = map['title']?.toString() ?? '';
       hasMore = map['hasMore'] == true;
-      final blocks = map['posts'];
-      if (blocks is List) {
-        for (final b in blocks) {
+      final posts = map['posts'];
+      if (posts is List) {
+        for (final b in posts) {
           final bm = _asMap2(b);
           final content = bm['content']?.toString() ?? '';
           final images = <String>[];
           final imgs = bm['images'];
-          if (imgs is List) {
-            images.addAll(imgs.map((e) => e.toString()));
-          }
+          if (imgs is List) images.addAll(imgs.map((e) => e.toString()));
           parsed.add(
             _ThreadPost(
               bm['author']?.toString() ?? '',
@@ -1819,18 +2062,15 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           ],
           if (_hasMore)
             Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: TextButton.icon(
-                  onPressed: _loading ? null : _load,
-                  icon: _loading
-                      ? const SizedBox.square(
-                          dimension: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.expand_more),
-                  label: Text(t.more),
-                ),
+              child: TextButton.icon(
+                onPressed: _loading ? null : _load,
+                icon: _loading
+                    ? const SizedBox.square(
+                        dimension: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.expand_more),
+                label: Text(t.more),
               ),
             ),
         ],
