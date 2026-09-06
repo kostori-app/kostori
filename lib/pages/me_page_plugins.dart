@@ -2489,6 +2489,7 @@ class PluginBoardPage extends StatelessWidget {
 class _ThreadPost {
   final int pid;
   final int floor;
+  final String floorLabel;
   final String author;
   final String avatarUrl;
   final String time;
@@ -2499,6 +2500,7 @@ class _ThreadPost {
   _ThreadPost({
     this.pid = 0,
     this.floor = 0,
+    this.floorLabel = '',
     this.author = '',
     this.avatarUrl = '',
     this.time = '',
@@ -2609,6 +2611,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
               _ThreadPost(
                 pid: _asInt(bm['pid'], 0),
                 floor: _asInt(bm['floor'], 0),
+                floorLabel: bm['floorLabel']?.toString() ?? '',
                 author: bm['author']?.toString() ?? '',
                 avatarUrl: bm['avatarUrl']?.toString() ?? '',
                 time: bm['time']?.toString() ?? '',
@@ -3072,7 +3075,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
-            '#$visibleNo',
+            post.floorLabel.isEmpty ? '#$visibleNo' : post.floorLabel,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
