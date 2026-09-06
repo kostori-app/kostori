@@ -39,13 +39,83 @@ class MePagePlugin {
   final String description;
   final String filePath;
 
-  const MePagePlugin({
+  /// 本插件独立状态（对齐番剧源 `.data`），持久化到 `plugins/<key>.data`
+  Map<String, dynamic> data;
+
+  MePagePlugin({
     required this.name,
     required this.key,
     required this.version,
     required this.description,
     required this.filePath,
-  });
+    Map<String, dynamic> initialData = const {},
+  }) : data = {...initialData};
+
+  String get _dataPath {
+    final base = filePath.endsWith('.js')
+        ? filePath.substring(0, filePath.length - 3)
+        : filePath;
+    return '$base.data';
+  }
+
+  void _saveData() {
+    try {
+      File(_dataPath).writeAsStringSync(jsonEncode(data));
+    } catch (e) {
+      SourceLog.error('MePagePlugin($name).saveData', '$e');
+    }
+  }
+
+  /// 插件是否启用（默认启用）
+  bool get isEnabled => data['enabled'] != false;
+
+  void setEnabled(bool v) {
+    data['enabled'] = v;
+    _saveData();
+  }
+
+  /// 插件是否已登录
+  bool get isLogged => data['logged'] == true;
+
+  void setLogged(bool v) {
+    data['logged'] = v;
+    _saveData();
+  }
+
+  static String _today() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 今日已签日期；仅当“最后一次成功签到”是今天时返回，否则空串
+  String get signedToday {
+    if (data['signed'] == _today()) return _today();
+    return '';
+  }
+
+  void markSignedToday() {
+    data['signed'] = _today();
+    _saveData();
+  }
+
+  /// 记住的登录凭证（供“重新登录”使用）
+  Map<String, dynamic>? get creds {
+    final raw = data['creds'];
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return null;
+  }
+
+  void setCreds({required String username, required String password}) {
+    data['creds'] = {'username': username, 'password': password};
+    _saveData();
+  }
+
+  void clearCreds() {
+    data.remove('creds');
+    _saveData();
+  }
 
   /// 调用插件 render()，返回模块列表（List<Map>）。
   Future<List<dynamic>> render() async {
@@ -155,45 +225,6 @@ class MePagePlugin {
     return {'ok': false, 'message': ''};
   }
 
-  /// 插件是否已登录（登录成功 / 有效会话后标记）
-  bool get isLogged {
-    final map = appdata.implicitData['mePluginLogged'];
-    return map is Map && map[key] == true;
-  }
-
-  void setLogged(bool v) {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData['mePluginLogged'] as Map? ?? {},
-    );
-    map[key] = v;
-    appdata.implicitData['mePluginLogged'] = map;
-    appdata.writeImplicitData();
-  }
-
-  static String _today() {
-    final now = DateTime.now();
-    return '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-  }
-
-  /// 今天的日期字符串；仅当“最后一次成功签到”是今天时返回，否则空串
-  String get signedToday {
-    final map = appdata.implicitData['mePluginSigned'];
-    if (map is Map && map[key] == _today()) return _today();
-    return '';
-  }
-
-  /// 标记今日已成功签到
-  void markSignedToday() {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData['mePluginSigned'] as Map? ?? {},
-    );
-    map[key] = _today();
-    appdata.implicitData['mePluginSigned'] = map;
-    appdata.writeImplicitData();
-  }
-
   /// 调用插件可选的 `logout()` 清理服务端/本地会话
   Future<void> logout() async {
     try {
@@ -295,53 +326,35 @@ class MePagePluginManager with ChangeNotifier, Init {
 
   bool get isEmpty => _plugins.isEmpty;
 
-  /// 插件是否启用（未记录默认启用）
-  bool isEnabled(String key) {
-    final map = appdata.implicitData['mePluginEnabled'];
-    if (map is Map) return map[key] != false;
-    return true;
+  MePagePlugin? _byKey(String key) {
+    for (final p in _plugins) {
+      if (p.key == key) return p;
+    }
+    return null;
   }
 
-  /// 设置启用/禁用并持久化、通知
+  /// 插件是否启用（默认启用；存于各插件 .data）
+  bool isEnabled(String key) => _byKey(key)?.isEnabled ?? true;
+
+  /// 设置启用/禁用（写入该插件 .data）并通知
   Future<void> setEnabled(String key, bool enabled) async {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData['mePluginEnabled'] as Map? ?? {},
-    );
-    map[key] = enabled;
-    appdata.implicitData['mePluginEnabled'] = map;
-    appdata.writeImplicitData();
+    _byKey(key)?.setEnabled(enabled);
     notifyListeners();
   }
 
   /// 已保存的登录凭证（供“重新登录”使用，与番源 account 存法对齐）
-  Map<String, dynamic>? credsOf(String key) {
-    final map = appdata.implicitData['mePluginCreds'];
-    if (map is Map && map[key] is Map) {
-      return Map<String, dynamic>.from(map[key] as Map);
-    }
-    return null;
-  }
+  Map<String, dynamic>? credsOf(String key) => _byKey(key)?.creds;
 
   Future<void> setCreds(
     String key, {
     required String username,
     required String password,
   }) async {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData['mePluginCreds'] as Map? ?? {},
-    );
-    map[key] = {'username': username, 'password': password};
-    appdata.implicitData['mePluginCreds'] = map;
-    appdata.writeImplicitData();
+    _byKey(key)?.setCreds(username: username, password: password);
   }
 
   void clearCreds(String key) {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData['mePluginCreds'] as Map? ?? {},
-    );
-    map.remove(key);
-    appdata.implicitData['mePluginCreds'] = map;
-    appdata.writeImplicitData();
+    _byKey(key)?.clearCreds();
   }
 
   @override
@@ -499,12 +512,53 @@ class MePagePluginParser {
             ?.toString() ??
         '';
 
+    // 各插件独立 `.data`（对齐番剧源）；无文件时从旧 implicitData 迁移一次
+    Map<String, dynamic> initialData = const {};
+    final dataPath = filePath.endsWith('.js')
+        ? '${filePath.substring(0, filePath.length - 3)}.data'
+        : '$filePath.data';
+    try {
+      if (File(dataPath).existsSync()) {
+        final raw = jsonDecode(await File(dataPath).readAsString());
+        if (raw is Map) {
+          initialData = raw.map((k, v) => MapEntry(k.toString(), v));
+        }
+      } else {
+        bool? enabled;
+        bool? logged;
+        String? signed;
+        Map<String, dynamic>? creds;
+        final enabledMap = appdata.implicitData['mePluginEnabled'];
+        if (enabledMap is Map && enabledMap[key] is bool) {
+          enabled = enabledMap[key] as bool;
+        }
+        final loggedMap = appdata.implicitData['mePluginLogged'];
+        if (loggedMap is Map && loggedMap[key] == true) logged = true;
+        final signedMap = appdata.implicitData['mePluginSigned'];
+        if (signedMap is Map && signedMap[key] is String) {
+          signed = signedMap[key] as String;
+        }
+        final credsMap = appdata.implicitData['mePluginCreds'];
+        if (credsMap is Map && credsMap[key] is Map) {
+          final rawCreds = credsMap[key] as Map;
+          creds = rawCreds.map((k, v) => MapEntry(k.toString(), v.toString()));
+        }
+        initialData = {
+          if (enabled != null) 'enabled': enabled,
+          if (logged != null) 'logged': logged,
+          if (signed != null) 'signed': signed,
+          if (creds != null) 'creds': creds,
+        };
+      }
+    } catch (_) {}
+
     return MePagePlugin(
       name: name.toString(),
       key: key,
       version: version,
       description: description,
       filePath: filePath,
+      initialData: initialData,
     );
   }
 }
