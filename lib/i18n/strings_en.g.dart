@@ -5647,6 +5647,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Login failed'
 	String get loginFailed => 'Login failed';
 
+	/// en: 'Logged in'
+	String get loggedIn => 'Logged in';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9261,6 +9264,7 @@ extension on Translations {
 			'filterLogged' => 'Logged in',
 			'filterNotLogged' => 'Not logged in',
 			'loginFailed' => 'Login failed',
+			'loggedIn' => 'Logged in',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9397,9 +9401,9 @@ extension on Translations {
 			'deleteProfile' => 'Delete Profile',
 			'confirmDeleteProfile' => 'Are you sure you want to delete this profile?',
 			'noProfilesYet' => 'No profiles yet',
-			'profileSaved' => 'Profile saved',
 			_ => null,
 		} ?? switch (path) {
+			'profileSaved' => 'Profile saved',
 			'profileCopiedToClipboard' => 'Profile copied to clipboard',
 			'switchedToProfile' => ({required Object name}) => 'Switched to ${name}',
 			'defaultAssistant' => 'Default',

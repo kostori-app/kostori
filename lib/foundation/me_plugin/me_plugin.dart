@@ -128,6 +128,15 @@ class MePagePlugin {
     appdata.writeImplicitData();
   }
 
+  /// 调用插件可选的 `logout()` 清理服务端/本地会话
+  Future<void> logout() async {
+    try {
+      await JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.logout?.()",
+      );
+    } catch (_) {}
+  }
+
   /// 插件导航项列表：`[{key,title,icon}]`，icon 为 Dart 图标白名单字符串。
   Future<List<Map<String, dynamic>>> nav() async {
     try {
@@ -232,6 +241,37 @@ class MePagePluginManager with ChangeNotifier, Init {
     appdata.implicitData['mePluginEnabled'] = map;
     appdata.writeImplicitData();
     notifyListeners();
+  }
+
+  /// 已保存的登录凭证（供“重新登录”使用，与番源 account 存法对齐）
+  Map<String, dynamic>? credsOf(String key) {
+    final map = appdata.implicitData['mePluginCreds'];
+    if (map is Map && map[key] is Map) {
+      return Map<String, dynamic>.from(map[key] as Map);
+    }
+    return null;
+  }
+
+  Future<void> setCreds(
+    String key, {
+    required String username,
+    required String password,
+  }) async {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData['mePluginCreds'] as Map? ?? {},
+    );
+    map[key] = {'username': username, 'password': password};
+    appdata.implicitData['mePluginCreds'] = map;
+    appdata.writeImplicitData();
+  }
+
+  void clearCreds(String key) {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData['mePluginCreds'] as Map? ?? {},
+    );
+    map.remove(key);
+    appdata.implicitData['mePluginCreds'] = map;
+    appdata.writeImplicitData();
   }
 
   @override

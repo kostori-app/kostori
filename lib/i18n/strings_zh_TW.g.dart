@@ -1907,6 +1907,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get filterLogged => '已登入';
 	@override String get filterNotLogged => '未登入';
 	@override String get loginFailed => '登入失敗';
+	@override String get loggedIn => '已登入';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
 	@override String get activityHeatmapTitle => '活躍熱力圖';
@@ -4408,6 +4409,7 @@ extension on TranslationsZhTw {
 			'filterLogged' => '已登入',
 			'filterNotLogged' => '未登入',
 			'loginFailed' => '登入失敗',
+			'loggedIn' => '已登入',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
 			'activityHeatmapTitle' => '活躍熱力圖',
@@ -4545,9 +4547,9 @@ extension on TranslationsZhTw {
 			'confirmDeleteProfile' => '確定要刪除該檔案嗎？',
 			'noProfilesYet' => '暫無檔案',
 			'profileSaved' => '檔案已儲存',
-			'profileCopiedToClipboard' => '檔案已複製到剪貼簿',
 			_ => null,
 		} ?? switch (path) {
+			'profileCopiedToClipboard' => '檔案已複製到剪貼簿',
 			'switchedToProfile' => ({required Object name}) => '已切換到 ${name}',
 			'defaultAssistant' => '預設',
 			'conciseReplies' => '簡潔回覆',

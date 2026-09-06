@@ -1926,6 +1926,7 @@ onlyEnabled: Show enabled only
 filterLogged: Logged in
 filterNotLogged: Not logged in
 loginFailed: Login failed
+loggedIn: Logged in
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
 activityHeatmapTitle: Activity heatmap

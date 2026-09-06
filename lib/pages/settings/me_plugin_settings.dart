@@ -16,6 +16,7 @@ class _PluginSettingsState extends State<PluginSettings> {
   String _loginFilter = 'all';
   String _enabledFilter = 'all';
   String _sort = 'default';
+  final Set<String> _reloginKeys = {};
 
   List<MePagePlugin> _visible(List<MePagePlugin> all) {
     final manager = MePagePluginManager();
@@ -507,14 +508,13 @@ const plugin = {
                     if (mounted) setState(() {});
                   },
                   login: p.hasLogin
-                      ? () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => _PluginLoginPage(plugin: p),
-                            ),
-                          );
-                        }
+                      ? () => _openLogin(p)
                       : null,
+                  logged: p.isLogged,
+                  account: manager.credsOf(p.key)?['username']?.toString(),
+                  reloginLoading: _reloginKeys.contains(p.key),
+                  onRelogin: () => _relogin(p),
+                  onLogout: () => _logout(p),
                   edit: _edit,
                   delete: _delete,
                 );
@@ -527,6 +527,55 @@ const plugin = {
         ),
       ],
     );
+  }
+
+  /// 打开登录表单（记住的账号会预填用户名）
+  Future<void> _openLogin(MePagePlugin p) async {
+    final creds = MePagePluginManager().credsOf(p.key);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _PluginLoginPage(
+          plugin: p,
+          initialUsername: creds?['username']?.toString() ?? '',
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// 用记住的账号密码自动重新登录（与番源“重新登录”一致）
+  Future<void> _relogin(MePagePlugin p) async {
+    final creds = MePagePluginManager().credsOf(p.key);
+    if (creds == null) {
+      context.showMessage(message: t.noData);
+      return;
+    }
+    setState(() => _reloginKeys.add(p.key));
+    final res = await p.login(
+      creds['username']?.toString() ?? '',
+      creds['password']?.toString() ?? '',
+    );
+    if (!mounted) return;
+    setState(() => _reloginKeys.remove(p.key));
+    if (res['ok'] == true) {
+      p.setLogged(true);
+      context.showMessage(message: t.switchSuccessful);
+    } else {
+      context.showMessage(
+        message: res['message']?.toString().isNotEmpty == true
+            ? res['message'].toString()
+            : t.loginFailed,
+        level: LogLevel.error,
+      );
+    }
+  }
+
+  Future<void> _logout(MePagePlugin p) async {
+    await p.logout();
+    MePagePluginManager().clearCreds(p.key);
+    p.setLogged(false);
+    if (mounted) setState(() {});
+    context.showMessage(message: t.switchSuccessful);
   }
 
   /// 打开插件源码编辑（桌面优先 VS Code，否则内置编辑器）
@@ -556,6 +605,11 @@ class _PluginSliverCard extends StatelessWidget {
     required this.edit,
     required this.delete,
     this.login,
+    this.logged = false,
+    this.account,
+    this.reloginLoading = false,
+    this.onRelogin,
+    this.onLogout,
   });
 
   final MePagePlugin plugin;
@@ -564,6 +618,11 @@ class _PluginSliverCard extends StatelessWidget {
   final Future<void> Function(MePagePlugin) edit;
   final Future<void> Function(MePagePlugin) delete;
   final VoidCallback? login;
+  final bool logged;
+  final String? account;
+  final bool reloginLoading;
+  final VoidCallback? onRelogin;
+  final VoidCallback? onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -616,24 +675,64 @@ class _PluginSliverCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 1, indent: 16, endIndent: 16),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (login != null)
-                  IconTileButton(
-                    icon: const Icon(Icons.login),
-                    label: t.login,
-                    onTap: login,
-                  ),
-                IconTileButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  label: t.edit,
-                  onTap: () => edit(plugin),
+          if (login != null) ...[
+            if (!logged)
+              ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Icons.person_outline, size: 20),
+                title: Text(t.logIn),
+                trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: login,
+              )
+            else ...[
+              ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: Icon(
+                  Icons.verified_user_outlined,
+                  size: 20,
+                  color: colorScheme.primary,
                 ),
-              ],
+                title: Text(
+                  (account != null && account!.isNotEmpty)
+                      ? account!
+                      : t.loggedIn,
+                ),
+              ),
+              ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Icons.refresh, size: 20),
+                title: Text(t.reLogin),
+                subtitle: Text(t.clickIfLoginExpired),
+                trailing: reloginLoading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: PolygonRefreshIndicator(),
+                      )
+                    : null,
+                onTap: onRelogin,
+              ),
+              ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Icons.logout, size: 20),
+                title: Text(t.logOut),
+                onTap: onLogout,
+              ),
+            ],
+            const Divider(height: 1, indent: 16, endIndent: 16),
+          ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: IconTileButton(
+                icon: const Icon(Icons.edit_outlined),
+                label: t.edit,
+                onTap: () => edit(plugin),
+              ),
             ),
           ),
         ],
@@ -1025,17 +1124,23 @@ class _PluginSourceListState extends State<_PluginSourceList> {
 /// 插件登录：与番剧源设置页的登录模块一致——账号/密码表单，
 /// 提交后调用插件 `login(username, password)`（JS 内自行发请求、存 Cookie）
 class _PluginLoginPage extends StatefulWidget {
-  const _PluginLoginPage({required this.plugin});
+  const _PluginLoginPage({
+    required this.plugin,
+    this.initialUsername = '',
+  });
 
   final MePagePlugin plugin;
+  final String initialUsername;
 
   @override
   State<_PluginLoginPage> createState() => _PluginLoginPageState();
 }
 
 class _PluginLoginPageState extends State<_PluginLoginPage> {
-  final _userCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
+  late final TextEditingController _userCtrl = TextEditingController(
+    text: widget.initialUsername,
+  );
+  final TextEditingController _passCtrl = TextEditingController();
   bool _loading = false;
 
   @override
@@ -1058,6 +1163,11 @@ class _PluginLoginPageState extends State<_PluginLoginPage> {
     setState(() => _loading = false);
     if (res['ok'] == true) {
       widget.plugin.setLogged(true);
+      await MePagePluginManager().setCreds(
+        widget.plugin.key,
+        username: username,
+        password: password,
+      );
       App.rootContext.showMessage(message: t.switchSuccessful);
       if (mounted) context.pop();
     } else {

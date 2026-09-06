@@ -1925,6 +1925,7 @@ onlyEnabled: 只显示已启用
 filterLogged: 已登录
 filterNotLogged: 未登录
 loginFailed: 登录失败
+loggedIn: 已登录
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线
 activityHeatmapTitle: 活跃热力图
