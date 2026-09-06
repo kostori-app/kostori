@@ -530,6 +530,7 @@ class _SignInButtonState extends State<_SignInButton> {
             level: LogLevel.error,
           );
         } else {
+          widget.plugin.markSignedToday();
           App.rootContext.showMessage(message: show);
         }
       } else {

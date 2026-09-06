@@ -170,6 +170,30 @@ class MePagePlugin {
     appdata.writeImplicitData();
   }
 
+  static String _today() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 今天的日期字符串；仅当“最后一次成功签到”是今天时返回，否则空串
+  String get signedToday {
+    final map = appdata.implicitData['mePluginSigned'];
+    if (map is Map && map[key] == _today()) return _today();
+    return '';
+  }
+
+  /// 标记今日已成功签到
+  void markSignedToday() {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData['mePluginSigned'] as Map? ?? {},
+    );
+    map[key] = _today();
+    appdata.implicitData['mePluginSigned'] = map;
+    appdata.writeImplicitData();
+  }
+
   /// 调用插件可选的 `logout()` 清理服务端/本地会话
   Future<void> logout() async {
     try {
@@ -217,6 +241,10 @@ class MePagePlugin {
   ]) async {
     try {
       final paramsJs = _jsJson(params);
+      // 注入“今日已签”状态，供插件的签到页直接展示（无需再次请求）
+      await JsEngine().runCode(
+        "globalThis.__me_plugin_signed_today = ${_jsStr(signedToday)};",
+      );
       final res = await JsEngine().runCode(
         "globalThis.__me_plugins[${_jsStr(key)}]"
         "?.page(${_jsStr(name)}, $paramsJs) ?? []",
@@ -358,7 +386,9 @@ class MePagePluginManager with ChangeNotifier, Init {
       if (!isEnabled(p.key) || !p.isLogged || !p.autoSigninEnabled) continue;
       try {
         final res = await p.autoSignin();
-        if (res['ok'] != true) {
+        if (res['ok'] == true) {
+          p.markSignedToday();
+        } else {
           SourceLog.warning(
             'MePagePlugin.autoSignin',
             '${p.name}: ${res['message']}',
