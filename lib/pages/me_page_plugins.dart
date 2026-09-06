@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
@@ -2764,12 +2765,52 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   }
 
   Widget _plainText(String text) {
-    return SelectableText(
+    return _richText(
       text,
-      style: TextStyle(
-        fontSize: 14.5,
-        height: 1.55,
-        color: Theme.of(context).colorScheme.onSurface,
+      fontSize: 14.5,
+      height: 1.55,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+  }
+
+  /// 正文富文本：把 URL 变成可点击链接（原地址等），其余保留可选文本样式
+  Widget _richText(
+    String text, {
+    double fontSize = 14.5,
+    double height = 1.55,
+    required Color color,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final urlRe = RegExp(r"https?://[^\s<>']+");
+    final spans = <TextSpan>[];
+    var pos = 0;
+    for (final m in urlRe.allMatches(text)) {
+      if (m.start > pos) {
+        spans.add(TextSpan(text: text.substring(pos, m.start)));
+      }
+      var url = m.group(0)!;
+      while (url.isNotEmpty &&
+          RegExp(r'[.,;:)\]}]$').hasMatch(url) &&
+          !url.endsWith('://')) {
+        url = url.substring(0, url.length - 1);
+      }
+      spans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(color: cs.primary),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => launchUrlString(url),
+        ),
+      );
+      pos = m.start + m.group(0)!.length;
+    }
+    if (pos < text.length) {
+      spans.add(TextSpan(text: text.substring(pos)));
+    }
+    return Text.rich(
+      TextSpan(
+        style: TextStyle(fontSize: fontSize, height: height, color: color),
+        children: spans,
       ),
     );
   }
@@ -2786,14 +2827,12 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           left: BorderSide(color: cs.primary.withValues(alpha: 0.7), width: 3),
         ),
       ),
-      child: SelectableText(
-        text,
-        style: TextStyle(
+        child: _richText(
+          text,
           fontSize: 13,
           height: 1.5,
           color: cs.onSurfaceVariant,
         ),
-      ),
     );
   }
 
