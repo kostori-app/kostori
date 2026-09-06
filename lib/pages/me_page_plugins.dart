@@ -1174,7 +1174,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
             children: [
               if (_nav.length > 1)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: _CapsuleBar(
@@ -1583,6 +1583,31 @@ Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
   return _PluginModulesList(plugin: plugin, modules: modules);
 }
 
+/// 磨砂玻璃容器（对齐 anime_list 底部换页条的 BackdropFilter 样式）
+class _GlassBar extends StatelessWidget {
+  final Widget child;
+
+  const _GlassBar({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return BlurEffect(
+      blur: 12,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface.toOpacity(0.78),
+          border: Border(
+            top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
 /// 论坛列表条目卡片：作者行 + 标题 + 条目信息 + 图片(可点击预览) + 辅助信息
 class _ForumBoardRow extends StatelessWidget {
   final MePagePlugin plugin;
@@ -1939,7 +1964,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
         else ...[
           if (_tabs.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: _CapsuleBar(
@@ -1953,14 +1978,34 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
                 ),
               ),
             ),
-          Expanded(child: _buildList()),
-          if (_metaLoaded)
-            _ForumPager(
-              page: _page,
-              totalPages: _totalPages,
-              busy: _isBusy,
-              onJump: _go,
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: _metaLoaded
+                      ? Padding(
+                          padding: const EdgeInsets.only(bottom: 58),
+                          child: _buildList(),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                if (_metaLoaded)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _GlassBar(
+                      child: _ForumPager(
+                        page: _page,
+                        totalPages: _totalPages,
+                        busy: _isBusy,
+                        onJump: _go,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ],
     );
