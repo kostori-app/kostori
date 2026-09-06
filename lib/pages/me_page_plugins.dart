@@ -2531,6 +2531,10 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   String _title = '';
   String _pageUrl = '';
   List<MapEntry<String, String>> _fields = const [];
+  String _bestText = '';
+  String _bestReward = '';
+  String _bestAuthor = '';
+  String _bestDate = '';
   final List<_ThreadPost> _posts = [];
   bool _loading = false;
   bool _hasMore = true;
@@ -2573,6 +2577,16 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             }
           }
           if (parsedFields.isNotEmpty) _fields = parsedFields;
+        }
+        final best = map['best'];
+        if (best is Map) {
+          final bm = best.map((k, v) => MapEntry(k.toString(), v.toString()));
+          if ((bm['text'] ?? '').isNotEmpty) {
+            _bestText = bm['text']!;
+            _bestReward = bm['reward'] ?? '';
+            _bestAuthor = bm['author'] ?? '';
+            _bestDate = bm['date'] ?? '';
+          }
         }
         hasMore = map['hasMore'] == true;
         final posts = map['posts'];
@@ -2883,6 +2897,10 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
               ),
               const SizedBox(height: 10),
             ],
+            if (_bestText.isNotEmpty) ...[
+              _bestAnswerBlock(cs),
+              const SizedBox(height: 10),
+            ],
             _postContent(context, cs, post),
             if (post.images.isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -2890,6 +2908,76 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// “最佳答案”组件块：已解决帖的采纳答案，独立高亮展示
+  Widget _bestAnswerBlock(ColorScheme cs) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: cs.secondaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: cs.secondary.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.workspace_premium_outlined,
+                  size: 18, color: cs.tertiary),
+              const SizedBox(width: 6),
+              Text(
+                '最佳答案',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
+          ),
+          if (_bestReward.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.paid_outlined, size: 15, color: cs.tertiary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _bestReward,
+                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (_bestText.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _richText(
+              _bestText,
+              fontSize: 14,
+              height: 1.55,
+              color: cs.onSurface,
+            ),
+          ],
+          if (_bestAuthor.isNotEmpty || _bestDate.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              [
+                if (_bestAuthor.isNotEmpty) _bestAuthor,
+                if (_bestDate.isNotEmpty) _bestDate,
+              ].join(' · '),
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            ),
+          ],
+        ],
       ),
     );
   }
