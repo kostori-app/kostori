@@ -515,6 +515,15 @@ const plugin = {
                           if (mounted) setState(() {});
                         }
                       : null,
+                  settings: p.hasSettings
+                      ? () async {
+                          await showPopUpWidget(
+                            App.rootContext,
+                            _PluginSettingsPage(plugin: p),
+                          );
+                          if (mounted) setState(() {});
+                        }
+                      : null,
                   edit: _edit,
                   delete: _delete,
                 );
@@ -556,6 +565,7 @@ class _PluginSliverCard extends StatelessWidget {
     required this.edit,
     required this.delete,
     this.account,
+    this.settings,
   });
 
   final MePagePlugin plugin;
@@ -566,6 +576,9 @@ class _PluginSliverCard extends StatelessWidget {
 
   /// 点击“账户/登录”按钮（进入二级账户页）
   final VoidCallback? account;
+
+  /// 点击“设置”按钮（进入插件设置页，如手动 uid 等配置）
+  final VoidCallback? settings;
 
   @override
   Widget build(BuildContext context) {
@@ -632,6 +645,12 @@ class _PluginSliverCard extends StatelessWidget {
                     ),
                     label: logged ? t.account : t.logIn,
                     onTap: account,
+                  ),
+                if (settings != null)
+                  IconTileButton(
+                    icon: const Icon(Icons.settings_outlined),
+                    label: t.settings,
+                    onTap: settings,
                   ),
                 IconTileButton(
                   icon: const Icon(Icons.edit_note),
@@ -1023,6 +1042,196 @@ class _PluginSourceListState extends State<_PluginSourceList> {
               ),
         ],
       ),
+    );
+  }
+}
+
+/// 插件设置页：渲染插件声明的 `settings` 模块（config 输入等，存插件 .data）
+class _PluginSettingsPage extends StatefulWidget {
+  final MePagePlugin plugin;
+
+  const _PluginSettingsPage({required this.plugin});
+
+  @override
+  State<_PluginSettingsPage> createState() => _PluginSettingsPageState();
+}
+
+class _PluginSettingsPageState extends State<_PluginSettingsPage> {
+  late Future<List<Map<String, dynamic>>> _future;
+
+  MePagePlugin get p => widget.plugin;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = p.settingsModules();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: p.name,
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Center(child: PolygonRefreshIndicator());
+          }
+          final modules = snap.data ?? const [];
+          if (modules.isEmpty) {
+            return Center(
+              child: Text(t.noData),
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              for (final m in modules) ...[
+                _PluginSettingsModule(plugin: p, m: m),
+                const SizedBox(height: 12),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 单个设置模块：目前支持 config（输入项持久化）与 text/说明
+class _PluginSettingsModule extends StatelessWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> m;
+
+  const _PluginSettingsModule({required this.plugin, required this.m});
+
+  @override
+  Widget build(BuildContext context) {
+    final type = m['type']?.toString() ?? '';
+    if (type == 'config') {
+      return _SettingCard(
+        children: [
+          if (m['title']?.toString().isNotEmpty ?? false)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                m['title'].toString(),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _PluginConfigEditor(plugin: plugin, m: m),
+          ),
+        ],
+      );
+    }
+    if (type == 'text') {
+      return _SettingCard(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(m['text']?.toString() ?? ''),
+          ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+/// 插件 config 输入：写入 `.data['configs']` 并通知刷新
+class _PluginConfigEditor extends StatefulWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> m;
+
+  const _PluginConfigEditor({required this.plugin, required this.m});
+
+  @override
+  State<_PluginConfigEditor> createState() => _PluginConfigEditorState();
+}
+
+class _PluginConfigEditorState extends State<_PluginConfigEditor> {
+  final Map<String, TextEditingController> _ctrls = {};
+  bool _saving = false;
+
+  List<Map<String, dynamic>> get _fields {
+    final raw = widget.m['fields'] ?? widget.m['items'];
+    final list = <Map<String, dynamic>>[];
+    if (raw is List) {
+      for (final f in raw) {
+        if (f is Map) {
+          list.add(f.map((k, v) => MapEntry(k.toString(), v)));
+        }
+      }
+    }
+    return list;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    for (final f in _fields) {
+      final key = f['key']?.toString() ?? '';
+      _ctrls[key] = TextEditingController(
+        text: widget.plugin.configs[key]?.toString() ?? '',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _ctrls.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      for (final f in _fields) {
+        final key = f['key']?.toString() ?? '';
+        widget.plugin.setConfigValue(key, _ctrls[key]?.text ?? '');
+      }
+      App.rootContext.showMessage(message: t.saved);
+      MePagePluginManager().touch();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_fields.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final f in _fields) ...[
+          TextField(
+            controller: _ctrls[f['key']?.toString() ?? ''],
+            keyboardType: (f['kind']?.toString() ?? '') == 'number'
+                ? TextInputType.number
+                : TextInputType.text,
+            decoration: InputDecoration(
+              isDense: true,
+              labelText: f['label']?.toString() ?? '',
+              hintText: f['hint']?.toString(),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Button.filled(
+            isLoading: _saving,
+            onPressed: _save,
+            child: Text(widget.m['saveText']?.toString() ?? t.apply),
+          ),
+        ),
+      ],
     );
   }
 }

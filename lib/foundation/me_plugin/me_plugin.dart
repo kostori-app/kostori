@@ -189,6 +189,38 @@ class MePagePlugin {
     _saveData();
   }
 
+  /// 插件是否声明了“设置页”模块：`plugin.settings = [{ type: 'config', ... }]`
+  /// 或 nav 里含 key 为 settings 的子页（与番源 source.settings 对齐）
+  bool get hasSettings {
+    try {
+      final res = JsEngine().runCode(
+        "const s = globalThis.__me_plugins[${_jsStr(key)}];"
+        "Array.isArray(s?.settings) && s.settings.length > 0",
+      );
+      if (res == true) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  /// 设置页模块列表（来自 `plugin.settings`）
+  Future<List<Map<String, dynamic>>> settingsModules() async {
+    try {
+      final res = await JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.settings ?? []",
+      );
+      if (res is List) {
+        return res
+            .map((e) => (e is Map)
+                ? e.map((k, v) => MapEntry(k.toString(), v))
+                : const <String, dynamic>{})
+            .toList();
+      }
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).settings', '$e\n$s');
+    }
+    return const [];
+  }
+
   /// 调用插件 render()，返回模块列表（List<Map>）。
   Future<List<dynamic>> render() async {
     try {
