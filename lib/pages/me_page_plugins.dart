@@ -1953,18 +1953,10 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     if (!_metaLoaded) {
       return const Center(child: PolygonRefreshIndicator(size: 24));
     }
+    // 留白放在滚动内容自身（anime_list 同款）：网格铺满，行可滚到玻璃条下方产生磨砂
     return Stack(
       children: [
-        // 列表铺满，上下留出玻璃条空间，滚动时从玻璃条下方穿过（anime_list 同款）
-        Positioned.fill(
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: _tabs.isNotEmpty ? 62 : 8,
-              bottom: 66,
-            ),
-            child: _buildList(),
-          ),
-        ),
+        Positioned.fill(child: _buildList()),
         if (_tabs.isNotEmpty)
           Positioned(
             left: 0,
@@ -2016,22 +2008,37 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
 
   Widget _buildList() {
     final cs = Theme.of(context).colorScheme;
+    final edge = EdgeInsets.fromLTRB(
+      8,
+      _tabs.isNotEmpty ? 62 : 8,
+      8,
+      66,
+    );
     if (_error != null) {
-      return _PluginRetry(message: _error!, onRetry: () => _go(_page));
+      return Padding(
+        padding: edge,
+        child: _PluginRetry(message: _error!, onRetry: () => _go(_page)),
+      );
     }
     if (_isBusy) {
-      return const Center(child: PolygonRefreshIndicator(size: 24));
+      return Padding(
+        padding: edge,
+        child: const Center(child: PolygonRefreshIndicator(size: 24)),
+      );
     }
     if (_rows.isEmpty) {
-      return Center(
-        child: Text(
-          t.noPluginToSign,
-          style: TextStyle(color: cs.onSurfaceVariant),
+      return Padding(
+        padding: edge,
+        child: Center(
+          child: Text(
+            t.noPluginToSign,
+            style: TextStyle(color: cs.onSurfaceVariant),
+          ),
         ),
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(8),
+      padding: edge,
       itemCount: _rows.length,
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, i) =>
