@@ -103,11 +103,11 @@ class MePagePlugin {
     try {
       final res = await JsEngine().runCode("""
         (async () => {
-          const fn = globalThis.__me_plugins[${_jsStr(key)}]?.signin;
-          if (typeof fn !== 'function') {
+          const obj = globalThis.__me_plugins[${_jsStr(key)}];
+          if (!obj || typeof obj.signin !== 'function') {
             return JSON.stringify({ ok: false, message: '' });
           }
-          const r = await fn();
+          const r = await obj.signin();
           return JSON.stringify({
             ok: !!(r && r.ok),
             message: (r && (r.message || r.error)) || ''
@@ -232,11 +232,11 @@ class MePagePlugin {
     try {
       final res = await JsEngine().runCode("""
         (async () => {
-          const fn = globalThis.__me_plugins[${_jsStr(key)}]?.autoSignin;
-          if (typeof fn !== 'function') {
+          const obj = globalThis.__me_plugins[${_jsStr(key)}];
+          if (typeof obj?.autoSignin !== 'function') {
             return JSON.stringify({ ok: false, message: '' });
           }
-          const r = await fn();
+          const r = await obj.autoSignin();
           return JSON.stringify({
             ok: !!(r && r.ok),
             message: (r && (r.message || r.error)) || ''
