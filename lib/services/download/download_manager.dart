@@ -639,18 +639,57 @@ class DownloadManager extends ChangeNotifier {
     task.error = null;
     notifyListeners();
     try {
-      await FfmpegEncoder.mergeTs(
+      await _mergeTsWithProgress(
+        task: task,
         tsPaths: segPaths.where((p) => p.isNotEmpty).toList(),
         outputPath: tmpPath,
         cancelToken: cancelToken,
-        onProgress: (p) {
-          task.progress = p.clamp(0.0, 1.0);
-          notifyListeners();
-        },
       );
     } finally {
       task.isMerging = false;
       notifyListeners();
+    }
+  }
+
+  /// 合并 TS → MP4 进度：ffmpeg concat -c copy 不提供 time= 进度（totalMs=0），
+  /// 这里按「输出文件大小 / 输入分片总大小」轮询估算，避免进度只有 0/100。
+  Future<void> _mergeTsWithProgress({
+    required DownloadTask task,
+    required List<String> tsPaths,
+    required String outputPath,
+    FfmpegCancelToken? cancelToken,
+  }) async {
+    int expected = 0;
+    for (final path in tsPaths) {
+      try {
+        expected += await File(path).length();
+      } catch (_) {}
+    }
+    Timer? timer;
+    double last = 0;
+    if (expected > 0) {
+      timer = Timer.periodic(const Duration(milliseconds: 250), (_) async {
+        try {
+          final f = File(outputPath);
+          if (!await f.exists()) return;
+          final size = await f.length();
+          final double p = (size / expected).clamp(0.0, 1.0).toDouble();
+          if (p > last + 0.01) {
+            last = p;
+            task.progress = p;
+            notifyListeners();
+          }
+        } catch (_) {}
+      });
+    }
+    try {
+      await FfmpegEncoder.mergeTs(
+        tsPaths: tsPaths,
+        outputPath: outputPath,
+        cancelToken: cancelToken,
+      );
+    } finally {
+      timer?.cancel();
     }
   }
 
@@ -769,14 +808,11 @@ class DownloadManager extends ChangeNotifier {
     _persist();
     notifyListeners();
     try {
-      await FfmpegEncoder.mergeTs(
+      await _mergeTsWithProgress(
+        task: task,
         tsPaths: segPaths,
         outputPath: tmpPath,
         cancelToken: cancelToken,
-        onProgress: (p) {
-          task.progress = p.clamp(0.0, 1.0);
-          notifyListeners();
-        },
       );
       final tmp = File(tmpPath);
       if (!await tmp.exists() || await tmp.length() == 0) {
