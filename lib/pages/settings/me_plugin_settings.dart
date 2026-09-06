@@ -81,7 +81,7 @@ class _PluginSettingsState extends State<PluginSettings> {
       await io.File('${dir.path}/$safe').writeAsString(res.data ?? '');
       await MePagePluginManager().reload();
       if (mounted) setState(() {});
-      App.rootContext.showMessage(message: t.switchSuccessful);
+      App.rootContext.showMessage(message: '${t.imported}: $safe');
     } catch (e) {
       App.rootContext.showMessage(
         message: e.toString(),
@@ -103,7 +103,7 @@ class _PluginSettingsState extends State<PluginSettings> {
       await io.File(file.path).copy('${dir.path}/$safe');
       await MePagePluginManager().reload();
       if (mounted) setState(() {});
-      App.rootContext.showMessage(message: t.switchSuccessful);
+      App.rootContext.showMessage(message: '${t.imported}: $safe');
     } catch (e) {
       App.rootContext.showMessage(
         message: e.toString(),
@@ -138,7 +138,7 @@ class _PluginSettingsState extends State<PluginSettings> {
   Future<void> _reload() async {
     await MePagePluginManager().reload();
     if (mounted) setState(() {});
-    App.rootContext.showMessage(message: t.switchSuccessful);
+    App.rootContext.showMessage(message: t.loadSuccess);
   }
 
   Future<void> _delete(MePagePlugin p) async {
