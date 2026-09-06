@@ -2341,6 +2341,8 @@ class PluginThreadPage extends StatefulWidget {
 
 class _PluginThreadPageState extends State<PluginThreadPage> {
   String _title = '';
+  String _pageUrl = '';
+  List<MapEntry<String, String>> _fields = const [];
   final List<_ThreadPost> _posts = [];
   bool _loading = false;
   bool _hasMore = true;
@@ -2370,6 +2372,20 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         final map = _asMap2(m);
         if (map['type'] != 'threadPage') continue;
         if (_title.isEmpty) _title = map['title']?.toString() ?? '';
+        if (_pageUrl.isEmpty) _pageUrl = map['url']?.toString() ?? '';
+        final rawFields = map['fields'];
+        if (rawFields is List) {
+          final parsedFields = <MapEntry<String, String>>[];
+          for (final rf in rawFields) {
+            final rfm = _asMap2(rf);
+            final k = rfm['k']?.toString() ?? '';
+            final v = rfm['v']?.toString() ?? '';
+            if (k.isNotEmpty && v.isNotEmpty) {
+              parsedFields.add(MapEntry(k, v));
+            }
+          }
+          if (parsedFields.isNotEmpty) _fields = parsedFields;
+        }
         hasMore = map['hasMore'] == true;
         final posts = map['posts'];
         if (posts is List) {
@@ -2445,6 +2461,17 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
+      actions: [
+        Tooltip(
+          message: t.openInBrowser,
+          child: IconButton(
+            icon: const Icon(Icons.open_in_browser_outlined),
+            onPressed: _pageUrl.isEmpty
+                ? null
+                : () => launchUrlString(_pageUrl),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2457,6 +2484,10 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     }
     final children = <Widget>[
       _header(cs),
+      if (_fields.isNotEmpty) ...[
+        _fieldsPanel(cs),
+        const SizedBox(height: 4),
+      ],
       if (_posts.isEmpty)
         Padding(
           padding: const EdgeInsets.only(top: 40),
@@ -2610,6 +2641,55 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
+  /// 分类信息面板（类别/原因或相关线索等，Discuz 分类信息表）
+  Widget _fieldsPanel(ColorScheme cs) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < _fields.length; i++) ...[
+            if (i > 0)
+              Divider(
+                height: 12,
+                color: cs.outlineVariant.withValues(alpha: 0.4),
+              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 90,
+                  child: Text(
+                    _fields[i].key,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _richText(
+                    _fields[i].value,
+                    fontSize: 13.5,
+                    height: 1.5,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   /// 单楼层卡片：头像/作者/时间/楼层 + 富文本内容 + 图片预览
   Widget _floorCard(BuildContext context, ColorScheme cs, _ThreadPost post) {
     final isFirst = _posts.indexOf(post) == 0;
@@ -2644,12 +2724,16 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     _ThreadPost post,
     bool isFirst,
   ) {
+    // 楼主楼层主题页未内置头像时回退列表行头像
+    final avatarUrl = post.avatarUrl.isNotEmpty
+        ? post.avatarUrl
+        : (isFirst ? (widget.row?['avatarUrl']?.toString() ?? '') : '');
     return Row(
       children: [
-        if (post.avatarUrl.isNotEmpty)
+        if (avatarUrl.isNotEmpty)
           ClipOval(
             child: _siteImage(
-              post.avatarUrl,
+              avatarUrl,
               width: 38,
               height: 38,
               plugin: widget.plugin,
