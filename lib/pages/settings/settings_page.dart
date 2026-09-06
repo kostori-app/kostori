@@ -44,6 +44,7 @@ import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
+import 'package:kostori/pages/me_page_plugins.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';

@@ -1922,6 +1922,7 @@ dropJsPluginHint: Drop a .js plugin file here to install
 mustBeJs: Only .js files are supported
 pluginSourceList: Plugin source list
 pluginRepoEmpty: No plugin repo configured yet. Tap the top-right to add one.
+onlyEnabled: Show enabled only
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline
 activityHeatmapTitle: Activity heatmap

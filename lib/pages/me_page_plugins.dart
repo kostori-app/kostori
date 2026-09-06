@@ -57,6 +57,7 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
       final plugins = MePagePluginManager().all();
       final cards = <Widget>[];
       for (final p in plugins) {
+        if (!MePagePluginManager().isEnabled(p.key)) continue;
         // 带导航的插件：进入“导航壳”浏览，不在 Me 页直接铺开 render()
         if (p.hasNav) {
           cards.add(_PluginShellEntry(plugin: p));
@@ -978,7 +979,14 @@ class _PluginShellEntry extends StatelessWidget {
 class PluginShellPage extends StatefulWidget {
   final MePagePlugin plugin;
 
-  const PluginShellPage({super.key, required this.plugin});
+  /// 打开时定位的初始页 key（如 'login'），null 时取第一个导航页
+  final String? initialPageKey;
+
+  const PluginShellPage({
+    super.key,
+    required this.plugin,
+    this.initialPageKey,
+  });
 
   @override
   State<PluginShellPage> createState() => _PluginShellPageState();
@@ -995,7 +1003,15 @@ class _PluginShellPageState extends State<PluginShellPage> {
     super.initState();
     _navFuture = widget.plugin.nav().then((nav) {
       _nav = nav;
-      if (_nav.isNotEmpty) _pageFutures.add(widget.plugin.page(_nav[0]['key']));
+      int start = 0;
+      if (widget.initialPageKey != null) {
+        final found = nav.indexWhere(
+          (n) => n['key'] == widget.initialPageKey,
+        );
+        if (found >= 0) start = found;
+      }
+      _index = start;
+      if (_nav.isNotEmpty) _pageFutures.add(widget.plugin.page(_nav[_index]['key']));
       return nav;
     });
   }

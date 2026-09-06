@@ -5635,6 +5635,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No plugin repo configured yet. Tap the top-right to add one.'
 	String get pluginRepoEmpty => 'No plugin repo configured yet. Tap the top-right to add one.';
 
+	/// en: 'Show enabled only'
+	String get onlyEnabled => 'Show enabled only';
+
 	/// en: 'No records yet'
 	String get statsTimelineNoRecords => 'No records yet';
 
@@ -9245,6 +9248,7 @@ extension on Translations {
 			'mustBeJs' => 'Only .js files are supported',
 			'pluginSourceList' => 'Plugin source list',
 			'pluginRepoEmpty' => 'No plugin repo configured yet. Tap the top-right to add one.',
+			'onlyEnabled' => 'Show enabled only',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
 			'activityHeatmapTitle' => 'Activity heatmap',
@@ -9385,9 +9389,9 @@ extension on Translations {
 			'profileCopiedToClipboard' => 'Profile copied to clipboard',
 			'switchedToProfile' => ({required Object name}) => 'Switched to ${name}',
 			'defaultAssistant' => 'Default',
-			'conciseReplies' => 'Concise replies',
 			_ => null,
 		} ?? switch (path) {
+			'conciseReplies' => 'Concise replies',
 			'useMarkdownFormatting' => 'Use Markdown formatting',
 			'codeFirst' => 'Code first',
 			'actionableAdvice' => 'Give actionable advice',

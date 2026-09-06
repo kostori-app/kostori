@@ -10,8 +10,24 @@ class PluginSettings extends StatefulWidget {
 
 class _PluginSettingsState extends State<PluginSettings> {
   late final TextEditingController _urlCtrl;
+  final TextEditingController _searchCtrl = TextEditingController();
   bool _dragOver = false;
+  String _search = '';
+  bool _onlyEnabled = false;
 
+  List<MePagePlugin> _visible(List<MePagePlugin> all) {
+    final manager = MePagePluginManager();
+    var list = all.where((p) {
+      if (_onlyEnabled && !manager.isEnabled(p.key)) return false;
+      if (_search.trim().isEmpty) return true;
+      final q = _search.toLowerCase();
+      return p.name.toLowerCase().contains(q) ||
+          p.key.toLowerCase().contains(q) ||
+          p.description.toLowerCase().contains(q);
+    }).toList();
+    list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return list;
+  }
   /// 从 .js 直链添加单个插件（与番剧源“添加源”一致）
   Future<void> _addPluginByUrl(String url) async {
     final trimmed = url.trim();
@@ -99,6 +115,7 @@ class _PluginSettingsState extends State<PluginSettings> {
   @override
   void dispose() {
     _urlCtrl.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -179,6 +196,7 @@ const plugin = {
   @override
   Widget build(BuildContext context) {
     final plugins = MePagePluginManager().all();
+    final visible = _visible(plugins);
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(
@@ -318,8 +336,63 @@ const plugin = {
             ),
           ),
         ),
+        // 筛选条（与番剧源设置页一致：搜索 + 只显示已启用）
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _searchCtrl,
+                  decoration: InputDecoration(
+                    hintText: t.search,
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _search.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _search = '');
+                            },
+                          ),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  ),
+                  onChanged: (v) => setState(() => _search = v),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      '${visible.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      t.onlyEnabled,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    CustomSwitch(
+                      value: _onlyEnabled,
+                      onChanged: (v) => setState(() => _onlyEnabled = v),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
         // 每个插件一个卡片（对齐番源卡片风格）
-        if (plugins.isEmpty)
+        if (visible.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
@@ -336,13 +409,34 @@ const plugin = {
         else
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, i) => _PluginSliverCard(
-                key: ValueKey(plugins[i].key),
-                plugin: plugins[i],
-                edit: _edit,
-                delete: _delete,
-              ),
-              childCount: plugins.length,
+              (context, i) {
+                final p = visible[i];
+                final manager = MePagePluginManager();
+                return _PluginSliverCard(
+                  key: ValueKey(p.key),
+                  plugin: p,
+                  enabled: manager.isEnabled(p.key),
+                  onToggle: (v) {
+                    manager.setEnabled(p.key, v);
+                    if (mounted) setState(() {});
+                  },
+                  login: p.hasLogin
+                      ? () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => PluginShellPage(
+                                plugin: p,
+                                initialPageKey: 'login',
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
+                  edit: _edit,
+                  delete: _delete,
+                );
+              },
+              childCount: visible.length,
             ),
           ),
         SliverPadding(
@@ -374,13 +468,19 @@ class _PluginSliverCard extends StatelessWidget {
   const _PluginSliverCard({
     super.key,
     required this.plugin,
+    required this.enabled,
+    required this.onToggle,
     required this.edit,
     required this.delete,
+    this.login,
   });
 
   final MePagePlugin plugin;
+  final bool enabled;
+  final ValueChanged<bool> onToggle;
   final Future<void> Function(MePagePlugin) edit;
   final Future<void> Function(MePagePlugin) delete;
+  final VoidCallback? login;
 
   @override
   Widget build(BuildContext context) {
@@ -410,28 +510,47 @@ class _PluginSliverCard extends StatelessWidget {
                   ),
               ],
             ),
-            trailing: IconButton(
-              visualDensity: VisualDensity.compact,
-              iconSize: 18,
-              tooltip: t.delete,
-              icon: Icon(
-                Icons.delete_outline,
-                size: 18,
-                color: colorScheme.error,
-              ),
-              onPressed: () => delete(plugin),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 18,
+                  tooltip: t.delete,
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: colorScheme.error,
+                  ),
+                  onPressed: () => delete(plugin),
+                ),
+                const SizedBox(width: 4),
+                CustomSwitch(
+                  value: enabled,
+                  onChanged: onToggle,
+                ),
+              ],
             ),
           ),
           const Divider(height: 1, indent: 16, endIndent: 16),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: IconTileButton(
-                icon: const Icon(Icons.edit_outlined),
-                label: t.edit,
-                onTap: () => edit(plugin),
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (login != null)
+                  IconTileButton(
+                    icon: const Icon(Icons.login),
+                    label: t.login,
+                    onTap: login,
+                  ),
+                IconTileButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  label: t.edit,
+                  onTap: () => edit(plugin),
+                ),
+              ],
             ),
           ),
         ],

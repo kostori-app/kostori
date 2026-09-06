@@ -1904,6 +1904,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get mustBeJs => '仅支持 .js 文件';
 	@override String get pluginSourceList => '插件源列表';
 	@override String get pluginRepoEmpty => '还没有配置插件源仓库，点右上角添加';
+	@override String get onlyEnabled => '只显示已启用';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
 	@override String get activityHeatmapTitle => '活跃热力图';
@@ -4402,6 +4403,7 @@ extension on TranslationsZhCn {
 			'mustBeJs' => '仅支持 .js 文件',
 			'pluginSourceList' => '插件源列表',
 			'pluginRepoEmpty' => '还没有配置插件源仓库，点右上角添加',
+			'onlyEnabled' => '只显示已启用',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
 			'activityHeatmapTitle' => '活跃热力图',
@@ -4542,9 +4544,9 @@ extension on TranslationsZhCn {
 			'profileCopiedToClipboard' => '档案已复制到剪贴板',
 			'switchedToProfile' => ({required Object name}) => '已切换到 ${name}',
 			'defaultAssistant' => '默认',
-			'conciseReplies' => '简洁回复',
 			_ => null,
 		} ?? switch (path) {
+			'conciseReplies' => '简洁回复',
 			'useMarkdownFormatting' => '使用 Markdown 排版',
 			'codeFirst' => '代码优先',
 			'actionableAdvice' => '给出可执行建议',

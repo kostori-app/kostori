@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
@@ -63,6 +64,20 @@ class MePagePlugin {
     try {
       final res = JsEngine().runCode(
         "Array.isArray(globalThis.__me_plugins[${_jsStr(key)}]?.nav)",
+      );
+      return res == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 是否声明了登录能力（login 为函数，或导航里有 key 为 login 的页）
+  bool get hasLogin {
+    try {
+      final res = JsEngine().runCode(
+        "typeof globalThis.__me_plugins[${_jsStr(key)}]?.login === 'function'"
+        " || (Array.isArray(globalThis.__me_plugins[${_jsStr(key)}]?.nav)"
+        "    && globalThis.__me_plugins[${_jsStr(key)}].nav.some(n => n && n.key === 'login'))",
       );
       return res == true;
     } catch (_) {
@@ -157,6 +172,24 @@ class MePagePluginManager with ChangeNotifier, Init {
   List<MePagePlugin> all() => List.from(_plugins);
 
   bool get isEmpty => _plugins.isEmpty;
+
+  /// 插件是否启用（未记录默认启用）
+  bool isEnabled(String key) {
+    final map = appdata.implicitData['mePluginEnabled'];
+    if (map is Map) return map[key] != false;
+    return true;
+  }
+
+  /// 设置启用/禁用并持久化、通知
+  Future<void> setEnabled(String key, bool enabled) async {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData['mePluginEnabled'] as Map? ?? {},
+    );
+    map[key] = enabled;
+    appdata.implicitData['mePluginEnabled'] = map;
+    appdata.writeImplicitData();
+    notifyListeners();
+  }
 
   @override
   @protected

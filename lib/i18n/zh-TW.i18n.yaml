@@ -1923,6 +1923,7 @@ dropJsPluginHint: 把 .js 插件檔案拖到這裡即可安裝
 mustBeJs: 僅支援 .js 檔案
 pluginSourceList: 插件源列表
 pluginRepoEmpty: 還沒有設定插件源倉庫，點右上角新增
+onlyEnabled: 只顯示已啟用
 statsTimelineNoRecords: "還沒有任何紀錄"
 statsAllTimelineTitle: 全部時間軸
 activityHeatmapTitle: 活躍熱力圖
