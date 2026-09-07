@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -40,6 +41,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   Map<CharacterActor, bool> selectedCharacterItems = {};
 
   bool useBriefMode = false;
+  String layoutMode = 'detailed';
   bool displayLabels = false;
   bool multiSelectMode = false;
   int? fixedCrossAxisCount;
@@ -97,8 +99,12 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   @override
   void initState() {
     super.initState();
-    // 布局偏好持久化
+    // 布局偏好持久化（简洁/详细/瀑布流）
     useBriefMode = appdata.implicitData['bangumiSearchBrief'] as bool? ?? false;
+    layoutMode =
+        appdata.implicitData['bangumiSearchLayout'] as String? ??
+        (useBriefMode ? 'brief' : 'detailed');
+    useBriefMode = layoutMode == 'brief';
     final perRow = appdata.implicitData['bangumiCardPerRow'];
     if (perRow != null && perRow.toString().isNotEmpty) {
       fixedCrossAxisCount = int.tryParse(perRow.toString());
@@ -124,13 +130,73 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     super.dispose();
   }
 
-  /// 切换卡片布局（简要/详情），并持久化偏好
-  void _toggleBriefMode() {
+  /// 切换卡片布局（简洁/详细/瀑布流），并持久化偏好
+  void _setLayout(String mode) {
     setState(() {
-      useBriefMode = !useBriefMode;
+      layoutMode = mode;
+      useBriefMode = mode == 'brief';
       appdata.implicitData['bangumiSearchBrief'] = useBriefMode;
+      appdata.implicitData['bangumiSearchLayout'] = mode;
       appdata.writeImplicitData();
     });
+  }
+
+  /// 布局模式胶囊：简洁 / 详细 / 瀑布流
+  Widget _layoutModeBar() {
+    final cs = Theme.of(context).colorScheme;
+    final options = [
+      ('brief', t.brief),
+      ('detailed', t.detailed),
+      ('masonry', t.masonry),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (key, label) in options)
+            GestureDetector(
+              onTap: () => _setLayout(key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: layoutMode == key
+                      ? cs.surface
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: layoutMode == key
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.toOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: layoutMode == key
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                    color: layoutMode == key
+                        ? cs.onSurface
+                        : cs.onSurface.toOpacity(0.45),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<List<BangumiItem>> bangumiSearch() async {
@@ -601,71 +667,104 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
       });
     }
 
+    Widget subjectTile(int index, {bool masonry = false}) {
+      final item = bangumiItems[index];
+      final isSelected = selectedBangumiItems[item] ?? false;
+      final Widget bangumi;
+      if (layoutMode == 'detailed') {
+        bangumi = BangumiDetailedCard(
+          bangumiItem: item,
+          heroTag: 'search',
+          onTap: multiSelectMode ? (a) => onTap(a) : null,
+          onLongPressed: (a) => onLongPressed(a),
+        );
+      } else {
+        bangumi = BangumiBriefCard(
+          bangumiItem: item,
+          heroTag: 'search',
+          masonryFactor: masonry ? 1.35 : null,
+          onTap: multiSelectMode ? (a) => onTap(a) : null,
+          onLongPressed: (a) => onLongPressed(a),
+        );
+      }
+      if (selectedBangumiItems.isEmpty) return bangumi;
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer.toOpacity(0.72)
+              : null,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(4),
+        child: bangumi,
+      );
+    }
+
+    Widget characterTile(int index) {
+      final item = characterItmes[index];
+      final isSelected = selectedCharacterItems[item] ?? false;
+      final character = BangumiCharacterCard(
+        character: item,
+        heroTag: 'search',
+        isCharacter: defaultCategory != 'person',
+        onTap: multiSelectMode ? (a) => onTap(a) : null,
+        onLongPressed: (a) => onLongPressed(a),
+      );
+      if (selectedCharacterItems.isEmpty) return character;
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer.toOpacity(0.72)
+              : null,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(4),
+        child: character,
+      );
+    }
+
+    // 角色/人物搜索保持网格
+    if (!subjectSearch) {
+      return SliverGrid(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => characterTile(index),
+          childCount: characterItmes.length,
+        ),
+        gridDelegate: SliverGridDelegateWithBangumiItems(
+          true,
+          fixedCrossAxisCount: fixedCrossAxisCount,
+        ),
+      );
+    }
+
+    // 瀑布流（仅条目搜索；样式与 bangumi 主页瀑布流一致，多选沿用选中高亮）
+    if (layoutMode == 'masonry') {
+      final width = MediaQuery.of(context).size.width;
+      final perRow = fixedCrossAxisCount;
+      final cols =
+          perRow ?? (width / 140).floor().clamp(2, 6);
+      return SliverMasonryGrid.count(
+        crossAxisCount: cols,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childCount: bangumiItems.length,
+        itemBuilder: (context, index) => subjectTile(index, masonry: true),
+      );
+    }
+
     return SliverGrid(
       delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (subjectSearch) {
-            final item = bangumiItems[index];
-            final isSelected = selectedBangumiItems[item] ?? false;
-            final bangumi = useBriefMode
-                ? BangumiBriefCard(
-                    bangumiItem: item,
-                    heroTag: 'search',
-                    onTap: multiSelectMode ? (a) => onTap(a) : null,
-                    onLongPressed: (a) => onLongPressed(a),
-                  )
-                : BangumiDetailedCard(
-                    bangumiItem: item,
-                    heroTag: 'search',
-                    onTap: multiSelectMode ? (a) => onTap(a) : null,
-                    onLongPressed: (a) => onLongPressed(a),
-                  );
-
-            if (selectedBangumiItems.isEmpty) return bangumi;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.secondaryContainer.toOpacity(0.72)
-                    : null,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.all(4),
-              child: bangumi,
-            );
-          } else {
-            final item = characterItmes[index];
-            final isSelected = selectedCharacterItems[item] ?? false;
-            final character = BangumiCharacterCard(
-              character: item,
-              heroTag: 'search',
-              isCharacter: defaultCategory != 'person',
-              onTap: multiSelectMode ? (a) => onTap(a) : null,
-              onLongPressed: (a) => onLongPressed(a),
-            );
-
-            if (selectedCharacterItems.isEmpty) return character;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.secondaryContainer.toOpacity(0.72)
-                    : null,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.all(4),
-              child: character,
-            );
-          }
-        },
-        childCount: subjectSearch ? bangumiItems.length : characterItmes.length,
+        (context, index) => subjectTile(index),
+        childCount: bangumiItems.length,
       ),
       gridDelegate: SliverGridDelegateWithBangumiItems(
-        subjectSearch ? useBriefMode : true,
+        layoutMode == 'brief',
         fixedCrossAxisCount: fixedCrossAxisCount,
       ),
     );
@@ -1267,12 +1366,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               tooltip: t.selectTime,
               icon: Icon(Icons.calendar_today),
             ),
-          if (subjectSearch)
-            IconButton(
-              onPressed: _toggleBriefMode,
-              tooltip: t.switchLayout,
-              icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
-            ),
+          if (subjectSearch) _layoutModeBar(),
           if (subjectSearch)
             PopupMenuButton<String>(
               icon: Row(
@@ -1389,12 +1483,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             tooltip: t.invertSelection,
             icon: Icon(Icons.flip),
           ),
-          if (subjectSearch)
-            IconButton(
-              onPressed: _toggleBriefMode,
-              tooltip: t.switchLayout,
-              icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
-            ),
+          if (subjectSearch) _layoutModeBar(),
         ],
       ),
     );
