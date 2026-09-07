@@ -41,6 +41,7 @@ class MePagePluginModules extends ConsumerStatefulWidget {
 
 class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
   List<Widget> _cards = [];
+  List<MePagePlugin> _navPlugins = [];
   bool _loaded = false;
 
   @override
@@ -54,11 +55,12 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
       await MePagePluginManager().ensureInit();
       final plugins = MePagePluginManager().all();
       final cards = <Widget>[];
+      final navPlugins = <MePagePlugin>[];
       for (final p in plugins) {
         if (!MePagePluginManager().isEnabled(p.key)) continue;
-        // 带导航的插件：进入“导航壳”浏览，不在 Me 页直接铺开 render()
+        // 带导航的插件：横向瓦片入口；无导航的仍在下方直接铺 render()
         if (p.hasNav) {
-          cards.add(_PluginShellEntry(plugin: p));
+          navPlugins.add(p);
           continue;
         }
         final modules = await p.render();
@@ -70,6 +72,7 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
       if (mounted) {
         setState(() {
           _cards = cards;
+          _navPlugins = navPlugins;
           _loaded = true;
         });
       }
@@ -140,24 +143,49 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
               ),
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: _cards.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text(
-                        t.noMePagePlugin,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurfaceVariant.toOpacity(0.7),
+            if (_navPlugins.isNotEmpty) ...[
+              // 导航型插件：紧凑横向瓦片（未来几十个也能横向滑动，不把页面撑长）
+              SizedBox(
+                height: 96,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  itemCount: _navPlugins.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) => _PluginShellEntry(
+                    plugin: _navPlugins[i],
+                  ),
+                ),
+              ),
+            ],
+            if (_cards.isNotEmpty || _navPlugins.isEmpty) ...[
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  _navPlugins.isNotEmpty ? 2 : 6,
+                  16,
+                  6,
+                ),
+                child: _cards.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Text(
+                          t.noMePagePlugin,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant.toOpacity(0.7),
+                          ),
                         ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: _cards,
                       ),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _cards,
-                    ),
-            ),
+              ),
+            ],
           ],
         ),
       ),

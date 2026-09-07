@@ -91,11 +91,11 @@ class _PluginShellEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return SizedBox(
+      width: 108,
       child: Material(
         color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
@@ -106,25 +106,22 @@ class _PluginShellEntry extends StatelessWidget {
             );
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.widgets_outlined, size: 20, color: cs.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    plugin.name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                Icon(Icons.widgets_outlined, size: 22, color: cs.primary),
+                const SizedBox(height: 6),
+                Text(
+                  plugin.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Text(
-                  t.open,
-                  style: TextStyle(fontSize: 13, color: cs.primary),
-                ),
-                Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
               ],
             ),
           ),
