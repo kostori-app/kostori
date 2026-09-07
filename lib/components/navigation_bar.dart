@@ -405,26 +405,29 @@ class NaviPaneState extends State<NaviPane>
       child: SizedBox(
         height: _kBottomBarHeight,
         child: _frostedPill(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (
-              var index = 0;
-              index < widget.paneItems.length;
-              index++
-            ) ...[
-              if (index > 0) const SizedBox(width: 4),
-              _SingleBottomNaviWidget(
-                enabled: currentPage == index,
-                entry: widget.paneItems[index],
-                onTap: () {
-                  updatePage(index);
-                },
-                key: ValueKey(index),
-              ),
-            ],
-          ],
-        ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (
+                  var index = 0;
+                  index < widget.paneItems.length;
+                  index++
+                ) ...[
+                  if (index > 0) const SizedBox(width: 8),
+                  _SingleBottomNaviWidget(
+                    enabled: currentPage == index,
+                    entry: widget.paneItems[index],
+                    onTap: () {
+                      updatePage(index);
+                    },
+                    key: ValueKey(index),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
