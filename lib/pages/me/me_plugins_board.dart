@@ -26,20 +26,10 @@ Widget _siteImage(
 }
 
 /// 若页面内容本身就是 board 模块则直接渲染板块内容
-Widget _contentOrBoard(
-  MePagePlugin plugin,
-  List<dynamic> modules, {
-  VoidCallback? onEdgeNext,
-  VoidCallback? onEdgePrev,
-}) {
+Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
   for (final m in modules) {
     if (_asMap2(m)['type'] == 'board') {
-      return PluginBoardContent(
-        plugin: plugin,
-        metaModules: modules,
-        onEdgeNext: onEdgeNext,
-        onEdgePrev: onEdgePrev,
-      );
+      return PluginBoardContent(plugin: plugin, metaModules: modules);
     }
   }
   return _PluginModulesList(plugin: plugin, modules: modules);
@@ -94,7 +84,6 @@ class _ForumBoardRow extends StatelessWidget {
         'forum_${plugin.key}_${(tidObj?.toString().isNotEmpty ?? false) ? tidObj.toString() : identityHashCode(item)}';
     String heroTagFor(int i) => '${heroBase}_$i';
 
-
     Widget avatarWidget;
     if (avatar.isNotEmpty) {
       avatarWidget = ClipOval(
@@ -104,11 +93,7 @@ class _ForumBoardRow extends StatelessWidget {
       avatarWidget = CircleAvatar(
         radius: 20,
         backgroundColor: cs.surfaceContainerHighest,
-        child: Icon(
-          Icons.person_outline,
-          size: 20,
-          color: cs.onSurfaceVariant,
-        ),
+        child: Icon(Icons.person_outline, size: 20, color: cs.onSurfaceVariant),
       );
     }
 
@@ -117,7 +102,7 @@ class _ForumBoardRow extends StatelessWidget {
       if (images.isEmpty) return;
       final url = images[index];
       BangumiWidget.showImagePreview(
-        context: context,
+        context: App.rootContext,
         url: url,
         title: title.isEmpty ? plugin.name : title,
         imageProvider: _siteProvider(url, plugin: plugin),
@@ -210,12 +195,18 @@ class _ForumBoardRow extends StatelessWidget {
                         onTap: () => preview(i),
                         child: Hero(
                           tag: heroTag,
-                          flightShuttleBuilder: (flightContext, animation,
-                              direction, fromContext, toContext) {
-                            return direction == HeroFlightDirection.pop
-                                ? (fromContext.widget as Hero).child
-                                : (toContext.widget as Hero).child;
-                          },
+                          flightShuttleBuilder:
+                              (
+                                flightContext,
+                                animation,
+                                direction,
+                                fromContext,
+                                toContext,
+                              ) {
+                                return direction == HeroFlightDirection.pop
+                                    ? (fromContext.widget as Hero).child
+                                    : (toContext.widget as Hero).child;
+                              },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: _siteImage(
@@ -236,8 +227,11 @@ class _ForumBoardRow extends StatelessWidget {
                 Row(
                   children: [
                     if (views.isNotEmpty) ...[
-                      Icon(Icons.visibility_outlined,
-                          size: 13, color: cs.onSurfaceVariant),
+                      Icon(
+                        Icons.visibility_outlined,
+                        size: 13,
+                        color: cs.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         views,
@@ -249,8 +243,11 @@ class _ForumBoardRow extends StatelessWidget {
                     ],
                     if (replies.isNotEmpty) ...[
                       const SizedBox(width: 12),
-                      Icon(Icons.mode_comment_outlined,
-                          size: 13, color: cs.onSurfaceVariant),
+                      Icon(
+                        Icons.mode_comment_outlined,
+                        size: 13,
+                        color: cs.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         replies,
@@ -270,6 +267,7 @@ class _ForumBoardRow extends StatelessWidget {
     );
   }
 }
+
 /// 板块内容（可内联进插件页，也可放进弹层页）：
 /// 分类 Tab + 列表 + 页码跳转
 class PluginBoardContent extends StatefulWidget {
@@ -278,23 +276,18 @@ class PluginBoardContent extends StatefulWidget {
   /// 外层（插件导航壳）已经取到的板块 meta 模块，避免再按写死的 'board' 拉一次
   final List<dynamic>? metaModules;
 
-  /// 分类滑到最右/最左继续滑时，交给外层导航切页
-  final VoidCallback? onEdgeNext;
-  final VoidCallback? onEdgePrev;
-
   const PluginBoardContent({
     super.key,
     required this.plugin,
     this.metaModules,
-    this.onEdgeNext,
-    this.onEdgePrev,
   });
 
   @override
   State<PluginBoardContent> createState() => _PluginBoardContentState();
 }
 
-class _PluginBoardContentState extends State<PluginBoardContent> {
+class _PluginBoardContentState extends State<PluginBoardContent>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _tabs = [];
   String _listPage = 'boardList';
   int _index = 0;
@@ -310,20 +303,17 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   final Map<String, int> _tabTotal = {};
 
   final ScrollController _scroll = ScrollController();
-  PageController? _tabController;
-  double _edgeOverscroll = 0;
+  TabController? _tabsCtrl;
 
   // 分页 / 连续滑动两种模式（连续 = 滚动到末尾自动加载下一页，对齐 anime_list 双模式）
   bool _continuous = false;
   bool _appending = false;
 
-  String get _tabKey => _index < _tabs.length
-      ? (_tabs[_index]['key']?.toString() ?? '')
-      : '';
+  String get _tabKey =>
+      _index < _tabs.length ? (_tabs[_index]['key']?.toString() ?? '') : '';
 
-  String _tabKeyOf(int i) => i < _tabs.length
-      ? (_tabs[i]['key']?.toString() ?? '')
-      : '';
+  String _tabKeyOf(int i) =>
+      i < _tabs.length ? (_tabs[i]['key']?.toString() ?? '') : '';
 
   String get _modeSettingKey => 'mePluginListMode_${widget.plugin.key}';
 
@@ -331,14 +321,13 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   void initState() {
     super.initState();
     _continuous = appdata.settings[_modeSettingKey] == true;
-    _tabController = PageController();
     _loadMeta();
   }
 
   @override
   void dispose() {
     _scroll.dispose();
-    _tabController?.dispose();
+    _tabsCtrl?.dispose();
     super.dispose();
   }
 
@@ -351,6 +340,11 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       final raw = mm['tabs'];
       if (raw is List) _tabs = raw.map((e) => _asMap2(e)).toList();
       _listPage = mm['page']?.toString() ?? 'boardList';
+    }
+    if (_tabs.isNotEmpty) {
+      _tabsCtrl?.dispose();
+      _tabsCtrl = TabController(length: _tabs.length, vsync: this)
+        ..addListener(_onTabChanged);
     }
     setState(() {
       _metaLoaded = true;
@@ -368,10 +362,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     });
     try {
       final parsed = _parseBoard(
-        await widget.plugin.page(
-          _listPage,
-          {'tab': tabKey, 'page': page},
-        ),
+        await widget.plugin.page(_listPage, {'tab': tabKey, 'page': page}),
         page,
       );
       if (!mounted || token != _reqToken) return;
@@ -455,21 +446,19 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   /// 顶部胶囊点击：动画切到对应分类页
   void _selectTab(int i) {
     if (i < 0 || i >= _tabs.length) return;
-    final c = _tabController;
-    if (c != null && c.hasClients) {
-      c.animateToPage(
-        i,
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOutCubic,
-      );
+    final c = _tabsCtrl;
+    if (c != null) {
+      c.animateTo(i);
       return;
     }
     _switchTo(i);
   }
 
-  /// 分类 PageView 停稳
-  void _onTabPageChanged(int i) {
-    _switchTo(i);
+  /// TabController 停稳后的同步（分类滑动落点）
+  void _onTabChanged() {
+    final c = _tabsCtrl;
+    if (c == null || !mounted || c.indexIsChanging) return;
+    _switchTo(c.index);
   }
 
   void _enterCurrentTab() {
@@ -541,10 +530,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     setState(() {});
     try {
       final parsed = _parseBoard(
-        await widget.plugin.page(
-          _listPage,
-          {'tab': key, 'page': next},
-        ),
+        await widget.plugin.page(_listPage, {'tab': key, 'page': next}),
         next,
       );
       if (!mounted || token != _reqToken) {
@@ -619,16 +605,11 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     return Stack(
       children: [
         Positioned.fill(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: _onCategoryScroll,
-            child: PageView(
-              controller: _tabController,
-              onPageChanged: _onTabPageChanged,
-              children: [
-                for (var i = 0; i < _tabs.length; i++)
-                  _categoryPane(i),
-              ],
-            ),
+          child: ExtendedTabBarView(
+            controller: _tabsCtrl,
+            children: [
+              for (var i = 0; i < _tabs.length; i++) _categoryPane(i),
+            ],
           ),
         ),
         if (_tabs.isNotEmpty)
@@ -642,9 +623,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: _CapsuleBar(
-                    keys: _tabs
-                        .map((t) => t['key']?.toString() ?? '')
-                        .toList(),
+                    keys: _tabs.map((t) => t['key']?.toString() ?? '').toList(),
                     titles: _tabs
                         .map((t) => t['title']?.toString() ?? '')
                         .toList(),
@@ -688,9 +667,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
               [
                 SpeedDialChild(
                   child: Icon(
-                    _continuous
-                        ? Icons.view_cozy_outlined
-                        : Icons.menu,
+                    _continuous ? Icons.view_cozy_outlined : Icons.menu,
                   ),
                   backgroundColor: cs.primaryContainer,
                   foregroundColor: cs.onPrimaryContainer,
@@ -714,32 +691,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     return _cache[_tabKey]?[_page] == null;
   }
 
-  /// 分类 PageView 的边缘滑动监听：滑到最右/最左仍继续拖时切到外层大导航
-  bool _onCategoryScroll(ScrollNotification n) {
-    if (n.metrics.axis != Axis.horizontal) return false;
-    if (n is ScrollStartNotification) {
-      _edgeOverscroll = 0;
-    } else if (n is OverscrollNotification) {
-      if (n.metrics.extentAfter == 0 && n.overscroll > 0) {
-        _edgeOverscroll = _edgeOverscroll > n.overscroll
-            ? _edgeOverscroll
-            : n.overscroll;
-      } else if (n.metrics.extentBefore == 0 && n.overscroll < 0) {
-        _edgeOverscroll = _edgeOverscroll < n.overscroll
-            ? _edgeOverscroll
-            : n.overscroll;
-      }
-    } else if (n is ScrollEndNotification) {
-      if (_edgeOverscroll > 36) {
-        widget.onEdgeNext?.call();
-      } else if (_edgeOverscroll < -36) {
-        widget.onEdgePrev?.call();
-      }
-      _edgeOverscroll = 0;
-    }
-    return false;
-  }
-
   /// 分类页内容（每个 tab 一页，状态从各自缓存取）
   Widget _categoryPane(int tabIdx) {
     final cs = Theme.of(context).colorScheme;
@@ -757,10 +708,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       if (active && _cache[_tabKey]?[1] == null && _error != null) {
         return Padding(
           padding: edge,
-          child: _PluginRetry(
-            message: _error!,
-            onRetry: _retryContinuous,
-          ),
+          child: _PluginRetry(message: _error!, onRetry: _retryContinuous),
         );
       }
       if (_cache[key]?[1] == null) {
@@ -776,10 +724,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       if (active && _error != null && cached == null) {
         return Padding(
           padding: edge,
-          child: _PluginRetry(
-            message: _error!,
-            onRetry: () => _go(page),
-          ),
+          child: _PluginRetry(message: _error!, onRetry: () => _go(page)),
         );
       }
       if (cached == null) {
@@ -794,10 +739,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       return Padding(
         padding: edge,
         child: Center(
-          child: Text(
-            t.noData,
-            style: TextStyle(color: cs.onSurfaceVariant),
-          ),
+          child: Text(t.noData, style: TextStyle(color: cs.onSurfaceVariant)),
         ),
       );
     }
@@ -842,4 +784,3 @@ class PluginBoardPage extends StatelessWidget {
     );
   }
 }
-

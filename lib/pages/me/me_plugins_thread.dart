@@ -207,10 +207,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         Padding(
           padding: const EdgeInsets.only(top: 40),
           child: Center(
-            child: Text(
-              t.noData,
-              style: TextStyle(color: cs.onSurfaceVariant),
-            ),
+            child: Text(t.noData, style: TextStyle(color: cs.onSurfaceVariant)),
           ),
         )
       else ...[
@@ -274,10 +271,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             ),
             child: Text(
               tag,
-              style: TextStyle(
-                fontSize: 12,
-                color: cs.onSecondaryContainer,
-              ),
+              style: TextStyle(fontSize: 12, color: cs.onSecondaryContainer),
             ),
           ),
         ],
@@ -352,10 +346,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
       children: [
         Icon(icon, size: 15, color: cs.onSurfaceVariant),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-        ),
+        Text(text, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
       ],
     );
   }
@@ -447,8 +438,11 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.workspace_premium_outlined,
-                  size: 18, color: cs.tertiary),
+              Icon(
+                Icons.workspace_premium_outlined,
+                size: 18,
+                color: cs.tertiary,
+              ),
               const SizedBox(width: 6),
               Text(
                 '最佳答案',
@@ -574,10 +568,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                   post.time,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: cs.onSurfaceVariant,
-                  ),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                 ),
             ],
           ),
@@ -601,11 +592,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  Widget _postContent(
-    BuildContext context,
-    ColorScheme cs,
-    _ThreadPost post,
-  ) {
+  Widget _postContent(BuildContext context, ColorScheme cs, _ThreadPost post) {
     if (post.blocks.isNotEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,11 +655,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  List<TextSpan> _linkSpans(
-    String text,
-    Color linkColor,
-    List<String> urls,
-  ) {
+  List<TextSpan> _linkSpans(String text, Color linkColor, List<String> urls) {
     final urlRe = RegExp(r'(?:https?://|magnet:\?)[^\s<>]+');
     final spans = <TextSpan>[];
     var pos = 0;
@@ -687,7 +670,12 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         url = url.substring(0, url.length - 1);
       }
       if (!urls.contains(url)) urls.add(url);
-      spans.add(TextSpan(text: url, style: TextStyle(color: linkColor)));
+      spans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(color: linkColor),
+        ),
+      );
       pos = m.start + m.group(0)!.length;
     }
     if (pos < text.length) {
@@ -709,8 +697,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (var i = 0; i < urls.length; i++) ...[
-                if (i > 0)
-                  Divider(height: 1, color: cs.outlineVariant),
+                if (i > 0) Divider(height: 1, color: cs.outlineVariant),
                 ListTile(
                   dense: true,
                   leading: const Icon(Icons.link),
@@ -752,9 +739,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           width: double.infinity,
           decoration: BoxDecoration(
             color: cs.surfaceContainer,
-            border: Border(
-              left: BorderSide(color: cs.primary, width: 4),
-            ),
+            border: Border(left: BorderSide(color: cs.primary, width: 4)),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -770,16 +755,12 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  Widget _postImages(
-    BuildContext context,
-    ColorScheme cs,
-    _ThreadPost post,
-  ) {
+  Widget _postImages(BuildContext context, ColorScheme cs, _ThreadPost post) {
     final pid = post.pid == 0 ? post.floor : post.pid;
     void preview(int i) {
       final url = post.images[i];
       BangumiWidget.showImagePreview(
-        context: context,
+        context: App.rootContext,
         url: url,
         title: _title,
         imageProvider: _siteProvider(url, plugin: widget.plugin),
@@ -799,12 +780,18 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             onTap: () => preview(i),
             child: Hero(
               tag: heroTag,
-              flightShuttleBuilder: (flightContext, animation, direction,
-                  fromContext, toContext) {
-                return direction == HeroFlightDirection.pop
-                    ? (fromContext.widget as Hero).child
-                    : (toContext.widget as Hero).child;
-              },
+              flightShuttleBuilder:
+                  (
+                    flightContext,
+                    animation,
+                    direction,
+                    fromContext,
+                    toContext,
+                  ) {
+                    return direction == HeroFlightDirection.pop
+                        ? (fromContext.widget as Hero).child
+                        : (toContext.widget as Hero).child;
+                  },
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: _siteImage(
@@ -920,13 +907,7 @@ class _ForumPager extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _pagePill(context),
-            Row(
-              children: [
-                prevBtn,
-                const SizedBox(width: 12),
-                nextBtn,
-              ],
-            ),
+            Row(children: [prevBtn, const SizedBox(width: 12), nextBtn]),
           ],
         ),
       );
