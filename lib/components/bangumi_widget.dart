@@ -354,24 +354,19 @@ class BangumiWidget {
         } catch (_) {}
       }
 
-      // 走项目 AppPageRoute（含 iOS 边缘返回手势），黑底全屏；
-      // 避免自定义 BlurFadeRoute 无法响应返回手势而误退底层页面
-      await App.rootContext.to(
-        () => ColoredBox(
-          color: Colors.black,
-          child: ProviderScope(
-            overrides: [
-              imageListProvider.overrideWith((ref) => allUrls ?? []),
-              currentIndexProvider.overrideWith((ref) => initIndex),
-            ],
-            child: ImagePreviewWidget(
-              url: url,
-              heroTag: heroTag,
-              isLocal: isLocal,
-              img: img,
-              pageController: pageController,
-              title: title,
-            ),
+      await App.rootContext.toBlurFade(
+        () => ProviderScope(
+          overrides: [
+            imageListProvider.overrideWith((ref) => allUrls ?? []),
+            currentIndexProvider.overrideWith((ref) => initIndex),
+          ],
+          child: ImagePreviewWidget(
+            url: url,
+            heroTag: heroTag,
+            isLocal: isLocal,
+            img: img,
+            pageController: pageController,
+            title: title,
           ),
         ),
       );
