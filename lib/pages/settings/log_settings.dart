@@ -150,6 +150,30 @@ class _LogSettingsState extends State<LogSettings> {
   }
 }
 
+/// 日志美化：识别正文里的 JSON 段并缩进格式化（保留前缀文字）
+String _prettyLogContent(String raw) {
+  final s = raw;
+  if (s.length < 2) return s;
+  int start = -1;
+  for (var i = 0; i < s.length; i++) {
+    final c = s[i];
+    if (c == '{' || c == '[') {
+      start = i;
+      break;
+    }
+  }
+  if (start < 0) return s;
+  final prefix = s.substring(0, start);
+  final tail = s.substring(start).trimRight();
+  try {
+    final obj = jsonDecode(tail);
+    final pretty = const JsonEncoder.withIndent('  ').convert(obj);
+    return prefix.trim().isEmpty ? pretty : '$prefix\n$pretty';
+  } catch (_) {
+    return s;
+  }
+}
+
 class LogsPage extends StatefulWidget {
   const LogsPage({super.key, this.inSheet = false});
 
@@ -319,7 +343,7 @@ class _LogsPageState extends State<LogsPage> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              log.content,
+                              _prettyLogContent(log.content),
                               maxLines: isLong ? 10 : null,
                               overflow: isLong
                                   ? TextOverflow.ellipsis
@@ -408,7 +432,7 @@ class _LogDetailPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: SelectionArea(
           child: Text(
-            log.content,
+            _prettyLogContent(log.content),
             style: TextStyle(
               fontSize: 13.5,
               height: 1.6,
