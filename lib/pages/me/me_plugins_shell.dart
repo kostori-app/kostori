@@ -252,6 +252,28 @@ class _PluginShellPageState extends State<PluginShellPage> {
     _loadIndex(index);
   }
 
+  void _outerNext() {
+    final c = _pageController;
+    if (c == null || !c.hasClients) return;
+    if (_index >= _nav.length - 1) return;
+    c.animateToPage(
+      _index + 1,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _outerPrev() {
+    final c = _pageController;
+    if (c == null || !c.hasClients) return;
+    if (_index <= 0) return;
+    c.animateToPage(
+      _index - 1,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -327,7 +349,12 @@ class _PluginShellPageState extends State<PluginShellPage> {
     // 同一插件的多个导航页即使渲染相同类型（如多个板块）也要按 key 重建状态
     return KeyedSubtree(
       key: ValueKey('$key-$index'),
-      child: _contentOrBoard(widget.plugin, data),
+      child: _contentOrBoard(
+        widget.plugin,
+        data,
+        onEdgeNext: _outerNext,
+        onEdgePrev: _outerPrev,
+      ),
     );
   }
 }

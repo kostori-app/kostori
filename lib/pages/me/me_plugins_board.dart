@@ -26,10 +26,20 @@ Widget _siteImage(
 }
 
 /// 若页面内容本身就是 board 模块则直接渲染板块内容
-Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
+Widget _contentOrBoard(
+  MePagePlugin plugin,
+  List<dynamic> modules, {
+  VoidCallback? onEdgeNext,
+  VoidCallback? onEdgePrev,
+}) {
   for (final m in modules) {
     if (_asMap2(m)['type'] == 'board') {
-      return PluginBoardContent(plugin: plugin, metaModules: modules);
+      return PluginBoardContent(
+        plugin: plugin,
+        metaModules: modules,
+        onEdgeNext: onEdgeNext,
+        onEdgePrev: onEdgePrev,
+      );
     }
   }
   return _PluginModulesList(plugin: plugin, modules: modules);
@@ -268,10 +278,16 @@ class PluginBoardContent extends StatefulWidget {
   /// 外层（插件导航壳）已经取到的板块 meta 模块，避免再按写死的 'board' 拉一次
   final List<dynamic>? metaModules;
 
+  /// 分类滑到最右/最左继续滑时，交给外层导航切页
+  final VoidCallback? onEdgeNext;
+  final VoidCallback? onEdgePrev;
+
   const PluginBoardContent({
     super.key,
     required this.plugin,
     this.metaModules,
+    this.onEdgeNext,
+    this.onEdgePrev,
   });
 
   @override
@@ -285,7 +301,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   bool _metaLoaded = false;
   int _page = 1;
   int _totalPages = 1;
-  List<Map<String, dynamic>> _rows = const [];
   String? _error;
   int _reqToken = 0;
 
@@ -295,14 +310,19 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   final Map<String, int> _tabTotal = {};
 
   final ScrollController _scroll = ScrollController();
+  PageController? _tabController;
+  double _edgeOverscroll = 0;
 
   // 分页 / 连续滑动两种模式（连续 = 滚动到末尾自动加载下一页，对齐 anime_list 双模式）
   bool _continuous = false;
   bool _appending = false;
-  List<Map<String, dynamic>> _merged = const [];
 
   String get _tabKey => _index < _tabs.length
       ? (_tabs[_index]['key']?.toString() ?? '')
+      : '';
+
+  String _tabKeyOf(int i) => i < _tabs.length
+      ? (_tabs[i]['key']?.toString() ?? '')
       : '';
 
   String get _modeSettingKey => 'mePluginListMode_${widget.plugin.key}';
@@ -311,12 +331,14 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
   void initState() {
     super.initState();
     _continuous = appdata.settings[_modeSettingKey] == true;
+    _tabController = PageController();
     _loadMeta();
   }
 
   @override
   void dispose() {
     _scroll.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -343,8 +365,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     setState(() {
       _error = null;
       _page = page;
-      _rows = const [];
-      _merged = const [];
     });
     try {
       final parsed = _parseBoard(
@@ -362,11 +382,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       setState(() {
         _page = parsed.current;
         _totalPages = parsed.total;
-        if (_continuous) {
-          _merged = _mergedOf(tabKey);
-        } else {
-          _rows = parsed.rows;
-        }
       });
       if (_continuous) _scheduleFetchMore();
     } catch (e) {
@@ -418,7 +433,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     final cached = _cache[key]?[page];
     if (cached != null) {
       setState(() {
-        _rows = cached;
         _page = page;
         _error = null;
         _totalPages = _tabTotal[key] ?? _totalPages;
@@ -428,7 +442,8 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     _fetch(key, page);
   }
 
-  void _switchTab(int i) {
+  /// 状态切换（PageView 停稳后调用）
+  void _switchTo(int i) {
     if (_index == i) return;
     setState(() {
       _index = i;
@@ -437,11 +452,24 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     _enterCurrentTab();
   }
 
-  /// 内容区左右滑切换分类
-  void _flipTab(int delta) {
-    if (_tabs.length < 2) return;
-    final next = (_index + delta).clamp(0, _tabs.length - 1);
-    _switchTab(next);
+  /// 顶部胶囊点击：动画切到对应分类页
+  void _selectTab(int i) {
+    if (i < 0 || i >= _tabs.length) return;
+    final c = _tabController;
+    if (c != null && c.hasClients) {
+      c.animateToPage(
+        i,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    _switchTo(i);
+  }
+
+  /// 分类 PageView 停稳
+  void _onTabPageChanged(int i) {
+    _switchTo(i);
   }
 
   void _enterCurrentTab() {
@@ -455,7 +483,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       _fetch(_tabKey, 1);
     } else {
       setState(() {
-        _merged = _mergedOf(_tabKey);
         _page = _nextMissing(_tabKey) - 1;
         _totalPages = _tabTotal[_tabKey] ?? _totalPages;
       });
@@ -529,7 +556,6 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
       if (_tabKey == key) {
         setState(() {
           _totalPages = parsed.total;
-          _merged = _mergedOf(key);
         });
       }
     } catch (e) {
@@ -593,20 +619,17 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     return Stack(
       children: [
         Positioned.fill(
-          child: _tabs.length > 1
-              ? GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onHorizontalDragEnd: (d) {
-                    final v = d.primaryVelocity ?? 0;
-                    if (v < -250) {
-                      _flipTab(1);
-                    } else if (v > 250) {
-                      _flipTab(-1);
-                    }
-                  },
-                  child: _buildList(),
-                )
-              : _buildList(),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _onCategoryScroll,
+            child: PageView(
+              controller: _tabController,
+              onPageChanged: _onTabPageChanged,
+              children: [
+                for (var i = 0; i < _tabs.length; i++)
+                  _categoryPane(i),
+              ],
+            ),
+          ),
         ),
         if (_tabs.isNotEmpty)
           Positioned(
@@ -628,7 +651,7 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
                     selected: _index < _tabs.length
                         ? (_tabs[_index]['key']?.toString() ?? '')
                         : '',
-                    onChanged: _switchTab,
+                    onChanged: _selectTab,
                   ),
                 ),
               ),
@@ -691,30 +714,82 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     return _cache[_tabKey]?[_page] == null;
   }
 
-  Widget _buildList() {
+  /// 分类 PageView 的边缘滑动监听：滑到最右/最左仍继续拖时切到外层大导航
+  bool _onCategoryScroll(ScrollNotification n) {
+    if (n.metrics.axis != Axis.horizontal) return false;
+    if (n is ScrollStartNotification) {
+      _edgeOverscroll = 0;
+    } else if (n is OverscrollNotification) {
+      if (n.metrics.extentAfter == 0 && n.overscroll > 0) {
+        _edgeOverscroll = _edgeOverscroll > n.overscroll
+            ? _edgeOverscroll
+            : n.overscroll;
+      } else if (n.metrics.extentBefore == 0 && n.overscroll < 0) {
+        _edgeOverscroll = _edgeOverscroll < n.overscroll
+            ? _edgeOverscroll
+            : n.overscroll;
+      }
+    } else if (n is ScrollEndNotification) {
+      if (_edgeOverscroll > 36) {
+        widget.onEdgeNext?.call();
+      } else if (_edgeOverscroll < -36) {
+        widget.onEdgePrev?.call();
+      }
+      _edgeOverscroll = 0;
+    }
+    return false;
+  }
+
+  /// 分类页内容（每个 tab 一页，状态从各自缓存取）
+  Widget _categoryPane(int tabIdx) {
     final cs = Theme.of(context).colorScheme;
+    final key = _tabKeyOf(tabIdx);
+    final active = tabIdx == _index;
     final edge = EdgeInsets.fromLTRB(
       8,
       _tabs.isNotEmpty ? 62 : 8,
       8,
       _continuous ? 24 : 66,
     );
-    if (_error != null) {
-      return Padding(
-        padding: edge,
-        child: _PluginRetry(
-          message: _error!,
-          onRetry: _continuous ? _retryContinuous : () => _go(_page),
-        ),
-      );
+
+    List<Map<String, dynamic>> visible;
+    if (_continuous) {
+      if (active && _cache[_tabKey]?[1] == null && _error != null) {
+        return Padding(
+          padding: edge,
+          child: _PluginRetry(
+            message: _error!,
+            onRetry: _retryContinuous,
+          ),
+        );
+      }
+      if (_cache[key]?[1] == null) {
+        return Padding(
+          padding: edge,
+          child: const Center(child: PolygonRefreshIndicator(size: 24)),
+        );
+      }
+      visible = _mergedOf(key);
+    } else {
+      final page = _tabPage[key] ?? 1;
+      final cached = _cache[key]?[page];
+      if (active && _error != null && cached == null) {
+        return Padding(
+          padding: edge,
+          child: _PluginRetry(
+            message: _error!,
+            onRetry: () => _go(page),
+          ),
+        );
+      }
+      if (cached == null) {
+        return Padding(
+          padding: edge,
+          child: const Center(child: PolygonRefreshIndicator(size: 24)),
+        );
+      }
+      visible = cached;
     }
-    if (_isBusy) {
-      return Padding(
-        padding: edge,
-        child: const Center(child: PolygonRefreshIndicator(size: 24)),
-      );
-    }
-    final visible = _continuous ? _merged : _rows;
     if (visible.isEmpty) {
       return Padding(
         padding: edge,
@@ -726,10 +801,10 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
         ),
       );
     }
-    // 连续模式底部追加载器行
-    final showTail = _continuous && _appending;
+    // 连续模式底部追加载器行（仅当前页）
+    final showTail = _continuous && active && _appending;
     return ListView.separated(
-      controller: _scroll,
+      controller: active ? _scroll : null,
       padding: edge,
       itemCount: visible.length + (showTail ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -742,8 +817,8 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
             ),
           );
         }
-        // 滑到末尾触发下一页加载（anime_list 连续模式同款）
-        if (_continuous && i == visible.length - 1 && _hasMore) {
+        // 连续模式滑到末尾自动加载下一页
+        if (_continuous && active && i == visible.length - 1 && _hasMore) {
           _scheduleFetchMore();
         }
         return _ForumBoardRow(plugin: widget.plugin, item: visible[i]);
