@@ -437,6 +437,13 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     _enterCurrentTab();
   }
 
+  /// 内容区左右滑切换分类
+  void _flipTab(int delta) {
+    if (_tabs.length < 2) return;
+    final next = (_index + delta).clamp(0, _tabs.length - 1);
+    _switchTab(next);
+  }
+
   void _enterCurrentTab() {
     if (!_continuous) {
       final p = _tabPage[_tabKey] ?? 1;
@@ -585,7 +592,22 @@ class _PluginBoardContentState extends State<PluginBoardContent> {
     // 留白放在滚动内容自身（anime_list 同款）：网格铺满，行可滚到玻璃条下方产生磨砂
     return Stack(
       children: [
-        Positioned.fill(child: _buildList()),
+        Positioned.fill(
+          child: _tabs.length > 1
+              ? GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragEnd: (d) {
+                    final v = d.primaryVelocity ?? 0;
+                    if (v < -250) {
+                      _flipTab(1);
+                    } else if (v > 250) {
+                      _flipTab(-1);
+                    }
+                  },
+                  child: _buildList(),
+                )
+              : _buildList(),
+        ),
         if (_tabs.isNotEmpty)
           Positioned(
             left: 0,
