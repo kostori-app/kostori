@@ -422,6 +422,9 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
   bool _loading = false;
   String? _error;
   bool _searched = false;
+  String _query = '';
+  int _page = 1;
+  int _total = 1;
 
   @override
   void dispose() {
@@ -432,19 +435,34 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
   Future<void> _search([String? _]) async {
     final q = _ctrl.text.trim();
     if (q.isEmpty) return;
+    _query = q;
+    await _load(1);
+  }
+
+  Future<void> _go(int page) {
+    if (page < 1) return _load(1);
+    return _load(page);
+  }
+
+  Future<void> _load(int page) async {
+    if (_query.isEmpty || page < 1) return;
     setState(() {
       _loading = true;
       _searched = true;
       _error = null;
+      _page = page;
       _rows = const [];
     });
     try {
-      final modules = await widget.plugin.search(q);
+      final modules = await widget.plugin.search(_query, {'page': page});
       if (!mounted) return;
       final rows = <Map<String, dynamic>>[];
+      var total = _total;
       for (final m in modules) {
         final mm = _asMap2(m);
         if (mm['type'] == 'boardPage' || mm['type'] == 'searchResult') {
+          final t = _asInt(mm['totalPages'], 0);
+          if (t > 0) total = t;
           final raw = mm['items'];
           if (raw is List) {
             rows.addAll(raw.map((e) => _asMap2(e)));
@@ -453,6 +471,7 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
       }
       setState(() {
         _rows = rows;
+        _total = total > 1 ? total : _total;
         _loading = false;
       });
     } catch (e) {
@@ -495,6 +514,13 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
             ),
           ),
           Expanded(child: _body(cs)),
+          if (_searched && _total > 1)
+            _ForumPager(
+              page: _page,
+              totalPages: _total,
+              busy: _loading,
+              onJump: _go,
+            ),
         ],
       ),
     );
@@ -510,7 +536,7 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
       );
     }
     if (_error != null) {
-      return _PluginRetry(message: _error!, onRetry: _search);
+      return _PluginRetry(message: _error!, onRetry: () => _load(_page));
     }
     if (_loading) {
       return const Center(child: PolygonRefreshIndicator(size: 24));

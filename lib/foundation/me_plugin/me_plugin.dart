@@ -212,12 +212,15 @@ class MePagePlugin {
   /// 是否提供 `plugin.search(query)`
   bool get hasSearch => searchable;
 
-  /// 调用插件 `search(query)`，返回模块列表（与 `page` 返回结构一致）
-  Future<List<dynamic>> search(String query) async {
+  /// 调用插件 `search(query, [params])`，返回模块列表（与 `page` 返回结构一致）
+  Future<List<dynamic>> search(
+    String query, [
+    Map<String, dynamic> params = const {},
+  ]) async {
     try {
       final res = await JsEngine().runCode(
         "globalThis.__me_plugins[${_jsStr(key)}]?.search"
-        "?.(${_jsStr(query)}) ?? []",
+        "?.(${_jsStr(query)}, ${_jsJson(params)}) ?? []",
       );
       if (res is List) return res;
     } catch (e, s) {

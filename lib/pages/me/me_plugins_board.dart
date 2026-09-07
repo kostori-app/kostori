@@ -68,6 +68,9 @@ class _ForumBoardRow extends StatelessWidget {
     final name = item['name']?.toString() ?? item['author']?.toString() ?? '';
     final infoLine =
         item['infoLine']?.toString() ?? item['meta']?.toString() ?? '';
+    final time = item['time']?.toString() ?? '';
+    // 无 infoLine（如搜索结果）时用时间兜底显示
+    final subLine = infoLine.isNotEmpty ? infoLine : time;
     final summary =
         item['summary']?.toString() ?? item['subtitle']?.toString() ?? '';
     final avatar =
@@ -149,10 +152,10 @@ class _ForumBoardRow extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (infoLine.isNotEmpty) ...[
+                        if (subLine.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
-                            infoLine,
+                            subLine,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
