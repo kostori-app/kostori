@@ -176,7 +176,78 @@ String _prettyLogContent(String raw) {
       RegExp(r'</?[a-zA-Z][\w-]*(\s[^>]*)?>').hasMatch(s)) {
     return _prettyHtml(s);
   }
+  // 类 Dart Map/List.toString()（键/字符串无引号）→ 结构缩进美化
+  if (s.contains('{') &&
+      RegExp(r'\{[^{}]*:[^{}]*(?:,|})').hasMatch(s)) {
+    return _prettyDartish(s);
+  }
   return s;
+}
+
+/// 无引号 Map/List 的美化：按 `,` `{` `[` `}` `]` 与引号切分并缩进
+String _prettyDartish(String raw) {
+  final buf = StringBuffer();
+  var indent = 0;
+  String pad() => '  ' * indent;
+  StringBuffer tok = StringBuffer();
+  var inString = false;
+  var quoteChar = '';
+  void flush() {
+    final t = tok.toString().trim();
+    tok = StringBuffer();
+    if (t.isEmpty) return;
+    buf
+      ..write('\n')
+      ..write(pad())
+      ..write(t);
+  }
+
+  for (var i = 0; i < raw.length; i++) {
+    final c = raw[i];
+    if (inString) {
+      tok.write(c);
+      if (c == quoteChar) inString = false;
+      continue;
+    }
+    if (c == '"' || c == "'") {
+      tok.write(c);
+      inString = true;
+      quoteChar = c;
+      continue;
+    }
+    if (c == '\n') {
+      flush();
+      continue;
+    }
+    switch (c) {
+      case ',':
+        flush();
+        break;
+      case '{':
+      case '[':
+        flush();
+        buf
+          ..write('\n')
+          ..write(pad())
+          ..write(c);
+        indent++;
+        break;
+      case '}':
+      case ']':
+        flush();
+        indent = indent > 0 ? indent - 1 : 0;
+        buf
+          ..write('\n')
+          ..write(pad())
+          ..write(c);
+        break;
+      default:
+        tok.write(c);
+    }
+  }
+  flush();
+  final out = buf.toString().replaceFirst(RegExp(r'^\n'), '').trimRight();
+  return out.isEmpty ? raw : out;
 }
 
 /// 轻量 HTML 美化：标签逐行、按嵌套缩进（文本段保留在当前行）
