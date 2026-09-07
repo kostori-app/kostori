@@ -1366,7 +1366,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               tooltip: t.selectTime,
               icon: Icon(Icons.calendar_today),
             ),
-          if (subjectSearch) _layoutModeBar(),
           if (subjectSearch)
             PopupMenuButton<String>(
               icon: Row(
@@ -1483,7 +1482,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             tooltip: t.invertSelection,
             icon: Icon(Icons.flip),
           ),
-          if (subjectSearch) _layoutModeBar(),
         ],
       ),
     );
@@ -2022,6 +2020,16 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   SliverToBoxAdapter(child: _toolBoxWidget(context)),
                 if (multiSelectMode)
                   SliverToBoxAdapter(child: _multiSelectBoxWidget(context)),
+                if (subjectSearch)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: _layoutModeBar(),
+                      ),
+                    ),
+                  ),
                 _buildContentListSliver(),
               ],
               if (_isLoading)
