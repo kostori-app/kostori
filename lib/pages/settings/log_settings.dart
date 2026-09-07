@@ -234,6 +234,10 @@ class _LogsPageState extends State<LogsPage> {
               itemBuilder: (context, index) {
                 index = logs.length - index - 1;
                 final log = logs[index];
+                // 过长日志截断展示，避免长卡片拖慢滑动；查看详情仍可看全文
+                final isLong =
+                    log.content.split('\n').length > 10 ||
+                    log.content.length > 700;
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
@@ -301,7 +305,13 @@ class _LogsPageState extends State<LogsPage> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text(log.content),
+                            Text(
+                              log.content,
+                              maxLines: isLong ? 10 : null,
+                              overflow: isLong
+                                  ? TextOverflow.ellipsis
+                                  : TextOverflow.clip,
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               log.time.toString().replaceAll(
@@ -311,16 +321,27 @@ class _LogsPageState extends State<LogsPage> {
                             ),
                             Align(
                               alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  Clipboard.setData(
-                                    ClipboardData(text: log.content),
-                                  );
-                                  App.rootContext.showMessage(
-                                    message: t.copySuccess,
-                                  );
-                                },
-                                child: Text(t.copy),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isLong)
+                                    TextButton(
+                                      onPressed: () =>
+                                          _openLogDetail(log),
+                                      child: Text(t.details),
+                                    ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Clipboard.setData(
+                                        ClipboardData(text: log.content),
+                                      );
+                                      App.rootContext.showMessage(
+                                        message: t.copySuccess,
+                                      );
+                                    },
+                                    child: Text(t.copy),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -334,6 +355,39 @@ class _LogsPageState extends State<LogsPage> {
           }).toList(),
         );
       },
+    );
+  }
+
+  /// 长日志详情弹层：完整内容，可复制，可选中
+  void _openLogDetail(LogItem log) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: '${log.title} · ${log.level.name}',
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 480),
+          child: SizedBox(
+            width: double.infinity,
+            child: SingleChildScrollView(
+              child: SelectionArea(
+                child: SelectableText(
+                  log.content,
+                  style: const TextStyle(fontSize: 13, height: 1.5),
+                ),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: log.content));
+              App.rootContext.showMessage(message: t.copySuccess);
+            },
+            child: Text(t.copy),
+          ),
+        ],
+      ),
     );
   }
 
