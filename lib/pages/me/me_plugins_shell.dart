@@ -154,6 +154,7 @@ class PluginShellPage extends StatefulWidget {
 class _PluginShellPageState extends State<PluginShellPage> {
   late final MePagePluginManager _manager;
   late Future<List<Map<String, dynamic>>> _navFuture;
+  PageController? _pageController;
   int _index = 0;
   List<Map<String, dynamic>> _nav = const [];
 
@@ -177,6 +178,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
         if (found >= 0) start = found;
       }
       _index = start;
+      _pageController = PageController(initialPage: start);
       _pages = List<List<dynamic>?>.filled(nav.length, null);
       _loading = List<bool>.filled(nav.length, false);
       _errors = List<String?>.filled(nav.length, null);
@@ -188,6 +190,7 @@ class _PluginShellPageState extends State<PluginShellPage> {
   @override
   void dispose() {
     _manager.removeListener(_onManagerChanged);
+    _pageController?.dispose();
     super.dispose();
   }
 
@@ -227,11 +230,25 @@ class _PluginShellPageState extends State<PluginShellPage> {
   }
 
   void _select(int index) {
-    if (index < 0 || index >= _nav.length || index == _index) return;
-    setState(() {
-      _index = index;
-      _errors[index] = null;
-    });
+    if (index < 0 || index >= _nav.length) return;
+    final pc = _pageController;
+    if (pc != null && pc.hasClients) {
+      pc.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    setState(() => _index = index);
+    _loadIndex(index);
+  }
+
+  void _onPageChanged(int index) {
+    if (index < 0 || index >= _nav.length) return;
+    if (_index != index) {
+      setState(() => _index = index);
+    }
     _loadIndex(index);
   }
 
@@ -272,7 +289,21 @@ class _PluginShellPageState extends State<PluginShellPage> {
                     ),
                   ),
                 ),
-              Expanded(child: _buildContent()),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: _onPageChanged,
+                  children: [
+                    for (var i = 0; i < _nav.length; i++)
+                      _NavKeepAlive(
+                        key: ValueKey(
+                          '${widget.plugin.key}-nav-${_nav[i]['key'] ?? i}',
+                        ),
+                        child: _pageBody(i),
+                      ),
+                  ],
+                ),
+              ),
             ],
           );
         },
@@ -280,25 +311,46 @@ class _PluginShellPageState extends State<PluginShellPage> {
     );
   }
 
-  Widget _buildContent() {
-    final nav = _nav[_index];
-    final key = nav['key']?.toString() ?? '';
-    final error = _index < _errors.length ? _errors[_index] : null;
-    final data = _index < _pages.length ? _pages[_index] : null;
+  Widget _pageBody(int index) {
+    if (index < 0 || index >= _nav.length) {
+      return const SizedBox.shrink();
+    }
+    final key = _nav[index]['key']?.toString() ?? '$index';
+    final error = index < _errors.length ? _errors[index] : null;
+    final data = index < _pages.length ? _pages[index] : null;
     if (error != null) {
-      return _PluginRetry(
-        message: error,
-        onRetry: () => _loadIndex(_index),
-      );
+      return _PluginRetry(message: error, onRetry: () => _loadIndex(index));
     }
     if (data == null) {
       return const Center(child: PolygonRefreshIndicator(size: 24));
     }
     // 同一插件的多个导航页即使渲染相同类型（如多个板块）也要按 key 重建状态
     return KeyedSubtree(
-      key: ValueKey(key),
+      key: ValueKey('$key-$index'),
       child: _contentOrBoard(widget.plugin, data),
     );
+  }
+}
+
+/// 保持各导航页存活（滚到旁边的 tab 再回来不重新加载/不丢滚动位置）
+class _NavKeepAlive extends StatefulWidget {
+  final Widget child;
+
+  const _NavKeepAlive({super.key, required this.child});
+
+  @override
+  State<_NavKeepAlive> createState() => _NavKeepAliveState();
+}
+
+class _NavKeepAliveState extends State<_NavKeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 
