@@ -52,6 +52,7 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
   late final ScrollController _controller;
 
   double? _futurePosition;
+  bool _wheelAnimating = false;
 
   static bool _isMouseScroll = App.isDesktop;
 
@@ -81,6 +82,31 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
   void dispose() {
     parent?.onChildInactive(id);
     super.dispose();
+  }
+
+  /// 一次滚轮动画结束才启动下一段（目标在动画期间已被滚轮持续更新 → 排队追赶）
+  Future<void> _wheelAnimateTo(double target) async {
+    if (_wheelAnimating) return;
+    _wheelAnimating = true;
+    try {
+      await _controller.animateTo(
+        target,
+        duration: _fastAnimationDuration,
+        curve: Curves.linear,
+      );
+    } catch (_) {
+      // position 已被 dispose（列表切换），直接作废
+    }
+    _wheelAnimating = false;
+    if (!mounted) return;
+    final next = _futurePosition;
+    if (next == null) return;
+    final pos = _controller.position.pixels;
+    if ((next - pos).abs() <= 0.5) {
+      _futurePosition = null;
+      return;
+    }
+    unawaited(_wheelAnimateTo(next));
   }
 
   @override
@@ -127,18 +153,10 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
           );
           if (_futurePosition == old) return;
           var target = _futurePosition!;
-          _controller
-              .animateTo(
-                _futurePosition!,
-                duration: _fastAnimationDuration,
-                curve: Curves.linear,
-              )
-              .then((_) {
-                var current = _controller.position.pixels;
-                if (current == target && current == _futurePosition) {
-                  _futurePosition = null;
-                }
-              });
+          // 动画进行中只更新目标，不重复 animateTo（避免打断→鬼畜/回跳）
+          if (!_wheelAnimating) {
+            unawaited(_wheelAnimateTo(target));
+          }
         }
       },
       child: ScrollState._(
@@ -385,12 +403,15 @@ class _AppScrollBarState extends State<AppScrollBar> {
                   right: 0,
                   bottom: widget.bottomPadding,
                   width: _scrollbarHeight,
-                  // 右侧轨道：仅支持拖拽滚动（点击穿透到下层内容，避免误触）
+                  // 右侧轨道：仅支持拖拽滑块（空白轨道不接管，避免误触跳页）
                   child: IgnorePointer(
                     ignoring: !showScrollbar,
                     child: Listener(
                       behavior: HitTestBehavior.translucent,
                       onPointerDown: (event) {
+                        // 只有按在滑块本体上才进入拖拽；轨道空白处按下放行给下层内容
+                        final dy = event.localPosition.dy;
+                        if (dy < top || dy > top + _scrollbarHeight) return;
                         _dragGestureRecognizer.addPointer(event);
                         _restartHideTimer();
                       },
