@@ -162,16 +162,66 @@ String _prettyLogContent(String raw) {
       break;
     }
   }
-  if (start < 0) return s;
-  final prefix = s.substring(0, start);
-  final tail = s.substring(start).trimRight();
-  try {
-    final obj = jsonDecode(tail);
-    final pretty = const JsonEncoder.withIndent('  ').convert(obj);
-    return prefix.trim().isEmpty ? pretty : '$prefix\n$pretty';
-  } catch (_) {
-    return s;
+  if (start >= 0) {
+    final prefix = s.substring(0, start);
+    final tail = s.substring(start).trimRight();
+    try {
+      final obj = jsonDecode(tail);
+      final pretty = const JsonEncoder.withIndent('  ').convert(obj);
+      return prefix.trim().isEmpty ? pretty : '$prefix\n$pretty';
+    } catch (_) {}
   }
+  // 含 HTML 标签 → 轻量缩进美化
+  if (s.contains('<') &&
+      RegExp(r'</?[a-zA-Z][\w-]*(\s[^>]*)?>').hasMatch(s)) {
+    return _prettyHtml(s);
+  }
+  return s;
+}
+
+/// 轻量 HTML 美化：标签逐行、按嵌套缩进（文本段保留在当前行）
+String _prettyHtml(String raw) {
+  const voidTags = {
+    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link',
+    'meta', 'param', 'source', 'track', 'wbr',
+  };
+  final buf = StringBuffer();
+  final tagRe = RegExp(r'<[^>]*>');
+  var indent = 0;
+  var last = 0;
+  String pad() => '  ' * indent;
+  for (final m in tagRe.allMatches(raw)) {
+    final text = raw.substring(last, m.start).trim();
+    if (text.isNotEmpty) {
+      buf
+        ..write('\n')
+        ..write(pad())
+        ..write(text.replaceAll(RegExp(r'\s+'), ' '));
+    }
+    final tag = m.group(0)!;
+    final tagName = RegExp(r'^</?([a-zA-Z][\w-]*)').firstMatch(tag)?[1] ?? '';
+    final lower = tagName.toLowerCase();
+    final isClosing = tag.startsWith('</');
+    final isSelfClose = tag.endsWith('/>') || voidTags.contains(lower);
+    if (isClosing) {
+      indent = indent > 0 ? indent - 1 : 0;
+    }
+    buf
+      ..write('\n')
+      ..write(pad())
+      ..write(tag);
+    if (!isClosing && !isSelfClose) indent++;
+    last = m.end;
+  }
+  final tail = raw.substring(last).trim();
+  if (tail.isNotEmpty) {
+    buf
+      ..write('\n')
+      ..write(pad())
+      ..write(tail.replaceAll(RegExp(r'\s+'), ' '));
+  }
+  final out = buf.toString().replaceFirst(RegExp(r'^\n'), '').trimRight();
+  return out.isEmpty ? raw : out;
 }
 
 class LogsPage extends StatefulWidget {
