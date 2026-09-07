@@ -358,41 +358,53 @@ class _LogsPageState extends State<LogsPage> {
     );
   }
 
-  /// 长日志详情弹层：完整内容，可复制，可选中
+  /// 长日志详情：独立页面查看完整内容（可选中/复制）
   void _openLogDetail(LogItem log) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => ContentDialog(
-        title: '${log.title} · ${log.level.name}',
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 480),
-          child: SizedBox(
-            width: double.infinity,
-            child: SingleChildScrollView(
-              child: SelectionArea(
-                child: SelectableText(
-                  log.content,
-                  style: const TextStyle(fontSize: 13, height: 1.5),
-                ),
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: log.content));
-              App.rootContext.showMessage(message: t.copySuccess);
-            },
-            child: Text(t.copy),
-          ),
-        ],
-      ),
-    );
+    context.to(() => _LogDetailPage(log: log));
   }
 
   void saveLog(String log) async {
     saveFile(data: utf8.encode(log), filename: 'log.txt');
+  }
+}
+
+/// 单条日志详情页
+class _LogDetailPage extends StatelessWidget {
+  final LogItem log;
+
+  const _LogDetailPage({required this.log});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: Appbar(
+        title: Text('${log.title} · ${log.level.name}'),
+        actions: [
+          IconButton(
+            tooltip: t.copy,
+            icon: const Icon(Icons.copy),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: log.content));
+              App.rootContext.showMessage(message: t.copySuccess);
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: SelectionArea(
+          child: Text(
+            log.content,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.6,
+              color: cs.onSurface,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
