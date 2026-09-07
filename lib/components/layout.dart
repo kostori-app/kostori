@@ -278,8 +278,9 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
     SliverConstraints constraints,
     double scale,
   ) {
-    // 每格宽度上限 ~240：宽屏自动切更多列但卡不过小，避免原 192 切出细长小卡
-    final maxCrossAxisExtent = 240.0 * scale;
+    // 每格宽度上限：桌面端 ~240 卡不过小；窄屏放宽到 176 → 手机宽度下回到 3 列
+    final maxCrossAxisExtent =
+        (constraints.crossAxisExtent <= changePoint ? 176.0 : 240.0) * scale;
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
 
