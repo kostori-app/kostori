@@ -490,36 +490,42 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
       appBar: Appbar(title: Text(t.search)),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            child: TextField(
-              controller: _ctrl,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              onSubmitted: _search,
-              decoration: InputDecoration(
-                hintText: t.search,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _loading
-                    ? const Padding(
-                        padding: EdgeInsets.all(10),
-                        child: PolygonRefreshIndicator(size: 18),
-                      )
-                    : null,
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(14)),
+          // 顶部搜索框：磨砂玻璃背景
+          _GlassBar(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: TextField(
+                controller: _ctrl,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                onSubmitted: _search,
+                decoration: InputDecoration(
+                  hintText: t.search,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _loading
+                      ? const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: PolygonRefreshIndicator(size: 18),
+                        )
+                      : null,
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(14)),
+                  ),
+                  isDense: true,
                 ),
-                isDense: true,
               ),
             ),
           ),
           Expanded(child: _body(cs)),
           if (_searched && _total > 1)
-            _ForumPager(
-              page: _page,
-              totalPages: _total,
-              busy: _loading,
-              onJump: _go,
+            // 底部翻页：磨砂玻璃背景
+            _GlassBar(
+              child: _ForumPager(
+                page: _page,
+                totalPages: _total,
+                busy: _loading,
+                onJump: _go,
+              ),
             ),
         ],
       ),
