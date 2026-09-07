@@ -260,7 +260,23 @@ class _PluginShellPageState extends State<PluginShellPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: Appbar(title: Text(widget.plugin.name)),
+      appBar: Appbar(
+        title: Text(widget.plugin.name),
+        actions: [
+          if (widget.plugin.hasSearch)
+            IconButton(
+              tooltip: t.search,
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => PluginSearchPage(plugin: widget.plugin),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _navFuture,
         builder: (context, snap) {
@@ -386,6 +402,133 @@ class _PluginRetry extends StatelessWidget {
           Button.filled(onPressed: onRetry, child: Text(t.retry)),
         ],
       ),
+    );
+  }
+}
+
+/// 搜索页：走插件 `search(query)`，结构与插件子页一致（输入框 + 结果）
+class PluginSearchPage extends StatefulWidget {
+  final MePagePlugin plugin;
+
+  const PluginSearchPage({super.key, required this.plugin});
+
+  @override
+  State<PluginSearchPage> createState() => _PluginSearchPageState();
+}
+
+class _PluginSearchPageState extends State<PluginSearchPage> {
+  final TextEditingController _ctrl = TextEditingController();
+  List<Map<String, dynamic>> _rows = const [];
+  bool _loading = false;
+  String? _error;
+  bool _searched = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search([String? _]) async {
+    final q = _ctrl.text.trim();
+    if (q.isEmpty) return;
+    setState(() {
+      _loading = true;
+      _searched = true;
+      _error = null;
+      _rows = const [];
+    });
+    try {
+      final modules = await widget.plugin.search(q);
+      if (!mounted) return;
+      final rows = <Map<String, dynamic>>[];
+      for (final m in modules) {
+        final mm = _asMap2(m);
+        if (mm['type'] == 'boardPage' || mm['type'] == 'searchResult') {
+          final raw = mm['items'];
+          if (raw is List) {
+            rows.addAll(raw.map((e) => _asMap2(e)));
+          }
+        }
+      }
+      setState(() {
+        _rows = rows;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = '$e';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: Appbar(title: Text(t.search)),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: TextField(
+              controller: _ctrl,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onSubmitted: _search,
+              decoration: InputDecoration(
+                hintText: t.search,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _loading
+                    ? const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: PolygonRefreshIndicator(size: 18),
+                      )
+                    : null,
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(14)),
+                ),
+                isDense: true,
+              ),
+            ),
+          ),
+          Expanded(child: _body(cs)),
+        ],
+      ),
+    );
+  }
+
+  Widget _body(ColorScheme cs) {
+    if (!_searched) {
+      return Center(
+        child: Text(
+          t.noSearchResults,
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+      );
+    }
+    if (_error != null) {
+      return _PluginRetry(message: _error!, onRetry: _search);
+    }
+    if (_loading) {
+      return const Center(child: PolygonRefreshIndicator(size: 24));
+    }
+    if (_rows.isEmpty) {
+      return Center(
+        child: Text(
+          t.noSearchResults,
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(8),
+      itemCount: _rows.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, i) =>
+          _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
     );
   }
 }

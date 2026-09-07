@@ -45,6 +45,9 @@ class MePagePlugin {
   /// 是否声明了 `plugin.settings`（解析时一次性判定，避免每次探测引擎不稳定）
   final bool settingsDeclared;
 
+  /// 是否提供 `plugin.search(query)`（解析期判定；决定 Appbar 是否显示搜索按钮）
+  final bool searchable;
+
   /// 设置页模块（解析时缓存，打开设置页不依赖运行期引擎状态）
   final List<Map<String, dynamic>> settingsCache;
 
@@ -59,6 +62,7 @@ class MePagePlugin {
     required this.filePath,
     this.referer,
     this.settingsDeclared = false,
+    this.searchable = false,
     this.settingsCache = const [],
     Map<String, dynamic> initialData = const {},
   }) : data = {...initialData};
@@ -203,6 +207,23 @@ class MePagePlugin {
   /// 设置页模块列表（来自 `plugin.settings`，缓存）
   Future<List<Map<String, dynamic>>> settingsModules() async {
     return List.from(settingsCache);
+  }
+
+  /// 是否提供 `plugin.search(query)`
+  bool get hasSearch => searchable;
+
+  /// 调用插件 `search(query)`，返回模块列表（与 `page` 返回结构一致）
+  Future<List<dynamic>> search(String query) async {
+    try {
+      final res = await JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.search"
+        "?.(${_jsStr(query)}) ?? []",
+      );
+      if (res is List) return res;
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).search', '$e\n$s');
+    }
+    return const [];
   }
 
   /// 调用插件 render()，返回模块列表（List<Map>）。
@@ -665,6 +686,15 @@ class MePagePluginParser {
       }
     } catch (_) {}
 
+    // 搜索能力（解析期判定，稳定缓存）
+    var searchable = false;
+    try {
+      final res = JsEngine().runCode(
+        "typeof globalThis.__me_plugins[${_jsStr(key)}]?.search === 'function'",
+      );
+      searchable = res == true;
+    } catch (_) {}
+
     // 各插件独立 `.data`（对齐番剧源）；无文件时从旧 implicitData 迁移一次
     Map<String, dynamic> initialData = const {};
     final dataPath = filePath.endsWith('.js')
@@ -713,6 +743,7 @@ class MePagePluginParser {
       filePath: filePath,
       referer: referer.isEmpty ? null : referer,
       settingsDeclared: settingsCache.isNotEmpty,
+      searchable: searchable,
       settingsCache: settingsCache,
       initialData: initialData,
     );
