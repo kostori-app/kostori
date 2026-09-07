@@ -436,7 +436,7 @@ class NaviPaneState extends State<NaviPane>
   /// 悬浮主导航（含两端内边距）的估算宽度
   double get floatingNavWidth =>
       16 +
-      widget.paneItems.length * 56 +
+      widget.paneItems.length * 44 +
       (widget.paneItems.length - 1) * 4;
 
   /// 动作坞估算宽度
@@ -718,7 +718,7 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 56,
+            width: 44,
             height: 28,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.all(Radius.circular(32)),
