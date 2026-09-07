@@ -486,45 +486,74 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final bottomPad = _searched && _total > 1 ? 76.0 : 16.0;
     return Scaffold(
       appBar: Appbar(title: Text(t.search)),
-      body: Column(
+      body: Stack(
         children: [
-          // 顶部搜索框：磨砂玻璃背景
-          _GlassBar(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              child: TextField(
-                controller: _ctrl,
-                autofocus: true,
-                textInputAction: TextInputAction.search,
-                onSubmitted: _search,
-                decoration: InputDecoration(
-                  hintText: t.search,
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _loading
-                      ? const Padding(
-                          padding: EdgeInsets.all(10),
-                          child: PolygonRefreshIndicator(size: 18),
-                        )
-                      : null,
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(14)),
+          Positioned.fill(
+            child: _searched && _rows.isNotEmpty
+                ? ListView.separated(
+                    padding: EdgeInsets.fromLTRB(8, 84, 8, bottomPad),
+                    itemCount: _rows.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) =>
+                        _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
+                  )
+                : Padding(
+                    padding: EdgeInsets.only(
+                      top: 84,
+                      bottom: bottomPad,
+                      left: 16,
+                      right: 16,
+                    ),
+                    child: _body(cs),
                   ),
-                  isDense: true,
+          ),
+          // 顶部搜索框：磨砂玻璃，内容从下方滚过
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: _GlassBar(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: TextField(
+                  controller: _ctrl,
+                  autofocus: true,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: _search,
+                  decoration: InputDecoration(
+                    hintText: t.search,
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _loading
+                        ? const Padding(
+                            padding: EdgeInsets.all(10),
+                            child: PolygonRefreshIndicator(size: 18),
+                          )
+                        : null,
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(14)),
+                    ),
+                    isDense: true,
+                  ),
                 ),
               ),
             ),
           ),
-          Expanded(child: _body(cs)),
+          // 底部翻页：磨砂玻璃，内容从上方滚过
           if (_searched && _total > 1)
-            // 底部翻页：磨砂玻璃背景
-            _GlassBar(
-              child: _ForumPager(
-                page: _page,
-                totalPages: _total,
-                busy: _loading,
-                onJump: _go,
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _GlassBar(
+                child: _ForumPager(
+                  page: _page,
+                  totalPages: _total,
+                  busy: _loading,
+                  onJump: _go,
+                ),
               ),
             ),
         ],
@@ -555,13 +584,7 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
         ),
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.all(8),
-      itemCount: _rows.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, i) =>
-          _ForumBoardRow(plugin: widget.plugin, item: _rows[i]),
-    );
+    return const SizedBox.shrink();
   }
 }
 

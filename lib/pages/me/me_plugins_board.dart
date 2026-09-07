@@ -362,6 +362,8 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     setState(() {
       _error = null;
       _page = page;
+      // 立刻更新“当前页指针”，让渲染端不再展示上一页内容
+      _tabPage[tabKey] = page;
     });
     try {
       final parsed = _parseBoard(

@@ -884,19 +884,19 @@ class _ForumPager extends StatelessWidget {
     final prevBtn = _PagerIcon(
       icon: Icons.chevron_left,
       label: t.back,
-      enabled: page > 1 && !busy,
+      enabled: page > 1 ,
       onTap: () => onJump(page - 1),
       onRepeat: () {
-        if (page > 1 && !busy) onJump(page - 1);
+        if (page > 1 ) onJump(page - 1);
       },
     );
     final nextBtn = _PagerIcon(
       icon: Icons.chevron_right,
       label: t.next,
-      enabled: page < totalPages && !busy,
+      enabled: page < totalPages ,
       onTap: () => onJump(page + 1),
       onRepeat: () {
-        if (page < totalPages && !busy) onJump(page + 1);
+        if (page < totalPages ) onJump(page + 1);
       },
     );
 
@@ -924,7 +924,7 @@ class _ForumPager extends StatelessWidget {
               _PagerIcon(
                 icon: Icons.first_page,
                 label: t.first,
-                enabled: page > 1 && !busy,
+                enabled: page > 1 ,
                 onTap: () => onJump(1),
               ),
               const SizedBox(width: 4),
@@ -937,7 +937,7 @@ class _ForumPager extends StatelessWidget {
               _PagerIcon(
                 icon: Icons.last_page,
                 label: t.last,
-                enabled: page < totalPages && !busy,
+                enabled: page < totalPages ,
                 onTap: () => onJump(totalPages),
               ),
             ],
