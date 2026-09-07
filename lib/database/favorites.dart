@@ -464,6 +464,102 @@ class LocalFavoritesManager with ChangeNotifier {
     return result;
   }
 
+  String _folderToken(String folder) {
+    if (folder == kUnassignedFolder || folder == '默认' || folder == '未分类') {
+      return kUnassignedFolder;
+    }
+    return folder;
+  }
+
+  /// 字段级合并专用序列化（含所在文件夹），用于跨端同步“移动收藏”
+  List<Map<String, dynamic>> getAllFavoriteMergeMaps() {
+    final out = <Map<String, dynamic>>[];
+    final seen = <String, Map<String, dynamic>>{};
+    for (final folder in _folderOrder) {
+      final token = _folderToken(folder);
+      final list = _byFolder[_resolveFolder(folder)] ?? const <_FavEntry>[];
+      for (final e in list) {
+        final item = e.item;
+        final key = '${item.type.value}\u0000${item.id}';
+        Map<String, dynamic>? entry = seen[key];
+        if (entry == null) {
+          entry = item.toMergeJson();
+          entry['folders'] = <String>[];
+          seen[key] = entry;
+          out.add(entry);
+        }
+        (entry['folders'] as List).add(token);
+      }
+    }
+    return out;
+  }
+
+  void _ensureFolderExists(String name) {
+    if (_byFolder.containsKey(_resolveFolder(name))) return;
+    createFolder(name, true);
+  }
+
+  /// 集合式对账：远端每条带所在文件夹。已存在也按远端更新位置（支持“移动”），
+  /// 远端没有的本地文件夹成员移除（以远端为准），避免出现“同一条在两处都留副本”。
+  void mergeFavoriteMaps(List<dynamic> remote) {
+    if (remote.isEmpty) return;
+    var changed = false;
+    for (final raw in remote) {
+      if (raw is! Map) continue;
+      final map = raw.map((k, v) => MapEntry(k.toString(), v));
+      final item = FavoriteItem.fromJson(map);
+      final rawFolders = map['folders'];
+      final hasFolderInfo = rawFolders is List && rawFolders.isNotEmpty;
+      if (!hasFolderInfo) {
+        // 旧版 merge 无文件夹信息：保持原“只补不删”行为
+        if (!findWithModelSync(item)) {
+          var defaultFolder = _folderOrder.contains('默认')
+              ? '默认'
+              : (_folderOrder.isNotEmpty ? _folderOrder.first : '默认');
+          try {
+            addAnime(defaultFolder, item);
+            changed = true;
+          } catch (e) {
+            DebugLog.error('mergeFavoriteMaps', '添加收藏 ${item.id} 失败：$e');
+          }
+        }
+        continue;
+      }
+      final desired = <String>[];
+      for (final f in rawFolders) {
+        final t = _folderToken(f.toString());
+        if (!desired.contains(t)) desired.add(t);
+      }
+      if (desired.isEmpty) desired.add(kUnassignedFolder);
+      // 目标文件夹不存在则先建（例如对端刚新建的“在看”）
+      for (final d in desired) {
+        _ensureFolderExists(d);
+        if (_findEntry(d, item.id, item.type) == null) {
+          final list = _byFolder[_resolveFolder(d)];
+          if (list != null) {
+            list.add(_FavEntry(_cloneItem(item)));
+            changed = true;
+          }
+        }
+      }
+      // 以远端为准：本地多余的旧文件夹成员移除
+      for (final folder in _folderOrder) {
+        final localToken = _folderToken(folder);
+        if (desired.contains(localToken)) continue;
+        final e = _findEntry(folder, item.id, item.type);
+        if (e != null) {
+          removeFavoriteFromFolder(folder, item.id, item.type);
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      _rebuildHashedIds();
+      _notify();
+      _schedulePersist();
+    }
+  }
+
   void mergeFavoriteList(List<FavoriteItem> remote) {
     if (remote.isEmpty) return;
     var defaultFolder = _folderOrder.contains('默认')

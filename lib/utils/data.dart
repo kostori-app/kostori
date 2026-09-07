@@ -101,9 +101,9 @@ Future<File> exportAppData() async {
     DebugLog.error('exportAppData', 'history_merge.json 导出失败：$e');
   }
   try {
-    final favorites = LocalFavoritesManager().getAllFavoriteItemsForMerge();
+    final favorites = LocalFavoritesManager().getAllFavoriteMergeMaps();
     final jsonStr = await Isolate.run(() {
-      return jsonEncode(favorites.map((f) => f.toMergeJson()).toList());
+      return jsonEncode(favorites);
     });
     await File(favoritesMergeFile).writeAsString(jsonStr);
   } catch (e) {
@@ -242,11 +242,8 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       try {
         final list = jsonDecode(await favoritesMergeFile.readAsString());
         if (list is List) {
-          final items = list
-              .whereType<Map>()
-              .map((m) => FavoriteItem.fromJson(Map<String, dynamic>.from(m)))
-              .toList();
-          LocalFavoritesManager().mergeFavoriteList(items);
+          final items = list.whereType<Map>().toList();
+          LocalFavoritesManager().mergeFavoriteMaps(items);
           mergedFavorites = true;
         }
       } catch (e) {

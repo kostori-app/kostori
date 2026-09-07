@@ -91,12 +91,18 @@ class DataSync with ChangeNotifier {
     _uploadDebounce = Timer(const Duration(seconds: 5), () {
       _uploadDebounce = null;
       if (!_dirty) return;
-      // 距上次成功同步过近（<30s）则暂不上传，保留 dirty 等下次触发，
-      // 避免频繁进出详情页/误点条目导致反复上传十几 MB 的压缩包。
-      // 窗口关闭时 _handleWindowClose 会兜底刷出待上传变化。
+      // 距上次成功同步过近（<30s）则暂不上传；但保留 dirty 并定时重试，
+      // 避免“只在下次改动才触发”（移动端退出时不依赖关窗兜底会丢改动）
       if (_lastSyncTime != null &&
           DateTime.now().difference(_lastSyncTime!) <
               const Duration(seconds: 30)) {
+        _uploadDebounce = Timer(const Duration(seconds: 31), () {
+          _uploadDebounce = null;
+          if (_dirty) {
+            _dirty = false;
+            unawaited(uploadData());
+          }
+        });
         return;
       }
       _dirty = false;
