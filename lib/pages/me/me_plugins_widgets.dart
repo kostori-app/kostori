@@ -87,13 +87,8 @@ class _ModuleView {
               icon: const Icon(Icons.forum_outlined),
               label: m['title']?.toString() ?? '',
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => PluginBoardPage(
-                      plugin: plugin,
-                      meta: m,
-                    ),
-                  ),
+                context.to(
+                  () => PluginBoardPage(plugin: plugin, meta: m),
                 );
               },
             ),

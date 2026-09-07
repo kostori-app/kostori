@@ -7,12 +7,10 @@ Future<void> _pushPluginPage(
   Map<String, dynamic> params, {
   Map<String, dynamic>? item,
 }) async {
-  await Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => name == 'thread'
-          ? PluginThreadPage(plugin: plugin, params: params, row: item)
-          : PluginSubPage(plugin: plugin, name: name, params: params),
-    ),
+  await context.to(
+    () => name == 'thread'
+        ? PluginThreadPage(plugin: plugin, params: params, row: item)
+        : PluginSubPage(plugin: plugin, name: name, params: params),
   );
 }
 
@@ -99,11 +97,7 @@ class _PluginShellEntry extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => PluginShellPage(plugin: plugin),
-              ),
-            );
+            context.to(() => PluginShellPage(plugin: plugin));
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
@@ -265,10 +259,8 @@ class _PluginShellPageState extends State<PluginShellPage>
               tooltip: t.search,
               icon: const Icon(Icons.search),
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => PluginSearchPage(plugin: widget.plugin),
-                  ),
+                context.to(
+                  () => PluginSearchPage(plugin: widget.plugin),
                 );
               },
             ),

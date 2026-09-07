@@ -49,7 +49,6 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
   late final FocusNode _focusNode;
   Timer? _singleTapTimer;
   DateTime? _lastTapTime;
-  Offset? _edgeDown;
   StreamSubscription? _volumeSubscription;
   VolumeListener? volumeListener;
 
@@ -268,35 +267,6 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
                     isLocal: widget.isLocal,
                     pageController: widget.pageController,
                     title: widget.title,
-                  ),
-                ),
-                // 左边缘右滑关闭预览：BlurFadeRoute 不支持 iOS 边缘返回，
-                // 若不处理会误退到底层页面
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 44,
-                  child: Listener(
-                    onPointerDown: (e) {
-                      if (App.isDesktop) {
-                        _edgeDown = null;
-                        return;
-                      }
-                      _edgeDown = e.position;
-                    },
-                    onPointerUp: (e) {
-                      final down = _edgeDown;
-                      _edgeDown = null;
-                      if (down == null) return;
-                      final dx = e.position.dx - down.dx;
-                      final dy = (e.position.dy - down.dy).abs();
-                      if (dx > 52 && dy < 90) {
-                        Navigator.of(context).maybePop();
-                      }
-                    },
-                    onPointerCancel: (_) => _edgeDown = null,
-                    child: const SizedBox.expand(),
                   ),
                 ),
               ],

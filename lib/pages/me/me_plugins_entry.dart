@@ -212,11 +212,7 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
   }
 
   void _openSignDetail() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PluginSignManagerPage(),
-      ),
-    );
+    context.to(() => PluginSignManagerPage());
   }
 
   /// 打开插件管理页
