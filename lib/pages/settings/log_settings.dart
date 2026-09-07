@@ -162,12 +162,25 @@ class LogsPage extends StatefulWidget {
 
 class _LogsPageState extends State<LogsPage> {
   final levelOrder = [LogLevel.info, LogLevel.warning, LogLevel.error];
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 先让页面进入（loading），再在下一帧构建日志列表，避免点开时卡顿
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _ready = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final tabs = levelOrder
         .map((lvl) => Tab(text: lvl.name.toUpperCase()))
         .toList();
+    if (!_ready) {
+      return const Center(child: PolygonRefreshIndicator());
+    }
     if (widget.inSheet) {
       // Sheet 内展示：无 Scaffold/Appbar，仅操作按钮 + 内容
       return DefaultTabController(
