@@ -425,6 +425,7 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
   String _query = '';
   int _page = 1;
   int _total = 1;
+  final Map<int, List<Map<String, dynamic>>> _pageCache = {};
 
   @override
   void dispose() {
@@ -436,6 +437,8 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
     final q = _ctrl.text.trim();
     if (q.isEmpty) return;
     _query = q;
+    _pageCache.clear();
+    _total = 1;
     await _load(1);
   }
 
@@ -446,6 +449,17 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
 
   Future<void> _load(int page) async {
     if (_query.isEmpty || page < 1) return;
+    // 已缓存页直接秒开（返回上一页不重新请求）
+    final hit = _pageCache[page];
+    if (hit != null) {
+      setState(() {
+        _page = page;
+        _rows = hit;
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
     setState(() {
       _loading = true;
       _searched = true;
@@ -469,6 +483,7 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
           }
         }
       }
+      _pageCache[page] = rows;
       setState(() {
         _rows = rows;
         _total = total > 1 ? total : _total;

@@ -430,6 +430,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     if (cached != null) {
       setState(() {
         _page = page;
+        _tabPage[key] = page;
         _error = null;
         _totalPages = _tabTotal[key] ?? _totalPages;
       });
