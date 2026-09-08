@@ -107,16 +107,10 @@ class _ForumBoardRow extends StatelessWidget {
         'forum_${plugin.key}_${(tidObj?.toString().isNotEmpty ?? false) ? tidObj.toString() : identityHashCode(item)}';
     String heroTagFor(int i) => '${heroBase}_$i';
 
-    Widget avatarWidget;
+    Widget? avatarWidget;
     if (avatar.isNotEmpty) {
       avatarWidget = ClipOval(
         child: _siteImage(avatar, width: 40, height: 40, plugin: plugin),
-      );
-    } else {
-      avatarWidget = CircleAvatar(
-        radius: 20,
-        backgroundColor: cs.surfaceContainerHighest,
-        child: Icon(Icons.person_outline, size: 20, color: cs.onSurfaceVariant),
       );
     }
 
@@ -155,40 +149,18 @@ class _ForumBoardRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  avatarWidget,
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (subLine.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            subLine,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
+              if (avatarWidget == null)
+                _ForumHeaderText(name: name, subLine: subLine)
+              else
+                Row(
+                  children: [
+                    avatarWidget,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ForumHeaderText(name: name, subLine: subLine),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(height: 8),
               Text(
                 title,
@@ -838,6 +810,46 @@ class _PluginBoardContentState extends State<PluginBoardContent>
         }
         return _ForumBoardRow(plugin: widget.plugin, item: visible[i]);
       },
+    );
+  }
+}
+
+/// 论坛行头部：无头像时直接铺开，作者为空则只显示信息行
+class _ForumHeaderText extends StatelessWidget {
+  final String name;
+  final String subLine;
+
+  const _ForumHeaderText({required this.name, this.subLine = ''});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (name.isNotEmpty)
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        if (subLine.isNotEmpty) ...[
+          if (name.isNotEmpty) const SizedBox(height: 2),
+          Text(
+            subLine,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

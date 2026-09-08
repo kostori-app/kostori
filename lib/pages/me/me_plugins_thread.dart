@@ -279,7 +279,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              if (avatar.isNotEmpty)
+              if (avatar.isNotEmpty) ...[
                 ClipOval(
                   child: _siteImage(
                     avatar,
@@ -287,18 +287,9 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                     height: 36,
                     plugin: widget.plugin,
                   ),
-                )
-              else
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.person_outline,
-                    size: 18,
-                    color: cs.onSurfaceVariant,
-                  ),
                 ),
-              const SizedBox(width: 10),
+                const SizedBox(width: 10),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,7 +515,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     final avatarUrl = post.avatarUrl;
     return Row(
       children: [
-        if (avatarUrl.isNotEmpty)
+        if (avatarUrl.isNotEmpty) ...[
           ClipOval(
             child: _siteImage(
               avatarUrl,
@@ -532,37 +523,23 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
               height: 38,
               plugin: widget.plugin,
             ),
-          )
-        else
-          CircleAvatar(
-            radius: 19,
-            backgroundColor: cs.surfaceContainerHighest,
-            child: Icon(
-              Icons.person_outline,
-              size: 19,
-              color: cs.onSurfaceVariant,
-            ),
           ),
-        const SizedBox(width: 10),
+          const SizedBox(width: 10),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      post.author.isEmpty ? t.unknown : post.author,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+              if (post.author.isNotEmpty)
+                Text(
+                  post.author,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
-              ),
+                ),
               if (post.time.isNotEmpty)
                 Text(
                   post.time,
