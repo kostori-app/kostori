@@ -280,6 +280,9 @@ openAnime: Open anime
 sourceNotInstalled: Anime source "${source}" is not installed. Add it in Source settings to open this anime
 openHelp: Open help
 openInBrowser: Open in Browser
+resolveLink: Resolve link
+resolveLinkHint: Paste an anime-source link here
+noResolvableLink: No enabled source can resolve this link
 openLink: Open link
 open: Open
 operation: Operation

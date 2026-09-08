@@ -875,6 +875,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Open in Browser'
 	String get openInBrowser => 'Open in Browser';
 
+	/// en: 'Resolve link'
+	String get resolveLink => 'Resolve link';
+
+	/// en: 'Paste an anime-source link here'
+	String get resolveLinkHint => 'Paste an anime-source link here';
+
+	/// en: 'No enabled source can resolve this link'
+	String get noResolvableLink => 'No enabled source can resolve this link';
+
 	/// en: 'Open link'
 	String get openLink => 'Open link';
 
@@ -7652,6 +7661,9 @@ extension on Translations {
 			'sourceNotInstalled' => ({required Object source}) => 'Anime source "${source}" is not installed. Add it in Source settings to open this anime',
 			'openHelp' => 'Open help',
 			'openInBrowser' => 'Open in Browser',
+			'resolveLink' => 'Resolve link',
+			'resolveLinkHint' => 'Paste an anime-source link here',
+			'noResolvableLink' => 'No enabled source can resolve this link',
 			'openLink' => 'Open link',
 			'open' => 'Open',
 			'operation' => 'Operation',
@@ -7883,11 +7895,11 @@ extension on Translations {
 			'saveFailedE' => ({required Object e}) => 'Save Failed: ${e}',
 			'failedToLoadImagesOrNoImages' => 'Failed to load images or no images',
 			'failedToPickImage' => 'Failed to pick image',
+			_ => null,
+		} ?? switch (path) {
 			'selectImages' => 'Select Images',
 			'addImages' => 'Add Images',
 			'importedCountI' => ({required Object i}) => 'Imported ${i} image(s)',
-			_ => null,
-		} ?? switch (path) {
 			'exportImage' => 'Copy / Share',
 			'saveAndShare' => 'Save & Share',
 			'monday' => 'Monday',
@@ -8397,11 +8409,11 @@ extension on Translations {
 			'modelName' => 'Model Name',
 			'apiConfiguration' => 'Api Configuration',
 			'wordCloud' => 'Word Cloud',
+			_ => null,
+		} ?? switch (path) {
 			'statsCalendar' => 'Stats Calendar',
 			'todaysRecords' => 'Today\'s Records',
 			'dailyStats' => 'Daily Stats',
-			_ => null,
-		} ?? switch (path) {
 			'viewAll' => 'View All',
 			'kostoriChangelog' => 'Kostori Changelog',
 			'copyPath' => 'Copy Path',
@@ -8911,11 +8923,11 @@ extension on Translations {
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			'cannotBeEmpty' => 'Cannot be empty',
 			'invalidCookies' => 'Invalid cookies',
+			_ => null,
+		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
 			'translationFailedPleaseTryAgainLater' => 'Translation failed, please try again later',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'The AI translation provider does not support your current region. Please switch provider or use a different network',
 			'translationErrorModelNotSupported' => 'The configured model is not supported by this provider. Please change it in AI settings',
 			'translationErrorApiKeyInvalid' => 'The API key is invalid or lacks permission. Please check it in AI settings',
@@ -9425,11 +9437,11 @@ extension on Translations {
 			'profileName' => 'Profile Name',
 			'profileIcon' => 'Icon',
 			'profileIconHint' => 'One emoji, e.g. 🤖',
+			_ => null,
+		} ?? switch (path) {
 			'profilePersona' => 'Persona',
 			'profileTone' => 'Tone',
 			'profilePromptFragments' => 'Prompt Fragments (one per line)',
-			_ => null,
-		} ?? switch (path) {
 			'profileKnowledge' => 'Knowledge (one per line)',
 			'profileParams' => 'Generation Parameters',
 			'profileBehaviorPrefs' => 'Behavior Preferences',

@@ -130,6 +130,19 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
                       ),
                     ),
                   ),
+                  Tooltip(
+                    message: t.resolveLink,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        context.to(() => const LinkResolvePage());
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(Icons.link, size: 20, color: cs.primary),
+                      ),
+                    ),
+                  ),
                   TextButton.icon(
                     onPressed: _openManage,
                     icon: const Icon(Icons.settings_outlined, size: 16),

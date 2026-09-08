@@ -269,6 +269,9 @@ openAnime: 打开番剧
 sourceNotInstalled: 番剧源「${source}」未安装，请到源设置中添加后再打开
 openHelp: 打开帮助
 openInBrowser: 在浏览器中打开
+resolveLink: 解析链接
+resolveLinkHint: 粘贴一条番剧源的链接或文本
+noResolvableLink: 没有启用的源能解析这条链接
 openLink: 打开链接
 open: 打开
 operation: 操作

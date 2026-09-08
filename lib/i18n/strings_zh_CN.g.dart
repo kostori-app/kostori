@@ -310,6 +310,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String sourceNotInstalled({required Object source}) => '番剧源「${source}」未安装，请到源设置中添加后再打开';
 	@override String get openHelp => '打开帮助';
 	@override String get openInBrowser => '在浏览器中打开';
+	@override String get resolveLink => '解析链接';
+	@override String get resolveLinkHint => '粘贴一条番剧源的链接或文本';
+	@override String get noResolvableLink => '没有启用的源能解析这条链接';
 	@override String get openLink => '打开链接';
 	@override String get open => '打开';
 	@override String get operation => '操作';
@@ -2774,6 +2777,9 @@ extension on TranslationsZhCn {
 			'sourceNotInstalled' => ({required Object source}) => '番剧源「${source}」未安装，请到源设置中添加后再打开',
 			'openHelp' => '打开帮助',
 			'openInBrowser' => '在浏览器中打开',
+			'resolveLink' => '解析链接',
+			'resolveLinkHint' => '粘贴一条番剧源的链接或文本',
+			'noResolvableLink' => '没有启用的源能解析这条链接',
 			'openLink' => '打开链接',
 			'open' => '打开',
 			'operation' => '操作',
@@ -3012,11 +3018,11 @@ extension on TranslationsZhCn {
 			'failedToPickImage' => '选择图片失败',
 			'monday' => '周一',
 			'tuesday' => '周二',
+			_ => null,
+		} ?? switch (path) {
 			'wednesday' => '周三',
 			'thursday' => '周四',
 			'friday' => '周五',
-			_ => null,
-		} ?? switch (path) {
 			'saturday' => '周六',
 			'sunday' => '周日',
 			'defaultOrder' => '默认排序',
@@ -3526,11 +3532,11 @@ extension on TranslationsZhCn {
 			'apiConfiguration' => 'API 配置',
 			'wordCloud' => '词云',
 			'statsCalendar' => '统计日历',
+			_ => null,
+		} ?? switch (path) {
 			'todaysRecords' => '当天的记录',
 			'dailyStats' => '天统计',
 			'viewAll' => '查看全部',
-			_ => null,
-		} ?? switch (path) {
 			'kostoriChangelog' => 'Kostori 更新日志',
 			'copyPath' => '复制路径',
 			'properties' => '属性',
@@ -4040,11 +4046,11 @@ extension on TranslationsZhCn {
 			'cannotBeEmpty' => '不能为空',
 			'invalidCookies' => '无效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
+			_ => null,
+		} ?? switch (path) {
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
 			'translationErrorRegionNotSupported' => 'AI 翻译源不支持当前网络地区，请更换翻译源或使用其他地区的网络',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorModelNotSupported' => '当前配置的模型不被该服务商支持，请到 AI 设置更换模型',
 			'translationErrorApiKeyInvalid' => 'API Key 无效或无权限，请检查 AI 设置中的密钥',
 			'translationErrorRateLimited' => '请求过于频繁或额度不足，请稍后再试',
@@ -4554,11 +4560,11 @@ extension on TranslationsZhCn {
 			'profileName' => '档案名称',
 			'profileIcon' => '图标',
 			'profileIconHint' => '一个 emoji，例如 🤖',
+			_ => null,
+		} ?? switch (path) {
 			'profilePersona' => '人设',
 			'profileTone' => '语气',
 			'profilePromptFragments' => '提示片段（每行一条）',
-			_ => null,
-		} ?? switch (path) {
 			'profileKnowledge' => '知识（每行一条）',
 			'profileParams' => '生成参数',
 			'profileBehaviorPrefs' => '行为偏好',

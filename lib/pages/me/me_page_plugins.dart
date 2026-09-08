@@ -16,6 +16,7 @@ import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/link_resolve_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:url_launcher/url_launcher_string.dart';

@@ -268,6 +268,9 @@ openAnime: 開啟動漫
 sourceNotInstalled: 番劇源「${source}」未安裝，請到源設定中新增後再開啟
 openHelp: 查看幫助
 openInBrowser: 在瀏覽器中開啟
+resolveLink: 解析連結
+resolveLinkHint: 貼上一條番劇源的連結或文字
+noResolvableLink: 沒有啟用的源能解析這條連結
 openLink: 開啟連結
 open: 開啟
 operation: 操作

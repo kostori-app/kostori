@@ -309,6 +309,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String sourceNotInstalled({required Object source}) => '番劇源「${source}」未安裝，請到源設定中新增後再開啟';
 	@override String get openHelp => '查看幫助';
 	@override String get openInBrowser => '在瀏覽器中開啟';
+	@override String get resolveLink => '解析連結';
+	@override String get resolveLinkHint => '貼上一條番劇源的連結或文字';
+	@override String get noResolvableLink => '沒有啟用的源能解析這條連結';
 	@override String get openLink => '開啟連結';
 	@override String get open => '開啟';
 	@override String get operation => '操作';
@@ -2772,6 +2775,9 @@ extension on TranslationsZhTw {
 			'sourceNotInstalled' => ({required Object source}) => '番劇源「${source}」未安裝，請到源設定中新增後再開啟',
 			'openHelp' => '查看幫助',
 			'openInBrowser' => '在瀏覽器中開啟',
+			'resolveLink' => '解析連結',
+			'resolveLinkHint' => '貼上一條番劇源的連結或文字',
+			'noResolvableLink' => '沒有啟用的源能解析這條連結',
 			'openLink' => '開啟連結',
 			'open' => '開啟',
 			'operation' => '操作',
@@ -3011,11 +3017,11 @@ extension on TranslationsZhTw {
 			'monday' => '週一',
 			'tuesday' => '週二',
 			'wednesday' => '週三',
+			_ => null,
+		} ?? switch (path) {
 			'thursday' => '週四',
 			'friday' => '週五',
 			'saturday' => '週六',
-			_ => null,
-		} ?? switch (path) {
 			'sunday' => '週日',
 			'defaultOrder' => '預設排序',
 			'byTime' => '按時間',
@@ -3525,11 +3531,11 @@ extension on TranslationsZhTw {
 			'modelName' => '模型名稱',
 			'apiConfiguration' => 'API 設定',
 			'wordCloud' => '詞雲',
+			_ => null,
+		} ?? switch (path) {
 			'statsCalendar' => '統計日曆',
 			'todaysRecords' => '當天的記錄',
 			'dailyStats' => '天統計',
-			_ => null,
-		} ?? switch (path) {
 			'viewAll' => '查看全部',
 			'kostoriChangelog' => 'Kostori 更新日誌',
 			'copyPath' => '複製路徑',
@@ -4039,11 +4045,11 @@ extension on TranslationsZhTw {
 			'loginWithPasswordIsDisabled' => '密碼登入已停用',
 			'cannotBeEmpty' => '不能為空',
 			'invalidCookies' => '無效的 Cookies',
+			_ => null,
+		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '資料源',
 			'translationFailedPleaseTryAgainLater' => '翻譯失敗，請稍後重試',
-			_ => null,
-		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'AI 翻譯來源不支援目前所在地區，請更換翻譯來源或改用其他地區的網路',
 			'translationErrorModelNotSupported' => '目前設定的模型不受該服務商支援，請到 AI 設定更換模型',
 			'translationErrorApiKeyInvalid' => 'API Key 無效或無權限，請檢查 AI 設定中的金鑰',
@@ -4553,11 +4559,11 @@ extension on TranslationsZhTw {
 			'profileIcon' => '圖示',
 			'profileIconHint' => '一個 emoji，例如 🤖',
 			'profilePersona' => '人設',
+			_ => null,
+		} ?? switch (path) {
 			'profileTone' => '語氣',
 			'profilePromptFragments' => '提示片段（每行一條）',
 			'profileKnowledge' => '知識（每行一條）',
-			_ => null,
-		} ?? switch (path) {
 			'profileParams' => '生成參數',
 			'profileBehaviorPrefs' => '行為偏好',
 			'customParamsHint' => '留空表示跟隨服務商預設值',

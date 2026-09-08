@@ -142,6 +142,47 @@ class AnimeSourceManager with ChangeNotifier, Init {
   void notifyStateChange() {
     notifyListeners();
   }
+
+  /// 收集“能解析这段文本”的启用源：域名命中 → linkToId 提取 id。
+  /// 供解析页/长按“用解析打开”复用。
+  Future<List<ResolvedLinkCandidate>> resolveLinkCandidates(String text) async {
+    final raw = text.trim();
+    if (raw.isEmpty) return const [];
+    String host = '';
+    try {
+      host = Uri.parse(raw).host;
+    } catch (_) {}
+    if (host.isEmpty) {
+      final m = RegExp(r'https?://[^\s<>]+').firstMatch(raw);
+      if (m != null) {
+        try {
+          host = Uri.parse(m.group(0)!).host;
+        } catch (_) {}
+      }
+    }
+    final candidates = <ResolvedLinkCandidate>[];
+    for (final source in all()) {
+      if (!isEnabled(source.key)) continue;
+      final handler = source.linkHandler;
+      if (handler == null) continue;
+      if (host.isNotEmpty && !handler.domains.contains(host)) continue;
+      try {
+        final id = handler.linkToId(raw);
+        if (id == null || id.isEmpty) continue;
+        candidates.add(
+          ResolvedLinkCandidate(
+            sourceKey: source.key,
+            sourceName: source.name,
+            id: id,
+            host: host,
+          ),
+        );
+      } catch (_) {
+        // 该源无法解析，忽略继续下一个
+      }
+    }
+    return candidates;
+  }
 }
 
 /// build Anime list, [Res.subData] should be maxPage or null if there is no limit.
@@ -666,4 +707,21 @@ class LinkHandler {
   final String? Function(String url) linkToId;
 
   const LinkHandler(this.domains, this.linkToId);
+}
+
+/// 链接解析候选：来源 + 提取到的番剧 id
+class ResolvedLinkCandidate {
+  final String sourceKey;
+  final String sourceName;
+  final String id;
+
+  /// 命中域名（若文本不含 URL 则为空）
+  final String host;
+
+  const ResolvedLinkCandidate({
+    required this.sourceKey,
+    required this.sourceName,
+    required this.id,
+    this.host = '',
+  });
 }
