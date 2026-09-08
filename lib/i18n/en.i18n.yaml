@@ -316,6 +316,12 @@ reviews: Reviews
 saveImage: Save Image
 savedFailed: Saved Failed
 saved: Saved
+importCustomCookie: Import custom cookie
+scanCookieQrCode: Scan cookie QR code
+invalidCookieQrCode: Invalid cookie QR code
+cookieImported: Cookie imported
+cookieCleared: Cookie cleared
+importFromClipboard: Paste cookie content
 searchAll: Search All
 searchHistory: Search History
 searchIn: Search in

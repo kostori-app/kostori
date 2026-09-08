@@ -346,6 +346,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get saveImage => '保存图片';
 	@override String get savedFailed => '保存失败';
 	@override String get saved => '已保存';
+	@override String get importCustomCookie => '导入自定义饼干';
+	@override String get scanCookieQrCode => '扫码导入饼干';
+	@override String get invalidCookieQrCode => '无效的饼干二维码';
+	@override String get cookieImported => '饼干已导入';
+	@override String get cookieCleared => '已清除饼干';
+	@override String get importFromClipboard => '粘贴饼干内容';
 	@override String get searchAll => '搜索全部';
 	@override String get searchHistory => '搜索历史';
 	@override String get searchIn => '搜索';
@@ -2813,6 +2819,12 @@ extension on TranslationsZhCn {
 			'saveImage' => '保存图片',
 			'savedFailed' => '保存失败',
 			'saved' => '已保存',
+			'importCustomCookie' => '导入自定义饼干',
+			'scanCookieQrCode' => '扫码导入饼干',
+			'invalidCookieQrCode' => '无效的饼干二维码',
+			'cookieImported' => '饼干已导入',
+			'cookieCleared' => '已清除饼干',
+			'importFromClipboard' => '粘贴饼干内容',
 			'searchAll' => '搜索全部',
 			'searchHistory' => '搜索历史',
 			'searchIn' => '搜索',
@@ -3012,14 +3024,14 @@ extension on TranslationsZhCn {
 			'innerBorderColor' => '内边框颜色',
 			'borderSettings' => '边框设置',
 			'saving' => '保存中',
+			_ => null,
+		} ?? switch (path) {
 			'saveSuccessful' => '保存成功',
 			'saveFailedE' => ({required Object e}) => '保存失败：${e}',
 			'failedToLoadImagesOrNoImages' => '加载图片失败或无图片',
 			'failedToPickImage' => '选择图片失败',
 			'monday' => '周一',
 			'tuesday' => '周二',
-			_ => null,
-		} ?? switch (path) {
 			'wednesday' => '周三',
 			'thursday' => '周四',
 			'friday' => '周五',
@@ -3526,14 +3538,14 @@ extension on TranslationsZhCn {
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => '请输入翻译提示词，使用 ${a} 作为目标语言的占位符',
 			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示词必须包含 ${a} 作为目标语言的占位符',
 			'thisFieldCannotBeEmpty' => '此字段不能为空',
+			_ => null,
+		} ?? switch (path) {
 			'thePromptMustContainAPlaceholder' => ({required Object a}) => '提示词必须包含 ${a} 占位符',
 			'translationPrompt' => '翻译提示词',
 			'modelName' => '模型名称',
 			'apiConfiguration' => 'API 配置',
 			'wordCloud' => '词云',
 			'statsCalendar' => '统计日历',
-			_ => null,
-		} ?? switch (path) {
 			'todaysRecords' => '当天的记录',
 			'dailyStats' => '天统计',
 			'viewAll' => '查看全部',
@@ -4040,14 +4052,14 @@ extension on TranslationsZhCn {
 			'connectionDisconnected' => '连接已断开',
 			'enterServerAddress' => '输入服务器地址',
 			'tapToShare' => '点击分享',
+			_ => null,
+		} ?? switch (path) {
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '没有数据',
 			'loginWithPasswordIsDisabled' => '密码登录已禁用',
 			'cannotBeEmpty' => '不能为空',
 			'invalidCookies' => '无效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
-			_ => null,
-		} ?? switch (path) {
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
 			'translationErrorRegionNotSupported' => 'AI 翻译源不支持当前网络地区，请更换翻译源或使用其他地区的网络',
@@ -4554,14 +4566,14 @@ extension on TranslationsZhCn {
 			'noSkillFileFound' => '所选文件夹中未找到 SKILL.md',
 			'importedSkillCount' => ({required Object count}) => '已导入 ${count} 个技能',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已导入 ${imported} 个技能，跳过 ${skipped} 个无效文件',
+			_ => null,
+		} ?? switch (path) {
 			'assistantProfiles' => '助手档案',
 			'newProfile' => '新建档案',
 			'editAssistantProfile' => '编辑档案',
 			'profileName' => '档案名称',
 			'profileIcon' => '图标',
 			'profileIconHint' => '一个 emoji，例如 🤖',
-			_ => null,
-		} ?? switch (path) {
 			'profilePersona' => '人设',
 			'profileTone' => '语气',
 			'profilePromptFragments' => '提示片段（每行一条）',

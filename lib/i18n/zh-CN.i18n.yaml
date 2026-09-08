@@ -305,6 +305,12 @@ reviews: 评价
 saveImage: 保存图片
 savedFailed: 保存失败
 saved: 已保存
+importCustomCookie: 导入自定义饼干
+scanCookieQrCode: 扫码导入饼干
+invalidCookieQrCode: 无效的饼干二维码
+cookieImported: 饼干已导入
+cookieCleared: 已清除饼干
+importFromClipboard: 粘贴饼干内容
 searchAll: 搜索全部
 searchHistory: 搜索历史
 searchIn: 搜索

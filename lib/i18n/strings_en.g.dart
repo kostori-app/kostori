@@ -983,6 +983,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Saved'
 	String get saved => 'Saved';
 
+	/// en: 'Import custom cookie'
+	String get importCustomCookie => 'Import custom cookie';
+
+	/// en: 'Scan cookie QR code'
+	String get scanCookieQrCode => 'Scan cookie QR code';
+
+	/// en: 'Invalid cookie QR code'
+	String get invalidCookieQrCode => 'Invalid cookie QR code';
+
+	/// en: 'Cookie imported'
+	String get cookieImported => 'Cookie imported';
+
+	/// en: 'Cookie cleared'
+	String get cookieCleared => 'Cookie cleared';
+
+	/// en: 'Paste cookie content'
+	String get importFromClipboard => 'Paste cookie content';
+
 	/// en: 'Search All'
 	String get searchAll => 'Search All';
 
@@ -7697,6 +7715,12 @@ extension on Translations {
 			'saveImage' => 'Save Image',
 			'savedFailed' => 'Saved Failed',
 			'saved' => 'Saved',
+			'importCustomCookie' => 'Import custom cookie',
+			'scanCookieQrCode' => 'Scan cookie QR code',
+			'invalidCookieQrCode' => 'Invalid cookie QR code',
+			'cookieImported' => 'Cookie imported',
+			'cookieCleared' => 'Cookie cleared',
+			'importFromClipboard' => 'Paste cookie content',
 			'searchAll' => 'Search All',
 			'searchHistory' => 'Search History',
 			'searchIn' => 'Search in',
@@ -7889,14 +7913,14 @@ extension on Translations {
 			'showOuterBorder' => 'Show Outer Border',
 			'innerBorderWidth' => 'Inner Border Width',
 			'innerBorderColor' => 'Inner Border Color',
+			_ => null,
+		} ?? switch (path) {
 			'borderSettings' => 'Border Settings',
 			'saving' => 'Saving',
 			'saveSuccessful' => 'Save Successful',
 			'saveFailedE' => ({required Object e}) => 'Save Failed: ${e}',
 			'failedToLoadImagesOrNoImages' => 'Failed to load images or no images',
 			'failedToPickImage' => 'Failed to pick image',
-			_ => null,
-		} ?? switch (path) {
 			'selectImages' => 'Select Images',
 			'addImages' => 'Add Images',
 			'importedCountI' => ({required Object i}) => 'Imported ${i} image(s)',
@@ -8403,14 +8427,14 @@ extension on Translations {
 			'operationUnknown' => 'Operation unknown',
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => 'Please enter translation prompt, use ${a} as the placeholder for the target language',
 			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => 'The prompt must contain ${a} as the placeholder for the target language',
+			_ => null,
+		} ?? switch (path) {
 			'thisFieldCannotBeEmpty' => 'This field cannot be empty',
 			'thePromptMustContainAPlaceholder' => ({required Object a}) => 'The prompt must contain ${a} placeholder',
 			'translationPrompt' => 'Translation Prompt',
 			'modelName' => 'Model Name',
 			'apiConfiguration' => 'Api Configuration',
 			'wordCloud' => 'Word Cloud',
-			_ => null,
-		} ?? switch (path) {
 			'statsCalendar' => 'Stats Calendar',
 			'todaysRecords' => 'Today\'s Records',
 			'dailyStats' => 'Daily Stats',
@@ -8917,14 +8941,14 @@ extension on Translations {
 			'autoTitle' => 'Auto Title',
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
+			_ => null,
+		} ?? switch (path) {
 			'tapToShare' => 'Tap to share',
 			'noConfigurationsFound' => 'No configurations found',
 			'noData' => 'No data',
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			'cannotBeEmpty' => 'Cannot be empty',
 			'invalidCookies' => 'Invalid cookies',
-			_ => null,
-		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
 			'translationFailedPleaseTryAgainLater' => 'Translation failed, please try again later',
@@ -9431,14 +9455,14 @@ extension on Translations {
 			'noSkillFileFound' => 'No SKILL.md found in the selected folder',
 			'importedSkillCount' => ({required Object count}) => 'Imported ${count} skill(s)',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)',
+			_ => null,
+		} ?? switch (path) {
 			'assistantProfiles' => 'Assistant Profiles',
 			'newProfile' => 'New Profile',
 			'editAssistantProfile' => 'Edit Profile',
 			'profileName' => 'Profile Name',
 			'profileIcon' => 'Icon',
 			'profileIconHint' => 'One emoji, e.g. 🤖',
-			_ => null,
-		} ?? switch (path) {
 			'profilePersona' => 'Persona',
 			'profileTone' => 'Tone',
 			'profilePromptFragments' => 'Prompt Fragments (one per line)',

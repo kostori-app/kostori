@@ -345,6 +345,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get saveImage => '儲存圖片';
 	@override String get savedFailed => '儲存失敗';
 	@override String get saved => '已儲存';
+	@override String get importCustomCookie => '導入自訂餅乾';
+	@override String get scanCookieQrCode => '掃碼匯入餅乾';
+	@override String get invalidCookieQrCode => '無效的餅乾 QR Code';
+	@override String get cookieImported => '餅乾已匯入';
+	@override String get cookieCleared => '已清除餅乾';
+	@override String get importFromClipboard => '貼上餅乾內容';
 	@override String get searchAll => '搜尋全部';
 	@override String get searchHistory => '搜尋歷史';
 	@override String get searchIn => '搜尋自';
@@ -2811,6 +2817,12 @@ extension on TranslationsZhTw {
 			'saveImage' => '儲存圖片',
 			'savedFailed' => '儲存失敗',
 			'saved' => '已儲存',
+			'importCustomCookie' => '導入自訂餅乾',
+			'scanCookieQrCode' => '掃碼匯入餅乾',
+			'invalidCookieQrCode' => '無效的餅乾 QR Code',
+			'cookieImported' => '餅乾已匯入',
+			'cookieCleared' => '已清除餅乾',
+			'importFromClipboard' => '貼上餅乾內容',
 			'searchAll' => '搜尋全部',
 			'searchHistory' => '搜尋歷史',
 			'searchIn' => '搜尋自',
@@ -3011,14 +3023,14 @@ extension on TranslationsZhTw {
 			'borderSettings' => '邊框設定',
 			'saving' => '正在儲存',
 			'saveSuccessful' => '儲存成功',
+			_ => null,
+		} ?? switch (path) {
 			'saveFailedE' => ({required Object e}) => '儲存失敗：${e}',
 			'failedToLoadImagesOrNoImages' => '載入圖片失敗或無圖片',
 			'failedToPickImage' => '選擇圖片失敗',
 			'monday' => '週一',
 			'tuesday' => '週二',
 			'wednesday' => '週三',
-			_ => null,
-		} ?? switch (path) {
 			'thursday' => '週四',
 			'friday' => '週五',
 			'saturday' => '週六',
@@ -3525,14 +3537,14 @@ extension on TranslationsZhTw {
 			'operationUnknown' => '操作未知',
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符',
 			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符',
+			_ => null,
+		} ?? switch (path) {
 			'thisFieldCannotBeEmpty' => '此欄位不能為空',
 			'thePromptMustContainAPlaceholder' => ({required Object a}) => '提示詞必須包含 ${a} 佔位符',
 			'translationPrompt' => '翻譯提示詞',
 			'modelName' => '模型名稱',
 			'apiConfiguration' => 'API 設定',
 			'wordCloud' => '詞雲',
-			_ => null,
-		} ?? switch (path) {
 			'statsCalendar' => '統計日曆',
 			'todaysRecords' => '當天的記錄',
 			'dailyStats' => '天統計',
@@ -4039,14 +4051,14 @@ extension on TranslationsZhTw {
 			'autoTitle' => '自動標題',
 			'connectionDisconnected' => '連線已斷開',
 			'enterServerAddress' => '輸入伺服器位址',
+			_ => null,
+		} ?? switch (path) {
 			'tapToShare' => '點擊分享',
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '沒有資料',
 			'loginWithPasswordIsDisabled' => '密碼登入已停用',
 			'cannotBeEmpty' => '不能為空',
 			'invalidCookies' => '無效的 Cookies',
-			_ => null,
-		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '資料源',
 			'translationFailedPleaseTryAgainLater' => '翻譯失敗，請稍後重試',
@@ -4553,14 +4565,14 @@ extension on TranslationsZhTw {
 			'importedSkillCount' => ({required Object count}) => '已匯入 ${count} 個技能',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案',
 			'assistantProfiles' => '助手檔案',
+			_ => null,
+		} ?? switch (path) {
 			'newProfile' => '新增檔案',
 			'editAssistantProfile' => '編輯檔案',
 			'profileName' => '檔案名稱',
 			'profileIcon' => '圖示',
 			'profileIconHint' => '一個 emoji，例如 🤖',
 			'profilePersona' => '人設',
-			_ => null,
-		} ?? switch (path) {
 			'profileTone' => '語氣',
 			'profilePromptFragments' => '提示片段（每行一條）',
 			'profileKnowledge' => '知識（每行一條）',

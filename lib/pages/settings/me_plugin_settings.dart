@@ -1126,6 +1126,24 @@ class _PluginSettingsModule extends StatelessWidget {
         ],
       );
     }
+    if (type == 'cookie') {
+      return _SettingCard(
+        children: [
+          if (m['title']?.toString().isNotEmpty ?? false)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                m['title'].toString(),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _PluginCookieEditor(plugin: plugin, m: m),
+          ),
+        ],
+      );
+    }
     if (type == 'text') {
       return _SettingCard(
         children: [
@@ -1137,6 +1155,144 @@ class _PluginSettingsModule extends StatelessWidget {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+/// 饼干设置：自定义粘贴导入 / 扫码导入（对齐 xdnmb-main 的饼干导入）
+class _PluginCookieEditor extends StatefulWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> m;
+
+  const _PluginCookieEditor({required this.plugin, required this.m});
+
+  @override
+  State<_PluginCookieEditor> createState() => _PluginCookieEditorState();
+}
+
+class _PluginCookieEditorState extends State<_PluginCookieEditor> {
+  String get _key => widget.m['key']?.toString() ?? 'userhash';
+
+  String get _value => widget.plugin.configs[_key]?.toString() ?? '';
+
+  /// 兼容多种来源：裸 userhash / userhash=xxx / {"cookie":"…","name":"…"} / {"userhash":…}
+  String? _normalize(String raw) {
+    var text = raw.trim();
+    if (text.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is Map) {
+        final map = decoded.map((k, v) => MapEntry('$k', v));
+        final hash =
+            map['cookie']?.toString() ??
+            map['userhash']?.toString() ??
+            map['user_hash']?.toString();
+        if (hash != null) text = hash.trim();
+      }
+    } catch (_) {}
+    if (text.startsWith('userhash=')) {
+      text = text.substring('userhash='.length).trim();
+    } else if (text.startsWith('userhash:')) {
+      text = text.substring('userhash:'.length).trim();
+    }
+    if (text.length >= 2 &&
+        ((text.startsWith('"') && text.endsWith('"')) ||
+            (text.startsWith("'") && text.endsWith("'")))) {
+      text = text.substring(1, text.length - 1);
+    }
+    if (!RegExp(r'^[0-9A-Za-z_-]{4,64}$').hasMatch(text)) return null;
+    return text;
+  }
+
+  void _save(String hash) {
+    widget.plugin.setConfigValue(_key, hash);
+    MePagePluginManager().touch();
+    if (mounted) setState(() {});
+    App.rootContext.showMessage(message: t.cookieImported);
+  }
+
+  Future<void> _manualImport() async {
+    await showInputDialog(
+      context: context,
+      title: t.importCustomCookie,
+      hintText: 'userhash=xxxxx 或 {"cookie":"…","name":"…"}',
+      initialValue: _value,
+      minLines: 1,
+      onConfirm: (raw) {
+        final hash = _normalize(raw);
+        if (hash == null) return t.invalidCookieQrCode;
+        _save(hash);
+        return null;
+      },
+    );
+  }
+
+  Future<void> _scanImport() async {
+    final result = await QrScannerPage.push(context);
+    if (result == null || !mounted) return;
+    final hash = _normalize(result.rawValue);
+    if (hash == null) {
+      App.rootContext.showMessage(
+        message: t.invalidCookieQrCode,
+        level: LogLevel.error,
+      );
+      return;
+    }
+    _save(hash);
+  }
+
+  void _clear() {
+    widget.plugin.setConfigValue(_key, '');
+    MePagePluginManager().touch();
+    if (mounted) setState(() {});
+    App.rootContext.showMessage(message: t.cookieCleared);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.cookie_outlined, size: 18, color: cs.primary),
+            const SizedBox(width: 6),
+            Text(
+              _value.isEmpty ? t.noData : _value,
+              style: TextStyle(
+                fontSize: 13,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w500,
+                color: _value.isEmpty ? cs.onSurfaceVariant : cs.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            IconTileButton(
+              icon: const Icon(Icons.edit_note),
+              label: t.importCustomCookie,
+              onTap: _manualImport,
+            ),
+            IconTileButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              label: t.scanCookieQrCode,
+              onTap: _scanImport,
+            ),
+            if (_value.isNotEmpty)
+              IconTileButton(
+                icon: const Icon(Icons.backspace_outlined),
+                label: t.clear,
+                onTap: _clear,
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 
