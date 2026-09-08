@@ -1316,29 +1316,30 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
 
   Future<void> _refreshCaptcha() async {
     if (_method('captcha').isEmpty) return;
+    if (_captchaBusy) return;
     setState(() {
       _captchaData = null;
       _captchaBusy = true;
       _error = null;
     });
-    final res = await widget.plugin.invoke(_method('captcha'));
-    if (!mounted) return;
-    final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
-    final data = m?['data']?.toString() ?? '';
-    if (data.isEmpty) {
-      setState(() {
-        _captchaBusy = false;
-        _error =
-            m?['error']?.toString().isNotEmpty == true
-                ? m!['error'].toString()
-                : t.invalidCookieHash;
-      });
-      return;
+    try {
+      final res = await widget.plugin.invoke(_method('captcha'));
+      if (!mounted) return;
+      final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
+      final data = m?['data']?.toString() ?? '';
+      if (data.isEmpty) {
+        setState(() {
+          _error =
+              m?['error']?.toString().isNotEmpty == true
+                  ? m!['error'].toString()
+                  : t.invalidCookieHash;
+        });
+        return;
+      }
+      setState(() => _captchaData = data);
+    } finally {
+      if (mounted) setState(() => _captchaBusy = false);
     }
-    setState(() {
-      _captchaData = data;
-      _captchaBusy = false;
-    });
   }
 
   Future<void> _login() async {
