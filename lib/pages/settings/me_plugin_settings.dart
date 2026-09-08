@@ -1624,7 +1624,15 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _refreshCaptcha,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: Text(_txt('captchaRefresh', '刷新验证码')),
+          ),
+        ),
+        const SizedBox(height: 4),
         if (_error != null) ...[
           Text(
             _error!,
