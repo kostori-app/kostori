@@ -48,6 +48,19 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
   void initState() {
     super.initState();
     _load();
+    MePagePluginManager().addListener(_onPluginsChanged);
+  }
+
+  @override
+  void dispose() {
+    MePagePluginManager().removeListener(_onPluginsChanged);
+    super.dispose();
+  }
+
+  /// 新增/删除/启用插件后自动刷新，无需重启
+  void _onPluginsChanged() {
+    if (!mounted) return;
+    unawaited(_load());
   }
 
   Future<void> _load() async {
