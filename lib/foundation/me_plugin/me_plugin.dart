@@ -396,10 +396,12 @@ class MePagePlugin {
         "?.page(${_jsStr(name)}, $paramsJs) ?? []",
       );
       if (res is List) return res;
+      return const [];
     } catch (e, s) {
-      SourceLog.error('MePagePlugin($name).page($name)', '$e\n$s');
+      // 交由调用方展示错误 + 重试，不再吞成“空数据”
+      SourceLog.error('MePagePlugin($key).page($name)', '$e\n$s');
+      rethrow;
     }
-    return const [];
   }
 
   /// 发送插件里的 signIn 请求（复用 JS Network，走代理/Cookie）。

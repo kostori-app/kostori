@@ -81,6 +81,19 @@ class _PluginSubPageState extends State<PluginSubPage> {
               child: PolygonRefreshIndicator(),
             );
           }
+          if (snap.hasError) {
+            return _PluginRetry(
+              message: '${snap.error}',
+              onRetry: () {
+                setState(() {
+                  _future = widget.plugin.page(
+                    widget.name,
+                    widget.params,
+                  );
+                });
+              },
+            );
+          }
           final modules = snap.data ?? const [];
           return _contentOrBoard(widget.plugin, modules);
         },

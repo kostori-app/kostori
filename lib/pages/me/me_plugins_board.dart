@@ -355,25 +355,43 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   }
 
   Future<void> _loadMeta() async {
-    final modules = widget.metaModules ?? await widget.plugin.page('board');
-    if (!mounted) return;
-    for (final m in modules) {
-      final mm = _asMap2(m);
-      if (mm['type'] != 'board') continue;
-      final raw = mm['tabs'];
-      if (raw is List) _tabs = raw.map((e) => _asMap2(e)).toList();
-      _listPage = mm['page']?.toString() ?? 'boardList';
+    try {
+      final modules =
+          widget.metaModules ?? await widget.plugin.page('board');
+      if (!mounted) return;
+      for (final m in modules) {
+        final mm = _asMap2(m);
+        if (mm['type'] != 'board') continue;
+        final raw = mm['tabs'];
+        if (raw is List) _tabs = raw.map((e) => _asMap2(e)).toList();
+        _listPage = mm['page']?.toString() ?? 'boardList';
+      }
+      if (_tabs.isNotEmpty) {
+        _tabsCtrl?.dispose();
+        _tabsCtrl = TabController(length: _tabs.length, vsync: this)
+          ..addListener(_onTabChanged);
+      }
+      setState(() {
+        _metaLoaded = true;
+        _index = 0;
+        _error = null;
+      });
+      if (_tabs.isNotEmpty) _go(_tabPage[_tabKey] ?? 1);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _metaLoaded = true;
+        _error = '$e';
+      });
     }
-    if (_tabs.isNotEmpty) {
-      _tabsCtrl?.dispose();
-      _tabsCtrl = TabController(length: _tabs.length, vsync: this)
-        ..addListener(_onTabChanged);
-    }
+  }
+
+  Future<void> _retryMeta() async {
     setState(() {
-      _metaLoaded = true;
-      _index = 0;
+      _metaLoaded = false;
+      _error = null;
     });
-    if (_tabs.isNotEmpty) _go(_tabPage[_tabKey] ?? 1);
+    await _loadMeta();
   }
 
   Future<void> _fetch(String tabKey, int page) async {
@@ -627,6 +645,13 @@ class _PluginBoardContentState extends State<PluginBoardContent>
       return const Center(child: PolygonRefreshIndicator(size: 24));
     }
     final cs = Theme.of(context).colorScheme;
+    if (_tabs.isEmpty) {
+      return Center(
+        child: _error != null
+            ? _PluginRetry(message: _error!, onRetry: _retryMeta)
+            : Text(t.noData, style: TextStyle(color: cs.onSurfaceVariant)),
+      );
+    }
     // 留白放在滚动内容自身（anime_list 同款）：网格铺满，行可滚到玻璃条下方产生磨砂
     return Stack(
       children: [
