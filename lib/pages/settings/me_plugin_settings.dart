@@ -1307,7 +1307,7 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
     final hashCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
     String? error;
-    final ok = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
@@ -1374,10 +1374,8 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
         ),
       ),
     );
-    nameCtrl.dispose();
-    hashCtrl.dispose();
-    noteCtrl.dispose();
-    if (ok != true) return;
+    // 注意：不要在这里 dispose 控制器——弹窗关闭的过渡动画期间
+    // TextField 仍会引用它们（见 “used after being disposed” 崩溃）
   }
 
   Future<void> _addByScan() async {
