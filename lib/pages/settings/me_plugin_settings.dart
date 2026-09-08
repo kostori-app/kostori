@@ -1283,6 +1283,12 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
   @override
   void initState() {
     super.initState();
+    // 回填已持久化的账号密码（保存在本插件的 creds）
+    final creds = MePagePluginManager().credsOf(widget.plugin.key);
+    if (creds != null) {
+      _emailCtrl.text = creds['username']?.toString() ?? '';
+      _passCtrl.text = creds['password']?.toString() ?? '';
+    }
     _refreshStatus();
   }
 
@@ -1360,6 +1366,12 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
     if (m?['ok'] == true) {
       _logged = true;
       _email = m?['email']?.toString() ?? email;
+      // 登录成功：持久化账号密码，重启后回填
+      await MePagePluginManager().setCreds(
+        widget.plugin.key,
+        username: email,
+        password: password,
+      );
       _verifyCtrl.clear();
       setState(() {});
       await _sync();
@@ -1470,6 +1482,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
     });
     await widget.plugin.invoke(_method('logout'));
     if (!mounted) return;
+    MePagePluginManager().clearCreds(widget.plugin.key);
     setState(() {
       _busy = false;
       _logged = false;
