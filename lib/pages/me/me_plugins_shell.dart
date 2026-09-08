@@ -143,7 +143,7 @@ class PluginShellPage extends StatefulWidget {
 }
 
 class _PluginShellPageState extends State<PluginShellPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final MePagePluginManager _manager;
   late Future<List<Map<String, dynamic>>> _navFuture;
   TabController? _outerTabs;
