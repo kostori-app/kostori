@@ -441,18 +441,27 @@ class _HistoryDb extends _$_HistoryDb {
   _HistoryDb() : super(_openConn());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 1;
 
   @override
-  MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
-    onUpgrade: (m, from, to) async {
-      if (from < 2) {
-        await m.createTable(pluginEventTable);
-      }
-    },
-  );
+  MigrationStrategy get migration =>
+      MigrationStrategy(onCreate: (m) => m.createAll());
 }
+
+/// 物理建表（v1 无迁移）：幂等，确保 history.db 里有 plugin_events 表
+const String _createPluginEventsSql = '''
+CREATE TABLE IF NOT EXISTS plugin_events (
+  pluginKey TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  itemKey TEXT NOT NULL,
+  title TEXT NOT NULL,
+  subtitle TEXT NOT NULL DEFAULT '',
+  coverUrl TEXT NOT NULL DEFAULT '',
+  extraJson TEXT NOT NULL DEFAULT '{}',
+  createdAt INTEGER NOT NULL,
+  PRIMARY KEY (pluginKey, kind, itemKey)
+)
+''';
 
 LazyDatabase _openConn() => LazyDatabase(() async {
   final file = File(p.join(App.dataPath, 'history.db'));
@@ -880,6 +889,9 @@ extension ProgressHelper on HistoryManager {
 
   Future<void> _ensureDb() async {
     if (!isInitialized) await init();
+    try {
+      await _db.customStatement(_createPluginEventsSql);
+    } catch (_) {}
   }
 
   /// 记录插件事件（浏览/搜索），history.db 同库、无条数上限
