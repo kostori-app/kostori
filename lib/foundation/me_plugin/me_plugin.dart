@@ -245,6 +245,27 @@ class MePagePlugin {
     return const [];
   }
 
+  /// 通用插件方法调用（供通用设置模块调插件 JS 的会话/账号等能力）
+  Future<dynamic> invoke(
+    String method, [
+    List<Object?> args = const [],
+  ]) async {
+    try {
+      final argsJs = args.map((a) => _jsJson(a as Object)).join(', ');
+      final res = await JsEngine().runCode("""
+        (async () => {
+          const f = globalThis.__me_plugins[${_jsStr(key)}]?.[${_jsStr(method)}];
+          if (typeof f !== 'function') return null;
+          return await f($argsJs);
+        })()
+      """);
+      return res;
+    } catch (e, s) {
+      SourceLog.error('MePagePlugin($name).invoke($method)', '$e\n$s');
+      return null;
+    }
+  }
+
   /// 调用插件 render()，返回模块列表（List<Map>）。
   Future<List<dynamic>> render() async {
     try {

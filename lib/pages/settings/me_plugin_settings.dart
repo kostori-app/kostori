@@ -1162,6 +1162,24 @@ class _PluginSettingsModule extends StatelessWidget {
         ],
       );
     }
+    if (type == 'account') {
+      return _SettingCard(
+        children: [
+          if (m['title']?.toString().isNotEmpty ?? false)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                m['title'].toString(),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _PluginAccountEditor(plugin: plugin, m: m),
+          ),
+        ],
+      );
+    }
     if (type == 'text') {
       return _SettingCard(
         children: [
@@ -1204,6 +1222,406 @@ String? _normalizeCookieUserhash(String raw) {
   }
   if (!RegExp(r'^[0-9A-Za-z_-]{4,64}$').hasMatch(text)) return null;
   return text;
+}
+
+/// 通用账号登录模块：插件 JS 通过声明 methods 提供会话/验证码/同步能力。
+/// 登录成功后自动同步插件返回的饼干列表进通用 cookies 存储。
+class _PluginAccountEditor extends StatefulWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> m;
+
+  const _PluginAccountEditor({required this.plugin, required this.m});
+
+  @override
+  State<_PluginAccountEditor> createState() => _PluginAccountEditorState();
+}
+
+class _PluginAccountEditorState extends State<_PluginAccountEditor> {
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _passCtrl = TextEditingController();
+  final TextEditingController _verifyCtrl = TextEditingController();
+  bool _busy = false;
+  bool _logged = false;
+  String _email = '';
+  String? _captchaData; // 插件返回的 base64 验证码图
+  String? _error;
+
+  String _method(String k) {
+    final raw = widget.m['methods'];
+    if (raw is Map) {
+      final v = raw[k];
+      if (v != null) return v.toString();
+    }
+    return '';
+  }
+
+  String _txt(String k, String fallback) {
+    final raw = widget.m['texts'];
+    if (raw is Map) {
+      final v = raw[k];
+      if (v != null && v.toString().isNotEmpty) return v.toString();
+    }
+    return fallback;
+  }
+
+  String get _listKey => widget.m['listKey']?.toString() ?? 'cookies';
+
+  String get _activeKey => widget.m['activeKey']?.toString() ?? 'activeCookie';
+
+  String get _configKey => widget.m['configKey']?.toString() ?? 'userhash';
+
+  int? _activeIndexOf(List<Map<String, dynamic>> list) {
+    final v = widget.plugin.dataValue(_activeKey);
+    final idx = v is num
+        ? v.toInt()
+        : (v is String ? int.tryParse(v) : null);
+    if (idx == null || idx < 0 || idx >= list.length) return null;
+    return idx;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshStatus();
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    _verifyCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refreshStatus() async {
+    if (_method('status').isEmpty) return;
+    final res = await widget.plugin.invoke(_method('status'));
+    if (!mounted) return;
+    final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
+    final logged = m?['logged'] == true;
+    setState(() {
+      _logged = logged;
+      _email = m?['email']?.toString() ?? '';
+      _error = null;
+    });
+    if (!logged) await _refreshCaptcha();
+  }
+
+  Future<void> _refreshCaptcha() async {
+    if (_method('captcha').isEmpty) return;
+    setState(() {
+      _captchaData = null;
+      _error = null;
+    });
+    final res = await widget.plugin.invoke(_method('captcha'));
+    if (!mounted) return;
+    final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
+    if (m == null || (m['data']?.toString() ?? '').isEmpty) {
+      if (mounted) {
+        setState(() => _error = t.invalidCookieHash);
+      }
+      return;
+    }
+    if (mounted) {
+      setState(() => _captchaData = m['data'].toString());
+    }
+  }
+
+  Future<void> _login() async {
+    final email = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+    final verify = _verifyCtrl.text.trim();
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = t.cannotBeEmpty);
+      return;
+    }
+    if (verify.isEmpty || _captchaData == null) {
+      setState(() => _error = t.cookieNameRequired);
+      return;
+    }
+    if (_method('login').isEmpty) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final res = await widget.plugin
+        .invoke(_method('login'), [email, password, verify]);
+    if (!mounted) return;
+    final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
+    setState(() => _busy = false);
+    if (m?['ok'] == true) {
+      _logged = true;
+      _email = m?['email']?.toString() ?? email;
+      _verifyCtrl.clear();
+      setState(() {});
+      await _sync();
+    } else {
+      setState(() {
+        _error =
+            m?['message']?.toString().isNotEmpty == true
+                ? m!['message'].toString()
+                : t.loginFailed;
+      });
+      await _refreshCaptcha();
+    }
+  }
+
+  Future<void> _sync() async {
+    if (_method('sync').isEmpty) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final res = await widget.plugin.invoke(_method('sync'));
+    if (!mounted) return;
+    final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
+    setState(() => _busy = false);
+    if (m == null || m['items'] is! List) {
+      if (mounted) {
+        setState(() {
+          _error =
+              m?['error']?.toString().isNotEmpty == true
+                  ? m!['error'].toString()
+                  : t.noData;
+        });
+      }
+      return;
+    }
+    final rawItems = m['items'] as List;
+    final incoming = <Map<String, dynamic>>[];
+    for (final e in rawItems) {
+      if (e is Map) {
+        final em = e.map((k, v) => MapEntry('$k', v));
+        final hash = _normalizeCookieUserhash(em['userhash']?.toString() ?? '');
+        if (hash == null) continue;
+        incoming.add({
+          'name': (em['name']?.toString().trim() ?? '').isEmpty
+              ? '饼干'
+              : em['name'].toString(),
+          'userhash': hash,
+          if ((em['note']?.toString().trim() ?? '').isNotEmpty)
+            'note': em['note'].toString(),
+        });
+      }
+    }
+    _merge(incoming);
+    App.rootContext.showMessage(message: t.cookieImported);
+  }
+
+  void _merge(List<Map<String, dynamic>> incoming) {
+    final current = widget.plugin.dataValue(_listKey);
+    final list = <Map<String, dynamic>>[];
+    if (current is List) {
+      for (final e in current) {
+        if (e is Map) {
+          final m = e.map((k, v) => MapEntry(k.toString(), v));
+          if ((m['userhash']?.toString() ?? '').isNotEmpty) list.add(m);
+        }
+      }
+    }
+    String? oldActive;
+    final oldIdx = _activeIndexOf(list);
+    if (oldIdx != null && oldIdx < list.length) {
+      oldActive = list[oldIdx]['userhash']?.toString();
+    }
+    for (final item in incoming) {
+      final idx = list.indexWhere(
+        (e) => e['userhash'] == item['userhash'],
+      );
+      if (idx >= 0) {
+        list[idx] = item;
+      } else {
+        list.add(item);
+      }
+    }
+    var active = oldActive != null
+        ? list.indexWhere((e) => e['userhash'] == oldActive)
+        : (list.isNotEmpty ? 0 : -1);
+    if (active < 0 && incoming.isNotEmpty) {
+      active = list.indexWhere((e) => e['userhash'] == incoming.first['userhash']);
+    }
+    widget.plugin.setDataValue(_listKey, list);
+    widget.plugin.setDataValue(
+      _activeKey,
+      active >= 0 && active < list.length ? active : null,
+    );
+    if (active >= 0 && active < list.length) {
+      widget.plugin.setConfigValue(_configKey, list[active]['userhash']!.toString());
+    } else {
+      widget.plugin.setConfigValue(_configKey, '');
+    }
+    MePagePluginManager().touch();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _logout() async {
+    if (_method('logout').isEmpty) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    await widget.plugin.invoke(_method('logout'));
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _logged = false;
+      _email = '';
+      _passCtrl.clear();
+      _verifyCtrl.clear();
+    });
+    await _refreshCaptcha();
+  }
+
+  Uint8List? _captchaBytes() {
+    final data = _captchaData;
+    if (data == null) return null;
+    try {
+      return base64Decode(data.replaceAll(RegExp(r'\s'), ''));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    if (_logged) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.verified_user_outlined, size: 18, color: cs.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _txt('loggedIn', _email.isEmpty ? t.loggedIn : _email),
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              IconTileButton(
+                icon: const Icon(Icons.sync),
+                label: _txt('sync', '同步账号饼干'),
+                onTap: _sync,
+              ),
+              IconTileButton(
+                icon: const Icon(Icons.logout),
+                label: _txt('logout', t.logOut),
+                onTap: _logout,
+              ),
+            ],
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _error!,
+                style: TextStyle(fontSize: 12, color: cs.error),
+              ),
+            ),
+        ],
+      );
+    }
+    final bytes = _captchaBytes();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _emailCtrl,
+          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(
+            labelText: _txt('email', t.username),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _passCtrl,
+          obscureText: true,
+          decoration: InputDecoration(
+            labelText: _txt('password', t.password),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _verifyCtrl,
+                onSubmitted: (_) => _login(),
+                decoration: InputDecoration(
+                  labelText: _txt('verify', 'Verify code'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: GestureDetector(
+                onTap: _captchaData == null ? null : _refreshCaptcha,
+                child: SizedBox(
+                  width: 120,
+                  height: 44,
+                  child: bytes != null
+                      ? Image.memory(
+                          bytes,
+                          fit: BoxFit.contain,
+                          gaplessPlayback: true,
+                          errorBuilder: (_, _, _) => _captchaFallback(cs),
+                        )
+                      : _captchaFallback(cs),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_error != null) ...[
+          Text(
+            _error!,
+            style: TextStyle(fontSize: 12, color: cs.error),
+          ),
+          const SizedBox(height: 8),
+        ],
+        FilledButton.icon(
+          onPressed: _busy ? null : _login,
+          icon: _busy
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: PolygonRefreshIndicator(),
+                )
+              : const Icon(Icons.login),
+          label: Text(_txt('login', t.logIn)),
+        ),
+      ],
+    );
+  }
+
+  Widget _captchaFallback(ColorScheme cs) {
+    return Container(
+      width: 120,
+      height: 44,
+      color: cs.surfaceContainerHigh,
+      child: Center(
+        child: _busy
+            ? const SizedBox.square(
+                dimension: 16,
+                child: PolygonRefreshIndicator(),
+              )
+            : Icon(Icons.refresh, size: 20, color: cs.onSurfaceVariant),
+      ),
+    );
+  }
 }
 
 /// 多饼干管理器（对齐 xdnmb-main 饼干页：列表 + 增删 + 选中浏览用）
