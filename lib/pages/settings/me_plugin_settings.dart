@@ -1065,6 +1065,18 @@ class _PluginSettingsPageState extends State<_PluginSettingsPage> {
   void initState() {
     super.initState();
     _future = p.settingsModules();
+    // 账号登录/饼干列表写入数据后，各设置卡片即时重建显示
+    MePagePluginManager().addListener(_onPluginsChanged);
+  }
+
+  @override
+  void dispose() {
+    MePagePluginManager().removeListener(_onPluginsChanged);
+    super.dispose();
+  }
+
+  void _onPluginsChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -1241,6 +1253,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
   final TextEditingController _passCtrl = TextEditingController();
   final TextEditingController _verifyCtrl = TextEditingController();
   Timer? _captchaTimeout;
+  Timer? _credsTimer;
   bool _busy = false;
   bool _captchaBusy = false;
   bool _logged = false;
@@ -1290,12 +1303,28 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       _emailCtrl.text = creds['username']?.toString() ?? '';
       _passCtrl.text = creds['password']?.toString() ?? '';
     }
+    // 输入即持久化（不需要等登录成功），下次打开自动回填
+    _emailCtrl.addListener(_schedulePersistCreds);
+    _passCtrl.addListener(_schedulePersistCreds);
     _refreshStatus();
+  }
+
+  void _schedulePersistCreds() {
+    _credsTimer?.cancel();
+    _credsTimer = Timer(const Duration(milliseconds: 500), () async {
+      if (!mounted) return;
+      await MePagePluginManager().setCreds(
+        widget.plugin.key,
+        username: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+      );
+    });
   }
 
   @override
   void dispose() {
     _captchaTimeout?.cancel();
+    _credsTimer?.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _verifyCtrl.dispose();
@@ -1441,6 +1470,13 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       }
     }
     _merge(incoming);
+    if (incoming.isEmpty) {
+      App.rootContext.showMessage(
+        message: _txt('noCookies', '账号下没有可同步的饼干'),
+        level: LogLevel.warning,
+      );
+      return;
+    }
     App.rootContext.showMessage(message: t.cookieImported);
   }
 
@@ -1498,12 +1534,9 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
     });
     await widget.plugin.invoke(_method('logout'));
     if (!mounted) return;
-    MePagePluginManager().clearCreds(widget.plugin.key);
     setState(() {
       _busy = false;
       _logged = false;
-      _email = '';
-      _passCtrl.clear();
       _verifyCtrl.clear();
     });
     await _refreshCaptcha();
