@@ -1232,7 +1232,8 @@ String? _normalizeCookieUserhash(String raw) {
           (text.startsWith("'") && text.endsWith("'")))) {
     text = text.substring(1, text.length - 1);
   }
-  if (!RegExp(r'^[0-9A-Za-z_-]{4,64}$').hasMatch(text)) return null;
+  // 官方饼干允许是百分号编码 token（如 %2F%DD…），需原样保留再放进 Cookie
+  if (!RegExp(r'^[0-9A-Za-z%._~-]{2,256}$').hasMatch(text)) return null;
   return text;
 }
 
