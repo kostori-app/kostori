@@ -404,20 +404,54 @@ class ProgressTable extends Table {
   Set<Column> get primaryKey => {type, episode, road, historyId};
 }
 
+/// 个人页插件浏览/搜索历史（与播放历史同库，无条数上限）
+class PluginEventTable extends Table {
+  @override
+  String get tableName => 'plugin_events';
+
+  TextColumn get pluginKey => text().named('pluginKey')();
+
+  /// open | search
+  TextColumn get kind => text()();
+
+  TextColumn get itemKey => text().named('itemKey')();
+
+  TextColumn get title => text()();
+
+  TextColumn get subtitle => text().withDefault(const Constant(''))();
+
+  TextColumn get coverUrl => text().named('coverUrl').withDefault(const Constant(''))();
+
+  /// 用于恢复原页的 JSON（page/params/item）
+  TextColumn get extraJson =>
+      text().named('extraJson').withDefault(const Constant('{}'))();
+
+  IntColumn get createdAt => integer().named('createdAt')();
+
+  @override
+  Set<Column> get primaryKey => {pluginKey, kind, itemKey};
+}
+
 // ═══════════════════════════════════════════════════════════
 // 数据库
 // ═══════════════════════════════════════════════════════════
 
-@DriftDatabase(tables: [HistoryTable, ProgressTable])
+@DriftDatabase(tables: [HistoryTable, ProgressTable, PluginEventTable])
 class _HistoryDb extends _$_HistoryDb {
   _HistoryDb() : super(_openConn());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(pluginEventTable);
+      }
+    },
+  );
 }
 
 LazyDatabase _openConn() => LazyDatabase(() async {
@@ -434,6 +468,29 @@ LazyDatabase _openConn() => LazyDatabase(() async {
 // ═══════════════════════════════════════════════════════════
 // HistoryManager（单例）
 // ═══════════════════════════════════════════════════════════
+
+/// 个人页插件事件（浏览/搜索），持久化于 history.db 同库
+class PluginEventItem {
+  final String pluginKey;
+  final String kind;
+  final String itemKey;
+  final String title;
+  final String subtitle;
+  final String coverUrl;
+  final String extraJson;
+  final int createdAt;
+
+  const PluginEventItem({
+    required this.pluginKey,
+    required this.kind,
+    required this.itemKey,
+    required this.title,
+    required this.subtitle,
+    required this.coverUrl,
+    required this.extraJson,
+    required this.createdAt,
+  });
+}
 
 class HistoryManager with ChangeNotifier {
   static HistoryManager? _cache;
@@ -819,6 +876,65 @@ extension ProgressHelper on HistoryManager {
                 : const Value.absent(),
           ),
         );
+  }
+
+  Future<void> _ensureDb() async {
+    if (!isInitialized) await init();
+  }
+
+  /// 记录插件事件（浏览/搜索），history.db 同库、无条数上限
+  Future<void> addPluginEvent({
+    required String pluginKey,
+    required String kind,
+    required String itemKey,
+    required String title,
+    String subtitle = '',
+    String coverUrl = '',
+    String extraJson = '{}',
+  }) async {
+    await _ensureDb();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _db.into(_db.pluginEventTable).insertOnConflictUpdate(
+      PluginEventTableCompanion.insert(
+        pluginKey: pluginKey,
+        kind: kind,
+        itemKey: itemKey,
+        title: title,
+        subtitle: Value(subtitle),
+        coverUrl: Value(coverUrl),
+        extraJson: Value(extraJson),
+        createdAt: now,
+      ),
+    );
+  }
+
+  Future<List<PluginEventItem>> listPluginEvents(String pluginKey) async {
+    await _ensureDb();
+    final rows = await (_db.select(_db.pluginEventTable)
+          ..where((t) => t.pluginKey.equals(pluginKey))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    return rows
+        .map(
+          (r) => PluginEventItem(
+            pluginKey: r.pluginKey,
+            kind: r.kind,
+            itemKey: r.itemKey,
+            title: r.title,
+            subtitle: r.subtitle,
+            coverUrl: r.coverUrl,
+            extraJson: r.extraJson,
+            createdAt: r.createdAt,
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> clearPluginEvents(String pluginKey) async {
+    await _ensureDb();
+    await (_db.delete(_db.pluginEventTable)
+          ..where((t) => t.pluginKey.equals(pluginKey)))
+        .go();
   }
 }
 

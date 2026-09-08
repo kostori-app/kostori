@@ -13,7 +13,7 @@ Future<void> _pushPluginPage(
     final row = item ?? const <String, dynamic>{};
     final images = row['images'];
     unawaited(
-      PluginHistoryManager().addEvent(
+      HistoryManager().addPluginEvent(
         pluginKey: plugin.key,
         kind: 'open',
         itemKey: 'thread:${tid ?? row['tid'] ?? row['title']}',
@@ -612,7 +612,7 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
     _total = 1;
     // 记录搜索历史
     unawaited(
-      PluginHistoryManager().addEvent(
+      HistoryManager().addPluginEvent(
         pluginKey: widget.plugin.key,
         kind: 'search',
         itemKey: 'search:$q',
@@ -800,12 +800,12 @@ class _PluginHistoryPageState extends State<PluginHistoryPage> {
   @override
   void initState() {
     super.initState();
-    _future = PluginHistoryManager().listEvents(widget.plugin.key);
+    _future = HistoryManager().listPluginEvents(widget.plugin.key);
   }
 
   void _reload() {
     setState(() {
-      _future = PluginHistoryManager().listEvents(widget.plugin.key);
+      _future = HistoryManager().listPluginEvents(widget.plugin.key);
     });
   }
 
@@ -849,7 +849,7 @@ class _PluginHistoryPageState extends State<PluginHistoryPage> {
             tooltip: t.clear,
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
-              await PluginHistoryManager().clear(widget.plugin.key);
+              await HistoryManager().clearPluginEvents(widget.plugin.key);
               _reload();
             },
           ),
