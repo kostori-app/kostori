@@ -7,6 +7,35 @@ Future<void> _pushPluginPage(
   Map<String, dynamic> params, {
   Map<String, dynamic>? item,
 }) async {
+  // 记录浏览历史（仅帖子/条目类详情）
+  if (name == 'thread') {
+    final tid = params['tid'];
+    final row = item ?? const <String, dynamic>{};
+    final images = row['images'];
+    unawaited(
+      PluginHistoryManager().addEvent(
+        pluginKey: plugin.key,
+        kind: 'open',
+        itemKey: 'thread:${tid ?? row['tid'] ?? row['title']}',
+        title:
+            (row['title']?.toString().isNotEmpty ?? false)
+            ? row['title'].toString()
+            : (params['title']?.toString() ?? plugin.name),
+        subtitle: [
+          if (row['name']?.toString().isNotEmpty ?? false) row['name'].toString(),
+          if (row['time']?.toString().isNotEmpty ?? false) row['time'].toString(),
+        ].join(' · '),
+        coverUrl: (images is List && images.isNotEmpty)
+            ? images.first.toString()
+            : (row['cover']?.toString() ?? ''),
+        extraJson: jsonEncode({
+          'page': name,
+          'params': params,
+          'item': row,
+        }),
+      ),
+    );
+  }
   await context.to(
     () => name == 'thread'
         ? PluginThreadPage(plugin: plugin, params: params, row: item)
@@ -317,6 +346,13 @@ class _PluginShellPageState extends State<PluginShellPage>
                 );
               },
             ),
+          IconButton(
+            tooltip: t.history,
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              context.to(() => PluginHistoryPage(plugin: widget.plugin));
+            },
+          ),
         ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -527,7 +563,14 @@ class _PluginRetry extends StatelessWidget {
 class PluginSearchPage extends StatefulWidget {
   final MePagePlugin plugin;
 
-  const PluginSearchPage({super.key, required this.plugin});
+  /// 进入即搜索的关键词（历史回点等）
+  final String initialQuery;
+
+  const PluginSearchPage({
+    super.key,
+    required this.plugin,
+    this.initialQuery = '',
+  });
 
   @override
   State<PluginSearchPage> createState() => _PluginSearchPageState();
@@ -545,6 +588,17 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
   final Map<int, List<Map<String, dynamic>>> _pageCache = {};
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery.isNotEmpty) {
+      _ctrl.text = widget.initialQuery;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _search();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _ctrl.dispose();
     super.dispose();
@@ -556,6 +610,16 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
     _query = q;
     _pageCache.clear();
     _total = 1;
+    // 记录搜索历史
+    unawaited(
+      PluginHistoryManager().addEvent(
+        pluginKey: widget.plugin.key,
+        kind: 'search',
+        itemKey: 'search:$q',
+        title: q,
+        extraJson: jsonEncode({'query': q}),
+      ),
+    );
     await _load(1);
   }
 
@@ -717,6 +781,166 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+/// 插件历史：浏览/搜索记录（持久化到 plugin_history.db）
+class PluginHistoryPage extends StatefulWidget {
+  final MePagePlugin plugin;
+
+  const PluginHistoryPage({super.key, required this.plugin});
+
+  @override
+  State<PluginHistoryPage> createState() => _PluginHistoryPageState();
+}
+
+class _PluginHistoryPageState extends State<PluginHistoryPage> {
+  late Future<List<PluginEventItem>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = PluginHistoryManager().listEvents(widget.plugin.key);
+  }
+
+  void _reload() {
+    setState(() {
+      _future = PluginHistoryManager().listEvents(widget.plugin.key);
+    });
+  }
+
+  void _open(PluginEventItem item) {
+    Map<String, dynamic> extra = const {};
+    try {
+      final d = jsonDecode(item.extraJson);
+      if (d is Map) {
+        extra = d.map((k, v) => MapEntry(k.toString(), v));
+      }
+    } catch (_) {}
+    if (item.kind == 'search') {
+      context.to(
+        () => PluginSearchPage(
+          plugin: widget.plugin,
+          initialQuery: (extra['query'] ?? item.title).toString(),
+        ),
+      );
+      return;
+    }
+    final page = (extra['page'] ?? 'thread').toString();
+    final rawParams = extra['params'];
+    final params = rawParams is Map
+        ? rawParams.map((k, v) => MapEntry(k.toString(), v.toString()))
+        : <String, dynamic>{};
+    final rawItem = extra['item'];
+    final row = rawItem is Map
+        ? rawItem.map((k, v) => MapEntry(k.toString(), v))
+        : null;
+    _pushPluginPage(context, widget.plugin, page, params, item: row);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: Appbar(
+        title: Text(t.history),
+        actions: [
+          IconButton(
+            tooltip: t.clear,
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () async {
+              await PluginHistoryManager().clear(widget.plugin.key);
+              _reload();
+            },
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<PluginEventItem>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Center(child: PolygonRefreshIndicator(size: 24));
+          }
+          final items = snap.data ?? const <PluginEventItem>[];
+          if (items.isEmpty) {
+            return Center(
+              child: Text(
+                t.noData,
+                style: TextStyle(color: cs.onSurfaceVariant),
+              ),
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(8),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 4),
+            itemBuilder: (context, i) {
+              final item = items[i];
+              final isSearch = item.kind == 'search';
+              return ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                tileColor: cs.surfaceContainerLow,
+                leading: isSearch
+                    ? CircleAvatar(
+                        radius: 18,
+                        backgroundColor: cs.primaryContainer,
+                        child: Icon(
+                          Icons.search,
+                          size: 18,
+                          color: cs.onPrimaryContainer,
+                        ),
+                      )
+                    : (item.coverUrl.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: _genericPluginImage(item.coverUrl,
+                                  width: 40, height: 40),
+                            )
+                          : CircleAvatar(
+                              radius: 18,
+                              backgroundColor: cs.surfaceContainerHighest,
+                              child: Icon(
+                                Icons.history,
+                                size: 18,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            )),
+                title: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  item.subtitle.isNotEmpty
+                      ? item.subtitle
+                      : (isSearch ? t.search : t.open),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Text(
+                  _timeText(item.createdAt),
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+                onTap: () => _open(item),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  String _timeText(int ms) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
+    final now = DateTime.now();
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+    return '${dt.month}/${dt.day}';
   }
 }
 
