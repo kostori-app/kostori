@@ -1588,7 +1588,8 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
           child: Tooltip(
             message: _txt('captchaTip', '看不清？点击刷新验证码'),
             child: GestureDetector(
-              onTap: _captchaBusy ? null : _refreshCaptcha,
+              behavior: HitTestBehavior.opaque,
+              onTap: _refreshCaptcha,
               child: SizedBox(
                 width: double.infinity,
                 height: 120,
@@ -1597,8 +1598,9 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
                         color: cs.surfaceContainerHigh,
                         child: Image.memory(
                           bytes,
+                          key: ValueKey(_captchaData),
                           fit: BoxFit.contain,
-                          gaplessPlayback: true,
+                          gaplessPlayback: false,
                           errorBuilder: (_, _, _) => _captchaFallback(cs),
                         ),
                       )
