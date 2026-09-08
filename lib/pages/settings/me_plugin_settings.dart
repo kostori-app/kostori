@@ -1240,6 +1240,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl = TextEditingController();
   final TextEditingController _verifyCtrl = TextEditingController();
+  Timer? _captchaTimeout;
   bool _busy = false;
   bool _captchaBusy = false;
   bool _logged = false;
@@ -1294,6 +1295,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
 
   @override
   void dispose() {
+    _captchaTimeout?.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _verifyCtrl.dispose();
@@ -1316,11 +1318,22 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
 
   Future<void> _refreshCaptcha() async {
     if (_method('captcha').isEmpty) return;
-    if (_captchaBusy) return;
+    if (_captchaBusy) {
+      App.rootContext.showMessage(message: '正在刷新验证码…');
+      return;
+    }
     setState(() {
       _captchaData = null;
       _captchaBusy = true;
       _error = null;
+    });
+    _captchaTimeout?.cancel();
+    _captchaTimeout = Timer(const Duration(seconds: 20), () {
+      if (!mounted) return;
+      setState(() {
+        _captchaBusy = false;
+        _error = t.invalidCookieHash;
+      });
     });
     try {
       final res = await widget.plugin.invoke(_method('captcha'));
@@ -1338,6 +1351,8 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       }
       setState(() => _captchaData = data);
     } finally {
+      _captchaTimeout?.cancel();
+      _captchaTimeout = null;
       if (mounted) setState(() => _captchaBusy = false);
     }
   }
