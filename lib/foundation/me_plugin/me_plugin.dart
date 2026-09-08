@@ -51,6 +51,9 @@ class MePagePlugin {
   /// 设置页模块（解析时缓存，打开设置页不依赖运行期引擎状态）
   final List<Map<String, dynamic>> settingsCache;
 
+  /// 声明为“无参页缓存”的 page 名（如版块列表），对齐 xdnmb：本地存列表，6h 才重拉
+  final List<String> pageCache;
+
   /// 本插件独立状态（对齐番剧源 `.data`），持久化到 `plugins/<key>.data`
   Map<String, dynamic> data;
 
@@ -64,6 +67,7 @@ class MePagePlugin {
     this.settingsDeclared = false,
     this.searchable = false,
     this.settingsCache = const [],
+    this.pageCache = const [],
     Map<String, dynamic> initialData = const {},
   }) : data = {...initialData};
 
@@ -377,11 +381,20 @@ class MePagePlugin {
     return pageName;
   }
 
+  /// 无参页持久缓存有效期（对齐 xdnmb：版块列表 6 小时一刷）
+  static const Duration pageCacheTtl = Duration(hours: 6);
+
   /// 调用插件 page(name, params)，返回该页模块列表。
   Future<List<dynamic>> page(
     String name, [
     Map<String, dynamic> params = const {},
   ]) async {
+    // 命中声明过的无参页缓存（如版块/时间线列表）：直接返回，不发网络请求
+    final cacheable = params.isEmpty && pageCache.contains(name);
+    if (cacheable) {
+      final cached = _readPageCache(name);
+      if (cached != null) return cached;
+    }
     try {
       final paramsJs = _jsJson(params);
       // 注入“今日已签”状态与自定义配置，供插件页直接读取（无需再次请求）
@@ -395,12 +408,52 @@ class MePagePlugin {
         "globalThis.__me_plugins[${_jsStr(key)}]"
         "?.page(${_jsStr(name)}, $paramsJs) ?? []",
       );
-      if (res is List) return res;
+      if (res is List) {
+        if (cacheable && res.isNotEmpty) _writePageCache(name, res);
+        return res;
+      }
       return const [];
     } catch (e, s) {
       // 交由调用方展示错误 + 重试，不再吞成“空数据”
       SourceLog.error('MePagePlugin($key).page($name)', '$e\n$s');
       rethrow;
+    }
+  }
+
+  /// 读无参页缓存；过期则删除并返回 null
+  List<dynamic>? _readPageCache(String name) {
+    final at = data['pageCacheAt_$name'];
+    if (at is String) {
+      final time = DateTime.tryParse(at);
+      if (time != null &&
+          DateTime.now().difference(time) < pageCacheTtl) {
+        final raw = data['pageCache_$name'];
+        if (raw is List && raw.isNotEmpty) {
+          return raw.map((e) {
+            return e is Map
+                ? e.map((k, v) => MapEntry(k.toString(), v))
+                : e;
+          }).toList();
+        }
+      }
+    }
+    data.remove('pageCache_$name');
+    data.remove('pageCacheAt_$name');
+    return null;
+  }
+
+  /// 写入无参页缓存并落盘（本插件 .data）
+  void _writePageCache(String name, List<dynamic> modules) {
+    try {
+      data['pageCache_$name'] = modules
+          .map((e) => e is Map
+              ? e.map((k, v) => MapEntry(k.toString(), v))
+              : e)
+          .toList();
+      data['pageCacheAt_$name'] = DateTime.now().toIso8601String();
+      _saveData();
+    } catch (e) {
+      SourceLog.error('MePagePlugin($name).savePageCache', '$e');
     }
   }
 
@@ -691,6 +744,20 @@ class MePagePluginParser {
       }
     } catch (_) {}
 
+    // 无参页缓存白名单（版块/时间线列表等静态导航页；运行时存 .data，6h 刷新）
+    List<String> pageCache = const [];
+    try {
+      final raw = JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.pageCache ?? []",
+      );
+      if (raw is List) {
+        pageCache = raw
+            .where((e) => e != null)
+            .map((e) => e.toString())
+            .toList();
+      }
+    } catch (_) {}
+
     // 搜索能力（解析期判定，稳定缓存）
     var searchable = false;
     try {
@@ -750,6 +817,7 @@ class MePagePluginParser {
       settingsDeclared: settingsCache.isNotEmpty,
       searchable: searchable,
       settingsCache: settingsCache,
+      pageCache: pageCache,
       initialData: initialData,
     );
   }
