@@ -215,8 +215,8 @@ class AnimeSourceParser {
 
   bool _checkExists(String index) {
     return JsEngine().runCode(
-      "AnimeSource.sources.$_key.$index !== null "
-      "&& AnimeSource.sources.$_key.$index !== undefined",
+      "(() => { try { const v = AnimeSource.sources.$_key.$index; "
+      "return v !== null && v !== undefined; } catch (e) { return false; } })()",
     );
   }
 
