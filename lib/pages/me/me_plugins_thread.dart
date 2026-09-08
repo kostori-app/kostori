@@ -600,6 +600,19 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           for (final b in post.blocks) ...[
             if (b['type'] == 'quote')
               _quoteBlock(cs, b['text']?.toString() ?? '')
+            else if (b['type'] == 'ref') ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: SelectableText(
+                  b['text']?.toString() ?? '',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: cs.primary,
+                  ),
+                ),
+              ),
+            ]
             else if (b['text']?.toString().trim().isNotEmpty ?? false)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
