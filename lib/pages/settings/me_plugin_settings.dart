@@ -1241,6 +1241,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
   final TextEditingController _passCtrl = TextEditingController();
   final TextEditingController _verifyCtrl = TextEditingController();
   bool _busy = false;
+  bool _captchaBusy = false;
   bool _logged = false;
   String _email = '';
   String? _captchaData; // 插件返回的 base64 验证码图
@@ -1311,20 +1312,27 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
     if (_method('captcha').isEmpty) return;
     setState(() {
       _captchaData = null;
+      _captchaBusy = true;
       _error = null;
     });
     final res = await widget.plugin.invoke(_method('captcha'));
     if (!mounted) return;
     final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
-    if (m == null || (m['data']?.toString() ?? '').isEmpty) {
-      if (mounted) {
-        setState(() => _error = t.invalidCookieHash);
-      }
+    final data = m?['data']?.toString() ?? '';
+    if (data.isEmpty) {
+      setState(() {
+        _captchaBusy = false;
+        _error =
+            m?['error']?.toString().isNotEmpty == true
+                ? m!['error'].toString()
+                : t.invalidCookieHash;
+      });
       return;
     }
-    if (mounted) {
-      setState(() => _captchaData = m['data'].toString());
-    }
+    setState(() {
+      _captchaData = data;
+      _captchaBusy = false;
+    });
   }
 
   Future<void> _login() async {
@@ -1567,19 +1575,23 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
             const SizedBox(width: 10),
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: GestureDetector(
-                onTap: _captchaData == null ? null : _refreshCaptcha,
-                child: SizedBox(
-                  width: 120,
-                  height: 44,
-                  child: bytes != null
-                      ? Image.memory(
-                          bytes,
-                          fit: BoxFit.contain,
-                          gaplessPlayback: true,
-                          errorBuilder: (_, _, _) => _captchaFallback(cs),
-                        )
-                      : _captchaFallback(cs),
+              child: Tooltip(
+                message: _txt('captchaTip', '看不清？点击刷新验证码'),
+                child: GestureDetector(
+                  // 加载失败/看不清都能点图重试
+                  onTap: _captchaBusy ? null : _refreshCaptcha,
+                  child: SizedBox(
+                    width: 150,
+                    height: 60,
+                    child: bytes != null
+                        ? Image.memory(
+                            bytes,
+                            fit: BoxFit.contain,
+                            gaplessPlayback: true,
+                            errorBuilder: (_, _, _) => _captchaFallback(cs),
+                          )
+                        : _captchaFallback(cs),
+                  ),
                 ),
               ),
             ),
@@ -1609,16 +1621,26 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
 
   Widget _captchaFallback(ColorScheme cs) {
     return Container(
-      width: 120,
-      height: 44,
+      width: 150,
+      height: 60,
       color: cs.surfaceContainerHigh,
-      child: Center(
-        child: _busy
-            ? const SizedBox.square(
-                dimension: 16,
-                child: PolygonRefreshIndicator(),
-              )
-            : Icon(Icons.refresh, size: 20, color: cs.onSurfaceVariant),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (_captchaBusy)
+            const SizedBox.square(
+              dimension: 18,
+              child: PolygonRefreshIndicator(),
+            )
+          else ...[
+            Icon(Icons.refresh, size: 24, color: cs.onSurfaceVariant),
+            const SizedBox(height: 4),
+            Text(
+              _txt('captchaTipShort', '点击重试'),
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            ),
+          ],
+        ],
       ),
     );
   }
