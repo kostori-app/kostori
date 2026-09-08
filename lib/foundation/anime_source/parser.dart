@@ -183,6 +183,7 @@ class AnimeSourceParser {
       translations: _parseTranslation(),
       handleClickTagEvent: _parseClickTagEvent(),
       linkHandler: _parseLinkHandler(),
+      linkResolveTarget: _parseLinkTargetResolver(),
       enableTagsSuggestions: _getValue("search.enableTagsSuggestions") ?? false,
       enableTagsTranslate: _getValue("anime.enableTagsTranslate") ?? false,
       starRatingFunc: _parseStarRatingFunc(),
@@ -1097,6 +1098,31 @@ class AnimeSourceParser {
     }
 
     return LinkHandler(domains, linkToId);
+  }
+
+  Future<Map<String, dynamic>?> Function(String)? _parseLinkTargetResolver() {
+    if (!_checkExists('anime.link.resolveTarget')) return null;
+    return (text) async {
+      try {
+        final res = await JsEngine().runCode("""
+          (async () => {
+            try {
+              const r = await AnimeSource.sources.$_key.anime.link.resolveTarget(${jsonEncode(text)});
+              return JSON.stringify(r ?? null);
+            } catch (e) {
+              return JSON.stringify({ ok: false, error: String(e && e.message || e) });
+            }
+          })()
+        """);
+        if (res is String && res != 'null') {
+          final m = jsonDecode(res);
+          if (m is Map) return m.map((k, v) => MapEntry(k.toString(), v));
+        }
+      } catch (e, s) {
+        SourceLog.error("AnimeSource.resolveTarget", "$e\n$s");
+      }
+      return null;
+    };
   }
 
   StarRatingFunc? _parseStarRatingFunc() {

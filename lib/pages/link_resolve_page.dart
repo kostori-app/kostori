@@ -61,6 +61,11 @@ class _LinkResolvePageState extends State<LinkResolvePage> {
   }
 
   void _open(ResolvedLinkCandidate c) {
+    if (c.kind == 'viewMore' && c.viewMore != null) {
+      final target = PageJumpTarget.parse(c.sourceKey, c.viewMore);
+      target.jump(context);
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => AnimePage(id: c.id, sourceKey: c.sourceKey),
@@ -147,7 +152,11 @@ class _LinkResolvePageState extends State<LinkResolvePage> {
               child: ListTile(
                 leading: Icon(Icons.movie_outlined, color: cs.primary),
                 title: Text(c.sourceName),
-                subtitle: Text(c.id),
+                subtitle: Text(
+                  c.kind == 'anime'
+                      ? c.id
+                      : (c.viewMore?['page'] ?? 'viewMore').toString(),
+                ),
                 trailing: const Icon(Icons.arrow_forward),
                 onTap: () => _open(c),
               ),

@@ -166,20 +166,49 @@ class AnimeSourceManager with ChangeNotifier, Init {
       final handler = source.linkHandler;
       if (handler == null) continue;
       if (host.isNotEmpty && !handler.domains.contains(host)) continue;
-      try {
-        final id = handler.linkToId(raw);
-        if (id == null || id.isEmpty) continue;
-        candidates.add(
-          ResolvedLinkCandidate(
-            sourceKey: source.key,
-            sourceName: source.name,
-            id: id,
-            host: host,
-          ),
-        );
-      } catch (_) {
-        // 该源无法解析，忽略继续下一个
+      // 优先结构化 resolveTarget；失败/未实现再回退域名 linkToId → anime
+      Map<String, dynamic>? target;
+      if (source.linkResolveTarget != null) {
+        try {
+          target = await source.linkResolveTarget!(raw);
+        } catch (_) {}
       }
+      final kind = (target?['kind']?.toString()) ?? 'anime';
+      if (kind == 'viewMore') {
+        final vm = target?['viewMore'];
+        if (vm is Map) {
+          candidates.add(
+            ResolvedLinkCandidate(
+              sourceKey: source.key,
+              sourceName: source.name,
+              kind: 'viewMore',
+              viewMore: vm.map((k, v) => MapEntry(k.toString(), v)),
+              host: host,
+            ),
+          );
+          continue;
+        }
+        continue;
+      }
+      // anime 目标：优先 target.id，回退 linkToId 提取
+      String? id = target?['id']?.toString();
+      if (id == null || id.isEmpty) {
+        try {
+          id = handler.linkToId(raw);
+        } catch (_) {
+          id = null;
+        }
+      }
+      if (id == null || id.isEmpty) continue;
+      candidates.add(
+        ResolvedLinkCandidate(
+          sourceKey: source.key,
+          sourceName: source.name,
+          kind: 'anime',
+          id: id,
+          host: host,
+        ),
+      );
     }
     return candidates;
   }
@@ -386,6 +415,10 @@ class AnimeSource {
 
   final LinkHandler? linkHandler;
 
+  /// 结构化链接解析（可选）：`resolveTarget(text)` 返回
+  /// `{kind:'anime', id…}` 或 `{kind:'viewMore', viewMore:{page,attributes,url?}}`
+  final Future<Map<String, dynamic>?> Function(String)? linkResolveTarget;
+
   final bool enableTagsSuggestions;
 
   final bool enableTagsTranslate;
@@ -478,7 +511,8 @@ class AnimeSource {
     required this.idMatcher,
     required this.translations,
     required this.handleClickTagEvent,
-    required this.linkHandler,
+      required this.linkHandler,
+      required this.linkResolveTarget,
     required this.enableTagsSuggestions,
     required this.enableTagsTranslate,
     required this.starRatingFunc,
@@ -709,11 +743,18 @@ class LinkHandler {
   const LinkHandler(this.domains, this.linkToId);
 }
 
-/// 链接解析候选：来源 + 提取到的番剧 id
+/// 链接解析候选：来源 + 目标（anime id 或 viewMore）
 class ResolvedLinkCandidate {
   final String sourceKey;
   final String sourceName;
+
+  /// anime | viewMore
+  final String kind;
+
   final String id;
+
+  /// viewMore 目标（与 PageJumpTarget.parse 兼容的 Map）
+  final Map<String, dynamic>? viewMore;
 
   /// 命中域名（若文本不含 URL 则为空）
   final String host;
@@ -721,7 +762,9 @@ class ResolvedLinkCandidate {
   const ResolvedLinkCandidate({
     required this.sourceKey,
     required this.sourceName,
-    required this.id,
+    this.kind = 'anime',
+    this.id = '',
+    this.viewMore,
     this.host = '',
   });
 }
