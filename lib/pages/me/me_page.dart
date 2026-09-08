@@ -17,6 +17,7 @@ import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
+import 'package:kostori/pages/link_resolve_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/anime_recognize_page.dart';
 import 'package:kostori/pages/download/download_page.dart';
@@ -600,6 +601,12 @@ class _ToolEntryGrid extends ConsumerWidget {
                 runSpacing: 8,
                 alignment: WrapAlignment.start,
                 children: [
+                  _iconBlock(
+                    context,
+                    Icons.link,
+                    () => context.to(() => const LinkResolvePage()),
+                    t.resolveLink,
+                  ),
                   _iconBlock(
                     context,
                     Icons.extension,
