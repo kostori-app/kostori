@@ -254,9 +254,9 @@ class MePagePlugin {
       final argsJs = args.map((a) => _jsJson(a as Object)).join(', ');
       final res = await JsEngine().runCode("""
         (async () => {
-          const f = globalThis.__me_plugins[${_jsStr(key)}]?.[${_jsStr(method)}];
-          if (typeof f !== 'function') return null;
-          return await f($argsJs);
+          const obj = globalThis.__me_plugins[${_jsStr(key)}];
+          if (!obj || typeof obj[${_jsStr(method)}] !== 'function') return null;
+          return await obj[${_jsStr(method)}]($argsJs);
         })()
       """);
       return res;
