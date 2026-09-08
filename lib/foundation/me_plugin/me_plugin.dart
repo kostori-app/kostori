@@ -453,13 +453,15 @@ class MePagePlugin {
     }
   }
 
-  /// 读无参页缓存；过期则删除并返回 null
+  /// 读无参页缓存；过期或插件版本变化则删除并返回 null
   List<dynamic>? _readPageCache(String name) {
     final at = data['pageCacheAt_$name'];
     if (at is String) {
       final time = DateTime.tryParse(at);
+      final ver = data['pageCacheVer_$name']?.toString();
       if (time != null &&
-          DateTime.now().difference(time) < pageCacheTtl) {
+          DateTime.now().difference(time) < pageCacheTtl &&
+          ver == version) {
         final raw = data['pageCache_$name'];
         if (raw is List && raw.isNotEmpty) {
           return raw.map((e) {
@@ -472,6 +474,7 @@ class MePagePlugin {
     }
     data.remove('pageCache_$name');
     data.remove('pageCacheAt_$name');
+    data.remove('pageCacheVer_$name');
     return null;
   }
 
@@ -484,6 +487,7 @@ class MePagePlugin {
               : e)
           .toList();
       data['pageCacheAt_$name'] = DateTime.now().toIso8601String();
+      data['pageCacheVer_$name'] = version;
       _saveData();
     } catch (e) {
       SourceLog.error('MePagePlugin($name).savePageCache', '$e');
