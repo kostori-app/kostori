@@ -35,7 +35,9 @@ class QrScannerPage extends StatefulWidget {
 
 class _QrScannerPageState extends State<QrScannerPage>
     with SingleTickerProviderStateMixin {
-  late final MobileScannerController _controller;
+  /// 桌面端无相机实现，走“选图识别”
+  final bool _isDesktop = !App.isMobile;
+  MobileScannerController? _controller;
   double _baseZoom = 0.0;
   double _currentZoom = 0.0;
   bool _isScanning = true;
@@ -48,15 +50,25 @@ class _QrScannerPageState extends State<QrScannerPage>
   @override
   void initState() {
     super.initState();
-    _controller = MobileScannerController(
-      autoStart: true,
-      detectionSpeed: DetectionSpeed.noDuplicates,
-    );
-
-    _lineAnim = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    if (_isDesktop) {
+      _lineAnim = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 2),
+      );
+      // 桌面端打开即弹出图片选择（等同移动端打开即启动相机）
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _pickFromGallery();
+      });
+    } else {
+      _controller = MobileScannerController(
+        autoStart: true,
+        detectionSpeed: DetectionSpeed.noDuplicates,
+      );
+      _lineAnim = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 2),
+      )..repeat(reverse: true);
+    }
 
     _linePosition = Tween<double>(
       begin: 0,
@@ -66,7 +78,7 @@ class _QrScannerPageState extends State<QrScannerPage>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     _lineAnim.dispose();
     super.dispose();
   }
@@ -84,7 +96,7 @@ class _QrScannerPageState extends State<QrScannerPage>
     }
 
     _isScanning = false;
-    _controller.stop();
+    _controller!.stop();
     _returnResult(barcode.rawValue!);
   }
 
@@ -92,7 +104,7 @@ class _QrScannerPageState extends State<QrScannerPage>
     if (_currentZoom < 0.8) {
       setState(() {
         _currentZoom = (_currentZoom + 0.15).clamp(0.0, 1.0);
-        _controller.setZoomScale(_currentZoom); // 使用正确的 setZoomScale 方法
+        _controller!.setZoomScale(_currentZoom); // 使用正确的 setZoomScale 方法
       });
     }
   }
@@ -106,7 +118,7 @@ class _QrScannerPageState extends State<QrScannerPage>
     setState(() {
       // details.scale 是手指张开的比例，1.0 代表不发生变化
       _currentZoom = (_baseZoom + (details.scale - 1) * 0.5).clamp(0.0, 1.0);
-      _controller.setZoomScale(_currentZoom);
+      _controller!.setZoomScale(_currentZoom);
     });
   }
 
@@ -114,7 +126,7 @@ class _QrScannerPageState extends State<QrScannerPage>
   void _handleDoubleTap() {
     setState(() {
       _currentZoom = _currentZoom > 0 ? 0.0 : 0.5;
-      _controller.setZoomScale(_currentZoom);
+      _controller!.setZoomScale(_currentZoom);
     });
   }
 
@@ -157,8 +169,63 @@ class _QrScannerPageState extends State<QrScannerPage>
     Navigator.pop(context, QrScanResult(rawValue: raw, parsed: parsed));
   }
 
+  /// 桌面端：没有相机插件，改为选图（文件选择器）识别二维码
+  Widget _desktopBody(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                color: Colors.white,
+                icon: const Icon(Icons.arrow_back_ios_new_outlined),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.qr_code_scanner,
+                      size: 72,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_isAnalyzing) ...[
+                      const PolygonRefreshIndicator(),
+                      const SizedBox(height: 12),
+                      Text(
+                        t.qrRecognizing,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ] else
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          foregroundColor: Colors.black87,
+                          backgroundColor: Colors.white,
+                        ),
+                        onPressed: _pickFromGallery,
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: Text(t.chooseImage),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isDesktop) return _desktopBody(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -170,7 +237,7 @@ class _QrScannerPageState extends State<QrScannerPage>
               onScaleUpdate: _handleScaleUpdate,
               onDoubleTap: _handleDoubleTap,
               child: MobileScanner(
-                controller: _controller,
+                controller: _controller!,
                 onDetect: _onDetect,
                 fit: BoxFit.cover,
               ),
@@ -196,19 +263,19 @@ class _QrScannerPageState extends State<QrScannerPage>
                     ),
                     const Spacer(),
                     ValueListenableBuilder(
-                      valueListenable: _controller,
+                      valueListenable: _controller!,
                       builder: (_, state, _) => _CircleBtn(
                         icon: state.torchState == TorchState.on
                             ? Icons.flash_on
                             : Icons.flash_off,
-                        onTap: _controller.toggleTorch,
+                        onTap: _controller!.toggleTorch,
                       ),
                     ),
                     const SizedBox(width: 8),
                     // 翻转摄像头
                     _CircleBtn(
                       icon: Icons.flip_camera_ios_outlined,
-                      onTap: _controller.switchCamera,
+                      onTap: _controller!.switchCamera,
                     ),
                     const SizedBox(width: 8),
                     // 相册
