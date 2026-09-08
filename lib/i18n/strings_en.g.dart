@@ -1001,6 +1001,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Paste cookie content'
 	String get importFromClipboard => 'Paste cookie content';
 
+	/// en: 'Please enter cookie name'
+	String get cookieNameRequired => 'Please enter cookie name';
+
+	/// en: 'Invalid userhash, please check it is complete'
+	String get invalidCookieHash => 'Invalid userhash, please check it is complete';
+
 	/// en: 'Search All'
 	String get searchAll => 'Search All';
 
@@ -7721,6 +7727,8 @@ extension on Translations {
 			'cookieImported' => 'Cookie imported',
 			'cookieCleared' => 'Cookie cleared',
 			'importFromClipboard' => 'Paste cookie content',
+			'cookieNameRequired' => 'Please enter cookie name',
+			'invalidCookieHash' => 'Invalid userhash, please check it is complete',
 			'searchAll' => 'Search All',
 			'searchHistory' => 'Search History',
 			'searchIn' => 'Search in',
@@ -7911,10 +7919,10 @@ extension on Translations {
 			'outerBorderWidth' => 'Outer Border Width',
 			'outerBorderColor' => 'Outer Border Color',
 			'showOuterBorder' => 'Show Outer Border',
-			'innerBorderWidth' => 'Inner Border Width',
-			'innerBorderColor' => 'Inner Border Color',
 			_ => null,
 		} ?? switch (path) {
+			'innerBorderWidth' => 'Inner Border Width',
+			'innerBorderColor' => 'Inner Border Color',
 			'borderSettings' => 'Border Settings',
 			'saving' => 'Saving',
 			'saveSuccessful' => 'Save Successful',
@@ -8425,10 +8433,10 @@ extension on Translations {
 			'screenshotInProgress' => 'Screenshot in progress...',
 			'moveOperationTargetUnknown' => 'Move operation, target unknown',
 			'operationUnknown' => 'Operation unknown',
-			'pleaseEnterTranslationPrompt' => ({required Object a}) => 'Please enter translation prompt, use ${a} as the placeholder for the target language',
-			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => 'The prompt must contain ${a} as the placeholder for the target language',
 			_ => null,
 		} ?? switch (path) {
+			'pleaseEnterTranslationPrompt' => ({required Object a}) => 'Please enter translation prompt, use ${a} as the placeholder for the target language',
+			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => 'The prompt must contain ${a} as the placeholder for the target language',
 			'thisFieldCannotBeEmpty' => 'This field cannot be empty',
 			'thePromptMustContainAPlaceholder' => ({required Object a}) => 'The prompt must contain ${a} placeholder',
 			'translationPrompt' => 'Translation Prompt',
@@ -8939,10 +8947,10 @@ extension on Translations {
 			'contextCompression' => 'Context Compression',
 			'followUpSuggestions' => 'Follow-up Suggestions',
 			'autoTitle' => 'Auto Title',
-			'connectionDisconnected' => 'Connection to server disconnected',
-			'enterServerAddress' => 'Please enter server address',
 			_ => null,
 		} ?? switch (path) {
+			'connectionDisconnected' => 'Connection to server disconnected',
+			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
 			'noConfigurationsFound' => 'No configurations found',
 			'noData' => 'No data',
@@ -9453,10 +9461,10 @@ extension on Translations {
 			'importSkillsFromFolderHint' => 'Import a folder containing a SKILL.md file',
 			'importingSkills' => 'Importing skills...',
 			'noSkillFileFound' => 'No SKILL.md found in the selected folder',
-			'importedSkillCount' => ({required Object count}) => 'Imported ${count} skill(s)',
-			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)',
 			_ => null,
 		} ?? switch (path) {
+			'importedSkillCount' => ({required Object count}) => 'Imported ${count} skill(s)',
+			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)',
 			'assistantProfiles' => 'Assistant Profiles',
 			'newProfile' => 'New Profile',
 			'editAssistantProfile' => 'Edit Profile',

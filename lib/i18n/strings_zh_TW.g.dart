@@ -351,6 +351,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get cookieImported => '餅乾已匯入';
 	@override String get cookieCleared => '已清除餅乾';
 	@override String get importFromClipboard => '貼上餅乾內容';
+	@override String get cookieNameRequired => '請輸入餅乾 name';
+	@override String get invalidCookieHash => '無效的 userhash，請檢查是否填寫完整';
 	@override String get searchAll => '搜尋全部';
 	@override String get searchHistory => '搜尋歷史';
 	@override String get searchIn => '搜尋自';
@@ -2823,6 +2825,8 @@ extension on TranslationsZhTw {
 			'cookieImported' => '餅乾已匯入',
 			'cookieCleared' => '已清除餅乾',
 			'importFromClipboard' => '貼上餅乾內容',
+			'cookieNameRequired' => '請輸入餅乾 name',
+			'invalidCookieHash' => '無效的 userhash，請檢查是否填寫完整',
 			'searchAll' => '搜尋全部',
 			'searchHistory' => '搜尋歷史',
 			'searchIn' => '搜尋自',
@@ -3021,10 +3025,10 @@ extension on TranslationsZhTw {
 			'innerBorderWidth' => '內邊框寬度',
 			'innerBorderColor' => '內邊框顏色',
 			'borderSettings' => '邊框設定',
-			'saving' => '正在儲存',
-			'saveSuccessful' => '儲存成功',
 			_ => null,
 		} ?? switch (path) {
+			'saving' => '正在儲存',
+			'saveSuccessful' => '儲存成功',
 			'saveFailedE' => ({required Object e}) => '儲存失敗：${e}',
 			'failedToLoadImagesOrNoImages' => '載入圖片失敗或無圖片',
 			'failedToPickImage' => '選擇圖片失敗',
@@ -3535,10 +3539,10 @@ extension on TranslationsZhTw {
 			'screenshotInProgress' => '正在擷圖...',
 			'moveOperationTargetUnknown' => '移動操作目標未知',
 			'operationUnknown' => '操作未知',
-			'pleaseEnterTranslationPrompt' => ({required Object a}) => '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符',
-			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符',
 			_ => null,
 		} ?? switch (path) {
+			'pleaseEnterTranslationPrompt' => ({required Object a}) => '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符',
+			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符',
 			'thisFieldCannotBeEmpty' => '此欄位不能為空',
 			'thePromptMustContainAPlaceholder' => ({required Object a}) => '提示詞必須包含 ${a} 佔位符',
 			'translationPrompt' => '翻譯提示詞',
@@ -4049,10 +4053,10 @@ extension on TranslationsZhTw {
 			'contextCompression' => '上下文壓縮',
 			'followUpSuggestions' => '後續追問建議',
 			'autoTitle' => '自動標題',
-			'connectionDisconnected' => '連線已斷開',
-			'enterServerAddress' => '輸入伺服器位址',
 			_ => null,
 		} ?? switch (path) {
+			'connectionDisconnected' => '連線已斷開',
+			'enterServerAddress' => '輸入伺服器位址',
 			'tapToShare' => '點擊分享',
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '沒有資料',
@@ -4563,10 +4567,10 @@ extension on TranslationsZhTw {
 			'importingSkills' => '正在匯入技能...',
 			'noSkillFileFound' => '所選資料夾中找不到 SKILL.md',
 			'importedSkillCount' => ({required Object count}) => '已匯入 ${count} 個技能',
-			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案',
-			'assistantProfiles' => '助手檔案',
 			_ => null,
 		} ?? switch (path) {
+			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案',
+			'assistantProfiles' => '助手檔案',
 			'newProfile' => '新增檔案',
 			'editAssistantProfile' => '編輯檔案',
 			'profileName' => '檔案名稱',

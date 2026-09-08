@@ -352,6 +352,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get cookieImported => '饼干已导入';
 	@override String get cookieCleared => '已清除饼干';
 	@override String get importFromClipboard => '粘贴饼干内容';
+	@override String get cookieNameRequired => '请输入饼干 name';
+	@override String get invalidCookieHash => '无效的 userhash，请检查是否填写完整';
 	@override String get searchAll => '搜索全部';
 	@override String get searchHistory => '搜索历史';
 	@override String get searchIn => '搜索';
@@ -2825,6 +2827,8 @@ extension on TranslationsZhCn {
 			'cookieImported' => '饼干已导入',
 			'cookieCleared' => '已清除饼干',
 			'importFromClipboard' => '粘贴饼干内容',
+			'cookieNameRequired' => '请输入饼干 name',
+			'invalidCookieHash' => '无效的 userhash，请检查是否填写完整',
 			'searchAll' => '搜索全部',
 			'searchHistory' => '搜索历史',
 			'searchIn' => '搜索',
@@ -3022,10 +3026,10 @@ extension on TranslationsZhCn {
 			'showOuterBorder' => '显示外边框',
 			'innerBorderWidth' => '内边框宽度',
 			'innerBorderColor' => '内边框颜色',
-			'borderSettings' => '边框设置',
-			'saving' => '保存中',
 			_ => null,
 		} ?? switch (path) {
+			'borderSettings' => '边框设置',
+			'saving' => '保存中',
 			'saveSuccessful' => '保存成功',
 			'saveFailedE' => ({required Object e}) => '保存失败：${e}',
 			'failedToLoadImagesOrNoImages' => '加载图片失败或无图片',
@@ -3536,10 +3540,10 @@ extension on TranslationsZhCn {
 			'moveOperationTargetUnknown' => '移动操作目标未知',
 			'operationUnknown' => '操作未知',
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => '请输入翻译提示词，使用 ${a} 作为目标语言的占位符',
-			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示词必须包含 ${a} 作为目标语言的占位符',
-			'thisFieldCannotBeEmpty' => '此字段不能为空',
 			_ => null,
 		} ?? switch (path) {
+			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示词必须包含 ${a} 作为目标语言的占位符',
+			'thisFieldCannotBeEmpty' => '此字段不能为空',
 			'thePromptMustContainAPlaceholder' => ({required Object a}) => '提示词必须包含 ${a} 占位符',
 			'translationPrompt' => '翻译提示词',
 			'modelName' => '模型名称',
@@ -4050,10 +4054,10 @@ extension on TranslationsZhCn {
 			'followUpSuggestions' => '后续追问建议',
 			'autoTitle' => '自动标题',
 			'connectionDisconnected' => '连接已断开',
-			'enterServerAddress' => '输入服务器地址',
-			'tapToShare' => '点击分享',
 			_ => null,
 		} ?? switch (path) {
+			'enterServerAddress' => '输入服务器地址',
+			'tapToShare' => '点击分享',
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '没有数据',
 			'loginWithPasswordIsDisabled' => '密码登录已禁用',
@@ -4564,10 +4568,10 @@ extension on TranslationsZhCn {
 			'importSkillsFromFolderHint' => '导入包含 SKILL.md 文件的文件夹',
 			'importingSkills' => '正在导入技能...',
 			'noSkillFileFound' => '所选文件夹中未找到 SKILL.md',
-			'importedSkillCount' => ({required Object count}) => '已导入 ${count} 个技能',
-			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已导入 ${imported} 个技能，跳过 ${skipped} 个无效文件',
 			_ => null,
 		} ?? switch (path) {
+			'importedSkillCount' => ({required Object count}) => '已导入 ${count} 个技能',
+			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已导入 ${imported} 个技能，跳过 ${skipped} 个无效文件',
 			'assistantProfiles' => '助手档案',
 			'newProfile' => '新建档案',
 			'editAssistantProfile' => '编辑档案',

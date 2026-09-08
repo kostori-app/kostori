@@ -310,6 +310,8 @@ invalidCookieQrCode: 無效的餅乾 QR Code
 cookieImported: 餅乾已匯入
 cookieCleared: 已清除餅乾
 importFromClipboard: 貼上餅乾內容
+cookieNameRequired: 請輸入餅乾 name
+invalidCookieHash: 無效的 userhash，請檢查是否填寫完整
 searchAll: 搜尋全部
 searchHistory: 搜尋歷史
 searchIn: 搜尋自

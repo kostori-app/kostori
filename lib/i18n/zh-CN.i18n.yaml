@@ -311,6 +311,8 @@ invalidCookieQrCode: 无效的饼干二维码
 cookieImported: 饼干已导入
 cookieCleared: 已清除饼干
 importFromClipboard: 粘贴饼干内容
+cookieNameRequired: 请输入饼干 name
+invalidCookieHash: 无效的 userhash，请检查是否填写完整
 searchAll: 搜索全部
 searchHistory: 搜索历史
 searchIn: 搜索

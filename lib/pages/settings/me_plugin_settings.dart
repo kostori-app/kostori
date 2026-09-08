@@ -1310,8 +1310,8 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
     await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
-          title: Text(_txt('add', '添加自定义饼干')),
+        builder: (ctx, setD) => ContentDialog(
+          title: _txt('add', '添加自定义饼干'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1357,8 +1357,12 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
               onPressed: () {
                 final name = nameCtrl.text.trim();
                 final hash = _normalizeCookieUserhash(hashCtrl.text);
-                if (name.isEmpty || hash == null) {
-                  setD(() => error = t.invalidCookieQrCode);
+                if (name.isEmpty) {
+                  setD(() => error = t.cookieNameRequired);
+                  return;
+                }
+                if (hash == null) {
+                  setD(() => error = t.invalidCookieHash);
                   return;
                 }
                 Navigator.pop(ctx, true);

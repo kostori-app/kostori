@@ -322,6 +322,8 @@ invalidCookieQrCode: Invalid cookie QR code
 cookieImported: Cookie imported
 cookieCleared: Cookie cleared
 importFromClipboard: Paste cookie content
+cookieNameRequired: Please enter cookie name
+invalidCookieHash: Invalid userhash, please check it is complete
 searchAll: Search All
 searchHistory: Search History
 searchIn: Search in
