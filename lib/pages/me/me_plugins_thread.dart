@@ -5,6 +5,7 @@ class _ThreadPost {
   final int floor;
   final String floorLabel;
   final String roleLabel;
+  final String noLabel;
   final String author;
   final String avatarUrl;
   final String time;
@@ -17,6 +18,7 @@ class _ThreadPost {
     this.floor = 0,
     this.floorLabel = '',
     this.roleLabel = '',
+    this.noLabel = '',
     this.author = '',
     this.avatarUrl = '',
     this.time = '',
@@ -144,6 +146,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                 floor: _asInt(bm['floor'], 0),
                 floorLabel: bm['floorLabel']?.toString() ?? '',
                 roleLabel: bm['roleLabel']?.toString() ?? '',
+                noLabel: bm['noLabel']?.toString() ?? '',
                 author: bm['author']?.toString() ?? '',
                 avatarUrl: bm['avatarUrl']?.toString() ?? '',
                 time: bm['time']?.toString() ?? '',
@@ -559,9 +562,11 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
 
   Widget _floorHeader(ColorScheme cs, _ThreadPost post, int visibleNo) {
     final avatarUrl = post.avatarUrl;
-    // 楼层序号：有 floorLabel 用插件给的；否则回复按可见序号补 #N；楼主(有身份标识)不显示 #0
+    // 右上角标识：优先插件下发的 No 串号，其次楼层序号（楼主有身份标识则不显示 #0）
     String floorNum = '';
-    if (post.floorLabel.isNotEmpty) {
+    if (post.noLabel.isNotEmpty) {
+      floorNum = post.noLabel;
+    } else if (post.floorLabel.isNotEmpty) {
       floorNum = post.floorLabel;
     } else if (visibleNo > 0) {
       floorNum = '#$visibleNo';
