@@ -25,10 +25,28 @@ Widget _siteImage(
   );
 }
 
-/// 若页面内容本身就是 board 模块则直接渲染板块内容
-Widget _contentOrBoard(MePagePlugin plugin, List<dynamic> modules) {
+/// 若页面内容本身就是 board 模块则直接渲染板块内容。
+/// [presetController] 由外壳下发时走“外壳托管模式”（顶部导航统一在外壳渲染）。
+Widget _contentOrBoard(
+  MePagePlugin plugin,
+  List<dynamic> modules, {
+  TabController? presetController,
+}) {
   for (final m in modules) {
     if (_asMap2(m)['type'] == 'board') {
+      if (presetController != null) {
+        final mm = _asMap2(m);
+        final raw = mm['tabs'];
+        final tabs = raw is List
+            ? raw.map((e) => _asMap2(e)).toList()
+            : <Map<String, dynamic>>[];
+        return PluginBoardContent(
+          plugin: plugin,
+          presetTabs: tabs,
+          presetListPage: mm['page']?.toString(),
+          presetController: presetController,
+        );
+      }
       return PluginBoardContent(plugin: plugin, metaModules: modules);
     }
   }
@@ -279,10 +297,19 @@ class PluginBoardContent extends StatefulWidget {
   /// 外层（插件导航壳）已经取到的板块 meta 模块，避免再按写死的 'board' 拉一次
   final List<dynamic>? metaModules;
 
+  /// 外壳托管模式：分类列表/请求页/控制器由外壳下发并统一渲染顶部导航
+  /// （此模式下组件不自建 TabController、不画顶部玻璃胶囊条）
+  final List<Map<String, dynamic>>? presetTabs;
+  final String? presetListPage;
+  final TabController? presetController;
+
   const PluginBoardContent({
     super.key,
     required this.plugin,
     this.metaModules,
+    this.presetTabs,
+    this.presetListPage,
+    this.presetController,
   });
 
   @override
@@ -295,6 +322,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   String _listPage = 'boardList';
   int _index = 0;
   bool _metaLoaded = false;
+  bool _external = false;
   int _page = 1;
   int _totalPages = 1;
   String? _error;
@@ -324,13 +352,29 @@ class _PluginBoardContentState extends State<PluginBoardContent>
   void initState() {
     super.initState();
     _continuous = appdata.settings[_modeSettingKey] == true;
+    if (widget.presetTabs != null && widget.presetController != null) {
+      _external = true;
+      _tabs = widget.presetTabs!;
+      _listPage = widget.presetListPage ?? 'boardList';
+      _tabsCtrl = widget.presetController!..addListener(_onTabChanged);
+      _metaLoaded = true;
+      if (_tabs.isNotEmpty) _go(_tabPage[_tabKey] ?? 1);
+      return;
+    }
     _loadMeta();
   }
 
   @override
   void dispose() {
     _scroll.dispose();
-    _tabsCtrl?.dispose();
+    final c = _tabsCtrl;
+    if (c != null) {
+      if (_external) {
+        c.removeListener(_onTabChanged);
+      } else {
+        c.dispose();
+      }
+    }
     super.dispose();
   }
 
@@ -618,7 +662,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
             ],
           ),
         ),
-        if (_tabs.isNotEmpty)
+        if (_tabs.isNotEmpty && !_external)
           Positioned(
             left: 0,
             right: 0,
@@ -704,8 +748,9 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     final active = tabIdx == _index;
     final edge = EdgeInsets.fromLTRB(
       8,
-      // 顶部仅让出子导航胶囊高度（~44px），避免胶囊与下方卡片之间出现空白缝
-      _tabs.isNotEmpty ? 50 : 8,
+      // 外壳托管时顶部胶囊由外壳统一渲染，内容不留内层胶囊高度；
+      // 自管理模式仍需让出 ~44px 顶部玻璃胶囊
+      _external ? 10 : (_tabs.isNotEmpty ? 50 : 8),
       8,
       _continuous ? 24 : 66,
     );

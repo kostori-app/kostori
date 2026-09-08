@@ -156,6 +156,11 @@ class _PluginShellPageState extends State<PluginShellPage>
   List<String?> _errors = const [];
   int _reqToken = 0;
 
+  // 板块页的分类信息与分类控制器（由外壳统一渲染顶部导航，避免两层玻璃接缝）
+  List<({List<Map<String, dynamic>> tabs, String listPage})?> _boardInfos =
+      const [];
+  List<TabController?> _boardCtrls = const [];
+
   @override
   void initState() {
     super.initState();
@@ -178,6 +183,8 @@ class _PluginShellPageState extends State<PluginShellPage>
       _pages = List<List<dynamic>?>.filled(nav.length, null);
       _loading = List<bool>.filled(nav.length, false);
       _errors = List<String?>.filled(nav.length, null);
+      _boardInfos = List.filled(nav.length, null);
+      _boardCtrls = List<TabController?>.filled(nav.length, null);
       if (_nav.isNotEmpty) _loadIndex(start);
       return nav;
     });
@@ -187,6 +194,9 @@ class _PluginShellPageState extends State<PluginShellPage>
   void dispose() {
     _manager.removeListener(_onManagerChanged);
     _outerTabs?.dispose();
+    for (final c in _boardCtrls) {
+      c?.dispose();
+    }
     super.dispose();
   }
 
@@ -212,6 +222,29 @@ class _PluginShellPageState extends State<PluginShellPage>
       final modules =
           await widget.plugin.page(_nav[index]['key']?.toString() ?? '');
       if (!mounted || token != _reqToken) return;
+      // 板块页：解析分类信息并（重新）创建外壳托管的分类控制器
+      ({List<Map<String, dynamic>> tabs, String listPage})? info;
+      for (final m in modules) {
+        final mm = _asMap2(m);
+        if (mm['type'] != 'board') continue;
+        final raw = mm['tabs'];
+        info = (
+          tabs: raw is List
+              ? raw.map((e) => _asMap2(e)).toList()
+              : <Map<String, dynamic>>[],
+          listPage: mm['page']?.toString() ?? 'boardList',
+        );
+        break;
+      }
+      _boardCtrls[index]?.dispose();
+      if (info != null) {
+        final c = TabController(length: info.tabs.length, vsync: this)
+          ..addListener(() => _onBoardTabChanged(index));
+        _boardCtrls[index] = c;
+      } else {
+        _boardCtrls[index] = null;
+      }
+      _boardInfos[index] = info;
       setState(() {
         _pages[index] = modules;
         _loading[index] = false;
@@ -248,6 +281,22 @@ class _PluginShellPageState extends State<PluginShellPage>
     _loadIndex(index);
   }
 
+  /// 板块分类控制器变化（内层 PageView 滑动/外壳胶囊点击共用）→ 刷新顶部高亮
+  void _onBoardTabChanged(int index) {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  /// 外壳统一渲染的板块分类胶囊点击
+  void _selectBoardTab(int boardIndex, int tabIndex) {
+    final c = _boardCtrls[boardIndex];
+    if (c != null) {
+      c.animateTo(tabIndex);
+      return;
+    }
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -277,28 +326,7 @@ class _PluginShellPageState extends State<PluginShellPage>
           }
           return Column(
             children: [
-              if (_nav.length > 1)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: _CapsuleBar(
-                      keys: _nav
-                          .map((n) => n['key']?.toString() ?? '')
-                          .toList(),
-                      titles: _nav
-                          .map((n) => n['title']?.toString() ?? '')
-                          .toList(),
-                      icons: _nav
-                          .map((n) => n['icon']?.toString() ?? '')
-                          .toList(),
-                      selected: _index < _nav.length
-                          ? (_nav[_index]['key']?.toString() ?? '')
-                          : '',
-                      onChanged: _select,
-                    ),
-                  ),
-                ),
+              _buildCombinedHeader(),
               Expanded(
                 child: ExtendedTabBarView(
                   controller: _outerTabs,
@@ -320,6 +348,66 @@ class _PluginShellPageState extends State<PluginShellPage>
     );
   }
 
+  /// 统一玻璃容器内的两行导航（主导航 + 当前板块分类导航），避免分层的亚像素接缝
+  Widget _buildCombinedHeader() {
+    final showBig = _nav.length > 1;
+    final info = _index < _boardInfos.length ? _boardInfos[_index] : null;
+    final ctrl = _index < _boardCtrls.length ? _boardCtrls[_index] : null;
+    final showSub =
+        info != null && ctrl != null && info.tabs.isNotEmpty;
+    if (!showBig && !showSub) return const SizedBox.shrink();
+
+    final rows = <Widget>[
+      if (showBig)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _CapsuleBar(
+              keys: _nav
+                  .map((n) => n['key']?.toString() ?? '')
+                  .toList(),
+              titles: _nav
+                  .map((n) => n['title']?.toString() ?? '')
+                  .toList(),
+              icons: _nav
+                  .map((n) => n['icon']?.toString() ?? '')
+                  .toList(),
+              selected: _index < _nav.length
+                  ? (_nav[_index]['key']?.toString() ?? '')
+                  : '',
+              onChanged: _select,
+            ),
+          ),
+        ),
+      if (showSub)
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            12,
+            showBig ? 2 : 6,
+            12,
+            6,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _CapsuleBar(
+              keys: info.tabs
+                  .map((t) => t['key']?.toString() ?? '')
+                  .toList(),
+              titles: info.tabs
+                  .map((t) => t['title']?.toString() ?? '')
+                  .toList(),
+              selected: ctrl.index < info.tabs.length
+                  ? (info.tabs[ctrl.index]['key']?.toString() ?? '')
+                  : '',
+              onChanged: (i) => _selectBoardTab(_index, i),
+            ),
+          ),
+        ),
+    ];
+    return _GlassBar(child: Column(mainAxisSize: MainAxisSize.min, children: rows));
+  }
+
   Widget _pageBody(int index) {
     if (index < 0 || index >= _nav.length) {
       return const SizedBox.shrink();
@@ -336,7 +424,13 @@ class _PluginShellPageState extends State<PluginShellPage>
     // 同一插件的多个导航页即使渲染相同类型（如多个板块）也要按 key 重建状态
     return KeyedSubtree(
       key: ValueKey('$key-$index'),
-      child: _contentOrBoard(widget.plugin, data),
+      child: _contentOrBoard(
+        widget.plugin,
+        data,
+        presetController: index < _boardCtrls.length
+            ? _boardCtrls[index]
+            : null,
+      ),
     );
   }
 }
