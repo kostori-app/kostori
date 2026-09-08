@@ -1559,43 +1559,39 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
           ),
         ),
         const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _verifyCtrl,
-                onSubmitted: (_) => _login(),
-                decoration: InputDecoration(
-                  labelText: _txt('verify', 'Verify code'),
-                  border: const OutlineInputBorder(),
-                ),
+        TextField(
+          controller: _verifyCtrl,
+          onSubmitted: (_) => _login(),
+          decoration: InputDecoration(
+            labelText: _txt('verify', 'Verify code'),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        // 验证码单独一大块展示，方便辨认；点图即可刷新/重试
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Tooltip(
+            message: _txt('captchaTip', '看不清？点击刷新验证码'),
+            child: GestureDetector(
+              onTap: _captchaBusy ? null : _refreshCaptcha,
+              child: SizedBox(
+                width: double.infinity,
+                height: 120,
+                child: bytes != null
+                    ? ColoredBox(
+                        color: cs.surfaceContainerHigh,
+                        child: Image.memory(
+                          bytes,
+                          fit: BoxFit.contain,
+                          gaplessPlayback: true,
+                          errorBuilder: (_, _, _) => _captchaFallback(cs),
+                        ),
+                      )
+                    : _captchaFallback(cs),
               ),
             ),
-            const SizedBox(width: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Tooltip(
-                message: _txt('captchaTip', '看不清？点击刷新验证码'),
-                child: GestureDetector(
-                  // 加载失败/看不清都能点图重试
-                  onTap: _captchaBusy ? null : _refreshCaptcha,
-                  child: SizedBox(
-                    width: 150,
-                    height: 60,
-                    child: bytes != null
-                        ? Image.memory(
-                            bytes,
-                            fit: BoxFit.contain,
-                            gaplessPlayback: true,
-                            errorBuilder: (_, _, _) => _captchaFallback(cs),
-                          )
-                        : _captchaFallback(cs),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: 12),
         if (_error != null) ...[
@@ -1621,8 +1617,8 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
 
   Widget _captchaFallback(ColorScheme cs) {
     return Container(
-      width: 150,
-      height: 60,
+      width: double.infinity,
+      height: 120,
       color: cs.surfaceContainerHigh,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
