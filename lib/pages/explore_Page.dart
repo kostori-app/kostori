@@ -2,7 +2,6 @@
 
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
@@ -13,7 +12,6 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/pages/explore_controller.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
 
@@ -29,9 +27,22 @@ class _ExplorePageState extends State<ExplorePage>
   late TabController sourceController;
   late Map<String, TabController> pageControllers = {};
 
-  late final ExploreController exploreController;
+  // 原 ExploreController 逻辑直接并入本页（无全局共享需求，去掉 mobx）
+  bool _showFB = false;
+  late AnimationController _fbController;
+  late Animation<double> _fbFade;
 
-  bool get showFB => exploreController.showFB;
+  void _showFloating() {
+    if (_showFB) return;
+    setState(() => _showFB = true);
+    _fbController.forward();
+  }
+
+  void _hideFloating() {
+    if (!_showFB) return;
+    setState(() => _showFB = false);
+    _fbController.reverse();
+  }
 
   bool get horizontalLayout => appdata.settings.s.exploreHorizontalLayout;
 
@@ -172,13 +183,16 @@ class _ExplorePageState extends State<ExplorePage>
   @override
   void initState() {
     super.initState();
-    exploreController = ExploreController();
     _initSourcesAndPages();
     sourceController = TabController(length: sources.length, vsync: this);
     _rebuildPageControllers();
     appdata.settings.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
-    exploreController.initController(this);
+    _fbController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fbFade = CurvedAnimation(parent: _fbController, curve: Curves.easeInOut);
   }
 
   void _initSourcesAndPages() {
@@ -236,7 +250,7 @@ class _ExplorePageState extends State<ExplorePage>
     }
     appdata.settings.removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
-    exploreController.dispose();
+    _fbController.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       appdata.implicitData['explorePageIndices'] = savedIndices;
       appdata.writeImplicitData();
@@ -329,7 +343,8 @@ class _ExplorePageState extends State<ExplorePage>
                             sourceKey: sourceKey,
                             pages: sourcePages[sourceKey] ?? [],
                             pageController: pageControllers[sourceKey]!,
-                            exploreController: exploreController,
+                            onFloatingShow: _showFloating,
+                            onFloatingHide: _hideFloating,
                             horizontalLayout: horizontalLayout,
                           ),
                         )
@@ -340,14 +355,15 @@ class _ExplorePageState extends State<ExplorePage>
             ],
           ),
         ),
-        Observer(
-          builder: (_) => Positioned(
+        AnimatedBuilder(
+          animation: _fbController,
+          builder: (_, _) => Positioned(
             bottom: 30,
             right: 10,
             child: FadeTransition(
-              opacity: exploreController.fadeAnimation,
+              opacity: _fbFade,
               child: IgnorePointer(
-                ignoring: !showFB,
+                ignoring: !_showFB,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 20, right: 0),
                   child: GridSpeedDial(
@@ -463,13 +479,15 @@ class _SingleExplorePage extends StatefulWidget {
     this.title, {
     super.key,
     required this.sourceKey,
-    required this.exploreController,
+    required this.onFloatingShow,
+    required this.onFloatingHide,
     this.horizontalLayout = false,
   });
 
   final String title;
   final String sourceKey;
-  final ExploreController exploreController;
+  final VoidCallback onFloatingShow;
+  final VoidCallback onFloatingHide;
 
   final bool horizontalLayout;
 
@@ -483,15 +501,11 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
 
   late final String animeSourceKey;
 
-  late final ExploreController exploreController;
-
   var scrollController = ScrollController();
 
   bool _wantKeepAlive = true;
 
   VoidCallback? refreshHandler;
-
-  bool get showFB => exploreController.showFB;
 
   void onSettingsChanged() {
     final rawMap = appdata.settings.s.explorePagesV2;
@@ -509,20 +523,15 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     // 内容不可滚动时也显示浮动按钮
     final shouldShow = !canScroll || scrollController.offset > 50;
     if (shouldShow) {
-      if (!exploreController.showFB) {
-        exploreController.show();
-      }
+      widget.onFloatingShow();
     } else {
-      if (exploreController.showFB) {
-        exploreController.hide();
-      }
+      widget.onFloatingHide();
     }
   }
 
   @override
   void initState() {
     super.initState();
-    exploreController = widget.exploreController;
     scrollController.addListener(onScroll);
     // 内容不可滚动时（无滚动监听触发）也显示浮动按钮
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -924,14 +933,16 @@ class _SourceExplorePage extends StatefulWidget {
     required this.sourceKey,
     required this.pages,
     required this.pageController,
-    required this.exploreController,
+    required this.onFloatingShow,
+    required this.onFloatingHide,
     this.horizontalLayout = false,
   });
 
   final String sourceKey;
   final List<String> pages;
   final TabController pageController;
-  final ExploreController exploreController;
+  final VoidCallback onFloatingShow;
+  final VoidCallback onFloatingHide;
   final bool horizontalLayout;
 
   @override
@@ -952,7 +963,8 @@ class _SourceExplorePageState extends State<_SourceExplorePage>
       pageTitle,
       key: PageStorageKey("${widget.sourceKey}_$pageTitle"),
       sourceKey: widget.sourceKey,
-      exploreController: widget.exploreController,
+      onFloatingShow: widget.onFloatingShow,
+      onFloatingHide: widget.onFloatingHide,
       horizontalLayout: widget.horizontalLayout,
     ),
   );
