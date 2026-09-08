@@ -205,6 +205,18 @@ class MePagePlugin {
     _saveData();
   }
 
+  /// 通用 data 读写（供插件设置 UI 存列表等结构化数据，落盘同 .data）
+  Object? dataValue(String key) => data[key];
+
+  void setDataValue(String key, Object? value) {
+    if (value == null) {
+      data.remove(key);
+    } else {
+      data[key] = value;
+    }
+    _saveData();
+  }
+
   /// 插件是否声明了“设置页”模块（与番源 source.settings 对齐；解析期已判定）
   bool get hasSettings => settingsDeclared;
 

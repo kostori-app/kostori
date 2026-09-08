@@ -1144,6 +1144,24 @@ class _PluginSettingsModule extends StatelessWidget {
         ],
       );
     }
+    if (type == 'cookies') {
+      return _SettingCard(
+        children: [
+          if (m['title']?.toString().isNotEmpty ?? false)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                m['title'].toString(),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _PluginCookiesEditor(plugin: plugin, m: m),
+          ),
+        ],
+      );
+    }
     if (type == 'text') {
       return _SettingCard(
         children: [
@@ -1155,6 +1173,380 @@ class _PluginSettingsModule extends StatelessWidget {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+/// 解析用户粘贴/扫码的饼干内容为纯 userhash：
+/// 裸 userhash / userhash=xxx / {"cookie":"…","name":"…"} / {"userhash":…}
+String? _normalizeCookieUserhash(String raw) {
+  var text = raw.trim();
+  if (text.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(text);
+    if (decoded is Map) {
+      final map = decoded.map((k, v) => MapEntry('$k', v));
+      final hash =
+          map['cookie']?.toString() ??
+          map['userhash']?.toString() ??
+          map['user_hash']?.toString();
+      if (hash != null) text = hash.trim();
+    }
+  } catch (_) {}
+  if (text.startsWith('userhash=')) {
+    text = text.substring('userhash='.length).trim();
+  } else if (text.startsWith('userhash:')) {
+    text = text.substring('userhash:'.length).trim();
+  }
+  if (text.length >= 2 &&
+      ((text.startsWith('"') && text.endsWith('"')) ||
+          (text.startsWith("'") && text.endsWith("'")))) {
+    text = text.substring(1, text.length - 1);
+  }
+  if (!RegExp(r'^[0-9A-Za-z_-]{4,64}$').hasMatch(text)) return null;
+  return text;
+}
+
+/// 多饼干管理器（对齐 xdnmb-main 饼干页：列表 + 增删 + 选中浏览用）
+class _PluginCookiesEditor extends StatefulWidget {
+  final MePagePlugin plugin;
+  final Map<String, dynamic> m;
+
+  const _PluginCookiesEditor({required this.plugin, required this.m});
+
+  @override
+  State<_PluginCookiesEditor> createState() => _PluginCookiesEditorState();
+}
+
+class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
+  @override
+  void initState() {
+    super.initState();
+    // 旧版单饼干配置 → 迁移进列表（仅首次且列表为空时）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final legacy = widget.plugin.configs[_configKey]?.toString() ?? '';
+      if (legacy.isNotEmpty && _list().isEmpty) {
+        _addEntry(name: _txt('legacy', '饼干'), hash: legacy);
+      }
+    });
+  }
+
+  String get _listKey => widget.m['key']?.toString() ?? 'cookies';
+
+  String get _activeKey => widget.m['activeKey']?.toString() ?? 'activeCookie';
+
+  String get _configKey => widget.m['configKey']?.toString() ?? 'userhash';
+
+  String _txt(String k, String fallback) {
+    final raw = widget.m['texts'];
+    if (raw is Map) {
+      final v = raw[k];
+      if (v != null && v.toString().isNotEmpty) return v.toString();
+    }
+    return fallback;
+  }
+
+  List<Map<String, dynamic>> _list() {
+    final raw = widget.plugin.dataValue(_listKey);
+    final out = <Map<String, dynamic>>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map) {
+          final m = e.map((k, v) => MapEntry(k.toString(), v));
+          if ((m['userhash']?.toString() ?? '').isNotEmpty) out.add(m);
+        }
+      }
+    }
+    return out;
+  }
+
+  int? _active() {
+    final v = widget.plugin.dataValue(_activeKey);
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  Map<String, dynamic>? _activeCookie() {
+    final list = _list();
+    final idx = _active();
+    if (idx == null || idx < 0 || idx >= list.length) return null;
+    return list[idx];
+  }
+
+  void _commit(List<Map<String, dynamic>> list, int? active) {
+    widget.plugin.setDataValue(_listKey, list);
+    widget.plugin.setDataValue(_activeKey, active);
+    if (active != null &&
+        active >= 0 &&
+        active < list.length &&
+        (list[active]['userhash']?.toString() ?? '').isNotEmpty) {
+      widget.plugin.setConfigValue(
+        _configKey,
+        list[active]['userhash']!.toString(),
+      );
+    } else {
+      widget.plugin.setConfigValue(_configKey, '');
+    }
+    MePagePluginManager().touch();
+    if (mounted) setState(() {});
+  }
+
+  void _select(int idx) {
+    final list = _list();
+    if (idx < 0 || idx >= list.length) return;
+    _commit(list, idx);
+    App.rootContext.showMessage(
+      message: '${list[idx]['name'] ?? list[idx]['userhash']} · '
+          '${_txt('active', '用于浏览')}',
+    );
+  }
+
+  Future<void> _addManual() async {
+    final nameCtrl = TextEditingController();
+    final hashCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+    String? error;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: Text(_txt('add', '添加自定义饼干')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: _txt('name', 'name'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: hashCtrl,
+                decoration: InputDecoration(
+                  labelText: _txt('hash', 'userhash / cookie'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: noteCtrl,
+                decoration: InputDecoration(
+                  labelText: _txt('note', '备注（可不填）'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  error!,
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(t.cancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                final hash = _normalizeCookieUserhash(hashCtrl.text);
+                if (name.isEmpty || hash == null) {
+                  setD(() => error = t.invalidCookieQrCode);
+                  return;
+                }
+                Navigator.pop(ctx, true);
+                _addEntry(
+                  name: name,
+                  hash: hash,
+                  note: noteCtrl.text.trim(),
+                );
+              },
+              child: Text(_txt('save', t.confirm)),
+            ),
+          ],
+        ),
+      ),
+    );
+    nameCtrl.dispose();
+    hashCtrl.dispose();
+    noteCtrl.dispose();
+    if (ok != true) return;
+  }
+
+  Future<void> _addByScan() async {
+    final result = await QrScannerPage.push(context);
+    if (result == null || !mounted) return;
+    var name = '';
+    var hash = _normalizeCookieUserhash(result.rawValue);
+    try {
+      final decoded = jsonDecode(result.rawValue);
+      if (decoded is Map) {
+        final map = decoded.map((k, v) => MapEntry('$k', v));
+        name = map['name']?.toString() ?? '';
+        hash =
+            _normalizeCookieUserhash(
+              map['cookie']?.toString() ?? '',
+            ) ??
+            hash;
+      }
+    } catch (_) {}
+    if (hash == null) {
+      App.rootContext.showMessage(
+        message: t.invalidCookieQrCode,
+        level: LogLevel.error,
+      );
+      return;
+    }
+    if (name.isEmpty) name = _txt('scanFallback', '扫码饼干');
+    _addEntry(name: name, hash: hash);
+  }
+
+  void _addEntry({
+    required String name,
+    required String hash,
+    String note = '',
+  }) {
+    final list = _list();
+    final existing = list.indexWhere((e) => e['userhash'] == hash);
+    if (existing >= 0) {
+      _commit(list, existing);
+      App.rootContext.showMessage(message: '${t.alreadyExists}: $name');
+      return;
+    }
+    list.add({
+      'name': name,
+      'userhash': hash,
+      if (note.isNotEmpty) 'note': note,
+    });
+    _commit(list, list.length - 1);
+    App.rootContext.showMessage(message: t.cookieImported);
+  }
+
+  void _remove(int idx) {
+    final list = _list();
+    if (idx < 0 || idx >= list.length) return;
+    final removed = list[idx];
+    showConfirmDialog(
+      context: context,
+      title: t.delete,
+      content:
+          '${removed['name'] ?? ''}\n${removed['userhash']}'
+          '${(removed['note'] ?? '').toString().isNotEmpty ? '\n${removed['note']}' : ''}',
+      btnColor: Theme.of(context).colorScheme.error,
+      onConfirm: () {
+        final active = _active();
+        list.removeAt(idx);
+        var newActive = active;
+        if (newActive != null) {
+          if (newActive == idx) {
+            newActive = list.isEmpty ? null : 0;
+          } else if (newActive > idx) {
+            newActive--;
+          }
+        }
+        _commit(list, newActive);
+        App.rootContext.showMessage(message: t.deleted);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final list = _list();
+    final active = _activeCookie();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.cookie_outlined, size: 18, color: cs.primary),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                active == null
+                    ? _txt('none', '还没有饼干')
+                    : '${active['name'] ?? active['userhash']} · '
+                          '${_txt('active', '用于浏览')}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: active == null ? cs.onSurfaceVariant : cs.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            IconTileButton(
+              icon: const Icon(Icons.edit_note),
+              label: _txt('add', '添加自定义饼干'),
+              onTap: _addManual,
+            ),
+            IconTileButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              label: _txt('scan', '扫描饼干二维码'),
+              onTap: _addByScan,
+            ),
+          ],
+        ),
+        if (list.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          for (var i = 0; i < list.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: cs.outlineVariant),
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                i == _active()
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                size: 20,
+                color: i == _active() ? cs.primary : cs.onSurfaceVariant,
+              ),
+              title: Text(
+                (list[i]['name']?.toString() ?? '')
+                    .isEmpty
+                    ? (list[i]['userhash']?.toString() ?? '')
+                    : list[i]['name']!.toString(),
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                [
+                  list[i]['userhash']?.toString() ?? '',
+                  list[i]['note']?.toString() ?? '',
+                ].where((s) => s.isNotEmpty).join(' · '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: IconButton(
+                tooltip: t.delete,
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: cs.error,
+                ),
+                onPressed: () => _remove(i),
+              ),
+              onTap: () => _select(i),
+            ),
+          ],
+        ],
+      ],
+    );
   }
 }
 
@@ -1175,33 +1567,7 @@ class _PluginCookieEditorState extends State<_PluginCookieEditor> {
   String get _value => widget.plugin.configs[_key]?.toString() ?? '';
 
   /// 兼容多种来源：裸 userhash / userhash=xxx / {"cookie":"…","name":"…"} / {"userhash":…}
-  String? _normalize(String raw) {
-    var text = raw.trim();
-    if (text.isEmpty) return null;
-    try {
-      final decoded = jsonDecode(text);
-      if (decoded is Map) {
-        final map = decoded.map((k, v) => MapEntry('$k', v));
-        final hash =
-            map['cookie']?.toString() ??
-            map['userhash']?.toString() ??
-            map['user_hash']?.toString();
-        if (hash != null) text = hash.trim();
-      }
-    } catch (_) {}
-    if (text.startsWith('userhash=')) {
-      text = text.substring('userhash='.length).trim();
-    } else if (text.startsWith('userhash:')) {
-      text = text.substring('userhash:'.length).trim();
-    }
-    if (text.length >= 2 &&
-        ((text.startsWith('"') && text.endsWith('"')) ||
-            (text.startsWith("'") && text.endsWith("'")))) {
-      text = text.substring(1, text.length - 1);
-    }
-    if (!RegExp(r'^[0-9A-Za-z_-]{4,64}$').hasMatch(text)) return null;
-    return text;
-  }
+  String? _normalize(String raw) => _normalizeCookieUserhash(raw);
 
   void _save(String hash) {
     widget.plugin.setConfigValue(_key, hash);
