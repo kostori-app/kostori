@@ -4,6 +4,7 @@ class _ThreadPost {
   final int pid;
   final int floor;
   final String floorLabel;
+  final String roleLabel;
   final String author;
   final String avatarUrl;
   final String time;
@@ -15,6 +16,7 @@ class _ThreadPost {
     this.pid = 0,
     this.floor = 0,
     this.floorLabel = '',
+    this.roleLabel = '',
     this.author = '',
     this.avatarUrl = '',
     this.time = '',
@@ -57,11 +59,25 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   String? _error;
   int _page = 1;
 
+  /// 简洁帖子模式（如 x岛）：不要“详情/楼主详情块”，所有帖子（含楼主）直接以楼层卡片平铺
+  bool _simplePosts = false;
+
+  /// 楼主等身份标识与 >>引用 跳转高亮
+  final Map<int, GlobalKey> _floorKeys = {};
+  int? _highlightPid;
+  Timer? _hlTimer;
+
   @override
   void initState() {
     super.initState();
     _title = widget.row?['title']?.toString() ?? '';
     _load();
+  }
+
+  @override
+  void dispose() {
+    _hlTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -79,6 +95,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
       for (final m in modules) {
         final map = _asMap2(m);
         if (map['type'] != 'threadPage') continue;
+        if (map['simple'] == true) _simplePosts = true;
         if (_title.isEmpty) _title = map['title']?.toString() ?? '';
         if (_pageUrl.isEmpty) _pageUrl = map['url']?.toString() ?? '';
         final rawFields = map['fields'];
@@ -126,6 +143,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                 pid: _asInt(bm['pid'], 0),
                 floor: _asInt(bm['floor'], 0),
                 floorLabel: bm['floorLabel']?.toString() ?? '',
+                roleLabel: bm['roleLabel']?.toString() ?? '',
                 author: bm['author']?.toString() ?? '',
                 avatarUrl: bm['avatarUrl']?.toString() ?? '',
                 time: bm['time']?.toString() ?? '',
@@ -202,7 +220,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
       return const Center(child: PolygonRefreshIndicator(size: 24));
     }
     final children = <Widget>[
-      _header(cs),
+      if (!_simplePosts) _header(cs),
       if (_posts.isEmpty)
         Padding(
           padding: const EdgeInsets.only(top: 40),
@@ -211,12 +229,19 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           ),
         )
       else ...[
-        // 楼主 = 帖子详情主体：分类信息 + 正文 + 图合并成一块，不再当楼层
-        _mainContent(cs, _posts.first),
-        const SizedBox(height: 10),
-        for (var i = 1; i < _posts.length; i++) ...[
-          _floorCard(cs, _posts[i], i),
+        if (_simplePosts)
+          for (var i = 0; i < _posts.length; i++) ...[
+            _keyedFloorCard(cs, _posts[i], i),
+            const SizedBox(height: 10),
+          ]
+        else ...[
+          // 楼主 = 帖子详情主体：分类信息 + 正文 + 图合并成一块，不再当楼层
+          _mainContent(cs, _posts.first),
           const SizedBox(height: 10),
+          for (var i = 1; i < _posts.length; i++) ...[
+            _keyedFloorCard(cs, _posts[i], i),
+            const SizedBox(height: 10),
+          ],
         ],
       ],
     ];
@@ -484,10 +509,31 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
+  /// 给帖子卡片挂跳转用的 GlobalKey（便于 >>No 点击定位）
+  Widget _keyedFloorCard(ColorScheme cs, _ThreadPost post, int visibleNo) {
+    return _floorCard(
+      cs,
+      post,
+      visibleNo,
+      key: post.pid > 0
+          ? (_floorKeys[post.pid] ??= GlobalKey())
+          : null,
+    );
+  }
+
   /// 回帖卡片：头像/作者/时间 + 可见序号 + 富文本内容 + 图片预览
-  Widget _floorCard(ColorScheme cs, _ThreadPost post, int visibleNo) {
+  Widget _floorCard(
+    ColorScheme cs,
+    _ThreadPost post,
+    int visibleNo, {
+    Key? key,
+  }) {
+    final highlighted = _highlightPid == post.pid;
     return Material(
-      color: cs.surfaceContainerLow,
+      key: key,
+      color: highlighted
+          ? cs.secondaryContainer.withValues(alpha: 0.55)
+          : cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: cs.outlineVariant, width: 0.6),
@@ -513,6 +559,13 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
 
   Widget _floorHeader(ColorScheme cs, _ThreadPost post, int visibleNo) {
     final avatarUrl = post.avatarUrl;
+    // 楼层序号：有 floorLabel 用插件给的；否则回复按可见序号补 #N；楼主(有身份标识)不显示 #0
+    String floorNum = '';
+    if (post.floorLabel.isNotEmpty) {
+      floorNum = post.floorLabel;
+    } else if (visibleNo > 0) {
+      floorNum = '#$visibleNo';
+    }
     return Row(
       children: [
         if (avatarUrl.isNotEmpty) ...[
@@ -530,15 +583,27 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (post.author.isNotEmpty)
-                Text(
-                  post.author,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+              if (post.author.isNotEmpty || post.roleLabel.isNotEmpty)
+                Row(
+                  children: [
+                    if (post.author.isNotEmpty)
+                      Flexible(
+                        child: Text(
+                          post.author,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    if (post.roleLabel.isNotEmpty) ...[
+                      if (post.author.isNotEmpty) const SizedBox(width: 6),
+                      // 身份标识通用组件：楼主/管理员/版主… 文案由插件下发（如 x岛 Po）
+                      _opBadge(cs, post.roleLabel),
+                    ],
+                  ],
                 ),
               if (post.time.isNotEmpty)
                 Text(
@@ -550,23 +615,98 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: cs.primaryContainer.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(6),
+        if (floorNum.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              floorNum,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: cs.onPrimaryContainer,
+              ),
+            ),
           ),
-          child: Text(
-            post.floorLabel.isEmpty ? '#$visibleNo' : post.floorLabel,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: cs.onPrimaryContainer,
+      ],
+    );
+  }
+
+  /// 通用“楼主”等身份标识组件（供 _floorHeader 复用）
+  Widget _opBadge(ColorScheme cs, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: cs.tertiaryContainer,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: cs.onTertiaryContainer,
+        ),
+      ),
+    );
+  }
+
+  /// >> 引用：x岛惯用经典绿 #789922，点击跳转到本串对应楼层（找不到则忽略）
+  Widget _refBlock(ColorScheme cs, String text) {
+    const green = Color(0xFF789922);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: green.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: green.withValues(alpha: 0.35), width: 0.8),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _jumpToRef(text),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: green,
+                height: 1.4,
+              ),
             ),
           ),
         ),
-      ],
+      ),
     );
+  }
+
+  /// 解析 >>No.xxx 并定位到对应楼层
+  void _jumpToRef(String text) {
+    final m = RegExp(r'\d{6,}').firstMatch(text);
+    if (m == null) return;
+    final pid = int.tryParse(m.group(0)!);
+    if (pid == null) return;
+    final has = _posts.any((p) => p.pid == pid);
+    if (!has) return;
+    final ctx = (_floorKeys[pid]?.currentContext);
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.08,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _hlTimer?.cancel();
+    setState(() => _highlightPid = pid);
+    _hlTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _highlightPid = null);
+    });
   }
 
   Widget _postContent(BuildContext context, ColorScheme cs, _ThreadPost post) {
@@ -577,19 +717,8 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           for (final b in post.blocks) ...[
             if (b['type'] == 'quote')
               _quoteBlock(cs, b['text']?.toString() ?? '')
-            else if (b['type'] == 'ref') ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: SelectableText(
-                  b['text']?.toString() ?? '',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: cs.primary,
-                  ),
-                ),
-              ),
-            ]
+            else if (b['type'] == 'ref')
+              _refBlock(cs, b['text']?.toString() ?? '')
             else if (b['text']?.toString().trim().isNotEmpty ?? false)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
