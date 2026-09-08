@@ -801,15 +801,26 @@ class _PluginBoardContentState extends State<PluginBoardContent>
         ),
       );
     }
-    // 连续模式底部追加载器行（仅当前页）
+    // 连续模式：底部追加载器行 / 加载失败重试行（仅当前页）
     final showTail = _continuous && active && _appending;
+    final showError =
+        _continuous && active && _error != null && !_appending;
     return ListView.separated(
       controller: active ? _scroll : null,
       padding: edge,
-      itemCount: visible.length + (showTail ? 1 : 0),
+      itemCount: visible.length + (showTail ? 1 : 0) + (showError ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         if (i >= visible.length) {
+          if (showError) {
+            return Padding(
+              padding: const EdgeInsets.all(8),
+              child: _PluginRetry(
+                message: _error!,
+                onRetry: _retryContinuous,
+              ),
+            );
+          }
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(12),
@@ -817,8 +828,12 @@ class _PluginBoardContentState extends State<PluginBoardContent>
             ),
           );
         }
-        // 连续模式滑到末尾自动加载下一页
-        if (_continuous && active && i == visible.length - 1 && _hasMore) {
+        // 连续模式滑到末尾自动加载下一页（失败后不自动循环重试）
+        if (_continuous &&
+            active &&
+            i == visible.length - 1 &&
+            _hasMore &&
+            _error == null) {
           _scheduleFetchMore();
         }
         return _ForumBoardRow(plugin: widget.plugin, item: visible[i]);
