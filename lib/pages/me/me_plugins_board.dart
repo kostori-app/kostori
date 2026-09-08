@@ -704,7 +704,8 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     final active = tabIdx == _index;
     final edge = EdgeInsets.fromLTRB(
       8,
-      _tabs.isNotEmpty ? 62 : 8,
+      // 顶部仅让出子导航胶囊高度（~44px），避免胶囊与下方卡片之间出现空白缝
+      _tabs.isNotEmpty ? 50 : 8,
       8,
       _continuous ? 24 : 66,
     );
