@@ -367,26 +367,52 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colorScheme;
     return SliverToBoxAdapter(
       child: Container(
-        height: App.isMobile ? 52 : 46,
-        width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        height: 44,
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Material(
-          color: context.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(32),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
           child: InkWell(
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(22),
             onTap: () {
               context.to(() => const BangumiSearchPage());
             },
             child: Row(
               children: [
-                const SizedBox(width: 16),
-                const Icon(Icons.search),
-                const SizedBox(width: 8),
-                Text(t.search, style: ts.s16),
-                const Spacer(),
+                const SizedBox(width: 12),
+                Icon(Icons.search, size: 20, color: cs.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    t.search,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (context.width > changePoint) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_ios,
+                      size: 14, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 12),
+                ],
               ],
             ),
           ),

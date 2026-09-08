@@ -274,12 +274,12 @@ class OptionChip extends StatelessWidget {
         border: isSelected
             ? Border.all(color: context.colorScheme.secondaryContainer)
             : Border.all(color: context.colorScheme.outline),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
