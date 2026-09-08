@@ -290,7 +290,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   PreferredSizeWidget _buildTabWithCapsule(PreferredSizeWidget tab) {
     final capsule = favoritesLayoutCapsule(
       context,
-      value: sourceDisplayModeOf('local_favorites') ??
+      value:
+          sourceDisplayModeOf('local_favorites') ??
           appdata.settings['animeDisplayMode'],
       onChanged: (v) => setSourceDisplayMode('local_favorites', v),
       modes: [
@@ -518,9 +519,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }) {
     return SliverAppbar(
       key: key,
-      style: context.width < changePoint
-          ? AppbarStyle.shadow
-          : AppbarStyle.blur,
+      style: AppbarStyle.blur,
       leading: leading,
       title: title,
       actions: actions,
@@ -686,17 +685,19 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     // 跳转详情后（页面可见时）再更新“最近观看”并触发排序刷新：
     // 若在详情页盖住期间就重排列表，瀑布流/网格会在不可见视口下
     // 重新布局，返回后容易出现空白/单列错乱。
-    App.mainNavigatorKey?.currentContext?.to<dynamic>(
-      () => AnimePage(
-        id: a.id,
-        sourceKey: a.sourceKey,
-        cover: a.cover,
-        title: a.title,
-        heroID: heroID,
-      ),
-    ).then((_) {
-      if (mounted) _markRecentlyWatched(a);
-    });
+    App.mainNavigatorKey?.currentContext
+        ?.to<dynamic>(
+          () => AnimePage(
+            id: a.id,
+            sourceKey: a.sourceKey,
+            cover: a.cover,
+            title: a.title,
+            heroID: heroID,
+          ),
+        )
+        .then((_) {
+          if (mounted) _markRecentlyWatched(a);
+        });
   }
 
   void _markRecentlyWatched(Anime a) {
@@ -810,8 +811,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               );
               // 每个 Tab：SliverAppbar（模糊、可穿透）+ 网格同属一个滚动流，
               // 卡片从头部条下方滚过（与 anime/探索一致）
-              final appbar =
-                  !searchAllMode && !searchMode && !multiSelectMode
+              final appbar = !searchAllMode && !searchMode && !multiSelectMode
                   ? _buildNormalAppbar(tab)
                   : multiSelectMode
                   ? _buildMultiSelectAppbar(tab)
@@ -837,9 +837,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                         ? (a, heroID) => _rangeSelect(a, name)
                         : null,
                   ),
-                  SliverPadding(
-                    padding: EdgeInsets.only(bottom: 80),
-                  ),
+                  SliverPadding(padding: EdgeInsets.only(bottom: 80)),
                 ],
               );
             }).toList(),
@@ -889,7 +887,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
 
     return AnimeDisplayModeScope(
-      mode: sourceDisplayModeOf('local_favorites') ??
+      mode:
+          sourceDisplayModeOf('local_favorites') ??
           appdata.settings['animeDisplayMode'],
       child: PopScope(
         key: PageStorageKey('${favState.folders}'),

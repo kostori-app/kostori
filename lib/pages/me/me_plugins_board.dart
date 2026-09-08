@@ -625,7 +625,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
             top: 0,
             child: _GlassBar(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: _CapsuleBar(
