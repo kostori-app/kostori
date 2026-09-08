@@ -279,7 +279,7 @@ class _PluginShellPageState extends State<PluginShellPage>
             children: [
               if (_nav.length > 1)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: _CapsuleBar(
