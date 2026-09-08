@@ -31,6 +31,7 @@ Widget _contentOrBoard(
   MePagePlugin plugin,
   List<dynamic> modules, {
   TabController? presetController,
+  double? presetTopInset,
 }) {
   for (final m in modules) {
     if (_asMap2(m)['type'] == 'board') {
@@ -45,6 +46,7 @@ Widget _contentOrBoard(
           presetTabs: tabs,
           presetListPage: mm['page']?.toString(),
           presetController: presetController,
+          presetTopInset: presetTopInset,
         );
       }
       return PluginBoardContent(plugin: plugin, metaModules: modules);
@@ -302,6 +304,7 @@ class PluginBoardContent extends StatefulWidget {
   final List<Map<String, dynamic>>? presetTabs;
   final String? presetListPage;
   final TabController? presetController;
+  final double? presetTopInset;
 
   const PluginBoardContent({
     super.key,
@@ -310,6 +313,7 @@ class PluginBoardContent extends StatefulWidget {
     this.presetTabs,
     this.presetListPage,
     this.presetController,
+    this.presetTopInset,
   });
 
   @override
@@ -748,9 +752,11 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     final active = tabIdx == _index;
     final edge = EdgeInsets.fromLTRB(
       8,
-      // 外壳托管时顶部胶囊由外壳统一渲染，内容不留内层胶囊高度；
+      // 外壳托管时顶部导航悬浮，内容按外壳下发的高度让位并从其下方滚过；
       // 自管理模式仍需让出 ~44px 顶部玻璃胶囊
-      _external ? 10 : (_tabs.isNotEmpty ? 50 : 8),
+      _external
+          ? (widget.presetTopInset ?? 10)
+          : (_tabs.isNotEmpty ? 50 : 8),
       8,
       _continuous ? 24 : 66,
     );

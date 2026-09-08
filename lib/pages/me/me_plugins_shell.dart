@@ -161,6 +161,10 @@ class _PluginShellPageState extends State<PluginShellPage>
       const [];
   List<TabController?> _boardCtrls = const [];
 
+  // 悬浮玻璃导航的实测高度（内容据此让位并从其下方滚过）
+  final GlobalKey _headerKey = GlobalKey();
+  double _headerH = 0;
+
   @override
   void initState() {
     super.initState();
@@ -324,10 +328,13 @@ class _PluginShellPageState extends State<PluginShellPage>
           if (_nav.isEmpty) {
             return const SizedBox.shrink();
           }
-          return Column(
+          final header = _buildCombinedHeader();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _syncHeaderH();
+          });
+          return Stack(
             children: [
-              _buildCombinedHeader(),
-              Expanded(
+              Positioned.fill(
                 child: ExtendedTabBarView(
                   controller: _outerTabs,
                   children: [
@@ -341,6 +348,16 @@ class _PluginShellPageState extends State<PluginShellPage>
                   ],
                 ),
               ),
+              if (header != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    key: _headerKey,
+                    child: header,
+                  ),
+                ),
             ],
           );
         },
@@ -348,14 +365,26 @@ class _PluginShellPageState extends State<PluginShellPage>
     );
   }
 
+  /// 实测悬浮玻璃导航高度，并驱动内容让位（下一帧生效）
+  void _syncHeaderH() {
+    final ctx = _headerKey.currentContext;
+    final rb = ctx?.findRenderObject();
+    if (rb is RenderBox) {
+      final h = rb.size.height;
+      if ((h - _headerH).abs() > 0.5) {
+        setState(() => _headerH = h);
+      }
+    }
+  }
+
   /// 统一玻璃容器内的两行导航（主导航 + 当前板块分类导航），避免分层的亚像素接缝
-  Widget _buildCombinedHeader() {
+  Widget? _buildCombinedHeader() {
     final showBig = _nav.length > 1;
     final info = _index < _boardInfos.length ? _boardInfos[_index] : null;
     final ctrl = _index < _boardCtrls.length ? _boardCtrls[_index] : null;
     final showSub =
         info != null && ctrl != null && info.tabs.isNotEmpty;
-    if (!showBig && !showSub) return const SizedBox.shrink();
+    if (!showBig && !showSub) return null;
 
     final rows = <Widget>[
       if (showBig)
@@ -421,17 +450,22 @@ class _PluginShellPageState extends State<PluginShellPage>
     if (data == null) {
       return const Center(child: PolygonRefreshIndicator(size: 24));
     }
-    // 同一插件的多个导航页即使渲染相同类型（如多个板块）也要按 key 重建状态
-    return KeyedSubtree(
-      key: ValueKey('$key-$index'),
-      child: _contentOrBoard(
-        widget.plugin,
-        data,
-        presetController: index < _boardCtrls.length
-            ? _boardCtrls[index]
-            : null,
-      ),
+    final ctrl = index < _boardCtrls.length ? _boardCtrls[index] : null;
+    Widget content = _contentOrBoard(
+      widget.plugin,
+      data,
+      presetController: ctrl,
+      presetTopInset: ctrl != null ? _headerH : null,
     );
+    // 非板块页（首页模块等）：顶部让出悬浮玻璃导航，避免内容被盖住
+    if (ctrl == null && _headerH > 0) {
+      content = Padding(
+        padding: EdgeInsets.only(top: _headerH),
+        child: content,
+      );
+    }
+    // 同一插件的多个导航页即使渲染相同类型（如多个板块）也要按 key 重建状态
+    return KeyedSubtree(key: ValueKey('$key-$index'), child: content);
   }
 }
 
