@@ -15,10 +15,8 @@ class _LocalFavoritesPage extends ConsumerStatefulWidget {
 
 class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  final ScrollController scrollController = ScrollController();
-
   /// 每个分组的独立滚动控制器：内容实际滚动在各 Tab 的内层网格里，
-  /// 滚动条/“回到顶部”都要指向当前分组的这个控制器，而不是外层 NestedScroll
+  /// 滚动条/“回到顶部”都要指向当前分组的这个控制器
   final Map<String, ScrollController> _folderControllers = {};
 
   ScrollController _controllerFor(String name) =>
@@ -73,7 +71,6 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       c.dispose();
     }
     _folderControllers.clear();
-    scrollController.dispose();
     super.dispose();
   }
 
@@ -788,68 +785,65 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     super.build(context);
     final tab = _buildTabBar();
 
-    Widget body = NestedScrollView(
-      controller: scrollController,
-      // 收藏页不弹跳：Clamping + 内容不足时仍可下拉刷新
-      physics: const ClampingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
-      headerSliverBuilder: (context, _) => [
-        if (!searchAllMode && !searchMode && !multiSelectMode)
-          _buildNormalAppbar(tab)
-        else if (multiSelectMode)
-          _buildMultiSelectAppbar(tab)
-        else if (searchAllMode)
-          _buildSearchAppbar(tab),
-      ],
-      body: isLoading
-          ? const Center(
-              child: SizedBox(
-                height: 200,
-                width: 200,
-                child: KostoriRefreshIndicator(),
-              ),
-            )
-          : TabBarView(
-              key: PageStorageKey('${favState.folders}'),
-              controller: widget.favoritesController.tabController,
-              children: favState.folders.map((name) {
-                final list = searchAllMode
-                    ? (searchResults[name] ?? const <FavoriteItem>[])
-                    : (favState.animes[name] ?? const <FavoriteItem>[]);
-                // 内容/排序变化即重建内层滚动视图（瀑布流在数据变化后
-                // 直接原地刷新会残留错误行列，换 tab 恢复正常正是重建所致）
-                final sig = list.fold<int>(
-                  0,
-                  (acc, a) =>
-                      (acc * 31 + a.id.hashCode ^ a.sourceKey.hashCode) &
-                      0x7fffffff,
-                );
-                return CustomScrollView(
-                  key: PageStorageKey('local_$name|$sig'),
-                  controller: _controllerFor(name),
-                  physics: const ClampingScrollPhysics(),
-                  slivers: [
-                    SliverGridAnimes(
-                      asSliver: true,
-                      animes: list,
-                      selections: selectedAnimes,
-                      enableFavorite: false,
-                      // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
-                      menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
-                      onTap: multiSelectMode
-                          ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
-                          : _onAnimeTap,
-                      // 多选模式下长按保留范围选择
-                      onLongPressed: multiSelectMode
-                          ? (a, heroID) => _rangeSelect(a, name)
-                          : null,
-                    ),
-                  ],
-                );
-              }).toList(),
+    Widget body = isLoading
+        ? const Center(
+            child: SizedBox(
+              height: 200,
+              width: 200,
+              child: KostoriRefreshIndicator(),
             ),
-    );
+          )
+        : TabBarView(
+            key: PageStorageKey('${favState.folders}'),
+            controller: widget.favoritesController.tabController,
+            children: favState.folders.map((name) {
+              final list = searchAllMode
+                  ? (searchResults[name] ?? const <FavoriteItem>[])
+                  : (favState.animes[name] ?? const <FavoriteItem>[]);
+              // 内容/排序变化即重建内层滚动视图（瀑布流在数据变化后
+              // 直接原地刷新会残留错误行列，换 tab 恢复正常正是重建所致）
+              final sig = list.fold<int>(
+                0,
+                (acc, a) =>
+                    (acc * 31 + a.id.hashCode ^ a.sourceKey.hashCode) &
+                    0x7fffffff,
+              );
+              // 每个 Tab：SliverAppbar（模糊、可穿透）+ 网格同属一个滚动流，
+              // 卡片从头部条下方滚过（与 anime/探索一致）
+              final appbar =
+                  !searchAllMode && !searchMode && !multiSelectMode
+                  ? _buildNormalAppbar(tab)
+                  : multiSelectMode
+                  ? _buildMultiSelectAppbar(tab)
+                  : _buildSearchAppbar(tab);
+              return CustomScrollView(
+                key: PageStorageKey('local_$name|$sig'),
+                controller: _controllerFor(name),
+                physics: const ClampingScrollPhysics(),
+                slivers: [
+                  appbar,
+                  SliverGridAnimes(
+                    asSliver: true,
+                    animes: list,
+                    selections: selectedAnimes,
+                    enableFavorite: false,
+                    // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
+                    menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
+                    onTap: multiSelectMode
+                        ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
+                        : _onAnimeTap,
+                    // 多选模式下长按保留范围选择
+                    onLongPressed: multiSelectMode
+                        ? (a, heroID) => _rangeSelect(a, name)
+                        : null,
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.only(bottom: 80),
+                  ),
+                ],
+              );
+            }).toList(),
+          );
 
     body = Stack(
       children: [
@@ -858,7 +852,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           bottom: 10,
           right: 10,
           child: FloatingMenu(
-            controller: scrollController,
+            controller: _activeController,
             child: [
               [
                 SpeedDialChild(
@@ -883,11 +877,11 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
 
     body = AppScrollBar(
-      topPadding:
-          52.0 + MediaQuery.of(context).padding.top + tab.preferredSize.height,
+      // 内容已在头部下方滚动，滚动条覆盖整屏
+      topPadding: 0,
       // 绑定当前分组的内部滚动控制器，使滚动条能驱动实际内容
       controller: _activeController,
-      isNested: true,
+      isNested: false,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
         child: body,
