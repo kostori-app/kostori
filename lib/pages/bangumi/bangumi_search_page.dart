@@ -2025,7 +2025,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                       child: Align(
-                        alignment: Alignment.centerLeft,
+                        alignment: Alignment.center,
                         child: _layoutModeBar(),
                       ),
                     ),
