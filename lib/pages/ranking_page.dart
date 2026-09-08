@@ -61,7 +61,7 @@ class _RankingPageState extends State<RankingPage> {
   }
 
   Widget buildOptionItem(String text, String value, BuildContext context) {
-    return OptionChip(
+    return CapsuleOption(
       text: text,
       isSelected: value == optionValue,
       onTap: () {
@@ -76,9 +76,7 @@ class _RankingPageState extends State<RankingPage> {
   Widget buildOptions() {
     List<Widget> children = [];
     children.add(
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      CapsuleOptions(
         children: [
           for (var option in options.entries)
             buildOptionItem(option.value.tl, option.key, context),

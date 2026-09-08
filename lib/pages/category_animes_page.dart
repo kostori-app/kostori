@@ -170,7 +170,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
     int group,
     BuildContext context,
   ) {
-    return OptionChip(
+    return CapsuleOption(
       text: text.ts(sourceKey),
       isSelected: value == optionsValue[group],
       onTap: () {
@@ -199,9 +199,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
       }
       if (optionList.options.length <= 8) {
         children.add(
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          CapsuleOptions(
             children: [
               for (var option in optionList.options.entries)
                 buildOptionItem(option.value.tl, option.key, group, context),

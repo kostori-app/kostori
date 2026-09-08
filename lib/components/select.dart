@@ -290,3 +290,86 @@ class OptionChip extends StatelessWidget {
     );
   }
 }
+
+/// 胶囊分段条：外层一条轨道，选中项为浮起的胶囊。
+/// 与探索页“简洁/详细/瀑布流/海报”布局切换同款样式，可复用。
+class CapsuleOptions extends StatelessWidget {
+  final List<Widget> children;
+  final EdgeInsets padding;
+  final WrapAlignment alignment;
+
+  const CapsuleOptions({
+    super.key,
+    required this.children,
+    this.padding = const EdgeInsets.all(3),
+    this.alignment = WrapAlignment.start,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Wrap(
+        spacing: 2,
+        runSpacing: 2,
+        alignment: alignment,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// CapsuleOptions 内的单个选项
+class CapsuleOption extends StatelessWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  const CapsuleOption({
+    super.key,
+    required this.text,
+    required this.isSelected,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: _fastAnimationDuration,
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? cs.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected
+                ? cs.onSurface
+                : cs.onSurface.toOpacity(0.45),
+          ),
+        ),
+      ),
+    );
+  }
+}
