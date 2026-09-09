@@ -64,6 +64,9 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   /// 简洁帖子模式：不要“详情/楼主详情块”，所有帖子（含楼主）直接以楼层卡片平铺
   bool _simplePosts = false;
 
+  /// 楼主徽标文案，插件可用 poLabel 覆盖，默认 Po
+  String _poLabel = 'Po';
+
   /// 楼主等身份标识与 >>引用 跳转高亮
   final Map<int, GlobalKey> _floorKeys = {};
   int? _highlightPid;
@@ -98,6 +101,9 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         final map = _asMap2(m);
         if (map['type'] != 'threadPage') continue;
         if (map['simple'] == true) _simplePosts = true;
+        if (map['simple'] == true && (map['poLabel']?.toString().isNotEmpty ?? false)) {
+          _poLabel = map['poLabel']!.toString();
+        }
         if (_title.isEmpty) _title = map['title']?.toString() ?? '';
         if (_pageUrl.isEmpty) _pageUrl = map['url']?.toString() ?? '';
         final rawFields = map['fields'];
@@ -588,7 +594,9 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (post.author.isNotEmpty || post.roleLabel.isNotEmpty)
+              // 身份标识：插件下发 roleLabel；若缺省，简单模式首条楼层固定为楼主徽标
+              if (post.author.isNotEmpty || post.roleLabel.isNotEmpty ||
+                  (visibleNo == 0 && _simplePosts))
                 Row(
                   children: [
                     if (post.author.isNotEmpty)
@@ -603,9 +611,11 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                           ),
                         ),
                       ),
-                    if (post.roleLabel.isNotEmpty) ...[
+                    if (visibleNo == 0 && _simplePosts) ...[
                       if (post.author.isNotEmpty) const SizedBox(width: 6),
-                      // 身份标识通用组件：楼主/管理员/版主… 文案由插件下发
+                      _opBadge(cs, _poLabel),
+                    ] else if (post.roleLabel.isNotEmpty) ...[
+                      if (post.author.isNotEmpty) const SizedBox(width: 6),
                       _opBadge(cs, post.roleLabel),
                     ],
                   ],
