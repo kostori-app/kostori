@@ -67,6 +67,9 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   /// 楼主徽标文案，插件可用 poLabel 覆盖，默认 Po
   String _poLabel = 'Po';
 
+  /// 简单模式下记录楼主的 user_hash，用于给楼主后续回复也标 Po
+  String _opHash = '';
+
   /// 楼主等身份标识与 >>引用 跳转高亮
   final Map<int, GlobalKey> _floorKeys = {};
   int? _highlightPid;
@@ -166,6 +169,9 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
       }
       setState(() {
         _posts.addAll(parsed);
+        if (_opHash.isEmpty && _simplePosts && _posts.isNotEmpty) {
+          _opHash = _posts.first.author;
+        }
         _page++;
         _hasMore = hasMore && parsed.isNotEmpty;
         _loading = false;
@@ -594,9 +600,15 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 身份标识：插件下发 roleLabel；若缺省，简单模式首条楼层固定为楼主徽标
-              if (post.author.isNotEmpty || post.roleLabel.isNotEmpty ||
-                  (visibleNo == 0 && _simplePosts))
+              // 楼主判定：插件 roleLabel；或简单模式首条；或楼主后续同 user_hash 回复
+              final bool poPost =
+                  _simplePosts &&
+                  _opHash.isNotEmpty &&
+                  post.author == _opHash;
+              if (post.author.isNotEmpty ||
+                  post.roleLabel.isNotEmpty ||
+                  (visibleNo == 0 && _simplePosts) ||
+                  poPost)
                 Row(
                   children: [
                     if (post.author.isNotEmpty)
@@ -611,7 +623,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                           ),
                         ),
                       ),
-                    if (visibleNo == 0 && _simplePosts) ...[
+                    if ((visibleNo == 0 && _simplePosts) || poPost) ...[
                       if (post.author.isNotEmpty) const SizedBox(width: 6),
                       _opBadge(cs, _poLabel),
                     ] else if (post.roleLabel.isNotEmpty) ...[
