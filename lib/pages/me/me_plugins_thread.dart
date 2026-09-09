@@ -583,6 +583,9 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     } else if (visibleNo > 0) {
       floorNum = '#$visibleNo';
     }
+    // 楼主判定：简单模式下，与首条同 user_hash 的回复也算楼主
+    final bool poPost =
+        _simplePosts && _opHash.isNotEmpty && post.author == _opHash;
     return Row(
       children: [
         if (avatarUrl.isNotEmpty) ...[
@@ -600,11 +603,6 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 楼主判定：插件 roleLabel；或简单模式首条；或楼主后续同 user_hash 回复
-              final bool poPost =
-                  _simplePosts &&
-                  _opHash.isNotEmpty &&
-                  post.author == _opHash;
               if (post.author.isNotEmpty ||
                   post.roleLabel.isNotEmpty ||
                   (visibleNo == 0 && _simplePosts) ||
