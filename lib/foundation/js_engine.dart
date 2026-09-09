@@ -69,6 +69,9 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
       BaseOptions(
         responseType: ResponseType.plain,
         validateStatus: (status) => true,
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 20),
+        sendTimeout: const Duration(seconds: 8),
       ),
     );
   }
@@ -93,6 +96,9 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
         BaseOptions(
           responseType: ResponseType.plain,
           validateStatus: (status) => true,
+          connectTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 20),
+          sendTimeout: const Duration(seconds: 8),
         ),
       );
 
