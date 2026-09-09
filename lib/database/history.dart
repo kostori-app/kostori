@@ -499,6 +499,28 @@ class PluginEventItem {
     required this.extraJson,
     required this.createdAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'pluginKey': pluginKey,
+    'kind': kind,
+    'itemKey': itemKey,
+    'title': title,
+    'subtitle': subtitle,
+    'coverUrl': coverUrl,
+    'extraJson': extraJson,
+    'createdAt': createdAt,
+  };
+
+  static PluginEventItem fromJson(Map<String, dynamic> m) => PluginEventItem(
+    pluginKey: m['pluginKey']?.toString() ?? '',
+    kind: m['kind']?.toString() ?? '',
+    itemKey: m['itemKey']?.toString() ?? '',
+    title: m['title']?.toString() ?? '',
+    subtitle: m['subtitle']?.toString() ?? '',
+    coverUrl: m['coverUrl']?.toString() ?? '',
+    extraJson: m['extraJson']?.toString() ?? '{}',
+    createdAt: (m['createdAt'] as num?)?.toInt() ?? 0,
+  );
 }
 
 class HistoryManager with ChangeNotifier {
@@ -940,6 +962,59 @@ extension ProgressHelper on HistoryManager {
           ),
         )
         .toList();
+  }
+
+  /// 全量插件事件（供多端同步导出）
+  Future<List<PluginEventItem>> getAllPluginEvents() async {
+    await _ensureDb();
+    final rows = await (_db.select(_db.pluginEventTable)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    return rows
+        .map(
+          (r) => PluginEventItem(
+            pluginKey: r.pluginKey,
+            kind: r.kind,
+            itemKey: r.itemKey,
+            title: r.title,
+            subtitle: r.subtitle,
+            coverUrl: r.coverUrl,
+            extraJson: r.extraJson,
+            createdAt: r.createdAt,
+          ),
+        )
+        .toList();
+  }
+
+  /// 字段级合并插件事件（WebDAV 多端）：按 (pluginKey,kind,itemKey) 主键，
+  /// createdAt 较新者胜或本地缺失则写入。
+  Future<void> mergePluginEvents(List<PluginEventItem> remote) async {
+    if (remote.isEmpty) return;
+    await _ensureDb();
+    final local = await getAllPluginEvents();
+    final localMap = {
+      for (final e in local) '${e.pluginKey}\u0000${e.kind}\u0000${e.itemKey}': e,
+    };
+    final ops = <PluginEventTableCompanion>[];
+    for (final r in remote) {
+      final key = '${r.pluginKey}\u0000${r.kind}\u0000${r.itemKey}';
+      final l = localMap[key];
+      if (l != null && l.createdAt >= r.createdAt) continue;
+      ops.add(
+        PluginEventTableCompanion.insert(
+          pluginKey: r.pluginKey,
+          kind: r.kind,
+          itemKey: r.itemKey,
+          title: r.title,
+          subtitle: Value(r.subtitle),
+          coverUrl: Value(r.coverUrl),
+          extraJson: Value(r.extraJson),
+          createdAt: r.createdAt,
+        ),
+      );
+    }
+    if (ops.isEmpty) return;
+    await _db.batch((b) => b.insertAllOnConflictUpdate(_db.pluginEventTable, ops));
   }
 
   Future<void> clearPluginEvents(String pluginKey) async {

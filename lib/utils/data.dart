@@ -88,6 +88,7 @@ Future<File> exportAppData() async {
   HistoryWriteService.pause();
   // 额外导出字段级合并数据（逐条 JSON），供多端合并而非整库覆盖
   var historyMergeFile = FilePath.join(App.cachePath, 'history_merge.json');
+  var pluginHistoryMergeFile = FilePath.join(App.cachePath, 'plugin_history_merge.json');
   var favoritesMergeFile = FilePath.join(App.cachePath, 'favorites_merge.json');
   var statsMergeFile = FilePath.join(App.cachePath, 'stats_merge.json');
   try {
@@ -99,6 +100,15 @@ Future<File> exportAppData() async {
     await File(historyMergeFile).writeAsString(jsonStr);
   } catch (e) {
     DebugLog.error('exportAppData', 'history_merge.json 导出失败：$e');
+  }
+  try {
+    final events = await HistoryManager().getAllPluginEvents();
+    final jsonStr = await Isolate.run(() {
+      return jsonEncode(events.map((e) => e.toJson()).toList());
+    });
+    await File(pluginHistoryMergeFile).writeAsString(jsonStr);
+  } catch (e) {
+    DebugLog.error('exportAppData', 'plugin_history_merge.json 导出失败：$e');
   }
   try {
     final favorites = LocalFavoritesManager().getAllFavoriteMergeMaps();
@@ -139,6 +149,10 @@ Future<File> exportAppData() async {
     final hmf = File(historyMergeFile);
     if (hmf.existsSync()) {
       zipFile.addFile("history_merge.json", historyMergeFile);
+    }
+    final phmf = File(pluginHistoryMergeFile);
+    if (phmf.existsSync()) {
+      zipFile.addFile("plugin_history_merge.json", pluginHistoryMergeFile);
     }
     final fmf = File(favoritesMergeFile);
     if (fmf.existsSync()) {
@@ -219,6 +233,25 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
         }
       } catch (e) {
         DebugLog.error('importAppData', 'history 字段级合并失败：$e');
+      }
+    }
+    // 插件事件（浏览/搜索）字段级合并：插件事件独立于主历史表
+    final pluginMergeFile = cacheDir.joinFile("plugin_history_merge.json");
+    if (await pluginMergeFile.exists()) {
+      try {
+        final list = jsonDecode(await pluginMergeFile.readAsString());
+        if (list is List) {
+          final events = list
+              .whereType<Map>()
+              .map((m) =>
+                  PluginEventItem.fromJson(Map<String, dynamic>.from(m)))
+              .toList();
+          HistoryWriteService.pause();
+          await HistoryManager().mergePluginEvents(events);
+          HistoryWriteService.resume();
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'plugin_history 字段级合并失败：$e');
       }
     }
     if (!mergedHistory && await historyFile.exists()) {
