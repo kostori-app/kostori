@@ -7,6 +7,11 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:markdown_widget/config/all.dart';
 
 extension Navigation on BuildContext {
+  /// 跳转前统一失焦：避免带焦点 TextField 的页面推到详情/返回后键盘重新弹起
+  void _unfocusBeforeNavigate() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   void pop<T>([T? result]) {
     if (mounted) {
       Navigator.of(this).pop(result);
@@ -18,24 +23,28 @@ extension Navigation on BuildContext {
   }
 
   Future<T?> to<T>(Widget Function() builder) {
+    _unfocusBeforeNavigate();
     return Navigator.of(
       this,
     ).push<T>(AppPageRoute(builder: (context) => builder()));
   }
 
   Future<void> toReplacement<T>(Widget Function() builder) {
+    _unfocusBeforeNavigate();
     return Navigator.of(
       this,
     ).pushReplacement(AppPageRoute(builder: (context) => builder()));
   }
 
   Future<T?> toBlurFade<T>(Widget Function() builder) {
+    _unfocusBeforeNavigate();
     return Navigator.of(
       this,
     ).push<T>(BlurFadeRoute(builder: (context) => builder()));
   }
 
   Future<T?> toFadeScale<T>(Widget Function() builder) {
+    _unfocusBeforeNavigate();
     return Navigator.of(
       this,
     ).push<T>(FadeScalePageRoute<T>(builder: (_) => builder()));
