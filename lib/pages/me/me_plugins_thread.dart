@@ -61,7 +61,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
   String? _error;
   int _page = 1;
 
-  /// 简洁帖子模式（如 x岛）：不要“详情/楼主详情块”，所有帖子（含楼主）直接以楼层卡片平铺
+  /// 简洁帖子模式：不要“详情/楼主详情块”，所有帖子（含楼主）直接以楼层卡片平铺
   bool _simplePosts = false;
 
   /// 楼主等身份标识与 >>引用 跳转高亮
@@ -605,7 +605,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
                       ),
                     if (post.roleLabel.isNotEmpty) ...[
                       if (post.author.isNotEmpty) const SizedBox(width: 6),
-                      // 身份标识通用组件：楼主/管理员/版主… 文案由插件下发（如 x岛 Po）
+                      // 身份标识通用组件：楼主/管理员/版主… 文案由插件下发
                       _opBadge(cs, post.roleLabel),
                     ],
                   ],

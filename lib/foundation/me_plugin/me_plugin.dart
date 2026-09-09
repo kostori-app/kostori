@@ -51,7 +51,7 @@ class MePagePlugin {
   /// 设置页模块（解析时缓存，打开设置页不依赖运行期引擎状态）
   final List<Map<String, dynamic>> settingsCache;
 
-  /// 声明为“无参页缓存”的 page 名（如版块列表），对齐 xdnmb：本地存列表，6h 才重拉
+  /// 声明为“无参页缓存”的 page 名（如版块列表）：本地存列表，6h 才重拉
   final List<String> pageCache;
 
   /// 本插件独立状态（对齐番剧源 `.data`），持久化到 `plugins/<key>.data`
@@ -414,7 +414,7 @@ class MePagePlugin {
     return pageName;
   }
 
-  /// 无参页持久缓存有效期（对齐 xdnmb：版块列表 6 小时一刷）
+  /// 无参页持久缓存有效期（版块列表 6 小时一刷）
   static const Duration pageCacheTtl = Duration(hours: 6);
 
   /// 调用插件 page(name, params)，返回该页模块列表。
@@ -667,7 +667,7 @@ class MePagePluginManager with ChangeNotifier, Init {
   ///
   /// 源地址返回 JSON 数组，形如：
   /// ```json
-  /// [{ "name": "girigirilove", "fileName": "girigirilove.js", "key": "girigirilove", "version": "1.1.6" }]
+  /// [{ "name": "my_source", "fileName": "my_source.js", "key": "my_source", "version": "1.0.0" }]
   /// ```
   /// 每项无 url 字段，JS 下载地址 = 源地址所在目录 + fileName。
   /// 逐个下载 JS 到 plugins 目录后重载。返回安装数量。

@@ -1715,7 +1715,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
   }
 }
 
-/// 多饼干管理器（对齐 xdnmb-main 饼干页：列表 + 增删 + 选中浏览用）
+/// 多凭据管理器（列表 + 增删 + 选中默认项）
 class _PluginCookiesEditor extends StatefulWidget {
   final MePagePlugin plugin;
   final Map<String, dynamic> m;
@@ -2061,7 +2061,7 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
   }
 }
 
-/// 饼干设置：自定义粘贴导入 / 扫码导入（对齐 xdnmb-main 的饼干导入）
+/// 凭据设置：自定义粘贴导入 / 扫码导入
 class _PluginCookieEditor extends StatefulWidget {
   final MePagePlugin plugin;
   final Map<String, dynamic> m;
