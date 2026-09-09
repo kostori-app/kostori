@@ -659,35 +659,62 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
     );
   }
 
-  /// >> 引用：x岛惯用经典绿 #789922，点击跳转到本串对应楼层（找不到则忽略）
-  Widget _refBlock(ColorScheme cs, String text) {
-    const green = Color(0xFF789922);
+  /// >> 引用：通用引用块（左侧色条 + 淡底色）。色条默认用主题色，
+  /// 插件可下发 `color`（#RRGGBB 或 int）覆盖。
+  Widget _refBlock(ColorScheme cs, String text, [dynamic rawColor]) {
+    final Color? overrideColor = _parseRefColor(rawColor);
+    final barColor = overrideColor ?? cs.primary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        decoration: BoxDecoration(
-          color: green.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: green.withValues(alpha: 0.35), width: 0.8),
-        ),
+      child: Material(
+        color: barColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
           onTap: () => _jumpToRef(text),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: green,
-                height: 1.4,
-              ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(width: 3.5, color: barColor),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        height: 1.5,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// 解析插件下发的引用色：#RRGGBB / #AARRGGBB / int
+  Color? _parseRefColor(dynamic v) {
+    if (v == null) return null;
+    if (v is int && v > 0) return Color(v);
+    final s = v.toString().trim();
+    if (s.startsWith('#')) {
+      final hex = s.substring(1);
+      final n = int.tryParse(hex, radix: 16);
+      if (n == null) return null;
+      const mask = 0xFFFFFFFF;
+      if (hex.length == 6) return Color(0xFF000000 | n);
+      if (hex.length == 8) return Color(n & mask);
+    }
+    return null;
   }
 
   /// 解析 >>No.xxx 并定位到对应楼层
@@ -723,7 +750,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             if (b['type'] == 'quote')
               _quoteBlock(cs, b['text']?.toString() ?? '')
             else if (b['type'] == 'ref')
-              _refBlock(cs, b['text']?.toString() ?? '')
+              _refBlock(cs, b['text']?.toString() ?? '', b['color'])
             else if (b['text']?.toString().trim().isNotEmpty ?? false)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
