@@ -684,22 +684,21 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           onTap: () => _jumpToRef(text),
           child: IntrinsicHeight(
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(width: 3.5, color: barColor),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        height: 1.5,
-                        color: cs.onSurface,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      height: 1.45,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
