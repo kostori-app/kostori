@@ -9,6 +9,8 @@ class BlurFadeRoute<T> extends PageRoute<T> {
 
   BlurFadeRoute({required this.builder});
 
+  Widget? _child;
+
   @override
   bool get opaque => false;
 
@@ -42,7 +44,8 @@ class BlurFadeRoute<T> extends PageRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
-    return builder(context);
+    // 复用首帧构建的内容，避免过渡动画每帧重建导致 hero 几何丢失/返回闪烁
+    return _child ??= builder(context);
   }
 
   @override
