@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/bean/card/episode_comments_sheet.dart';
@@ -624,15 +624,20 @@ class BottomInfoState extends State<BottomInfo>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // 封面图改成 Ink.image
-                                Ink.image(
-                                  image: CachedImageProvider(
-                                    item.images['large']!,
-                                    sourceKey: 'bangumi',
+                                // 封面用 KostoriHero + AnimatedImage(ink:true)：
+                                // 平时以 Ink 绘制（波纹在图上），Hero 飞行时退化成普通 Image
+                                KostoriHero(
+                                  tag: item.id.toString(),
+                                  child: AnimatedImage(
+                                    image: CachedImageProvider(
+                                      item.images['large']!,
+                                      sourceKey: 'bangumi',
+                                    ),
+                                    width: 140,
+                                    height: 180,
+                                    fit: BoxFit.cover,
+                                    ink: true,
                                   ),
-                                  width: 140,
-                                  height: 180,
-                                  fit: BoxFit.cover,
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(4.0),
