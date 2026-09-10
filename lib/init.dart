@@ -19,6 +19,7 @@ import 'package:kostori/services/download/download_manager.dart';import 'package
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/text_rule.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -69,6 +70,8 @@ Future<void> init() async {
     MePagePluginManager().init().wait(),
   ];
   await Future.wait(futures);
+  // 加载持久化的文本规则（history.db 的 text_rules 表）
+  await TextRuleStore.load();
   SkillRegistry.instance.registerAll([
     OpenUrlSkill(),
     DeviceInfoSkill(),

@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/appdata.dart';
 
 /// 文本规则预览的默认示例文本
@@ -65,28 +69,59 @@ class TextRule {
   );
 }
 
-/// 文本规则存储与执行（存于 `implicitData['textRules']`）
+/// 文本规则存储：持久化在 `history.db` 的 `text_rules` 表，运行时用内存缓存。
 class TextRuleStore {
-  static const String _key = 'textRules';
   static List<TextRule>? _cache;
+  static bool _loaded = false;
 
-  static List<TextRule> get rules {
-    if (_cache != null) return _cache!;
-    final raw = appdata.implicitData[_key];
-    final list = <TextRule>[];
-    if (raw is List) {
-      for (final e in raw) {
-        if (e is Map) list.add(TextRule.fromJson(e));
-      }
+  static bool get isLoaded => _loaded;
+
+  static List<TextRule> get rules => _cache ?? const [];
+
+  /// 从数据库加载到内存缓存（启动时调用一次）
+  static Future<void> load() async {
+    try {
+      final rows = await HistoryManager().getTextRules();
+      _cache = rows
+          .map(
+            (m) => TextRule(
+              id: m['id']?.toString() ?? '',
+              name: m['name']?.toString() ?? '',
+              steps: _decodeSteps(m['stepsJson']?.toString()),
+            ),
+          )
+          .where((r) => r.id.isNotEmpty)
+          .toList();
+      _loaded = true;
+    } catch (_) {
+      _cache ??= [];
     }
-    return _cache = list;
   }
 
-  static void invalidate() => _cache = null;
+  /// 重新从数据库加载
+  static Future<void> reload() async {
+    _loaded = false;
+    await load();
+  }
 
+  static void invalidate() {
+    _cache = null;
+    _loaded = false;
+  }
+
+  /// 把当前内存缓存整表写回数据库（不阻塞 UI）
   static void save() {
-    appdata.implicitData[_key] = rules.map((e) => e.toJson()).toList();
-    appdata.writeImplicitData();
+    final list = _cache ?? const <TextRule>[];
+    unawaited(
+      HistoryManager().replaceTextRules([
+        for (final r in list)
+          {
+            'id': r.id,
+            'name': r.name,
+            'stepsJson': jsonEncode(r.steps.map((e) => e.toJson()).toList()),
+          },
+      ]),
+    );
   }
 
   static TextRule? byId(String id) {
@@ -97,6 +132,20 @@ class TextRuleStore {
   }
 
   static String newId() => DateTime.now().microsecondsSinceEpoch.toString();
+
+  static List<TextRuleStep> _decodeSteps(String? json) {
+    if (json == null || json.isEmpty) return const [];
+    try {
+      final list = jsonDecode(json);
+      if (list is List) {
+        return list
+            .whereType<Map>()
+            .map((e) => TextRuleStep.fromJson(e))
+            .toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
 
   /// 按顺序把规则应用到文本
   static String apply(String input, Iterable<TextRule> rules) {
@@ -138,8 +187,7 @@ class TextRuleStore {
             final n = int.tryParse(name);
             if (n != null) {
               sb.write(m.group(n) ?? '');
-            } else if (m is RegExpMatch &&
-                m.groupNames.contains(name)) {
+            } else if (m is RegExpMatch && m.groupNames.contains(name)) {
               sb.write(m.namedGroup(name) ?? '');
             }
             i = end;

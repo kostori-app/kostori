@@ -1812,6 +1812,359 @@ class PluginEventTableCompanion extends UpdateCompanion<PluginEventTableData> {
   }
 }
 
+class $TextRuleTableTable extends TextRuleTable
+    with TableInfo<$TextRuleTableTable, TextRuleTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TextRuleTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stepsJsonMeta = const VerificationMeta(
+    'stepsJson',
+  );
+  @override
+  late final GeneratedColumn<String> stepsJson = GeneratedColumn<String>(
+    'stepsJson',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _sortMeta = const VerificationMeta('sort');
+  @override
+  late final GeneratedColumn<int> sort = GeneratedColumn<int>(
+    'sort',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'createdAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, stepsJson, sort, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'text_rules';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TextRuleTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('stepsJson')) {
+      context.handle(
+        _stepsJsonMeta,
+        stepsJson.isAcceptableOrUnknown(data['stepsJson']!, _stepsJsonMeta),
+      );
+    }
+    if (data.containsKey('sort')) {
+      context.handle(
+        _sortMeta,
+        sort.isAcceptableOrUnknown(data['sort']!, _sortMeta),
+      );
+    }
+    if (data.containsKey('createdAt')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['createdAt']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TextRuleTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TextRuleTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      stepsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stepsJson'],
+      )!,
+      sort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}createdAt'],
+      )!,
+    );
+  }
+
+  @override
+  $TextRuleTableTable createAlias(String alias) {
+    return $TextRuleTableTable(attachedDatabase, alias);
+  }
+}
+
+class TextRuleTableData extends DataClass
+    implements Insertable<TextRuleTableData> {
+  final String id;
+  final String name;
+
+  /// 步骤 JSON（find/replace/caseSensitive 数组）
+  final String stepsJson;
+
+  /// 排序（越小越靠前，即应用顺序）
+  final int sort;
+  final int createdAt;
+  const TextRuleTableData({
+    required this.id,
+    required this.name,
+    required this.stepsJson,
+    required this.sort,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['stepsJson'] = Variable<String>(stepsJson);
+    map['sort'] = Variable<int>(sort);
+    map['createdAt'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  TextRuleTableCompanion toCompanion(bool nullToAbsent) {
+    return TextRuleTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      stepsJson: Value(stepsJson),
+      sort: Value(sort),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory TextRuleTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TextRuleTableData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      stepsJson: serializer.fromJson<String>(json['stepsJson']),
+      sort: serializer.fromJson<int>(json['sort']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'stepsJson': serializer.toJson<String>(stepsJson),
+      'sort': serializer.toJson<int>(sort),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  TextRuleTableData copyWith({
+    String? id,
+    String? name,
+    String? stepsJson,
+    int? sort,
+    int? createdAt,
+  }) => TextRuleTableData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    stepsJson: stepsJson ?? this.stepsJson,
+    sort: sort ?? this.sort,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  TextRuleTableData copyWithCompanion(TextRuleTableCompanion data) {
+    return TextRuleTableData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      stepsJson: data.stepsJson.present ? data.stepsJson.value : this.stepsJson,
+      sort: data.sort.present ? data.sort.value : this.sort,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TextRuleTableData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('stepsJson: $stepsJson, ')
+          ..write('sort: $sort, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, stepsJson, sort, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TextRuleTableData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.stepsJson == this.stepsJson &&
+          other.sort == this.sort &&
+          other.createdAt == this.createdAt);
+}
+
+class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> stepsJson;
+  final Value<int> sort;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const TextRuleTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.stepsJson = const Value.absent(),
+    this.sort = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TextRuleTableCompanion.insert({
+    required String id,
+    required String name,
+    this.stepsJson = const Value.absent(),
+    this.sort = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt);
+  static Insertable<TextRuleTableData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? stepsJson,
+    Expression<int>? sort,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (stepsJson != null) 'stepsJson': stepsJson,
+      if (sort != null) 'sort': sort,
+      if (createdAt != null) 'createdAt': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TextRuleTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? stepsJson,
+    Value<int>? sort,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return TextRuleTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      stepsJson: stepsJson ?? this.stepsJson,
+      sort: sort ?? this.sort,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (stepsJson.present) {
+      map['stepsJson'] = Variable<String>(stepsJson.value);
+    }
+    if (sort.present) {
+      map['sort'] = Variable<int>(sort.value);
+    }
+    if (createdAt.present) {
+      map['createdAt'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TextRuleTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('stepsJson: $stepsJson, ')
+          ..write('sort: $sort, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$_HistoryDb extends GeneratedDatabase {
   _$_HistoryDb(QueryExecutor e) : super(e);
   $_HistoryDbManager get managers => $_HistoryDbManager(this);
@@ -1820,6 +2173,7 @@ abstract class _$_HistoryDb extends GeneratedDatabase {
   late final $PluginEventTableTable pluginEventTable = $PluginEventTableTable(
     this,
   );
+  late final $TextRuleTableTable textRuleTable = $TextRuleTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1828,6 +2182,7 @@ abstract class _$_HistoryDb extends GeneratedDatabase {
     historyTable,
     progressTable,
     pluginEventTable,
+    textRuleTable,
   ];
 }
 
@@ -2752,6 +3107,219 @@ typedef $$PluginEventTableTableProcessedTableManager =
       PluginEventTableData,
       PrefetchHooks Function()
     >;
+typedef $$TextRuleTableTableCreateCompanionBuilder =
+    TextRuleTableCompanion Function({
+      required String id,
+      required String name,
+      Value<String> stepsJson,
+      Value<int> sort,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$TextRuleTableTableUpdateCompanionBuilder =
+    TextRuleTableCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> stepsJson,
+      Value<int> sort,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$TextRuleTableTableFilterComposer
+    extends Composer<_$_HistoryDb, $TextRuleTableTable> {
+  $$TextRuleTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stepsJson => $composableBuilder(
+    column: $table.stepsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sort => $composableBuilder(
+    column: $table.sort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TextRuleTableTableOrderingComposer
+    extends Composer<_$_HistoryDb, $TextRuleTableTable> {
+  $$TextRuleTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stepsJson => $composableBuilder(
+    column: $table.stepsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sort => $composableBuilder(
+    column: $table.sort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TextRuleTableTableAnnotationComposer
+    extends Composer<_$_HistoryDb, $TextRuleTableTable> {
+  $$TextRuleTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get stepsJson =>
+      $composableBuilder(column: $table.stepsJson, builder: (column) => column);
+
+  GeneratedColumn<int> get sort =>
+      $composableBuilder(column: $table.sort, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$TextRuleTableTableTableManager
+    extends
+        RootTableManager<
+          _$_HistoryDb,
+          $TextRuleTableTable,
+          TextRuleTableData,
+          $$TextRuleTableTableFilterComposer,
+          $$TextRuleTableTableOrderingComposer,
+          $$TextRuleTableTableAnnotationComposer,
+          $$TextRuleTableTableCreateCompanionBuilder,
+          $$TextRuleTableTableUpdateCompanionBuilder,
+          (
+            TextRuleTableData,
+            BaseReferences<
+              _$_HistoryDb,
+              $TextRuleTableTable,
+              TextRuleTableData
+            >,
+          ),
+          TextRuleTableData,
+          PrefetchHooks Function()
+        > {
+  $$TextRuleTableTableTableManager(_$_HistoryDb db, $TextRuleTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TextRuleTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TextRuleTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TextRuleTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> stepsJson = const Value.absent(),
+                Value<int> sort = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TextRuleTableCompanion(
+                id: id,
+                name: name,
+                stepsJson: stepsJson,
+                sort: sort,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String> stepsJson = const Value.absent(),
+                Value<int> sort = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TextRuleTableCompanion.insert(
+                id: id,
+                name: name,
+                stepsJson: stepsJson,
+                sort: sort,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TextRuleTableTable, TextRuleTableData>(table),
+                  BaseReferences<
+                    _$_HistoryDb,
+                    $TextRuleTableTable,
+                    TextRuleTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TextRuleTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$_HistoryDb,
+      $TextRuleTableTable,
+      TextRuleTableData,
+      $$TextRuleTableTableFilterComposer,
+      $$TextRuleTableTableOrderingComposer,
+      $$TextRuleTableTableAnnotationComposer,
+      $$TextRuleTableTableCreateCompanionBuilder,
+      $$TextRuleTableTableUpdateCompanionBuilder,
+      (
+        TextRuleTableData,
+        BaseReferences<_$_HistoryDb, $TextRuleTableTable, TextRuleTableData>,
+      ),
+      TextRuleTableData,
+      PrefetchHooks Function()
+    >;
 
 class $_HistoryDbManager {
   final _$_HistoryDb _db;
@@ -2762,4 +3330,6 @@ class $_HistoryDbManager {
       $$ProgressTableTableTableManager(_db, _db.progressTable);
   $$PluginEventTableTableTableManager get pluginEventTable =>
       $$PluginEventTableTableTableManager(_db, _db.pluginEventTable);
+  $$TextRuleTableTableTableManager get textRuleTable =>
+      $$TextRuleTableTableTableManager(_db, _db.textRuleTable);
 }

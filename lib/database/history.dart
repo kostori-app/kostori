@@ -432,11 +432,33 @@ class PluginEventTable extends Table {
   Set<Column> get primaryKey => {pluginKey, kind, itemKey};
 }
 
+/// 文本规则（下载标题筛选/组合；与播放历史同库）
+class TextRuleTable extends Table {
+  @override
+  String get tableName => 'text_rules';
+
+  TextColumn get id => text()();
+
+  TextColumn get name => text()();
+
+  /// 步骤 JSON（find/replace/caseSensitive 数组）
+  TextColumn get stepsJson =>
+      text().named('stepsJson').withDefault(const Constant('[]'))();
+
+  /// 排序（越小越靠前，即应用顺序）
+  IntColumn get sort => integer().withDefault(const Constant(0))();
+
+  IntColumn get createdAt => integer().named('createdAt')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // ═══════════════════════════════════════════════════════════
 // 数据库
 // ═══════════════════════════════════════════════════════════
 
-@DriftDatabase(tables: [HistoryTable, ProgressTable, PluginEventTable])
+@DriftDatabase(tables: [HistoryTable, ProgressTable, PluginEventTable, TextRuleTable])
 class _HistoryDb extends _$_HistoryDb {
   _HistoryDb() : super(_openConn());
 
@@ -460,6 +482,18 @@ CREATE TABLE IF NOT EXISTS plugin_events (
   extraJson TEXT NOT NULL DEFAULT '{}',
   createdAt INTEGER NOT NULL,
   PRIMARY KEY (pluginKey, kind, itemKey)
+)
+''';
+
+/// 物理建表（v1 无迁移）：幂等，确保 history.db 里有 text_rules 表
+const String _createTextRulesSql = '''
+CREATE TABLE IF NOT EXISTS text_rules (
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  stepsJson TEXT NOT NULL DEFAULT '[]',
+  sort INTEGER NOT NULL DEFAULT 0,
+  createdAt INTEGER NOT NULL,
+  PRIMARY KEY (id)
 )
 ''';
 
@@ -913,6 +947,7 @@ extension ProgressHelper on HistoryManager {
     if (!isInitialized) await init();
     try {
       await _db.customStatement(_createPluginEventsSql);
+      await _db.customStatement(_createTextRulesSql);
     } catch (_) {}
   }
 
@@ -1022,6 +1057,47 @@ extension ProgressHelper on HistoryManager {
     await (_db.delete(_db.pluginEventTable)
           ..where((t) => t.pluginKey.equals(pluginKey)))
         .go();
+  }
+
+  /// 读取全部文本规则（按 sort 升序，即应用顺序）
+  Future<List<Map<String, dynamic>>> getTextRules() async {
+    await _ensureDb();
+    final rows =
+        await (_db.select(_db.textRuleTable)
+              ..orderBy([(t) => OrderingTerm.asc(t.sort)]))
+            .get();
+    return rows
+        .map(
+          (r) => {'id': r.id, 'name': r.name, 'stepsJson': r.stepsJson},
+        )
+        .toList();
+  }
+
+  /// 覆盖写入全部文本规则（按传入顺序保存 sort）
+  Future<void> replaceTextRules(List<Map<String, dynamic>> rules) async {
+    await _ensureDb();
+    await _db.transaction(() async {
+      await _db.delete(_db.textRuleTable).go();
+      var i = 0;
+      for (final r in rules) {
+        final id = r['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+        await _db
+            .into(_db.textRuleTable)
+            .insert(
+              TextRuleTableCompanion.insert(
+                id: id,
+                name: r['name']?.toString() ?? '',
+                stepsJson: Value(r['stepsJson']?.toString() ?? '[]'),
+                sort: Value(i),
+                createdAt:
+                    (r['createdAt'] as num?)?.toInt() ??
+                    DateTime.now().millisecondsSinceEpoch,
+              ),
+            );
+        i++;
+      }
+    });
   }
 }
 
