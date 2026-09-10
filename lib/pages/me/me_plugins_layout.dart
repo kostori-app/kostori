@@ -83,82 +83,50 @@ class _PluginImagesSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        child: FutureBuilder<List<dynamic>>(
-          future: future,
-          builder: (context, snap) {
-            final loading = snap.connectionState != ConnectionState.done;
-            final images = snap.hasData
-                ? _imagesFromModules(snap.data!)
-                : const <String>[];
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: cs.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  title.isEmpty ? plugin.name : title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                if (loading)
-                  const SizedBox(
-                    height: 200,
-                    child: Center(child: PolygonRefreshIndicator(size: 28)),
-                  )
-                else if (images.isEmpty)
-                  const SizedBox(height: 120, child: Center(child: Text('—')))
-                else
-                  SizedBox(
-                    height: 260,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: images.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, i) {
-                        final u = images[i];
-                        return GestureDetector(
-                          onTap: () => BangumiWidget.showImagePreview(
-                            context: App.rootContext,
-                            url: u,
-                            title: title.isEmpty ? plugin.name : title,
-                            imageProvider: _siteProvider(u, plugin: plugin),
-                            heroTag: 'plugin_sheet_${plugin.key}_${u.hashCode}',
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _siteImage(
-                              u,
-                              plugin: plugin,
-                              height: 260,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            );
-          },
+    return Sheet(
+      title: title.isEmpty ? plugin.name : title,
+      icon: Icons.image_outlined,
+      builder: (context, sc) => FutureBuilder<List<dynamic>>(
+        future: future,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Center(child: PolygonRefreshIndicator(size: 28));
+          }
+          final images = snap.hasData
+              ? _imagesFromModules(snap.data!)
+              : const <String>[];
+          if (images.isEmpty) {
+            return const Center(child: Text('—'));
+          }
+          return SingleChildScrollView(
+            controller: sc,
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [for (final u in images) _thumb(context, u)],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _thumb(BuildContext context, String url) {
+    return GestureDetector(
+      onTap: () => BangumiWidget.showImagePreview(
+        context: App.rootContext,
+        url: url,
+        title: title.isEmpty ? plugin.name : title,
+        imageProvider: _siteProvider(url, plugin: plugin),
+        heroTag: 'plugin_sheet_${plugin.key}_${url.hashCode}',
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: 112,
+          height: 72,
+          child: _siteImage(url, plugin: plugin, fit: BoxFit.cover),
         ),
       ),
     );
@@ -302,8 +270,11 @@ class _GenericPluginCard extends StatelessWidget {
   ) {
     showModalBottomSheet<void>(
       context: App.rootContext,
-      backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => _PluginImagesSheet(
         plugin: plugin,
         title: title,
