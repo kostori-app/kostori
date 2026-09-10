@@ -1869,8 +1869,27 @@ class $TextRuleTableTable extends TextRuleTable
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, stepsJson, sort, createdAt];
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    stepsJson,
+    sort,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1916,6 +1935,12 @@ class $TextRuleTableTable extends TextRuleTable
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1945,6 +1970,10 @@ class $TextRuleTableTable extends TextRuleTable
         DriftSqlType.int,
         data['${effectivePrefix}createdAt'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
     );
   }
 
@@ -1965,12 +1994,16 @@ class TextRuleTableData extends DataClass
   /// 排序（越小越靠前，即应用顺序）
   final int sort;
   final int createdAt;
+
+  /// 最后修改时间（多端合并用，新者胜）
+  final int updatedAt;
   const TextRuleTableData({
     required this.id,
     required this.name,
     required this.stepsJson,
     required this.sort,
     required this.createdAt,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1980,6 +2013,7 @@ class TextRuleTableData extends DataClass
     map['stepsJson'] = Variable<String>(stepsJson);
     map['sort'] = Variable<int>(sort);
     map['createdAt'] = Variable<int>(createdAt);
+    map['updatedAt'] = Variable<int>(updatedAt);
     return map;
   }
 
@@ -1990,6 +2024,7 @@ class TextRuleTableData extends DataClass
       stepsJson: Value(stepsJson),
       sort: Value(sort),
       createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -2004,6 +2039,7 @@ class TextRuleTableData extends DataClass
       stepsJson: serializer.fromJson<String>(json['stepsJson']),
       sort: serializer.fromJson<int>(json['sort']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
   }
   @override
@@ -2015,6 +2051,7 @@ class TextRuleTableData extends DataClass
       'stepsJson': serializer.toJson<String>(stepsJson),
       'sort': serializer.toJson<int>(sort),
       'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
     };
   }
 
@@ -2024,12 +2061,14 @@ class TextRuleTableData extends DataClass
     String? stepsJson,
     int? sort,
     int? createdAt,
+    int? updatedAt,
   }) => TextRuleTableData(
     id: id ?? this.id,
     name: name ?? this.name,
     stepsJson: stepsJson ?? this.stepsJson,
     sort: sort ?? this.sort,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   TextRuleTableData copyWithCompanion(TextRuleTableCompanion data) {
     return TextRuleTableData(
@@ -2038,6 +2077,7 @@ class TextRuleTableData extends DataClass
       stepsJson: data.stepsJson.present ? data.stepsJson.value : this.stepsJson,
       sort: data.sort.present ? data.sort.value : this.sort,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -2048,13 +2088,15 @@ class TextRuleTableData extends DataClass
           ..write('name: $name, ')
           ..write('stepsJson: $stepsJson, ')
           ..write('sort: $sort, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, stepsJson, sort, createdAt);
+  int get hashCode =>
+      Object.hash(id, name, stepsJson, sort, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2063,7 +2105,8 @@ class TextRuleTableData extends DataClass
           other.name == this.name &&
           other.stepsJson == this.stepsJson &&
           other.sort == this.sort &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
@@ -2072,6 +2115,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
   final Value<String> stepsJson;
   final Value<int> sort;
   final Value<int> createdAt;
+  final Value<int> updatedAt;
   final Value<int> rowid;
   const TextRuleTableCompanion({
     this.id = const Value.absent(),
@@ -2079,6 +2123,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
     this.stepsJson = const Value.absent(),
     this.sort = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TextRuleTableCompanion.insert({
@@ -2087,6 +2132,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
     this.stepsJson = const Value.absent(),
     this.sort = const Value.absent(),
     required int createdAt,
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -2097,6 +2143,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
     Expression<String>? stepsJson,
     Expression<int>? sort,
     Expression<int>? createdAt,
+    Expression<int>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2105,6 +2152,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
       if (stepsJson != null) 'stepsJson': stepsJson,
       if (sort != null) 'sort': sort,
       if (createdAt != null) 'createdAt': createdAt,
+      if (updatedAt != null) 'updatedAt': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2115,6 +2163,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
     Value<String>? stepsJson,
     Value<int>? sort,
     Value<int>? createdAt,
+    Value<int>? updatedAt,
     Value<int>? rowid,
   }) {
     return TextRuleTableCompanion(
@@ -2123,6 +2172,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
       stepsJson: stepsJson ?? this.stepsJson,
       sort: sort ?? this.sort,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2145,6 +2195,9 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
     if (createdAt.present) {
       map['createdAt'] = Variable<int>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2159,6 +2212,7 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
           ..write('stepsJson: $stepsJson, ')
           ..write('sort: $sort, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3114,6 +3168,7 @@ typedef $$TextRuleTableTableCreateCompanionBuilder =
       Value<String> stepsJson,
       Value<int> sort,
       required int createdAt,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 typedef $$TextRuleTableTableUpdateCompanionBuilder =
@@ -3123,6 +3178,7 @@ typedef $$TextRuleTableTableUpdateCompanionBuilder =
       Value<String> stepsJson,
       Value<int> sort,
       Value<int> createdAt,
+      Value<int> updatedAt,
       Value<int> rowid,
     });
 
@@ -3157,6 +3213,11 @@ class $$TextRuleTableTableFilterComposer
 
   ColumnFilters<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3194,6 +3255,11 @@ class $$TextRuleTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TextRuleTableTableAnnotationComposer
@@ -3219,6 +3285,9 @@ class $$TextRuleTableTableAnnotationComposer
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$TextRuleTableTableTableManager
@@ -3261,6 +3330,7 @@ class $$TextRuleTableTableTableManager
                 Value<String> stepsJson = const Value.absent(),
                 Value<int> sort = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TextRuleTableCompanion(
                 id: id,
@@ -3268,6 +3338,7 @@ class $$TextRuleTableTableTableManager
                 stepsJson: stepsJson,
                 sort: sort,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3277,6 +3348,7 @@ class $$TextRuleTableTableTableManager
                 Value<String> stepsJson = const Value.absent(),
                 Value<int> sort = const Value.absent(),
                 required int createdAt,
+                Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TextRuleTableCompanion.insert(
                 id: id,
@@ -3284,6 +3356,7 @@ class $$TextRuleTableTableTableManager
                 stepsJson: stepsJson,
                 sort: sort,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

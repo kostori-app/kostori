@@ -48,13 +48,21 @@ class TextRule {
   String name;
   List<TextRuleStep> steps;
 
-  TextRule({required this.id, required this.name, List<TextRuleStep>? steps})
-    : steps = steps ?? [];
+  /// 最后修改时间（多端合并用，新者胜）
+  int updatedAt;
+
+  TextRule({
+    required this.id,
+    required this.name,
+    List<TextRuleStep>? steps,
+    this.updatedAt = 0,
+  }) : steps = steps ?? [];
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'steps': steps.map((e) => e.toJson()).toList(),
+    'updatedAt': updatedAt,
   };
 
   static TextRule fromJson(Map m) => TextRule(
@@ -66,6 +74,7 @@ class TextRule {
             .map((e) => TextRuleStep.fromJson(e))
             .toList() ??
         [],
+    updatedAt: (m['updatedAt'] as num?)?.toInt() ?? 0,
   );
 }
 
@@ -88,6 +97,7 @@ class TextRuleStore {
               id: m['id']?.toString() ?? '',
               name: m['name']?.toString() ?? '',
               steps: _decodeSteps(m['stepsJson']?.toString()),
+              updatedAt: (m['updatedAt'] as num?)?.toInt() ?? 0,
             ),
           )
           .where((r) => r.id.isNotEmpty)
@@ -119,6 +129,7 @@ class TextRuleStore {
             'id': r.id,
             'name': r.name,
             'stepsJson': jsonEncode(r.steps.map((e) => e.toJson()).toList()),
+            'updatedAt': r.updatedAt,
           },
       ]),
     );

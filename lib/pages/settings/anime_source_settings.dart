@@ -551,6 +551,16 @@ class _BodyState extends State<_Body> {
                         },
                       ),
                       IconTileButton(
+                        icon: const Icon(Icons.text_fields),
+                        label: t.textRules,
+                        onTap: () {
+                          showPopUpWidget(
+                            App.rootContext,
+                            const _TextRulesManagerPage(),
+                          );
+                        },
+                      ),
+                      IconTileButton(
                         icon: const Icon(Icons.network_check_outlined),
                         label: t.pingTest,
                         onTap: () {
@@ -1678,6 +1688,113 @@ class _DownloadFormatDialogState extends State<_DownloadFormatDialog> {
   }
 }
 
+/// 全局文本规则管理页（不绑定具体番源）：新增/编辑/删除规则
+class _TextRulesManagerPage extends StatefulWidget {
+  const _TextRulesManagerPage();
+
+  @override
+  State<_TextRulesManagerPage> createState() => _TextRulesManagerPageState();
+}
+
+class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
+  Future<void> _edit([TextRule? rule]) async {
+    final result = await showDialog<TextRule>(
+      context: context,
+      builder: (_) => _TextRuleEditorDialog(initial: rule),
+    );
+    if (result == null || !mounted) return;
+    final rules = TextRuleStore.rules;
+    if (rule == null) {
+      rules.add(result);
+    } else {
+      final idx = rules.indexWhere((e) => e.id == rule.id);
+      if (idx >= 0) rules[idx] = result;
+    }
+    TextRuleStore.save();
+    setState(() {});
+  }
+
+  void _delete(TextRule rule) {
+    showConfirmDialog(
+      context: context,
+      title: t.delete,
+      content: '${rule.name}\n${t.textRuleDeleteConfirm}',
+      btnColor: Theme.of(context).colorScheme.error,
+      onConfirm: () {
+        TextRuleStore.rules.removeWhere((e) => e.id == rule.id);
+        TextRuleStore.save();
+        setState(() {});
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rules = TextRuleStore.rules;
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: t.textRules,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          tooltip: t.textRuleAdd,
+          onPressed: () => _edit(),
+        ),
+      ],
+      body: rules.isEmpty
+          ? Center(
+              child: Text(
+                t.textRuleNone,
+                style: TextStyle(color: cs.onSurfaceVariant),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                for (final rule in rules)
+                  ListTile(
+                    leading: const Icon(Icons.text_fields),
+                    title: Text(rule.name.isEmpty ? t.textRuleName : rule.name),
+                    subtitle: Text(
+                      rule.steps.isEmpty
+                          ? t.textRuleNone
+                          : rule.steps
+                                .map((s) => s.find)
+                                .where((s) => s.isNotEmpty)
+                                .join('  →  '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          iconSize: 18,
+                          tooltip: t.edit,
+                          icon: const Icon(Icons.edit_note, size: 18),
+                          onPressed: () => _edit(rule),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          iconSize: 18,
+                          tooltip: t.delete,
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: cs.error,
+                          ),
+                          onPressed: () => _delete(rule),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
 /// 番源“规则”页：文本规则 + 下载标题格式（后续可继续加块）
 class _SourceRulesPage extends StatefulWidget {
   const _SourceRulesPage({required this.source});
@@ -2091,6 +2208,7 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
       id: id,
       name: name.isEmpty ? t.textRuleName : name,
       steps: steps,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
   }
 

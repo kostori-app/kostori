@@ -13,6 +13,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
+import 'package:kostori/foundation/text_rule.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/utils/io.dart';
@@ -89,6 +90,7 @@ Future<File> exportAppData() async {
   // 额外导出字段级合并数据（逐条 JSON），供多端合并而非整库覆盖
   var historyMergeFile = FilePath.join(App.cachePath, 'history_merge.json');
   var pluginHistoryMergeFile = FilePath.join(App.cachePath, 'plugin_history_merge.json');
+  var textRulesMergeFile = FilePath.join(App.cachePath, 'text_rules_merge.json');
   var favoritesMergeFile = FilePath.join(App.cachePath, 'favorites_merge.json');
   var statsMergeFile = FilePath.join(App.cachePath, 'stats_merge.json');
   try {
@@ -109,6 +111,15 @@ Future<File> exportAppData() async {
     await File(pluginHistoryMergeFile).writeAsString(jsonStr);
   } catch (e) {
     DebugLog.error('exportAppData', 'plugin_history_merge.json 导出失败：$e');
+  }
+  try {
+    final rules = await HistoryManager().getTextRules();
+    final jsonStr = await Isolate.run(() {
+      return jsonEncode(rules);
+    });
+    await File(textRulesMergeFile).writeAsString(jsonStr);
+  } catch (e) {
+    DebugLog.error('exportAppData', 'text_rules_merge.json 导出失败：$e');
   }
   try {
     final favorites = LocalFavoritesManager().getAllFavoriteMergeMaps();
@@ -153,6 +164,10 @@ Future<File> exportAppData() async {
     final phmf = File(pluginHistoryMergeFile);
     if (phmf.existsSync()) {
       zipFile.addFile("plugin_history_merge.json", pluginHistoryMergeFile);
+    }
+    final trmf = File(textRulesMergeFile);
+    if (trmf.existsSync()) {
+      zipFile.addFile("text_rules_merge.json", textRulesMergeFile);
     }
     final fmf = File(favoritesMergeFile);
     if (fmf.existsSync()) {
@@ -252,6 +267,23 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
         }
       } catch (e) {
         DebugLog.error('importAppData', 'plugin_history 字段级合并失败：$e');
+      }
+    }
+    // 文本规则字段级合并（history.db 的 text_rules 表）
+    final textRulesMergeFile = cacheDir.joinFile("text_rules_merge.json");
+    if (await textRulesMergeFile.exists()) {
+      try {
+        final list = jsonDecode(await textRulesMergeFile.readAsString());
+        if (list is List) {
+          HistoryWriteService.pause();
+          await HistoryManager().mergeTextRules(
+            list.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList(),
+          );
+          HistoryWriteService.resume();
+          await TextRuleStore.reload();
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'text_rules 字段级合并失败：$e');
       }
     }
     if (!mergedHistory && await historyFile.exists()) {

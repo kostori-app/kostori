@@ -450,6 +450,10 @@ class TextRuleTable extends Table {
 
   IntColumn get createdAt => integer().named('createdAt')();
 
+  /// 最后修改时间（多端合并用，新者胜）
+  IntColumn get updatedAt =>
+      integer().named('updatedAt').withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -493,9 +497,14 @@ CREATE TABLE IF NOT EXISTS text_rules (
   stepsJson TEXT NOT NULL DEFAULT '[]',
   sort INTEGER NOT NULL DEFAULT 0,
   createdAt INTEGER NOT NULL,
+  updatedAt INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (id)
 )
 ''';
+
+/// 老库补列（表已存在但无 updatedAt 时）；列已存在会抛错，忽略即可
+const String _alterTextRulesUpdatedAtSql =
+    'ALTER TABLE text_rules ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0';
 
 LazyDatabase _openConn() => LazyDatabase(() async {
   final file = File(p.join(App.dataPath, 'history.db'));
@@ -949,6 +958,9 @@ extension ProgressHelper on HistoryManager {
       await _db.customStatement(_createPluginEventsSql);
       await _db.customStatement(_createTextRulesSql);
     } catch (_) {}
+    try {
+      await _db.customStatement(_alterTextRulesUpdatedAtSql);
+    } catch (_) {}
   }
 
   /// 记录插件事件（浏览/搜索），history.db 同库、无条数上限
@@ -1068,7 +1080,14 @@ extension ProgressHelper on HistoryManager {
             .get();
     return rows
         .map(
-          (r) => {'id': r.id, 'name': r.name, 'stepsJson': r.stepsJson},
+          (r) => {
+            'id': r.id,
+            'name': r.name,
+            'stepsJson': r.stepsJson,
+            'sort': r.sort,
+            'createdAt': r.createdAt,
+            'updatedAt': r.updatedAt,
+          },
         )
         .toList();
   }
@@ -1093,9 +1112,50 @@ extension ProgressHelper on HistoryManager {
                 createdAt:
                     (r['createdAt'] as num?)?.toInt() ??
                     DateTime.now().millisecondsSinceEpoch,
+                updatedAt: Value(
+                  (r['updatedAt'] as num?)?.toInt() ??
+                      DateTime.now().millisecondsSinceEpoch,
+                ),
               ),
             );
         i++;
+      }
+    });
+  }
+
+  /// 字段级合并文本规则（多端同步）：按 id，updatedAt 较新者胜；单边存在则并入。
+  /// 注意：删除不会跨端传播（无墓碑），本地删除的规则若远端仍有会再被合并回来。
+  Future<void> mergeTextRules(List<Map<String, dynamic>> remote) async {
+    if (remote.isEmpty) return;
+    await _ensureDb();
+    final local = await getTextRules();
+    final localMap = {for (final e in local) e['id']?.toString() ?? '': e};
+    await _db.transaction(() async {
+      var sort = local.length;
+      for (final r in remote) {
+        final id = r['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+        final l = localMap[id];
+        final remoteUpdated = (r['updatedAt'] as num?)?.toInt() ?? 0;
+        final localUpdated = (l?['updatedAt'] as num?)?.toInt() ?? 0;
+        if (l != null && localUpdated >= remoteUpdated) continue;
+        final companion = TextRuleTableCompanion.insert(
+          id: id,
+          name: r['name']?.toString() ?? '',
+          stepsJson: Value(r['stepsJson']?.toString() ?? '[]'),
+          sort: Value(
+            l != null ? ((l['sort'] as num?)?.toInt() ?? sort) : sort,
+          ),
+          createdAt:
+              (r['createdAt'] as num?)?.toInt() ??
+              (l?['createdAt'] as num?)?.toInt() ??
+              DateTime.now().millisecondsSinceEpoch,
+          updatedAt: Value(remoteUpdated),
+        );
+        await _db
+            .into(_db.textRuleTable)
+            .insertOnConflictUpdate(companion);
+        sort++;
       }
     });
   }
