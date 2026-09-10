@@ -72,6 +72,7 @@ class _PluginSubPageState extends State<PluginSubPage> {
   @override
   Widget build(BuildContext context) {
     final paramTitle = widget.params['title']?.toString() ?? '';
+    final pageUrl = widget.params['url']?.toString() ?? '';
     return Scaffold(
       appBar: Appbar(
         title: Text(
@@ -81,6 +82,16 @@ class _PluginSubPageState extends State<PluginSubPage> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          if (pageUrl.isNotEmpty)
+            Tooltip(
+              message: t.openInBrowser,
+              child: IconButton(
+                icon: const Icon(Icons.open_in_browser_outlined),
+                onPressed: () => launchUrlString(pageUrl),
+              ),
+            ),
+        ],
       ),
       body: FutureBuilder<List<dynamic>>(
         future: _future,
