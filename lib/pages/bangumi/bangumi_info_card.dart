@@ -357,6 +357,14 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                           widget.bangumiItem.images['large']!,
                                           width: width,
                                           height: height,
+                                          // 按显示宽度解码：避免详情页封面按原图全分辨率解码
+                                          // 造成进页首帧卡顿（与列表卡片不同尺寸，必然 miss 缓存）
+                                          cacheWidth:
+                                              (width *
+                                                      MediaQuery.devicePixelRatioOf(
+                                                        context,
+                                                      ))
+                                                  .round(),
                                         ),
                                       ),
                                       Positioned(

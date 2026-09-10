@@ -305,30 +305,40 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                       opacity: 0.4,
                                       child: LayoutBuilder(
                                         builder: (context, boxConstraints) {
-                                          return ImageFiltered(
-                                            imageFilter: ImageFilter.blur(
-                                              sigmaX: 15.0,
-                                              sigmaY: 15.0,
-                                            ),
-                                            child: ShaderMask(
-                                              shaderCallback: (Rect bounds) {
-                                                return const LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: [
-                                                    Colors.white,
-                                                    Colors.transparent,
-                                                  ],
-                                                  stops: [0.8, 1],
-                                                ).createShader(bounds);
-                                              },
-                                              child: BangumiWidget.kostoriImage(
-                                                context,
-                                                loadedItem.images['large'] ??
-                                                    '',
-                                                width: boxConstraints.maxWidth,
-                                                height:
-                                                    boxConstraints.maxHeight,
+                                          // 缓存模糊结果：页面数据回填会多次重建，
+                                          // RepaintBoundary 避免每帧重做大半径高斯模糊
+                                          return RepaintBoundary(
+                                            child: ImageFiltered(
+                                              imageFilter: ImageFilter.blur(
+                                                sigmaX: 15.0,
+                                                sigmaY: 15.0,
+                                              ),
+                                              child: ShaderMask(
+                                                shaderCallback: (Rect bounds) {
+                                                  return const LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.white,
+                                                      Colors.transparent,
+                                                    ],
+                                                    stops: [0.8, 1],
+                                                  ).createShader(bounds);
+                                                },
+                                                child:
+                                                    BangumiWidget.kostoriImage(
+                                                      context,
+                                                      loadedItem
+                                                              .images['large'] ??
+                                                          '',
+                                                      width: boxConstraints
+                                                          .maxWidth,
+                                                      height: boxConstraints
+                                                          .maxHeight,
+                                                      // 背景本就高斯模糊，低分辨率解码即可，
+                                                      // 避免全屏原图解码 + 大半径模糊造成卡顿
+                                                      cacheWidth: 96,
+                                                    ),
                                               ),
                                             ),
                                           );
