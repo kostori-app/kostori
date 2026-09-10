@@ -193,6 +193,7 @@ class _PluginSettingsState extends State<PluginSettings> {
  * 个人页插件：$name
  *
  * 支持模块类型：card / text / keyValue / link / progress / chips / signIn / button / list / form
+ *  通用布局：groupPage(分组卡片) / selector(类月份表选择器) / detailPage(详情页)
  * 支持插件导航：plugin.nav + plugin.page(name, params)
  */
 const plugin = {

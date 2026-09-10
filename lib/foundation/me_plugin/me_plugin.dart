@@ -32,6 +32,15 @@ const String mePluginsDirName = 'plugins';
 ///   }
 /// };
 /// ```
+///
+/// 通用布局模块（详情见 `me_plugins_layout.dart`）：
+/// - `groupPage`：分组卡片 `{ type:'groupPage', groups:[{ header, items:[card...] }] }`
+/// - `selector`：类月份表选择器 `{ type:'selector', page, options:[{key,title}], selected, groups:[...] }`
+/// - `detailPage`：详情页 `{ type:'detailPage', title?, sections:[
+///       {type:'imageText', title, text, image, showTitle},
+///       {type:'gallery', title, images:[...]},
+///       {type:'cards', title, cards:[card...]} ] }`
+/// - 通用卡片字段：`cover/title/subtitle/description/tags/meta/rating/ratingMax/badge/page/params/url`
 class MePagePlugin {
   final String name;
   final String key;

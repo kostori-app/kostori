@@ -71,8 +71,17 @@ class _PluginSubPageState extends State<PluginSubPage> {
 
   @override
   Widget build(BuildContext context) {
+    final paramTitle = widget.params['title']?.toString() ?? '';
     return Scaffold(
-      appBar: Appbar(title: Text(widget.plugin.titleOf(widget.name))),
+      appBar: Appbar(
+        title: Text(
+          paramTitle.isNotEmpty
+              ? paramTitle
+              : widget.plugin.titleOf(widget.name),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
       body: FutureBuilder<List<dynamic>>(
         future: _future,
         builder: (context, snap) {

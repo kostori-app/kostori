@@ -101,6 +101,20 @@ class _ModuleView {
         );
       case 'button':
         return _PluginCard(child: _Button(plugin: plugin, m: m));
+      case 'groupPage':
+        return _PluginGroupList(
+          plugin: plugin,
+          groups: m['groups'] is List
+              ? (m['groups'] as List)
+                    .map(_map)
+                    .where((e) => e.isNotEmpty)
+                    .toList()
+              : const <Map<String, dynamic>>[],
+        );
+      case 'selector':
+        return _SelectorSection(plugin: plugin, module: m);
+      case 'detailPage':
+        return _PluginDetailView(plugin: plugin, module: m);
       default:
         return null;
     }
@@ -180,6 +194,36 @@ class _ModuleView {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: _Button(plugin: plugin, m: m),
+        );
+      case 'groupHeader':
+        final gt = m['title']?.toString() ?? '';
+        final gs = m['subtitle']?.toString() ?? '';
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (gt.isNotEmpty)
+                Text(
+                  gt,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              if (gs.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    gs,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       default:
         return null;

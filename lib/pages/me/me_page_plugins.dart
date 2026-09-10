@@ -26,3 +26,4 @@ part 'me_plugins_shell.dart';
 part 'me_plugins_sign.dart';
 part 'me_plugins_board.dart';
 part 'me_plugins_thread.dart';
+part 'me_plugins_layout.dart';
