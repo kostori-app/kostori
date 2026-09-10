@@ -979,6 +979,9 @@ IconData _navIcon(String name) => switch (name) {
   'cloud' => Icons.cloud_outlined,
   'heart' => Icons.favorite_outline,
   'more' => Icons.more_horiz,
+  'calendar' => Icons.calendar_month_outlined,
+  'image' => Icons.image_outlined,
+  'shop' => Icons.shopping_bag_outlined,
   _ => Icons.widgets_outlined,
 };
 

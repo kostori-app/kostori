@@ -323,6 +323,7 @@ class _SelectorSectionState extends State<_SelectorSection> {
   late List<Map<String, dynamic>> _groups;
   late String _selected;
   bool _loading = false;
+  final ScrollController _scroll = ScrollController();
 
   @override
   void initState() {
@@ -331,6 +332,23 @@ class _SelectorSectionState extends State<_SelectorSection> {
     _groups = _parseGroups(widget.module['groups']);
     _selected = widget.module['selected']?.toString() ??
         (_options.isNotEmpty ? _options.first['key']?.toString() ?? '' : '');
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelected() {
+    if (!_scroll.hasClients) return;
+    final idx = _options.indexWhere((o) => o['key']?.toString() == _selected);
+    if (idx <= 0) return;
+    const chip = 84.0;
+    final max = _scroll.position.maxScrollExtent;
+    final target = (idx * chip - 40).clamp(0.0, max);
+    _scroll.jumpTo(target);
   }
 
   List<Map<String, dynamic>> _parseOptions(dynamic raw) {
@@ -398,6 +416,7 @@ class _SelectorSectionState extends State<_SelectorSection> {
     return SizedBox(
       height: 42,
       child: ListView.separated(
+        controller: _scroll,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         itemCount: _options.length,
