@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/app.dart';
 
 /// 底部弹层式 [PageRoute]。
 ///
 /// 视觉与 `showModalBottomSheet` 类似（底部对齐、圆角、限高、上滑进入、
 /// 点击遮罩关闭），但本质是 [PageRoute]，因此可以与目标页做 Hero 转场
 /// （Flutter 的 `HeroController` 只处理 PageRoute 之间的转场，PopupRoute 不行）。
+///
+/// 通过 `context.toSheet(...)` 使用，与项目其它跳转一致。
 class SheetPageRoute<T> extends PageRoute<T> {
   SheetPageRoute({
     required this.builder,
     this.maxHeightFactor = 0.75,
-    this.maxWidthFactor = 1.0,
     this.radius = 16,
   });
 
   final WidgetBuilder builder;
   final double maxHeightFactor;
-  final double maxWidthFactor;
   final double radius;
 
   @override
@@ -46,12 +47,16 @@ class SheetPageRoute<T> extends PageRoute<T> {
     Animation<double> secondaryAnimation,
   ) {
     final size = MediaQuery.sizeOf(context);
+    // 桌面宽屏收窄，避免弹层铺满
+    final maxWidth = size.width <= 600 || !App.isDesktop
+        ? size.width
+        : size.width * 9 / 16;
     return Align(
       alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: size.height * maxHeightFactor,
-          maxWidth: size.width * maxWidthFactor,
+          maxWidth: maxWidth,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),

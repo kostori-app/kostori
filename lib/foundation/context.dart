@@ -3,6 +3,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app_page_route.dart';
 import 'package:kostori/foundation/blur_fade_route.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/sheet_page_route.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:markdown_widget/config/all.dart';
 
@@ -41,6 +42,14 @@ extension Navigation on BuildContext {
     return Navigator.of(
       this,
     ).push<T>(BlurFadeRoute(builder: (context) => builder()));
+  }
+
+  /// 底部弹层式页面（视觉是 sheet，本质是 PageRoute，可与目标页做 Hero 转场）
+  Future<T?> toSheet<T>(Widget Function() builder) {
+    _unfocusBeforeNavigate();
+    return Navigator.of(
+      this,
+    ).push<T>(SheetPageRoute(builder: (context) => builder()));
   }
 
   Future<T?> toFadeScale<T>(Widget Function() builder) {

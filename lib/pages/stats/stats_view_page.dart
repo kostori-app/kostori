@@ -69,17 +69,10 @@ class _StatsViewPageState extends State<StatsViewPage> {
   }
 
   void _showRatingDetail(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
     // 用 PageRoute 版弹层（而非 showModalBottomSheet），这样条目卡片才能与
     // 详情页做 Hero 转场（PopupRoute 不参与 Hero）
-    Navigator.of(context, rootNavigator: true).push(
-      SheetPageRoute<void>(
-        maxHeightFactor: 0.75,
-        maxWidthFactor: width <= 600
-            ? 1.0
-            : (App.isDesktop ? 9 / 16 : 1.0),
-        builder: (_) => _RatingDetailPage(ratingBangumiMap: ratingBangumiMap),
-      ),
+    context.toSheet(
+      () => _RatingDetailPage(ratingBangumiMap: ratingBangumiMap),
     );
   }
 
