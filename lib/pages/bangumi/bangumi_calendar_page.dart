@@ -160,16 +160,19 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
         final weekday = parsedTime.weekday;
         final episodes = allEpisodesMap[item.id];
 
-        final episodeResult = shouldFetchEpisodes
+        // 有剧集信息时按剧集判断；拿不到剧集信息（接口失败/补全占位）时
+        // 回退到按 end 判断，避免这类条目被误跳过（与主页时间表保持一致）
+        var episodeResult = shouldFetchEpisodes
             ? await _processEpisodeInfo(
                 episodes: episodes,
                 now: now,
                 currentWeekInfo: currentWeekInfo,
                 bangumiItem: item,
               )
-            : EpisodeResult.fromEndDate(entry.end);
+            : null;
+        episodeResult ??= EpisodeResult.fromEndDate(entry.end);
 
-        if (episodeResult == null || episodeResult.shouldSkip) continue;
+        if (episodeResult.shouldSkip) continue;
 
         newCalendar[weekday - 1].add(
           item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
