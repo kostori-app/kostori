@@ -656,7 +656,10 @@ class _PluginBoardContentState extends State<PluginBoardContent>
         Positioned.fill(
           child: ExtendedTabBarView(
             controller: _tabsCtrl,
-            children: [for (var i = 0; i < _tabs.length; i++) _categoryPane(i)],
+            children: [
+              for (var i = 0; i < _tabs.length; i++)
+                HeroMode(enabled: i == _index, child: _categoryPane(i)),
+            ],
           ),
         ),
         if (_tabs.isNotEmpty && !_external)

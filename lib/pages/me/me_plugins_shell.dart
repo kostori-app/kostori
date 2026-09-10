@@ -426,7 +426,12 @@ class _PluginShellPageState extends State<PluginShellPage>
                         key: ValueKey(
                           '${widget.plugin.key}-nav-${_nav[i]['key'] ?? i}',
                         ),
-                        child: _pageBody(i),
+                        // 各 tab 都被 keep-alive，同一子页可能重复出现同一 Hero tag；
+                        // 非当前 tab 禁用 Hero，避免 "multiple heroes share the same tag"
+                        child: HeroMode(
+                          enabled: i == _index,
+                          child: _pageBody(i),
+                        ),
                       ),
                   ],
                 ),
