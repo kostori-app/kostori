@@ -28,6 +28,22 @@ Widget _siteImage(
   );
 }
 
+/// Hero 飞行替身：必须用普通 Image（不带骨架屏/AnimatedSwitcher）。
+/// 返回时飞行替身取“来源 Hero 的 child”，若用 AnimatedImage，
+/// 替身会在飞行层重建并先渲染骨架/淡入，导致回退动画异常。
+Widget _siteHeroShuttle(
+  String url, {
+  required MePagePlugin plugin,
+  BoxFit fit = BoxFit.contain,
+}) {
+  return Image(
+    image: _siteProvider(url, plugin: plugin),
+    fit: fit,
+    gaplessPlayback: true,
+    filterQuality: FilterQuality.medium,
+  );
+}
+
 /// 若页面内容本身就是 board 模块则直接渲染板块内容。
 /// [presetController] 由外壳下发时走“外壳托管模式”（顶部导航统一在外壳渲染）。
 Widget _contentOrBoard(
@@ -201,6 +217,13 @@ class _ForumBoardRow extends StatelessWidget {
                         onTap: () => preview(i),
                         child: Hero(
                           tag: heroTag,
+                          flightShuttleBuilder:
+                              (flightContext, animation, direction, fromContext, toContext) =>
+                                  _siteHeroShuttle(
+                                    images[i],
+                                    plugin: plugin,
+                                    fit: BoxFit.cover,
+                                  ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: _siteImage(

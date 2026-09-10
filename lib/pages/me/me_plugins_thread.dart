@@ -949,6 +949,13 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             onTap: () => preview(i),
             child: Hero(
               tag: heroTag,
+              flightShuttleBuilder:
+                  (flightContext, animation, direction, fromContext, toContext) =>
+                      _siteHeroShuttle(
+                        post.images[i],
+                        plugin: widget.plugin,
+                        fit: BoxFit.cover,
+                      ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: _siteImage(
