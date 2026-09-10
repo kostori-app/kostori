@@ -71,6 +71,7 @@ class CachedImageProvider
         url,
         sourceKey,
         aid,
+        headers,
       )) {
         checkStop();
         // 网络失败：直接抛出，由 ImageStream 显示占位；

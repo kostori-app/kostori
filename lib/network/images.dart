@@ -14,12 +14,13 @@ abstract class ImageDownloader {
     String url,
     String? sourceKey, [
     String? aid,
+    Map<String, String>? headers,
   ]) {
     final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
     final existing = _loadingImages[cacheKey];
     if (existing != null) return existing.stream;
     final wrapper = _StreamWrapper<ImageDownloadProgress>(
-      _loadThumbnail(url, sourceKey, aid),
+      _loadThumbnail(url, sourceKey, aid, headers),
       (w) {
         _loadingImages.remove(cacheKey);
       },
@@ -32,6 +33,7 @@ abstract class ImageDownloader {
     String url,
     String? sourceKey, [
     String? aid,
+    Map<String, String>? headers,
   ]) async* {
     final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
     final cache = await CacheManager().findCache(cacheKey);
@@ -53,6 +55,13 @@ abstract class ImageDownloader {
       configs['headers'] = {
         ...sourceHeaders,
         ...(configs['headers'] as Map? ?? {}),
+      };
+    }
+    // 调用方显式传入的请求头（如 me-plugin 的 referer / cookie）优先
+    if (headers != null && headers.isNotEmpty) {
+      configs['headers'] = {
+        ...(configs['headers'] as Map? ?? {}),
+        ...headers,
       };
     }
     configs['headers'] ??= {};

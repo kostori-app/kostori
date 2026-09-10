@@ -326,16 +326,19 @@ class _SelectorState {
   List<Map<String, dynamic>> options;
   String selected;
 
+  /// 是否显示左右箭头（快捷切换）
+  final bool arrows;
+
   _SelectorState({
     required this.key,
     required this.options,
     required this.selected,
+    this.arrows = false,
   });
 }
 
 class _SelectorSectionState extends State<_SelectorSection> {
   late List<_SelectorState> _sels;
-  late List<ScrollController> _ctrls;
   late List<Map<String, dynamic>> _groups;
   bool _loading = false;
 
@@ -343,21 +346,7 @@ class _SelectorSectionState extends State<_SelectorSection> {
   void initState() {
     super.initState();
     _sels = _parseSelectors(widget.module);
-    _ctrls = List.generate(_sels.length, (_) => ScrollController());
     _groups = _parseGroups(widget.module['groups']);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      for (var i = 0; i < _sels.length; i++) {
-        _scrollToSelected(i);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    for (final c in _ctrls) {
-      c.dispose();
-    }
-    super.dispose();
   }
 
   List<Map<String, dynamic>> _parseOptions(dynamic raw) {
@@ -371,7 +360,7 @@ class _SelectorSectionState extends State<_SelectorSection> {
   }
 
   /// 支持两种声明：
-  /// - 多选择器：`selectors:[{key,options,selected}, ...]`
+  /// - 多选择器：`selectors:[{key,options,selected,arrows}, ...]`
   /// - 单选择器（兼容）：`options:[...]`, `selected`
   List<_SelectorState> _parseSelectors(Map<String, dynamic> m) {
     final raw = m['selectors'];
@@ -386,6 +375,7 @@ class _SelectorSectionState extends State<_SelectorSection> {
             key: sm['key']?.toString() ?? 'selection',
             options: opts,
             selected: sm['selected']?.toString() ?? opts.first['key'].toString(),
+            arrows: sm['arrows'] == true,
           ),
         );
       }
@@ -401,19 +391,6 @@ class _SelectorSectionState extends State<_SelectorSection> {
             m['selected']?.toString() ?? (opts.first['key']?.toString() ?? ''),
       ),
     ];
-  }
-
-  void _scrollToSelected(int i) {
-    if (i >= _ctrls.length || i >= _sels.length) return;
-    final c = _ctrls[i];
-    if (!c.hasClients) return;
-    final idx = _sels[i].options.indexWhere(
-      (o) => o['key']?.toString() == _sels[i].selected,
-    );
-    if (idx <= 0) return;
-    const chip = 84.0;
-    final max = c.position.maxScrollExtent;
-    c.jumpTo((idx * chip - 40).clamp(0.0, max));
   }
 
   Future<void> _switch(int i, String key) async {
@@ -442,20 +419,9 @@ class _SelectorSectionState extends State<_SelectorSection> {
       setState(() {
         if (mod != null) {
           final newSels = _parseSelectors(mod);
-          if (newSels.isNotEmpty) {
-            if (newSels.length != _ctrls.length) {
-              for (final c in _ctrls) {
-                c.dispose();
-              }
-              _ctrls = List.generate(newSels.length, (_) => ScrollController());
-            }
-            _sels = newSels;
-          }
+          if (newSels.isNotEmpty) _sels = newSels;
           _groups = _parseGroups(mod['groups']);
         }
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _scrollToSelected(i);
       });
     } catch (_) {
     } finally {
@@ -483,40 +449,41 @@ class _SelectorSectionState extends State<_SelectorSection> {
   Widget _selectorBar(BuildContext context, int index) {
     final sel = _sels[index];
     if (sel.options.isEmpty) return const SizedBox.shrink();
-    final cs = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 42,
-      child: ListView.separated(
-        controller: _ctrls[index],
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        itemCount: sel.options.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final o = sel.options[i];
-          final key = o['key']?.toString() ?? '';
-          final on = key == sel.selected;
-          return GestureDetector(
-            onTap: () => _switch(index, key),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: on ? cs.primary : cs.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                o['title']?.toString() ?? key,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: on ? FontWeight.w600 : FontWeight.w400,
-                  color: on ? cs.onPrimary : cs.onSurface,
-                ),
-              ),
+    final keys = sel.options.map((o) => o['key']?.toString() ?? '').toList();
+    final titles = sel.options
+        .map((o) => o['title']?.toString() ?? '')
+        .toList();
+    final cur = keys.indexOf(sel.selected);
+    Widget arrow(IconData icon, bool enabled, VoidCallback onTap) => IconButton(
+      icon: Icon(icon, size: 20),
+      visualDensity: VisualDensity.compact,
+      onPressed: enabled ? onTap : null,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
+      child: Row(
+        children: [
+          if (sel.arrows)
+            arrow(
+              Icons.chevron_left,
+              cur > 0,
+              () => _switch(index, keys[cur - 1]),
             ),
-          );
-        },
+          Expanded(
+            child: _CapsuleBar(
+              keys: keys,
+              titles: titles,
+              selected: sel.selected,
+              onChanged: (i) => _switch(index, keys[i]),
+            ),
+          ),
+          if (sel.arrows)
+            arrow(
+              Icons.chevron_right,
+              cur >= 0 && cur < keys.length - 1,
+              () => _switch(index, keys[cur + 1]),
+            ),
+        ],
       ),
     );
   }
