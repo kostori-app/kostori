@@ -119,14 +119,24 @@ class BangumiItem {
         if (val is List && val.isNotEmpty && val.first is String) {
           return val.first as String;
         }
+        if (val is Map) {
+          final nested = _nameString(val);
+          if (nested.isNotEmpty) return nested;
+        }
       }
-      // 兜底：任一非空字符串值
+      // 兜底：任一非空字符串值（递归处理嵌套 Map）
       for (final val in v.values) {
         if (val is String && val.isNotEmpty) return val;
         if (val is List && val.isNotEmpty && val.first is String) {
           return val.first as String;
         }
+        if (val is Map) {
+          final nested = _nameString(val);
+          if (nested.isNotEmpty) return nested;
+        }
       }
+      // 完全取不到可读名称时返回空串，避免把原始 JSON 当标题展示
+      return '';
     }
     return v.toString();
   }

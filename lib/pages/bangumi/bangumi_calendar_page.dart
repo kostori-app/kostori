@@ -37,6 +37,8 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
     // 默认全周；主页只取当天时传 days: [today]
     final targetDays = days ?? const [1, 2, 3, 4, 5, 6, 7];
     final manager = providerContainer.read(bangumiManagerProvider);
+    // 清掉旧版本遗留的坏占位行（标题为原始 JSON）
+    await manager.cleanupBrokenCalendarRows();
     final allItems = await manager.getWeeks(targetDays);
 
     // 补全：bangumi_data 表（全量）中日历表缺失的近期条目。
@@ -94,13 +96,19 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
             item = item.copyWith(airTime: basic.begin, airWeekday: begin.weekday);
           } else {
             // 接口失败：用 bangumi_data 基础信息占位（标题 + 时间）
+            final beginLocal = begin?.toLocal();
             item = BangumiItem(
               id: id,
               type: 2,
               name: basic.titleTranslate ?? basic.title,
               nameCn: basic.titleTranslate ?? basic.title,
               summary: '',
-              airDate: basic.begin ?? '2077',
+              // airDate 会被部分卡片直接展示，统一成 YYYY-MM-DD，避免露出 ISO 时间戳
+              airDate: beginLocal != null
+                  ? '${beginLocal.year.toString().padLeft(4, '0')}-'
+                        '${beginLocal.month.toString().padLeft(2, '0')}-'
+                        '${beginLocal.day.toString().padLeft(2, '0')}'
+                  : '2077',
               airWeekday: begin?.weekday ?? 0,
               rank: 0,
               total: 0,

@@ -18,6 +18,37 @@ part 'bangumi.g.dart';
 // 数据类
 // ═══════════════════════════════════════════════════════════
 
+/// bangumi_data 的 titleTranslate 存的是 JSON（如 {"zh-Hans":["名"],"zh-Hant":["名"]}）。
+/// 解码并优先取简体中文显示名；非 JSON 文本则原样返回。
+String? localizedTitleTranslate(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  final trimmed = raw.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    return trimmed;
+  }
+  try {
+    final decoded = jsonDecode(trimmed);
+    if (decoded is Map) {
+      for (final key in ['zh-Hans', 'zh-hans', 'zh-CN', 'zh_cn', 'zhHans']) {
+        final v = decoded[key];
+        if (v is String && v.isNotEmpty) return v;
+        if (v is List && v.isNotEmpty && v.first is String) {
+          return v.first as String;
+        }
+      }
+      for (final v in decoded.values) {
+        if (v is String && v.isNotEmpty) return v;
+        if (v is List && v.isNotEmpty && v.first is String) {
+          return v.first as String;
+        }
+      }
+    } else if (decoded is String && decoded.isNotEmpty) {
+      return decoded;
+    }
+  } catch (_) {}
+  return null;
+}
+
 /// bangumi_data 表条目的基础信息（用于补全日历）
 class BangumiDataBasic {
   final String title;
@@ -559,7 +590,7 @@ class BangumiManager with ChangeNotifier {
               if (id != null) {
                 result[id] = BangumiDataBasic(
                   title: row.title,
-                  titleTranslate: row.titleTranslate,
+                  titleTranslate: localizedTitleTranslate(row.titleTranslate),
                   begin: row.begin,
                   end: row.end,
                 );
@@ -641,6 +672,17 @@ class BangumiManager with ChangeNotifier {
   Future<void> clearBangumiCalendar() {
     return _guard(() async {
       await _db.delete(_db.bangumiCalendarTable).go();
+    });
+  }
+
+  /// 清理历史遗留的“坏占位”日历行：标题是原始 JSON（以 `{`/`[` 开头）。
+  /// 旧版本补全失败时会把 bangumi_data 的 titleTranslate 原始 JSON 当标题写入缓存。
+  Future<void> cleanupBrokenCalendarRows() {
+    return _guard(() async {
+      await (_db.delete(_db.bangumiCalendarTable)..where(
+            (t) => t.name.like('{%') | t.nameCn.like('{%'),
+          ))
+          .go();
     });
   }
 
