@@ -70,6 +70,19 @@ class _GenericPluginCard extends StatelessWidget {
 
   bool get _hasNav => item['page'] != null || item['url'] != null;
 
+  void _previewCover() {
+    final cover = _str('cover');
+    if (cover.isEmpty) return;
+    final title = _str('title');
+    BangumiWidget.showImagePreview(
+      context: App.rootContext,
+      url: cover,
+      title: title.isEmpty ? plugin.name : title,
+      imageProvider: _siteProvider(cover, plugin: plugin),
+      heroTag: 'plugin_card_${plugin.key}_${identityHashCode(item)}',
+    );
+  }
+
   List<String> _btnImages(Map<String, dynamic> btn) {
     final v = btn['images'];
     if (v is List) {
@@ -79,8 +92,19 @@ class _GenericPluginCard extends StatelessWidget {
     return single.isNotEmpty ? [single] : const [];
   }
 
-  Future<void> _buttonTap(Map<String, dynamic> btn) async {
+  Future<void> _buttonTap(BuildContext context, Map<String, dynamic> btn) async {
     final label = btn['label']?.toString() ?? '';
+    // 按钮可跳转到插件子页（如按需解析预览图）
+    final page = btn['page']?.toString() ?? '';
+    if (page.isNotEmpty) {
+      final params = btn['params'] is Map
+          ? _asMap2(btn['params'])
+          : <String, dynamic>{};
+      if (btn['url'] != null) params['url'] = btn['url'].toString();
+      params['title'] ??= label;
+      _pushPluginPage(context, plugin, page, params, item: btn);
+      return;
+    }
     final images = _btnImages(btn);
     final url = btn['url']?.toString() ?? '';
     final text = btn['text']?.toString() ?? '';
@@ -179,7 +203,7 @@ class _GenericPluginCard extends StatelessWidget {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
-        onPressed: () => _buttonTap(btn),
+        onPressed: () => _buttonTap(context, btn),
         child: Text(
           label,
           maxLines: 1,
@@ -219,25 +243,31 @@ class _GenericPluginCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: cover.isNotEmpty
-                    ? _siteImage(
-                        cover,
-                        plugin: plugin,
-                        width: 86,
-                        height: 116,
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        width: 86,
-                        height: 116,
-                        color: cs.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.image_outlined,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
+              GestureDetector(
+                onTap: cover.isEmpty ? null : _previewCover,
+                child: Hero(
+                  tag: 'plugin_card_${plugin.key}_${identityHashCode(item)}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: cover.isNotEmpty
+                        ? _siteImage(
+                            cover,
+                            plugin: plugin,
+                            width: 104,
+                            height: 140,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            width: 104,
+                            height: 140,
+                            color: cs.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -444,7 +474,7 @@ class _PluginGroupBlock extends StatelessWidget {
           ),
         for (final it in items) ...[
           _GenericPluginCard(plugin: plugin, item: it),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
       ],
     );
@@ -894,7 +924,7 @@ class _CardsSection extends StatelessWidget {
           ),
         for (final c in cards) ...[
           _GenericPluginCard(plugin: plugin, item: c),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
       ],
     );
@@ -1013,8 +1043,10 @@ class _PluginCardPageState extends State<PluginCardPage> {
               else if (groups.isNotEmpty)
                 _PluginGroupList(plugin: widget.plugin, groups: groups)
               else if (items.isNotEmpty)
-                for (final it in items)
-                  _GenericPluginCard(plugin: widget.plugin, item: it)
+                for (final it in items) ...[
+                  _GenericPluginCard(plugin: widget.plugin, item: it),
+                  const SizedBox(height: 12),
+                ]
               else
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 40),
