@@ -69,23 +69,17 @@ class _StatsViewPageState extends State<StatsViewPage> {
   }
 
   void _showRatingDetail(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-        maxWidth: MediaQuery.of(context).size.width <= 600
-            ? MediaQuery.of(context).size.width
-            : (App.isDesktop)
-            ? MediaQuery.of(context).size.width * 9 / 16
-            : MediaQuery.of(context).size.width,
+    final width = MediaQuery.of(context).size.width;
+    // 用 PageRoute 版弹层（而非 showModalBottomSheet），这样条目卡片才能与
+    // 详情页做 Hero 转场（PopupRoute 不参与 Hero）
+    Navigator.of(context, rootNavigator: true).push(
+      SheetPageRoute<void>(
+        maxHeightFactor: 0.75,
+        maxWidthFactor: width <= 600
+            ? 1.0
+            : (App.isDesktop ? 9 / 16 : 1.0),
+        builder: (_) => _RatingDetailPage(ratingBangumiMap: ratingBangumiMap),
       ),
-      clipBehavior: Clip.antiAlias,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _RatingDetailPage(ratingBangumiMap: ratingBangumiMap),
     );
   }
 
@@ -664,7 +658,7 @@ class _RatingDetailPageState extends State<_RatingDetailPage>
                   itemCount: items.length,
                   itemBuilder: (context, index) => BangumiBriefCard(
                     bangumiItem: items[index],
-                    heroTag: null,
+                    heroTag: 'RatingDetail',
                   ),
                 );
               }),
