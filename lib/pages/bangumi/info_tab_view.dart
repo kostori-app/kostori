@@ -431,9 +431,9 @@ class _InfoTabViewState extends State<InfoTabView>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      Hero(
+                                      KostoriHero(
                                         tag: item.id.toString(),
-                                        child: Ink.image(
+                                        child: AnimatedImage(
                                           image: CachedImageProvider(
                                             item.images['large']!,
                                             sourceKey: 'bangumi',
@@ -441,6 +441,10 @@ class _InfoTabViewState extends State<InfoTabView>
                                           width: 140,
                                           height: 180,
                                           fit: BoxFit.cover,
+                                          // 用 AnimatedImage(ink:true) 替代裸 Ink.image：
+                                          // 平时仍以 Ink 绘制（波纹在图上），但 Hero 飞行时会
+                                          // 退化成普通 Image，避免飞行层无 Material 导致返回异常
+                                          ink: true,
                                         ),
                                       ),
                                       Padding(
