@@ -312,54 +312,44 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                 Positioned.fill(
                                   bottom: kTextTabBarHeight,
                                   child: IgnorePointer(
-                                    child: ClipRect(
+                                    child: Opacity(
+                                      opacity: 0.4,
                                       child: LayoutBuilder(
                                         builder: (context, boxConstraints) {
-                                          // 先缩小 → 模糊 → 再放大：模糊只作用在小图层上，
-                                          // 避免全屏高斯模糊的高开销（背景本就不需要清晰）
-                                          const sampleW = 48.0;
-                                          final sampleH =
-                                              (sampleW *
-                                                      boxConstraints.maxHeight /
-                                                      boxConstraints.maxWidth)
-                                                  .clamp(1.0, 4096.0);
-                                          final scale =
-                                              boxConstraints.maxWidth / sampleW;
-                                          return Transform.scale(
-                                            scale: scale,
-                                            child: RepaintBoundary(
-                                              child: Opacity(
-                                                opacity: 0.4,
-                                                child: ImageFiltered(
-                                                  imageFilter: ImageFilter.blur(
-                                                    sigmaX: 4.0,
-                                                    sigmaY: 4.0,
-                                                  ),
-                                                  child: ShaderMask(
-                                                    shaderCallback: (Rect bounds) {
-                                                      return const LinearGradient(
-                                                        begin:
-                                                            Alignment.topCenter,
-                                                        end: Alignment
-                                                            .bottomCenter,
-                                                        colors: [
-                                                          Colors.white,
-                                                          Colors.transparent,
-                                                        ],
-                                                        stops: [0.8, 1],
-                                                      ).createShader(bounds);
-                                                    },
-                                                    child: BangumiWidget.kostoriImage(
+                                          // 缓存模糊结果：页面数据回填会多次重建，
+                                          // RepaintBoundary 避免每帧重做大半径高斯模糊
+                                          return RepaintBoundary(
+                                            child: ImageFiltered(
+                                              imageFilter: ImageFilter.blur(
+                                                sigmaX: 15.0,
+                                                sigmaY: 15.0,
+                                              ),
+                                              child: ShaderMask(
+                                                shaderCallback: (Rect bounds) {
+                                                  return const LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.white,
+                                                      Colors.transparent,
+                                                    ],
+                                                    stops: [0.8, 1],
+                                                  ).createShader(bounds);
+                                                },
+                                                child:
+                                                    BangumiWidget.kostoriImage(
                                                       context,
                                                       loadedItem
                                                               .images['large'] ??
                                                           '',
-                                                      width: sampleW,
-                                                      height: sampleH,
+                                                      width: boxConstraints
+                                                          .maxWidth,
+                                                      height: boxConstraints
+                                                          .maxHeight,
+                                                      // 背景本就高斯模糊，低分辨率解码即可，
+                                                      // 避免全屏原图解码 + 大半径模糊造成卡顿
                                                       cacheWidth: 96,
                                                     ),
-                                                  ),
-                                                ),
                                               ),
                                             ),
                                           );
