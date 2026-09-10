@@ -30,13 +30,23 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
   List<int>? days,
 }) async {
   try {
+    final manager = providerContainer.read(bangumiManagerProvider);
     if (isFetchEpisodes) {
+      // 一次性清理：旧版本会把补全占位（可能含已完结旧番）写进日历缓存，
+      // 而 getCalendarData 当天已拉取时会跳过、不会清表，导致坏卡片一直残留。
+      // 这里清空日历表并重置拉取时间，强制重新拉取一次。
+      if (appdata.implicitData['bangumiCalendarPurgedV2'] != true) {
+        await manager.clearBangumiCalendar();
+        appdata.settings['getCalendarDataTime'] = '';
+        appdata.saveData();
+        appdata.implicitData['bangumiCalendarPurgedV2'] = true;
+        appdata.writeImplicitData();
+      }
       await Bangumi.instance.getCalendarData();
       await Bangumi.instance.checkBangumiData();
     }
     // 默认全周；主页只取当天时传 days: [today]
     final targetDays = days ?? const [1, 2, 3, 4, 5, 6, 7];
-    final manager = providerContainer.read(bangumiManagerProvider);
     // 清掉旧版本遗留的坏占位行（标题为原始 JSON）
     await manager.cleanupBrokenCalendarRows();
     final allItems = await manager.getWeeks(targetDays);
