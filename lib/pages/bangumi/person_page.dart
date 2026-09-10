@@ -236,15 +236,14 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       child: loadingPerson
                           ? Center(child: KostoriRefreshIndicator())
                           : (characterFullItem.id == 0
-                                  ? EmptyState(
-                                      message: t.nobodysPostedAnythingYet,
-                                      retry: loadPerson,
-                                      retryText: t.reload,
-                                    )
+                                ? EmptyState(
+                                    message: t.nobodysPostedAnythingYet,
+                                    retry: loadPerson,
+                                    retryText: t.reload,
+                                  )
                                 : ScrollConfiguration(
-                                    behavior: ScrollConfiguration.of(
-                                      context,
-                                    ).copyWith(scrollbars: false),
+                                    behavior: ScrollConfiguration.of(context)
+                                        .copyWith(scrollbars: false),
                                     child: SingleChildScrollView(
                                       child: SizedBox(
                                         child: Padding(
@@ -279,24 +278,6 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                       child: Hero(
                                                         tag: characterFullItem
                                                             .image,
-                                                        flightShuttleBuilder:
-                                                            (
-                                                              flightContext,
-                                                              animation,
-                                                              direction,
-                                                              fromContext,
-                                                              toContext,
-                                                            ) {
-                                                              return direction ==
-                                                                      HeroFlightDirection
-                                                                          .pop
-                                                                  ? (fromContext.widget
-                                                                            as Hero)
-                                                                        .child
-                                                                  : (toContext.widget
-                                                                            as Hero)
-                                                                        .child;
-                                                            },
                                                         child:
                                                             BangumiWidget.kostoriImage(
                                                               context,
@@ -318,17 +299,18 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                         Text(
                                                           characterFullItem
                                                               .name,
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .headlineSmall
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color: Theme.of(
-                                                                  context,
-                                                                ).colorScheme.tertiary,
-                                                              ),
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .headlineSmall
+                                                                  ?.copyWith(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color: Theme.of(
+                                                                      context,
+                                                                    ).colorScheme.tertiary,
+                                                                  ),
                                                           overflow: TextOverflow
                                                               .ellipsis,
                                                           maxLines: 2,
@@ -341,13 +323,16 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                           child: Text(
                                                             characterFullItem
                                                                 .nameCN,
-                                                            style: Theme.of(context)
-                                                                .textTheme
-                                                                .titleMedium
-                                                                ?.copyWith(
-                                                                  color: Colors
-                                                                      .grey[700],
-                                                                ),
+                                                            style:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .textTheme
+                                                                    .titleMedium
+                                                                    ?.copyWith(
+                                                                      color: Colors
+                                                                          .grey[700],
+                                                                    ),
                                                           ),
                                                         ),
                                                       ],
@@ -380,9 +365,9 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                           '${item.key}: ${item.values.map((v) => v.value).join(", ")}',
                                                     )
                                                     .join("\n"),
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodyMedium,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium,
                                                 textAlign: TextAlign.justify,
                                                 scrollPhysics:
                                                     const NeverScrollableScrollPhysics(),
@@ -687,24 +672,6 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                               .character
                                                               .images
                                                               .large,
-                                                      flightShuttleBuilder:
-                                                          (
-                                                            flightContext,
-                                                            animation,
-                                                            direction,
-                                                            fromContext,
-                                                            toContext,
-                                                          ) {
-                                                            return direction ==
-                                                                    HeroFlightDirection
-                                                                        .pop
-                                                                ? (fromContext.widget
-                                                                          as Hero)
-                                                                      .child
-                                                                : (toContext.widget
-                                                                          as Hero)
-                                                                      .child;
-                                                          },
                                                       child: ClipRRect(
                                                         borderRadius:
                                                             BorderRadius.circular(
@@ -916,13 +883,13 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       )
                     else if (characterPersonCastsQueryTimeout)
                       SliverFillRemaining(
-                    child: ErrorState(
-                      message: t.failedToLoadPleaseTryAgain,
-                      retry: () {
-                        loadPersonCasts();
-                      },
-                      retryText: t.reload,
-                    ),
+                        child: ErrorState(
+                          message: t.failedToLoadPleaseTryAgain,
+                          retry: () {
+                            loadPersonCasts();
+                          },
+                          retryText: t.reload,
+                        ),
                       )
                     else
                       SliverList.builder(
@@ -1133,9 +1100,9 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.secondaryContainer,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondaryContainer,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
@@ -1159,13 +1126,13 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       )
                     else if (personWorksQueryTimeout)
                       SliverFillRemaining(
-                    child: ErrorState(
-                      message: t.failedToLoadPleaseTryAgain,
-                      retry: () {
-                        loadPersonWorks();
-                      },
-                      retryText: t.reload,
-                    ),
+                        child: ErrorState(
+                          message: t.failedToLoadPleaseTryAgain,
+                          retry: () {
+                            loadPersonWorks();
+                          },
+                          retryText: t.reload,
+                        ),
                       )
                     else
                       BangumiWidget.bangumiSkeletonSliverBrief(),

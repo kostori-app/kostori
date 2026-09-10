@@ -104,7 +104,8 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         final map = _asMap2(m);
         if (map['type'] != 'threadPage') continue;
         if (map['simple'] == true) _simplePosts = true;
-        if (map['simple'] == true && (map['poLabel']?.toString().isNotEmpty ?? false)) {
+        if (map['simple'] == true &&
+            (map['poLabel']?.toString().isNotEmpty ?? false)) {
           _poLabel = map['poLabel']!.toString();
         }
         if (_title.isEmpty) _title = map['title']?.toString() ?? '';
@@ -530,9 +531,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
       cs,
       post,
       visibleNo,
-      key: post.pid > 0
-          ? (_floorKeys[post.pid] ??= GlobalKey())
-          : null,
+      key: post.pid > 0 ? (_floorKeys[post.pid] ??= GlobalKey()) : null,
     );
   }
 
@@ -950,18 +949,6 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
             onTap: () => preview(i),
             child: Hero(
               tag: heroTag,
-              flightShuttleBuilder:
-                  (
-                    flightContext,
-                    animation,
-                    direction,
-                    fromContext,
-                    toContext,
-                  ) {
-                    return direction == HeroFlightDirection.pop
-                        ? (fromContext.widget as Hero).child
-                        : (toContext.widget as Hero).child;
-                  },
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: _siteImage(
@@ -1054,19 +1041,19 @@ class _ForumPager extends StatelessWidget {
     final prevBtn = _PagerIcon(
       icon: Icons.chevron_left,
       label: t.back,
-      enabled: page > 1 ,
+      enabled: page > 1,
       onTap: () => onJump(page - 1),
       onRepeat: () {
-        if (page > 1 ) onJump(page - 1);
+        if (page > 1) onJump(page - 1);
       },
     );
     final nextBtn = _PagerIcon(
       icon: Icons.chevron_right,
       label: t.next,
-      enabled: page < totalPages ,
+      enabled: page < totalPages,
       onTap: () => onJump(page + 1),
       onRepeat: () {
-        if (page < totalPages ) onJump(page + 1);
+        if (page < totalPages) onJump(page + 1);
       },
     );
 
@@ -1094,7 +1081,7 @@ class _ForumPager extends StatelessWidget {
               _PagerIcon(
                 icon: Icons.first_page,
                 label: t.first,
-                enabled: page > 1 ,
+                enabled: page > 1,
                 onTap: () => onJump(1),
               ),
               const SizedBox(width: 4),
@@ -1107,7 +1094,7 @@ class _ForumPager extends StatelessWidget {
               _PagerIcon(
                 icon: Icons.last_page,
                 label: t.last,
-                enabled: page < totalPages ,
+                enabled: page < totalPages,
                 onTap: () => onJump(totalPages),
               ),
             ],

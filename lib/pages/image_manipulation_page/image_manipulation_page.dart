@@ -359,23 +359,7 @@ class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
                     tag: App.isAndroid
                         ? file.path.split('/').last
                         : file.path.split('\\').last,
-                    flightShuttleBuilder:
-                        (
-                          flightContext,
-                          animation,
-                          direction,
-                          fromContext,
-                          toContext,
-                        ) {
-                          return direction == HeroFlightDirection.pop
-                              ? (fromContext.widget as Hero).child
-                              : (toContext.widget as Hero).child;
-                        },
-                    child: Image.file(
-                      file,
-                      fit: BoxFit.cover,
-                      cacheWidth: 360,
-                    ),
+                    child: Image.file(file, fit: BoxFit.cover, cacheWidth: 360),
                   ),
                 ),
               ),

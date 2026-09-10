@@ -346,19 +346,6 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                 tag: (widget.heroTag == null)
                                     ? '${widget.bangumiItem.id}'
                                     : '${widget.heroTag}-${widget.bangumiItem.id}',
-                                flightShuttleBuilder:
-                                    (
-                                      flightContext,
-                                      animation,
-                                      direction,
-                                      fromContext,
-                                      toContext,
-                                    ) {
-                                      return direction ==
-                                              HeroFlightDirection.pop
-                                          ? (fromContext.widget as Hero).child
-                                          : (toContext.widget as Hero).child;
-                                    },
                                 child: SizedBox(
                                   width: width,
                                   height: height,

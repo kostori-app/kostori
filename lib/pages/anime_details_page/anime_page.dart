@@ -156,10 +156,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   Future<void> updateStatsClicks() async {
     if (!mounted) return;
     try {
-      if (!await stats.isExistAsync(
-        _animeId,
-        AnimeType(_sourceKey.hashCode),
-      )) {
+      if (!await stats.isExistAsync(_animeId, AnimeType(_sourceKey.hashCode))) {
         try {
           await stats.addStats(
             stats.createStatsData(
@@ -316,10 +313,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
 
     // 查询下载状态（是否已下载，用于下载按钮显示）
-    final records = await DownloadManager.recordsFor(
-      _animeId,
-      _sourceKey,
-    );
+    final records = await DownloadManager.recordsFor(_animeId, _sourceKey);
     if (mounted && records.isNotEmpty != isDownloaded) {
       setState(() => isDownloaded = records.isNotEmpty);
     }
@@ -493,9 +487,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 // 播放器在左侧铺满剩余空间
                 Expanded(
                   child: MediaQuery(
-                    data: MediaQuery.of(
-                      context,
-                    ).copyWith(size: Size(playerWidth, screenHeight)),
+                    data: MediaQuery.of(context)
+                        .copyWith(size: Size(playerWidth, screenHeight)),
                     child: Watcher(
                       key: watcherKey,
                       playerController: playerController,
@@ -648,7 +641,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
                             onTap: () {
-                              final coverUrl = (widget.cover != null &&
+                              final coverUrl =
+                                  (widget.cover != null &&
                                       widget.cover!.isNotEmpty)
                                   ? widget.cover!
                                   : anime.cover;
@@ -666,18 +660,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                             },
                             child: Hero(
                               tag: widget.heroTag ?? "cover${widget.heroID}",
-                              flightShuttleBuilder:
-                                  (
-                                    flightContext,
-                                    animation,
-                                    direction,
-                                    fromContext,
-                                    toContext,
-                                  ) {
-                                    return direction == HeroFlightDirection.pop
-                                        ? (fromContext.widget as Hero).child
-                                        : (toContext.widget as Hero).child;
-                                  },
                               child: Container(
                                 width: imageWidth,
                                 height: imageHeight,
@@ -699,7 +681,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     // anime.cover，避免空串不走 ?? 导致加载空 URL
                                     final coverUrl =
                                         (widget.cover != null &&
-                                                widget.cover!.isNotEmpty)
+                                            widget.cover!.isNotEmpty)
                                         ? widget.cover!
                                         : anime.cover;
                                     return coverUrl.isNotEmpty
@@ -776,7 +758,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                               .colorScheme
                                               .secondaryContainer
                                               .toOpacity(0.6),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -784,16 +768,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                             Icon(
                                               Icons.swap_horiz,
                                               size: 14,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              AnimeSource.find(
-                                                anime.sourceKey,
-                                              )?.name ??
-                                              '',
+                                              AnimeSource.find(anime.sourceKey)
+                                                      ?.name ??
+                                                  '',
                                               style: ts.s12,
                                             ),
                                           ],
@@ -803,7 +786,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   )
                                 else
                                   Text(
-                                    AnimeSource.find(anime.sourceKey)?.name ?? '',
+                                    AnimeSource.find(anime.sourceKey)?.name ??
+                                        '',
                                     style: ts.s12,
                                   ),
                                 const Spacer(),
@@ -820,9 +804,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                           ),
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                           ),
                                         ),
                                         const Text(' / '),
@@ -835,9 +819,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                           ),
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.error,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .error,
                                           ),
                                         ),
                                         const Text(' / '),
@@ -1123,10 +1107,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       await _onDownloadSeries();
       return;
     }
-    final records = await DownloadManager.recordsFor(
-      _animeId,
-      _sourceKey,
-    );
+    final records = await DownloadManager.recordsFor(_animeId, _sourceKey);
     if (!mounted) return;
     final eps = episode.values.first;
     final items = <_DownloadItem>[
@@ -1165,10 +1146,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       App.rootContext.showMessage(message: t.downloadNotYet);
       return;
     }
-    final records = await DownloadManager.recordsFor(
-      _animeId,
-      _sourceKey,
-    );
+    final records = await DownloadManager.recordsFor(_animeId, _sourceKey);
     if (!mounted) return;
     final items = <_DownloadItem>[
       for (final a in series)
@@ -1303,9 +1281,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             ListTile(title: Text(t.myRating)),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: SelectableText(
-                commentRecord!.comment!,
-              ).fixWidth(double.infinity),
+              child: SelectableText(commentRecord!.comment!)
+                  .fixWidth(double.infinity),
             ),
           ],
         ),
@@ -1389,9 +1366,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                           ? AnimatedImage(
                               image: CachedImageProvider(
                                 avatar,
-                                headers: AnimeSource.find(
-                                  anime.sourceKey,
-                                )?.httpHeaders,
+                                headers: AnimeSource.find(anime.sourceKey)
+                                    ?.httpHeaders,
                               ),
                               width: 48,
                               height: 48,
@@ -1633,9 +1609,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(
-                context,
-              ).copyWith(scrollbars: false),
+              behavior: ScrollConfiguration.of(context)
+                  .copyWith(scrollbars: false),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1729,9 +1704,8 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: MediaQuery(
-                    data: MediaQuery.of(
-                      context,
-                    ).copyWith(size: Size(playerWidth, screenHeight)),
+                    data: MediaQuery.of(context)
+                        .copyWith(size: Size(playerWidth, screenHeight)),
                     child: buildVideoPlaceholder(context),
                   ),
                 ),
@@ -1928,7 +1902,11 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
     );
   }
 
-  Widget buildImage(BuildContext context, {required double width, required double height}) {
+  Widget buildImage(
+    BuildContext context, {
+    required double width,
+    required double height,
+  }) {
     Widget child;
     if (cover != null) {
       child = AnimatedImage(
@@ -2014,12 +1992,9 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
   }
 
   /// 参与聚合的 bangumi 源（排除当前源）
-  List<AnimeSource> get _bangumiSources =>
-      AnimeSource.allSources()
-          .where(
-            (x) => x.isBangumi && x.key != widget.currentSourceKey,
-          )
-          .toList();
+  List<AnimeSource> get _bangumiSources => AnimeSource.allSources()
+      .where((x) => x.isBangumi && x.key != widget.currentSourceKey)
+      .toList();
 
   @override
   void initState() {
@@ -2117,7 +2092,9 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
               verifying: _verifying?.url == s.key,
               isCurrent:
                   s.key == widget.currentSourceKey &&
-                  _states[s.key]!.results.any((a) => a.id == widget.currentAnimeId),
+                  _states[s.key]!.results.any(
+                    (a) => a.id == widget.currentAnimeId,
+                  ),
               onToggle: () => setState(() {
                 if (!_expanded.remove(s.key)) _expanded.add(s.key);
               }),
@@ -2190,7 +2167,10 @@ class _SourceCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -2254,7 +2234,10 @@ class _SourceCard extends StatelessWidget {
                       if (needsCf)
                         ListTile(
                           dense: true,
-                          leading: Icon(Icons.verified_user_outlined, color: cs.error),
+                          leading: Icon(
+                            Icons.verified_user_outlined,
+                            color: cs.error,
+                          ),
                           title: Text(t.needVerification),
                           subtitle: Text(t.tapToVerify),
                           trailing: verifying
@@ -2269,7 +2252,10 @@ class _SourceCard extends StatelessWidget {
                       if (needsCaptcha && !needsCf)
                         ListTile(
                           dense: true,
-                          leading: Icon(Icons.password_outlined, color: Colors.orange),
+                          leading: Icon(
+                            Icons.password_outlined,
+                            color: Colors.orange,
+                          ),
                           title: Text(t.needVerification),
                           subtitle: Text(t.tapToVerify),
                           trailing: state.loading
@@ -2309,8 +2295,7 @@ class _SourceCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          trailing:
-                              a.sourceKey == source.key
+                          trailing: a.sourceKey == source.key
                               ? Icon(Icons.chevron_right, color: cs.outline)
                               : null,
                           onTap: () => onPick(a),
@@ -2684,7 +2669,9 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                 suffixIcon: _rules.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: _useRules ? t.textRuleApplied : t.textRuleNotApplied,
+                        tooltip: _useRules
+                            ? t.textRuleApplied
+                            : t.textRuleNotApplied,
                         icon: Icon(
                           Icons.rule,
                           size: 20,

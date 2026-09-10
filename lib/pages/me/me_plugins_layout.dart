@@ -538,15 +538,31 @@ class _PluginDetailView extends StatelessWidget {
   }
 }
 
-/// 图片 + 文字组件；是否显示标题由插件 showTitle 控制（默认显示）
-class _ImageTextSection extends StatelessWidget {
+/// 图片 + 文字组件；是否显示标题由插件 showTitle 控制（默认显示）。
+/// 文字可复制，并带翻译按钮。
+class _ImageTextSection extends StatefulWidget {
   const _ImageTextSection({required this.plugin, required this.section});
 
   final MePagePlugin plugin;
   final Map<String, dynamic> section;
 
   @override
+  State<_ImageTextSection> createState() => _ImageTextSectionState();
+}
+
+class _ImageTextSectionState extends State<_ImageTextSection> {
+  final TranslationController _tc = TranslationController();
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final plugin = widget.plugin;
+    final section = widget.section;
     final title = section['title']?.toString() ?? '';
     final text = section['text']?.toString() ?? '';
     final image = section['image']?.toString() ?? '';
@@ -554,6 +570,9 @@ class _ImageTextSection extends StatelessWidget {
     final tag = 'plugin_imagetext_${plugin.key}_${identityHashCode(section)}';
     return _PluginCard(
       title: showTitle && title.isNotEmpty ? title : null,
+      trailing: text.isEmpty
+          ? null
+          : TranslateIconButton(data: text, controller: _tc, iconSize: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -589,7 +608,16 @@ class _ImageTextSection extends StatelessWidget {
             ),
           if (image.isNotEmpty && text.isNotEmpty) const SizedBox(height: 8),
           if (text.isNotEmpty)
-            Text(text, style: const TextStyle(fontSize: 13, height: 1.5)),
+            // 可选中复制
+            SelectableText(
+              text,
+              style: const TextStyle(fontSize: 13, height: 1.5),
+            ),
+          if (text.isNotEmpty)
+            TranslationOutput(
+              controller: _tc,
+              padding: const EdgeInsets.only(top: 8),
+            ),
         ],
       ),
     );

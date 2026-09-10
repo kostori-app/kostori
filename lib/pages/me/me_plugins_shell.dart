@@ -87,7 +87,7 @@ class _PluginSubPageState extends State<PluginSubPage> {
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
             return const Center(
-              child: PolygonRefreshIndicator(),
+              child: PolygonRefreshIndicator(size: 28),
             );
           }
           if (snap.hasError) {

@@ -234,13 +234,16 @@ class _ModuleView {
 /// 项目风格卡片：surfaceContainerLow 底色 + outlineVariant 描边 + 圆角
 class _PluginCard extends StatelessWidget {
   final String? title;
+  final Widget? trailing;
   final Widget child;
 
-  const _PluginCard({this.title, required this.child});
+  const _PluginCard({this.title, this.trailing, required this.child});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final hasTitle = title != null && title!.isNotEmpty;
+    final hasHeader = hasTitle || trailing != null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -255,14 +258,24 @@ class _PluginCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (title != null && title!.isNotEmpty) ...[
-                Text(
-                  title!,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface,
-                  ),
+              if (hasHeader) ...[
+                Row(
+                  children: [
+                    if (hasTitle)
+                      Expanded(
+                        child: Text(
+                          title!,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    if (trailing != null) trailing!,
+                  ],
                 ),
                 const SizedBox(height: 12),
               ],

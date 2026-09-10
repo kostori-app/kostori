@@ -324,18 +324,6 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                           onLongPress: () => _showSaveDialog(img),
                           child: Hero(
                             tag: img,
-                            flightShuttleBuilder:
-                                (
-                                  flightContext,
-                                  animation,
-                                  direction,
-                                  fromContext,
-                                  toContext,
-                                ) {
-                                  return direction == HeroFlightDirection.pop
-                                      ? (fromContext.widget as Hero).child
-                                      : (toContext.widget as Hero).child;
-                                },
                             // 固定高度，避免图片加载前后高度突变导致
                             // CustomScrollView maxScrollExtent 变化、滚动条跳动
                             child: SizedBox(

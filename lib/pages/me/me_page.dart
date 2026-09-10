@@ -102,12 +102,12 @@ class _MePageState extends ConsumerState<MePage> {
                 if (inWatchRoom)
                   SpeedDialChild(
                     child: const Icon(Icons.play_circle_outline),
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer,
-                    foregroundColor: Theme.of(
-                      context,
-                    ).colorScheme.onPrimaryContainer,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .primaryContainer,
+                    foregroundColor: Theme.of(context)
+                        .colorScheme
+                        .onPrimaryContainer,
                     onTap: () {
                       context.to(
                         () => AnimePage(
@@ -121,12 +121,12 @@ class _MePageState extends ConsumerState<MePage> {
                   ),
                 SpeedDialChild(
                   child: const Icon(Icons.vertical_align_top),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
+                  foregroundColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer,
                   onTap: () => scrollToTop(),
                 ),
               ],
@@ -209,7 +209,9 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget> {
                           fontSize: 13,
                         ),
                       )
-                    : const PolygonRefreshIndicator().fixWidth(18).fixHeight(18),
+                    : const PolygonRefreshIndicator()
+                          .fixWidth(18)
+                          .fixHeight(18),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
@@ -304,25 +306,37 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget> {
   }
 }
 
-class TodayRecommendation extends StatelessWidget {
+class TodayRecommendation extends StatefulWidget {
   const TodayRecommendation({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final doingFolder = appdata.settings.s.favoriteTypeDoing;
+  State<TodayRecommendation> createState() => _TodayRecommendationState();
+}
 
+class _TodayRecommendationState extends State<TodayRecommendation> {
+  /// 只在挂载时计算一次，避免每次 build 都做同步排序/洗牌（会卡顿）
+  List<FavoriteItem> _recommendations = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    final doingFolder = appdata.settings.s.favoriteTypeDoing;
     if (doingFolder == 'none' ||
         doingFolder.isEmpty ||
         !LocalFavoritesManager().existsFolder(doingFolder)) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
+      return;
     }
-
     final animes = LocalFavoritesManager().getAllAnimes(doingFolder);
-    if (animes.isEmpty) {
+    if (animes.isEmpty) return;
+    _recommendations = _getRecommendations(animes);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recommendations = _recommendations;
+    if (recommendations.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
-
-    final recommendations = _getRecommendations(animes);
     final cs = Theme.of(context).colorScheme;
 
     return SliverToBoxAdapter(
@@ -468,7 +482,9 @@ class _TodayRecCard extends StatelessWidget {
             fit: BoxFit.cover,
             height: double.infinity,
             width: double.infinity,
-            filterQuality: FilterQuality.high,
+            // 限制解码尺寸，避免整屏多张原图同时解码导致卡顿
+            cacheWidth: 480,
+            filterQuality: FilterQuality.medium,
           ),
         ),
         Positioned.fill(
@@ -807,21 +823,6 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                                     height: 200,
                                     child: Hero(
                                       tag: filename,
-                                      flightShuttleBuilder:
-                                          (
-                                            flightContext,
-                                            animation,
-                                            direction,
-                                            fromContext,
-                                            toContext,
-                                          ) {
-                                            return direction ==
-                                                    HeroFlightDirection.pop
-                                                ? (fromContext.widget as Hero)
-                                                      .child
-                                                : (toContext.widget as Hero)
-                                                      .child;
-                                          },
                                       child: Image.file(
                                         file,
                                         fit: BoxFit.cover,

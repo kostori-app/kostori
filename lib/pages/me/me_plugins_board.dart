@@ -193,18 +193,6 @@ class _ForumBoardRow extends StatelessWidget {
                         onTap: () => preview(i),
                         child: Hero(
                           tag: heroTag,
-                          flightShuttleBuilder:
-                              (
-                                flightContext,
-                                animation,
-                                direction,
-                                fromContext,
-                                toContext,
-                              ) {
-                                return direction == HeroFlightDirection.pop
-                                    ? (fromContext.widget as Hero).child
-                                    : (toContext.widget as Hero).child;
-                              },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: _siteImage(
@@ -359,8 +347,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
 
   Future<void> _loadMeta() async {
     try {
-      final modules =
-          widget.metaModules ?? await widget.plugin.page('board');
+      final modules = widget.metaModules ?? await widget.plugin.page('board');
       if (!mounted) return;
       for (final m in modules) {
         final mm = _asMap2(m);
@@ -661,9 +648,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
         Positioned.fill(
           child: ExtendedTabBarView(
             controller: _tabsCtrl,
-            children: [
-              for (var i = 0; i < _tabs.length; i++) _categoryPane(i),
-            ],
+            children: [for (var i = 0; i < _tabs.length; i++) _categoryPane(i)],
           ),
         ),
         if (_tabs.isNotEmpty && !_external)
@@ -754,9 +739,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
       8,
       // 外壳托管时顶部导航悬浮，内容按外壳下发的高度让位并从其下方滚过；
       // 自管理模式仍需让出 ~44px 顶部玻璃胶囊
-      _external
-          ? (widget.presetTopInset ?? 10)
-          : (_tabs.isNotEmpty ? 50 : 8),
+      _external ? (widget.presetTopInset ?? 10) : (_tabs.isNotEmpty ? 50 : 8),
       8,
       _continuous ? 24 : 66,
     );
@@ -803,8 +786,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
     }
     // 连续模式：底部追加载器行 / 加载失败重试行（仅当前页）
     final showTail = _continuous && active && _appending;
-    final showError =
-        _continuous && active && _error != null && !_appending;
+    final showError = _continuous && active && _error != null && !_appending;
     return ListView.separated(
       controller: active ? _scroll : null,
       padding: edge,
@@ -815,10 +797,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
           if (showError) {
             return Padding(
               padding: const EdgeInsets.all(8),
-              child: _PluginRetry(
-                message: _error!,
-                onRetry: _retryContinuous,
-              ),
+              child: _PluginRetry(message: _error!, onRetry: _retryContinuous),
             );
           }
           return const Center(
@@ -860,10 +839,7 @@ class _ForumHeaderText extends StatelessWidget {
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         if (subLine.isNotEmpty) ...[
           if (name.isNotEmpty) const SizedBox(height: 2),
@@ -871,10 +847,7 @@ class _ForumHeaderText extends StatelessWidget {
             subLine,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              color: cs.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
         ],
       ],

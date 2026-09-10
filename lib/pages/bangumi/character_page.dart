@@ -180,9 +180,8 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                     retryText: t.reload,
                                   )
                                 : ScrollConfiguration(
-                                    behavior: ScrollConfiguration.of(
-                                      context,
-                                    ).copyWith(scrollbars: false),
+                                    behavior: ScrollConfiguration.of(context)
+                                        .copyWith(scrollbars: false),
                                     child: SingleChildScrollView(
                                       child: SizedBox(
                                         child: Column(
@@ -212,24 +211,6 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                     child: Hero(
                                                       tag: characterFullItem
                                                           .image,
-                                                      flightShuttleBuilder:
-                                                          (
-                                                            flightContext,
-                                                            animation,
-                                                            direction,
-                                                            fromContext,
-                                                            toContext,
-                                                          ) {
-                                                            return direction ==
-                                                                    HeroFlightDirection
-                                                                        .pop
-                                                                ? (fromContext.widget
-                                                                          as Hero)
-                                                                      .child
-                                                                : (toContext.widget
-                                                                          as Hero)
-                                                                      .child;
-                                                          },
                                                       child:
                                                           BangumiWidget.kostoriImage(
                                                             context,
@@ -276,13 +257,14 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                         child: Text(
                                                           characterFullItem
                                                               .nameCN,
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .titleMedium
-                                                              ?.copyWith(
-                                                                color: Colors
-                                                                    .grey[700],
-                                                              ),
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .titleMedium
+                                                                  ?.copyWith(
+                                                                    color: Colors
+                                                                        .grey[700],
+                                                                  ),
                                                         ),
                                                       ),
                                                     ],
@@ -315,9 +297,9 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                         '${item.key}: ${item.values.map((v) => v.value).join(", ")}',
                                                   )
                                                   .join("\n"),
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
                                               textAlign: TextAlign.justify,
                                               scrollPhysics:
                                                   const NeverScrollableScrollPhysics(),
