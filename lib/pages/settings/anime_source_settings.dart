@@ -1775,6 +1775,7 @@ class _SourceTextRulesPage extends StatefulWidget {
 
 class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
   late List<String> _selected;
+  late final TextEditingController _sampleCtrl;
 
   @override
   void initState() {
@@ -1782,6 +1783,22 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
     _selected = List<String>.from(
       SourceTextRuleConfig.ruleIdsFor(widget.source.key),
     );
+    _sampleCtrl = TextEditingController(text: kTextRulePreviewDefault);
+  }
+
+  @override
+  void dispose() {
+    _sampleCtrl.dispose();
+    super.dispose();
+  }
+
+  /// 用当前选中的规则（按列表顺序）预览套用结果
+  String get _preview {
+    final sel = _selected.toSet();
+    final applied = TextRuleStore.rules
+        .where((r) => sel.contains(r.id))
+        .toList();
+    return TextRuleStore.apply(_sampleCtrl.text, applied);
   }
 
   void _save() =>
@@ -1835,90 +1852,139 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
           onPressed: () => _edit(),
         ),
       ],
-      body: rules.isEmpty
-          ? Center(
-              child: Text(
-                t.textRuleNone,
-                style: TextStyle(color: colorScheme.onSurfaceVariant),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          // 实时预览：输入示例文本 → 显示套用当前选中规则后的结果
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: colorScheme.outlineVariant,
+                  width: 0.6,
+                ),
               ),
-            )
-          : ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  child: Text(
-                    t.textRuleSelectHint,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _sampleCtrl,
+                    maxLines: null,
+                    minLines: 1,
+                    keyboardType: TextInputType.multiline,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: t.textRulePreviewInput,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    t.textRulePreviewResult,
                     style: TextStyle(
                       fontSize: 12,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  SelectableText(
+                    _preview,
+                    style: const TextStyle(fontSize: 14, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(
+              t.textRuleSelectHint,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          if (rules.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  t.textRuleNone,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
-                for (final rule in rules)
-                  ListTile(
-                    leading: Checkbox(
-                      value: _selected.contains(rule.id),
-                      onChanged: (v) {
-                        setState(() {
-                          if (v == true) {
-                            if (!_selected.contains(rule.id)) {
-                              _selected.add(rule.id);
-                            }
-                          } else {
-                            _selected.remove(rule.id);
-                          }
-                        });
-                        _save();
-                      },
-                    ),
-                    title: Text(rule.name.isEmpty ? t.textRuleName : rule.name),
-                    subtitle: Text(
-                      rule.steps.isEmpty
-                          ? t.textRuleNone
-                          : rule.steps
-                                .map((s) => s.find)
-                                .where((s) => s.isNotEmpty)
-                                .join('  →  '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          iconSize: 18,
-                          tooltip: t.edit,
-                          icon: const Icon(Icons.edit_note, size: 18),
-                          onPressed: () => _edit(rule),
-                        ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          iconSize: 18,
-                          tooltip: t.delete,
-                          icon: Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: colorScheme.error,
-                          ),
-                          onPressed: () => _delete(rule),
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      setState(() {
-                        if (_selected.contains(rule.id)) {
-                          _selected.remove(rule.id);
-                        } else {
+              ),
+            )
+          else
+            for (final rule in rules)
+              ListTile(
+                leading: Checkbox(
+                  value: _selected.contains(rule.id),
+                  onChanged: (v) {
+                    setState(() {
+                      if (v == true) {
+                        if (!_selected.contains(rule.id)) {
                           _selected.add(rule.id);
                         }
-                      });
-                      _save();
-                    },
-                  ),
-              ],
-            ),
+                      } else {
+                        _selected.remove(rule.id);
+                      }
+                    });
+                    _save();
+                  },
+                ),
+                title: Text(rule.name.isEmpty ? t.textRuleName : rule.name),
+                subtitle: Text(
+                  rule.steps.isEmpty
+                      ? t.textRuleNone
+                      : rule.steps
+                            .map((s) => s.find)
+                            .where((s) => s.isNotEmpty)
+                            .join('  →  '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      tooltip: t.edit,
+                      icon: const Icon(Icons.edit_note, size: 18),
+                      onPressed: () => _edit(rule),
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      tooltip: t.delete,
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: colorScheme.error,
+                      ),
+                      onPressed: () => _delete(rule),
+                    ),
+                  ],
+                ),
+                onTap: () {
+                  setState(() {
+                    if (_selected.contains(rule.id)) {
+                      _selected.remove(rule.id);
+                    } else {
+                      _selected.add(rule.id);
+                    }
+                  });
+                  _save();
+                },
+              ),
+        ],
+      ),
     );
   }
 }
@@ -1953,6 +2019,7 @@ class _TextRuleStepEdit {
 
 class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
   late final TextEditingController _nameCtrl;
+  late final TextEditingController _sampleCtrl;
   final List<_TextRuleStepEdit> _steps = [];
 
   @override
@@ -1960,30 +2027,44 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
     super.initState();
     final r = widget.initial;
     _nameCtrl = TextEditingController(text: r?.name ?? '');
+    _sampleCtrl = TextEditingController(text: kTextRulePreviewDefault);
     if (r != null) {
       for (final s in r.steps) {
         _steps.add(
-          _TextRuleStepEdit(
-            findText: s.find,
-            replaceText: s.replace,
-            caseSensitive: s.caseSensitive,
+          _attach(
+            _TextRuleStepEdit(
+              findText: s.find,
+              replaceText: s.replace,
+              caseSensitive: s.caseSensitive,
+            ),
           ),
         );
       }
     }
-    if (_steps.isEmpty) _steps.add(_TextRuleStepEdit());
+    if (_steps.isEmpty) _steps.add(_attach(_TextRuleStepEdit()));
+  }
+
+  _TextRuleStepEdit _attach(_TextRuleStepEdit s) {
+    s.find.addListener(_onChanged);
+    s.replace.addListener(_onChanged);
+    return s;
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _sampleCtrl.dispose();
     for (final s in _steps) {
       s.dispose();
     }
     super.dispose();
   }
 
-  void _addStep() => setState(() => _steps.add(_TextRuleStepEdit()));
+  void _addStep() => setState(() => _steps.add(_attach(_TextRuleStepEdit())));
 
   void _removeStep(int i) {
     setState(() {
@@ -1991,7 +2072,7 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
     });
   }
 
-  void _save() {
+  TextRule _buildRule() {
     final name = _nameCtrl.text.trim();
     final steps = <TextRuleStep>[];
     for (final s in _steps) {
@@ -2006,8 +2087,49 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
       );
     }
     final id = widget.initial?.id ?? TextRuleStore.newId();
-    Navigator.of(context).pop(
-      TextRule(id: id, name: name.isEmpty ? t.textRuleName : name, steps: steps),
+    return TextRule(
+      id: id,
+      name: name.isEmpty ? t.textRuleName : name,
+      steps: steps,
+    );
+  }
+
+  void _save() => Navigator.of(context).pop(_buildRule());
+
+  /// 编辑中的实时预览：示例文本 → 套用当前步骤后的结果
+  Widget _editorPreview(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final result = TextRuleStore.apply(_sampleCtrl.text, [_buildRule()]);
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cs.outlineVariant, width: 0.6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _sampleCtrl,
+            maxLines: null,
+            minLines: 1,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: t.textRulePreviewInput,
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            t.textRulePreviewResult,
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 2),
+          SelectableText(result, style: const TextStyle(fontSize: 13)),
+        ],
+      ),
     );
   }
 
@@ -2033,6 +2155,8 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
                     isDense: true,
                   ),
                 ),
+                const SizedBox(height: 10),
+                _editorPreview(context),
                 const SizedBox(height: 12),
                 for (var i = 0; i < _steps.length; i++) ...[
                   Row(

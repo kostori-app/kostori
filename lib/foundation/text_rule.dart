@@ -1,5 +1,8 @@
 import 'package:kostori/foundation/appdata.dart';
 
+/// 文本规则预览的默认示例文本
+const String kTextRulePreviewDefault = '[字幕组] 示例番剧名 - 第01集 [1080P]';
+
 /// 文本规则的单个“查找 → 替换”步骤（正则；替换支持 `$1`、`${name}`）
 class TextRuleStep {
   final String find;
@@ -183,10 +186,11 @@ class SourceTextRuleConfig {
   }
 
   static List<TextRule> rulesFor(String sourceKey) {
+    final ids = ruleIdsFor(sourceKey).toSet();
     final out = <TextRule>[];
-    for (final id in ruleIdsFor(sourceKey)) {
-      final r = TextRuleStore.byId(id);
-      if (r != null) out.add(r);
+    // 按规则列表顺序返回，保证“展示顺序 == 应用顺序”
+    for (final r in TextRuleStore.rules) {
+      if (ids.contains(r.id)) out.add(r);
     }
     return out;
   }

@@ -6844,6 +6844,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Delete this rule?'
 	String get textRuleDeleteConfirm => 'Delete this rule?';
 
+	/// en: 'Preview text'
+	String get textRulePreviewInput => 'Preview text';
+
+	/// en: 'Preview result'
+	String get textRulePreviewResult => 'Preview result';
+
 	/// en: 'Download directory'
 	String get downloadDir => 'Download directory';
 
@@ -9770,6 +9776,8 @@ extension on Translations {
 			'textRuleApplied' => 'Rules applied',
 			'textRuleNotApplied' => 'Rules off',
 			'textRuleDeleteConfirm' => 'Delete this rule?',
+			'textRulePreviewInput' => 'Preview text',
+			'textRulePreviewResult' => 'Preview result',
 			'downloadDir' => 'Download directory',
 			'loadingStepParse' => 'Resolving video address',
 			'loadingStepInit' => 'Initializing player',
