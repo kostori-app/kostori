@@ -740,6 +740,9 @@ class _StatItemWidgetState extends State<StatItemWidget> {
         borderRadius: BorderRadius.circular(12),
         child: Hero(
           tag: stats.id,
+          flightShuttleBuilder:
+              (flightContext, animation, direction, fromContext, toContext) =>
+                  BangumiWidget.heroShuttleImage(cover),
           child: BangumiWidget.kostoriImage(
             context,
             cover,

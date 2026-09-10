@@ -714,6 +714,14 @@ class _BangumiCalendarCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         child: Hero(
                           tag: 'Timetable-${bangumiItem.id}',
+                          flightShuttleBuilder:
+                              (flightContext, animation, direction, fromContext, toContext) =>
+                                  BangumiWidget.heroShuttleImage(
+                                    bangumiItem.images['large'] ??
+                                        bangumiItem.images['common'] ??
+                                        bangumiItem.images['medium'] ??
+                                        '',
+                                  ),
                           child: _buildCover(
                             context,
                             Theme.of(context).colorScheme,

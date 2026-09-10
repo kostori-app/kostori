@@ -211,6 +211,12 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                     child: Hero(
                                                       tag: characterFullItem
                                                           .image,
+                                                      flightShuttleBuilder:
+                                                          (flightContext, animation, direction, fromContext, toContext) =>
+                                                              BangumiWidget.heroShuttleImage(
+                                                                characterFullItem
+                                                                    .image,
+                                                              ),
                                                       child:
                                                           BangumiWidget.kostoriImage(
                                                             context,
