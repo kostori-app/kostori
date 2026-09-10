@@ -35,11 +35,11 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
       // 一次性清理：旧版本会把补全占位（可能含已完结旧番）写进日历缓存，
       // 而 getCalendarData 当天已拉取时会跳过、不会清表，导致坏卡片一直残留。
       // 这里清空日历表并重置拉取时间，强制重新拉取一次。
-      if (appdata.implicitData['bangumiCalendarPurgedV2'] != true) {
+      if (appdata.implicitData['bangumiCalendarPurgedV3'] != true) {
         await manager.clearBangumiCalendar();
         appdata.settings['getCalendarDataTime'] = '';
         appdata.saveData();
-        appdata.implicitData['bangumiCalendarPurgedV2'] = true;
+        appdata.implicitData['bangumiCalendarPurgedV3'] = true;
         appdata.writeImplicitData();
       }
       await Bangumi.instance.getCalendarData();
@@ -100,46 +100,20 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           final id = batch[j];
           final basic = supplement[id]!;
           final info = fetched[j];
-          // bangumi-data 的 begin 可能与 bgm 实际档期不一致（把旧番标成近期）。
-          // 以 bgm 条目自身首播日为准：首播超过一年的一律不补全，避免旧番混入时间表。
-          if (info != null) {
-            final infoAir = DateTime.tryParse(info.airDate);
-            if (infoAir != null &&
-                infoAir.isBefore(
-                  DateTime.now().subtract(const Duration(days: 365)),
-                )) {
-              continue;
-            }
-          }
+          // 拿不到 bgm 条目信息时不再造“占位卡”（无封面/评分，且可能是脏数据）
+          if (info == null) continue;
           final begin = DateTime.tryParse(basic.begin ?? '');
-          var item = info;
-          if (item != null && begin != null) {
-            item = item.copyWith(airTime: basic.begin, airWeekday: begin.weekday);
-          } else {
-            // 接口失败：用 bangumi_data 基础信息占位（标题 + 时间）
-            final beginLocal = begin?.toLocal();
-            item = BangumiItem(
-              id: id,
-              type: 2,
-              name: basic.titleTranslate ?? basic.title,
-              nameCn: basic.titleTranslate ?? basic.title,
-              summary: '',
-              // airDate 会被部分卡片直接展示，统一成 YYYY-MM-DD，避免露出 ISO 时间戳
-              airDate: beginLocal != null
-                  ? '${beginLocal.year.toString().padLeft(4, '0')}-'
-                        '${beginLocal.month.toString().padLeft(2, '0')}-'
-                        '${beginLocal.day.toString().padLeft(2, '0')}'
-                  : '2077',
-              airWeekday: begin?.weekday ?? 0,
-              rank: 0,
-              total: 0,
-              totalEpisodes: 0,
-              score: 0,
-              images: const {},
-              tags: const [],
-              airTime: basic.begin,
-            );
+          // bangumi-data 的 begin 有时与实际档期不符（如把 2023 旧番标成 2026）。
+          // 与 bgm 条目自身首播日相差过大时视为脏数据，跳过补全。
+          final infoAir = DateTime.tryParse(info.airDate);
+          if (begin != null &&
+              infoAir != null &&
+              begin.difference(infoAir).inDays.abs() > 180) {
+            continue;
           }
+          final item = begin != null
+              ? info.copyWith(airTime: basic.begin, airWeekday: begin.weekday)
+              : info;
           allItems.add(item);
           supplementToCache.add(item);
         }
