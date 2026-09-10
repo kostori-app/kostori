@@ -73,7 +73,10 @@ class _PluginSubPageState extends State<PluginSubPage> {
   Widget build(BuildContext context) {
     final paramTitle = widget.params['title']?.toString() ?? '';
     final pageUrl = widget.params['url']?.toString() ?? '';
+    // 内容延伸到 AppBar 之下，滚动时触发磨砂玻璃
+    final topInset = MediaQuery.paddingOf(context).top + 52;
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: Appbar(
         title: Text(
           paramTitle.isNotEmpty
@@ -115,7 +118,11 @@ class _PluginSubPageState extends State<PluginSubPage> {
             );
           }
           final modules = snap.data ?? const [];
-          return _contentOrBoard(widget.plugin, modules);
+          return _contentOrBoard(
+            widget.plugin,
+            modules,
+            topPadding: topInset,
+          );
         },
       ),
     );
@@ -127,12 +134,19 @@ class _PluginModulesList extends StatelessWidget {
   final MePagePlugin plugin;
   final List<dynamic> modules;
 
-  const _PluginModulesList({required this.plugin, required this.modules});
+  /// 顶部额外留白（内容从悬浮 AppBar 下方开始，同时滚动到 AppBar 下方触发磨砂）
+  final double topPadding;
+
+  const _PluginModulesList({
+    required this.plugin,
+    required this.modules,
+    this.topPadding = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 12 + topPadding, 16, 24),
       children: [
         for (final m in modules)
           if (_ModuleView.build(context, plugin, m) != null)

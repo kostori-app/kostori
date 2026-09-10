@@ -35,6 +35,7 @@ Widget _contentOrBoard(
   List<dynamic> modules, {
   TabController? presetController,
   double? presetTopInset,
+  double topPadding = 0,
 }) {
   for (final m in modules) {
     if (_asMap2(m)['type'] == 'board') {
@@ -55,7 +56,11 @@ Widget _contentOrBoard(
       return PluginBoardContent(plugin: plugin, metaModules: modules);
     }
   }
-  return _PluginModulesList(plugin: plugin, modules: modules);
+  return _PluginModulesList(
+    plugin: plugin,
+    modules: modules,
+    topPadding: topPadding,
+  );
 }
 
 /// 磨砂玻璃条（样式对齐 anime_list 分页条：BlurEffect + 半透明 surface，直边无圆角）
