@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:charset/charset.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart' show protected;
@@ -501,6 +502,13 @@ mixin class _JSEngineApi {
       switch (type) {
         case "utf8":
           return isEncode ? utf8.encode(value) : utf8.decode(value);
+        case "charset":
+          // 按指定字符集解码字节（如 euc-jp / gbk / shift-jis）
+          final name = data["charset"]?.toString() ?? 'utf-8';
+          final encoding = Charset.getByName(name) ?? utf8;
+          return isEncode
+              ? encoding.encode(value)
+              : encoding.decode(value as List<int>);
         case "base64":
           return isEncode ? base64Encode(value) : base64Decode(value);
         case "md5":

@@ -52,6 +52,38 @@ let Convert = {
     },
 
     /**
+     * Decode bytes with a given charset (e.g. "euc-jp", "gbk", "shift-jis").
+     * @param value {ArrayBuffer}
+     * @param charset {string}
+     * @returns {string}
+     */
+    decode: (value, charset) => {
+        return sendMessage({
+            method: "convert",
+            type: "charset",
+            value: value,
+            charset: charset,
+            isEncode: false
+        });
+    },
+
+    /**
+     * Encode a string with a given charset.
+     * @param str {string}
+     * @param charset {string}
+     * @returns {ArrayBuffer}
+     */
+    encode: (str, charset) => {
+        return sendMessage({
+            method: "convert",
+            type: "charset",
+            value: str,
+            charset: charset,
+            isEncode: true
+        });
+    },
+
+    /**
      * @param {ArrayBuffer} value
      * @returns {string}
      */
