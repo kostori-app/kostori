@@ -245,28 +245,25 @@ class _GenericPluginCard extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: cover.isEmpty ? null : _previewCover,
-                child: Hero(
-                  tag: 'plugin_card_${plugin.key}_${identityHashCode(item)}',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: cover.isNotEmpty
-                        ? _siteImage(
-                            cover,
-                            plugin: plugin,
-                            width: 104,
-                            height: 140,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            width: 104,
-                            height: 140,
-                            color: cs.surfaceContainerHighest,
-                            child: Icon(
-                              Icons.image_outlined,
-                              color: cs.onSurfaceVariant,
-                            ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: cover.isNotEmpty
+                      ? _siteImage(
+                          cover,
+                          plugin: plugin,
+                          width: 104,
+                          height: 140,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          width: 104,
+                          height: 140,
+                          color: cs.surfaceContainerHighest,
+                          child: Icon(
+                            Icons.image_outlined,
+                            color: cs.onSurfaceVariant,
                           ),
-                  ),
+                        ),
                 ),
               ),
               const SizedBox(width: 10),
