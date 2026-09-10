@@ -559,12 +559,18 @@ class _ImageTextSection extends StatelessWidget {
           if (image.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: _siteImage(
-                image,
-                plugin: plugin,
+              child: Container(
                 width: double.infinity,
-                height: 180,
-                fit: BoxFit.cover,
+                height: 200,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: _siteImage(
+                  image,
+                  plugin: plugin,
+                  width: double.infinity,
+                  height: 200,
+                  // 完整显示，不裁剪
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           if (image.isNotEmpty && text.isNotEmpty) const SizedBox(height: 8),
@@ -596,28 +602,39 @@ class _GallerySection extends StatelessWidget {
     return _PluginCard(
       title: title.isEmpty ? null : title,
       child: SizedBox(
-        height: 140,
+        height: 220,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: images.length,
           separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (context, i) {
             final url = images[i];
+            final tag =
+                'plugin_gallery_${plugin.key}_${identityHashCode(section)}_$i';
             return GestureDetector(
               onTap: () => BangumiWidget.showImagePreview(
                 context: App.rootContext,
                 url: url,
                 title: title.isEmpty ? plugin.name : title,
                 imageProvider: _siteProvider(url, plugin: plugin),
-                heroTag: 'plugin_gallery_${plugin.key}_${identityHashCode(section)}_$i',
+                heroTag: tag,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: _siteImage(
-                  url,
-                  plugin: plugin,
-                  height: 140,
-                  fit: BoxFit.cover,
+              child: Hero(
+                tag: tag,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 340,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    // 完整显示（不裁剪），点击可进图片预览
+                    child: _siteImage(
+                      url,
+                      plugin: plugin,
+                      width: 340,
+                      height: 220,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
             );
