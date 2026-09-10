@@ -70,7 +70,8 @@ List<String> _imagesFromModules(List<dynamic> modules) {
 }
 
 /// 轻量图片预览：底部弹出，按需调用 plugin.page 解析图片，不再跳转新页面。
-class _PluginImagesSheet extends StatelessWidget {
+/// 图片占满整块区域，可横向翻页。
+class _PluginImagesSheet extends StatefulWidget {
   const _PluginImagesSheet({
     required this.plugin,
     required this.title,
@@ -82,12 +83,28 @@ class _PluginImagesSheet extends StatelessWidget {
   final Future<List<dynamic>> future;
 
   @override
+  State<_PluginImagesSheet> createState() => _PluginImagesSheetState();
+}
+
+class _PluginImagesSheetState extends State<_PluginImagesSheet> {
+  final PageController _pc = PageController();
+  int _index = 0;
+
+  @override
+  void dispose() {
+    _pc.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final title = widget.title.isEmpty ? widget.plugin.name : widget.title;
     return Sheet(
-      title: title.isEmpty ? plugin.name : title,
+      title: title,
       icon: Icons.image_outlined,
+      initialSize: 0.8,
       builder: (context, sc) => FutureBuilder<List<dynamic>>(
-        future: future,
+        future: widget.future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
             return const Center(child: PolygonRefreshIndicator(size: 28));
@@ -98,35 +115,67 @@ class _PluginImagesSheet extends StatelessWidget {
           if (images.isEmpty) {
             return const Center(child: Text('—'));
           }
-          return SingleChildScrollView(
-            controller: sc,
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [for (final u in images) _thumb(context, u)],
-            ),
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: PageView.builder(
+                  controller: _pc,
+                  itemCount: images.length,
+                  onPageChanged: (i) => setState(() => _index = i),
+                  itemBuilder: (context, i) => _page(title, images[i]),
+                ),
+              ),
+              if (images.length > 1)
+                Positioned(
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.toOpacity(0.45),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_index + 1} / ${images.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _thumb(BuildContext context, String url) {
+  Widget _page(String title, String url) {
     return GestureDetector(
       onTap: () => BangumiWidget.showImagePreview(
         context: App.rootContext,
         url: url,
-        title: title.isEmpty ? plugin.name : title,
-        imageProvider: _siteProvider(url, plugin: plugin),
-        heroTag: 'plugin_sheet_${plugin.key}_${url.hashCode}',
+        title: title,
+        imageProvider: _siteProvider(url, plugin: widget.plugin),
+        heroTag: 'plugin_sheet_${widget.plugin.key}_${url.hashCode}',
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: 112,
-          height: 72,
-          child: _siteImage(url, plugin: plugin, fit: BoxFit.cover),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
+        child: LayoutBuilder(
+          builder: (context, c) => _siteImage(
+            url,
+            plugin: widget.plugin,
+            width: c.maxWidth,
+            height: c.maxHeight,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
