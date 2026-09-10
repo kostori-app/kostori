@@ -90,6 +90,17 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           final id = batch[j];
           final basic = supplement[id]!;
           final info = fetched[j];
+          // bangumi-data 的 begin 可能与 bgm 实际档期不一致（把旧番标成近期）。
+          // 以 bgm 条目自身首播日为准：首播超过一年的一律不补全，避免旧番混入时间表。
+          if (info != null) {
+            final infoAir = DateTime.tryParse(info.airDate);
+            if (infoAir != null &&
+                infoAir.isBefore(
+                  DateTime.now().subtract(const Duration(days: 365)),
+                )) {
+              continue;
+            }
+          }
           final begin = DateTime.tryParse(basic.begin ?? '');
           var item = info;
           if (item != null && begin != null) {
@@ -160,19 +171,16 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
         final weekday = parsedTime.weekday;
         final episodes = allEpisodesMap[item.id];
 
-        // 有剧集信息时按剧集判断；拿不到剧集信息（接口失败/补全占位）时
-        // 回退到按 end 判断，避免这类条目被误跳过（与主页时间表保持一致）
-        var episodeResult = shouldFetchEpisodes
+        final episodeResult = shouldFetchEpisodes
             ? await _processEpisodeInfo(
                 episodes: episodes,
                 now: now,
                 currentWeekInfo: currentWeekInfo,
                 bangumiItem: item,
               )
-            : null;
-        episodeResult ??= EpisodeResult.fromEndDate(entry.end);
+            : EpisodeResult.fromEndDate(entry.end);
 
-        if (episodeResult.shouldSkip) continue;
+        if (episodeResult == null || episodeResult.shouldSkip) continue;
 
         newCalendar[weekday - 1].add(
           item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
