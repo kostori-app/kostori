@@ -6799,6 +6799,51 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Placeholders: {title} {episode} {author} {resolution} {source} {year}'
 	String get downloadFormatHint => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}';
 
+	/// en: 'Rules'
+	String get rules => 'Rules';
+
+	/// en: 'Text rules'
+	String get textRules => 'Text rules';
+
+	/// en: 'Add rule'
+	String get textRuleAdd => 'Add rule';
+
+	/// en: 'Rule name'
+	String get textRuleName => 'Rule name';
+
+	/// en: 'Find (regex)'
+	String get textRuleFind => 'Find (regex)';
+
+	/// en: 'Replace (group refs)'
+	String get textRuleReplace => 'Replace (group refs)';
+
+	/// en: 'Case sensitive'
+	String get textRuleCaseSensitive => 'Case sensitive';
+
+	/// en: 'Add step'
+	String get textRuleStepAdd => 'Add step';
+
+	/// en: 'Step ${n}'
+	String textRuleStepN({required Object n}) => 'Step ${n}';
+
+	/// en: 'No rules'
+	String get textRuleNone => 'No rules';
+
+	/// en: 'Select rules to apply to this source'
+	String get textRuleSelectHint => 'Select rules to apply to this source';
+
+	/// en: 'Apply rules'
+	String get textRuleApply => 'Apply rules';
+
+	/// en: 'Rules applied'
+	String get textRuleApplied => 'Rules applied';
+
+	/// en: 'Rules off'
+	String get textRuleNotApplied => 'Rules off';
+
+	/// en: 'Delete this rule?'
+	String get textRuleDeleteConfirm => 'Delete this rule?';
+
 	/// en: 'Download directory'
 	String get downloadDir => 'Download directory';
 
@@ -9710,6 +9755,21 @@ extension on Translations {
 			'openWithOtherPlayer' => 'Open with other player',
 			'downloadTitleFormat' => 'Download title format',
 			'downloadFormatHint' => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}',
+			'rules' => 'Rules',
+			'textRules' => 'Text rules',
+			'textRuleAdd' => 'Add rule',
+			'textRuleName' => 'Rule name',
+			'textRuleFind' => 'Find (regex)',
+			'textRuleReplace' => 'Replace (group refs)',
+			'textRuleCaseSensitive' => 'Case sensitive',
+			'textRuleStepAdd' => 'Add step',
+			'textRuleStepN' => ({required Object n}) => 'Step ${n}',
+			'textRuleNone' => 'No rules',
+			'textRuleSelectHint' => 'Select rules to apply to this source',
+			'textRuleApply' => 'Apply rules',
+			'textRuleApplied' => 'Rules applied',
+			'textRuleNotApplied' => 'Rules off',
+			'textRuleDeleteConfirm' => 'Delete this rule?',
 			'downloadDir' => 'Download directory',
 			'loadingStepParse' => 'Resolving video address',
 			'loadingStepInit' => 'Initializing player',

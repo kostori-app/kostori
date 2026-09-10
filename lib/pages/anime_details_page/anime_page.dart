@@ -24,6 +24,7 @@ import 'package:kostori/database/history.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_play_result.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/text_rule.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -1198,6 +1199,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         downloaded: downloaded,
         resolvePlay: _resolvePlayResult,
         animeTitle: data!.title,
+        sourceKey: _sourceKey,
       ),
     );
     if (result == null || result.isEmpty || !mounted) return;
@@ -2467,6 +2469,7 @@ class _EpisodeDownloadPicker extends StatefulWidget {
     required this.downloaded,
     required this.resolvePlay,
     required this.animeTitle,
+    required this.sourceKey,
   });
 
   final List<_DownloadItem> items;
@@ -2479,6 +2482,9 @@ class _EpisodeDownloadPicker extends StatefulWidget {
 
   /// 番剧主标题（用于文件名的 {title}，可在弹窗内修改）
   final String animeTitle;
+
+  /// 所属番源 key（决定可用文本规则）
+  final String sourceKey;
 
   @override
   State<_EpisodeDownloadPicker> createState() => _EpisodeDownloadPickerState();
@@ -2498,19 +2504,47 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   late String _animeTitle;
   late final TextEditingController _titleCtrl;
 
+  /// 该源选用的文本规则
+  late final List<TextRule> _rules;
+
+  /// 原始番剧标题（未套用规则）
+  late final String _originalTitle;
+
+  /// 是否套用规则（一键开关）
+  bool _useRules = false;
+
+  /// 按当前开关计算标题
+  String _computedTitle() {
+    if (_useRules && _rules.isNotEmpty) {
+      return TextRuleStore.apply(_originalTitle, _rules);
+    }
+    return _originalTitle;
+  }
+
   @override
   void initState() {
     super.initState();
     // 默认不选择任何集，避免误下载整部（尤其是大批量番剧）
     selected = <String>{};
-    _animeTitle = widget.animeTitle;
-    _titleCtrl = TextEditingController(text: widget.animeTitle);
+    _rules = SourceTextRuleConfig.rulesFor(widget.sourceKey);
+    _originalTitle = widget.animeTitle;
+    _useRules = _rules.isNotEmpty;
+    _animeTitle = _computedTitle();
+    _titleCtrl = TextEditingController(text: _animeTitle);
   }
 
   @override
   void dispose() {
     _titleCtrl.dispose();
     super.dispose();
+  }
+
+  void _toggleRules() {
+    setState(() {
+      _useRules = !_useRules;
+      _animeTitle = _computedTitle();
+      _titleCtrl.text = _animeTitle;
+    });
   }
 
   void _toggle(String key) {
@@ -2634,15 +2668,32 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
             child: TextField(
               controller: _titleCtrl,
               onChanged: (v) => _animeTitle = v,
-              maxLines: 2,
+              // 不限制行数：完整展示标题，方便手动修改
+              maxLines: null,
               minLines: 1,
+              keyboardType: TextInputType.multiline,
               decoration: InputDecoration(
                 labelText: t.downloadMainTitle,
+                alignLabelWithHint: true,
                 isDense: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 prefixIcon: const Icon(Icons.title, size: 18),
+                // 一键切换是否套用文本规则；无规则时不显示
+                suffixIcon: _rules.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: _useRules ? t.textRuleApplied : t.textRuleNotApplied,
+                        icon: Icon(
+                          Icons.rule,
+                          size: 20,
+                          color: _useRules
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: _toggleRules,
+                      ),
               ),
             ),
           ),

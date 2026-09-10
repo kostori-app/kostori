@@ -32,6 +32,7 @@ import 'package:kostori/foundation/ai_service/mcp_client.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/text_rule.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/cache_manager.dart';

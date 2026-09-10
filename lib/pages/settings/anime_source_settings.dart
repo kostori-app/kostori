@@ -1432,27 +1432,6 @@ class _SliverAnimeSource extends StatefulWidget {
 class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
   AnimeSource get source => widget.source;
 
-  /// 设置该源独立的下载标题格式模板
-  Future<void> _setDownloadFormat(AnimeSource source) async {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData['downloadTitleFormats'] as Map? ?? {},
-    );
-    final current = map[source.key] as String? ?? '';
-    final value = await showDialog<String>(
-      context: context,
-      builder: (_) => _DownloadFormatDialog(initialValue: current),
-    );
-    if (value == null) return;
-    final v = value.trim();
-    if (v.isEmpty) {
-      map.remove(source.key);
-    } else {
-      map[source.key] = v;
-    }
-    appdata.implicitData['downloadTitleFormats'] = map;
-    appdata.writeImplicitData();
-  }
-
   @override
   Widget build(BuildContext context) {
     var newVersion = AnimeSourceManager().availableUpdates[source.key];
@@ -1576,9 +1555,14 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                   onTap: () => widget.edit(source),
                 ),
                 IconTileButton(
-                  icon: const Icon(Icons.title),
-                  label: t.downloadTitleFormat,
-                  onTap: () => _setDownloadFormat(source),
+                  icon: const Icon(Icons.rule),
+                  label: t.rules,
+                  onTap: () {
+                    showPopUpWidget(
+                      context,
+                      _SourceRulesPage(source: source),
+                    );
+                  },
                 ),
               ],
             ),
@@ -1648,7 +1632,8 @@ class _DownloadFormatDialogState extends State<_DownloadFormatDialog> {
             controller: _ctrl,
             focusNode: _focus,
             minLines: 2,
-            maxLines: 3,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,
@@ -1689,6 +1674,431 @@ class _DownloadFormatDialogState extends State<_DownloadFormatDialog> {
           child: Text(t.confirm),
         ),
       ],
+    );
+  }
+}
+
+/// 番源“规则”页：文本规则 + 下载标题格式（后续可继续加块）
+class _SourceRulesPage extends StatefulWidget {
+  const _SourceRulesPage({required this.source});
+
+  final AnimeSource source;
+
+  @override
+  State<_SourceRulesPage> createState() => _SourceRulesPageState();
+}
+
+class _SourceRulesPageState extends State<_SourceRulesPage> {
+  AnimeSource get source => widget.source;
+
+  Future<void> _editDownloadFormat() async {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData['downloadTitleFormats'] as Map? ?? {},
+    );
+    final current = map[source.key] as String? ?? '';
+    final value = await showDialog<String>(
+      context: context,
+      builder: (_) => _DownloadFormatDialog(initialValue: current),
+    );
+    if (value == null || !mounted) return;
+    final v = value.trim();
+    if (v.isEmpty) {
+      map.remove(source.key);
+    } else {
+      map[source.key] = v;
+    }
+    appdata.implicitData['downloadTitleFormats'] = map;
+    appdata.writeImplicitData();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedRules = SourceTextRuleConfig.rulesFor(source.key);
+    final formatMap = appdata.implicitData['downloadTitleFormats'] as Map?;
+    final format = formatMap?[source.key]?.toString() ?? '';
+    return PopUpWidgetScaffold(
+      title: t.rules,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _SettingCard(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.text_fields),
+                title: Text(t.textRules),
+                subtitle: Text(
+                  selectedRules.isEmpty
+                      ? t.textRuleNone
+                      : selectedRules.map((e) => e.name).join('、'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: const Icon(Icons.arrow_right),
+                onTap: () async {
+                  await showPopUpWidget(
+                    context,
+                    _SourceTextRulesPage(source: source),
+                  );
+                  if (mounted) setState(() {});
+                },
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              ListTile(
+                leading: const Icon(Icons.title),
+                title: Text(t.downloadTitleFormat),
+                subtitle: Text(
+                  format.isEmpty ? t.downloadFormatHint : format,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: const Icon(Icons.arrow_right),
+                onTap: _editDownloadFormat,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 选择/管理文本规则：勾选应用到该源，并可新增/编辑/删除规则
+class _SourceTextRulesPage extends StatefulWidget {
+  const _SourceTextRulesPage({required this.source});
+
+  final AnimeSource source;
+
+  @override
+  State<_SourceTextRulesPage> createState() => _SourceTextRulesPageState();
+}
+
+class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
+  late List<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = List<String>.from(
+      SourceTextRuleConfig.ruleIdsFor(widget.source.key),
+    );
+  }
+
+  void _save() =>
+      SourceTextRuleConfig.setRuleIds(widget.source.key, _selected);
+
+  Future<void> _edit([TextRule? rule]) async {
+    final result = await showDialog<TextRule>(
+      context: context,
+      builder: (_) => _TextRuleEditorDialog(initial: rule),
+    );
+    if (result == null || !mounted) return;
+    final rules = TextRuleStore.rules;
+    if (rule == null) {
+      rules.add(result);
+      if (!_selected.contains(result.id)) _selected.add(result.id);
+    } else {
+      final idx = rules.indexWhere((e) => e.id == rule.id);
+      if (idx >= 0) rules[idx] = result;
+    }
+    TextRuleStore.save();
+    _save();
+    setState(() {});
+  }
+
+  void _delete(TextRule rule) {
+    showConfirmDialog(
+      context: context,
+      title: t.delete,
+      content: '${rule.name}\n${t.textRuleDeleteConfirm}',
+      btnColor: Theme.of(context).colorScheme.error,
+      onConfirm: () {
+        TextRuleStore.rules.removeWhere((e) => e.id == rule.id);
+        TextRuleStore.save();
+        _selected.remove(rule.id);
+        _save();
+        setState(() {});
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rules = TextRuleStore.rules;
+    final colorScheme = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: t.textRules,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          tooltip: t.textRuleAdd,
+          onPressed: () => _edit(),
+        ),
+      ],
+      body: rules.isEmpty
+          ? Center(
+              child: Text(
+                t.textRuleNone,
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Text(
+                    t.textRuleSelectHint,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                for (final rule in rules)
+                  ListTile(
+                    leading: Checkbox(
+                      value: _selected.contains(rule.id),
+                      onChanged: (v) {
+                        setState(() {
+                          if (v == true) {
+                            if (!_selected.contains(rule.id)) {
+                              _selected.add(rule.id);
+                            }
+                          } else {
+                            _selected.remove(rule.id);
+                          }
+                        });
+                        _save();
+                      },
+                    ),
+                    title: Text(rule.name.isEmpty ? t.textRuleName : rule.name),
+                    subtitle: Text(
+                      rule.steps.isEmpty
+                          ? t.textRuleNone
+                          : rule.steps
+                                .map((s) => s.find)
+                                .where((s) => s.isNotEmpty)
+                                .join('  →  '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          iconSize: 18,
+                          tooltip: t.edit,
+                          icon: const Icon(Icons.edit_note, size: 18),
+                          onPressed: () => _edit(rule),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          iconSize: 18,
+                          tooltip: t.delete,
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: colorScheme.error,
+                          ),
+                          onPressed: () => _delete(rule),
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      setState(() {
+                        if (_selected.contains(rule.id)) {
+                          _selected.remove(rule.id);
+                        } else {
+                          _selected.add(rule.id);
+                        }
+                      });
+                      _save();
+                    },
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+/// 文本规则编辑：名称 + 若干“查找/替换”步骤
+class _TextRuleEditorDialog extends StatefulWidget {
+  const _TextRuleEditorDialog({this.initial});
+
+  final TextRule? initial;
+
+  @override
+  State<_TextRuleEditorDialog> createState() => _TextRuleEditorDialogState();
+}
+
+class _TextRuleStepEdit {
+  final TextEditingController find;
+  final TextEditingController replace;
+  bool caseSensitive;
+
+  _TextRuleStepEdit({
+    String findText = '',
+    String replaceText = '',
+    this.caseSensitive = false,
+  }) : find = TextEditingController(text: findText),
+       replace = TextEditingController(text: replaceText);
+
+  void dispose() {
+    find.dispose();
+    replace.dispose();
+  }
+}
+
+class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
+  late final TextEditingController _nameCtrl;
+  final List<_TextRuleStepEdit> _steps = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.initial;
+    _nameCtrl = TextEditingController(text: r?.name ?? '');
+    if (r != null) {
+      for (final s in r.steps) {
+        _steps.add(
+          _TextRuleStepEdit(
+            findText: s.find,
+            replaceText: s.replace,
+            caseSensitive: s.caseSensitive,
+          ),
+        );
+      }
+    }
+    if (_steps.isEmpty) _steps.add(_TextRuleStepEdit());
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    for (final s in _steps) {
+      s.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addStep() => setState(() => _steps.add(_TextRuleStepEdit()));
+
+  void _removeStep(int i) {
+    setState(() {
+      _steps.removeAt(i).dispose();
+    });
+  }
+
+  void _save() {
+    final name = _nameCtrl.text.trim();
+    final steps = <TextRuleStep>[];
+    for (final s in _steps) {
+      final find = s.find.text;
+      if (find.isEmpty) continue;
+      steps.add(
+        TextRuleStep(
+          find: find,
+          replace: s.replace.text,
+          caseSensitive: s.caseSensitive,
+        ),
+      );
+    }
+    final id = widget.initial?.id ?? TextRuleStore.newId();
+    Navigator.of(context).pop(
+      TextRule(id: id, name: name.isEmpty ? t.textRuleName : name, steps: steps),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ContentDialog(
+      title: widget.initial == null ? t.textRuleAdd : t.edit,
+      content: SizedBox(
+        width: double.infinity,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 380),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _nameCtrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: t.textRuleName,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (var i = 0; i < _steps.length; i++) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          t.textRuleStepN(n: i + 1),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 18,
+                        tooltip: t.delete,
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: _steps.length <= 1
+                            ? null
+                            : () => _removeStep(i),
+                      ),
+                    ],
+                  ),
+                  TextField(
+                    controller: _steps[i].find,
+                    decoration: InputDecoration(
+                      labelText: t.textRuleFind,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _steps[i].replace,
+                    decoration: InputDecoration(
+                      labelText: t.textRuleReplace,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        t.textRuleCaseSensitive,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const Spacer(),
+                      Switch(
+                        value: _steps[i].caseSensitive,
+                        onChanged: (v) =>
+                            setState(() => _steps[i].caseSensitive = v),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                ],
+                TextButton.icon(
+                  onPressed: _addStep,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(t.textRuleStepAdd),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [Button.filled(onPressed: _save, child: Text(t.confirm))],
     );
   }
 }
