@@ -2308,6 +2308,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get textRuleDeleteConfirm => '確定刪除該規則？';
 	@override String get textRulePreviewInput => '預覽文字';
 	@override String get textRulePreviewResult => '預覽結果';
+	@override String get textRuleSelectSources => '選擇使用該規則的番源';
 	@override String get downloadDir => '下載目錄';
 	@override String get loadingStepParse => '解析影片網址';
 	@override String get loadingStepInit => '初始化播放器';
@@ -4849,6 +4850,7 @@ extension on TranslationsZhTw {
 			'textRuleDeleteConfirm' => '確定刪除該規則？',
 			'textRulePreviewInput' => '預覽文字',
 			'textRulePreviewResult' => '預覽結果',
+			'textRuleSelectSources' => '選擇使用該規則的番源',
 			'downloadDir' => '下載目錄',
 			'loadingStepParse' => '解析影片網址',
 			'loadingStepInit' => '初始化播放器',

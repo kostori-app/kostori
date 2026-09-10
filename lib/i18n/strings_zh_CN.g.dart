@@ -2309,6 +2309,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get textRuleDeleteConfirm => '确定删除该规则？';
 	@override String get textRulePreviewInput => '预览文本';
 	@override String get textRulePreviewResult => '预览结果';
+	@override String get textRuleSelectSources => '选择使用该规则的番源';
 	@override String get downloadDir => '下载目录';
 	@override String get loadingStepParse => '解析视频地址';
 	@override String get loadingStepInit => '初始化播放器';
@@ -4851,6 +4852,7 @@ extension on TranslationsZhCn {
 			'textRuleDeleteConfirm' => '确定删除该规则？',
 			'textRulePreviewInput' => '预览文本',
 			'textRulePreviewResult' => '预览结果',
+			'textRuleSelectSources' => '选择使用该规则的番源',
 			'downloadDir' => '下载目录',
 			'loadingStepParse' => '解析视频地址',
 			'loadingStepInit' => '初始化播放器',

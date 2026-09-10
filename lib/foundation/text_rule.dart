@@ -258,4 +258,57 @@ class SourceTextRuleConfig {
 
   static String applyTo(String sourceKey, String input) =>
       TextRuleStore.apply(input, rulesFor(sourceKey));
+
+  /// 有多少个番源选用了该规则
+  static int countSourcesUsing(String ruleId) {
+    final raw = appdata.implicitData[_key];
+    if (raw is! Map) return 0;
+    var n = 0;
+    for (final v in raw.values) {
+      if (v is List && v.map((e) => e.toString()).contains(ruleId)) n++;
+    }
+    return n;
+  }
+
+  /// 选用该规则的所有番源 key
+  static Set<String> sourcesUsing(String ruleId) {
+    final raw = appdata.implicitData[_key];
+    final out = <String>{};
+    if (raw is Map) {
+      raw.forEach((k, v) {
+        if (v is List && v.map((e) => e.toString()).contains(ruleId)) {
+          out.add(k.toString());
+        }
+      });
+    }
+    return out;
+  }
+
+  /// 设置“哪些番源使用该规则”（其余番源移除该规则）
+  static void setSourcesForRule(String ruleId, Set<String> sourceKeys) {
+    final map = Map<String, dynamic>.from(
+      appdata.implicitData[_key] as Map? ?? {},
+    );
+    final keys = <String>{
+      ...map.keys.map((e) => e.toString()),
+      ...sourceKeys,
+    };
+    for (final k in keys) {
+      final list = map[k] is List
+          ? (map[k] as List).map((e) => e.toString()).toList()
+          : <String>[];
+      if (sourceKeys.contains(k)) {
+        if (!list.contains(ruleId)) list.add(ruleId);
+      } else {
+        list.remove(ruleId);
+      }
+      if (list.isEmpty) {
+        map.remove(k);
+      } else {
+        map[k] = list;
+      }
+    }
+    appdata.implicitData[_key] = map;
+    appdata.writeImplicitData();
+  }
 }

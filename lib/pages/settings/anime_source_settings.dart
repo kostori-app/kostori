@@ -1728,6 +1728,14 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
     );
   }
 
+  Future<void> _selectSources(TextRule rule) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _RuleSourcesDialog(rule: rule),
+    );
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final rules = TextRuleStore.rules;
@@ -1755,19 +1763,43 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
                   ListTile(
                     leading: const Icon(Icons.text_fields),
                     title: Text(rule.name.isEmpty ? t.textRuleName : rule.name),
-                    subtitle: Text(
-                      rule.steps.isEmpty
-                          ? t.textRuleNone
-                          : rule.steps
-                                .map((s) => s.find)
-                                .where((s) => s.isNotEmpty)
-                                .join('  →  '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          rule.steps.isEmpty
+                              ? t.textRuleNone
+                              : rule.steps
+                                    .map((s) => s.find)
+                                    .where((s) => s.isNotEmpty)
+                                    .join('  →  '),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          t.sourceCount(
+                            count: SourceTextRuleConfig.countSourcesUsing(
+                              rule.id,
+                            ),
+                          ),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          iconSize: 18,
+                          tooltip: t.textRuleSelectSources,
+                          icon: const Icon(Icons.playlist_add_check, size: 18),
+                          onPressed: () => _selectSources(rule),
+                        ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
                           iconSize: 18,
@@ -1791,6 +1823,76 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
                   ),
               ],
             ),
+    );
+  }
+}
+
+/// 选择“哪些番源使用该规则”
+class _RuleSourcesDialog extends StatefulWidget {
+  const _RuleSourcesDialog({required this.rule});
+
+  final TextRule rule;
+
+  @override
+  State<_RuleSourcesDialog> createState() => _RuleSourcesDialogState();
+}
+
+class _RuleSourcesDialogState extends State<_RuleSourcesDialog> {
+  late Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = SourceTextRuleConfig.sourcesUsing(widget.rule.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sources = AnimeSource.all().toList();
+    return ContentDialog(
+      title: t.textRuleSelectSources,
+      content: SizedBox(
+        width: double.infinity,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 380),
+          child: sources.isEmpty
+              ? const Center(child: Text('—'))
+              : SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final s in sources)
+                        CheckboxListTile(
+                          dense: true,
+                          value: _selected.contains(s.key),
+                          title: Text(s.name),
+                          subtitle: Text(
+                            s.key,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onChanged: (v) => setState(() {
+                            if (v == true) {
+                              _selected.add(s.key);
+                            } else {
+                              _selected.remove(s.key);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+        ),
+      ),
+      actions: [
+        Button.filled(
+          onPressed: () {
+            SourceTextRuleConfig.setSourcesForRule(widget.rule.id, _selected);
+            Navigator.of(context).pop();
+          },
+          child: Text(t.confirm),
+        ),
+      ],
     );
   }
 }

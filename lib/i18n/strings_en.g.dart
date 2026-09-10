@@ -6850,6 +6850,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Preview result'
 	String get textRulePreviewResult => 'Preview result';
 
+	/// en: 'Sources using this rule'
+	String get textRuleSelectSources => 'Sources using this rule';
+
 	/// en: 'Download directory'
 	String get downloadDir => 'Download directory';
 
@@ -9778,6 +9781,7 @@ extension on Translations {
 			'textRuleDeleteConfirm' => 'Delete this rule?',
 			'textRulePreviewInput' => 'Preview text',
 			'textRulePreviewResult' => 'Preview result',
+			'textRuleSelectSources' => 'Sources using this rule',
 			'downloadDir' => 'Download directory',
 			'loadingStepParse' => 'Resolving video address',
 			'loadingStepInit' => 'Initializing player',
