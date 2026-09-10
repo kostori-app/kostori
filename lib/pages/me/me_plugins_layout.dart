@@ -1011,6 +1011,14 @@ class _GallerySection extends StatelessWidget {
               .toList()
         : const <String>[];
     if (images.isEmpty) return const SizedBox.shrink();
+    // 每张图的稳定 Hero tag（与预览页各页一一对应）
+    final tags = [
+      for (var i = 0; i < images.length; i++)
+        'plugin_gallery_${plugin.key}_${identityHashCode(section)}_$i',
+    ];
+    final providers = [
+      for (final u in images) _siteProvider(u, plugin: plugin),
+    ];
     return _PluginCard(
       title: title.isEmpty ? null : title,
       child: SizedBox(
@@ -1021,15 +1029,18 @@ class _GallerySection extends StatelessWidget {
           separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (context, i) {
             final url = images[i];
-            final tag =
-                'plugin_gallery_${plugin.key}_${identityHashCode(section)}_$i';
+            final tag = tags[i];
             return GestureDetector(
               onTap: () => BangumiWidget.showImagePreview(
                 context: App.rootContext,
                 url: url,
                 title: title.isEmpty ? plugin.name : title,
-                imageProvider: _siteProvider(url, plugin: plugin),
+                imageProvider: providers[i],
                 heroTag: tag,
+                // 整组图一起传入 → 预览页可左右滑动浏览（像本地多图那样）
+                initialIndex: i,
+                galleryProviders: providers,
+                galleryHeroTags: tags,
               ),
               child: KostoriHero(
                 tag: tag,

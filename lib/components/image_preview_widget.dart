@@ -29,6 +29,10 @@ class ImagePreviewWidget extends ConsumerStatefulWidget {
   final String title;
   final PageController pageController;
 
+  /// 网络多图浏览：按顺序传入所有图片的 provider 与对应 Hero tag
+  final List<ImageProvider>? galleryProviders;
+  final List<String>? galleryHeroTags;
+
   const ImagePreviewWidget({
     super.key,
     required this.url,
@@ -37,6 +41,8 @@ class ImagePreviewWidget extends ConsumerStatefulWidget {
     required this.img,
     required this.pageController,
     required this.title,
+    this.galleryProviders,
+    this.galleryHeroTags,
   });
 
   @override
@@ -133,11 +139,14 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
     );
   }
 
+  int get _imageCount =>
+      widget.galleryProviders?.length ?? ref.read(imageListProvider).length;
+
   void _goNext() {
-    final list = ref.read(imageListProvider);
-    if (list.isEmpty) return;
+    final count = _imageCount;
+    if (count == 0) return;
     final current = ref.read(currentIndexProvider);
-    final next = (current + 1).clamp(0, list.length - 1);
+    final next = (current + 1).clamp(0, count - 1);
     if (next != current) {
       widget.pageController.animateToPage(
         next,
@@ -148,10 +157,10 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
   }
 
   void _goPrev() {
-    final list = ref.read(imageListProvider);
-    if (list.isEmpty) return;
+    final count = _imageCount;
+    if (count == 0) return;
     final current = ref.read(currentIndexProvider);
-    final prev = (current - 1).clamp(0, list.length - 1);
+    final prev = (current - 1).clamp(0, count - 1);
     if (prev != current) {
       widget.pageController.animateToPage(
         prev,
@@ -267,6 +276,7 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
                     isLocal: widget.isLocal,
                     pageController: widget.pageController,
                     title: widget.title,
+                    galleryCount: widget.galleryProviders?.length ?? 0,
                   ),
                 ),
               ],
@@ -278,6 +288,33 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
   }
 
   Widget _buildImageArea() {
+    final gallery = widget.galleryProviders;
+
+    // 网络多图：左右滑动浏览（与本地多图体验一致）
+    if (gallery != null && gallery.length > 1) {
+      final tags = widget.galleryHeroTags;
+      return PhotoViewGallery.builder(
+        itemCount: gallery.length,
+        pageController: widget.pageController,
+        backgroundDecoration: const BoxDecoration(color: Colors.transparent),
+        onPageChanged: (i) => ref.read(currentIndexProvider.notifier).state = i,
+        builder: (context, i) {
+          return PhotoViewGalleryPageOptions(
+            controller: _controllerForIndex(i),
+            scaleStateController: _scaleControllerForIndex(i),
+            imageProvider: gallery[i],
+            heroAttributes: PhotoViewHeroAttributes(
+              tag: (tags != null && i < tags.length) ? tags[i] : widget.heroTag,
+            ),
+            initialScale: PhotoViewComputedScale.contained,
+            minScale: PhotoViewComputedScale.contained / 3,
+            maxScale: PhotoViewComputedScale.covered * 100,
+            onTapUp: (ctx, details, _) => _handleTap(i, details),
+          );
+        },
+      );
+    }
+
     final imageList = ref.watch(imageListProvider);
 
     if (imageList.length > 1) {
@@ -352,6 +389,7 @@ class _TopBar extends ConsumerWidget {
   final bool isLocal;
   final String title;
   final PageController pageController;
+  final int galleryCount;
 
   const _TopBar({
     required this.url,
@@ -359,6 +397,7 @@ class _TopBar extends ConsumerWidget {
     required this.isLocal,
     required this.pageController,
     required this.title,
+    this.galleryCount = 0,
   });
 
   @override
@@ -384,6 +423,9 @@ class _TopBar extends ConsumerWidget {
     final urls = ref.watch(imageListProvider);
     final file = urls.isNotEmpty ? urls[index] : File(url);
     final filename = file.path.split(Platform.pathSeparator).last;
+    if (galleryCount > 1) {
+      return _textBackground('$title  ${index + 1} / $galleryCount');
+    }
     return _textBackground(isLocal ? filename : title);
   }
 

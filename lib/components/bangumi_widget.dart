@@ -322,10 +322,14 @@ class BangumiWidget {
     List<File>? allUrls,
     int? initialIndex,
     ImageProvider? imageProvider,
+    List<ImageProvider>? galleryProviders,
+    List<String>? galleryHeroTags,
   }) async {
     try {
       final isLocal = File(url).existsSync();
-      final initIndex = _resolveInitIndex(url, allUrls, initialIndex);
+      final initIndex = (galleryProviders != null && galleryProviders.isNotEmpty)
+          ? (initialIndex ?? 0).clamp(0, galleryProviders.length - 1)
+          : _resolveInitIndex(url, allUrls, initialIndex);
       final pageController = PageController(initialPage: initIndex);
       // 优先使用调用方传入的 provider（与被点击封面同 key，缓存必命中）；
       // 缺省用 bangumi 源构造，保证 ImageCache key 与 kostoriImage 一致
@@ -365,6 +369,8 @@ class BangumiWidget {
             img: img,
             pageController: pageController,
             title: title,
+            galleryProviders: galleryProviders,
+            galleryHeroTags: galleryHeroTags,
           ),
         ),
       );
