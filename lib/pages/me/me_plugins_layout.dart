@@ -70,7 +70,7 @@ List<String> _imagesFromModules(List<dynamic> modules) {
 }
 
 /// 轻量图片预览：底部弹出，按需调用 plugin.page 解析图片，不再跳转新页面。
-/// 图片占满整块区域，可横向翻页。
+/// 大图横向连续滑动（非翻页），用 keep-alive 避免滑回时重新加载。
 class _PluginImagesSheet extends StatefulWidget {
   const _PluginImagesSheet({
     required this.plugin,
@@ -87,15 +87,6 @@ class _PluginImagesSheet extends StatefulWidget {
 }
 
 class _PluginImagesSheetState extends State<_PluginImagesSheet> {
-  final PageController _pc = PageController();
-  int _index = 0;
-
-  @override
-  void dispose() {
-    _pc.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final title = widget.title.isEmpty ? widget.plugin.name : widget.title;
@@ -115,49 +106,28 @@ class _PluginImagesSheetState extends State<_PluginImagesSheet> {
           if (images.isEmpty) {
             return const Center(child: Text('—'));
           }
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: PageView.builder(
-                  controller: _pc,
-                  itemCount: images.length,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (context, i) => _page(title, images[i]),
+          return LayoutBuilder(
+            builder: (context, c) {
+              final h = c.maxHeight - 24;
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
                 ),
-              ),
-              if (images.length > 1)
-                Positioned(
-                  bottom: 12,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.toOpacity(0.45),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_index + 1} / ${images.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
+                itemCount: images.length,
+                itemBuilder: (context, i) => KeepAliveWrapper(
+                  child: _page(title, images[i], h),
                 ),
-            ],
+              );
+            },
           );
         },
       ),
     );
   }
 
-  Widget _page(String title, String url) {
+  Widget _page(String title, String url, double height) {
     return GestureDetector(
       onTap: () => BangumiWidget.showImagePreview(
         context: App.rootContext,
@@ -167,15 +137,12 @@ class _PluginImagesSheetState extends State<_PluginImagesSheet> {
         heroTag: 'plugin_sheet_${widget.plugin.key}_${url.hashCode}',
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
-        child: LayoutBuilder(
-          builder: (context, c) => _siteImage(
-            url,
-            plugin: widget.plugin,
-            width: c.maxWidth,
-            height: c.maxHeight,
-            fit: BoxFit.contain,
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: _siteImage(
+          url,
+          plugin: widget.plugin,
+          height: height,
+          fit: BoxFit.contain,
         ),
       ),
     );
