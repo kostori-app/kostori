@@ -70,7 +70,17 @@ class _GenericPluginCard extends StatelessWidget {
 
   bool get _hasNav => item['page'] != null || item['url'] != null;
 
-  void _previewCover() {
+  // Hero tag 必须跨重建稳定：优先用条目唯一标识，退回封面地址
+  String get _heroTag {
+    final id = item['tid'] ?? item['id'] ?? item['url'];
+    final seed = (id != null && id.toString().isNotEmpty)
+        ? id.toString()
+        : _str('cover');
+    if (seed.isEmpty) return '';
+    return 'plugin_card_${plugin.key}_$seed';
+  }
+
+  void _previewCover(String heroTag) {
     final cover = _str('cover');
     if (cover.isEmpty) return;
     final title = _str('title');
@@ -79,7 +89,9 @@ class _GenericPluginCard extends StatelessWidget {
       url: cover,
       title: title.isEmpty ? plugin.name : title,
       imageProvider: _siteProvider(cover, plugin: plugin),
-      heroTag: 'plugin_card_${plugin.key}_${identityHashCode(item)}',
+      heroTag: heroTag.isEmpty
+          ? 'plugin_card_${plugin.key}_${identityHashCode(item)}'
+          : heroTag,
     );
   }
 
@@ -229,6 +241,28 @@ class _GenericPluginCard extends StatelessWidget {
     final rating = _num(item['rating']);
     final ratingMax = _num(item['ratingMax']) ?? 5.0;
 
+    final heroTag = _heroTag;
+    final coverBox = ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: cover.isNotEmpty
+          ? _siteImage(
+              cover,
+              plugin: plugin,
+              width: 104,
+              height: 140,
+              fit: BoxFit.cover,
+            )
+          : Container(
+              width: 104,
+              height: 140,
+              color: cs.surfaceContainerHighest,
+              child: Icon(
+                Icons.image_outlined,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+    );
+
     return Material(
       color: cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(
@@ -244,27 +278,10 @@ class _GenericPluginCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onTap: cover.isEmpty ? null : _previewCover,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: cover.isNotEmpty
-                      ? _siteImage(
-                          cover,
-                          plugin: plugin,
-                          width: 104,
-                          height: 140,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(
-                          width: 104,
-                          height: 140,
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.image_outlined,
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
-                ),
+                onTap: cover.isEmpty ? null : () => _previewCover(heroTag),
+                child: heroTag.isEmpty
+                    ? coverBox
+                    : Hero(tag: heroTag, child: coverBox),
               ),
               const SizedBox(width: 10),
               Expanded(
