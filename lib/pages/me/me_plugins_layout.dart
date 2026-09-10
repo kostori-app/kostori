@@ -28,7 +28,142 @@ part of 'me_page_plugins.dart';
 //
 // <card> 字段：cover / title / subtitle / description / tags[] / meta[] /
 //              rating / ratingMax / badge / page / params / url
+//              buttons:[{ label, images?|image?|url?|text?|page?+params?,
+//                         sheet?:true }]
+//   sheet:true 时调用 plugin.page(page,params)，收集其中图片用底部弹层展示，
+//   不跳转新页面（适合“预览图”这类按需解析的轻量动作）。
 // ═══════════════════════════════════════════════════════════
+
+/// 从模块列表里收集图片地址（detailPage 的 gallery/imageText、顶层 gallery）。
+List<String> _imagesFromModules(List<dynamic> modules) {
+  final out = <String>[];
+  void addImages(dynamic v) {
+    if (v is List) {
+      out.addAll(v.map((e) => e.toString()).where((e) => e.isNotEmpty));
+    }
+  }
+
+  void addSection(dynamic s) {
+    final ss = _asMap2(s);
+    if (ss['type'] == 'gallery') {
+      addImages(ss['images']);
+    } else if (ss['type'] == 'imageText') {
+      final img = ss['image']?.toString() ?? '';
+      if (img.isNotEmpty) out.add(img);
+    }
+  }
+
+  for (final m in modules) {
+    final mm = _asMap2(m);
+    if (mm['type'] == 'detailPage') {
+      final secs = mm['sections'];
+      if (secs is List) {
+        for (final s in secs) {
+          addSection(s);
+        }
+      }
+    } else if (mm['type'] == 'gallery') {
+      addImages(mm['images']);
+    }
+  }
+  return out;
+}
+
+/// 轻量图片预览：底部弹出，按需调用 plugin.page 解析图片，不再跳转新页面。
+class _PluginImagesSheet extends StatelessWidget {
+  const _PluginImagesSheet({
+    required this.plugin,
+    required this.title,
+    required this.future,
+  });
+
+  final MePagePlugin plugin;
+  final String title;
+  final Future<List<dynamic>> future;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLow,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        child: FutureBuilder<List<dynamic>>(
+          future: future,
+          builder: (context, snap) {
+            final loading = snap.connectionState != ConnectionState.done;
+            final images = snap.hasData
+                ? _imagesFromModules(snap.data!)
+                : const <String>[];
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title.isEmpty ? plugin.name : title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                if (loading)
+                  const SizedBox(
+                    height: 200,
+                    child: Center(child: PolygonRefreshIndicator(size: 28)),
+                  )
+                else if (images.isEmpty)
+                  const SizedBox(height: 120, child: Center(child: Text('—')))
+                else
+                  SizedBox(
+                    height: 260,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: images.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        final u = images[i];
+                        return GestureDetector(
+                          onTap: () => BangumiWidget.showImagePreview(
+                            context: App.rootContext,
+                            url: u,
+                            title: title.isEmpty ? plugin.name : title,
+                            imageProvider: _siteProvider(u, plugin: plugin),
+                            heroTag: 'plugin_sheet_${plugin.key}_${u.hashCode}',
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _siteImage(
+                              u,
+                              plugin: plugin,
+                              height: 260,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
 /// 通用“详细卡片”：左封面 + 右信息，字段全部由插件下发，点击进入详情页
 class _GenericPluginCard extends StatelessWidget {
@@ -114,6 +249,11 @@ class _GenericPluginCard extends StatelessWidget {
           : <String, dynamic>{};
       if (btn['url'] != null) params['url'] = btn['url'].toString();
       params['title'] ??= label;
+      // sheet:true → 轻量底部弹层（按需解析图片），不跳转新页面
+      if (btn['sheet'] == true) {
+        _showPageImagesSheet(label, page, params);
+        return;
+      }
       _pushPluginPage(context, plugin, page, params, item: btn);
       return;
     }
@@ -153,6 +293,23 @@ class _GenericPluginCard extends StatelessWidget {
         ),
       );
     }
+  }
+
+  void _showPageImagesSheet(
+    String title,
+    String page,
+    Map<String, dynamic> params,
+  ) {
+    showModalBottomSheet<void>(
+      context: App.rootContext,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _PluginImagesSheet(
+        plugin: plugin,
+        title: title,
+        future: plugin.page(page, params),
+      ),
+    );
   }
 
   void _showImagesDialog(
