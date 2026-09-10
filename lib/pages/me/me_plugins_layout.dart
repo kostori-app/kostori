@@ -551,25 +551,39 @@ class _ImageTextSection extends StatelessWidget {
     final text = section['text']?.toString() ?? '';
     final image = section['image']?.toString() ?? '';
     final showTitle = section['showTitle'] != false;
+    final tag = 'plugin_imagetext_${plugin.key}_${identityHashCode(section)}';
     return _PluginCard(
       title: showTitle && title.isNotEmpty ? title : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (image.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: double.infinity,
-                height: 200,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: _siteImage(
-                  image,
-                  plugin: plugin,
-                  width: double.infinity,
-                  height: 200,
-                  // 完整显示，不裁剪
-                  fit: BoxFit.contain,
+            GestureDetector(
+              onTap: () => BangumiWidget.showImagePreview(
+                context: App.rootContext,
+                url: image,
+                title: title.isEmpty ? plugin.name : title,
+                imageProvider: _siteProvider(image, plugin: plugin),
+                heroTag: tag,
+              ),
+              child: Hero(
+                tag: tag,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: double.infinity,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    alignment: Alignment.center,
+                    // 完整显示且尽量放大
+                    child: _siteImage(
+                      image,
+                      plugin: plugin,
+                      height: 320,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -602,7 +616,7 @@ class _GallerySection extends StatelessWidget {
     return _PluginCard(
       title: title.isEmpty ? null : title,
       child: SizedBox(
-        height: 220,
+        height: 260,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: images.length,
@@ -623,17 +637,12 @@ class _GallerySection extends StatelessWidget {
                 tag: tag,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: 340,
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    // 完整显示（不裁剪），点击可进图片预览
-                    child: _siteImage(
-                      url,
-                      plugin: plugin,
-                      width: 340,
-                      height: 220,
-                      fit: BoxFit.contain,
-                    ),
+                  // 按图片自身比例显示，完整不裁剪、不缩小
+                  child: _siteImage(
+                    url,
+                    plugin: plugin,
+                    height: 260,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
