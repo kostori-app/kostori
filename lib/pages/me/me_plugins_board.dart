@@ -38,9 +38,9 @@ Widget _contentOrBoard(
   double topPadding = 0,
 }) {
   for (final m in modules) {
-    if (_asMap2(m)['type'] == 'board') {
+    final mm = _asMap2(m);
+    if (mm['type'] == 'board') {
       if (presetController != null) {
-        final mm = _asMap2(m);
         final raw = mm['tabs'];
         final tabs = raw is List
             ? raw.map((e) => _asMap2(e)).toList()
@@ -54,6 +54,9 @@ Widget _contentOrBoard(
         );
       }
       return PluginBoardContent(plugin: plugin, metaModules: modules);
+    }
+    if (mm['type'] == 'cardPage') {
+      return PluginCardPage(plugin: plugin, module: mm);
     }
   }
   return _PluginModulesList(

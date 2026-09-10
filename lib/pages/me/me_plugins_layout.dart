@@ -62,6 +62,134 @@ class _GenericPluginCard extends StatelessWidget {
     _pushPluginPage(context, plugin, page, params, item: item);
   }
 
+  List<Map<String, dynamic>> get _buttons {
+    final v = item['buttons'];
+    if (v is! List) return const [];
+    return v.map(_asMap2).where((e) => e.isNotEmpty).toList();
+  }
+
+  bool get _hasNav => item['page'] != null || item['url'] != null;
+
+  List<String> _btnImages(Map<String, dynamic> btn) {
+    final v = btn['images'];
+    if (v is List) {
+      return v.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    }
+    final single = btn['image']?.toString() ?? '';
+    return single.isNotEmpty ? [single] : const [];
+  }
+
+  Future<void> _buttonTap(Map<String, dynamic> btn) async {
+    final label = btn['label']?.toString() ?? '';
+    final images = _btnImages(btn);
+    final url = btn['url']?.toString() ?? '';
+    final text = btn['text']?.toString() ?? '';
+    if (images.length == 1) {
+      await BangumiWidget.showImagePreview(
+        context: App.rootContext,
+        url: images.first,
+        title: label.isEmpty ? plugin.name : label,
+        imageProvider: _siteProvider(images.first, plugin: plugin),
+        heroTag: 'plugin_btn_${plugin.key}_${identityHashCode(btn)}_0',
+      );
+      return;
+    }
+    if (images.length > 1) {
+      _showImagesDialog(label, images, btn);
+      return;
+    }
+    if (url.isNotEmpty) {
+      launchUrlString(url);
+      return;
+    }
+    if (text.isNotEmpty) {
+      showDialog<void>(
+        context: App.rootContext,
+        builder: (_) => ContentDialog(
+          title: label.isEmpty ? plugin.name : label,
+          content: SingleChildScrollView(child: SelectableText(text)),
+          actions: [
+            Button.filled(
+              onPressed: () => Navigator.of(App.rootContext).pop(),
+              child: Text(t.ok),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _showImagesDialog(
+    String title,
+    List<String> images,
+    Map<String, dynamic> btn,
+  ) {
+    showDialog<void>(
+      context: App.rootContext,
+      builder: (_) => ContentDialog(
+        title: title.isEmpty ? plugin.name : title,
+        content: SizedBox(
+          height: 240,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final u = images[i];
+              return GestureDetector(
+                onTap: () => BangumiWidget.showImagePreview(
+                  context: App.rootContext,
+                  url: u,
+                  title: title.isEmpty ? plugin.name : title,
+                  imageProvider: _siteProvider(u, plugin: plugin),
+                  heroTag:
+                      'plugin_btn_${plugin.key}_${identityHashCode(btn)}_$i',
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: _siteImage(
+                    u,
+                    plugin: plugin,
+                    height: 240,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          Button.filled(
+            onPressed: () => Navigator.of(App.rootContext).pop(),
+            child: Text(t.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cardButton(BuildContext context, Map<String, dynamic> btn) {
+    final label = btn['label']?.toString() ?? '...';
+    return SizedBox(
+      width: 76,
+      child: FilledButton.tonal(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          minimumSize: const Size(0, 32),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+        onPressed: () => _buttonTap(btn),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -85,7 +213,7 @@ class _GenericPluginCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _open(context),
+        onTap: _hasNav ? () => _open(context) : null,
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Row(
@@ -249,6 +377,19 @@ class _GenericPluginCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (_buttons.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final b in _buttons)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: _cardButton(context, b),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -335,6 +476,47 @@ class _SelectorState {
     required this.selected,
     this.arrows = false,
   });
+}
+
+List<Map<String, dynamic>> _selOptions(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw.map(_asMap2).where((e) => e.isNotEmpty).toList();
+}
+
+List<Map<String, dynamic>> _selGroups(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw.map(_asMap2).where((e) => e.isNotEmpty).toList();
+}
+
+List<_SelectorState> _selParseSelectors(Map<String, dynamic> m) {
+  final raw = m['selectors'];
+  if (raw is List && raw.isNotEmpty) {
+    final out = <_SelectorState>[];
+    for (final e in raw) {
+      final sm = _asMap2(e);
+      final opts = _selOptions(sm['options']);
+      if (opts.isEmpty) continue;
+      out.add(
+        _SelectorState(
+          key: sm['key']?.toString() ?? 'selection',
+          options: opts,
+          selected: sm['selected']?.toString() ?? opts.first['key'].toString(),
+          arrows: sm['arrows'] == true,
+        ),
+      );
+    }
+    return out;
+  }
+  final opts = _selOptions(m['options']);
+  if (opts.isEmpty) return const [];
+  return [
+    _SelectorState(
+      key: 'selection',
+      options: opts,
+      selected:
+          m['selected']?.toString() ?? (opts.first['key']?.toString() ?? ''),
+    ),
+  ];
 }
 
 class _SelectorSectionState extends State<_SelectorSection> {
@@ -715,6 +897,197 @@ class _CardsSection extends StatelessWidget {
           const SizedBox(height: 8),
         ],
       ],
+    );
+  }
+}
+
+/// 卡片列表页：可选选择器（含日期选择）+ 卡片列表 + 底部分页（复用论坛分页组件）。
+/// 模块协议：
+/// { type:'cardPage', page:'new', pageNum:1, totalPages:10,
+///   selectors:[{key,options,selected,arrows}], datePicker:true, dateKey:'date',
+///   items:[<card>], groups:[{header,items:[<card>]}] }
+class PluginCardPage extends StatefulWidget {
+  const PluginCardPage({super.key, required this.plugin, required this.module});
+
+  final MePagePlugin plugin;
+  final Map<String, dynamic> module;
+
+  @override
+  State<PluginCardPage> createState() => _PluginCardPageState();
+}
+
+class _PluginCardPageState extends State<PluginCardPage> {
+  late Map<String, dynamic> _module;
+  late List<_SelectorState> _sels;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _module = widget.module;
+    _sels = _selParseSelectors(_module);
+  }
+
+  int get _pageNum => (_module['pageNum'] as num?)?.toInt() ?? 1;
+
+  int get _totalPages => (_module['totalPages'] as num?)?.toInt() ?? 1;
+
+  String get _fetchPage => _module['page']?.toString() ?? '';
+
+  Future<void> _fetch({int? page}) async {
+    if (_fetchPage.isEmpty) return;
+    final params = <String, dynamic>{
+      for (final s in _sels) s.key: s.selected,
+      if (page != null) 'page': page,
+    };
+    setState(() => _loading = true);
+    try {
+      final modules = await widget.plugin.page(_fetchPage, params);
+      Map<String, dynamic>? mod;
+      for (final m in modules) {
+        final mm = _asMap2(m);
+        if (mm['type'] == 'cardPage') {
+          mod = mm;
+          break;
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        if (mod != null) {
+          _module = mod;
+          final ns = _selParseSelectors(mod);
+          if (ns.isNotEmpty) _sels = ns;
+        }
+      });
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _select(int i, String key) {
+    if (i < 0 || i >= _sels.length || _sels[i].selected == key) return;
+    setState(() => _sels[i].selected = key);
+    _fetch();
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDate() async {
+    if (_sels.isEmpty) return;
+    final dateKey = _module['dateKey']?.toString() ?? 'date';
+    var idx = _sels.indexWhere((s) => s.key == dateKey);
+    if (idx < 0) idx = 0;
+    final cur = DateTime.tryParse(_sels[idx].selected) ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: cur,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() => _sels[idx].selected = _fmtDate(picked));
+    _fetch();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalPages = _totalPages;
+    final groups = _selGroups(_module['groups']);
+    final items = _selGroups(_module['items']);
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(12, 12, 12, totalPages > 1 ? 84 : 24),
+            children: [
+              for (var i = 0; i < _sels.length; i++) _selectorBar(context, i),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: PolygonRefreshIndicator(size: 24)),
+                )
+              else if (groups.isNotEmpty)
+                _PluginGroupList(plugin: widget.plugin, groups: groups)
+              else if (items.isNotEmpty)
+                for (final it in items)
+                  _GenericPluginCard(plugin: widget.plugin, item: it)
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: Text('—')),
+                ),
+            ],
+          ),
+        ),
+        if (totalPages > 1)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _GlassBar(
+              child: _ForumPager(
+                page: _pageNum,
+                totalPages: totalPages,
+                busy: _loading,
+                onJump: (p) => _fetch(page: p),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _selectorBar(BuildContext context, int index) {
+    final sel = _sels[index];
+    if (sel.options.isEmpty) return const SizedBox.shrink();
+    final keys = sel.options.map((o) => o['key']?.toString() ?? '').toList();
+    final titles = sel.options
+        .map((o) => o['title']?.toString() ?? '')
+        .toList();
+    final cur = keys.indexOf(sel.selected);
+    final showDate = _module['datePicker'] == true && index == 0;
+    Widget arrow(IconData icon, bool enabled, VoidCallback onTap) => IconButton(
+      icon: Icon(icon, size: 20),
+      visualDensity: VisualDensity.compact,
+      onPressed: enabled ? onTap : null,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          if (showDate)
+            IconButton(
+              icon: const Icon(Icons.calendar_month_outlined, size: 20),
+              visualDensity: VisualDensity.compact,
+              tooltip: t.jumpToPage,
+              onPressed: _pickDate,
+            ),
+          if (sel.arrows)
+            arrow(
+              Icons.chevron_left,
+              cur > 0,
+              () => _select(index, keys[cur - 1]),
+            ),
+          Expanded(
+            child: _CapsuleBar(
+              keys: keys,
+              titles: titles,
+              selected: sel.selected,
+              onChanged: (i) => _select(index, keys[i]),
+            ),
+          ),
+          if (sel.arrows)
+            arrow(
+              Icons.chevron_right,
+              cur >= 0 && cur < keys.length - 1,
+              () => _select(index, keys[cur + 1]),
+            ),
+        ],
+      ),
     );
   }
 }
