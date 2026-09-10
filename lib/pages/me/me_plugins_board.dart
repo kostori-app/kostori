@@ -2,9 +2,12 @@ part of 'me_page_plugins.dart';
 
 CachedImageProvider _siteProvider(String url, {required MePagePlugin plugin}) {
   final referer = plugin.referer;
+  final headers = <String, String>{};
+  if (referer != null && referer.isNotEmpty) headers['referer'] = referer;
+  headers.addAll(plugin.imageHeaders);
   return CachedImageProvider(
     url,
-    headers: referer == null || referer.isEmpty ? null : {'referer': referer},
+    headers: headers.isEmpty ? null : headers,
     sourceKey: plugin.key,
   );
 }

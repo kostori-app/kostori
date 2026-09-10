@@ -13,8 +13,11 @@ part of 'me_page_plugins.dart';
 //
 // 2) 选择器页（类似月份表，可快捷切换多组数据）
 //    { type:'selector', page:'preview',        // 切换时重新请求的 page 名
-//      options:[{key,title}, ...], selected:'k', groups:[...] }
-//    切换时调用 plugin.page(page, {selection: key})，期望返回同样结构的 selector 模块。
+//      selectors:[ {key:'genre', options:[{key,title}], selected:'k'},
+//                  {key:'month', options:[{key,title}], selected:'k'} ],
+//      groups:[...] }
+//    切换时调用 plugin.page(page, {genre:..., month:...})，期望返回同样结构的 selector 模块。
+//    也兼容单选择器写法：options:[...] + selected（键名为 selection）。
 //
 // 3) 详情页
 //    { type:'detailPage', title?, sections:[
@@ -318,37 +321,43 @@ class _SelectorSection extends StatefulWidget {
   State<_SelectorSection> createState() => _SelectorSectionState();
 }
 
+class _SelectorState {
+  final String key;
+  List<Map<String, dynamic>> options;
+  String selected;
+
+  _SelectorState({
+    required this.key,
+    required this.options,
+    required this.selected,
+  });
+}
+
 class _SelectorSectionState extends State<_SelectorSection> {
-  late List<Map<String, dynamic>> _options;
+  late List<_SelectorState> _sels;
+  late List<ScrollController> _ctrls;
   late List<Map<String, dynamic>> _groups;
-  late String _selected;
   bool _loading = false;
-  final ScrollController _scroll = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _options = _parseOptions(widget.module['options']);
+    _sels = _parseSelectors(widget.module);
+    _ctrls = List.generate(_sels.length, (_) => ScrollController());
     _groups = _parseGroups(widget.module['groups']);
-    _selected = widget.module['selected']?.toString() ??
-        (_options.isNotEmpty ? _options.first['key']?.toString() ?? '' : '');
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (var i = 0; i < _sels.length; i++) {
+        _scrollToSelected(i);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _scroll.dispose();
+    for (final c in _ctrls) {
+      c.dispose();
+    }
     super.dispose();
-  }
-
-  void _scrollToSelected() {
-    if (!_scroll.hasClients) return;
-    final idx = _options.indexWhere((o) => o['key']?.toString() == _selected);
-    if (idx <= 0) return;
-    const chip = 84.0;
-    final max = _scroll.position.maxScrollExtent;
-    final target = (idx * chip - 40).clamp(0.0, max);
-    _scroll.jumpTo(target);
   }
 
   List<Map<String, dynamic>> _parseOptions(dynamic raw) {
@@ -361,16 +370,66 @@ class _SelectorSectionState extends State<_SelectorSection> {
     return raw.map(_asMap2).where((e) => e.isNotEmpty).toList();
   }
 
-  Future<void> _switch(String key) async {
-    if (key == _selected || _loading) return;
+  /// 支持两种声明：
+  /// - 多选择器：`selectors:[{key,options,selected}, ...]`
+  /// - 单选择器（兼容）：`options:[...]`, `selected`
+  List<_SelectorState> _parseSelectors(Map<String, dynamic> m) {
+    final raw = m['selectors'];
+    if (raw is List && raw.isNotEmpty) {
+      final out = <_SelectorState>[];
+      for (final e in raw) {
+        final sm = _asMap2(e);
+        final opts = _parseOptions(sm['options']);
+        if (opts.isEmpty) continue;
+        out.add(
+          _SelectorState(
+            key: sm['key']?.toString() ?? 'selection',
+            options: opts,
+            selected: sm['selected']?.toString() ?? opts.first['key'].toString(),
+          ),
+        );
+      }
+      return out;
+    }
+    final opts = _parseOptions(m['options']);
+    if (opts.isEmpty) return const [];
+    return [
+      _SelectorState(
+        key: 'selection',
+        options: opts,
+        selected:
+            m['selected']?.toString() ?? (opts.first['key']?.toString() ?? ''),
+      ),
+    ];
+  }
+
+  void _scrollToSelected(int i) {
+    if (i >= _ctrls.length || i >= _sels.length) return;
+    final c = _ctrls[i];
+    if (!c.hasClients) return;
+    final idx = _sels[i].options.indexWhere(
+      (o) => o['key']?.toString() == _sels[i].selected,
+    );
+    if (idx <= 0) return;
+    const chip = 84.0;
+    final max = c.position.maxScrollExtent;
+    c.jumpTo((idx * chip - 40).clamp(0.0, max));
+  }
+
+  Future<void> _switch(int i, String key) async {
+    if (i < 0 || i >= _sels.length) return;
+    if (key == _sels[i].selected || _loading) return;
     setState(() {
-      _selected = key;
+      _sels[i].selected = key;
       _loading = true;
     });
     try {
       final page = widget.module['page']?.toString() ?? '';
       if (page.isEmpty) return;
-      final modules = await widget.plugin.page(page, {'selection': key});
+      final params = <String, dynamic>{
+        for (final s in _sels) s.key: s.selected,
+      };
+      final modules = await widget.plugin.page(page, params);
       Map<String, dynamic>? mod;
       for (final m in modules) {
         final mm = _asMap2(m);
@@ -382,11 +441,21 @@ class _SelectorSectionState extends State<_SelectorSection> {
       if (!mounted) return;
       setState(() {
         if (mod != null) {
+          final newSels = _parseSelectors(mod);
+          if (newSels.isNotEmpty) {
+            if (newSels.length != _ctrls.length) {
+              for (final c in _ctrls) {
+                c.dispose();
+              }
+              _ctrls = List.generate(newSels.length, (_) => ScrollController());
+            }
+            _sels = newSels;
+          }
           _groups = _parseGroups(mod['groups']);
-          final opts = _parseOptions(mod['options']);
-          if (opts.isNotEmpty) _options = opts;
-          _selected = mod['selected']?.toString() ?? key;
         }
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToSelected(i);
       });
     } catch (_) {
     } finally {
@@ -399,7 +468,7 @@ class _SelectorSectionState extends State<_SelectorSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_options.isNotEmpty) _selectorBar(context),
+        for (var i = 0; i < _sels.length; i++) _selectorBar(context, i),
         if (_loading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 32),
@@ -411,27 +480,29 @@ class _SelectorSectionState extends State<_SelectorSection> {
     );
   }
 
-  Widget _selectorBar(BuildContext context) {
+  Widget _selectorBar(BuildContext context, int index) {
+    final sel = _sels[index];
+    if (sel.options.isEmpty) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
     return SizedBox(
       height: 42,
       child: ListView.separated(
-        controller: _scroll,
+        controller: _ctrls[index],
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        itemCount: _options.length,
+        itemCount: sel.options.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
-          final o = _options[i];
+          final o = sel.options[i];
           final key = o['key']?.toString() ?? '';
-          final sel = key == _selected;
+          final on = key == sel.selected;
           return GestureDetector(
-            onTap: () => _switch(key),
+            onTap: () => _switch(index, key),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 160),
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: sel ? cs.primary : cs.surfaceContainerHigh,
+                color: on ? cs.primary : cs.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(20),
               ),
               alignment: Alignment.center,
@@ -439,8 +510,8 @@ class _SelectorSectionState extends State<_SelectorSection> {
                 o['title']?.toString() ?? key,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
-                  color: sel ? cs.onPrimary : cs.onSurface,
+                  fontWeight: on ? FontWeight.w600 : FontWeight.w400,
+                  color: on ? cs.onPrimary : cs.onSurface,
                 ),
               ),
             ),

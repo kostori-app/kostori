@@ -51,6 +51,9 @@ class MePagePlugin {
   /// 插件声明的站点 Referer（图片防盗链用，可选）
   final String? referer;
 
+  /// 插件声明的图片附加请求头（如 Cookie，可选）
+  final Map<String, String> imageHeaders;
+
   /// 是否声明了 `plugin.settings`（解析时一次性判定，避免每次探测引擎不稳定）
   final bool settingsDeclared;
 
@@ -73,6 +76,7 @@ class MePagePlugin {
     required this.description,
     required this.filePath,
     this.referer,
+    this.imageHeaders = const {},
     this.settingsDeclared = false,
     this.searchable = false,
     this.settingsCache = const [],
@@ -775,6 +779,19 @@ class MePagePluginParser {
             ?.toString() ??
         '';
 
+    // 图片附加请求头（如 Cookie）
+    Map<String, String> imageHeaders = const {};
+    try {
+      final raw = JsEngine().runCode(
+        "globalThis.__me_plugins[${_jsStr(key)}]?.imageHeaders ?? null",
+      );
+      if (raw is Map) {
+        imageHeaders = raw.map(
+          (k, v) => MapEntry(k.toString(), v?.toString() ?? ''),
+        );
+      }
+    } catch (_) {}
+
     // 设置页：解析期缓存（避免运行期引擎状态导致按钮忽有忽无）
     List<Map<String, dynamic>> settingsCache = const [];
     try {
@@ -860,6 +877,7 @@ class MePagePluginParser {
       description: description,
       filePath: filePath,
       referer: referer.isEmpty ? null : referer,
+      imageHeaders: imageHeaders,
       settingsDeclared: settingsCache.isNotEmpty,
       searchable: searchable,
       settingsCache: settingsCache,
