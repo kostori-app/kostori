@@ -322,7 +322,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                             );
                           },
                           onLongPress: () => _showSaveDialog(img),
-                          child: Hero(
+                          child: KostoriHero(
                             tag: img,
                             // 固定高度，避免图片加载前后高度突变导致
                             // CustomScrollView maxScrollExtent 变化、滚动条跳动

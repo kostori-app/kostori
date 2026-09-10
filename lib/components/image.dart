@@ -1,5 +1,42 @@
 part of 'components.dart';
 
+/// 标记当前处于 Hero 飞行替身层。
+///
+/// 飞行替身直接取 Hero 的 child 重建，若其中是 [AnimatedImage]，
+/// 其骨架屏 / [AnimatedSwitcher] 会在飞行层重新初始化，导致返回动画异常。
+/// 检测到该作用域时 [AnimatedImage] 直接渲染普通 [Image]。
+class HeroShuttleScope extends InheritedWidget {
+  const HeroShuttleScope({super.key, required super.child});
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<HeroShuttleScope>() != null;
+
+  @override
+  bool updateShouldNotify(HeroShuttleScope oldWidget) => false;
+}
+
+/// 图片 Hero：与 [Hero] 用法一致，但在飞行替身层包一层 [HeroShuttleScope]，
+/// 让 [AnimatedImage] 飞行时改用普通 [Image]。图片类 Hero 一律用它替代裸 [Hero]。
+class KostoriHero extends StatelessWidget {
+  const KostoriHero({super.key, required this.tag, required this.child});
+
+  final Object tag;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Hero(
+      tag: tag,
+      flightShuttleBuilder:
+          (flightContext, animation, direction, fromContext, toContext) {
+            final toHero = toContext.widget as Hero;
+            return HeroShuttleScope(child: toHero.child);
+          },
+      child: child,
+    );
+  }
+}
+
 class AnimatedImage extends StatefulWidget {
   /// show animation when loading is complete.
   AnimatedImage({
@@ -276,6 +313,24 @@ class _AnimatedImageState extends State<AnimatedImage>
 
   @override
   Widget build(BuildContext context) {
+    // Hero 飞行替身：直接渲染普通 Image，避免骨架屏/AnimatedSwitcher 在
+    // 飞行层重建导致返回动画异常。
+    if (HeroShuttleScope.of(context)) {
+      return Image(
+        image: widget.image,
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit ?? BoxFit.cover,
+        alignment: widget.alignment,
+        gaplessPlayback: true,
+        filterQuality: widget.filterQuality,
+        color: widget.color,
+        colorBlendMode: widget.colorBlendMode,
+        semanticLabel: widget.semanticLabel,
+        excludeFromSemantics: widget.excludeFromSemantics,
+      );
+    }
+
     Widget result;
 
     if (_imageInfo != null) {

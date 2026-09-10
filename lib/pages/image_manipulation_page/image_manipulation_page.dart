@@ -355,7 +355,7 @@ class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
                 child: InkWell(
                   onTap: () => _onTapImage(index),
                   onLongPress: () => _onLongPressImage(index),
-                  child: Hero(
+                  child: KostoriHero(
                     tag: App.isAndroid
                         ? file.path.split('/').last
                         : file.path.split('\\').last,

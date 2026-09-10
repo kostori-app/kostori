@@ -14,20 +14,6 @@ ImageProvider? _findImageProvider(Anime anime) {
   return image;
 }
 
-/// Hero 飞行替身：用普通 Image（不带骨架屏/AnimatedSwitcher）。
-/// 返回时飞行替身取“来源 Hero 的 child”，若用 AnimatedImage，
-/// 替身会在飞行层重建并先渲染骨架/淡入，导致回退动画异常。
-Widget _animeHeroShuttle(Anime anime, {BoxFit fit = BoxFit.cover}) {
-  final provider = _findImageProvider(anime);
-  if (provider == null) return const SizedBox.shrink();
-  return Image(
-    image: provider,
-    fit: fit,
-    gaplessPlayback: true,
-    filterQuality: FilterQuality.medium,
-  );
-}
-
 // ── Providers ────────────────────────────────────────────────────────────────
 
 final favoritesVersion = StateProvider<int>((ref) => 0);
@@ -616,11 +602,8 @@ class AnimeTile extends ConsumerWidget {
         );
 
         if (heroID != null) {
-          image = Hero(
+          image = KostoriHero(
             tag: heroTag ?? "cover$heroID",
-            flightShuttleBuilder:
-                (flightContext, animation, direction, fromContext, toContext) =>
-                    _animeHeroShuttle(anime),
             child: image,
           );
         }
@@ -773,11 +756,8 @@ class AnimeTile extends ConsumerWidget {
           );
 
           if (heroID != null) {
-            image = Hero(
+            image = KostoriHero(
               tag: heroTag ?? "cover$heroID",
-              flightShuttleBuilder:
-                  (flightContext, animation, direction, fromContext, toContext) =>
-                      _animeHeroShuttle(anime),
               child: image,
             );
           }
@@ -867,11 +847,8 @@ class AnimeTile extends ConsumerWidget {
           );
 
           if (heroID != null) {
-            image = Hero(
+            image = KostoriHero(
               tag: heroTag ?? "cover$heroID",
-              flightShuttleBuilder:
-                  (flightContext, animation, direction, fromContext, toContext) =>
-                      _animeHeroShuttle(anime),
               child: image,
             );
           }
@@ -935,11 +912,8 @@ class AnimeTile extends ConsumerWidget {
           );
 
           if (heroID != null) {
-            image = Hero(
+            image = KostoriHero(
               tag: heroTag ?? "cover$heroID",
-              flightShuttleBuilder:
-                  (flightContext, animation, direction, fromContext, toContext) =>
-                      _animeHeroShuttle(anime),
               child: image,
             );
           }
@@ -2290,11 +2264,8 @@ class SimpleAnimeTile extends StatelessWidget {
     );
 
     if (heroID != null) {
-      child = Hero(
+      child = KostoriHero(
         tag: "cover$heroID",
-        flightShuttleBuilder:
-            (flightContext, animation, direction, fromContext, toContext) =>
-                _animeHeroShuttle(anime),
         child: child,
       );
     }

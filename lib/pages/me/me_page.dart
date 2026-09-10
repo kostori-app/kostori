@@ -821,7 +821,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                                   child: SizedBox(
                                     width: 200 * (4 / 3),
                                     height: 200,
-                                    child: Hero(
+                                    child: KostoriHero(
                                       tag: filename,
                                       child: Image.file(
                                         file,

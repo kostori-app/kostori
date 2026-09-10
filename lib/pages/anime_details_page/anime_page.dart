@@ -658,25 +658,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     : null,
                               );
                             },
-                            child: Hero(
+                            child: KostoriHero(
                               tag: widget.heroTag ?? "cover${widget.heroID}",
-                              flightShuttleBuilder:
-                                  (flightContext, animation, direction, fromContext, toContext) {
-                                    final coverUrl =
-                                        (widget.cover != null &&
-                                            widget.cover!.isNotEmpty)
-                                        ? widget.cover!
-                                        : anime.cover;
-                                    return coverUrl.isEmpty
-                                        ? const SizedBox.shrink()
-                                        : Image(
-                                            image: _coverProvider(coverUrl),
-                                            fit: BoxFit.cover,
-                                            gaplessPlayback: true,
-                                            filterQuality:
-                                                FilterQuality.medium,
-                                          );
-                                  },
                               child: Container(
                                 width: imageWidth,
                                 height: imageHeight,
@@ -1958,24 +1941,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
     );
     final tag = heroTag ?? (heroID != null ? 'cover$heroID' : null);
     if (tag != null) {
-      coverBox = Hero(
-        tag: tag,
-        flightShuttleBuilder:
-            (flightContext, animation, direction, fromContext, toContext) =>
-                cover == null || cover!.isEmpty
-                ? const SizedBox.shrink()
-                : Image(
-                    image: CachedImageProvider(
-                      cover!,
-                      sourceKey: sourceKey,
-                      aid: aid,
-                    ),
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                    filterQuality: FilterQuality.medium,
-                  ),
-        child: coverBox,
-      );
+      coverBox = KostoriHero(tag: tag, child: coverBox);
     }
     return coverBox;
   }

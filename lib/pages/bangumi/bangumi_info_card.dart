@@ -342,15 +342,10 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                             borderRadius: BorderRadius.circular(12),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Hero(
+                              child: KostoriHero(
                                 tag: (widget.heroTag == null)
                                     ? '${widget.bangumiItem.id}'
                                     : '${widget.heroTag}-${widget.bangumiItem.id}',
-                                flightShuttleBuilder:
-                                    (flightContext, animation, direction, fromContext, toContext) =>
-                                        BangumiWidget.heroShuttleImage(
-                                          widget.bangumiItem.images['large']!,
-                                        ),
                                 child: SizedBox(
                                   width: width,
                                   height: height,

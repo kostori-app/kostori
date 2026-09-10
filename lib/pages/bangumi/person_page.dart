@@ -275,15 +275,9 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                                   .image,
                                                         );
                                                       },
-                                                      child: Hero(
+                                                      child: KostoriHero(
                                                         tag: characterFullItem
                                                             .image,
-                                                        flightShuttleBuilder:
-                                                            (flightContext, animation, direction, fromContext, toContext) =>
-                                                                BangumiWidget.heroShuttleImage(
-                                                                  characterFullItem
-                                                                      .image,
-                                                                ),
                                                         child:
                                                             BangumiWidget.kostoriImage(
                                                               context,
@@ -672,7 +666,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                         BorderRadius.circular(
                                                           12,
                                                         ),
-                                                    child: Hero(
+                                                    child: KostoriHero(
                                                       tag:
                                                           characterPersonCastsList[index]
                                                               .character

@@ -738,11 +738,8 @@ class _StatItemWidgetState extends State<StatItemWidget> {
 
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Hero(
+        child: KostoriHero(
           tag: stats.id,
-          flightShuttleBuilder:
-              (flightContext, animation, direction, fromContext, toContext) =>
-                  BangumiWidget.heroShuttleImage(cover),
           child: BangumiWidget.kostoriImage(
             context,
             cover,

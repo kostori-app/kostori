@@ -947,15 +947,8 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
           final heroTag = 'thread_${widget.plugin.key}_${pid}_$i';
           return GestureDetector(
             onTap: () => preview(i),
-            child: Hero(
+            child: KostoriHero(
               tag: heroTag,
-              flightShuttleBuilder:
-                  (flightContext, animation, direction, fromContext, toContext) =>
-                      _siteHeroShuttle(
-                        post.images[i],
-                        plugin: widget.plugin,
-                        fit: BoxFit.cover,
-                      ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: _siteImage(

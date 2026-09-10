@@ -421,21 +421,6 @@ class BangumiWidget {
       cacheWidth: cacheWidth,
     );
   }
-
-  /// Hero 飞行替身：用普通 Image（不带骨架屏/AnimatedSwitcher）。
-  /// 返回时替身取“来源 Hero 的 child”，若用 AnimatedImage 会先渲染骨架/淡入，
-  /// 导致回退动画异常。
-  static Widget heroShuttleImage(
-    String imageUrl, {
-    BoxFit fit = BoxFit.cover,
-  }) {
-    return Image(
-      image: CachedImageProvider(imageUrl, sourceKey: 'bangumi'),
-      fit: fit,
-      gaplessPlayback: true,
-      filterQuality: FilterQuality.medium,
-    );
-  }
 }
 
 class StatItem {
@@ -993,15 +978,10 @@ class BangumiBriefCard extends StatelessWidget {
                 ],
               ),
               clipBehavior: Clip.antiAlias,
-              child: Hero(
+              child: KostoriHero(
                 tag: heroTag != null
                     ? '$heroTag-${bangumiItem.id}'
                     : bangumiItem.id.toString(),
-                flightShuttleBuilder:
-                    (flightContext, animation, direction, fromContext, toContext) =>
-                        BangumiWidget.heroShuttleImage(
-                          bangumiItem.images['large']!,
-                        ),
                 child: BangumiWidget.kostoriImage(
                   context,
                   bangumiItem.images['large']!,
@@ -1320,13 +1300,8 @@ class BangumiDetailedCard extends StatelessWidget {
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: Hero(
+          child: KostoriHero(
             tag: '$heroTag-${bangumiItem.id}',
-            flightShuttleBuilder:
-                (flightContext, animation, direction, fromContext, toContext) =>
-                    BangumiWidget.heroShuttleImage(
-                      bangumiItem.images['large']!,
-                    ),
             child: BangumiWidget.kostoriImage(
               context,
               bangumiItem.images['large']!,
@@ -1573,11 +1548,8 @@ class BangumiCharacterCard extends StatelessWidget {
               ],
             ),
             clipBehavior: Clip.antiAlias,
-            child: Hero(
+            child: KostoriHero(
               tag: '$heroTag-${character.id}',
-              flightShuttleBuilder:
-                  (flightContext, animation, direction, fromContext, toContext) =>
-                      BangumiWidget.heroShuttleImage(character.images.large),
               child: BangumiWidget.kostoriImage(
                 context,
                 character.images.large,
@@ -1839,13 +1811,8 @@ class _BangumiCardState extends State<BangumiCard> {
               clipBehavior: Clip.antiAlias,
               child: backgroundImage,
             );
-            Widget foregroundImage = Hero(
+            Widget foregroundImage = KostoriHero(
               tag: '${widget.heroTag}-${widget.bangumiItem.id}',
-              flightShuttleBuilder:
-                  (flightContext, animation, direction, fromContext, toContext) =>
-                      hasImage
-                      ? BangumiWidget.heroShuttleImage(image)
-                      : const SizedBox.shrink(),
               child: hasImage
                   ? BangumiWidget.kostoriImage(
                       context,

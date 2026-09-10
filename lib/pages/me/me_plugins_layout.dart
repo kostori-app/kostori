@@ -281,17 +281,7 @@ class _GenericPluginCard extends StatelessWidget {
                 onTap: cover.isEmpty ? null : () => _previewCover(heroTag),
                 child: heroTag.isEmpty
                     ? coverBox
-                    : Hero(
-                        tag: heroTag,
-                        flightShuttleBuilder:
-                            (flightContext, animation, direction, fromContext, toContext) =>
-                                _siteHeroShuttle(
-                                  cover,
-                                  plugin: plugin,
-                                  fit: BoxFit.cover,
-                                ),
-                        child: coverBox,
-                      ),
+                    : KostoriHero(tag: heroTag, child: coverBox),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -821,11 +811,8 @@ class _ImageTextSectionState extends State<_ImageTextSection> {
                 imageProvider: _siteProvider(image, plugin: plugin),
                 heroTag: tag,
               ),
-              child: Hero(
+              child: KostoriHero(
                 tag: tag,
-                flightShuttleBuilder:
-                    (flightContext, animation, direction, fromContext, toContext) =>
-                        _siteHeroShuttle(image, plugin: plugin),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
@@ -900,11 +887,8 @@ class _GallerySection extends StatelessWidget {
                 imageProvider: _siteProvider(url, plugin: plugin),
                 heroTag: tag,
               ),
-              child: Hero(
+              child: KostoriHero(
                 tag: tag,
-                flightShuttleBuilder:
-                    (flightContext, animation, direction, fromContext, toContext) =>
-                        _siteHeroShuttle(url, plugin: plugin),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   // 按图片自身比例显示，完整不裁剪、不缩小
