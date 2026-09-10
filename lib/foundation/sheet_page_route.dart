@@ -40,6 +40,14 @@ class SheetPageRoute<T> extends PageRoute<T> {
   @override
   bool get maintainState => true;
 
+  // 作为 PageRoute 被 push 时，不要触发底层路由的次级（左移）过渡；
+  // 自身也不需要在被压栈时做次级过渡（弹层保持原位）。
+  @override
+  bool canTransitionTo(TransitionRoute<dynamic> nextRoute) => false;
+
+  @override
+  bool canTransitionFrom(TransitionRoute<dynamic> previousRoute) => false;
+
   @override
   Widget buildPage(
     BuildContext context,
