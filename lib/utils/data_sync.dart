@@ -194,8 +194,16 @@ class DataSync with ChangeNotifier {
       try {
         // 读取服务端现有文件，以服务端为准确定新版本号与清理策略，
         // 避免多端本地各自递增导致版本号冲突 / 互相覆盖删除
-        var files = await client.readDir('/');
-        files = files.where((e) => e.name!.endsWith('.kostori')).toList();
+        final allFiles = await client.readDir('/');
+        // 清理上次上传中断残留的临时文件（.part，不算数据文件）
+        for (final f in allFiles) {
+          if ((f.name ?? '').endsWith('.part')) {
+            try {
+              await client.remove(f.name!);
+            } catch (_) {}
+          }
+        }
+        var files = allFiles.where((e) => e.name!.endsWith('.kostori')).toList();
         files.sort((a, b) => a.name!.compareTo(b.name!));
 
         // 计算全局最新版本号（取所有文件中版本号最大者）
@@ -219,14 +227,25 @@ class DataSync with ChangeNotifier {
           files.sort((a, b) => a.name!.compareTo(b.name!));
           await client.remove(files.first.name!);
         }
-        await client.write(
-          filename,
-          await data.readAsBytes(),
-          onProgress: (count, total) {
-            _progress = total > 0 ? count / total : null;
-            notifyListeners();
-          },
-        );
+        // 原子上传：先写临时名（.part，下载端不会当作数据文件），写完后 rename 到正式名。
+        // 这样中途退出/断网只留下 .part，不会损坏已有的 .kostori 文件。
+        final bytes = await data.readAsBytes();
+        void onProgress(int count, int total) {
+          _progress = total > 0 ? count / total : null;
+          notifyListeners();
+        }
+
+        final tempName = '$filename.part';
+        await client.write(tempName, bytes, onProgress: onProgress);
+        try {
+          await client.rename(tempName, filename, true);
+        } catch (_) {
+          // 服务器不支持 MOVE：退回直接写正式名（尽力而为）
+          await client.write(filename, bytes, onProgress: onProgress);
+          try {
+            await client.remove(tempName);
+          } catch (_) {}
+        }
         data.deleteIgnoreError();
         Log.info("Upload Data", "Data uploaded successfully ($filename)");
         return const Res(true);
