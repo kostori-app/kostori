@@ -96,14 +96,9 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 
   void _showDaySheet(DateTime day, List<History> items) {
     if (items.isEmpty || !mounted) return;
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => Sheet(
+    // 用 PageRoute 版弹层（而非 showModalBottomSheet），这样瓷砖才能与详情页做 Hero 转场
+    context.toSheet(
+      () => Sheet(
         title: t.statsTimelineDay(month: day.month, day: day.day),
         icon: Icons.history,
         initialSize: 0.7,
@@ -118,7 +113,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                 disableMasonry: true,
                 onTap: (a, heroID) {
                   final h = a as History;
-                  Navigator.pop(context);
+                  // 不先关弹层：让 Hero 从瓷砖飞入详情页，返回时回到弹层
                   App.mainNavigatorKey?.currentContext?.to<dynamic>(
                     () => AnimePage(
                       id: h.id,
