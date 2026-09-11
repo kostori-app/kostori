@@ -115,35 +115,40 @@ class HistoryWriteService {
       mainSend.send(['err', 'init', e.toString()]);
       return;
     }
-    rp.listen((msg) async {
+    // 串行处理消息：rp.listen 的 async 回调会交错执行，
+    // 若 close 与在途写入交错会关库打断查询（原生 sqlite3_step 崩溃）
+    Future<void> queue = Future.value();
+    rp.listen((msg) {
       if (msg is! Map) return;
       final m = msg as Map<String, dynamic>;
-      try {
-        switch (m['op']) {
-          case 'addHistory':
-            if (!manager.isInitialized) await manager.init();
-            await manager.addHistory(
-              _mapToHistory(m['h'] as Map<String, dynamic>),
-            );
-            mainSend.send(['ok', 'addHistory']);
-          case 'updateProgress':
-            if (!manager.isInitialized) await manager.init();
-            await manager.updateProgress(
-              historyId: m['historyId'] as String,
-              type: AnimeType(m['type'] as int),
-              episode: m['episode'] as int,
-              road: m['road'] as int,
-              progressInMilli: m['progressInMilli'] as int?,
-              isCompleted: m['isCompleted'] as bool?,
-            );
-            mainSend.send(['ok', 'updateProgress']);
-          case 'close':
-            // 释放 history.db 占用（WebDAV 导入前调用）
-            await manager.close();
+      queue = queue.then((_) async {
+        try {
+          switch (m['op']) {
+            case 'addHistory':
+              if (!manager.isInitialized) await manager.init();
+              await manager.addHistory(
+                _mapToHistory(m['h'] as Map<String, dynamic>),
+              );
+              mainSend.send(['ok', 'addHistory']);
+            case 'updateProgress':
+              if (!manager.isInitialized) await manager.init();
+              await manager.updateProgress(
+                historyId: m['historyId'] as String,
+                type: AnimeType(m['type'] as int),
+                episode: m['episode'] as int,
+                road: m['road'] as int,
+                progressInMilli: m['progressInMilli'] as int?,
+                isCompleted: m['isCompleted'] as bool?,
+              );
+              mainSend.send(['ok', 'updateProgress']);
+            case 'close':
+              // 释放 history.db 占用（WebDAV 导入前调用）
+              await manager.close();
+          }
+        } catch (e) {
+          mainSend.send(['err', m['op'], e.toString()]);
         }
-      } catch (e) {
-        mainSend.send(['err', m['op'], e.toString()]);
-      }
+      });
     });
   }
 }

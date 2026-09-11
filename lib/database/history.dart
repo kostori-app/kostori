@@ -576,6 +576,21 @@ class HistoryManager with ChangeNotifier {
   late _HistoryDb _db;
   bool isInitialized = false;
 
+  /// 在途数据库操作计数；close/reinit 前等待归零，
+  /// 避免数据导入/后台关闭连接时打断在途查询（原生 sqlite3_step 崩溃）
+  int _busy = 0;
+
+  Future<void> _waitIdle() async {
+    while (_busy > 0) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+  }
+
+  Future<T> _guard<T>(Future<T> Function() op) {
+    _busy++;
+    return Future.sync(op).whenComplete(() => _busy--);
+  }
+
   // 内存缓存（保持原有性能优化）
   Map<String, bool>? _cachedHistoryIds;
   // 缓存全部历史（初始从数据库加载，之后增量更新）
@@ -608,7 +623,7 @@ class HistoryManager with ChangeNotifier {
     }
   }
 
-  Future<void> init() async {
+  Future<void> init() => _guard(() async {
     if (isInitialized) return;
     _db = _HistoryDb();
     isInitialized = true;
@@ -618,15 +633,17 @@ class HistoryManager with ChangeNotifier {
       await _db.customStatement('PRAGMA busy_timeout = 10000;');
     } catch (_) {}
     await _updateCache();
-  }
+  });
 
   Future<void> close() async {
+    await _waitIdle();
     await _db.close();
     _cache = null;
     isInitialized = false;
   }
 
   Future<void> reinit([Future<void> Function()? between]) async {
+    await _waitIdle();
     if (isInitialized) {
       await _db.close();
       isInitialized = false;
@@ -646,7 +663,7 @@ class HistoryManager with ChangeNotifier {
 
   // ─── 缓存 ──────────────────────────────────
 
-  Future<void> _updateCache() async {
+  Future<void> _updateCache() => _guard(() async {
     final rows = await _db.select(_db.historyTable).get();
     _cachedHistoryIds = {};
     cachedHistories.clear();
@@ -655,13 +672,13 @@ class HistoryManager with ChangeNotifier {
       _cachedHistoryIds![h.id] = true;
       cachedHistories[h.id] = h;
     }
-  }
+  });
 
   void updateCache() => _updateCache();
 
   // ─── 写入 ──────────────────────────────────
 
-  Future<void> addHistory(History item) async {
+  Future<void> addHistory(History item) => _guard(() async {
     await _db.into(_db.historyTable).insertOnConflictUpdate(item.toCompanion());
     _cachedHistoryIds ??= {};
     _cachedHistoryIds![item.id] = true;
@@ -669,9 +686,9 @@ class HistoryManager with ChangeNotifier {
     cachedHistories.remove(item.id);
     cachedHistories[item.id] = item;
     notifyListeners();
-  }
+  });
 
-  Future<void> remove(String id, AnimeType type) async {
+  Future<void> remove(String id, AnimeType type) => _guard(() async {
     await (_db.delete(_db.historyTable)..where((t) => t.id.equals(id))).go();
     await (_db.delete(
       _db.progressTable,
@@ -679,22 +696,22 @@ class HistoryManager with ChangeNotifier {
     _cachedHistoryIds?.remove(id);
     cachedHistories.remove(id);
     notifyListeners();
-  }
+  });
 
-  Future<void> clearHistory() async {
+  Future<void> clearHistory() => _guard(() async {
     await _db.delete(_db.historyTable).go();
     await _db.delete(_db.progressTable).go();
     _cachedHistoryIds = {};
     cachedHistories.clear();
     notifyListeners();
-  }
+  });
 
-  Future<void> clearProgress() async {
+  Future<void> clearProgress() => _guard(() async {
     await _db.delete(_db.progressTable).go();
     notifyListeners();
-  }
+  });
 
-  Future<void> clearUnfavoritedHistory() async {
+  Future<void> clearUnfavoritedHistory() => _guard(() async {
     final rows = await (_db.selectOnly(
       _db.historyTable,
     )..addColumns([_db.historyTable.id, _db.historyTable.type])).get();
@@ -715,9 +732,9 @@ class HistoryManager with ChangeNotifier {
     });
     await _updateCache();
     notifyListeners();
-  }
+  });
 
-  Future<void> batchDeleteHistories(List<AnimeID> histories) async {
+  Future<void> batchDeleteHistories(List<AnimeID> histories) => _guard(() async {
     if (histories.isEmpty) return;
     await _db.transaction(() async {
       for (final h in histories) {
@@ -728,7 +745,7 @@ class HistoryManager with ChangeNotifier {
     });
     await _updateCache();
     notifyListeners();
-  }
+  });
 
   // ─── 查询 ──────────────────────────────────
 
@@ -740,7 +757,7 @@ class HistoryManager with ChangeNotifier {
     return null; // 返回 null 让调用方用 findAsync
   }
 
-  Future<History?> findAsync(String id, AnimeType type) async {
+  Future<History?> findAsync(String id, AnimeType type) => _guard(() async {
     try {
       final row =
           await (_db.select(_db.historyTable)
@@ -751,14 +768,14 @@ class HistoryManager with ChangeNotifier {
       // 连接可能正在重开（WebDAV 导入等），忽略该次查询
       return null;
     }
-  }
+  });
 
-  Future<List<History>> getAll() async {
+  Future<List<History>> getAll() => _guard(() async {
     final rows = await (_db.select(
       _db.historyTable,
     )..orderBy([(t) => OrderingTerm.desc(t.time)])).get();
     return rows.map(History.fromDrift).toList();
-  }
+  });
 
   Stream<List<History>> watchAll() {
     return (_db.select(_db.historyTable)
@@ -767,33 +784,33 @@ class HistoryManager with ChangeNotifier {
         .map((rows) => rows.map(History.fromDrift).toList());
   }
 
-  Future<List<History>> getRecent() async {
+  Future<List<History>> getRecent() => _guard(() async {
     final rows =
         await (_db.select(_db.historyTable)
               ..orderBy([(t) => OrderingTerm.desc(t.time)])
               ..limit(20))
             .get();
     return rows.map(History.fromDrift).toList();
-  }
+  });
 
-  Future<int> count() async {
+  Future<int> count() => _guard(() async {
     final c = _db.historyTable.id.count();
     final q = _db.selectOnly(_db.historyTable)..addColumns([c]);
     final row = await q.getSingle();
     return row.read(c) ?? 0;
-  }
+  });
 
-  Future<List<History>> bangumiByIDFind(int id) async {
+  Future<List<History>> bangumiByIDFind(int id) => _guard(() async {
     final rows = await (_db.select(
       _db.historyTable,
     )..where((t) => t.bangumiId.equals(id))).get();
     return rows.map(History.fromDrift).toList();
-  }
+  });
 
   /// 字段级合并：逐条与本地比对，`lastWatchTime` 较新者胜，其余字段一并采用。
   /// 用于 WebDAV 多端同步（不整库覆盖，避免各端改动互相丢失）。
   /// 性能：批量 insert，合并结束后仅通知一次，避免逐条 notify 导致 UI 反复重建。
-  Future<void> mergeHistoryList(List<History> remote) async {
+  Future<void> mergeHistoryList(List<History> remote) => _guard(() async {
     if (remote.isEmpty) return;
     final local = await getAll();
     final localMap = {for (final h in local) h.id: h};
@@ -846,7 +863,7 @@ class HistoryManager with ChangeNotifier {
     // 合并后统一刷新缓存并通知一次
     await _updateCache();
     notifyListeners();
-  }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -854,7 +871,7 @@ class HistoryManager with ChangeNotifier {
 // ═══════════════════════════════════════════════════════════
 
 extension ProgressHelper on HistoryManager {
-  Future<void> addProgress(Progress prog, String historyId) async {
+  Future<void> addProgress(Progress prog, String historyId) => _guard(() async {
     await _db
         .into(_db.progressTable)
         .insertOnConflictUpdate(
@@ -869,14 +886,14 @@ extension ProgressHelper on HistoryManager {
             endTime: Value(prog.endTime?.toIso8601String()),
           ),
         );
-  }
+  });
 
   Future<bool> checkIfProgressExists({
     required String historyId,
     required AnimeType type,
     required int episode,
     required int road,
-  }) async {
+  }) => _guard(() async {
     final row =
         await (_db.select(_db.progressTable)..where(
               (t) =>
@@ -887,7 +904,7 @@ extension ProgressHelper on HistoryManager {
             ))
             .getSingleOrNull();
     return row != null;
-  }
+  });
 
   Progress? progressFind(
     String historyId,
@@ -904,7 +921,7 @@ extension ProgressHelper on HistoryManager {
     AnimeType type,
     int episode,
     int road,
-  ) async {
+  ) => _guard(() async {
     final row =
         await (_db.select(_db.progressTable)..where(
               (t) =>
@@ -915,7 +932,7 @@ extension ProgressHelper on HistoryManager {
             ))
             .getSingleOrNull();
     return row != null ? Progress.fromDrift(row) : null;
-  }
+  });
 
   Future<void> updateProgress({
     required String historyId,
@@ -926,7 +943,7 @@ extension ProgressHelper on HistoryManager {
     bool? isCompleted,
     DateTime? startTime,
     DateTime? endTime,
-  }) async {
+  }) => _guard(() async {
     await (_db.update(_db.progressTable)..where(
           (t) =>
               t.historyId.equals(historyId) &
@@ -950,9 +967,9 @@ extension ProgressHelper on HistoryManager {
                 : const Value.absent(),
           ),
         );
-  }
+  });
 
-  Future<void> _ensureDb() async {
+  Future<void> _ensureDb() => _guard(() async {
     if (!isInitialized) await init();
     try {
       await _db.customStatement(_createPluginEventsSql);
@@ -961,7 +978,7 @@ extension ProgressHelper on HistoryManager {
     try {
       await _db.customStatement(_alterTextRulesUpdatedAtSql);
     } catch (_) {}
-  }
+  });
 
   /// 记录插件事件（浏览/搜索），history.db 同库、无条数上限
   Future<void> addPluginEvent({
@@ -972,7 +989,7 @@ extension ProgressHelper on HistoryManager {
     String subtitle = '',
     String coverUrl = '',
     String extraJson = '{}',
-  }) async {
+  }) => _guard(() async {
     await _ensureDb();
     final now = DateTime.now().millisecondsSinceEpoch;
     await _db.into(_db.pluginEventTable).insertOnConflictUpdate(
@@ -987,32 +1004,33 @@ extension ProgressHelper on HistoryManager {
         createdAt: now,
       ),
     );
-  }
+  });
 
-  Future<List<PluginEventItem>> listPluginEvents(String pluginKey) async {
-    await _ensureDb();
-    final rows = await (_db.select(_db.pluginEventTable)
-          ..where((t) => t.pluginKey.equals(pluginKey))
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-        .get();
-    return rows
-        .map(
-          (r) => PluginEventItem(
-            pluginKey: r.pluginKey,
-            kind: r.kind,
-            itemKey: r.itemKey,
-            title: r.title,
-            subtitle: r.subtitle,
-            coverUrl: r.coverUrl,
-            extraJson: r.extraJson,
-            createdAt: r.createdAt,
-          ),
-        )
-        .toList();
-  }
+  Future<List<PluginEventItem>> listPluginEvents(String pluginKey) =>
+      _guard(() async {
+        await _ensureDb();
+        final rows = await (_db.select(_db.pluginEventTable)
+              ..where((t) => t.pluginKey.equals(pluginKey))
+              ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+            .get();
+        return rows
+            .map(
+              (r) => PluginEventItem(
+                pluginKey: r.pluginKey,
+                kind: r.kind,
+                itemKey: r.itemKey,
+                title: r.title,
+                subtitle: r.subtitle,
+                coverUrl: r.coverUrl,
+                extraJson: r.extraJson,
+                createdAt: r.createdAt,
+              ),
+            )
+            .toList();
+      });
 
   /// 全量插件事件（供多端同步导出）
-  Future<List<PluginEventItem>> getAllPluginEvents() async {
+  Future<List<PluginEventItem>> getAllPluginEvents() => _guard(() async {
     await _ensureDb();
     final rows = await (_db.select(_db.pluginEventTable)
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
@@ -1031,48 +1049,52 @@ extension ProgressHelper on HistoryManager {
           ),
         )
         .toList();
-  }
+  });
 
   /// 字段级合并插件事件（WebDAV 多端）：按 (pluginKey,kind,itemKey) 主键，
   /// createdAt 较新者胜或本地缺失则写入。
-  Future<void> mergePluginEvents(List<PluginEventItem> remote) async {
-    if (remote.isEmpty) return;
-    await _ensureDb();
-    final local = await getAllPluginEvents();
-    final localMap = {
-      for (final e in local) '${e.pluginKey}\u0000${e.kind}\u0000${e.itemKey}': e,
-    };
-    final ops = <PluginEventTableCompanion>[];
-    for (final r in remote) {
-      final key = '${r.pluginKey}\u0000${r.kind}\u0000${r.itemKey}';
-      final l = localMap[key];
-      if (l != null && l.createdAt >= r.createdAt) continue;
-      ops.add(
-        PluginEventTableCompanion.insert(
-          pluginKey: r.pluginKey,
-          kind: r.kind,
-          itemKey: r.itemKey,
-          title: r.title,
-          subtitle: Value(r.subtitle),
-          coverUrl: Value(r.coverUrl),
-          extraJson: Value(r.extraJson),
-          createdAt: r.createdAt,
-        ),
-      );
-    }
-    if (ops.isEmpty) return;
-    await _db.batch((b) => b.insertAllOnConflictUpdate(_db.pluginEventTable, ops));
-  }
+  Future<void> mergePluginEvents(List<PluginEventItem> remote) =>
+      _guard(() async {
+        if (remote.isEmpty) return;
+        await _ensureDb();
+        final local = await getAllPluginEvents();
+        final localMap = {
+          for (final e in local)
+            '${e.pluginKey}\u0000${e.kind}\u0000${e.itemKey}': e,
+        };
+        final ops = <PluginEventTableCompanion>[];
+        for (final r in remote) {
+          final key = '${r.pluginKey}\u0000${r.kind}\u0000${r.itemKey}';
+          final l = localMap[key];
+          if (l != null && l.createdAt >= r.createdAt) continue;
+          ops.add(
+            PluginEventTableCompanion.insert(
+              pluginKey: r.pluginKey,
+              kind: r.kind,
+              itemKey: r.itemKey,
+              title: r.title,
+              subtitle: Value(r.subtitle),
+              coverUrl: Value(r.coverUrl),
+              extraJson: Value(r.extraJson),
+              createdAt: r.createdAt,
+            ),
+          );
+        }
+        if (ops.isEmpty) return;
+        await _db.batch(
+          (b) => b.insertAllOnConflictUpdate(_db.pluginEventTable, ops),
+        );
+      });
 
-  Future<void> clearPluginEvents(String pluginKey) async {
+  Future<void> clearPluginEvents(String pluginKey) => _guard(() async {
     await _ensureDb();
     await (_db.delete(_db.pluginEventTable)
           ..where((t) => t.pluginKey.equals(pluginKey)))
         .go();
-  }
+  });
 
   /// 读取全部文本规则（按 sort 升序，即应用顺序）
-  Future<List<Map<String, dynamic>>> getTextRules() async {
+  Future<List<Map<String, dynamic>>> getTextRules() => _guard(() async {
     await _ensureDb();
     final rows =
         await (_db.select(_db.textRuleTable)
@@ -1090,75 +1112,77 @@ extension ProgressHelper on HistoryManager {
           },
         )
         .toList();
-  }
+  });
 
   /// 覆盖写入全部文本规则（按传入顺序保存 sort）
-  Future<void> replaceTextRules(List<Map<String, dynamic>> rules) async {
-    await _ensureDb();
-    await _db.transaction(() async {
-      await _db.delete(_db.textRuleTable).go();
-      var i = 0;
-      for (final r in rules) {
-        final id = r['id']?.toString() ?? '';
-        if (id.isEmpty) continue;
-        await _db
-            .into(_db.textRuleTable)
-            .insert(
-              TextRuleTableCompanion.insert(
-                id: id,
-                name: r['name']?.toString() ?? '',
-                stepsJson: Value(r['stepsJson']?.toString() ?? '[]'),
-                sort: Value(i),
-                createdAt:
-                    (r['createdAt'] as num?)?.toInt() ??
-                    DateTime.now().millisecondsSinceEpoch,
-                updatedAt: Value(
-                  (r['updatedAt'] as num?)?.toInt() ??
-                      DateTime.now().millisecondsSinceEpoch,
-                ),
-              ),
-            );
-        i++;
-      }
-    });
-  }
+  Future<void> replaceTextRules(List<Map<String, dynamic>> rules) =>
+      _guard(() async {
+        await _ensureDb();
+        await _db.transaction(() async {
+          await _db.delete(_db.textRuleTable).go();
+          var i = 0;
+          for (final r in rules) {
+            final id = r['id']?.toString() ?? '';
+            if (id.isEmpty) continue;
+            await _db
+                .into(_db.textRuleTable)
+                .insert(
+                  TextRuleTableCompanion.insert(
+                    id: id,
+                    name: r['name']?.toString() ?? '',
+                    stepsJson: Value(r['stepsJson']?.toString() ?? '[]'),
+                    sort: Value(i),
+                    createdAt:
+                        (r['createdAt'] as num?)?.toInt() ??
+                        DateTime.now().millisecondsSinceEpoch,
+                    updatedAt: Value(
+                      (r['updatedAt'] as num?)?.toInt() ??
+                          DateTime.now().millisecondsSinceEpoch,
+                    ),
+                  ),
+                );
+            i++;
+          }
+        });
+      });
 
   /// 字段级合并文本规则（多端同步）：按 id，updatedAt 较新者胜；单边存在则并入。
   /// 注意：删除不会跨端传播（无墓碑），本地删除的规则若远端仍有会再被合并回来。
-  Future<void> mergeTextRules(List<Map<String, dynamic>> remote) async {
-    if (remote.isEmpty) return;
-    await _ensureDb();
-    final local = await getTextRules();
-    final localMap = {for (final e in local) e['id']?.toString() ?? '': e};
-    await _db.transaction(() async {
-      var sort = local.length;
-      for (final r in remote) {
-        final id = r['id']?.toString() ?? '';
-        if (id.isEmpty) continue;
-        final l = localMap[id];
-        final remoteUpdated = (r['updatedAt'] as num?)?.toInt() ?? 0;
-        final localUpdated = (l?['updatedAt'] as num?)?.toInt() ?? 0;
-        if (l != null && localUpdated >= remoteUpdated) continue;
-        final companion = TextRuleTableCompanion.insert(
-          id: id,
-          name: r['name']?.toString() ?? '',
-          stepsJson: Value(r['stepsJson']?.toString() ?? '[]'),
-          sort: Value(
-            l != null ? ((l['sort'] as num?)?.toInt() ?? sort) : sort,
-          ),
-          createdAt:
-              (r['createdAt'] as num?)?.toInt() ??
-              (l?['createdAt'] as num?)?.toInt() ??
-              DateTime.now().millisecondsSinceEpoch,
-          updatedAt: Value(remoteUpdated),
-        );
-        await _db
-            .into(_db.textRuleTable)
-            .insertOnConflictUpdate(companion);
-        sort++;
-      }
-    });
-  }
+  Future<void> mergeTextRules(List<Map<String, dynamic>> remote) =>
+      _guard(() async {
+        if (remote.isEmpty) return;
+        await _ensureDb();
+        final local = await getTextRules();
+        final localMap = {for (final e in local) e['id']?.toString() ?? '': e};
+        await _db.transaction(() async {
+          var sort = local.length;
+          for (final r in remote) {
+            final id = r['id']?.toString() ?? '';
+            if (id.isEmpty) continue;
+            final l = localMap[id];
+            final remoteUpdated = (r['updatedAt'] as num?)?.toInt() ?? 0;
+            final localUpdated = (l?['updatedAt'] as num?)?.toInt() ?? 0;
+            if (l != null && localUpdated >= remoteUpdated) continue;
+            final companion = TextRuleTableCompanion.insert(
+              id: id,
+              name: r['name']?.toString() ?? '',
+              stepsJson: Value(r['stepsJson']?.toString() ?? '[]'),
+              sort: Value(
+                l != null ? ((l['sort'] as num?)?.toInt() ?? sort) : sort,
+              ),
+              createdAt:
+                  (r['createdAt'] as num?)?.toInt() ??
+                  (l?['createdAt'] as num?)?.toInt() ??
+                  DateTime.now().millisecondsSinceEpoch,
+              updatedAt: Value(remoteUpdated),
+            );
+            await _db
+                .into(_db.textRuleTable)
+                .insertOnConflictUpdate(companion);
+            sort++;
+          }
+        });
+      });
 }
 
 // ═══════════════════════════════════════════════════════════
