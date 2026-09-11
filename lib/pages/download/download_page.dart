@@ -5,6 +5,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/download/download_filter.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
 import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/services/download/download_task.dart';
@@ -19,6 +20,12 @@ String _formatBytes(int bytes) {
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
+// 下载筛选/分组的持久化 key
+const String _recordGroupsKey = 'downloadRecordGroups';
+const String _recordFilterKey = 'downloadRecordFilter';
+const String _taskGroupsKey = 'downloadTaskGroups';
+const String _taskFilterKey = 'downloadTaskFilter';
+
 /// 视频下载管理页
 class DownloadPage extends StatefulWidget {
   const DownloadPage({super.key});
@@ -28,6 +35,9 @@ class DownloadPage extends StatefulWidget {
 }
 
 class _DownloadPageState extends State<DownloadPage> {
+  String _taskFilter = readDownloadFilter(_taskFilterKey, 'all');
+  Map<String, List<String>> _taskGroups = readDownloadGroups(_taskGroupsKey);
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +47,27 @@ class _DownloadPageState extends State<DownloadPage> {
 
   void _onChange() {
     if (mounted) setState(() {});
+  }
+
+  void _setTaskFilter(String value) {
+    setState(() => _taskFilter = value);
+    saveDownloadFilter(_taskFilterKey, value);
+  }
+
+  Future<void> _manageTaskGroups(List<DownloadFilterItem> items) async {
+    await showDownloadGroupManageSheet(
+      context,
+      storageKey: _taskGroupsKey,
+      items: items,
+      onChanged: () {
+        if (mounted) {
+          setState(() => _taskGroups = readDownloadGroups(_taskGroupsKey));
+        }
+      },
+    );
+    if (mounted) {
+      setState(() => _taskGroups = readDownloadGroups(_taskGroupsKey));
+    }
   }
 
   /// 下载设置弹窗：并发数 + 仅 WiFi
@@ -207,13 +238,13 @@ class _DownloadPageState extends State<DownloadPage> {
     );
   }
 
-  /// 正在下载：操作按钮行 + 未完成任务列表
+  /// 正在下载：筛选条 + 操作按钮行 + 未完成任务列表
   Widget _buildActiveTab(BuildContext context, DownloadManager manager) {
     final tasks = manager.tasks;
     final unfinished = tasks
         .where((t) => t.status != DownloadStatus.completed)
         .toList();
-    if (unfinished.isEmpty) {
+    if (tasks.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -235,8 +266,29 @@ class _DownloadPageState extends State<DownloadPage> {
       );
     }
 
+    final filtered = _filterTasks(unfinished);
     return Column(
       children: [
+        DownloadFilterBar(
+          builtins: [
+            (key: 'all', label: t.all),
+            (key: 'downloading', label: t.downloading),
+            (key: 'paused', label: t.paused),
+            (key: 'failed', label: t.failed),
+          ],
+          groups: _taskGroups,
+          selected: _taskFilter,
+          onSelected: _setTaskFilter,
+          onManage: () => _manageTaskGroups([
+            for (final task in tasks)
+              (
+                key: task.id,
+                label: (task.episode ?? '').isEmpty
+                    ? task.title
+                    : '${task.title} · ${task.episode}',
+              ),
+          ]),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
           child: Row(
@@ -277,16 +329,48 @@ class _DownloadPageState extends State<DownloadPage> {
           ),
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.only(bottom: 16),
-            children: [
-              for (final (i, t) in unfinished.indexed)
-                _DownloadTile(index: i + 1, task: t),
-            ],
-          ),
+          child: filtered.isEmpty
+              ? Center(
+                  child: Text(
+                    t.noData,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  children: [
+                    for (final (i, task) in filtered.indexed)
+                      _DownloadTile(index: i + 1, task: task),
+                  ],
+                ),
         ),
       ],
     );
+  }
+
+  List<DownloadTask> _filterTasks(List<DownloadTask> unfinished) {
+    switch (_taskFilter) {
+      case 'downloading':
+        return unfinished
+            .where((t) => t.status == DownloadStatus.downloading)
+            .toList();
+      case 'paused':
+        return unfinished
+            .where((t) => t.status == DownloadStatus.paused)
+            .toList();
+      case 'failed':
+        return unfinished
+            .where((t) => t.status == DownloadStatus.failed)
+            .toList();
+    }
+    if (_taskFilter.startsWith(kDownloadGroupPrefix)) {
+      final name = _taskFilter.substring(kDownloadGroupPrefix.length);
+      final ids = (_taskGroups[name] ?? const []).toSet();
+      return unfinished.where((t) => ids.contains(t.id)).toList();
+    }
+    return unfinished;
   }
 }
 
@@ -306,6 +390,9 @@ class _RecordsTabState extends State<_RecordsTab> {
 
   /// filePath → 文件大小（字节）
   final Map<String, int> _sizes = {};
+
+  String _filter = readDownloadFilter(_recordFilterKey, 'exists');
+  Map<String, List<String>> _groups = readDownloadGroups(_recordGroupsKey);
 
   @override
   void initState() {
@@ -370,6 +457,57 @@ class _RecordsTabState extends State<_RecordsTab> {
     await _reload();
   }
 
+  List<Map<String, dynamic>> _filtered() {
+    switch (_filter) {
+      case 'exists':
+        return _records.where((r) => _exists[r['filePath']] == true).toList();
+      case 'deleted':
+        return _records.where((r) => _exists[r['filePath']] != true).toList();
+    }
+    if (_filter.startsWith(kDownloadGroupPrefix)) {
+      final name = _filter.substring(kDownloadGroupPrefix.length);
+      final keys = (_groups[name] ?? const []).toSet();
+      return _records
+          .where((r) => keys.contains(r['filePath'] as String? ?? ''))
+          .toList();
+    }
+    return _records;
+  }
+
+  String _recordLabel(Map<String, dynamic> r) {
+    final title = r['title'] as String? ?? '';
+    final episode = r['episode'] as String? ?? '';
+    final resolution = r['resolution'] as String? ?? '';
+    return episode.isNotEmpty
+        ? '$title · $episode${resolution.isNotEmpty ? ' · $resolution' : ''}'
+        : title;
+  }
+
+  void _setFilter(String value) {
+    setState(() => _filter = value);
+    saveDownloadFilter(_recordFilterKey, value);
+  }
+
+  Future<void> _manageGroups() async {
+    await showDownloadGroupManageSheet(
+      context,
+      storageKey: _recordGroupsKey,
+      items: [
+        for (final r in _records)
+          if ((r['filePath'] as String? ?? '').isNotEmpty)
+            (key: r['filePath'] as String, label: _recordLabel(r)),
+      ],
+      onChanged: () {
+        if (mounted) {
+          setState(() => _groups = readDownloadGroups(_recordGroupsKey));
+        }
+      },
+    );
+    if (mounted) {
+      setState(() => _groups = readDownloadGroups(_recordGroupsKey));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -394,12 +532,35 @@ class _RecordsTabState extends State<_RecordsTab> {
         ),
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-      itemCount: _records.length,
+    final filtered = _filtered();
+    return Column(
+      children: [
+        DownloadFilterBar(
+          builtins: [
+            (key: 'exists', label: t.exists),
+            (key: 'all', label: t.all),
+            (key: 'deleted', label: t.deleted),
+          ],
+          groups: _groups,
+          selected: _filter,
+          onSelected: _setFilter,
+          onManage: _manageGroups,
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: Text(
+                    t.noData,
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+                  itemCount: filtered.length,
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
-        final r = _records[index];
+        final r = filtered[index];
         final title = r['title'] as String? ?? '';
         final episode = r['episode'] as String? ?? '';
         final resolution = r['resolution'] as String? ?? '';
@@ -490,9 +651,9 @@ class _RecordsTabState extends State<_RecordsTab> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  // 操作按钮：放到底部居中
+                  // 操作按钮：靠右
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       if (exists)
                         IconButton(
@@ -521,6 +682,9 @@ class _RecordsTabState extends State<_RecordsTab> {
           ),
         );
       },
+                ),
+        ),
+      ],
     );
   }
 }

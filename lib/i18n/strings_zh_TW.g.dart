@@ -2332,6 +2332,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get recordsEmpty => '暫無下載記錄';
 	@override String get fileNotFound => '找不到檔案';
 	@override String get deleted => '已刪除';
+	@override String get exists => '存在的';
+	@override String get failed => '失敗';
 	@override String get localPlayerSpeedTip => '長按畫面切換倍速';
 	@override String get audioTrack => '音軌';
 	@override String get subtitle => '字幕';
@@ -4874,6 +4876,8 @@ extension on TranslationsZhTw {
 			'recordsEmpty' => '暫無下載記錄',
 			'fileNotFound' => '找不到檔案',
 			'deleted' => '已刪除',
+			'exists' => '存在的',
+			'failed' => '失敗',
 			'localPlayerSpeedTip' => '長按畫面切換倍速',
 			'audioTrack' => '音軌',
 			'subtitle' => '字幕',

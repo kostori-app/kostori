@@ -6922,6 +6922,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Deleted'
 	String get deleted => 'Deleted';
 
+	/// en: 'Existing'
+	String get exists => 'Existing';
+
+	/// en: 'Failed'
+	String get failed => 'Failed';
+
 	/// en: 'Long press to change speed'
 	String get localPlayerSpeedTip => 'Long press to change speed';
 
@@ -9805,6 +9811,8 @@ extension on Translations {
 			'recordsEmpty' => 'No download records',
 			'fileNotFound' => 'File not found',
 			'deleted' => 'Deleted',
+			'exists' => 'Existing',
+			'failed' => 'Failed',
 			'localPlayerSpeedTip' => 'Long press to change speed',
 			'audioTrack' => 'Audio track',
 			'subtitle' => 'Subtitles',

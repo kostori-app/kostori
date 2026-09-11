@@ -2333,6 +2333,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get recordsEmpty => '暂无下载记录';
 	@override String get fileNotFound => '未找到文件';
 	@override String get deleted => '已删除';
+	@override String get exists => '存在的';
+	@override String get failed => '失败';
 	@override String get localPlayerSpeedTip => '长按画面切换倍速';
 	@override String get audioTrack => '音轨';
 	@override String get subtitle => '字幕';
@@ -4876,6 +4878,8 @@ extension on TranslationsZhCn {
 			'recordsEmpty' => '暂无下载记录',
 			'fileNotFound' => '未找到文件',
 			'deleted' => '已删除',
+			'exists' => '存在的',
+			'failed' => '失败',
 			'localPlayerSpeedTip' => '长按画面切换倍速',
 			'audioTrack' => '音轨',
 			'subtitle' => '字幕',
