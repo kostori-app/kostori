@@ -1313,6 +1313,50 @@ class DownloadManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 重命名某条下载记录对应的文件：改磁盘文件名 + 记录里的 title/filePath。
+  /// 会保留原文件名里除标题外的部分（集数/分辨率等）。
+  Future<void> renameRecord(String filePath, String newTitle) async {
+    final name = newTitle.trim();
+    if (name.isEmpty) return;
+    final recFile = File(p.join(App.dataPath, 'download_records.json'));
+    if (!await recFile.exists()) return;
+    List records;
+    try {
+      records = jsonDecode(await recFile.readAsString()) as List;
+    } catch (_) {
+      return;
+    }
+    final rec = records
+        .whereType<Map>()
+        .where((e) => e['filePath'] == filePath)
+        .firstOrNull;
+    if (rec == null) return;
+
+    final oldTitle = rec['title']?.toString() ?? '';
+    final dir = p.dirname(filePath);
+    final ext = p.extension(filePath);
+    final oldBase = p.basenameWithoutExtension(filePath);
+    // 保留文件名里除标题外的部分（如集数/分辨率），只替换标题
+    final newBase = (oldTitle.isNotEmpty && oldBase.contains(oldTitle))
+        ? oldBase.replaceFirst(oldTitle, name)
+        : name;
+    final newPath = p.join(dir, '${_sanitize(newBase)}$ext');
+    if (newPath != filePath) {
+      final f = File(filePath);
+      if (await f.exists()) {
+        try {
+          await f.rename(newPath);
+        } catch (_) {}
+      }
+    }
+    rec['title'] = name;
+    rec['filePath'] = newPath;
+    try {
+      await recFile.writeAsString(jsonEncode(records));
+    } catch (_) {}
+    notifyListeners();
+  }
+
   /// 移动任务目录到新分组，返回新的文件路径（未变/失败返回 null）
   Future<String?> _moveTaskDir(DownloadTask task, String newGroup) async {
     final oldDir = Directory(_taskDirPath(task));

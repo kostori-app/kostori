@@ -480,6 +480,36 @@ class _RecordsTabState extends State<_RecordsTab> {
     );
   }
 
+  /// 重命名已下载文件（同时改磁盘文件名与记录标题）
+  Future<void> _rename(Map<String, dynamic> r) async {
+    final fp = r['filePath'] as String? ?? '';
+    if (fp.isEmpty) return;
+    final ctrl = TextEditingController(text: r['title'] as String? ?? '');
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.rename,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+          decoration: InputDecoration(labelText: t.fileName),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    final n = name?.trim() ?? '';
+    if (n.isEmpty) return;
+    await DownloadManager.instance.renameRecord(fp, n);
+    await _reload();
+  }
+
   List<Map<String, dynamic>> _filtered() {
     switch (_filter) {
       case 'exists':
@@ -560,8 +590,8 @@ class _RecordsTabState extends State<_RecordsTab> {
       children: [
         DownloadFilterBar(
           builtins: [
-            (key: 'exists', label: t.exists),
             (key: 'all', label: t.all),
+            (key: 'exists', label: t.exists),
             (key: 'deleted', label: t.deleted),
           ],
           groups: DownloadManager.groups(),
@@ -689,6 +719,15 @@ class _RecordsTabState extends State<_RecordsTab> {
                           ),
                           onPressed: () => _openExternal(r),
                         ),
+                      IconButton(
+                        tooltip: t.rename,
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          color: colorScheme.primary,
+                        ),
+                        onPressed: () => _rename(r),
+                      ),
                       IconButton(
                         tooltip: t.delete,
                         visualDensity: VisualDensity.compact,

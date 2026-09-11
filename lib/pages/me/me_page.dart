@@ -619,12 +619,6 @@ class _ToolEntryGrid extends ConsumerWidget {
                 children: [
                   _iconBlock(
                     context,
-                    Icons.link,
-                    () => context.to(() => const LinkResolvePage()),
-                    t.resolveLink,
-                  ),
-                  _iconBlock(
-                    context,
                     Icons.extension,
                     () => context.to(() => const AiHubPage()),
                     t.aiLabel,
@@ -668,6 +662,12 @@ class _ToolEntryGrid extends ConsumerWidget {
                       () => context.to(() => const VideoTestPage()),
                       t.videoTestLabel,
                     ),
+                  _iconBlock(
+                    context,
+                    Icons.link,
+                    () => context.to(() => const LinkResolvePage()),
+                    t.resolveLink,
+                  ),
                 ],
               ),
             ),
