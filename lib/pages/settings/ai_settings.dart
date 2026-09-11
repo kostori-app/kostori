@@ -965,7 +965,6 @@ class _ModelListSectionState extends State<_ModelListSection> {
         isDefault: model != null && widget.selectedModelId == model.modelId,
         onSetDefault: (id) {
           widget.onSelected(id);
-          App.rootContext.showMessage(message: t.saved);
         },
         onChanged: widget.onChanged,
       ),
