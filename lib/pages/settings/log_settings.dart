@@ -150,6 +150,19 @@ class _LogSettingsState extends State<LogSettings> {
   }
 }
 
+/// 单条日志美化结果缓存（Expando 弱引用，随日志回收自动清理）。
+/// 日志页在每条新日志到达时都会重建，避免对长内容反复 jsonDecode/regex。
+final _prettyCache = Expando<String>();
+
+String _prettyLogContentCached(LogItem log) =>
+    _prettyCache[log] ??= _prettyLogContent(log.content);
+
+final _longCache = Expando<bool>();
+
+bool _isLongLog(LogItem log) =>
+    _longCache[log] ??=
+        log.content.split('\n').length > 10 || log.content.length > 700;
+
 /// 日志美化：识别正文里的 JSON 段并缩进格式化（保留前缀文字）
 String _prettyLogContent(String raw) {
   final s = raw;
@@ -393,9 +406,7 @@ class _LogsPageState extends State<LogsPage> {
                 index = logs.length - index - 1;
                 final log = logs[index];
                 // 过长日志截断展示，避免长卡片拖慢滑动；查看详情仍可看全文
-                final isLong =
-                    log.content.split('\n').length > 10 ||
-                    log.content.length > 700;
+                final isLong = _isLongLog(log);
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
@@ -464,7 +475,7 @@ class _LogsPageState extends State<LogsPage> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              _prettyLogContent(log.content),
+                              _prettyLogContentCached(log),
                               maxLines: isLong ? 10 : null,
                               overflow: isLong
                                   ? TextOverflow.ellipsis
@@ -553,7 +564,7 @@ class _LogDetailPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: SelectionArea(
           child: Text(
-            _prettyLogContent(log.content),
+            _prettyLogContentCached(log),
             style: TextStyle(
               fontSize: 13.5,
               height: 1.6,
