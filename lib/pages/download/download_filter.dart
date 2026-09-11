@@ -110,6 +110,87 @@ Future<void> showDownloadGroupManageSheet(
   );
 }
 
+/// 选择要移动到的分组（长按条目卡片触发）
+Future<void> showDownloadGroupPicker(
+  BuildContext context, {
+  required String current,
+  required Future<void> Function(String group) onSelected,
+}) {
+  final groups = DownloadManager.groups();
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => Sheet(
+      title: t.moveToFolder,
+      icon: Icons.drive_file_move_outline,
+      initialSize: 0.5,
+      builder: (context, sc) => ListView(
+        controller: sc,
+        children: [
+          _GroupChoiceTile(
+            label: t.ungrouped,
+            selected: current.isEmpty,
+            onTap: () {
+              Navigator.pop(context);
+              onSelected('');
+            },
+          ),
+          for (final g in groups)
+            _GroupChoiceTile(
+              label: g,
+              selected: current == g,
+              onTap: () {
+                Navigator.pop(context);
+                onSelected(g);
+              },
+            ),
+          if (groups.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Text(
+                  t.noData,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _GroupChoiceTile extends StatelessWidget {
+  const _GroupChoiceTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(
+        selected ? Icons.radio_button_checked : Icons.folder_outlined,
+        color: selected ? cs.primary : cs.onSurfaceVariant,
+      ),
+      title: Text(label),
+      selected: selected,
+      onTap: onTap,
+    );
+  }
+}
+
 class _DownloadGroupManageSheet extends StatefulWidget {
   const _DownloadGroupManageSheet({
     required this.items,
@@ -263,7 +344,9 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
                     ),
                     title: Text(name),
                     subtitle: Text(
-                      '${widget.items.where((e) => e.group == name).length} ${t.sources}',
+                      t.itemsCount(
+                        n: widget.items.where((e) => e.group == name).length,
+                      ),
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,

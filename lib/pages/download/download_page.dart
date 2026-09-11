@@ -64,6 +64,18 @@ class _DownloadPageState extends State<DownloadPage> {
     if (mounted) setState(() {});
   }
 
+  /// 长按下载中卡片：选择移动到哪个分组（= 下载目录子目录）
+  Future<void> _moveTaskToGroup(DownloadTask task) async {
+    await showDownloadGroupPicker(
+      context,
+      current: task.group,
+      onSelected: (g) async {
+        await DownloadManager.instance.setTaskGroup(task.id, g);
+        if (mounted) setState(() {});
+      },
+    );
+  }
+
   /// 下载设置弹窗：并发数 + 仅 WiFi
   void _showSettings(BuildContext context) {
     showModalBottomSheet<void>(
@@ -337,7 +349,11 @@ class _DownloadPageState extends State<DownloadPage> {
                   padding: const EdgeInsets.only(bottom: 16),
                   children: [
                     for (final (i, task) in filtered.indexed)
-                      _DownloadTile(index: i + 1, task: task),
+                      _DownloadTile(
+                        index: i + 1,
+                        task: task,
+                        onLongPress: () => _moveTaskToGroup(task),
+                      ),
                   ],
                 ),
         ),
@@ -448,6 +464,20 @@ class _RecordsTabState extends State<_RecordsTab> {
     if (path == null || path.isEmpty) return;
     await DownloadManager.instance.deleteRecord(path);
     await _reload();
+  }
+
+  /// 长按卡片：选择移动到哪个分组（= 下载目录子目录）
+  Future<void> _moveToGroup(Map<String, dynamic> r) async {
+    final fp = r['filePath'] as String? ?? '';
+    if (fp.isEmpty) return;
+    await showDownloadGroupPicker(
+      context,
+      current: r['group']?.toString() ?? '',
+      onSelected: (g) async {
+        await DownloadManager.instance.setRecordGroup(fp, g);
+        await _reload();
+      },
+    );
   }
 
   List<Map<String, dynamic>> _filtered() {
@@ -612,6 +642,7 @@ class _RecordsTabState extends State<_RecordsTab> {
               }
               _play(r);
             },
+            onLongPress: () => _moveToGroup(r),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
               child: Column(
@@ -683,11 +714,18 @@ class _RecordsTabState extends State<_RecordsTab> {
 }
 
 class _DownloadTile extends StatelessWidget {
-  const _DownloadTile({required this.index, required this.task});
+  const _DownloadTile({
+    required this.index,
+    required this.task,
+    this.onLongPress,
+  });
 
   final int index;
 
   final DownloadTask task;
+
+  /// 长按卡片：选择移动到哪个分组
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -703,9 +741,11 @@ class _DownloadTile extends StatelessWidget {
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
+        child: GestureDetector(
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 顶部：横封面（含序号） + 右侧：标题 + 来源/分辨率 + 状态
@@ -794,6 +834,7 @@ class _DownloadTile extends StatelessWidget {
               ],
             ],
           ),
+        ),
         ),
       ),
     );
