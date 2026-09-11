@@ -206,7 +206,7 @@ class _DownloadPageState extends State<DownloadPage> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
+        appBar: Appbar(
           title: Text(t.download),
           actions: [
             IconButton(
