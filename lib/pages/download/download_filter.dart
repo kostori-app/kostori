@@ -3,33 +3,24 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/services/download/download_manager.dart';
 
-/// 下载筛选/分组工具。
+/// 下载筛选/分组。
 ///
-/// 分组持久化在 implicitData：`{组名: [条目key...]}`；
-/// 当前选中的筛选项也持久化（内置 key 或 `g:<组名>`）。
+/// 分组 = 下载目录下的子目录；组名列表存在 `DownloadManager.groups()`。
+/// 每个任务/记录自带 `group` 字段；筛选选中项持久化在 implicitData。
 
-typedef DownloadFilterItem = ({String key, String label});
+/// 筛选条上的内置筛选项
+typedef DownloadFilterOption = ({String key, String label});
+
+/// 分组管理里的条目（key 唯一；group 为当前所属分组）
+typedef DownloadFilterItem = ({String key, String label, String group});
 
 /// 自定义分组在筛选条里的 key 前缀（避免与内置 key 冲突）
 const String kDownloadGroupPrefix = 'g:';
 
-Map<String, List<String>> readDownloadGroups(String storageKey) {
-  final raw = appdata.implicitData[storageKey];
-  if (raw is Map) {
-    final result = <String, List<String>>{};
-    raw.forEach((k, v) {
-      if (v is List) result[k.toString()] = v.whereType<String>().toList();
-    });
-    return result;
-  }
-  return {};
-}
-
-void saveDownloadGroups(String storageKey, Map<String, List<String>> groups) {
-  appdata.implicitData[storageKey] = groups;
-  appdata.writeImplicitData();
-}
+/// 下载弹窗里“默认下载分组”的持久化 key
+const String kDownloadDefaultGroupKey = 'downloadDefaultGroup';
 
 String readDownloadFilter(String storageKey, String fallback) {
   final v = appdata.implicitData[storageKey]?.toString();
@@ -52,8 +43,8 @@ class DownloadFilterBar extends StatelessWidget {
     required this.onManage,
   });
 
-  final List<DownloadFilterItem> builtins;
-  final Map<String, List<String>> groups;
+  final List<DownloadFilterOption> builtins;
+  final List<String> groups;
   final String selected;
   final ValueChanged<String> onSelected;
   final VoidCallback onManage;
@@ -75,12 +66,11 @@ class DownloadFilterBar extends StatelessWidget {
                       isSelected: selected == b.key,
                       onTap: () => onSelected(b.key),
                     ),
-                  for (final name in groups.keys)
+                  for (final name in groups)
                     CapsuleOption(
                       text: name,
                       isSelected: selected == '$kDownloadGroupPrefix$name',
-                      onTap: () =>
-                          onSelected('$kDownloadGroupPrefix$name'),
+                      onTap: () => onSelected('$kDownloadGroupPrefix$name'),
                     ),
                 ],
               ),
@@ -98,11 +88,11 @@ class DownloadFilterBar extends StatelessWidget {
   }
 }
 
-/// 管理下载分组：新建/重命名/删除 + 勾选条目
+/// 管理下载分组：新建/重命名/删除 + 勾选条目（勾选即移动到该分组目录）
 Future<void> showDownloadGroupManageSheet(
   BuildContext context, {
-  required String storageKey,
   required List<DownloadFilterItem> items,
+  required Future<void> Function(String itemKey, String group) onSetGroup,
   required VoidCallback onChanged,
 }) {
   return showModalBottomSheet<void>(
@@ -113,8 +103,8 @@ Future<void> showDownloadGroupManageSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (_) => _DownloadGroupManageSheet(
-      storageKey: storageKey,
       items: items,
+      onSetGroup: onSetGroup,
       onChanged: onChanged,
     ),
   );
@@ -122,13 +112,13 @@ Future<void> showDownloadGroupManageSheet(
 
 class _DownloadGroupManageSheet extends StatefulWidget {
   const _DownloadGroupManageSheet({
-    required this.storageKey,
     required this.items,
+    required this.onSetGroup,
     required this.onChanged,
   });
 
-  final String storageKey;
   final List<DownloadFilterItem> items;
+  final Future<void> Function(String itemKey, String group) onSetGroup;
   final VoidCallback onChanged;
 
   @override
@@ -137,16 +127,16 @@ class _DownloadGroupManageSheet extends StatefulWidget {
 }
 
 class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
-  late Map<String, List<String>> _groups;
+  late List<String> _groups;
 
   @override
   void initState() {
     super.initState();
-    _groups = readDownloadGroups(widget.storageKey);
+    _groups = DownloadManager.groups();
   }
 
-  void _persist() {
-    saveDownloadGroups(widget.storageKey, _groups);
+  void _refresh() {
+    setState(() => _groups = DownloadManager.groups());
     widget.onChanged();
   }
 
@@ -177,60 +167,61 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
   Future<void> _create() async {
     final name = await _promptName(title: t.newGroup);
     if (name == null || name.isEmpty) return;
-    if (_groups.containsKey(name)) {
+    if (_groups.contains(name)) {
       App.rootContext.showMessage(message: t.groupExists);
       return;
     }
-    setState(() {
-      _groups[name] = [];
-      _persist();
-    });
+    await DownloadManager.createGroup(name);
+    _refresh();
   }
 
   Future<void> _rename(String old) async {
     final name = await _promptName(initial: old, title: t.rename);
     if (name == null || name.isEmpty || name == old) return;
-    if (_groups.containsKey(name)) {
+    if (_groups.contains(name)) {
       App.rootContext.showMessage(message: t.groupExists);
       return;
     }
-    setState(() {
-      _groups[name] = _groups.remove(old) ?? [];
-      _persist();
-    });
+    await DownloadManager.instance.renameGroup(old, name);
+    _refresh();
   }
 
-  void _delete(String name) {
+  Future<void> _delete(String name) async {
     showConfirmDialog(
       context: context,
       title: t.delete,
       content: '${t.deleteGroupConfirm}\n"$name"',
       btnColor: Theme.of(context).colorScheme.error,
-      onConfirm: () {
-        setState(() {
-          _groups.remove(name);
-          _persist();
-        });
+      onConfirm: () async {
+        await DownloadManager.instance.deleteGroup(name);
+        _refresh();
       },
     );
   }
 
   Future<void> _assign(String name) async {
-    final result = await showModalBottomSheet<Set<String>>(
+    final selected = await showModalBottomSheet<Set<String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _DownloadGroupItemPicker(
         title: name,
         items: widget.items,
-        selected: Set.of(_groups[name] ?? const []),
+        initialSelected: {
+          for (final it in widget.items)
+            if (it.group == name) it.key,
+        },
       ),
     );
-    if (result == null) return;
-    setState(() {
-      _groups[name] = result.toList();
-      _persist();
-    });
+    if (selected == null) return;
+    for (final it in widget.items) {
+      final was = it.group == name;
+      final now = selected.contains(it.key);
+      if (was != now) {
+        await widget.onSetGroup(it.key, now ? name : '');
+      }
+    }
+    _refresh();
   }
 
   @override
@@ -264,32 +255,33 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
           : ListView(
               controller: sc,
               children: [
-                for (final entry in _groups.entries.toList()
-                  ..sort((a, b) => a.key.compareTo(b.key)))
+                for (final name in _groups)
                   ListTile(
                     leading: Icon(
                       Icons.create_new_folder_outlined,
                       color: cs.primary,
                     ),
-                    title: Text(entry.key),
-                    subtitle: Text('${entry.value.length} ${t.sources}'),
+                    title: Text(name),
+                    subtitle: Text(
+                      '${widget.items.where((e) => e.group == name).length} ${t.sources}',
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           tooltip: t.assignSources,
                           icon: const Icon(Icons.checklist),
-                          onPressed: () => _assign(entry.key),
+                          onPressed: () => _assign(name),
                         ),
                         IconButton(
                           tooltip: t.rename,
                           icon: const Icon(Icons.edit_outlined),
-                          onPressed: () => _rename(entry.key),
+                          onPressed: () => _rename(name),
                         ),
                         IconButton(
                           tooltip: t.delete,
                           icon: const Icon(Icons.delete_outline),
-                          onPressed: () => _delete(entry.key),
+                          onPressed: () => _delete(name),
                         ),
                       ],
                     ),
@@ -305,12 +297,12 @@ class _DownloadGroupItemPicker extends StatefulWidget {
   const _DownloadGroupItemPicker({
     required this.title,
     required this.items,
-    required this.selected,
+    required this.initialSelected,
   });
 
   final String title;
   final List<DownloadFilterItem> items;
-  final Set<String> selected;
+  final Set<String> initialSelected;
 
   @override
   State<_DownloadGroupItemPicker> createState() =>
@@ -318,7 +310,7 @@ class _DownloadGroupItemPicker extends StatefulWidget {
 }
 
 class _DownloadGroupItemPickerState extends State<_DownloadGroupItemPicker> {
-  late final Set<String> _selected = Set.of(widget.selected);
+  late final Set<String> _selected = Set.of(widget.initialSelected);
   final _searchCtrl = TextEditingController();
   String _keyword = '';
 

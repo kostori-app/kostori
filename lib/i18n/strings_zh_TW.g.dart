@@ -2334,6 +2334,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleted => '已刪除';
 	@override String get exists => '存在的';
 	@override String get failed => '失敗';
+	@override String get ungrouped => '未分組';
 	@override String get localPlayerSpeedTip => '長按畫面切換倍速';
 	@override String get audioTrack => '音軌';
 	@override String get subtitle => '字幕';
@@ -4878,6 +4879,7 @@ extension on TranslationsZhTw {
 			'deleted' => '已刪除',
 			'exists' => '存在的',
 			'failed' => '失敗',
+			'ungrouped' => '未分組',
 			'localPlayerSpeedTip' => '長按畫面切換倍速',
 			'audioTrack' => '音軌',
 			'subtitle' => '字幕',

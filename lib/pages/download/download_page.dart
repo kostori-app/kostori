@@ -20,10 +20,8 @@ String _formatBytes(int bytes) {
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
-// 下载筛选/分组的持久化 key
-const String _recordGroupsKey = 'downloadRecordGroups';
+// 下载筛选的持久化 key
 const String _recordFilterKey = 'downloadRecordFilter';
-const String _taskGroupsKey = 'downloadTaskGroups';
 const String _taskFilterKey = 'downloadTaskFilter';
 
 /// 视频下载管理页
@@ -36,7 +34,6 @@ class DownloadPage extends StatefulWidget {
 
 class _DownloadPageState extends State<DownloadPage> {
   String _taskFilter = readDownloadFilter(_taskFilterKey, 'all');
-  Map<String, List<String>> _taskGroups = readDownloadGroups(_taskGroupsKey);
 
   @override
   void initState() {
@@ -57,17 +54,14 @@ class _DownloadPageState extends State<DownloadPage> {
   Future<void> _manageTaskGroups(List<DownloadFilterItem> items) async {
     await showDownloadGroupManageSheet(
       context,
-      storageKey: _taskGroupsKey,
       items: items,
+      onSetGroup: (key, group) =>
+          DownloadManager.instance.setTaskGroup(key, group),
       onChanged: () {
-        if (mounted) {
-          setState(() => _taskGroups = readDownloadGroups(_taskGroupsKey));
-        }
+        if (mounted) setState(() {});
       },
     );
-    if (mounted) {
-      setState(() => _taskGroups = readDownloadGroups(_taskGroupsKey));
-    }
+    if (mounted) setState(() {});
   }
 
   /// 下载设置弹窗：并发数 + 仅 WiFi
@@ -276,7 +270,7 @@ class _DownloadPageState extends State<DownloadPage> {
             (key: 'paused', label: t.paused),
             (key: 'failed', label: t.failed),
           ],
-          groups: _taskGroups,
+          groups: DownloadManager.groups(),
           selected: _taskFilter,
           onSelected: _setTaskFilter,
           onManage: () => _manageTaskGroups([
@@ -286,6 +280,7 @@ class _DownloadPageState extends State<DownloadPage> {
                 label: (task.episode ?? '').isEmpty
                     ? task.title
                     : '${task.title} · ${task.episode}',
+                group: task.group,
               ),
           ]),
         ),
@@ -367,8 +362,7 @@ class _DownloadPageState extends State<DownloadPage> {
     }
     if (_taskFilter.startsWith(kDownloadGroupPrefix)) {
       final name = _taskFilter.substring(kDownloadGroupPrefix.length);
-      final ids = (_taskGroups[name] ?? const []).toSet();
-      return unfinished.where((t) => ids.contains(t.id)).toList();
+      return unfinished.where((t) => t.group == name).toList();
     }
     return unfinished;
   }
@@ -392,7 +386,6 @@ class _RecordsTabState extends State<_RecordsTab> {
   final Map<String, int> _sizes = {};
 
   String _filter = readDownloadFilter(_recordFilterKey, 'exists');
-  Map<String, List<String>> _groups = readDownloadGroups(_recordGroupsKey);
 
   @override
   void initState() {
@@ -466,9 +459,8 @@ class _RecordsTabState extends State<_RecordsTab> {
     }
     if (_filter.startsWith(kDownloadGroupPrefix)) {
       final name = _filter.substring(kDownloadGroupPrefix.length);
-      final keys = (_groups[name] ?? const []).toSet();
       return _records
-          .where((r) => keys.contains(r['filePath'] as String? ?? ''))
+          .where((r) => (r['group']?.toString() ?? '') == name)
           .toList();
     }
     return _records;
@@ -491,21 +483,22 @@ class _RecordsTabState extends State<_RecordsTab> {
   Future<void> _manageGroups() async {
     await showDownloadGroupManageSheet(
       context,
-      storageKey: _recordGroupsKey,
       items: [
         for (final r in _records)
           if ((r['filePath'] as String? ?? '').isNotEmpty)
-            (key: r['filePath'] as String, label: _recordLabel(r)),
+            (
+              key: r['filePath'] as String,
+              label: _recordLabel(r),
+              group: r['group']?.toString() ?? '',
+            ),
       ],
+      onSetGroup: (key, group) =>
+          DownloadManager.instance.setRecordGroup(key, group),
       onChanged: () {
-        if (mounted) {
-          setState(() => _groups = readDownloadGroups(_recordGroupsKey));
-        }
+        if (mounted) _reload();
       },
     );
-    if (mounted) {
-      setState(() => _groups = readDownloadGroups(_recordGroupsKey));
-    }
+    if (mounted) _reload();
   }
 
   @override
@@ -541,7 +534,7 @@ class _RecordsTabState extends State<_RecordsTab> {
             (key: 'all', label: t.all),
             (key: 'deleted', label: t.deleted),
           ],
-          groups: _groups,
+          groups: DownloadManager.groups(),
           selected: _filter,
           onSelected: _setFilter,
           onManage: _manageGroups,

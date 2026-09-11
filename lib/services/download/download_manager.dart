@@ -65,6 +65,13 @@ class DownloadManager extends ChangeNotifier {
     return p.join(App.dataPath, 'downloads');
   }
 
+  /// 分组对应的下载目录（空分组 = 根下载目录）
+  static String groupDir(String group) =>
+      group.isEmpty ? _downloadDir : p.join(_downloadDir, group);
+
+  String _taskDirPath(DownloadTask task) =>
+      p.join(groupDir(task.group), _safeTaskName(task));
+
   static String get _persistFile =>
       p.join(App.dataPath, 'download_tasks.json');
 
@@ -158,31 +165,44 @@ class DownloadManager extends ChangeNotifier {
   /// 清理孤儿残留：非可恢复任务（completed/无任务对应）的分片目录 +
   /// 各目录残留的 video.mp4 半成品（合并中断/强关遗留，避免损坏与占空间）。
   /// 保留 queued/downloading/paused/failed 任务的切片（断点续传 / 重新合并用）。
+  /// 分组后目录是 `downloads/<分组>/<任务目录>`，这里递归一层处理分组目录。
   Future<void> _cleanupOrphanSegments() async {
     try {
-      final dir = Directory(_downloadDir);
-      if (!await dir.exists()) return;
+      final root = Directory(_downloadDir);
+      if (!await root.exists()) return;
       final keepDirs = <String>{
         for (final t in _tasks)
           if (t.status == DownloadStatus.queued ||
               t.status == DownloadStatus.downloading ||
               t.status == DownloadStatus.paused ||
               t.status == DownloadStatus.failed)
-            p.join(_downloadDir, _safeTaskName(t)),
+            _taskDirPath(t),
       };
-      await for (final entry in dir.list()) {
-        if (entry is! Directory) continue;
-        if (keepDirs.contains(entry.path)) {
-          // 保留目录：不清 video.mp4（mp4 断点续传依赖它），也不删分片
-          continue;
-        }
-        // 孤儿目录：清理残留半成品 + 分片
-        await _deleteQuiet(File(p.join(entry.path, 'video.mp4')));
-        final segDir = Directory(p.join(entry.path, 'segments'));
-        if (!await segDir.exists()) continue;
+
+      Future<void> cleanTaskDir(Directory dir) async {
+        await _deleteQuiet(File(p.join(dir.path, 'video.mp4')));
+        final segDir = Directory(p.join(dir.path, 'segments'));
+        if (!await segDir.exists()) return;
         try {
           await segDir.delete(recursive: true);
         } catch (_) {}
+      }
+
+      await for (final entry in root.list()) {
+        if (entry is! Directory) continue;
+        if (keepDirs.contains(entry.path)) continue;
+        final hasSeg = await Directory(p.join(entry.path, 'segments')).exists();
+        final hasVideo = await File(p.join(entry.path, 'video.mp4')).exists();
+        if (hasSeg || hasVideo) {
+          await cleanTaskDir(entry);
+        } else {
+          // 可能是分组目录：递归清理其下的任务目录
+          await for (final sub in entry.list()) {
+            if (sub is! Directory) continue;
+            if (keepDirs.contains(sub.path)) continue;
+            await cleanTaskDir(sub);
+          }
+        }
       }
     } catch (e) {
       Log.error('DownloadManager.cleanupOrphanSegments', '$e');
@@ -202,6 +222,7 @@ class DownloadManager extends ChangeNotifier {
     String? author,
     String? episodeNo,
     String? resolution,
+    String? group,
     Map<String, String> headers = const {},
   }) async {
     if (url.isEmpty) return null;
@@ -240,6 +261,7 @@ class DownloadManager extends ChangeNotifier {
       episodeNo: episodeNo,
       author: author,
       resolution: resolution,
+      group: group ?? '',
       headers: effectiveHeaders,
       createdAt: DateTime.now(),
     );
@@ -318,9 +340,8 @@ class DownloadManager extends ChangeNotifier {
       return;
     }
 
-    // 每个任务一个目录：mp4 断点临时文件 / m3u8 分片都在目录内
-    final safeName = _safeTaskName(task);
-    final taskDir = p.join(_downloadDir, safeName);
+    // 每个任务一个目录（含分组子目录）：mp4 断点临时文件 / m3u8 分片都在目录内
+    final taskDir = _taskDirPath(task);
     await Directory(taskDir).create(recursive: true);
     final tmpPath = p.join(taskDir, 'video.mp4');
     // 最终文件名用标题基名（不带唯一 id 数字后缀），目录仍按 taskDir 隔离
@@ -778,8 +799,7 @@ class DownloadManager extends ChangeNotifier {
       App.rootContext.showMessage(message: t.downloadFailed);
       return;
     }
-    final safeName = _safeTaskName(task);
-    final taskDir = p.join(_downloadDir, safeName);
+    final taskDir = _taskDirPath(task);
     final segDir = p.join(taskDir, 'segments');
     if (!await Directory(segDir).exists()) {
       App.rootContext.showMessage(message: t.downloadFailed);
@@ -992,9 +1012,8 @@ class DownloadManager extends ChangeNotifier {
     if (t.filePath != null) {
       await _deleteQuiet(File(t.filePath!));
     }
-    // 用与创建一致的目录名（_safeTaskName），否则删不到残留目录
-    final safeName = _safeTaskName(t);
-    final dir = Directory(p.join(_downloadDir, safeName));
+    // 用与创建一致的目录路径（含分组），否则删不到残留目录
+    final dir = Directory(_taskDirPath(t));
     if (await dir.exists()) {
       try {
         await dir.delete(recursive: true);
@@ -1127,6 +1146,7 @@ class DownloadManager extends ChangeNotifier {
         'title': task.title,
         'episode': task.episode,
         'resolution': task.resolution,
+        'group': task.group,
         'filePath': task.filePath,
         'totalBytes': task.totalBytes,
         'time': DateTime.now().toIso8601String(),
@@ -1188,6 +1208,196 @@ class DownloadManager extends ChangeNotifier {
     } catch (e, s) {
       Log.error('DownloadManager.persist', '$e\n$s');
     }
+  }
+
+  // ── 分组（= 下载目录）────────────────────────
+
+  static const String groupsKey = 'downloadGroups';
+
+  static List<String> groups() {
+    final raw = appdata.implicitData[groupsKey];
+    if (raw is List) return raw.whereType<String>().toList();
+    return [];
+  }
+
+  static void _saveGroups(List<String> list) {
+    appdata.implicitData[groupsKey] = list;
+    appdata.writeImplicitData();
+  }
+
+  /// 新建分组：登记名称并创建目录
+  static Future<void> createGroup(String name) async {
+    final g = name.trim();
+    if (g.isEmpty) return;
+    final list = groups();
+    if (!list.contains(g)) {
+      list.add(g);
+      _saveGroups(list);
+    }
+    await Directory(groupDir(g)).create(recursive: true);
+  }
+
+  /// 重命名分组：重命名目录 + 更新任务/记录
+  Future<void> renameGroup(String from, String to) async {
+    final name = to.trim();
+    if (from == name || name.isEmpty) return;
+    final list = groups();
+    final idx = list.indexOf(from);
+    if (idx >= 0) {
+      list[idx] = name;
+    } else {
+      list.add(name);
+    }
+    final dedup = <String>[];
+    for (final g in list) {
+      if (!dedup.contains(g)) dedup.add(g);
+    }
+    _saveGroups(dedup);
+
+    final oldDir = Directory(groupDir(from));
+    final newDir = Directory(groupDir(name));
+    if (await oldDir.exists()) {
+      try {
+        await newDir.parent.create(recursive: true);
+        await oldDir.rename(newDir.path);
+      } catch (_) {}
+    }
+    for (final t in _tasks) {
+      if (t.group == from) t.group = name;
+    }
+    _persist();
+    await _rewriteRecordGroups({from: name});
+    notifyListeners();
+  }
+
+  /// 删除分组：移除分组名；组内条目回到未分组（磁盘目录/文件保留）
+  Future<void> deleteGroup(String name) async {
+    final list = groups()..remove(name);
+    _saveGroups(list);
+    for (final t in _tasks) {
+      if (t.group == name) t.group = '';
+    }
+    _persist();
+    await _rewriteRecordGroups({name: ''});
+    notifyListeners();
+  }
+
+  /// 设置任务分组（会移动磁盘上的目录/文件）
+  Future<void> setTaskGroup(String id, String group) async {
+    final t = _tasks.where((e) => e.id == id).firstOrNull;
+    if (t == null || t.group == group) return;
+    final oldPath = t.filePath;
+    final newPath = await _moveTaskDir(t, group);
+    t.group = group;
+    if (newPath != null) t.filePath = newPath;
+    _persist();
+    if (oldPath != null) {
+      await _updateRecordPath(oldPath, t.filePath ?? oldPath, group);
+    }
+    notifyListeners();
+  }
+
+  /// 设置记录分组（会移动磁盘文件）
+  Future<void> setRecordGroup(String filePath, String group) async {
+    final records = await allRecords();
+    final record = records.where((r) => r['filePath'] == filePath).firstOrNull;
+    if (record == null) return;
+    if ((record['group']?.toString() ?? '') == group) return;
+    final task = _tasks.where((e) => e.filePath == filePath).firstOrNull;
+    if (task != null) {
+      await setTaskGroup(task.id, group);
+      return;
+    }
+    final newPath = await _moveFileToGroup(filePath, group);
+    await _updateRecordPath(filePath, newPath, group);
+    notifyListeners();
+  }
+
+  /// 移动任务目录到新分组，返回新的文件路径（未变/失败返回 null）
+  Future<String?> _moveTaskDir(DownloadTask task, String newGroup) async {
+    final oldDir = Directory(_taskDirPath(task));
+    final newDir = Directory(p.join(groupDir(newGroup), _safeTaskName(task)));
+    if (oldDir.path == newDir.path) return null;
+    try {
+      await newDir.parent.create(recursive: true);
+      if (await oldDir.exists()) {
+        await oldDir.rename(newDir.path);
+        if (task.filePath != null) {
+          return p.join(newDir.path, p.basename(task.filePath!));
+        }
+        return null;
+      }
+    } catch (_) {}
+    if (task.filePath != null) {
+      final moved = await _moveFileToGroup(task.filePath!, newGroup);
+      return moved == task.filePath ? null : moved;
+    }
+    return null;
+  }
+
+  /// 移动记录文件（连同其所在任务目录）到新分组，返回新路径
+  Future<String> _moveFileToGroup(String filePath, String group) async {
+    final f = File(filePath);
+    if (!await f.exists()) return filePath;
+    final srcDir = Directory(p.dirname(filePath));
+    final dstBase = Directory(groupDir(group));
+    final dstDir = Directory(p.join(dstBase.path, p.basename(srcDir.path)));
+    if (srcDir.path == dstDir.path) return filePath;
+    try {
+      await dstBase.create(recursive: true);
+      if (await srcDir.exists()) {
+        await srcDir.rename(dstDir.path);
+        return p.join(dstDir.path, p.basename(filePath));
+      }
+      await f.rename(p.join(dstBase.path, p.basename(filePath)));
+      return p.join(dstBase.path, p.basename(filePath));
+    } catch (_) {
+      return filePath;
+    }
+  }
+
+  Future<void> _updateRecordPath(
+    String oldPath,
+    String newPath,
+    String group,
+  ) async {
+    final file = File(p.join(App.dataPath, 'download_records.json'));
+    if (!await file.exists()) return;
+    try {
+      final records = jsonDecode(await file.readAsString()) as List;
+      var changed = false;
+      for (final e in records.whereType<Map>()) {
+        if (e['filePath'] == oldPath) {
+          e['group'] = group;
+          e['filePath'] = newPath;
+          changed = true;
+        }
+      }
+      if (changed) await file.writeAsString(jsonEncode(records));
+    } catch (_) {}
+  }
+
+  Future<void> _rewriteRecordGroups(Map<String, String> mapping) async {
+    final file = File(p.join(App.dataPath, 'download_records.json'));
+    if (!await file.exists()) return;
+    try {
+      final records = jsonDecode(await file.readAsString()) as List;
+      var changed = false;
+      for (final e in records.whereType<Map>()) {
+        final g = e['group']?.toString() ?? '';
+        if (!mapping.containsKey(g)) continue;
+        final newG = mapping[g] ?? '';
+        e['group'] = newG;
+        final fp = e['filePath']?.toString() ?? '';
+        // 仅“重命名到非空分组”时改路径（删除分组不改，文件留在原目录）
+        if (fp.isNotEmpty && g.isNotEmpty && newG.isNotEmpty) {
+          final rel = p.relative(fp, from: groupDir(g));
+          e['filePath'] = p.join(groupDir(newG), rel);
+        }
+        changed = true;
+      }
+      if (changed) await file.writeAsString(jsonEncode(records));
+    } catch (_) {}
   }
 }
 

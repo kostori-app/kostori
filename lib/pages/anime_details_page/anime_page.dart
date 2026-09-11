@@ -43,6 +43,7 @@ import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/anime_details_page/watch_together_page.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
+import 'package:kostori/pages/download/download_filter.dart';
 import 'package:kostori/pages/download/download_page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
@@ -1189,6 +1190,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         resolution: item.resolution,
         animeTitle: item.animeTitle,
         episodeNo: item.episodeNo,
+        group: item.group,
       );
     }
   }
@@ -1214,6 +1216,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     String? resolution,
     String? animeTitle,
     String? episodeNo,
+    String? group,
   }) async {
     final source = AnimeSource.find(_sourceKey);
     if (source == null || source.loadAnimePages == null) {
@@ -1249,6 +1252,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       author: data!.uploader,
       headers: source.httpHeaders ?? const {},
       resolution: resolution,
+      group: group,
     );
     if (!mounted) return;
     // 并发未满时任务已立即开始（status 已切 downloading），
@@ -2437,6 +2441,9 @@ class _DownloadPick {
   /// 分辨率标签（如 1080p）
   final String? resolution;
 
+  /// 下载分组（= 下载目录子目录，空 = 未分组）
+  final String group;
+
   const _DownloadPick({
     required this.key,
     required this.episodeName,
@@ -2444,6 +2451,7 @@ class _DownloadPick {
     this.episodeNo,
     this.url,
     this.resolution,
+    this.group = '',
   });
 }
 
@@ -2498,6 +2506,9 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   /// 是否套用规则（一键开关）
   bool _useRules = false;
 
+  /// 选定的下载分组（= 下载目录子目录），持久化上次选择
+  late String _group;
+
   /// 按当前开关计算标题
   String _computedTitle() {
     if (_useRules && _rules.isNotEmpty) {
@@ -2516,6 +2527,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     _useRules = _rules.isNotEmpty;
     _animeTitle = _computedTitle();
     _titleCtrl = TextEditingController(text: _animeTitle);
+    _group = readDownloadFilter(kDownloadDefaultGroupKey, '');
   }
 
   @override
@@ -2606,6 +2618,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
           episodeNo: item.episodeNo,
           url: _resolutionByKey[item.key],
           resolution: resLabel,
+          group: _group,
         ),
       );
     }
@@ -2681,6 +2694,38 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                         ),
                         onPressed: _toggleRules,
                       ),
+              ),
+            ),
+          ),
+          // 下载分组（= 下载目录子目录），选择后持久化，下次默认沿用
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: t.downloadDir,
+                isDense: true,
+                prefixIcon: const Icon(Icons.folder_outlined, size: 18),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  isDense: true,
+                  value: DownloadManager.groups().contains(_group)
+                      ? _group
+                      : '',
+                  items: [
+                    DropdownMenuItem(value: '', child: Text(t.ungrouped)),
+                    for (final g in DownloadManager.groups())
+                      DropdownMenuItem(value: g, child: Text(g)),
+                  ],
+                  onChanged: (v) {
+                    setState(() => _group = v ?? '');
+                    saveDownloadFilter(kDownloadDefaultGroupKey, _group);
+                  },
+                ),
               ),
             ),
           ),

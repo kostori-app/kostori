@@ -2335,6 +2335,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleted => '已删除';
 	@override String get exists => '存在的';
 	@override String get failed => '失败';
+	@override String get ungrouped => '未分组';
 	@override String get localPlayerSpeedTip => '长按画面切换倍速';
 	@override String get audioTrack => '音轨';
 	@override String get subtitle => '字幕';
@@ -4880,6 +4881,7 @@ extension on TranslationsZhCn {
 			'deleted' => '已删除',
 			'exists' => '存在的',
 			'failed' => '失败',
+			'ungrouped' => '未分组',
 			'localPlayerSpeedTip' => '长按画面切换倍速',
 			'audioTrack' => '音轨',
 			'subtitle' => '字幕',

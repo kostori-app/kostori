@@ -42,6 +42,9 @@ class DownloadTask {
 
   final String? resolution;
 
+  /// 所属分组（同时作为下载目录的子目录名，空表示根目录）
+  String group;
+
   DownloadStatus status;
 
   /// 进度 0~1
@@ -86,6 +89,7 @@ class DownloadTask {
     this.episodeNo,
     this.author,
     this.resolution,
+    this.group = '',
     this.status = DownloadStatus.queued,
     this.progress = 0,
     this.totalBytes = 0,
@@ -121,6 +125,7 @@ class DownloadTask {
     'episodeNo': episodeNo,
     'author': author,
     'resolution': resolution,
+    'group': group,
     'status': status.name,
     'progress': progress,
     'totalBytes': totalBytes,
@@ -146,6 +151,7 @@ class DownloadTask {
     episodeNo: json['episodeNo'] as String?,
     author: json['author'] as String?,
     resolution: json['resolution'] as String?,
+    group: json['group']?.toString() ?? '',
     status: DownloadStatus.values.firstWhere(
       (e) => e.name == json['status'],
       orElse: () => DownloadStatus.failed,

@@ -6928,6 +6928,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Failed'
 	String get failed => 'Failed';
 
+	/// en: 'Ungrouped'
+	String get ungrouped => 'Ungrouped';
+
 	/// en: 'Long press to change speed'
 	String get localPlayerSpeedTip => 'Long press to change speed';
 
@@ -9813,6 +9816,7 @@ extension on Translations {
 			'deleted' => 'Deleted',
 			'exists' => 'Existing',
 			'failed' => 'Failed',
+			'ungrouped' => 'Ungrouped',
 			'localPlayerSpeedTip' => 'Long press to change speed',
 			'audioTrack' => 'Audio track',
 			'subtitle' => 'Subtitles',

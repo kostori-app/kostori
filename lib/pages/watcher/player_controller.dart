@@ -1130,6 +1130,8 @@ abstract class _PlayerController with Store {
       episode: currentSetName,
       author: animeUploader,
       headers: videoHeaders ?? const {},
+      // 沿用下载弹窗里选的默认分组（= 下载目录子目录）
+      group: appdata.implicitData['downloadDefaultGroup']?.toString() ?? '',
     );
     App.rootContext.showMessage(message: t.downloadQueued);
   }
