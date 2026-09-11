@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
-import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -12,7 +11,6 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/io.dart';
@@ -111,7 +109,8 @@ class DataSync with ChangeNotifier {
   }
 
   bool _handleWindowClose() {
-    // 关闭前先刷出未触发防抖的待上传变化，避免丢失最后一次修改
+    // 关闭前尽力刷出未触发防抖的待上传变化，但不阻塞退出：
+    // 不再因“正在上传”而弹窗拦截，用户想退就直接退（上传会被中断）。
     if (_uploadDebounce != null) {
       _uploadDebounce?.cancel();
       _uploadDebounce = null;
@@ -120,25 +119,7 @@ class DataSync with ChangeNotifier {
         unawaited(uploadData());
       }
     }
-    if (_isUploading) {
-      _showWindowCloseDialog();
-      return false;
-    }
     return true;
-  }
-
-  void _showWindowCloseDialog() async {
-    showLoadingDialog(
-      App.rootContext,
-      cancelButtonText: t.shutDown,
-      onCancel: () => exit(0),
-      barrierDismissible: false,
-      message: t.uploadingData,
-    );
-    while (_isUploading) {
-      await Future.delayed(const Duration(milliseconds: 50));
-    }
-    exit(0);
   }
 
   List<String>? _validateConfig() {
