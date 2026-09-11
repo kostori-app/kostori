@@ -354,14 +354,8 @@ class _GroupSourcesPickerState extends State<_GroupSourcesPicker> {
                         final s = sources[i];
                         return CheckboxListTile(
                           dense: true,
+                          // 只显示 name（很多源的 name 与 key 相同，两个都显示太重复）
                           title: Text(s.name),
-                          secondary: Text(
-                            s.key,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
                           value: _selected.contains(s.key),
                           onChanged: (v) => setState(() {
                             if (v == true) {

@@ -194,23 +194,20 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
           : null,
       builder: (context, sc) => Column(
         children: [
-          SizedBox(
-            height: 40,
-            child: ListView(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+            child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              controller: sc,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                for (final group in searchGroups())
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: OptionChip(
+              child: CapsuleOptions(
+                children: [
+                  for (final group in searchGroups())
+                    CapsuleOption(
                       text: searchGroupLabel(group),
                       isSelected: _group == group,
                       onTap: () => _switchGroup(group),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           const Divider(height: 1),
