@@ -2455,6 +2455,9 @@ class _DownloadPick {
   });
 }
 
+/// 下载弹窗分组下拉里“新建分组”的哨兵值
+const String _kNewGroupValue = '\u0000__new_download_group__';
+
 /// 卡片化下载选择弹窗：每集一张卡片（封面 + 标题 + 分辨率选择）
 class _EpisodeDownloadPicker extends StatefulWidget {
   const _EpisodeDownloadPicker({
@@ -2548,6 +2551,36 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     setState(() {
       if (!selected.add(key)) selected.remove(key);
     });
+  }
+
+  /// 在下载弹窗内直接新建分组（目录）并选中
+  Future<void> _createGroup() async {
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.newGroup,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+          decoration: InputDecoration(labelText: t.groupName),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    final n = name?.trim() ?? '';
+    if (n.isEmpty) return;
+    await DownloadManager.createGroup(n);
+    if (!mounted) return;
+    setState(() => _group = n);
+    saveDownloadFilter(kDownloadDefaultGroupKey, n);
   }
 
   /// 编辑下载标题（用于生成文件名，避免超长标题导致无法创建文件）
@@ -2720,8 +2753,22 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                     DropdownMenuItem(value: '', child: Text(t.ungrouped)),
                     for (final g in DownloadManager.groups())
                       DropdownMenuItem(value: g, child: Text(g)),
+                    DropdownMenuItem(
+                      value: _kNewGroupValue,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.add, size: 18),
+                          const SizedBox(width: 6),
+                          Text(t.newGroup),
+                        ],
+                      ),
+                    ),
                   ],
                   onChanged: (v) {
+                    if (v == _kNewGroupValue) {
+                      _createGroup();
+                      return;
+                    }
                     setState(() => _group = v ?? '');
                     saveDownloadFilter(kDownloadDefaultGroupKey, _group);
                   },
