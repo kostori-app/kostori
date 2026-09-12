@@ -90,12 +90,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     'score': t.highestRating,
   };
 
-  final Map<String, String> searchCategory = {
-    'subject': t.subject,
-    'character': t.character,
-    'person': t.person,
-  };
-
   @override
   void initState() {
     super.initState();
@@ -1628,84 +1622,62 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     );
   }
 
+  Widget _searchCategoryCapsule() {
+    return CapsuleOptions(
+      children: [
+        CapsuleOption(
+          text: t.subject,
+          isSelected: defaultCategory == 'subject',
+          onTap: () => _setSearchCategory('subject'),
+        ),
+        CapsuleOption(
+          text: t.character,
+          isSelected: defaultCategory == 'character',
+          onTap: () => _setSearchCategory('character'),
+        ),
+        CapsuleOption(
+          text: t.person,
+          isSelected: defaultCategory == 'person',
+          onTap: () => _setSearchCategory('person'),
+        ),
+      ],
+    );
+  }
+
+  void _setSearchCategory(String category) {
+    if (defaultCategory == category) return;
+    setState(() {
+      defaultCategory = category;
+      subjectSearch = category == 'subject';
+      multiSelectMode = false;
+      selectedCharacterItems.clear();
+      selectedBangumiItems.clear();
+      characterItmes.clear();
+      if (category != 'subject') {
+        bangumiItems.clear();
+      }
+    });
+  }
+
   Widget _sliverAppBar(BuildContext context) {
     return SliverAppbar(
-      leading: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            onPressed: () {
-              if (_showSearchHistory) {
-                setState(() {
-                  FocusScope.of(context).unfocus();
-                  keyword = '';
-                  _controller.clear();
-                  _showSearchHistory = false;
-                  _showSearchSuggestions = false;
-                  subjectSearchSuggestions.clear();
-                  characterSearchSuggestions.clear();
-                });
-              } else {
-                Navigator.of(context).pop();
-              }
-            },
-          ),
-          MenuAnchor(
-            builder: (context, controller, child) {
-              return TextButton.icon(
-                label: Text(searchCategory[defaultCategory] ?? ''),
-                onPressed: () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
-              );
-            },
-            menuChildren: [
-              MenuItemButton(
-                onPressed: () {
-                  defaultCategory = 'subject';
-                  subjectSearch = true;
-                  multiSelectMode = false;
-                  selectedCharacterItems.clear();
-                  selectedBangumiItems.clear();
-                  characterItmes.clear();
-                  setState(() {});
-                },
-                child: Text(t.subject),
-              ),
-              MenuItemButton(
-                onPressed: () {
-                  defaultCategory = 'character';
-                  subjectSearch = false;
-                  multiSelectMode = false;
-                  selectedCharacterItems.clear();
-                  selectedBangumiItems.clear();
-                  characterItmes.clear();
-                  bangumiItems.clear();
-                  setState(() {});
-                },
-                child: Text(t.character),
-              ),
-              MenuItemButton(
-                onPressed: () {
-                  defaultCategory = 'person';
-                  subjectSearch = false;
-                  multiSelectMode = false;
-                  selectedCharacterItems.clear();
-                  selectedBangumiItems.clear();
-                  characterItmes.clear();
-                  bangumiItems.clear();
-                  setState(() {});
-                },
-                child: Text(t.person),
-              ),
-            ],
-          ),
-        ],
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new),
+        onPressed: () {
+          if (_showSearchHistory) {
+            setState(() {
+              FocusScope.of(context).unfocus();
+              keyword = '';
+              _controller.clear();
+              _showSearchHistory = false;
+              _showSearchSuggestions = false;
+              subjectSearchSuggestions.clear();
+              characterSearchSuggestions.clear();
+            });
+          } else {
+            Navigator.of(context).pop();
+          }
+        },
       ),
       actions: [
         if (_showSearchHistory)
@@ -1749,6 +1721,10 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               );
             },
           ),
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: _searchCategoryCapsule(),
+        ),
       ],
       title: PreferredSize(
         preferredSize: const Size.fromHeight(60),
