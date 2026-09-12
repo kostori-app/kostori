@@ -2738,8 +2738,25 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     return null;
   }
 
-  /// 从清晰度标签取分辨率数字（1080P → 1080；无数字 → 0）
+  /// 从清晰度标签取排序分：无压缩的「原画/source」最高；
+  /// 其余按分辨率数字（1080 > 720 > 480 …）；无数字记 0。
   int _resScore(String label) {
+    final l = label.toLowerCase();
+    const lossless = [
+      'source',
+      'original',
+      '原画',
+      '原畫',
+      '原盘',
+      '原盤',
+      '无损',
+      '無損',
+      'blu-ray',
+      'bluray',
+      'bdrip',
+      'remux',
+    ];
+    if (lossless.any(l.contains)) return 100000;
     final m = RegExp(r'(\d{3,4})').firstMatch(label);
     return m != null ? (int.tryParse(m.group(1)!) ?? 0) : 0;
   }
