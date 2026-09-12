@@ -839,7 +839,6 @@ class _AiSettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final sources = OpenAiProviderRegistry.allProviders.entries.toList();
 
     void select(String key) {
       if (key == provider) return;
@@ -850,39 +849,15 @@ class _AiSettingsCard extends StatelessWidget {
     return _AiCard(
       icon: Icons.psychology,
       title: t.aiSettings,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Text(
-            t.aiSource,
+            t.model,
             style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final s in sources)
-                ChoiceChip(
-                  label: Text(s.value.name),
-                  selected: provider == s.key,
-                  onSelected: (v) {
-                    if (v) select(s.key);
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Text(
-                t.model,
-                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-              ),
-              const Spacer(),
-              _ModelSelector(provider: provider, onProviderChanged: select),
-            ],
-          ),
+          const Spacer(),
+          // 模型按钮内已含服务商切换，无需再单独放数据源选择
+          _ModelSelector(provider: provider, onProviderChanged: select),
         ],
       ),
     );
@@ -1227,12 +1202,23 @@ class _RangeChip extends StatelessWidget {
 }
 
 class _ModelSelector extends StatelessWidget {
-  const _ModelSelector({required this.provider, this.onProviderChanged});
+  const _ModelSelector({
+    required this.provider,
+    this.onProviderChanged,
+    this.currentModel,
+    this.onModelSelected,
+  });
 
   final String provider;
 
   /// 切换服务商回调（内置插件页用它同步 _source）
   final ValueChanged<String>? onProviderChanged;
+
+  /// 自定义当前模型（为空则用该服务商已保存的模型）
+  final String? currentModel;
+
+  /// 自定义模型选择回调（为空则写回该服务商的聊天模型）
+  final ValueChanged<String>? onModelSelected;
 
   void _showSheet(BuildContext context) {
     showModalBottomSheet(
@@ -1242,6 +1228,8 @@ class _ModelSelector extends StatelessWidget {
       builder: (_) => ProviderModelSheet(
         provider: provider,
         onProviderChanged: onProviderChanged ?? (_) {},
+        currentModel: currentModel,
+        onModelSelected: onModelSelected,
       ),
     );
   }
@@ -1252,10 +1240,12 @@ class _ModelSelector extends StatelessWidget {
     return StreamBuilder<AiApiKey?>(
       stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(provider),
       builder: (ctx, keySnap) {
-        final currentModel = keySnap.data?.model ?? '...';
-        final displayName = currentModel.contains('/')
-            ? currentModel.split('/').last
-            : currentModel;
+        final model = onModelSelected != null
+            ? (currentModel ?? '')
+            : (keySnap.data?.model ?? '');
+        final displayName = model.isEmpty
+            ? t.set
+            : (model.contains('/') ? model.split('/').last : model);
 
         return StreamBuilder<List<AiModel>>(
           stream: (AiDatabase.instance.select(

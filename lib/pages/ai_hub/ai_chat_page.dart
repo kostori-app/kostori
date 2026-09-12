@@ -1729,10 +1729,18 @@ class ProviderModelSheet extends StatefulWidget {
     super.key,
     required this.provider,
     required this.onProviderChanged,
+    this.currentModel,
+    this.onModelSelected,
   });
 
   final String provider;
   final ValueChanged<String> onProviderChanged;
+
+  /// 自定义当前模型（为空则用该服务商已保存的模型）
+  final String? currentModel;
+
+  /// 自定义模型选择回调（为空则写回该服务商的聊天模型）
+  final ValueChanged<String>? onModelSelected;
 
   @override
   State<ProviderModelSheet> createState() => _ProviderModelSheetState();
@@ -1785,7 +1793,13 @@ class _ProviderModelSheetState extends State<ProviderModelSheet> {
             ),
           ),
           const Divider(height: 1),
-          Expanded(child: ProviderModelList(provider: _provider)),
+          Expanded(
+            child: ProviderModelList(
+              provider: _provider,
+              currentModel: widget.currentModel,
+              onModelSelected: widget.onModelSelected,
+            ),
+          ),
         ],
       ),
     );
@@ -1793,9 +1807,20 @@ class _ProviderModelSheetState extends State<ProviderModelSheet> {
 }
 
 class ProviderModelList extends StatefulWidget {
-  const ProviderModelList({super.key, required this.provider});
+  const ProviderModelList({
+    super.key,
+    required this.provider,
+    this.currentModel,
+    this.onModelSelected,
+  });
 
   final String provider;
+
+  /// 自定义当前模型（为空则用该服务商已保存的模型）
+  final String? currentModel;
+
+  /// 自定义模型选择回调（为空则写回该服务商的聊天模型）
+  final ValueChanged<String>? onModelSelected;
 
   @override
   State<ProviderModelList> createState() => _ProviderModelListState();
@@ -1814,7 +1839,9 @@ class _ProviderModelListState extends State<ProviderModelList> {
     return StreamBuilder<AiApiKey?>(
       stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(widget.provider),
       builder: (ctx, keySnap) {
-        final currentModel = keySnap.data?.model;
+        final currentModel = widget.onModelSelected != null
+            ? widget.currentModel
+            : keySnap.data?.model;
         return StreamBuilder<List<AiModel>>(
           stream: (AiDatabase.instance.select(
             AiDatabase.instance.aiModels,
@@ -1909,7 +1936,11 @@ class _ProviderModelListState extends State<ProviderModelList> {
                 model: m,
                 isSelected: m.modelId == currentModel,
                 onTap: () {
-                  if (m.modelId != currentModel) {
+                  if (m.modelId == currentModel) return;
+                  final onModelSelected = widget.onModelSelected;
+                  if (onModelSelected != null) {
+                    onModelSelected(m.modelId);
+                  } else {
                     AiDatabase.instance.aiApiKeyDao.updateModel(
                       widget.provider,
                       m.modelId,
