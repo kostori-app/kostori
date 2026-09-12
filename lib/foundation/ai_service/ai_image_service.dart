@@ -12,55 +12,76 @@ import 'package:kostori/network/app_dio.dart';
 enum AiImageEngine { openai, sd }
 
 class AiImageGenConfig {
+  /// 独立于聊天的出图服务商（默认取第一个可用服务商）
+  final String provider;
   final AiImageEngine engine;
   final String model;
   final String size; // 例如 1024x1024
   final int steps; // SD 采样步数
   final String baseUrl; // 可选覆盖（SD 通常必填）
+  final String apiKey; // 可选覆盖，为空则用服务商已保存的 key
 
   const AiImageGenConfig({
+    this.provider = '',
     this.engine = AiImageEngine.openai,
     this.model = '',
     this.size = '1024x1024',
     this.steps = 20,
     this.baseUrl = '',
+    this.apiKey = '',
   });
+
+  static String defaultProvider() => OpenAiProviderRegistry
+      .allProviders
+      .keys
+      .firstWhere((_) => true, orElse: () => 'siliconFlow');
 
   static AiImageGenConfig load() {
     final v = appdata.implicitData['aiImageGen'];
     if (v is Map) {
+      final provider = v['provider']?.toString() ?? '';
       return AiImageGenConfig(
+        provider: OpenAiProviderRegistry.allProviders.containsKey(provider)
+            ? provider
+            : defaultProvider(),
         engine: v['engine'] == 'sd' ? AiImageEngine.sd : AiImageEngine.openai,
         model: v['model']?.toString() ?? '',
         size: v['size']?.toString() ?? '1024x1024',
         steps: (v['steps'] as num?)?.toInt() ?? 20,
         baseUrl: v['baseUrl']?.toString() ?? '',
+        apiKey: v['apiKey']?.toString() ?? '',
       );
     }
-    return const AiImageGenConfig();
+    return AiImageGenConfig(provider: defaultProvider());
   }
 
   AiImageGenConfig copyWith({
+    String? provider,
     AiImageEngine? engine,
     String? model,
     String? size,
     int? steps,
     String? baseUrl,
+    String? apiKey,
   }) => AiImageGenConfig(
+    provider: provider ?? this.provider,
     engine: engine ?? this.engine,
     model: model ?? this.model,
     size: size ?? this.size,
     steps: steps ?? this.steps,
     baseUrl: baseUrl ?? this.baseUrl,
+    apiKey: apiKey ?? this.apiKey,
   );
 
   void save() {
     appdata.implicitData['aiImageGen'] = {
+      'provider': provider,
       'engine': engine.name,
       'model': model,
       'size': size,
       'steps': steps,
       'baseUrl': baseUrl,
+      'apiKey': apiKey,
     };
     appdata.writeImplicitData();
   }
@@ -69,12 +90,16 @@ class AiImageGenConfig {
 class AiImageService {
   /// 生成图片。成功返回 PNG 字节。
   static Future<Res<Uint8List>> generate({
-    required String provider,
     required String prompt,
     required AiImageGenConfig config,
   }) async {
+    final provider = config.provider.isNotEmpty
+        ? config.provider
+        : AiImageGenConfig.defaultProvider();
     final row = await AiDatabase.instance.aiApiKeyDao.getByProvider(provider);
-    final apiKey = row?.apiKey ?? '';
+    final apiKey = config.apiKey.trim().isNotEmpty
+        ? config.apiKey.trim()
+        : (row?.apiKey ?? '');
     final providerBase =
         OpenAiProviderRegistry.allProviders[provider]?.baseUrl ?? '';
     final override = config.baseUrl.trim();

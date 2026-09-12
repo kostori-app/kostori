@@ -27,8 +27,8 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
 
   // AI 出图
   AiImageGenConfig _imageConfig = const AiImageGenConfig();
-  late final TextEditingController _imageModelCtrl;
   late final TextEditingController _imageBaseUrlCtrl;
+  late final TextEditingController _imageApiKeyCtrl;
   Uint8List? _imageBytes;
   bool _generatingImage = false;
 
@@ -36,15 +36,93 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
   void initState() {
     super.initState();
     _imageConfig = AiImageGenConfig.load();
-    _imageModelCtrl = TextEditingController(text: _imageConfig.model);
     _imageBaseUrlCtrl = TextEditingController(text: _imageConfig.baseUrl);
+    _imageApiKeyCtrl = TextEditingController(text: _imageConfig.apiKey);
   }
 
   @override
   void dispose() {
-    _imageModelCtrl.dispose();
     _imageBaseUrlCtrl.dispose();
+    _imageApiKeyCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImageModel() async {
+    final provider = _imageConfig.provider;
+    final models = await (AiDatabase.instance.select(
+      AiDatabase.instance.aiModels,
+    )..where((t) => t.provider.equals(provider))).get();
+    if (!mounted) return;
+    var custom = _imageConfig.model;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    t.aiImageModel,
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextFormField(
+                  initialValue: _imageConfig.model,
+                  onChanged: (v) => custom = v,
+                  decoration: InputDecoration(
+                    hintText: t.custom,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.check),
+                      onPressed: () {
+                        _updateImageConfig(
+                          _imageConfig.copyWith(model: custom.trim()),
+                        );
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: models.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(t.noModelsReturned),
+                      )
+                    : ListView(
+                        shrinkWrap: true,
+                        children: [
+                          for (final m in models)
+                            ListTile(
+                              title: Text(m.label),
+                              selected: _imageConfig.model == m.modelId,
+                              onTap: () {
+                                _updateImageConfig(
+                                  _imageConfig.copyWith(model: m.modelId),
+                                );
+                                Navigator.pop(ctx);
+                              },
+                            ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _updateImageConfig(AiImageGenConfig config) {
@@ -59,7 +137,6 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     }
     setState(() => _generatingImage = true);
     final res = await AiImageService.generate(
-      provider: _source,
       prompt: _tags.join(', '),
       config: _imageConfig,
     );
@@ -291,6 +368,27 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          label(t.aiSource),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in OpenAiProviderRegistry.allProviders.entries)
+                ChoiceChip(
+                  label: Text(s.value.name),
+                  selected: _imageConfig.provider == s.key,
+                  onSelected: (v) {
+                    if (v) {
+                      _updateImageConfig(
+                        _imageConfig.copyWith(provider: s.key, model: ''),
+                      );
+                    }
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
           label(t.aiImageEngine),
           const SizedBox(height: 6),
           Wrap(
@@ -360,17 +458,54 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                   ),
               ],
             ),
-          ] else
-            TextField(
-              controller: _imageModelCtrl,
-              decoration: InputDecoration(
-                labelText: t.aiImageModel,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (v) =>
-                  _updateImageConfig(_imageConfig.copyWith(model: v)),
+          ] else ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                label(t.aiImageModel),
+                const Spacer(),
+                InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: _pickImageModel,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 220),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _imageConfig.model.isEmpty
+                                ? t.set
+                                : _imageConfig.model,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          size: 16,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ],
           const SizedBox(height: 10),
           TextField(
             controller: _imageBaseUrlCtrl,
@@ -382,6 +517,18 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
             ),
             onChanged: (v) =>
                 _updateImageConfig(_imageConfig.copyWith(baseUrl: v)),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _imageApiKeyCtrl,
+            obscureText: true,
+            decoration: InputDecoration(
+              labelText: t.apiKey,
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (v) =>
+                _updateImageConfig(_imageConfig.copyWith(apiKey: v)),
           ),
           const SizedBox(height: 12),
           SizedBox(
