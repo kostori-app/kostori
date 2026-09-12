@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -403,41 +405,67 @@ class _RecordsTabState extends State<_RecordsTab> {
 
   String _filter = readDownloadFilter(_recordFilterKey, 'exists');
 
+  Timer? _reloadTimer;
+  bool _reloading = false;
+
   @override
   void initState() {
     super.initState();
-    DownloadManager.instance.addListener(_reload);
+    DownloadManager.instance.addListener(_scheduleReload);
     _reload();
   }
 
   @override
   void dispose() {
-    DownloadManager.instance.removeListener(_reload);
+    _reloadTimer?.cancel();
+    DownloadManager.instance.removeListener(_scheduleReload);
     super.dispose();
   }
 
+  /// 下载管理器进度通知很频繁：合并为最多每 400ms 刷新一次
+  void _scheduleReload() {
+    _reloadTimer?.cancel();
+    _reloadTimer = Timer(const Duration(milliseconds: 400), _reload);
+  }
+
   Future<void> _reload() async {
-    final records = await DownloadManager.allRecords();
-    final exists = <String, bool>{};
-    final sizes = <String, int>{};
-    for (final r in records) {
-      final fp = r['filePath'] as String? ?? '';
-      final f = File(fp);
-      exists[fp] = fp.isNotEmpty && await f.exists();
-      if (exists[fp] == true) {
-        sizes[fp] = await f.length();
+    if (_reloading) return;
+    _reloading = true;
+    try {
+      final records = await DownloadManager.allRecords();
+      // 并行检查文件是否存在/大小，避免逐条 await 拖慢首次加载
+      final checks = await Future.wait(
+        records.map((r) async {
+          final fp = r['filePath'] as String? ?? '';
+          if (fp.isEmpty) return (fp, false, 0);
+          try {
+            final stat = await File(fp).stat();
+            final exists = stat.type != FileSystemEntityType.notFound;
+            return (fp, exists, exists ? stat.size : 0);
+          } catch (_) {
+            return (fp, false, 0);
+          }
+        }),
+      );
+      final exists = <String, bool>{};
+      final sizes = <String, int>{};
+      for (final (fp, e, s) in checks) {
+        exists[fp] = e;
+        if (e) sizes[fp] = s;
       }
-    }
-    if (mounted) {
-      setState(() {
-        _records = records;
-        _exists
-          ..clear()
-          ..addAll(exists);
-        _sizes
-          ..clear()
-          ..addAll(sizes);
-      });
+      if (mounted) {
+        setState(() {
+          _records = records;
+          _exists
+            ..clear()
+            ..addAll(exists);
+          _sizes
+            ..clear()
+            ..addAll(sizes);
+        });
+      }
+    } finally {
+      _reloading = false;
     }
   }
 
@@ -516,6 +544,10 @@ class _RecordsTabState extends State<_RecordsTab> {
         return _records.where((r) => _exists[r['filePath']] == true).toList();
       case 'deleted':
         return _records.where((r) => _exists[r['filePath']] != true).toList();
+      case 'ungrouped':
+        return _records
+            .where((r) => (r['group']?.toString() ?? '') == '')
+            .toList();
     }
     if (_filter.startsWith(kDownloadGroupPrefix)) {
       final name = _filter.substring(kDownloadGroupPrefix.length);
@@ -593,6 +625,7 @@ class _RecordsTabState extends State<_RecordsTab> {
             (key: 'all', label: t.all),
             (key: 'exists', label: t.exists),
             (key: 'deleted', label: t.deleted),
+            (key: 'ungrouped', label: t.ungrouped),
           ],
           groups: DownloadManager.groups(),
           selected: _filter,

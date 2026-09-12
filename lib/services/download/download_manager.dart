@@ -54,6 +54,9 @@ class DownloadManager extends ChangeNotifier {
   final Map<String, DateTime> _speedSampleTime = {};
   final Map<String, int> _speedSampleBytes = {};
 
+  /// 进度通知节流：task.id → 上次 notify 时间
+  final Map<String, DateTime> _lastProgressNotify = {};
+
   List<DownloadTask> get tasks => List.unmodifiable(_tasks);
 
   int get _activeCount =>
@@ -450,7 +453,13 @@ class DownloadManager extends ChangeNotifier {
       _speedSampleTime[task.id] = now;
       _speedSampleBytes[task.id] = task.downloadedBytes;
     }
-    notifyListeners();
+    // 节流通知：数据块到达非常频繁，逐个 notifyListeners 会拖垮全局 UI
+    final lastNotify = _lastProgressNotify[task.id];
+    if (lastNotify == null ||
+        now.difference(lastNotify).inMilliseconds >= 250) {
+      _lastProgressNotify[task.id] = now;
+      notifyListeners();
+    }
     _syncKeepAlive();
   }
 

@@ -2455,8 +2455,122 @@ class _DownloadPick {
   });
 }
 
-/// 下载弹窗分组下拉里“新建分组”的哨兵值
-const String _kNewGroupValue = '\u0000__new_download_group__';
+/// 下载分组选择弹层：选择 / 新建 / 删除分组
+class _DownloadGroupSelectSheet extends StatefulWidget {
+  const _DownloadGroupSelectSheet({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_DownloadGroupSelectSheet> createState() =>
+      _DownloadGroupSelectSheetState();
+}
+
+class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
+  late List<String> _groups = DownloadManager.groups();
+
+  Future<void> _create() async {
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.newGroup,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+          decoration: InputDecoration(labelText: t.groupName),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    final n = name?.trim() ?? '';
+    if (n.isEmpty) return;
+    await DownloadManager.createGroup(n);
+    if (!mounted) return;
+    setState(() => _groups = DownloadManager.groups());
+    if (mounted) Navigator.of(context).pop(n);
+  }
+
+  Future<void> _delete(String name) async {
+    showConfirmDialog(
+      context: context,
+      title: t.delete,
+      content: '${t.deleteGroupConfirm}\n"$name"',
+      btnColor: Theme.of(context).colorScheme.error,
+      onConfirm: () async {
+        await DownloadManager.instance.deleteGroup(name);
+        if (mounted) setState(() => _groups = DownloadManager.groups());
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    Widget tile({
+      required String label,
+      required bool selected,
+      required VoidCallback onTap,
+      Widget? trailing,
+    }) => ListTile(
+      leading: Icon(
+        selected ? Icons.radio_button_checked : Icons.folder_outlined,
+        color: selected ? cs.primary : cs.onSurfaceVariant,
+      ),
+      title: Text(label),
+      selected: selected,
+      onTap: onTap,
+      trailing: trailing,
+    );
+    return Sheet(
+      title: t.downloadDir,
+      icon: Icons.folder_outlined,
+      initialSize: 0.55,
+      footer: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _create,
+              icon: const Icon(Icons.add),
+              label: Text(t.newGroup),
+            ),
+          ),
+        ),
+      ),
+      builder: (context, sc) => ListView(
+        controller: sc,
+        children: [
+          tile(
+            label: t.ungrouped,
+            selected: widget.initial.isEmpty,
+            onTap: () => Navigator.of(context).pop(''),
+          ),
+          for (final g in _groups)
+            tile(
+              label: g,
+              selected: widget.initial == g,
+              onTap: () => Navigator.of(context).pop(g),
+              trailing: IconButton(
+                tooltip: t.delete,
+                icon: Icon(Icons.delete_outline, size: 20, color: cs.error),
+                onPressed: () => _delete(g),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 /// 卡片化下载选择弹窗：每集一张卡片（封面 + 标题 + 分辨率选择）
 class _EpisodeDownloadPicker extends StatefulWidget {
@@ -2553,34 +2667,17 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     });
   }
 
-  /// 在下载弹窗内直接新建分组（目录）并选中
-  Future<void> _createGroup() async {
-    final ctrl = TextEditingController();
-    final name = await showDialog<String>(
+  /// 打开分组选择弹层（可新建/删除分组）
+  Future<void> _pickGroup() async {
+    final result = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => ContentDialog(
-        title: t.newGroup,
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
-          decoration: InputDecoration(labelText: t.groupName),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(t.confirm),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _DownloadGroupSelectSheet(initial: _group),
     );
-    ctrl.dispose();
-    final n = name?.trim() ?? '';
-    if (n.isEmpty) return;
-    await DownloadManager.createGroup(n);
-    if (!mounted) return;
-    setState(() => _group = n);
-    saveDownloadFilter(kDownloadDefaultGroupKey, n);
+    if (result == null || !mounted) return;
+    setState(() => _group = result);
+    saveDownloadFilter(kDownloadDefaultGroupKey, _group);
   }
 
   /// 编辑下载标题（用于生成文件名，避免超长标题导致无法创建文件）
@@ -2619,28 +2716,47 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     ctrl.dispose();
   }
 
-  /// 默认清晰度对应的实际标签：解析首个可用视频流（仅用于显示，不改 url）
-  Future<String?> _defaultResLabel(_DownloadItem item) async {
+  /// 默认清晰度：取最高清晰度（1080 > 720 > 480 …），而非列表第一个
+  Future<VideoStreamInfo?> _bestStream(_DownloadItem item) async {
     try {
       final res = await widget.resolvePlay(item.key);
-      final streams = res?.videoStreams ?? const <VideoStreamInfo>[];
-      for (final s in streams) {
-        if (s.url != null && s.url!.isNotEmpty) {
-          return s.label.isNotEmpty ? s.label : null;
+      final streams = (res?.videoStreams ?? const <VideoStreamInfo>[])
+          .where((s) => s.url != null && s.url!.isNotEmpty)
+          .toList();
+      if (streams.isEmpty) return null;
+      var best = streams.first;
+      var bestScore = _resScore(best.label);
+      for (final s in streams.skip(1)) {
+        final score = _resScore(s.label);
+        if (score > bestScore) {
+          best = s;
+          bestScore = score;
         }
       }
+      return best;
     } catch (_) {}
     return null;
+  }
+
+  /// 从清晰度标签取分辨率数字（1080P → 1080；无数字 → 0）
+  int _resScore(String label) {
+    final m = RegExp(r'(\d{3,4})').firstMatch(label);
+    return m != null ? (int.tryParse(m.group(1)!) ?? 0) : 0;
   }
 
   Future<void> _confirm() async {
     final picks = <_DownloadPick>[];
     for (final item in widget.items) {
       if (!selected.contains(item.key)) continue;
+      var url = _resolutionByKey[item.key];
       var resLabel = _resolutionLabelByKey[item.key];
-      // 未手动选清晰度（默认清晰度）：回填实际流标签用于显示
-      if (_resolutionByKey[item.key] == null && resLabel == null) {
-        resLabel = await _defaultResLabel(item);
+      // 未手动选清晰度：默认选最高清晰度（而非第一个）
+      if (url == null) {
+        final best = await _bestStream(item);
+        if (best != null) {
+          url = best.url;
+          if (best.label.isNotEmpty) resLabel = best.label;
+        }
       }
       picks.add(
         _DownloadPick(
@@ -2649,7 +2765,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
           episodeName: _nameOverrides[item.key] ?? item.episodeName,
           animeTitle: _animeTitle.trim().isEmpty ? null : _animeTitle.trim(),
           episodeNo: item.episodeNo,
-          url: _resolutionByKey[item.key],
+          url: url,
           resolution: resLabel,
           group: _group,
         ),
@@ -2730,48 +2846,25 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
               ),
             ),
           ),
-          // 下载分组（= 下载目录子目录），选择后持久化，下次默认沿用
+          // 下载分组（= 下载目录子目录）：点击打开选择弹层（可新建/删除）
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: t.downloadDir,
-                isDense: true,
-                prefixIcon: const Icon(Icons.folder_outlined, size: 18),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: _pickGroup,
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: t.downloadDir,
                   isDense: true,
-                  value: DownloadManager.groups().contains(_group)
-                      ? _group
-                      : '',
-                  items: [
-                    DropdownMenuItem(value: '', child: Text(t.ungrouped)),
-                    for (final g in DownloadManager.groups())
-                      DropdownMenuItem(value: g, child: Text(g)),
-                    DropdownMenuItem(
-                      value: _kNewGroupValue,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.add, size: 18),
-                          const SizedBox(width: 6),
-                          Text(t.newGroup),
-                        ],
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v == _kNewGroupValue) {
-                      _createGroup();
-                      return;
-                    }
-                    setState(() => _group = v ?? '');
-                    saveDownloadFilter(kDownloadDefaultGroupKey, _group);
-                  },
+                  prefixIcon: const Icon(Icons.folder_outlined, size: 18),
+                  suffixIcon: const Icon(Icons.chevron_right, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  _group.isEmpty ? t.ungrouped : _group,
+                  style: const TextStyle(fontSize: 14),
                 ),
               ),
             ),
