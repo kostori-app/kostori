@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
-import 'package:kostori/foundation/app.dart';
+import 'package:kostori/components/watermark.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
@@ -183,16 +183,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
             );
           }),
           const Divider(height: 24),
-          Center(
-            child: Text(
-              t.generatedBy(version: App.version),
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[400],
-                fontWeight: FontWeight.w300,
-              ),
-            ),
-          ),
+          const Center(child: KostoriWatermark()),
         ],
       ),
     );
