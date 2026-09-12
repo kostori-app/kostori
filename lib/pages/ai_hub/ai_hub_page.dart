@@ -172,6 +172,25 @@ class _AiHubPageState extends State<AiHubPage> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _duplicatePlugin(PluginModule plugin) async {
+    final copy = PluginModule(
+      id: 'plugin_${DateTime.now().millisecondsSinceEpoch}',
+      name: '${plugin.name} · ${t.copy}',
+      icon: plugin.icon,
+      description: plugin.description,
+      prompt: plugin.prompt,
+      starters: plugin.starters,
+      tags: plugin.tags,
+      provider: plugin.provider,
+      model: plugin.model,
+      temperature: plugin.temperature,
+      maxContextMessages: plugin.maxContextMessages,
+      chatMode: plugin.chatMode,
+    );
+    await PluginStore.instance.upsert(copy);
+    if (mounted) setState(() {});
+  }
+
   Future<void> _deletePlugin(PluginModule plugin) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -251,6 +270,7 @@ class _AiHubPageState extends State<AiHubPage> {
                       plugin: p,
                       onTap: () => _openPlugin(p),
                       onEdit: p.isBuiltin ? null : () => _editPlugin(p),
+                      onDuplicate: () => _duplicatePlugin(p),
                       onDelete: p.isBuiltin ? null : () => _deletePlugin(p),
                     ),
                     const SizedBox(height: 8),
@@ -274,12 +294,14 @@ class _PluginCard extends StatelessWidget {
     required this.plugin,
     required this.onTap,
     this.onEdit,
+    this.onDuplicate,
     this.onDelete,
   });
 
   final PluginModule plugin;
   final VoidCallback onTap;
   final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
   final VoidCallback? onDelete;
 
   @override
@@ -350,17 +372,22 @@ class _PluginCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onEdit != null || onDelete != null)
+              if (onEdit != null || onDuplicate != null || onDelete != null)
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
                   tooltip: t.more,
                   onSelected: (v) {
                     if (v == 'edit') onEdit?.call();
+                    if (v == 'duplicate') onDuplicate?.call();
                     if (v == 'delete') onDelete?.call();
                   },
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'edit', child: Text(t.edit)),
-                    PopupMenuItem(value: 'delete', child: Text(t.delete)),
+                    if (onEdit != null)
+                      PopupMenuItem(value: 'edit', child: Text(t.edit)),
+                    if (onDuplicate != null)
+                      PopupMenuItem(value: 'duplicate', child: Text(t.copy)),
+                    if (onDelete != null)
+                      PopupMenuItem(value: 'delete', child: Text(t.delete)),
                   ],
                 )
               else
