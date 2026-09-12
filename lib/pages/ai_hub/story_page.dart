@@ -485,6 +485,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       userMessage: text,
       taskType: 'story',
       maxContextMessages: 40,
+      providerOverride: aiHubProvider(),
       systemPromptOverride: _systemPrompt,
     );
     if (!mounted) return;
@@ -559,12 +560,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           }
                           final m = messages[i];
                           final isUser = m.role == 'user';
-                          return _ChatBubble(
+                          return _StoryBubble(
                             content: isUser
                                 ? m.inputContent
                                 : _parseReply(m.outputContent ?? '').narrative,
                             isUser: isUser,
-                            task: m,
                           );
                         },
                       ),
@@ -591,6 +591,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       onSend: _sendInput,
                       sending: _sending,
                       hintText: t.storyInput,
+                      bottomLeading: _ModelSelector(
+                        provider: aiHubProvider(),
+                        onProviderChanged: (p) {
+                          setAiHubProvider(p);
+                          setState(() {});
+                        },
+                      ),
                     ),
                   ],
                 );

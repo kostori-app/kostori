@@ -1150,12 +1150,16 @@ class _AiComposerBar extends StatelessWidget {
     required this.onSend,
     this.sending = false,
     this.hintText,
+    this.bottomLeading,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
   final bool sending;
   final String? hintText;
+
+  /// 底部工具行左侧内容（如模型选择器），与 AI 聊天输入栏一致
+  final Widget? bottomLeading;
 
   @override
   Widget build(BuildContext context) {
@@ -1167,46 +1171,99 @@ class _AiComposerBar extends StatelessWidget {
         border: Border.all(color: scheme.outlineVariant, width: 1),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              minLines: 1,
-              maxLines: 4,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => onSend(),
-              decoration: InputDecoration(
-                hintText: hintText ?? t.inputMessage,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => onSend(),
+                    decoration: InputDecoration(
+                      hintText: hintText ?? t.inputMessage,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      isDense: true,
+                    ),
+                  ),
                 ),
-                isDense: true,
-              ),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 6, bottom: 6),
-            child: sending
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+            child: Row(
+              children: [
+                if (bottomLeading != null) ...[
+                  bottomLeading!,
+                  const SizedBox(width: 6),
+                ],
+                const Spacer(),
+                if (sending)
+                  const Padding(
+                    padding: EdgeInsets.all(8),
                     child: SizedBox(
                       width: 20,
                       height: 20,
                       child: PolygonRefreshIndicator(),
                     ),
                   )
-                : IconButton.filled(
+                else
+                  IconButton.filled(
                     icon: const Icon(Icons.arrow_upward, size: 20),
                     tooltip: t.sendMessage,
                     onPressed: onSend,
                   ),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 冒险叙事的干净气泡：AI 全文 Markdown（无模型名/时间/操作/用量），用户右对齐气泡
+class _StoryBubble extends StatelessWidget {
+  const _StoryBubble({required this.content, required this.isUser});
+
+  final String content;
+  final bool isUser;
+
+  @override
+  Widget build(BuildContext context) {
+    if (content.trim().isEmpty) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    if (isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * 0.8,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: CustomMarkdownWidget(data: content),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: CustomMarkdownWidget(data: content, indentFirstLine: false),
     );
   }
 }
