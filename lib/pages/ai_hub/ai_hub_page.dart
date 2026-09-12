@@ -808,12 +808,33 @@ void setAiHubProvider(String provider) {
   appdata.writeImplicitData();
 }
 
+/// AI 扮演独立选中的服务商（与聊天/出图分离）
+String aiRoleProvider() {
+  final v = appdata.implicitData['aiRoleProvider'];
+  if (v is String && OpenAiProviderRegistry.allProviders.containsKey(v)) {
+    return v;
+  }
+  return aiHubProvider();
+}
+
+void setAiRoleProvider(String provider) {
+  appdata.implicitData['aiRoleProvider'] = provider;
+  appdata.writeImplicitData();
+}
+
 /// 共用的 AI 设置卡片：服务商选择 + 当前模型，风格与其它设置卡片一致
 class _AiSettingsCard extends StatelessWidget {
-  const _AiSettingsCard({required this.provider, required this.onChanged});
+  const _AiSettingsCard({
+    required this.provider,
+    required this.onChanged,
+    this.persist,
+  });
 
   final String provider;
   final ValueChanged<String> onChanged;
+
+  /// 服务商持久化方式（默认写 aiHubProvider）
+  final ValueChanged<String>? persist;
 
   @override
   Widget build(BuildContext context) {
@@ -822,7 +843,7 @@ class _AiSettingsCard extends StatelessWidget {
 
     void select(String key) {
       if (key == provider) return;
-      setAiHubProvider(key);
+      (persist ?? setAiHubProvider)(key);
       onChanged(key);
     }
 

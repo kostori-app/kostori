@@ -28,7 +28,6 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
   // AI 出图
   AiImageGenConfig _imageConfig = const AiImageGenConfig();
   late final TextEditingController _imageBaseUrlCtrl;
-  late final TextEditingController _imageApiKeyCtrl;
   Uint8List? _imageBytes;
   bool _generatingImage = false;
 
@@ -37,13 +36,11 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     super.initState();
     _imageConfig = AiImageGenConfig.load();
     _imageBaseUrlCtrl = TextEditingController(text: _imageConfig.baseUrl);
-    _imageApiKeyCtrl = TextEditingController(text: _imageConfig.apiKey);
   }
 
   @override
   void dispose() {
     _imageBaseUrlCtrl.dispose();
-    _imageApiKeyCtrl.dispose();
     super.dispose();
   }
 
@@ -506,30 +503,20 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
               ],
             ),
           ],
-          const SizedBox(height: 10),
-          TextField(
-            controller: _imageBaseUrlCtrl,
-            decoration: InputDecoration(
-              labelText: t.aiImageBaseUrl,
-              hintText: isSd ? 'http://127.0.0.1:7860' : '',
-              isDense: true,
-              border: const OutlineInputBorder(),
+          if (isSd) ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _imageBaseUrlCtrl,
+              decoration: InputDecoration(
+                labelText: t.aiImageBaseUrl,
+                hintText: 'http://127.0.0.1:7860',
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (v) =>
+                  _updateImageConfig(_imageConfig.copyWith(baseUrl: v)),
             ),
-            onChanged: (v) =>
-                _updateImageConfig(_imageConfig.copyWith(baseUrl: v)),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _imageApiKeyCtrl,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: t.apiKey,
-              isDense: true,
-              border: const OutlineInputBorder(),
-            ),
-            onChanged: (v) =>
-                _updateImageConfig(_imageConfig.copyWith(apiKey: v)),
-          ),
+          ],
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,

@@ -12,6 +12,8 @@ class RolePlayPage extends ConsumerStatefulWidget {
 }
 
 class _RolePlayPageState extends ConsumerState<RolePlayPage> {
+  String _provider = aiRoleProvider();
+
   @override
   void initState() {
     super.initState();
@@ -48,24 +50,33 @@ class _RolePlayPageState extends ConsumerState<RolePlayPage> {
         icon: const Icon(Icons.add),
         label: Text(t.rolePlayNew),
       ),
-      body: ListenableBuilder(
-        listenable: AiRoleStore.instance,
-        builder: (context, _) {
-          final roles = AiRoleStore.instance.roles;
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
-            itemCount: roles.length,
-            itemBuilder: (context, i) {
-              final r = roles[i];
-              return _RoleCard(
-                role: r,
-                onTap: () => context.to(() => RoleChatPage(role: r)),
-                onEdit: r.isBuiltin ? null : () => _edit(r),
-                onDelete: r.isBuiltin ? null : () => _delete(r),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+        children: [
+          _AiSettingsCard(
+            provider: _provider,
+            persist: setAiRoleProvider,
+            onChanged: (v) => setState(() => _provider = v),
+          ),
+          const SizedBox(height: 8),
+          ListenableBuilder(
+            listenable: AiRoleStore.instance,
+            builder: (context, _) {
+              final roles = AiRoleStore.instance.roles;
+              return Column(
+                children: [
+                  for (final r in roles)
+                    _RoleCard(
+                      role: r,
+                      onTap: () => context.to(() => RoleChatPage(role: r)),
+                      onEdit: r.isBuiltin ? null : () => _edit(r),
+                      onDelete: r.isBuiltin ? null : () => _delete(r),
+                    ),
+                ],
               );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -169,7 +180,7 @@ class RoleChatPage extends ConsumerStatefulWidget {
 class _RoleChatPageState extends ConsumerState<RoleChatPage> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
-  final String _provider = aiHubProvider();
+  final String _provider = aiRoleProvider();
   String? _sessionId;
   bool _sending = false;
 
