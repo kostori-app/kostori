@@ -2778,33 +2778,58 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     return m != null ? (int.tryParse(m.group(1)!) ?? 0) : 0;
   }
 
+  /// 并发映射（带上限，避免同时打太多请求被源盯上）
+  Future<List<T>> _mapConcurrent<T>(
+    List<_DownloadItem> items,
+    int limit,
+    Future<T> Function(_DownloadItem item) fn,
+  ) async {
+    final results = List<T?>.filled(items.length, null);
+    var next = 0;
+    Future<void> worker() async {
+      while (true) {
+        final i = next++;
+        if (i >= items.length) return;
+        results[i] = await fn(items[i]);
+      }
+    }
+
+    final n = items.isEmpty ? 0 : limit.clamp(1, items.length);
+    await Future.wait(List.generate(n, (_) => worker()));
+    return results.cast<T>();
+  }
+
   Future<void> _confirm() async {
-    final picks = <_DownloadPick>[];
-    for (final item in widget.items) {
-      if (!selected.contains(item.key)) continue;
-      var url = _resolutionByKey[item.key];
-      var resLabel = _resolutionLabelByKey[item.key];
-      // 未手动选清晰度：默认选最高清晰度（而非第一个）
-      if (url == null) {
-        final best = await _bestStream(item);
-        if (best != null) {
-          url = best.url;
-          if (best.label.isNotEmpty) resLabel = best.label;
+    final selectedItems = widget.items
+        .where((i) => selected.contains(i.key))
+        .toList();
+    // 并发（上限 4）：避免逐个串行过慢，同时不至于一次打太多请求
+    final picks = await _mapConcurrent<_DownloadPick>(
+      selectedItems,
+      4,
+      (item) async {
+        var url = _resolutionByKey[item.key];
+        var resLabel = _resolutionLabelByKey[item.key];
+        // 未手动选清晰度：默认选最高清晰度（而非第一个）
+        if (url == null) {
+          final best = await _bestStream(item);
+          if (best != null) {
+            url = best.url;
+            if (best.label.isNotEmpty) resLabel = best.label;
+          }
         }
-      }
-      // 系列条目：单独访问其详情取自身标题，避免全部用当前番剧标题命名
-      String? itemTitle;
-      final resolver = widget.resolveAnimeTitle;
-      if (resolver != null) {
-        try {
-          itemTitle = await resolver(item.key);
-        } catch (_) {}
-      }
-      final resolvedTitle = (itemTitle != null && itemTitle.trim().isNotEmpty)
-          ? itemTitle.trim()
-          : (_animeTitle.trim().isEmpty ? null : _animeTitle.trim());
-      picks.add(
-        _DownloadPick(
+        // 系列条目：单独访问其详情取自身标题，避免全部用当前番剧标题命名
+        String? itemTitle;
+        final resolver = widget.resolveAnimeTitle;
+        if (resolver != null) {
+          try {
+            itemTitle = await resolver(item.key);
+          } catch (_) {}
+        }
+        final resolvedTitle = (itemTitle != null && itemTitle.trim().isNotEmpty)
+            ? itemTitle.trim()
+            : (_animeTitle.trim().isEmpty ? null : _animeTitle.trim());
+        return _DownloadPick(
           key: item.key,
           // 用户编辑过标题时用它（用于文件名），否则用原始集名
           episodeName: _nameOverrides[item.key] ?? item.episodeName,
@@ -2813,9 +2838,9 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
           url: url,
           resolution: resLabel,
           group: _group,
-        ),
-      );
-    }
+        );
+      },
+    );
     if (!mounted) return;
     Navigator.of(context).pop(picks);
   }
