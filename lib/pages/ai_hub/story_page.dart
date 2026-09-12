@@ -695,9 +695,22 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (res.success) {
       final parsed = _parseReply(res.data);
       if (parsed.state != null) {
+        var state = parsed.state!;
+        // 把「获得道具」事件并入背包（去重），保证道具一定被持久化
+        final gained = parsed.events
+            .where((e) => e.type == 'item' && e.text.trim().isNotEmpty)
+            .map((e) => e.text.trim());
+        if (gained.isNotEmpty) {
+          final inv = [...state.inventory];
+          for (final item in gained) {
+            if (!inv.contains(item)) inv.add(item);
+          }
+          state = state.copyWith(inventory: inv);
+        }
+        setState(() => _state = state);
         await StorySessionStore.instance.put(
           story.id,
-          StorySession(sessionId: sessionId, state: parsed.state!),
+          StorySession(sessionId: sessionId, state: state),
         );
       }
     } else {

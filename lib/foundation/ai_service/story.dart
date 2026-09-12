@@ -151,6 +151,26 @@ class GameState {
 
   static const empty = GameState();
 
+  GameState copyWith({
+    List<StatBar>? resources,
+    Map<String, int>? attributes,
+    List<String>? skills,
+    List<String>? inventory,
+    List<QuestItem>? quests,
+    String? time,
+    String? location,
+    List<StoryDefinition>? codex,
+  }) => GameState(
+    resources: resources ?? this.resources,
+    attributes: attributes ?? this.attributes,
+    skills: skills ?? this.skills,
+    inventory: inventory ?? this.inventory,
+    quests: quests ?? this.quests,
+    time: time ?? this.time,
+    location: location ?? this.location,
+    codex: codex ?? this.codex,
+  );
+
   factory GameState.fromJson(Map<String, dynamic> json) {
     final resources = <StatBar>[];
     final rawRes = json['resources'];
