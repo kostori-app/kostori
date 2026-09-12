@@ -1905,7 +1905,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineCommentUpdated({required Object n}) => '第 ${n} 次修改評論';
 	@override String get statsTimelineRatingCreated => '建立了評分';
 	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改評分';
-	@override String get playerAutoPlay => '自動播放';
+	@override String get playerAutoPlay => '自動播放下一集';
 	@override String get playerAutoPlayDesc => '本集結束後自動播放下一集';
 	@override String get playerLoopEpisode => '單集循環';
 	@override String get playerLoopEpisodeDesc => '本集結束後循環播放當前集';
@@ -4449,7 +4449,7 @@ extension on TranslationsZhTw {
 			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改評論',
 			'statsTimelineRatingCreated' => '建立了評分',
 			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改評分',
-			'playerAutoPlay' => '自動播放',
+			'playerAutoPlay' => '自動播放下一集',
 			'playerAutoPlayDesc' => '本集結束後自動播放下一集',
 			'playerLoopEpisode' => '單集循環',
 			'playerLoopEpisodeDesc' => '本集結束後循環播放當前集',
