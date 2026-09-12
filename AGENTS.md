@@ -10,10 +10,16 @@ Flutter anime streaming app (GPL-3.0). Forked from Venera; video/UI patterns fro
 
 ## Codegen (mandatory)
 
-After editing drift tables/DAOs (`lib/database/`), MobX stores, `@freezed`/`@JsonSerializable` models, or i18n `.i18n.yaml` files, regenerate:
+After editing drift tables/DAOs (`lib/database/`), MobX stores, or `@freezed`/`@JsonSerializable` models, regenerate:
 
 ```
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
+```
+
+After editing i18n `.i18n.yaml` files, regenerate with slang (build_runner does not handle these):
+
+```
+dart run slang
 ```
 
 Generated `*.g.dart` files are committed to the repo.
