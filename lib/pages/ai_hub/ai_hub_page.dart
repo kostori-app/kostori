@@ -25,6 +25,7 @@ import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -381,7 +382,7 @@ class PluginModulePage extends StatefulWidget {
 
 class _PluginModulePageState extends State<PluginModulePage> {
   final TextEditingController _inputController = TextEditingController();
-  String _source = 'siliconFlow';
+  String _source = aiHubProvider();
   String? _result;
   bool _running = false;
   String? _error;
@@ -438,8 +439,8 @@ class _PluginModulePageState extends State<PluginModulePage> {
         padding: const EdgeInsets.all(16),
         children: [
           // 源选择
-          _AiSourceSelector(
-            selected: _source,
+          _AiSettingsCard(
+            provider: _source,
             onChanged: (v) => setState(() => _source = v),
           ),
           const SizedBox(height: 12),
@@ -784,32 +785,78 @@ mixin _AnimeDataMixin {
 // 共用：AI 源选择器
 // ─────────────────────────────────────────────
 
-class _AiSourceSelector extends StatelessWidget {
-  const _AiSourceSelector({required this.selected, required this.onChanged});
+/// AI 工坊当前选中的服务商（持久化到 implicitData，跨页面/重启保留）
+String aiHubProvider() {
+  final v = appdata.implicitData['aiHubProvider'];
+  if (v is String && OpenAiProviderRegistry.allProviders.containsKey(v)) {
+    return v;
+  }
+  return OpenAiProviderRegistry.allProviders.keys.firstWhere(
+    (_) => true,
+    orElse: () => 'siliconFlow',
+  );
+}
 
-  final String selected;
+void setAiHubProvider(String provider) {
+  appdata.implicitData['aiHubProvider'] = provider;
+  appdata.writeImplicitData();
+}
+
+/// 共用的 AI 设置卡片：服务商选择 + 当前模型，风格与其它设置卡片一致
+class _AiSettingsCard extends StatelessWidget {
+  const _AiSettingsCard({required this.provider, required this.onChanged});
+
+  final String provider;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final sources = OpenAiProviderRegistry.allProviders.entries
-        .map((e) => (e.key, e.value.name))
-        .toList();
+    final scheme = Theme.of(context).colorScheme;
+    final sources = OpenAiProviderRegistry.allProviders.entries.toList();
+
+    void select(String key) {
+      if (key == provider) return;
+      setAiHubProvider(key);
+      onChanged(key);
+    }
 
     return _AiCard(
       icon: Icons.psychology,
-      title: t.aiSource,
-      child: Wrap(
-        spacing: 8,
-        children: sources.map((s) {
-          return ChoiceChip(
-            label: Text(s.$2),
-            selected: selected == s.$1,
-            onSelected: (v) {
-              if (v) onChanged(s.$1);
-            },
-          );
-        }).toList(),
+      title: t.aiSettings,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.aiSource,
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in sources)
+                ChoiceChip(
+                  label: Text(s.value.name),
+                  selected: provider == s.key,
+                  onSelected: (v) {
+                    if (v) select(s.key);
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                t.model,
+                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+              ),
+              const Spacer(),
+              _ModelSelector(provider: provider, onProviderChanged: select),
+            ],
+          ),
+        ],
       ),
     );
   }

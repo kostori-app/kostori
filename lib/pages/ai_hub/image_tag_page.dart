@@ -15,7 +15,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     with _AnimeDataMixin {
   bool _isLoading = false;
   List<String> _tags = [];
-  String _source = 'siliconFlow';
+  String _source = aiHubProvider();
   String _style = 'anime';
   int _count = 30;
 
@@ -96,24 +96,9 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            _AiCard(
-              icon: Icons.psychology,
-              title: t.aiSettings,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _AiSourceSelector(
-                    selected: _source,
-                    onChanged: (v) => setState(() => _source = v),
-                  ),
-                  const SizedBox(height: 8),
-                  _ModelSelector(
-                    provider: _source,
-                    onProviderChanged: (v) => setState(() => _source = v),
-                  ),
-                ],
-              ),
+            _AiSettingsCard(
+              provider: _source,
+              onChanged: (v) => setState(() => _source = v),
             ),
             const SizedBox(height: 8),
             _AiCard(

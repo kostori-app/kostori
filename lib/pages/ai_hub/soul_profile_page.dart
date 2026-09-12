@@ -14,7 +14,7 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
     with _AnimeDataMixin {
   bool _isLoading = false;
   String? _result;
-  String _source = 'siliconFlow';
+  String _source = aiHubProvider();
   String _style = 'balanced';
 
   static const _styleHints = <String, String>{
@@ -90,24 +90,9 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            _AiCard(
-              icon: Icons.psychology,
-              title: t.aiSettings,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _AiSourceSelector(
-                    selected: _source,
-                    onChanged: (v) => setState(() => _source = v),
-                  ),
-                  const SizedBox(height: 8),
-                  _ModelSelector(
-                    provider: _source,
-                    onProviderChanged: (v) => setState(() => _source = v),
-                  ),
-                ],
-              ),
+            _AiSettingsCard(
+              provider: _source,
+              onChanged: (v) => setState(() => _source = v),
             ),
             const SizedBox(height: 8),
             _AiCard(

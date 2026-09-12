@@ -14,7 +14,7 @@ class SummaryPage extends ConsumerStatefulWidget {
 class _SummaryPageState extends ConsumerState<SummaryPage> {
   bool _isLoading = false;
   String? _result;
-  String _source = 'siliconFlow';
+  String _source = aiHubProvider();
   late _SummaryRange _range;
   DateTimeRange? _customRange;
 
@@ -225,24 +225,9 @@ Generate a $rangeLabel anime watch report based on the following data:
         child: Column(
           children: [
             // ── 服务商 + 模型选择 ──────────────────
-            _AiCard(
-              icon: Icons.psychology,
-              title: t.aiSettings,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _AiSourceSelector(
-                    selected: _source,
-                    onChanged: (v) => setState(() => _source = v),
-                  ),
-                  const SizedBox(height: 8),
-                  _ModelSelector(
-                    provider: _source,
-                    onProviderChanged: (v) => setState(() => _source = v),
-                  ),
-                ],
-              ),
+            _AiSettingsCard(
+              provider: _source,
+              onChanged: (v) => setState(() => _source = v),
             ),
             const SizedBox(height: 8),
             _AiCard(
