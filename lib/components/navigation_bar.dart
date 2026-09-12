@@ -495,24 +495,59 @@ class NaviPaneState extends State<NaviPane>
         ),
       ),
     );
+    // 展开内容：向上生长（SizeTransition 从底部对齐）+ 淡入
+    final menu = Column(
+      key: const ValueKey('actions-menu'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final a in widget.paneActions.reversed) ...[
+          item(a),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (open)
-          for (final a in widget.paneActions.reversed) ...[
-            item(a),
-            const SizedBox(height: 8),
-          ],
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          layoutBuilder: (currentChild, previousChildren) => Stack(
+            alignment: Alignment.bottomLeft,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          ),
+          transitionBuilder: (child, animation) => SizeTransition(
+            sizeFactor: animation,
+            alignment: Alignment.bottomCenter,
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: open
+              ? menu
+              : const SizedBox(
+                  key: ValueKey('actions-menu-empty'),
+                  width: size,
+                ),
+        ),
         Tooltip(
           message: t.more,
           child: circle(
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: onToggle,
-              child: Icon(
-                open ? Icons.close_rounded : Icons.grid_view_rounded,
-                size: 20,
+              child: AnimatedRotation(
+                turns: open ? 0.25 : 0,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  open ? Icons.close_rounded : Icons.grid_view_rounded,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -1102,11 +1137,10 @@ class _NaviMainViewState extends State<_NaviMainView> {
               const navH = NaviPaneState._kBottomBarHeight;
               final navW = state.floatingNavWidth;
               final open = _actionsOpen;
-              final btnColH = open
-                  ? state.widget.paneActions.length * (btnW + 8) + btnW
-                  : btnW;
-              // 留出顶部余量，避免展开后最上面的按钮被裁掉
-              final stackH = math.max(navH, (navH - btnW) / 2 + btnColH + 12);
+              // 始终按完整展开高度预留（让展开/收起的动画不被裁切）
+              final fullColH =
+                  state.widget.paneActions.length * (btnW + 8) + btnW;
+              final stackH = math.max(navH, (navH - btnW) / 2 + fullColH + 12);
               final btnLeft = math.max(
                 8.0,
                 (constraints.maxWidth - navW) / 2 - btnW - 14,
@@ -1157,16 +1191,29 @@ class _NaviMainViewState extends State<_NaviMainView> {
                         ),
                       ),
                     ),
-                    if (!_minimized)
-                      Positioned(
-                        left: btnLeft,
-                        bottom: (navH - btnW) / 2,
-                        child: state.buildFloatingActions(
-                          open: open,
-                          onToggle: () =>
-                              setState(() => _actionsOpen = !_actionsOpen),
+                    Positioned(
+                      left: btnLeft,
+                      bottom: (navH - btnW) / 2,
+                      child: IgnorePointer(
+                        ignoring: _minimized,
+                        child: AnimatedOpacity(
+                          opacity: _minimized ? 0 : 1,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOut,
+                          child: AnimatedScale(
+                            scale: _minimized ? 0.6 : 1,
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOut,
+                            alignment: Alignment.bottomCenter,
+                            child: state.buildFloatingActions(
+                              open: open,
+                              onToggle: () =>
+                                  setState(() => _actionsOpen = !_actionsOpen),
+                            ),
+                          ),
                         ),
                       ),
+                    ),
                   ],
                 ),
               );
