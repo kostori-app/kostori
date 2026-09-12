@@ -1617,6 +1617,9 @@ storyInvalidState: Invalid initial state JSON
 storyLibrary: Library
 storyLibraryHint: Only the selected entries are injected into this story.
 storyLibraryEmpty: No library entries yet. Add them in AI settings first.
+storyRollAttribute: Attribute
+storyNoAttributes: No attributes available to roll
+storyRollResult: Roll result
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

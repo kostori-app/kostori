@@ -1112,13 +1112,35 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               final parsed = isUser
                                   ? null
                                   : _parseReply(m.outputContent ?? '');
-                              return _StoryBubble(
-                                content: isUser
-                                    ? m.inputContent
-                                    : (parsed?.narrative ?? ''),
-                                isUser: isUser,
-                                task: m,
-                                events: parsed?.events ?? const [],
+                              final check = parsed?.check;
+                              final showCheck =
+                                  !isUser &&
+                                  check != null &&
+                                  i == messages.length - 1 &&
+                                  !_sending;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _StoryBubble(
+                                    content: isUser
+                                        ? m.inputContent
+                                        : (parsed?.narrative ?? ''),
+                                    isUser: isUser,
+                                    task: m,
+                                    events: parsed?.events ?? const [],
+                                  ),
+                                  if (showCheck)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 6,
+                                        bottom: 4,
+                                      ),
+                                      child: _StoryCheckCard(
+                                        check: check,
+                                        onRoll: () => _rollCheck(check),
+                                      ),
+                                    ),
+                                ],
                               );
                             },
                           ),
@@ -1431,6 +1453,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     GameState? state;
     var choices = <String>[];
     var events = <StoryEvent>[];
+    StoryCheck? check;
     if (matches.isNotEmpty) {
       final m = matches.last;
       narrative = content.replaceRange(m.start, m.end, '').trim();
@@ -1448,6 +1471,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           if (ev is List) {
             events = [for (final e in ev) StoryEvent.fromJson(e)];
           }
+          if (decoded['check'] is Map) {
+            check = StoryCheck.fromJson(
+              (decoded['check'] as Map).cast<String, dynamic>(),
+            );
+          }
         }
       } catch (_) {}
     } else if ('```'.allMatches(content).length.isOdd) {
@@ -1461,6 +1489,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       state: state,
       choices: choices,
       events: events,
+      check: check,
     );
   }
 
@@ -1484,15 +1513,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
-  /// 「更多」：故事自定义的操作按钮（一键 / 批量等）
+  /// 「更多」：内置掷骰 + 故事自定义操作按钮（一键 / 批量等）
   Future<void> _showMore() async {
-    if (story.actions.isEmpty) {
-      App.rootContext.showMessage(
-        message: t.storyNoActions,
-        level: LogLevel.warning,
-      );
-      return;
-    }
     await showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -1512,6 +1534,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 ),
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.casino_outlined),
+              title: Text(t.storyRoll),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _manualRoll();
+              },
+            ),
             for (final a in story.actions)
               ListTile(
                 leading: Icon(_storyActionIcon(a.icon)),
@@ -1521,11 +1551,124 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                   _send(a.prompt);
                 },
               ),
+            if (story.actions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    t.storyNoActions,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
           ],
         ),
       ),
     );
+  }
+
+  /// 展示掷骰结果弹窗
+  Future<void> _showRollResult(DiceRoll roll, String title) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(
+          roll.detail,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 执行 AI 声明的检定：项目掷骰，再把结果回传给 GM
+  Future<void> _rollCheck(StoryCheck check) async {
+    if (_sending) return;
+    final roll = rollDice(check.dice, modifier: check.modifier, dc: check.dc);
+    await _showRollResult(roll, check.label.isEmpty ? t.storyRoll : check.label);
+    if (!mounted) return;
+    await _send('【检定结果】${check.label}：${roll.detail}');
+  }
+
+  /// 手动掷骰：从当前属性里选一项 + 输入 DC
+  Future<void> _manualRoll() async {
+    final entries = _state.attributes.entries.toList();
+    if (entries.isEmpty) {
+      App.rootContext.showMessage(
+        message: t.storyNoAttributes,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    var index = 0;
+    final dcCtrl = TextEditingController(text: '12');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(t.storyRoll),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(t.storyRollAttribute, style: const TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (var i = 0; i < entries.length; i++)
+                    ChoiceChip(
+                      label: Text('${entries[i].key} ${entries[i].value}'),
+                      selected: index == i,
+                      onSelected: (_) => setLocal(() => index = i),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: dcCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'DC',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(t.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(t.storyRoll),
+            ),
+          ],
+        ),
+      ),
+    );
+    final dc = int.tryParse(dcCtrl.text.trim());
+    dcCtrl.dispose();
+    if (ok != true || !mounted) return;
+    final entry = entries[index];
+    final roll = rollDice('1d20', modifier: entry.value, dc: dc);
+    await _showRollResult(roll, '${entry.key} ${entry.value}');
+    if (!mounted) return;
+    await _send('【检定结果】${entry.key}：${roll.detail}');
   }
 }
 
@@ -1896,11 +2039,13 @@ class _ParsedReply {
   final GameState? state;
   final List<String> choices;
   final List<StoryEvent> events;
+  final StoryCheck? check;
 
   const _ParsedReply({
     required this.narrative,
     this.state,
     this.choices = const [],
     this.events = const [],
+    this.check,
   });
 }

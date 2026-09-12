@@ -4,6 +4,7 @@
 // 支持 .md 导入/导出。
 
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,6 +118,108 @@ class StoryAction {
     'prompt': prompt,
     'icon': icon,
   };
+}
+
+/// 检定请求：由 AI 声明、项目负责掷骰（避免模型自编点数）
+class StoryCheck {
+  final String label;
+
+  /// 骰子记法，如 1d20 / 2d6
+  final String dice;
+  final int modifier;
+  final int? dc;
+  final String reason;
+
+  const StoryCheck({
+    required this.label,
+    this.dice = '1d20',
+    this.modifier = 0,
+    this.dc,
+    this.reason = '',
+  });
+
+  factory StoryCheck.fromJson(Map<String, dynamic> json) => StoryCheck(
+    label: (json['label'] ?? json['skill'] ?? json['name'] ?? '').toString(),
+    dice: json['dice']?.toString() ?? '1d20',
+    modifier: (json['modifier'] as num?)?.toInt() ?? 0,
+    dc: (json['dc'] as num?)?.toInt(),
+    reason: json['reason']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    'dice': dice,
+    'modifier': modifier,
+    if (dc != null) 'dc': dc,
+    'reason': reason,
+  };
+
+  /// 展示用记法：1d20+3 vs DC 12
+  String get notation {
+    final mod = modifier > 0
+        ? '+$modifier'
+        : modifier < 0
+        ? '$modifier'
+        : '';
+    return '$dice$mod${dc != null ? ' vs DC $dc' : ''}';
+  }
+}
+
+/// 掷骰结果
+class DiceRoll {
+  final String notation;
+  final List<int> dice;
+  final int sides;
+  final int modifier;
+  final int total;
+  final int? dc;
+  final bool? success;
+
+  const DiceRoll({
+    required this.notation,
+    required this.dice,
+    required this.sides,
+    required this.modifier,
+    required this.total,
+    this.dc,
+    this.success,
+  });
+
+  /// 明细：1d20(15) + 3 = 18 ≥ 12 → 成功
+  String get detail {
+    final buf = StringBuffer(notation.split(' ').first);
+    buf.write('(${dice.join(', ')})');
+    if (modifier > 0) {
+      buf.write(' + $modifier');
+    } else if (modifier < 0) {
+      buf.write(' - ${-modifier}');
+    }
+    buf.write(' = $total');
+    if (dc != null) {
+      buf.write(' ${success == true ? '≥' : '<'} $dc');
+      buf.write(' → ${success == true ? '成功' : '失败'}');
+    }
+    return buf.toString();
+  }
+}
+
+/// 解析并掷骰（记法形如 NdM；不合法时回退为 1d20）
+DiceRoll rollDice(String notation, {int modifier = 0, int? dc}) {
+  final m = RegExp(r'(\d*)\s*[dD]\s*(\d+)').firstMatch(notation);
+  final count = (m == null ? 1 : (int.tryParse(m.group(1) ?? '') ?? 1)).clamp(1, 100);
+  final sides = (m == null ? 20 : (int.tryParse(m.group(2) ?? '') ?? 20)).clamp(2, 1000);
+  final rng = math.Random();
+  final dice = [for (var i = 0; i < count; i++) 1 + rng.nextInt(sides)];
+  final total = dice.fold(0, (a, b) => a + b) + modifier;
+  return DiceRoll(
+    notation: notation,
+    dice: dice,
+    sides: sides,
+    modifier: modifier,
+    total: total,
+    dc: dc,
+    success: dc == null ? null : total >= dc,
+  );
 }
 
 /// 设定条目（道具 / 种族 / 特质 / 天赋等）：一层给玩家看，一层给 AI 看
@@ -492,13 +595,15 @@ class Story {
     "situation": "当前局势/所在环境的简述（可选，展示在局势页签）"
   },
   "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
-  "choices": ["选项A", "选项B", "选项C"]
+  "choices": ["选项A", "选项B", "选项C"],
+  "check": {"label":"力量检定","dice":"1d20","modifier":3,"dc":12,"reason":"撬开铁门"}
 }
 ```
 规则：
 - state 需给出当前完整状态；codex 记录出现或已有的道具/种族/特质/天赋等设定，display 面向玩家，mechanics 供你后续严格遵守，避免自相矛盾。
-- events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务 / 检定等），会单独高亮展示。需要检定时用 type=dice，并在 text 里写明「N d M + 修正 = 结果 vs DC」及 success。
-- choices 提供 3-5 个可供玩家选择的行动。''');
+- events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
+- choices 提供 3-5 个可供玩家选择的行动。
+- **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
       buf.writeln('【后续建议要求】');

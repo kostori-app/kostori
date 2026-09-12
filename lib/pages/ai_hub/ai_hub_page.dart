@@ -1363,6 +1363,53 @@ class _StoryEventCard extends StatelessWidget {
   }
 }
 
+/// 检定卡片：AI 声明检定，玩家点「掷骰」由项目掷骰
+class _StoryCheckCard extends StatelessWidget {
+  const _StoryCheckCard({required this.check, required this.onRoll});
+
+  final StoryCheck check;
+  final VoidCallback onRoll;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.teal.withValues(alpha: 0.1),
+        border: Border.all(color: Colors.teal.withValues(alpha: 0.4), width: 0.8),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.casino_outlined, size: 18, color: Colors.teal),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  check.label.isEmpty ? t.storyRoll : check.label,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  check.reason.isEmpty
+                      ? check.notation
+                      : '${check.notation} · ${check.reason}',
+                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.tonal(onPressed: onRoll, child: Text(t.storyRoll)),
+        ],
+      ),
+    );
+  }
+}
+
 /// 共用的 AI 设置卡片：服务商选择 + 当前模型，风格与其它设置卡片一致
 class _AiSettingsCard extends StatelessWidget {
   const _AiSettingsCard({required this.provider, required this.onChanged});

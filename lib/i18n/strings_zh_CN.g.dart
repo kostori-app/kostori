@@ -1606,6 +1606,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyLibrary => '知识库';
 	@override String get storyLibraryHint => '仅勾选的条目会注入到本故事。';
 	@override String get storyLibraryEmpty => '知识库还是空的，请先在 AI 设置里添加。';
+	@override String get storyRollAttribute => '属性';
+	@override String get storyNoAttributes => '没有可用于检定的属性';
+	@override String get storyRollResult => '掷骰结果';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4241,6 +4244,9 @@ extension on TranslationsZhCn {
 			'storyLibrary' => '知识库',
 			'storyLibraryHint' => '仅勾选的条目会注入到本故事。',
 			'storyLibraryEmpty' => '知识库还是空的，请先在 AI 设置里添加。',
+			'storyRollAttribute' => '属性',
+			'storyNoAttributes' => '没有可用于检定的属性',
+			'storyRollResult' => '掷骰结果',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4677,11 +4683,11 @@ extension on TranslationsZhCn {
 			'statsRatedAt' => ({required Object duration}) => '(评价时 ${duration})',
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} 创建了评论 ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评论 ${duration}:',
+			_ => null,
+		} ?? switch (path) {
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} 创建了评级 ${duration}:',
 			'statsRateAndComment' => '评分并评论',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评级 ${duration}:',
-			_ => null,
-		} ?? switch (path) {
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}点击${value}次',
 			'statsDailyClicks' => ({required Object total}) => '本日点击次数: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} ${platform}观看: ${duration}',

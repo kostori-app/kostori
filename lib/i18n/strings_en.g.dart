@@ -4744,6 +4744,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No library entries yet. Add them in AI settings first.'
 	String get storyLibraryEmpty => 'No library entries yet. Add them in AI settings first.';
 
+	/// en: 'Attribute'
+	String get storyRollAttribute => 'Attribute';
+
+	/// en: 'No attributes available to roll'
+	String get storyNoAttributes => 'No attributes available to roll';
+
+	/// en: 'Roll result'
+	String get storyRollResult => 'Roll result';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9359,6 +9368,9 @@ extension on Translations {
 			'storyLibrary' => 'Library',
 			'storyLibraryHint' => 'Only the selected entries are injected into this story.',
 			'storyLibraryEmpty' => 'No library entries yet. Add them in AI settings first.',
+			'storyRollAttribute' => 'Attribute',
+			'storyNoAttributes' => 'No attributes available to roll',
+			'storyRollResult' => 'Roll result',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9794,11 +9806,11 @@ extension on Translations {
 			'statsRatedAt' => ({required Object duration}) => '(at rating ${duration})',
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} created a comment ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} modified the comment ${n} times ${duration}:',
+			_ => null,
+		} ?? switch (path) {
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} rated ${duration}:',
 			'statsRateAndComment' => 'rated & commented',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} changed the rating ${n} times ${duration}:',
-			_ => null,
-		} ?? switch (path) {
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} clicked ${platform} ${value} times',
 			'statsDailyClicks' => ({required Object total}) => 'Today\'s clicks: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} watched ${platform} ${duration}',

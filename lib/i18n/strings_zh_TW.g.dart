@@ -1607,6 +1607,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyLibrary => '知識庫';
 	@override String get storyLibraryHint => '僅勾選的條目會注入到本故事。';
 	@override String get storyLibraryEmpty => '知識庫還是空的，請先在 AI 設定裡新增。';
+	@override String get storyRollAttribute => '屬性';
+	@override String get storyNoAttributes => '沒有可用於檢定的屬性';
+	@override String get storyRollResult => '擲骰結果';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4241,6 +4244,9 @@ extension on TranslationsZhTw {
 			'storyLibrary' => '知識庫',
 			'storyLibraryHint' => '僅勾選的條目會注入到本故事。',
 			'storyLibraryEmpty' => '知識庫還是空的，請先在 AI 設定裡新增。',
+			'storyRollAttribute' => '屬性',
+			'storyNoAttributes' => '沒有可用於檢定的屬性',
+			'storyRollResult' => '擲骰結果',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4676,11 +4682,11 @@ extension on TranslationsZhTw {
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} 建立了評論 ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評論 ${duration}:',
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} 建立了評級 ${duration}:',
+			_ => null,
+		} ?? switch (path) {
 			'statsRateAndComment' => '評分並評論',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評級 ${duration}:',
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}點擊${value}次',
-			_ => null,
-		} ?? switch (path) {
 			'statsDailyClicks' => ({required Object total}) => '本日點擊次數: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} ${platform}觀看: ${duration}',
 			'statsDailyWatch' => ({required Object duration}) => '本日觀看時長: ${duration}',
