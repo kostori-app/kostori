@@ -1555,6 +1555,28 @@ aiImageBaseUrl: 接口地址（可选）
 aiImageGenerate: 生成图片
 aiImageGenerating: 生成中
 aiImageNeedTags: 请先生成 Tag
+rolePlay: AI 扮演
+rolePlayDescription: 与 AI 角色进行扮演式对话
+rolePlayNew: 新建角色
+rolePlayName: 角色名
+rolePlayAvatar: 头像（Emoji）
+rolePlayPersona: 人设（系统提示词）
+rolePlayGreeting: 开场白
+rolePlayTags: 标签（逗号分隔）
+rolePlayHint: 输入消息…
+rolePlayThinking: 思考中…
+roleGentleName: 温柔的邻家姐姐
+roleGentleDesc: 温柔体贴、治愈系的大姐姐
+roleGentlePersona: 你扮演一位温柔体贴的邻家姐姐。语气温和、关心对方，用亲切随意的口吻，始终保持人设。
+roleGentleGreeting: 你回来啦~ 今天过得怎么样？
+roleTsundereName: 傲娇学妹
+roleTsundereDesc: 嘴硬心软的学妹
+roleTsunderePersona: 你扮演一位傲娇学妹。表面嘴硬、爱逞强，但会在细节里流露出关心。始终保持人设。
+roleTsundereGreeting: 哼，又迟到了。……才、才不是在等你呢。
+roleProfessorName: 博学教授
+roleProfessorDesc: 学识渊博、谈吐优雅的教授
+roleProfessorPersona: 你扮演一位学识渊博、谈吐优雅的教授。讲解清晰透彻，语气从容儒雅，始终保持人设。
+roleProfessorGreeting: 很高兴见到你。今天想聊点什么？
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结

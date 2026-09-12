@@ -21,6 +21,7 @@ import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/ai_service/ai_image_service.dart';
+import 'package:kostori/foundation/ai_service/ai_role.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
@@ -53,6 +54,8 @@ part 'soul_profile_page.dart';
 part 'summary_page.dart';
 
 part 'taste_radar_page.dart';
+
+part 'role_play_page.dart';
 
 class AiHubEntry extends StatelessWidget {
   const AiHubEntry({super.key});
@@ -148,6 +151,8 @@ class _AiHubPageState extends State<AiHubPage> {
         context.to(() => const SummaryPage());
       case 'taste_radar':
         context.to(() => const TasteRadarPage());
+      case 'role_play':
+        context.to(() => const RolePlayPage());
       case 'season_review':
         context.to(
           () => const SummaryPage(initialRange: _SummaryRange.quarter),

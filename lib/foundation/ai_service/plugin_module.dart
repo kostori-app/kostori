@@ -104,6 +104,13 @@ class PluginStore extends ChangeNotifier {
       isBuiltin: true,
     ),
     PluginModule(
+      id: 'role_play',
+      name: t.rolePlay,
+      icon: '🎭',
+      description: t.rolePlayDescription,
+      isBuiltin: true,
+    ),
+    PluginModule(
       id: 'season_review',
       name: t.seasonReview,
       icon: '🍂',

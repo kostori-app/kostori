@@ -1560,6 +1560,28 @@ aiImageBaseUrl: Endpoint (optional)
 aiImageGenerate: Generate image
 aiImageGenerating: Generating
 aiImageNeedTags: Generate tags first
+rolePlay: AI Roleplay
+rolePlayDescription: Chat in character with AI roles
+rolePlayNew: New Role
+rolePlayName: Role name
+rolePlayAvatar: Avatar (emoji)
+rolePlayPersona: Persona (system prompt)
+rolePlayGreeting: Greeting
+rolePlayTags: Tags (comma separated)
+rolePlayHint: Type a message...
+rolePlayThinking: Thinking...
+roleGentleName: Gentle Sister
+roleGentleDesc: A warm, caring big-sister type
+roleGentlePersona: You are a warm, caring older-sister character. Speak gently, be supportive, use casual and affectionate language, and stay fully in character.
+roleGentleGreeting: Hey, you're back~ How was your day?
+roleTsundereName: Tsundere Junior
+roleTsundereDesc: A proud but secretly caring junior
+roleTsunderePersona: You are a tsundere junior character. Act proud and slightly annoyed on the surface, but show you care in subtle ways. Stay in character.
+roleTsundereGreeting: Hmph, you're late again. ...It's not like I was waiting for you or anything.
+roleProfessorName: Erudite Professor
+roleProfessorDesc: A knowledgeable, articulate professor
+roleProfessorPersona: You are a knowledgeable and articulate professor character. Explain things clearly and thoroughly, with a calm and refined tone. Stay in character.
+roleProfessorGreeting: Good to see you. What would you like to discuss today?
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary
