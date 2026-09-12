@@ -761,39 +761,12 @@ class _ChatBubble extends StatelessWidget {
     return null;
   }
 
-  /// usage 字段；兼容旧格式（thought 直接存放 usage JSON）
-  Map<String, dynamic>? get _usageMap {
-    final map = _thoughtMap;
-    if (map == null) return null;
-    final usage = map['usage'];
-    if (usage is Map<String, dynamic>) return usage;
-    return map;
-  }
-
   String? get _reasoningText {
     final map = _thoughtMap;
     if (map == null) return null;
     final r = map['reasoning'];
     if (r is String && r.isNotEmpty) return r;
     return null;
-  }
-
-  int? get _promptTokens {
-    final u = _usageMap;
-    if (u == null) return null;
-    return (u['prompt'] as num?)?.toInt();
-  }
-
-  int? get _completionTokens {
-    final u = _usageMap;
-    if (u == null) return null;
-    return (u['completion'] as num?)?.toInt();
-  }
-
-  int? get _cachedTokens {
-    final u = _usageMap;
-    if (u == null) return null;
-    return (u['cached'] as num?)?.toInt();
   }
 
   /// 生成耗时（毫秒），由服务端落库时写入 thought.durationMs
@@ -1189,80 +1162,8 @@ class _ChatBubble extends StatelessWidget {
               ),
             ],
           ),
-          _metaRow(context),
+          AiUsageMeta(task: task),
         ],
-      ),
-    );
-  }
-
-  /// 千分位格式化：1234567 -> 1,234,567
-  static String _thousands(num v) {
-    final s = v.toInt().toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
-      buf.write(s[i]);
-    }
-    return buf.toString();
-  }
-
-  /// 底部元数据：图标 + 紧凑统计（输入 / 缓存 / 输出 tokens · 速度 · 耗时）
-  Widget _metaRow(BuildContext context) {
-    final style = TextStyle(fontSize: 11, color: Colors.grey.shade500);
-    final segments = <Widget>[];
-
-    void addSegment(IconData icon, String text) {
-      segments.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: Colors.grey.shade500),
-            const SizedBox(width: 2),
-            Text(text, style: style),
-          ],
-        ),
-      );
-    }
-
-    final prompt = _promptTokens;
-    final completion = _completionTokens;
-    final cached = _cachedTokens;
-    final durationMs = _durationMs;
-
-    if (prompt != null) {
-      addSegment(
-        Icons.subdirectory_arrow_left,
-        '${_thousands(prompt)} ${t.tokens}',
-      );
-    }
-    if (cached != null && cached > 0) {
-      addSegment(Icons.cached, '(${_thousands(cached)} ${t.statsCached})');
-    }
-    if (completion != null) {
-      addSegment(
-        Icons.subdirectory_arrow_right,
-        '${_thousands(completion)} ${t.tokens}',
-      );
-    }
-    if (completion != null && durationMs != null && durationMs > 0) {
-      final speed = completion / (durationMs / 1000);
-      addSegment(Icons.speed, '${speed.toStringAsFixed(1)} tok/s');
-    }
-    if (durationMs != null && durationMs > 0) {
-      addSegment(
-        Icons.timer_outlined,
-        '${(durationMs / 1000).toStringAsFixed(1)}s',
-      );
-    }
-
-    if (segments.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, top: 2),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 2,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: segments,
       ),
     );
   }
