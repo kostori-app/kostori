@@ -1108,19 +1108,17 @@ class _NaviMainViewState extends State<_NaviMainView> {
         Column(
           children: [
             Expanded(
-              child: Padding(
-                // 顶部安全距离（去掉了原顶部头部，这里补回状态栏高度）
-                padding: EdgeInsets.only(top: context.padding.top),
-                child: MediaQuery.removePadding(
-                  context: context,
-                  removeTop: true,
-                  removeBottom: true,
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _onScrollNotification,
-                    // 内容直接延伸到窗口底部（悬浮栏后），页面背景覆盖到底，
-                    // 避免 Padding 间隙露出父容器背景形成黑条
-                    child: state.buildPageStack(),
-                  ),
+              // 顶部不做实心留白：让页面背景延伸到状态栏下方（状态栏透明），
+              // 页面内部各自用 MediaQuery.padding.top 让出安全距离
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: false,
+                removeBottom: true,
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _onScrollNotification,
+                  // 内容直接延伸到窗口底部（悬浮栏后），页面背景覆盖到底，
+                  // 避免 Padding 间隙露出父容器背景形成黑条
+                  child: state.buildPageStack(),
                 ),
               ),
             ),
