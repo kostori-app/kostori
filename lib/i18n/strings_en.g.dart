@@ -5647,6 +5647,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Auto-play next episode when the current one ends'
 	String get playerAutoPlayDesc => 'Auto-play next episode when the current one ends';
 
+	/// en: 'Auto play on open'
+	String get playerAutoPlayOnEnter => 'Auto play on open';
+
+	/// en: 'Start playing automatically when the player opens'
+	String get playerAutoPlayOnEnterDesc => 'Start playing automatically when the player opens';
+
 	/// en: 'Loop single episode'
 	String get playerLoopEpisode => 'Loop single episode';
 
@@ -9390,6 +9396,8 @@ extension on Translations {
 			'statsTimelineRatingUpdated' => ({required Object n}) => 'Rating modified (${n})',
 			'playerAutoPlay' => 'Auto play next',
 			'playerAutoPlayDesc' => 'Auto-play next episode when the current one ends',
+			'playerAutoPlayOnEnter' => 'Auto play on open',
+			'playerAutoPlayOnEnterDesc' => 'Start playing automatically when the player opens',
 			'playerLoopEpisode' => 'Loop single episode',
 			'playerLoopEpisodeDesc' => 'Repeat the current episode when it ends',
 			'form' => 'Form',
@@ -9525,10 +9533,10 @@ extension on Translations {
 			'importSkillsFromFiles' => 'Markdown file(s)',
 			'importSkillsFromFilesHint' => 'Import one or more .md skill files with YAML frontmatter',
 			'importSkillsFromFolder' => 'Folder with SKILL.md',
-			'importSkillsFromFolderHint' => 'Import a folder containing a SKILL.md file',
-			'importingSkills' => 'Importing skills...',
 			_ => null,
 		} ?? switch (path) {
+			'importSkillsFromFolderHint' => 'Import a folder containing a SKILL.md file',
+			'importingSkills' => 'Importing skills...',
 			'noSkillFileFound' => 'No SKILL.md found in the selected folder',
 			'importedSkillCount' => ({required Object count}) => 'Imported ${count} skill(s)',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)',

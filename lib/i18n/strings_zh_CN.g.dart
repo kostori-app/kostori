@@ -1908,6 +1908,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改评分';
 	@override String get playerAutoPlay => '自动播放下一集';
 	@override String get playerAutoPlayDesc => '本集结束后自动播放下一集';
+	@override String get playerAutoPlayOnEnter => '进入时自动播放';
+	@override String get playerAutoPlayOnEnterDesc => '打开播放器时自动开始播放';
 	@override String get playerLoopEpisode => '单集循环';
 	@override String get playerLoopEpisodeDesc => '本集结束后循环播放当前集';
 	@override String get form => '表单';
@@ -4453,6 +4455,8 @@ extension on TranslationsZhCn {
 			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改评分',
 			'playerAutoPlay' => '自动播放下一集',
 			'playerAutoPlayDesc' => '本集结束后自动播放下一集',
+			'playerAutoPlayOnEnter' => '进入时自动播放',
+			'playerAutoPlayOnEnterDesc' => '打开播放器时自动开始播放',
 			'playerLoopEpisode' => '单集循环',
 			'playerLoopEpisodeDesc' => '本集结束后循环播放当前集',
 			'form' => '表单',
@@ -4588,10 +4592,10 @@ extension on TranslationsZhCn {
 			'importSkillsFromFiles' => 'Markdown 文件',
 			'importSkillsFromFilesHint' => '导入一个或多个带 YAML frontmatter 的 .md 技能文件',
 			'importSkillsFromFolder' => '含 SKILL.md 的文件夹',
-			'importSkillsFromFolderHint' => '导入包含 SKILL.md 文件的文件夹',
-			'importingSkills' => '正在导入技能...',
 			_ => null,
 		} ?? switch (path) {
+			'importSkillsFromFolderHint' => '导入包含 SKILL.md 文件的文件夹',
+			'importingSkills' => '正在导入技能...',
 			'noSkillFileFound' => '所选文件夹中未找到 SKILL.md',
 			'importedSkillCount' => ({required Object count}) => '已导入 ${count} 个技能',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已导入 ${imported} 个技能，跳过 ${skipped} 个无效文件',

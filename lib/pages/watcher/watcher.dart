@@ -465,7 +465,8 @@ class _WatcherState extends State<Watcher>
       playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
       playerController.videoUrl = playUrl;
-      playerController.playing = true;
+      // 以播放器实际状态为准（进入时自动播放关闭时为暂停态）
+      playerController.playing = playerController.player.state.playing;
       playerController.updateCurrentSetName(epIndex);
 
       history.watchEpisode.add(epIndex);
@@ -512,11 +513,14 @@ class _WatcherState extends State<Watcher>
       // 步骤2：加载媒体数据
       playerController.loadingStep = 2;
 
+      final autoPlayOnEnter =
+          appdata.implicitData['playerAutoPlayOnEnter'] != false;
       await playerController.player.open(
         Media(
           actualPlayUrl,
           httpHeaders: actualPlayUrl == res ? playHeaders : const {},
         ),
+        play: autoPlayOnEnter,
       );
     } catch (e, s) {
       PlayLog.error("openMedia", "$e\n$s");

@@ -1926,6 +1926,8 @@ statsTimelineRatingCreated: Rating created
 statsTimelineRatingUpdated: "Rating modified (${n})"
 playerAutoPlay: Auto play next
 playerAutoPlayDesc: Auto-play next episode when the current one ends
+playerAutoPlayOnEnter: Auto play on open
+playerAutoPlayOnEnterDesc: Start playing automatically when the player opens
 playerLoopEpisode: Loop single episode
 playerLoopEpisodeDesc: Repeat the current episode when it ends
 form: Form

@@ -1925,6 +1925,8 @@ statsTimelineRatingCreated: 创建了评分
 statsTimelineRatingUpdated: "第 ${n} 次修改评分"
 playerAutoPlay: 自动播放下一集
 playerAutoPlayDesc: 本集结束后自动播放下一集
+playerAutoPlayOnEnter: 进入时自动播放
+playerAutoPlayOnEnterDesc: 打开播放器时自动开始播放
 playerLoopEpisode: 单集循环
 playerLoopEpisodeDesc: 本集结束后循环播放当前集
 form: 表单

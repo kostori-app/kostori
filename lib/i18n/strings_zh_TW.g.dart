@@ -1907,6 +1907,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String statsTimelineRatingUpdated({required Object n}) => '第 ${n} 次修改評分';
 	@override String get playerAutoPlay => '自動播放下一集';
 	@override String get playerAutoPlayDesc => '本集結束後自動播放下一集';
+	@override String get playerAutoPlayOnEnter => '進入時自動播放';
+	@override String get playerAutoPlayOnEnterDesc => '開啟播放器時自動開始播放';
 	@override String get playerLoopEpisode => '單集循環';
 	@override String get playerLoopEpisodeDesc => '本集結束後循環播放當前集';
 	@override String get form => '表單';
@@ -4451,6 +4453,8 @@ extension on TranslationsZhTw {
 			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改評分',
 			'playerAutoPlay' => '自動播放下一集',
 			'playerAutoPlayDesc' => '本集結束後自動播放下一集',
+			'playerAutoPlayOnEnter' => '進入時自動播放',
+			'playerAutoPlayOnEnterDesc' => '開啟播放器時自動開始播放',
 			'playerLoopEpisode' => '單集循環',
 			'playerLoopEpisodeDesc' => '本集結束後循環播放當前集',
 			'form' => '表單',
@@ -4587,10 +4591,10 @@ extension on TranslationsZhTw {
 			'importSkillsFromFilesHint' => '匯入一個或多個帶 YAML frontmatter 的 .md 技能檔案',
 			'importSkillsFromFolder' => '含 SKILL.md 的資料夾',
 			'importSkillsFromFolderHint' => '匯入包含 SKILL.md 檔案的資料夾',
-			'importingSkills' => '正在匯入技能...',
-			'noSkillFileFound' => '所選資料夾中找不到 SKILL.md',
 			_ => null,
 		} ?? switch (path) {
+			'importingSkills' => '正在匯入技能...',
+			'noSkillFileFound' => '所選資料夾中找不到 SKILL.md',
 			'importedSkillCount' => ({required Object count}) => '已匯入 ${count} 個技能',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案',
 			'assistantProfiles' => '助手檔案',

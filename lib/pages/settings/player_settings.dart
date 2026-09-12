@@ -80,6 +80,13 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   settingKey: "haEnable",
                 ),
                 _SwitchSetting(
+                  title: t.playerAutoPlayOnEnter,
+                  subtitle: t.playerAutoPlayOnEnterDesc,
+                  settingKey: 'playerAutoPlayOnEnter',
+                  dataSource: SwitchDataSource.implicit,
+                  defaultValue: true,
+                ),
+                _SwitchSetting(
                   title: t.playerAutoPlay,
                   subtitle: t.playerAutoPlayDesc,
                   settingKey: 'playerAutoPlay',

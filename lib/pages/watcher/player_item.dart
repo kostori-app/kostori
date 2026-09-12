@@ -378,6 +378,15 @@ class _PlayerItemState extends State<PlayerItem>
                 },
               ),
             _MoreSwitchCard(
+              icon: Icons.play_circle_outline,
+              title: t.playerAutoPlayOnEnter,
+              value: appdata.implicitData['playerAutoPlayOnEnter'] ?? true,
+              onChanged: (v) {
+                appdata.implicitData['playerAutoPlayOnEnter'] = v;
+                appdata.writeImplicitData();
+              },
+            ),
+            _MoreSwitchCard(
               icon: Icons.skip_next_rounded,
               title: t.playerAutoPlay,
               value: appdata.implicitData['playerAutoPlay'] ?? true,
