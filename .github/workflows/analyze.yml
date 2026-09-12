@@ -16,4 +16,5 @@ jobs:
           flutter-version-file: pubspec.yaml
           architecture: x64
       - run: flutter pub get
+      - run: flutter test
       - uses: invertase/github-action-dart-analyzer@v1

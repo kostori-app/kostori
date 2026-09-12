@@ -27,7 +27,8 @@ Generated `*.g.dart` files are committed to the repo.
 ## Commands
 
 - `flutter pub get`
-- `flutter analyze` — the CI gate (`.github/workflows/analyze.yml`). There are no real tests (`test/widget_test.dart` is empty); verify changes with analyze + build.
+- `flutter test` — unit tests in `test/` (run in CI alongside analyze).
+- `flutter analyze` — the CI gate (`.github/workflows/analyze.yml`); verify changes with analyze + test + build.
 - Build: `flutter build apk --release` / `flutter build windows` / `dart run msix:create` (Windows MSIX).
 - Building may need a Rust toolchain for native deps (CI runs `rustup show` before the Android build).
 
