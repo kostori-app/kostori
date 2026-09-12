@@ -1522,6 +1522,17 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get generateTag => '生成 Tag';
 	@override String get summaryReport => '总结报告';
 	@override String get aiStatActiveTitles => '活跃条目';
+	@override String get aiSoulStyle => '分析风格';
+	@override String get aiStyleBalanced => '均衡';
+	@override String get aiStyleDetailed => '详细';
+	@override String get aiStyleSharp => '毒舌';
+	@override String get aiStylePoetic => '文艺';
+	@override String get aiTagStyle => 'Tag 风格';
+	@override String get aiTagStyleAnime => '动漫';
+	@override String get aiTagStyleDanbooru => 'Danbooru';
+	@override String get aiTagStyleRealistic => '写实';
+	@override String get aiTagCount => 'Tag 数量';
+	@override String get aiCustomRange => '自定义范围';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4068,6 +4079,19 @@ extension on TranslationsZhCn {
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '总结报告',
 			'aiStatActiveTitles' => '活跃条目',
+			'aiSoulStyle' => '分析风格',
+			'aiStyleBalanced' => '均衡',
+			'aiStyleDetailed' => '详细',
+			'aiStyleSharp' => '毒舌',
+			'aiStylePoetic' => '文艺',
+			'aiTagStyle' => 'Tag 风格',
+			'aiTagStyleAnime' => '动漫',
+			'aiTagStyleDanbooru' => 'Danbooru',
+			'aiTagStyleRealistic' => '写实',
+			'aiTagCount' => 'Tag 数量',
+			'aiCustomRange' => '自定义范围',
+			_ => null,
+		} ?? switch (path) {
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4079,8 +4103,6 @@ extension on TranslationsZhCn {
 			'auxFollowSessionHint' => '该任务将使用当前对话会话中配置的服务商。',
 			'contextCompression' => '上下文压缩',
 			'followUpSuggestions' => '后续追问建议',
-			_ => null,
-		} ?? switch (path) {
 			'autoTitle' => '自动标题',
 			'connectionDisconnected' => '连接已断开',
 			'enterServerAddress' => '输入服务器地址',
@@ -4582,6 +4604,8 @@ extension on TranslationsZhCn {
 			'skillName' => '技能名称',
 			'skillKey' => '技能 Key',
 			'builtin' => '内置',
+			_ => null,
+		} ?? switch (path) {
 			'skillMarkdownHint' => '技能支持 Markdown 格式',
 			'sendMessage' => '发送消息',
 			'contextAutoCompressed' => '上下文过长，已自动压缩',
@@ -4593,8 +4617,6 @@ extension on TranslationsZhCn {
 			'importSkills' => '导入技能',
 			'importSkillsFromFiles' => 'Markdown 文件',
 			'importSkillsFromFilesHint' => '导入一个或多个带 YAML frontmatter 的 .md 技能文件',
-			_ => null,
-		} ?? switch (path) {
 			'importSkillsFromFolder' => '含 SKILL.md 的文件夹',
 			'importSkillsFromFolderHint' => '导入包含 SKILL.md 文件的文件夹',
 			'importingSkills' => '正在导入技能...',

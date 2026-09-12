@@ -1,6 +1,6 @@
 part of 'ai_hub_page.dart';
 
-enum _SummaryRange { week, month }
+enum _SummaryRange { week, month, custom }
 
 class SummaryPage extends ConsumerStatefulWidget {
   const SummaryPage({super.key});
@@ -14,6 +14,7 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
   String? _result;
   String _source = 'siliconFlow';
   _SummaryRange _range = _SummaryRange.week;
+  DateTimeRange? _customRange;
 
   // 本次生成的统计数据（用于结果卡片上方的统计条）
   int _activeTitles = 0;
@@ -28,9 +29,12 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
     try {
       final allStats = await StatsManager().getStatsAll();
       final now = DateTime.now();
-      final cutoff = _range == _SummaryRange.week
-          ? now.subtract(const Duration(days: 7))
-          : DateTime(now.year, now.month, 1);
+      final cutoff = switch (_range) {
+        _SummaryRange.week => now.subtract(const Duration(days: 7)),
+        _SummaryRange.month => DateTime(now.year, now.month, 1),
+        _SummaryRange.custom =>
+          _customRange?.start ?? now.subtract(const Duration(days: 7)),
+      };
 
       final activeStats = allStats.where((s) {
         final allEvents = [
@@ -69,7 +73,11 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
         if (s.title != null) watchedTitles.add(s.title!);
       }
 
-      final rangeLabel = _range == _SummaryRange.week ? t.summaryThisWeek : t.summaryThisMonth;
+      final rangeLabel = switch (_range) {
+        _SummaryRange.week => t.summaryThisWeek,
+        _SummaryRange.month => t.summaryThisMonth,
+        _SummaryRange.custom => t.aiCustomRange,
+      };
       final prompt =
           '''
 Generate a $rangeLabel anime watch report based on the following data:
@@ -110,6 +118,21 @@ Generate a $rangeLabel anime watch report based on the following data:
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 5),
+      lastDate: now,
+      initialDateRange: _customRange,
+    );
+    if (picked == null) return;
+    setState(() {
+      _customRange = picked;
+      _range = _SummaryRange.custom;
+    });
   }
 
   Widget _statHeader(BuildContext context) {
@@ -226,6 +249,14 @@ Generate a $rangeLabel anime watch report based on the following data:
                       label: t.thisMonth,
                       selected: _range == _SummaryRange.month,
                       onTap: () => setState(() => _range = _SummaryRange.month),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _RangeChip(
+                      label: t.aiCustomRange,
+                      selected: _range == _SummaryRange.custom,
+                      onTap: _pickCustomRange,
                     ),
                   ),
                 ],

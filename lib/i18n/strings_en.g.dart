@@ -4492,6 +4492,39 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Active titles'
 	String get aiStatActiveTitles => 'Active titles';
 
+	/// en: 'Analysis style'
+	String get aiSoulStyle => 'Analysis style';
+
+	/// en: 'Balanced'
+	String get aiStyleBalanced => 'Balanced';
+
+	/// en: 'Detailed'
+	String get aiStyleDetailed => 'Detailed';
+
+	/// en: 'Sharp'
+	String get aiStyleSharp => 'Sharp';
+
+	/// en: 'Poetic'
+	String get aiStylePoetic => 'Poetic';
+
+	/// en: 'Tag style'
+	String get aiTagStyle => 'Tag style';
+
+	/// en: 'Anime'
+	String get aiTagStyleAnime => 'Anime';
+
+	/// en: 'Danbooru'
+	String get aiTagStyleDanbooru => 'Danbooru';
+
+	/// en: 'Realistic'
+	String get aiTagStyleRealistic => 'Realistic';
+
+	/// en: 'Tag count'
+	String get aiTagCount => 'Tag count';
+
+	/// en: 'Custom range'
+	String get aiCustomRange => 'Custom range';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9012,6 +9045,19 @@ extension on Translations {
 			'generateTag' => 'Generate Tag',
 			'summaryReport' => 'Summary Report',
 			'aiStatActiveTitles' => 'Active titles',
+			'aiSoulStyle' => 'Analysis style',
+			'aiStyleBalanced' => 'Balanced',
+			'aiStyleDetailed' => 'Detailed',
+			'aiStyleSharp' => 'Sharp',
+			'aiStylePoetic' => 'Poetic',
+			'aiTagStyle' => 'Tag style',
+			'aiTagStyleAnime' => 'Anime',
+			'aiTagStyleDanbooru' => 'Danbooru',
+			'aiTagStyleRealistic' => 'Realistic',
+			'aiTagCount' => 'Tag count',
+			_ => null,
+		} ?? switch (path) {
+			'aiCustomRange' => 'Custom range',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9022,8 +9068,6 @@ extension on Translations {
 			'auxFollowSession' => 'Follow session provider',
 			'auxFollowSessionHint' => 'This task will use the provider configured in the current chat session.',
 			'contextCompression' => 'Context Compression',
-			_ => null,
-		} ?? switch (path) {
 			'followUpSuggestions' => 'Follow-up Suggestions',
 			'autoTitle' => 'Auto Title',
 			'connectionDisconnected' => 'Connection to server disconnected',
@@ -9525,6 +9569,8 @@ extension on Translations {
 			'skillName' => 'Skill Name',
 			'skillKey' => 'Skill Key',
 			'builtin' => 'Built-in',
+			_ => null,
+		} ?? switch (path) {
 			'skillMarkdownHint' => 'Skills support Markdown',
 			'sendMessage' => 'Send message',
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
@@ -9536,8 +9582,6 @@ extension on Translations {
 			'importSkills' => 'Import Skills',
 			'importSkillsFromFiles' => 'Markdown file(s)',
 			'importSkillsFromFilesHint' => 'Import one or more .md skill files with YAML frontmatter',
-			_ => null,
-		} ?? switch (path) {
 			'importSkillsFromFolder' => 'Folder with SKILL.md',
 			'importSkillsFromFolderHint' => 'Import a folder containing a SKILL.md file',
 			'importingSkills' => 'Importing skills...',

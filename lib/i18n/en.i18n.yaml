@@ -1533,6 +1533,17 @@ generateSummary: Generate Summary
 generateTag: Generate Tag
 summaryReport: Summary Report
 aiStatActiveTitles: Active titles
+aiSoulStyle: Analysis style
+aiStyleBalanced: Balanced
+aiStyleDetailed: Detailed
+aiStyleSharp: Sharp
+aiStylePoetic: Poetic
+aiTagStyle: Tag style
+aiTagStyleAnime: Anime
+aiTagStyleDanbooru: Danbooru
+aiTagStyleRealistic: Realistic
+aiTagCount: Tag count
+aiCustomRange: Custom range
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

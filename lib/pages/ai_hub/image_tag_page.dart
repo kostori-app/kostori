@@ -16,6 +16,14 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
   bool _isLoading = false;
   List<String> _tags = [];
   String _source = 'siliconFlow';
+  String _style = 'anime';
+  int _count = 30;
+
+  static const _stylePrompts = <String, String>{
+    'anime': '自然语言描述的动漫插画 tag',
+    'danbooru': 'Danbooru 标准标签（用下划线连接）',
+    'realistic': '写实摄影风格 tag',
+  };
 
   Future<void> _generate() async {
     setState(() {
@@ -41,7 +49,8 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
       final result = await AiConversationService().runTask(
         provider: _source,
         taskType: 'image_tag',
-        prompt: '请根据我的番剧品味生成 AI 绘画 tag',
+        prompt:
+            '请根据我的番剧品味生成 $_count 个${_stylePrompts[_style]}，用英文逗号分隔',
         systemPrompt: systemPrompt,
         sessionTitle: 'AI Tag ${DateTime.now().toString().substring(0, 10)}',
       );
@@ -103,6 +112,50 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                     provider: _source,
                     onProviderChanged: (v) => setState(() => _source = v),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            _AiCard(
+              icon: Icons.brush_outlined,
+              title: t.aiTagStyle,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final entry in [
+                    ('anime', t.aiTagStyleAnime),
+                    ('danbooru', t.aiTagStyleDanbooru),
+                    ('realistic', t.aiTagStyleRealistic),
+                  ])
+                    SizedBox(
+                      width: 92,
+                      child: _RangeChip(
+                        label: entry.$2,
+                        selected: _style == entry.$1,
+                        onTap: () => setState(() => _style = entry.$1),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            _AiCard(
+              icon: Icons.tag,
+              title: t.aiTagCount,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final n in [20, 30, 50])
+                    SizedBox(
+                      width: 78,
+                      child: _RangeChip(
+                        label: '$n',
+                        selected: _count == n,
+                        onTap: () => setState(() => _count = n),
+                      ),
+                    ),
                 ],
               ),
             ),

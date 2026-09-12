@@ -1523,6 +1523,17 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get generateTag => '生成 Tag';
 	@override String get summaryReport => '總結報告';
 	@override String get aiStatActiveTitles => '活躍條目';
+	@override String get aiSoulStyle => '分析風格';
+	@override String get aiStyleBalanced => '均衡';
+	@override String get aiStyleDetailed => '詳細';
+	@override String get aiStyleSharp => '毒舌';
+	@override String get aiStylePoetic => '文藝';
+	@override String get aiTagStyle => 'Tag 風格';
+	@override String get aiTagStyleAnime => '動漫';
+	@override String get aiTagStyleDanbooru => 'Danbooru';
+	@override String get aiTagStyleRealistic => '寫實';
+	@override String get aiTagCount => 'Tag 數量';
+	@override String get aiCustomRange => '自訂範圍';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4068,6 +4079,19 @@ extension on TranslationsZhTw {
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '總結報告',
 			'aiStatActiveTitles' => '活躍條目',
+			'aiSoulStyle' => '分析風格',
+			'aiStyleBalanced' => '均衡',
+			'aiStyleDetailed' => '詳細',
+			'aiStyleSharp' => '毒舌',
+			'aiStylePoetic' => '文藝',
+			'aiTagStyle' => 'Tag 風格',
+			'aiTagStyleAnime' => '動漫',
+			'aiTagStyleDanbooru' => 'Danbooru',
+			'aiTagStyleRealistic' => '寫實',
+			'aiTagCount' => 'Tag 數量',
+			_ => null,
+		} ?? switch (path) {
+			'aiCustomRange' => '自訂範圍',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4078,8 +4102,6 @@ extension on TranslationsZhTw {
 			'auxFollowSession' => '跟隨會話服務商',
 			'auxFollowSessionHint' => '該任務將使用目前對話會話中配置的服務商。',
 			'contextCompression' => '上下文壓縮',
-			_ => null,
-		} ?? switch (path) {
 			'followUpSuggestions' => '後續追問建議',
 			'autoTitle' => '自動標題',
 			'connectionDisconnected' => '連線已斷開',
@@ -4581,6 +4603,8 @@ extension on TranslationsZhTw {
 			'skillKey' => '技能 Key',
 			'builtin' => '內建',
 			'skillMarkdownHint' => '技能支援 Markdown 格式',
+			_ => null,
+		} ?? switch (path) {
 			'sendMessage' => '發送訊息',
 			'contextAutoCompressed' => '上下文過長，已自動壓縮',
 			'chatGreeting' => '今天有什麼可以幫你？',
@@ -4592,8 +4616,6 @@ extension on TranslationsZhTw {
 			'importSkillsFromFiles' => 'Markdown 檔案',
 			'importSkillsFromFilesHint' => '匯入一個或多個帶 YAML frontmatter 的 .md 技能檔案',
 			'importSkillsFromFolder' => '含 SKILL.md 的資料夾',
-			_ => null,
-		} ?? switch (path) {
 			'importSkillsFromFolderHint' => '匯入包含 SKILL.md 檔案的資料夾',
 			'importingSkills' => '正在匯入技能...',
 			'noSkillFileFound' => '所選資料夾中找不到 SKILL.md',

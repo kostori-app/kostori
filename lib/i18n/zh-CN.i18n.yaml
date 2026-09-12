@@ -1528,6 +1528,17 @@ generateSummary: 生成总结
 generateTag: 生成 Tag
 summaryReport: 总结报告
 aiStatActiveTitles: 活跃条目
+aiSoulStyle: 分析风格
+aiStyleBalanced: 均衡
+aiStyleDetailed: 详细
+aiStyleSharp: 毒舌
+aiStylePoetic: 文艺
+aiTagStyle: Tag 风格
+aiTagStyleAnime: 动漫
+aiTagStyleDanbooru: Danbooru
+aiTagStyleRealistic: 写实
+aiTagCount: Tag 数量
+aiCustomRange: 自定义范围
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结

@@ -15,6 +15,14 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
   bool _isLoading = false;
   String? _result;
   String _source = 'siliconFlow';
+  String _style = 'balanced';
+
+  static const _styleHints = <String, String>{
+    'balanced': '',
+    'detailed': '\n\n请给出非常详尽的分析，覆盖多个维度，篇幅可以较长。',
+    'sharp': '\n\n请用犀利、毒舌、幽默的语气点评，但要有理有据。',
+    'poetic': '\n\n请用文艺、优美、有画面感的语言来描写。',
+  };
 
   Future<void> _run() async {
     setState(() {
@@ -31,10 +39,12 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
       final injection = PromptInjectionStore.instance.findById(
         kInjectionSoulProfiler,
       );
-      final systemPrompt = (injection?.content ?? soulProfilerSystemPrompt)
-          .replaceAll('{animeCount}', '${data.likedItems.length}')
-          .replaceAll('{animeNames}', data.animeNames)
-          .replaceAll('{topTags}', data.topTags);
+      final systemPrompt =
+          (injection?.content ?? soulProfilerSystemPrompt)
+              .replaceAll('{animeCount}', '${data.likedItems.length}')
+              .replaceAll('{animeNames}', data.animeNames)
+              .replaceAll('{topTags}', data.topTags) +
+          _styleHints[_style]!;
 
       final result = await AiConversationService().runTask(
         provider: _source,
@@ -96,6 +106,31 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
                     provider: _source,
                     onProviderChanged: (v) => setState(() => _source = v),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            _AiCard(
+              icon: Icons.auto_fix_high,
+              title: t.aiSoulStyle,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final entry in [
+                    ('balanced', t.aiStyleBalanced),
+                    ('detailed', t.aiStyleDetailed),
+                    ('sharp', t.aiStyleSharp),
+                    ('poetic', t.aiStylePoetic),
+                  ])
+                    SizedBox(
+                      width: 78,
+                      child: _RangeChip(
+                        label: entry.$2,
+                        selected: _style == entry.$1,
+                        onTap: () => setState(() => _style = entry.$1),
+                      ),
+                    ),
                 ],
               ),
             ),
