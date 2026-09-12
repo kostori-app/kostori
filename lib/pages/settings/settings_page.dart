@@ -119,6 +119,8 @@ part 'ai_settings.dart';
 
 part 'ai_settings_profile.dart';
 
+part 'ai_settings_providers.dart';
+
 part 'extension_settings.dart';
 
 part 'role_management_settings.dart';
