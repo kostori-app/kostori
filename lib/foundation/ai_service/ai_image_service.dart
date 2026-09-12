@@ -40,13 +40,22 @@ class AiImageGenConfig {
     final v = appdata.implicitData['aiImageGen'];
     if (v is Map) {
       final provider = v['provider']?.toString() ?? '';
+      final engine = v['engine'] == 'sd'
+          ? AiImageEngine.sd
+          : AiImageEngine.openai;
+      var size = v['size']?.toString() ?? '1024x1024';
+      // OpenAI 出图接口有最小像素预算，旧配置的 512/768 会被拒绝
+      if (engine == AiImageEngine.openai &&
+          (size == '512x512' || size == '768x768')) {
+        size = '1024x1024';
+      }
       return AiImageGenConfig(
         provider: OpenAiProviderRegistry.allProviders.containsKey(provider)
             ? provider
             : defaultProvider(),
-        engine: v['engine'] == 'sd' ? AiImageEngine.sd : AiImageEngine.openai,
+        engine: engine,
         model: v['model']?.toString() ?? '',
-        size: v['size']?.toString() ?? '1024x1024',
+        size: size,
         steps: (v['steps'] as num?)?.toInt() ?? 20,
         baseUrl: v['baseUrl']?.toString() ?? '',
         apiKey: v['apiKey']?.toString() ?? '',

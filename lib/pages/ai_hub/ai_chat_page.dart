@@ -1833,15 +1833,20 @@ class _ProviderModelListState extends State<ProviderModelList> {
   /// 已折叠的基名分组
   final Set<String> _collapsed = {};
 
+  /// 本地选中态：点击后立即高亮，避免等待 DB/回调刷新
+  String? _selected;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<AiApiKey?>(
       stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(widget.provider),
       builder: (ctx, keySnap) {
-        final currentModel = widget.onModelSelected != null
-            ? widget.currentModel
-            : keySnap.data?.model;
+        final currentModel =
+            _selected ??
+            (widget.onModelSelected != null
+                ? widget.currentModel
+                : keySnap.data?.model);
         return StreamBuilder<List<AiModel>>(
           stream: (AiDatabase.instance.select(
             AiDatabase.instance.aiModels,
@@ -1936,7 +1941,11 @@ class _ProviderModelListState extends State<ProviderModelList> {
                 model: m,
                 isSelected: m.modelId == currentModel,
                 onTap: () {
-                  if (m.modelId == currentModel) return;
+                  if (m.modelId == currentModel) {
+                    Navigator.pop(context);
+                    return;
+                  }
+                  setState(() => _selected = m.modelId);
                   final onModelSelected = widget.onModelSelected;
                   if (onModelSelected != null) {
                     onModelSelected(m.modelId);
@@ -1946,6 +1955,7 @@ class _ProviderModelListState extends State<ProviderModelList> {
                       m.modelId,
                     );
                   }
+                  Navigator.pop(context);
                 },
               ),
             ),

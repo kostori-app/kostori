@@ -299,7 +299,10 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                 onSelected: (v) {
                   if (v) {
                     _updateImageConfig(
-                      _imageConfig.copyWith(engine: AiImageEngine.openai),
+                      _imageConfig.copyWith(
+                        engine: AiImageEngine.openai,
+                        size: '1024x1024',
+                      ),
                     );
                   }
                 },
@@ -310,7 +313,10 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                 onSelected: (v) {
                   if (v) {
                     _updateImageConfig(
-                      _imageConfig.copyWith(engine: AiImageEngine.sd),
+                      _imageConfig.copyWith(
+                        engine: AiImageEngine.sd,
+                        size: '1024x1024',
+                      ),
                     );
                   }
                 },
@@ -324,7 +330,9 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final s in ['512x512', '768x768', '1024x1024'])
+              for (final s in (isSd
+                  ? ['512x512', '768x768', '1024x1024']
+                  : ['auto', '1024x1024', '1024x1536', '1536x1024']))
                 ChoiceChip(
                   label: Text(s),
                   selected: _imageConfig.size == s,

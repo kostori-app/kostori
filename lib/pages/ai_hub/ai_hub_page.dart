@@ -1240,12 +1240,15 @@ class _ModelSelector extends StatelessWidget {
     return StreamBuilder<AiApiKey?>(
       stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(provider),
       builder: (ctx, keySnap) {
+        final providerName =
+            OpenAiProviderRegistry.allProviders[provider]?.name ?? provider;
         final model = onModelSelected != null
             ? (currentModel ?? '')
             : (keySnap.data?.model ?? '');
         final displayName = model.isEmpty
             ? t.set
             : (model.contains('/') ? model.split('/').last : model);
+        final chipLabel = '$providerName · $displayName';
 
         return StreamBuilder<List<AiModel>>(
           stream: (AiDatabase.instance.select(
@@ -1255,7 +1258,7 @@ class _ModelSelector extends StatelessWidget {
             final models = modelSnap.data ?? [];
 
             final chip = Container(
-              constraints: const BoxConstraints(maxWidth: 150),
+              constraints: const BoxConstraints(maxWidth: 220),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest,
@@ -1272,7 +1275,7 @@ class _ModelSelector extends StatelessWidget {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      displayName,
+                      chipLabel,
                       style: TextStyle(
                         fontSize: 12,
                         color: scheme.onSurfaceVariant,
