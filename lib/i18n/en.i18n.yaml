@@ -1570,7 +1570,7 @@ aiImageGenerating: Generating
 aiImageNeedTags: Generate tags first
 aiTagHistory: History tags
 rolePlay: AI Roleplay
-rolePlayDescription: Chat in character using assistant profiles and world book
+rolePlayDescription: Story-driven text adventure with status panels and choices
 importCharacter: Import character card
 characterImportFailed: Failed to import character card
 cannotDeletePreset: Preset cannot be deleted
@@ -1578,6 +1578,21 @@ importEntries: Import
 exportEntries: Export
 importedEntries: Imported ${count} entries
 importFailed: Import failed
+storyRestart: Restart world
+storyRestartConfirm: Restart this story? Current progress will be lost.
+storyInput: Type your action...
+storyState: Status
+storyNoStories: No stories yet. Import or create one from the top right.
+storyImported: Story imported
+storyNew: New story
+storyEdit: Edit story
+storyOpening: Opening
+storySystemPrompt: System prompt
+storyWorldBook: World book
+storyChoicesPrompt: Follow-up prompt
+rolePlayAvatar: Avatar (emoji)
+storyInventory: Inventory
+storyQuests: Quests
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

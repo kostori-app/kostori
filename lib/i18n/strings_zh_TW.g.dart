@@ -1560,7 +1560,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageNeedTags => '請先生成 Tag';
 	@override String get aiTagHistory => '歷史 Tag';
 	@override String get rolePlay => 'AI 扮演';
-	@override String get rolePlayDescription => '基於助手檔案與世界書的扮演式對話';
+	@override String get rolePlayDescription => '故事驅動的文字冒險，帶狀態面板與選項';
 	@override String get importCharacter => '導入角色卡';
 	@override String get characterImportFailed => '角色卡導入失敗';
 	@override String get cannotDeletePreset => '預設不可刪除';
@@ -1568,6 +1568,21 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get exportEntries => '匯出';
 	@override String importedEntries({required Object count}) => '已導入 ${count} 條';
 	@override String get importFailed => '導入失敗';
+	@override String get storyRestart => '重啟世界';
+	@override String get storyRestartConfirm => '確定重新開始？目前進度將遺失。';
+	@override String get storyInput => '輸入你的行動…';
+	@override String get storyState => '狀態';
+	@override String get storyNoStories => '還沒有故事，點右上角導入或新建';
+	@override String get storyImported => '故事已導入';
+	@override String get storyNew => '新建故事';
+	@override String get storyEdit => '編輯故事';
+	@override String get storyOpening => '開局引導';
+	@override String get storySystemPrompt => '系統提示詞';
+	@override String get storyWorldBook => '世界書';
+	@override String get storyChoicesPrompt => '後續建議提示詞';
+	@override String get rolePlayAvatar => '頭像（Emoji）';
+	@override String get storyInventory => '物品';
+	@override String get storyQuests => '任務';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4152,7 +4167,7 @@ extension on TranslationsZhTw {
 			'aiImageNeedTags' => '請先生成 Tag',
 			'aiTagHistory' => '歷史 Tag',
 			'rolePlay' => 'AI 扮演',
-			'rolePlayDescription' => '基於助手檔案與世界書的扮演式對話',
+			'rolePlayDescription' => '故事驅動的文字冒險，帶狀態面板與選項',
 			'importCharacter' => '導入角色卡',
 			'characterImportFailed' => '角色卡導入失敗',
 			'cannotDeletePreset' => '預設不可刪除',
@@ -4160,6 +4175,21 @@ extension on TranslationsZhTw {
 			'exportEntries' => '匯出',
 			'importedEntries' => ({required Object count}) => '已導入 ${count} 條',
 			'importFailed' => '導入失敗',
+			'storyRestart' => '重啟世界',
+			'storyRestartConfirm' => '確定重新開始？目前進度將遺失。',
+			'storyInput' => '輸入你的行動…',
+			'storyState' => '狀態',
+			'storyNoStories' => '還沒有故事，點右上角導入或新建',
+			'storyImported' => '故事已導入',
+			'storyNew' => '新建故事',
+			'storyEdit' => '編輯故事',
+			'storyOpening' => '開局引導',
+			'storySystemPrompt' => '系統提示詞',
+			'storyWorldBook' => '世界書',
+			'storyChoicesPrompt' => '後續建議提示詞',
+			'rolePlayAvatar' => '頭像（Emoji）',
+			'storyInventory' => '物品',
+			'storyQuests' => '任務',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4622,6 +4652,8 @@ extension on TranslationsZhTw {
 			'regenerateReply' => '重新生成此回覆',
 			'noPersonality' => '無人格',
 			'noSystemPromptUsed' => '不使用系統提示詞',
+			_ => null,
+		} ?? switch (path) {
 			'queryBalance' => '查詢餘額',
 			'balance' => '餘額',
 			'queryingBalance' => '查詢中...',
@@ -4637,8 +4669,6 @@ extension on TranslationsZhTw {
 			'newMcpServer' => '新增 MCP 伺服器',
 			'newSkill' => '新增技能',
 			'invalidJson' => 'JSON 格式無效',
-			_ => null,
-		} ?? switch (path) {
 			'providerKey' => '服務商 Key',
 			'providerKeyHint' => '例如 my-provider',
 			'providerKeyExists' => '服務商 Key 已存在，請更換',

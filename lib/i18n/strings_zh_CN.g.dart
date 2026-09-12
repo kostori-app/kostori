@@ -1559,7 +1559,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageNeedTags => '请先生成 Tag';
 	@override String get aiTagHistory => '历史 Tag';
 	@override String get rolePlay => 'AI 扮演';
-	@override String get rolePlayDescription => '基于助手档案与世界书的扮演式对话';
+	@override String get rolePlayDescription => '故事驱动的文字冒险，带状态面板与选项';
 	@override String get importCharacter => '导入角色卡';
 	@override String get characterImportFailed => '角色卡导入失败';
 	@override String get cannotDeletePreset => '预设不可删除';
@@ -1567,6 +1567,21 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get exportEntries => '导出';
 	@override String importedEntries({required Object count}) => '已导入 ${count} 条';
 	@override String get importFailed => '导入失败';
+	@override String get storyRestart => '重启世界';
+	@override String get storyRestartConfirm => '确定重新开始？当前进度将丢失。';
+	@override String get storyInput => '输入你的行动…';
+	@override String get storyState => '状态';
+	@override String get storyNoStories => '还没有故事，点右上角导入或新建';
+	@override String get storyImported => '故事已导入';
+	@override String get storyNew => '新建故事';
+	@override String get storyEdit => '编辑故事';
+	@override String get storyOpening => '开局引导';
+	@override String get storySystemPrompt => '系统提示词';
+	@override String get storyWorldBook => '世界书';
+	@override String get storyChoicesPrompt => '后续建议提示词';
+	@override String get rolePlayAvatar => '头像（Emoji）';
+	@override String get storyInventory => '物品';
+	@override String get storyQuests => '任务';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4152,7 +4167,7 @@ extension on TranslationsZhCn {
 			'aiImageNeedTags' => '请先生成 Tag',
 			'aiTagHistory' => '历史 Tag',
 			'rolePlay' => 'AI 扮演',
-			'rolePlayDescription' => '基于助手档案与世界书的扮演式对话',
+			'rolePlayDescription' => '故事驱动的文字冒险，带状态面板与选项',
 			'importCharacter' => '导入角色卡',
 			'characterImportFailed' => '角色卡导入失败',
 			'cannotDeletePreset' => '预设不可删除',
@@ -4160,6 +4175,21 @@ extension on TranslationsZhCn {
 			'exportEntries' => '导出',
 			'importedEntries' => ({required Object count}) => '已导入 ${count} 条',
 			'importFailed' => '导入失败',
+			'storyRestart' => '重启世界',
+			'storyRestartConfirm' => '确定重新开始？当前进度将丢失。',
+			'storyInput' => '输入你的行动…',
+			'storyState' => '状态',
+			'storyNoStories' => '还没有故事，点右上角导入或新建',
+			'storyImported' => '故事已导入',
+			'storyNew' => '新建故事',
+			'storyEdit' => '编辑故事',
+			'storyOpening' => '开局引导',
+			'storySystemPrompt' => '系统提示词',
+			'storyWorldBook' => '世界书',
+			'storyChoicesPrompt' => '后续建议提示词',
+			'rolePlayAvatar' => '头像（Emoji）',
+			'storyInventory' => '物品',
+			'storyQuests' => '任务',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4623,6 +4653,8 @@ extension on TranslationsZhCn {
 			'resendFromHere' => '从此处重新发送',
 			'regenerateReply' => '重新生成此回复',
 			'noPersonality' => '无人格',
+			_ => null,
+		} ?? switch (path) {
 			'noSystemPromptUsed' => '不使用系统提示词',
 			'queryBalance' => '查询余额',
 			'balance' => '余额',
@@ -4638,8 +4670,6 @@ extension on TranslationsZhCn {
 			'newCustomProvider' => '新建自定义服务商',
 			'newMcpServer' => '新建 MCP 服务器',
 			'newSkill' => '新建技能',
-			_ => null,
-		} ?? switch (path) {
 			'invalidJson' => 'JSON 格式无效',
 			'providerKey' => '服务商 Key',
 			'providerKeyHint' => '例如 my-provider',

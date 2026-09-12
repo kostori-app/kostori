@@ -4603,8 +4603,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'AI Roleplay'
 	String get rolePlay => 'AI Roleplay';
 
-	/// en: 'Chat in character using assistant profiles and world book'
-	String get rolePlayDescription => 'Chat in character using assistant profiles and world book';
+	/// en: 'Story-driven text adventure with status panels and choices'
+	String get rolePlayDescription => 'Story-driven text adventure with status panels and choices';
 
 	/// en: 'Import character card'
 	String get importCharacter => 'Import character card';
@@ -4626,6 +4626,51 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Import failed'
 	String get importFailed => 'Import failed';
+
+	/// en: 'Restart world'
+	String get storyRestart => 'Restart world';
+
+	/// en: 'Restart this story? Current progress will be lost.'
+	String get storyRestartConfirm => 'Restart this story? Current progress will be lost.';
+
+	/// en: 'Type your action...'
+	String get storyInput => 'Type your action...';
+
+	/// en: 'Status'
+	String get storyState => 'Status';
+
+	/// en: 'No stories yet. Import or create one from the top right.'
+	String get storyNoStories => 'No stories yet. Import or create one from the top right.';
+
+	/// en: 'Story imported'
+	String get storyImported => 'Story imported';
+
+	/// en: 'New story'
+	String get storyNew => 'New story';
+
+	/// en: 'Edit story'
+	String get storyEdit => 'Edit story';
+
+	/// en: 'Opening'
+	String get storyOpening => 'Opening';
+
+	/// en: 'System prompt'
+	String get storySystemPrompt => 'System prompt';
+
+	/// en: 'World book'
+	String get storyWorldBook => 'World book';
+
+	/// en: 'Follow-up prompt'
+	String get storyChoicesPrompt => 'Follow-up prompt';
+
+	/// en: 'Avatar (emoji)'
+	String get rolePlayAvatar => 'Avatar (emoji)';
+
+	/// en: 'Inventory'
+	String get storyInventory => 'Inventory';
+
+	/// en: 'Quests'
+	String get storyQuests => 'Quests';
 
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
@@ -9186,7 +9231,7 @@ extension on Translations {
 			'aiImageNeedTags' => 'Generate tags first',
 			'aiTagHistory' => 'History tags',
 			'rolePlay' => 'AI Roleplay',
-			'rolePlayDescription' => 'Chat in character using assistant profiles and world book',
+			'rolePlayDescription' => 'Story-driven text adventure with status panels and choices',
 			'importCharacter' => 'Import character card',
 			'characterImportFailed' => 'Failed to import character card',
 			'cannotDeletePreset' => 'Preset cannot be deleted',
@@ -9194,6 +9239,21 @@ extension on Translations {
 			'exportEntries' => 'Export',
 			'importedEntries' => ({required Object count}) => 'Imported ${count} entries',
 			'importFailed' => 'Import failed',
+			'storyRestart' => 'Restart world',
+			'storyRestartConfirm' => 'Restart this story? Current progress will be lost.',
+			'storyInput' => 'Type your action...',
+			'storyState' => 'Status',
+			'storyNoStories' => 'No stories yet. Import or create one from the top right.',
+			'storyImported' => 'Story imported',
+			'storyNew' => 'New story',
+			'storyEdit' => 'Edit story',
+			'storyOpening' => 'Opening',
+			'storySystemPrompt' => 'System prompt',
+			'storyWorldBook' => 'World book',
+			'storyChoicesPrompt' => 'Follow-up prompt',
+			'rolePlayAvatar' => 'Avatar (emoji)',
+			'storyInventory' => 'Inventory',
+			'storyQuests' => 'Quests',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9656,6 +9716,8 @@ extension on Translations {
 			'resendFromHere' => 'Resend from here',
 			'regenerateReply' => 'Regenerate this reply',
 			'noPersonality' => 'No personality',
+			_ => null,
+		} ?? switch (path) {
 			'noSystemPromptUsed' => 'No system prompt used',
 			'queryBalance' => 'Query Balance',
 			'balance' => 'Balance',
@@ -9671,8 +9733,6 @@ extension on Translations {
 			'newCustomProvider' => 'New Custom Provider',
 			'newMcpServer' => 'New MCP Server',
 			'newSkill' => 'New Skill',
-			_ => null,
-		} ?? switch (path) {
 			'invalidJson' => 'Invalid JSON format',
 			'providerKey' => 'Provider Key',
 			'providerKeyHint' => 'e.g. my-provider',

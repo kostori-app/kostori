@@ -1570,7 +1570,7 @@ aiImageGenerating: 生成中
 aiImageNeedTags: 請先生成 Tag
 aiTagHistory: 歷史 Tag
 rolePlay: AI 扮演
-rolePlayDescription: 基於助手檔案與世界書的扮演式對話
+rolePlayDescription: 故事驅動的文字冒險，帶狀態面板與選項
 importCharacter: 導入角色卡
 characterImportFailed: 角色卡導入失敗
 cannotDeletePreset: 預設不可刪除
@@ -1578,6 +1578,21 @@ importEntries: 導入
 exportEntries: 匯出
 importedEntries: 已導入 ${count} 條
 importFailed: 導入失敗
+storyRestart: 重啟世界
+storyRestartConfirm: 確定重新開始？目前進度將遺失。
+storyInput: 輸入你的行動…
+storyState: 狀態
+storyNoStories: 還沒有故事，點右上角導入或新建
+storyImported: 故事已導入
+storyNew: 新建故事
+storyEdit: 編輯故事
+storyOpening: 開局引導
+storySystemPrompt: 系統提示詞
+storyWorldBook: 世界書
+storyChoicesPrompt: 後續建議提示詞
+rolePlayAvatar: 頭像（Emoji）
+storyInventory: 物品
+storyQuests: 任務
 noActivityInTimeRange: 該時間段內暫無活動記錄
 weeklySummary: 本週總結
 monthlySummary: 本月總結
