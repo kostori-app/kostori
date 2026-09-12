@@ -222,10 +222,10 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
   }
 
   Future<String?> _promptName({String initial = '', String? title}) {
+    final ctrl = TextEditingController(text: initial);
     return showDialog<String>(
       context: context,
       builder: (dialogContext) {
-        final ctrl = TextEditingController(text: initial);
         return ContentDialog(
           title: title ?? t.groupName,
           content: TextField(
@@ -242,7 +242,7 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
           ],
         );
       },
-    );
+    ).whenComplete(ctrl.dispose);
   }
 
   Future<void> _create() async {

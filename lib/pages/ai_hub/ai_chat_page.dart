@@ -849,6 +849,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         ],
       ),
     );
+    ctrl.dispose();
   }
 
   void _onProviderChanged(String provider) {
@@ -3171,6 +3172,7 @@ class _ChatBubble extends StatelessWidget {
         ],
       ),
     );
+    ctrl.dispose();
     if (result != null && result.isNotEmpty) onEdit?.call(result);
   }
 

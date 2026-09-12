@@ -2463,6 +2463,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
           ],
         ),
       );
+      ctrl.dispose();
       if (text != null && text.isNotEmpty) {
         setState(() => _personaCtrl.text = text);
       }
@@ -2526,6 +2527,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
           ],
         ),
       );
+      ctrl.dispose();
       if (text != null && text.isNotEmpty) {
         setState(() => _toneCtrl.text = text);
       }

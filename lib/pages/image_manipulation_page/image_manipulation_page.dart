@@ -861,10 +861,10 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
               child: showOuterBorder
                   ? Column(
                       children: [
-                        _buildColorPicker(
-                          t.outerBorderColor,
-                          outerBorderColor,
-                          (c) =>
+                        _ColorPickerField(
+                          title: t.outerBorderColor,
+                          initialColor: outerBorderColor,
+                          onChanged: (c) =>
                               ref
                                       .read(outerBorderColorProvider.notifier)
                                       .state =
@@ -913,10 +913,10 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
               child: showInnerBorders
                   ? Column(
                       children: [
-                        _buildColorPicker(
-                          t.innerBorderColor,
-                          innerBorderColor,
-                          (c) =>
+                        _ColorPickerField(
+                          title: t.innerBorderColor,
+                          initialColor: innerBorderColor,
+                          onChanged: (c) =>
                               ref
                                       .read(innerBorderColorProvider.notifier)
                                       .state =
@@ -954,83 +954,6 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
     );
   }
 
-  Widget _buildColorPicker(
-    String title,
-    Color currentColor,
-    ValueChanged<Color> onChanged,
-  ) {
-    String colorToHex(Color color) => '#${color.toARGB32().toRadixString(16)}';
-
-    Color fallbackColorIfTooDark(Color color) =>
-        color.toARGB32() == 0xFF000000 ? const Color(0xFF6677ff) : color;
-
-    final Color initialColor = fallbackColorIfTooDark(currentColor);
-    final controller = TextEditingController(text: colorToHex(initialColor));
-    Color pickerColor = initialColor;
-
-    Color? hexToColor(String hex) {
-      try {
-        hex = hex.toUpperCase().replaceAll('#', '');
-        if (hex.length == 6) hex = 'FF$hex';
-        return Color(int.parse(hex, radix: 16));
-      } catch (_) {
-        return null;
-      }
-    }
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        void onTextChanged(String value) {
-          final color = hexToColor(value);
-          if (color != null) {
-            setState(() {
-              pickerColor = color;
-              controller.text = colorToHex(color);
-            });
-            onChanged(color);
-          }
-        }
-
-        void onColorChanged(Color color) {
-          setState(() {
-            pickerColor = color;
-            controller.text = colorToHex(color);
-          });
-          onChanged(color);
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            ColorPicker(
-              pickerColor: pickerColor,
-              onColorChanged: onColorChanged,
-              enableAlpha: false,
-              pickerAreaHeightPercent: 0.3,
-              displayThumbColor: true,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: t.enterHexColorCode,
-                border: const OutlineInputBorder(),
-              ),
-              maxLength: 9,
-              onSubmitted: onTextChanged,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'#[0-9a-fA-F]*')),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildSlider(
     String label,
     double value,
@@ -1056,6 +979,109 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
           SizedBox(width: 40, child: Text(value.toStringAsFixed(1))),
         ],
       ),
+    );
+  }
+}
+
+class _ColorPickerField extends StatefulWidget {
+  const _ColorPickerField({
+    required this.title,
+    required this.initialColor,
+    required this.onChanged,
+  });
+
+  final String title;
+  final Color initialColor;
+  final ValueChanged<Color> onChanged;
+
+  @override
+  State<_ColorPickerField> createState() => _ColorPickerFieldState();
+}
+
+class _ColorPickerFieldState extends State<_ColorPickerField> {
+  late Color pickerColor;
+  late final TextEditingController controller;
+
+  static String _colorToHex(Color color) =>
+      '#${color.toARGB32().toRadixString(16)}';
+
+  static Color _fallbackIfTooDark(Color color) =>
+      color.toARGB32() == 0xFF000000 ? const Color(0xFF6677ff) : color;
+
+  static Color? _hexToColor(String hex) {
+    try {
+      hex = hex.toUpperCase().replaceAll('#', '');
+      if (hex.length == 6) hex = 'FF$hex';
+      return Color(int.parse(hex, radix: 16));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    pickerColor = _fallbackIfTooDark(widget.initialColor);
+    controller = TextEditingController(text: _colorToHex(pickerColor));
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _onTextChanged(String value) {
+    final color = _hexToColor(value);
+    if (color != null) {
+      setState(() {
+        pickerColor = color;
+        controller.text = _colorToHex(color);
+      });
+      widget.onChanged(color);
+    }
+  }
+
+  void _onColorChanged(Color color) {
+    setState(() {
+      pickerColor = color;
+      controller.text = _colorToHex(color);
+    });
+    widget.onChanged(color);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        ColorPicker(
+          pickerColor: pickerColor,
+          onColorChanged: _onColorChanged,
+          enableAlpha: false,
+          pickerAreaHeightPercent: 0.3,
+          displayThumbColor: true,
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: t.enterHexColorCode,
+            border: const OutlineInputBorder(),
+          ),
+          maxLength: 9,
+          onSubmitted: _onTextChanged,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'#[0-9a-fA-F]*')),
+          ],
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }

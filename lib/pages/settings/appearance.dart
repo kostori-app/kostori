@@ -420,6 +420,12 @@ class _ColorPickPageState extends State<ColorPickPage> {
     controller = TextEditingController(text: Utils.colorToHex(pickerColor));
   }
 
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
   void _onTextChanged(String value) {
     final color = Utils.hexToColor(value);
     if (color != null) {

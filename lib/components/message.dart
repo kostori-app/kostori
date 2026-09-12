@@ -568,7 +568,7 @@ Future<void> showInputDialog({
         },
       );
     },
-  );
+  ).whenComplete(controller.dispose);
 }
 
 /// 验证码输入对话框：显示验证码图片 + 手动输入框。
@@ -649,7 +649,7 @@ Future<String?> showCaptchaDialog({
         },
       );
     },
-  );
+  ).whenComplete(controller.dispose);
 }
 
 Uint8List _captchaDataBytes(String dataUrl) {
