@@ -526,6 +526,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         title: Text('${story.icon} ${story.name}'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.assessment_outlined),
+            tooltip: t.storyState,
+            onPressed: _showStateSheet,
+          ),
+          IconButton(
             icon: const Icon(Icons.restart_alt),
             tooltip: t.storyRestart,
             onPressed: _confirmRestart,
@@ -538,15 +543,55 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               stream: AiConversationService().watchMessages(sessionId),
               builder: (context, snap) {
                 final messages = snap.data ?? [];
-                final last = _lastAiReply(messages);
-                final state = last?.state ?? _state;
-                final choices = last?.choices ?? const <String>[];
+                final choices = _lastAiReply(messages)?.choices ?? const <String>[];
                 return Column(
                   children: [
-                    _statusBar(context, state),
-                    Expanded(child: _messages(context, messages)),
-                    if (choices.isNotEmpty) _choices(context, choices),
-                    _inputBar(context),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: messages.length + (_sending ? 1 : 0),
+                        itemBuilder: (context, i) {
+                          if (i == messages.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Center(child: PolygonRefreshIndicator()),
+                            );
+                          }
+                          final m = messages[i];
+                          final isUser = m.role == 'user';
+                          return _ChatBubble(
+                            content: isUser
+                                ? m.inputContent
+                                : _parseReply(m.outputContent ?? '').narrative,
+                            isUser: isUser,
+                            task: m,
+                          );
+                        },
+                      ),
+                    ),
+                    if (choices.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+                        child: SizedBox(
+                          height: 32,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: choices.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (_, i) => _FollowUpChip(
+                              text: choices[i],
+                              onTap: _sending ? () {} : () => _send(choices[i]),
+                            ),
+                          ),
+                        ),
+                      ),
+                    _AiComposerBar(
+                      controller: _input,
+                      onSend: _sendInput,
+                      sending: _sending,
+                      hintText: t.storyInput,
+                    ),
                   ],
                 );
               },
@@ -590,260 +635,134 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return _ParsedReply(narrative: narrative, state: state, choices: choices);
   }
 
-  Widget _statusBar(BuildContext context, GameState state) {
-    final scheme = Theme.of(context).colorScheme;
-    if (state.resources.isEmpty && state.location.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        border: Border(bottom: BorderSide(color: scheme.outlineVariant)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (state.location.isNotEmpty || state.time.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                [state.location, state.time]
-                    .where((e) => e.isNotEmpty)
-                    .join(' · '),
-                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+  Future<void> _showStateSheet() async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    final messages = await AiConversationService()
+        .watchMessages(sessionId)
+        .first;
+    final state = _lastAiReply(messages)?.state ?? _state;
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.storyState,
+        icon: Icons.assessment_outlined,
+        initialSize: 0.6,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            if (state.location.isNotEmpty || state.time.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  [state.location, state.time]
+                      .where((e) => e.isNotEmpty)
+                      .join(' · '),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
-            ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 6,
-            children: [
-              for (final r in state.resources)
-                SizedBox(
-                  width: 150,
-                  child: Column(
+            for (final r in state.resources)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${r.name}  ${r.cur}/${r.max}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: r.max <= 0
+                            ? 0
+                            : (r.cur / r.max).clamp(0.0, 1.0),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (state.attributes.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _sectionTitle(t.storyState),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final e in state.attributes.entries)
+                    Chip(label: Text('${e.key} ${e.value}')),
+                ],
+              ),
+            ],
+            if (state.skills.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _sectionTitle(t.skills),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final s in state.skills) Chip(label: Text(s)),
+                ],
+              ),
+            ],
+            if (state.inventory.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _sectionTitle(t.storyInventory),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final s in state.inventory) Chip(label: Text(s)),
+                ],
+              ),
+            ],
+            if (state.quests.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _sectionTitle(t.storyQuests),
+              for (final q in state.quests)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(q.title),
+                  subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${r.name}  ${r.cur}/${r.max}',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      const SizedBox(height: 2),
+                      if (q.desc.isNotEmpty)
+                        Text(q.desc, style: const TextStyle(fontSize: 12)),
+                      const SizedBox(height: 4),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
-                          value: r.max <= 0 ? 0 : (r.cur / r.max).clamp(0.0, 1.0),
+                          value: (q.progress / 100).clamp(0.0, 1.0),
                           minHeight: 6,
-                          backgroundColor: scheme.surfaceContainer,
                         ),
                       ),
                     ],
                   ),
                 ),
             ],
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => _showStateSheet(context, state),
-              icon: const Icon(Icons.assessment_outlined, size: 16),
-              label: Text(t.storyState),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _messages(BuildContext context, List<AiTask> messages) {
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        for (final m in messages)
-          _bubble(context, m.role == 'user' ? m.inputContent : _parseReply(m.outputContent ?? '').narrative, m.role == 'user'),
-        if (_sending)
-          const Padding(
-            padding: EdgeInsets.all(12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: PolygonRefreshIndicator(),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _bubble(BuildContext context, String text, bool isUser) {
-    final scheme = Theme.of(context).colorScheme;
-    if (text.trim().isEmpty) return const SizedBox.shrink();
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.85,
-        ),
-        decoration: BoxDecoration(
-          color: isUser
-              ? scheme.primaryContainer
-              : scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: CustomMarkdownWidget(data: text),
-      ),
-    );
-  }
-
-  Widget _choices(BuildContext context, List<String> choices) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final c in choices)
-            ActionChip(
-              label: Text(c),
-              onPressed: _sending ? null : () => _send(c),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _inputBar(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _input,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendInput(),
-                decoration: InputDecoration(
-                  hintText: t.storyInput,
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: _sending ? null : _sendInput,
-              icon: const Icon(Icons.send),
-            ),
           ],
         ),
       ),
     );
   }
 
-  void _showStateSheet(BuildContext context, GameState state) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => SafeArea(
-        child: DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          builder: (ctx, sc) => ListView(
-            controller: sc,
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(t.storyState, style: Theme.of(ctx).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              if (state.attributes.isNotEmpty) ...[
-                _sheetTitle(t.storyState),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final e in state.attributes.entries)
-                      Chip(label: Text('${e.key} ${e.value}')),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (state.skills.isNotEmpty) ...[
-                _sheetTitle(t.skills),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final s in state.skills) Chip(label: Text(s)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (state.inventory.isNotEmpty) ...[
-                _sheetTitle(t.storyInventory),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final s in state.inventory) Chip(label: Text(s)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (state.quests.isNotEmpty) ...[
-                _sheetTitle(t.storyQuests),
-                for (final q in state.quests)
-                  ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(q.title),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (q.desc.isNotEmpty)
-                          Text(q.desc, style: const TextStyle(fontSize: 12)),
-                        const SizedBox(height: 4),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: (q.progress / 100).clamp(0.0, 1.0),
-                            minHeight: 6,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _sheetTitle(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
+  Widget _sectionTitle(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       text,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
     ),
   );
+
 }
 
 class _ParsedReply {

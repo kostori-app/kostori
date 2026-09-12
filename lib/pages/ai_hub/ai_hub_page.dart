@@ -1143,6 +1143,74 @@ void setAiHubProvider(String provider) {
   appdata.writeImplicitData();
 }
 
+/// 复用 AI 聊天风格的输入条：圆角容器 + 无边框输入框 + 上箭头发送
+class _AiComposerBar extends StatelessWidget {
+  const _AiComposerBar({
+    required this.controller,
+    required this.onSend,
+    this.sending = false,
+    this.hintText,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onSend;
+  final bool sending;
+  final String? hintText;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border.all(color: scheme.outlineVariant, width: 1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              minLines: 1,
+              maxLines: 4,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => onSend(),
+              decoration: InputDecoration(
+                hintText: hintText ?? t.inputMessage,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                isDense: true,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 6, bottom: 6),
+            child: sending
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: PolygonRefreshIndicator(),
+                    ),
+                  )
+                : IconButton.filled(
+                    icon: const Icon(Icons.arrow_upward, size: 20),
+                    tooltip: t.sendMessage,
+                    onPressed: onSend,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 共用的 AI 设置卡片：服务商选择 + 当前模型，风格与其它设置卡片一致
 class _AiSettingsCard extends StatelessWidget {
   const _AiSettingsCard({required this.provider, required this.onChanged});
