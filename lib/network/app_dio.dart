@@ -191,7 +191,7 @@ class RHttpAdapter implements HttpClientAdapter {
         appdata.settings['noProxyOverrides'] as List? ?? [];
 
     final enableNoProxyOverrides =
-        appdata.settings['enableNoProxyOverrides'] as bool? ?? false;
+        appdata.settings['enableNoProxyOverrides'] as bool? ?? true;
 
     final isNoProxy = enableNoProxyOverrides
         ? noProxyOverrides.any((entry) {
@@ -200,7 +200,8 @@ class RHttpAdapter implements HttpClientAdapter {
               final enabled = entry['enabled'] as bool? ?? true;
               return enabled && options.uri.host.startsWith(domain);
             }
-            return false;
+            // 兼容旧版仅存域名字符串的格式
+            return options.uri.host.startsWith(entry.toString());
           })
         : false;
 
@@ -256,6 +257,12 @@ class RHttpAdapter implements HttpClientAdapter {
 
           if (enabled && ip != null && ip.isNotEmpty) {
             result[entry.key] = [ip];
+          }
+        } else if (entry.key is String && entry.value is String) {
+          // 兼容旧版仅存 ip 字符串的格式
+          final ip = entry.value as String;
+          if (ip.isNotEmpty) {
+            result[entry.key as String] = [ip];
           }
         }
       }
