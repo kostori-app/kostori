@@ -9,6 +9,7 @@ class Appbar extends StatefulWidget implements PreferredSizeWidget {
     this.style = AppbarStyle.blur,
     super.key,
     this.bottom,
+    this.alwaysBlur = false,
   });
 
   final Widget title;
@@ -22,6 +23,10 @@ class Appbar extends StatefulWidget implements PreferredSizeWidget {
   final AppbarStyle style;
 
   final PreferredSizeWidget? bottom;
+
+  /// 是否始终磨砂（默认仅在内容滚到其下方时才模糊）。
+  /// 用作固定悬浮头部（内容不从其下方滚过）时需要。
+  final bool alwaysBlur;
 
   @override
   State<Appbar> createState() => _AppbarState();
@@ -132,7 +137,10 @@ class _AppbarState extends State<Appbar> {
         child: content,
       );
     } else {
-      return BlurEffect(blur: _scrolledUnder ? 15 : 0, child: content);
+      return BlurEffect(
+        blur: (widget.alwaysBlur || _scrolledUnder) ? 15 : 0,
+        child: content,
+      );
     }
   }
 }

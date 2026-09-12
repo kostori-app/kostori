@@ -517,9 +517,10 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     List<Widget> actions = const [],
     required PreferredSizeWidget tab,
   }) {
-    return SliverAppbar(
+    return Appbar(
       key: key,
       style: AppbarStyle.blur,
+      alwaysBlur: true,
       leading: leading,
       title: title,
       actions: actions,
@@ -785,8 +786,14 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   Widget build(BuildContext context) {
     super.build(context);
     final tab = _buildTabBar();
+    // 固定 app bar（不放进 TabBarView，避免左右滑动切分组时一起被划走）
+    final appbar = !searchAllMode && !searchMode && !multiSelectMode
+        ? _buildNormalAppbar(tab)
+        : multiSelectMode
+        ? _buildMultiSelectAppbar(tab)
+        : _buildSearchAppbar(tab);
 
-    Widget body = isLoading
+    Widget tabsView = isLoading
         ? const Center(
             child: SizedBox(
               height: 200,
@@ -809,19 +816,12 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     (acc * 31 + a.id.hashCode ^ a.sourceKey.hashCode) &
                     0x7fffffff,
               );
-              // 每个 Tab：SliverAppbar（模糊、可穿透）+ 网格同属一个滚动流，
-              // 卡片从头部条下方滚过（与 anime/探索一致）
-              final appbar = !searchAllMode && !searchMode && !multiSelectMode
-                  ? _buildNormalAppbar(tab)
-                  : multiSelectMode
-                  ? _buildMultiSelectAppbar(tab)
-                  : _buildSearchAppbar(tab);
+              // 每个 Tab：只有网格（app bar 已固定在外层，不随滑动移动）
               return CustomScrollView(
                 key: PageStorageKey('local_$name|$sig'),
                 controller: _controllerFor(name),
                 physics: const ClampingScrollPhysics(),
                 slivers: [
-                  appbar,
                   SliverGridAnimes(
                     asSliver: true,
                     animes: list,
@@ -843,31 +843,41 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
             }).toList(),
           );
 
-    body = Stack(
+    // 固定 app bar + 下方 TabBarView（左右滑动只切内容，app bar 不动）
+    Widget body = Column(
       children: [
-        Positioned.fill(child: body),
-        Positioned(
-          bottom: 10,
-          right: 10,
-          child: FloatingMenu(
-            controller: _activeController,
-            child: [
-              [
-                SpeedDialChild(
-                  child: const Icon(Icons.refresh),
-                  backgroundColor: context.colorScheme.primaryContainer,
-                  foregroundColor: context.colorScheme.onPrimaryContainer,
-                  onTap: updateAnimes,
+        appbar,
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(child: tabsView),
+              Positioned(
+                bottom: 10,
+                right: 10,
+                child: FloatingMenu(
+                  controller: _activeController,
+                  child: [
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.refresh),
+                        backgroundColor: context.colorScheme.primaryContainer,
+                        foregroundColor:
+                            context.colorScheme.onPrimaryContainer,
+                        onTap: updateAnimes,
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.vertical_align_top),
+                        backgroundColor: context.colorScheme.primaryContainer,
+                        foregroundColor:
+                            context.colorScheme.onPrimaryContainer,
+                        onTap: scrollToTop,
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-              [
-                SpeedDialChild(
-                  child: const Icon(Icons.vertical_align_top),
-                  backgroundColor: context.colorScheme.primaryContainer,
-                  foregroundColor: context.colorScheme.onPrimaryContainer,
-                  onTap: scrollToTop,
-                ),
-              ],
+              ),
             ],
           ),
         ),
@@ -875,8 +885,6 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
 
     body = AppScrollBar(
-      // 内容已在头部下方滚动，滚动条覆盖整屏
-      topPadding: 0,
       // 绑定当前分组的内部滚动控制器，使滚动条能驱动实际内容
       controller: _activeController,
       isNested: false,

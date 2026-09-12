@@ -997,7 +997,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: cs.surface.withValues(alpha: 0.7),
+            color: cs.surface.withValues(alpha: 0.45),
             border: Border(
               bottom: BorderSide(
                 color: cs.outlineVariant.withValues(alpha: 0.2),
