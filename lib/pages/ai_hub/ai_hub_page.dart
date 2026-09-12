@@ -1150,6 +1150,7 @@ class _AiComposerBar extends StatelessWidget {
     required this.controller,
     required this.onSend,
     this.sending = false,
+    this.onStop,
     this.hintText,
     this.bottomLeading,
   });
@@ -1157,6 +1158,7 @@ class _AiComposerBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final bool sending;
+  final VoidCallback? onStop;
   final String? hintText;
 
   /// 底部工具行左侧内容（如模型选择器），与 AI 聊天输入栏一致
@@ -1211,13 +1213,10 @@ class _AiComposerBar extends StatelessWidget {
                 ],
                 const Spacer(),
                 if (sending)
-                  const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: PolygonRefreshIndicator(),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.stop_rounded, size: 20),
+                    tooltip: t.stopGenerating,
+                    onPressed: onStop,
                   )
                 else
                   IconButton.filled(
@@ -1240,13 +1239,13 @@ class _StoryBubble extends StatelessWidget {
   const _StoryBubble({
     required this.content,
     required this.isUser,
-    required this.task,
+    this.task,
     this.events = const [],
   });
 
   final String content;
   final bool isUser;
-  final AiTask task;
+  final AiTask? task;
   final List<StoryEvent> events;
 
   @override
@@ -1289,7 +1288,7 @@ class _StoryBubble extends StatelessWidget {
           CustomMarkdownWidget(data: content, indentFirstLine: false),
           if (!isUser)
             for (final e in events) _StoryEventCard(event: e),
-          if (!isUser) AiUsageMeta(task: task),
+          if (!isUser && task != null) AiUsageMeta(task: task!),
         ],
       ),
     );

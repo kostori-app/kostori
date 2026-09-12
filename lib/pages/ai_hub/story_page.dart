@@ -552,6 +552,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   GameState _state = GameState.empty;
   bool _sending = false;
   bool _booting = true;
+  bool _showStreamBubble = false;
+  String _streamText = '';
+  CancelToken? _cancelToken;
 
   /// 需要先做开局档案设置（仅新游戏且故事定义了 setup 时）
   bool _needsSetup = false;
@@ -681,19 +684,49 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _send(String text) async {
     final sessionId = _sessionId;
     if (sessionId == null || _sending) return;
-    setState(() => _sending = true);
-    final res = await AiConversationService().sendMessage(
-      sessionId: sessionId,
-      userMessage: text,
-      taskType: 'story',
-      maxContextMessages: 40,
-      providerOverride: aiHubProvider(),
-      systemPromptOverride: _systemPromptFor(_state),
-    );
-    if (!mounted) return;
-    setState(() => _sending = false);
-    if (res.success) {
-      final parsed = _parseReply(res.data);
+    final cancelToken = CancelToken();
+    _cancelToken = cancelToken;
+    setState(() {
+      _sending = true;
+      _showStreamBubble = true;
+      _streamText = '';
+    });
+    try {
+      await for (final u in AiConversationService().sendMessageStream(
+        sessionId: sessionId,
+        userMessage: text,
+        taskType: 'story',
+        providerOverride: aiHubProvider(),
+        systemPromptOverride: _systemPromptFor(_state),
+        cancelToken: cancelToken,
+      )) {
+        if (!mounted) return;
+        if (u.errorMessage != null) {
+          setState(() {
+            _sending = false;
+            _showStreamBubble = false;
+            _streamText = '';
+          });
+          App.rootContext.showMessage(
+            message: u.errorMessage!,
+            level: LogLevel.error,
+          );
+          return;
+        }
+        setState(() => _streamText = u.text);
+        if (u.done) break;
+      }
+      if (!mounted) return;
+      final finalText = _streamText;
+      final cancelled = cancelToken.isCancelled;
+      setState(() {
+        _sending = false;
+        _showStreamBubble = false;
+        _streamText = '';
+      });
+      // 取消时服务端不落库，忽略本次结果
+      if (cancelled || finalText.trim().isEmpty) return;
+      final parsed = _parseReply(finalText);
       if (parsed.state != null) {
         var state = parsed.state!;
         // 把「获得道具」事件并入背包（去重），保证道具一定被持久化
@@ -713,11 +746,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           StorySession(sessionId: sessionId, state: state),
         );
       }
-    } else {
-      App.rootContext.showMessage(
-        message: res.errorMessage ?? 'Error',
-        level: LogLevel.error,
-      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _showStreamBubble = false;
+          _streamText = '';
+        });
+        App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
+      }
+    } finally {
+      _cancelToken = null;
     }
   }
 
@@ -769,14 +808,31 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               horizontal: 12,
                               vertical: 12,
                             ),
-                            itemCount: messages.length + (_sending ? 1 : 0),
+                            itemCount:
+                                messages.length + (_showStreamBubble ? 1 : 0),
                             itemBuilder: (context, i) {
                               if (i == messages.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.all(12),
-                                  child: Center(
-                                    child: PolygonRefreshIndicator(),
-                                  ),
+                                final streamNarrative = _parseReply(
+                                  _streamText,
+                                ).narrative;
+                                if (streamNarrative.trim().isEmpty) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: PolygonRefreshIndicator(),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return _StoryBubble(
+                                  content: streamNarrative,
+                                  isUser: false,
                                 );
                               }
                               final m = messages[i];
@@ -818,6 +874,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       controller: _input,
                       onSend: _sendInput,
                       sending: _sending,
+                      onStop: () => _cancelToken?.cancel(),
                       hintText: t.storyInput,
                       bottomLeading: _ModelSelector(
                         provider: aiHubProvider(),
@@ -1102,6 +1159,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           }
         }
       } catch (_) {}
+    } else if ('```'.allMatches(content).length.isOdd) {
+      // 流式过程中可能出现未闭合的代码块，先隐藏
+      narrative = content
+          .substring(0, content.lastIndexOf('```'))
+          .trim();
     }
     return _ParsedReply(
       narrative: narrative,

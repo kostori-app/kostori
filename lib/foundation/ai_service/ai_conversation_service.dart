@@ -430,6 +430,7 @@ class AiConversationService {
     CancelToken? cancelToken,
     void Function()? onAutoCompressed,
     AiGenerationParams? paramsOverride,
+    String? systemPromptOverride,
   }) async* {
     var session = await _sessionDao.getSession(sessionId);
     if (session == null) {
@@ -478,11 +479,13 @@ class AiConversationService {
 
     // 2. 组装 System Prompt（配置 + 技能 + 压缩摘要；关联助手档案时优先档案）
     final profile = await _resolveProfile(session);
-    final systemPrompt = await _buildSystemPrompt(
-      session,
-      profile: profile,
-      userMessage: userMessage,
-    );
+    final systemPrompt =
+        systemPromptOverride ??
+        await _buildSystemPrompt(
+          session,
+          profile: profile,
+          userMessage: userMessage,
+        );
 
     // 3. 取最近 N 条（保证不超过上下文窗口）
     final trimmed = contextMessages.length > maxContextMessages
