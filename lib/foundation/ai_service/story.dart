@@ -256,56 +256,6 @@ class StoryStore extends ChangeNotifier {
 
   List<Story> get stories => List.unmodifiable(_stories);
 
-  static List<Story> builtinStories() => [
-    const Story(
-      id: 'wasteland_survival',
-      name: '废土求生',
-      icon: '🏚️',
-      description: '在一座废弃检查站中醒来，你没有工具、没有食物，必须活过第一夜。',
-      opening: '雨声敲打着金属屋顶。你在一个废弃检查站的角落醒来，浑身湿冷，头痛欲裂。',
-      systemPrompt:
-          '你是一个硬核生存文字冒险的主持人(GM)。以第二人称叙事，描写真实、克制、有细节；'
-          '资源稀缺，死亡是真实威胁。玩家可以自由输入任何行动。',
-      worldBook:
-          '时代：近未来废土。资源匮乏，变异生物与拾荒者横行。'
-          '生存要点：体温、饮水、食物、伤口感染。夜晚危险。',
-      choicesPrompt: '给出与当前处境紧密相关、各有利弊的选项，鼓励玩家权衡。',
-      initialState: GameState(
-        resources: [
-          StatBar(name: '生命', cur: 100, max: 100),
-          StatBar(name: '精神', cur: 100, max: 100),
-          StatBar(name: '体力', cur: 100, max: 100),
-          StatBar(name: '进食', cur: 100, max: 100),
-        ],
-        attributes: {'力量': 5, '敏捷': 5, '智力': 5, '魅力': 5},
-        inventory: ['破旧外套 x1'],
-        time: '第1天 清晨',
-        location: '北境针叶林 · 废弃检查站',
-      ),
-    ),
-    const Story(
-      id: 'xianxia_cultivation',
-      name: '仙途问道',
-      icon: '⚔️',
-      description: '你是一个刚入门的练气修士，机缘与危机并存。',
-      opening: '晨钟响过三声，你自蒲团上睁开眼。今日是外门大比的第一天。',
-      systemPrompt: '你是一个东方修仙文字冒险的主持人(GM)。文风古朴，注重境界、法宝、人情世故与因果。',
-      worldBook: '境界：练气、筑基、金丹、元婴…… 灵气分金木水火土五行。',
-      choicesPrompt: '选项应体现修仙世界的取舍：稳妥修炼、冒险寻宝、结交同门或树敌。',
-      initialState: GameState(
-        resources: [
-          StatBar(name: '气血', cur: 100, max: 100),
-          StatBar(name: '灵力', cur: 50, max: 100),
-        ],
-        attributes: {'根骨': 5, '悟性': 5, '身法': 5},
-        skills: ['吐纳术 Lv1'],
-        inventory: ['下品灵石 x3'],
-        time: '入门第1日',
-        location: '青云宗 · 外门',
-      ),
-    ),
-  ];
-
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_kKey);
@@ -323,14 +273,6 @@ class StoryStore extends ChangeNotifier {
         _stories = [];
       }
     }
-    var changed = false;
-    for (final b in builtinStories()) {
-      if (!_stories.any((s) => s.id == b.id)) {
-        _stories.insert(0, b);
-        changed = true;
-      }
-    }
-    if (changed) await _save();
     _loaded = true;
     notifyListeners();
   }
@@ -380,6 +322,16 @@ class StoryStore extends ChangeNotifier {
   static Story storyFromMarkdown(String text, {String? id}) {
     final name = _firstHeading(text) ?? '未命名故事';
     final description = _quoteLine(text) ?? '';
+    var initialState = GameState.empty;
+    final stateText = _section(text, '初始状态');
+    if (stateText != null) {
+      try {
+        final decoded = jsonDecode(stateText);
+        if (decoded is Map) {
+          initialState = GameState.fromJson(decoded.cast<String, dynamic>());
+        }
+      } catch (_) {}
+    }
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -388,6 +340,7 @@ class StoryStore extends ChangeNotifier {
       systemPrompt: _section(text, '系统提示词') ?? '',
       worldBook: _section(text, '世界书') ?? '',
       choicesPrompt: _section(text, '后续建议提示词') ?? '',
+      initialState: initialState,
     );
   }
 
@@ -409,6 +362,7 @@ class StoryStore extends ChangeNotifier {
     section('系统提示词', s.systemPrompt);
     section('世界书', s.worldBook);
     section('后续建议提示词', s.choicesPrompt);
+    section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();
   }
 
