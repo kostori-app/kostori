@@ -378,7 +378,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
   }
 
-  Widget _buildNormalAppbar(PreferredSizeWidget tab) {
+  Appbar _buildNormalAppbar(PreferredSizeWidget tab) {
     return _buildAppbar(
       key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
@@ -438,7 +438,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
   }
 
-  Widget _buildMultiSelectAppbar(PreferredSizeWidget tab) {
+  Appbar _buildMultiSelectAppbar(PreferredSizeWidget tab) {
     return _buildAppbar(
       key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
@@ -484,7 +484,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
   }
 
-  Widget _buildSearchAppbar(PreferredSizeWidget tab) {
+  Appbar _buildSearchAppbar(PreferredSizeWidget tab) {
     return _buildAppbar(
       key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
@@ -509,8 +509,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
   }
 
-  /// 三个 appbar 共用的 SliverAppbar 骨架
-  Widget _buildAppbar({
+  /// 三个 appbar 共用的固定头部骨架
+  Appbar _buildAppbar({
     required Key key,
     required Widget leading,
     required Widget title,
@@ -787,11 +787,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     super.build(context);
     final tab = _buildTabBar();
     // 固定 app bar（不放进 TabBarView，避免左右滑动切分组时一起被划走）
-    final appbar = !searchAllMode && !searchMode && !multiSelectMode
+    final Appbar appbar = !searchAllMode && !searchMode && !multiSelectMode
         ? _buildNormalAppbar(tab)
         : multiSelectMode
         ? _buildMultiSelectAppbar(tab)
         : _buildSearchAppbar(tab);
+    // 固定头部总高（含状态栏）：网格顶部让出这段，滚动时内容从其下方穿过（磨砂）
+    final headerH = appbar.preferredSize.height + context.padding.top;
 
     Widget tabsView = isLoading
         ? const Center(
@@ -822,6 +824,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                 controller: _controllerFor(name),
                 physics: const ClampingScrollPhysics(),
                 slivers: [
+                  SliverPadding(padding: EdgeInsets.only(top: headerH)),
                   SliverGridAnimes(
                     asSliver: true,
                     animes: list,
@@ -843,41 +846,33 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
             }).toList(),
           );
 
-    // 固定 app bar + 下方 TabBarView（左右滑动只切内容，app bar 不动）
-    Widget body = Column(
+    // app bar 悬浮在顶部（不随 TabBarView 滑动）；网格从下方滚过 → 磨砂
+    Widget body = Stack(
       children: [
-        appbar,
-        Expanded(
-          child: Stack(
-            children: [
-              Positioned.fill(child: tabsView),
-              Positioned(
-                bottom: 10,
-                right: 10,
-                child: FloatingMenu(
-                  controller: _activeController,
-                  child: [
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.refresh),
-                        backgroundColor: context.colorScheme.primaryContainer,
-                        foregroundColor:
-                            context.colorScheme.onPrimaryContainer,
-                        onTap: updateAnimes,
-                      ),
-                    ],
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: context.colorScheme.primaryContainer,
-                        foregroundColor:
-                            context.colorScheme.onPrimaryContainer,
-                        onTap: scrollToTop,
-                      ),
-                    ],
-                  ],
+        Positioned.fill(child: tabsView),
+        Positioned(top: 0, left: 0, right: 0, child: appbar),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: FloatingMenu(
+            controller: _activeController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: context.colorScheme.primaryContainer,
+                  foregroundColor: context.colorScheme.onPrimaryContainer,
+                  onTap: updateAnimes,
                 ),
-              ),
+              ],
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: context.colorScheme.primaryContainer,
+                  foregroundColor: context.colorScheme.onPrimaryContainer,
+                  onTap: scrollToTop,
+                ),
+              ],
             ],
           ),
         ),
