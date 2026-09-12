@@ -558,6 +558,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   final Map<String, String> _singleValues = {};
   final Map<String, Set<String>> _multiValues = {};
   final Map<String, TextEditingController> _textValues = {};
+  final Map<String, int> _numberValues = {};
 
   Story get story => widget.story;
 
@@ -600,7 +601,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     await _send('开始游戏');
   }
 
-  Future<void> _newSession() async {
+  Future<void> _newSession({GameState? initialState}) async {
+    final initial = initialState ?? story.initialState;
     final old = _sessionId;
     if (old != null) {
       await AiConversationService().deleteSession(old);
@@ -613,22 +615,24 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (!mounted) return;
     setState(() {
       _sessionId = sessionId;
-      _state = story.initialState;
+      _state = initial;
       _booting = false;
     });
     await StorySessionStore.instance.put(
       story.id,
-      StorySession(sessionId: sessionId, state: story.initialState),
+      StorySession(sessionId: sessionId, state: initial),
     );
   }
 
-  /// 校验并生成开局档案文本，然后开局
+  /// 校验并生成开局档案文本，然后开局（数值项并入初始状态属性）
   Future<void> _startWithSetup() async {
     final buf = StringBuffer('【角色档案】');
+    final attrs = Map<String, int>.from(story.initialState.attributes);
     for (final part in story.setup) {
       final value = switch (part.type) {
         'multi' => (_multiValues[part.key] ?? const <String>{}).join('、'),
         'text' => (_textValues[part.key]?.text.trim() ?? ''),
+        'number' => '${_partNumber(part)}',
         _ => (_singleValues[part.key] ?? ''),
       };
       if (part.required && value.isEmpty) {
@@ -640,9 +644,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
       if (value.isEmpty) continue;
       buf.writeln('${part.title}：$value');
+      if (part.type == 'number') attrs[part.title] = _partNumber(part);
     }
+    final initial = GameState(
+      resources: story.initialState.resources,
+      attributes: attrs,
+      skills: story.initialState.skills,
+      inventory: story.initialState.inventory,
+      quests: story.initialState.quests,
+      time: story.initialState.time,
+      location: story.initialState.location,
+    );
     setState(() => _needsSetup = false);
-    await _newSession();
+    await _newSession(initialState: initial);
     await _send(buf.toString());
   }
 
@@ -794,8 +808,78 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 开局档案设置（类似 DnD 捏人）：单选 / 多选 / 自填，仅开局一次
+  int _partNumber(StorySetupPart p) =>
+      _numberValues[p.key] ?? p.value ?? p.min ?? 0;
+
+  int? _groupPool(List<StorySetupPart> parts) {
+    for (final p in parts) {
+      if (p.pool != null) return p.pool;
+    }
+    return null;
+  }
+
+  int _groupAllocated(List<StorySetupPart> parts) {
+    var sum = 0;
+    for (final p in parts) {
+      if (p.type == 'number') sum += _partNumber(p);
+    }
+    return sum;
+  }
+
+  void _bumpNumber(StorySetupPart p, int delta, List<StorySetupPart> group) {
+    final min = p.min ?? 0;
+    final max = p.max ?? (min + 99);
+    if (delta > 0) {
+      final pool = _groupPool(group);
+      if (pool != null && pool - _groupAllocated(group) <= 0) return;
+    }
+    final next = (_partNumber(p) + delta).clamp(min, max);
+    setState(() => _numberValues[p.key] = next);
+  }
+
+  void _rollGroup(List<StorySetupPart> group) {
+    final nums = group.where((p) => p.type == 'number').toList();
+    if (nums.isEmpty) return;
+    final rng = math.Random();
+    final pool = _groupPool(group);
+    setState(() {
+      if (pool == null) {
+        for (final p in nums) {
+          final min = p.min ?? 1;
+          final max = p.max ?? min;
+          _numberValues[p.key] =
+              max > min ? min + rng.nextInt(max - min + 1) : min;
+        }
+        return;
+      }
+      final values = [for (final p in nums) p.min ?? 0];
+      final maxs = [for (final p in nums) p.max ?? pool];
+      var remaining = pool - values.fold(0, (a, b) => a + b);
+      var guard = 0;
+      while (remaining > 0 && guard < 100000) {
+        guard++;
+        final order = List<int>.generate(nums.length, (i) => i)..shuffle(rng);
+        for (final i in order) {
+          if (remaining <= 0) break;
+          if (values[i] < maxs[i]) {
+            values[i]++;
+            remaining--;
+          }
+        }
+      }
+      for (var i = 0; i < nums.length; i++) {
+        _numberValues[nums[i].key] = values[i];
+      }
+    });
+  }
+
+  /// 开局档案设置（类似 DnD 捏人）：单选 / 多选 / 自填 / 数值(可掷骰)，仅开局一次
   Widget _buildSetup(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final groups = <String, List<StorySetupPart>>{};
+    for (final p in story.setup) {
+      groups.putIfAbsent(p.group, () => []).add(p);
+    }
     return Scaffold(
       appBar: Appbar(title: Text('${story.icon} ${story.name}')),
       body: ListView(
@@ -809,65 +893,40 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 style: TextStyle(color: scheme.onSurfaceVariant),
               ),
             ),
-          for (final part in story.setup) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                part.required ? '${part.title} *' : part.title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            if (part.type == 'multi')
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+          for (final entry in groups.entries) ...[
+            if (entry.key.isNotEmpty) ...[
+              Row(
                 children: [
-                  for (final o in part.options)
-                    FilterChip(
-                      label: Text(o),
-                      selected: _multiValues[part.key]?.contains(o) ?? false,
-                      onSelected: (v) => setState(() {
-                        final set = _multiValues.putIfAbsent(part.key, () => {});
-                        if (v) {
-                          set.add(o);
-                        } else {
-                          set.remove(o);
-                        }
-                      }),
+                  Text(
+                    entry.key,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
-                ],
-              )
-            else if (part.type == 'text')
-              TextField(
-                controller: _textValues.putIfAbsent(
-                  part.key,
-                  () => TextEditingController(),
-                ),
-                decoration: InputDecoration(
-                  hintText: part.hint,
-                  isDense: true,
-                  border: const OutlineInputBorder(),
-                ),
-              )
-            else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final o in part.options)
-                    ChoiceChip(
-                      label: Text(o),
-                      selected: _singleValues[part.key] == o,
-                      onSelected: (v) {
-                        if (v) setState(() => _singleValues[part.key] = o);
-                      },
+                  ),
+                  const Spacer(),
+                  if (_groupPool(entry.value) != null)
+                    Text(
+                      '${t.storyPointsLeft}: '
+                      '${_groupPool(entry.value)! - _groupAllocated(entry.value)}',
+                      style: TextStyle(fontSize: 12, color: scheme.primary),
                     ),
                 ],
               ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 8),
+            ],
+            for (final part in entry.value)
+              _buildPart(context, part, entry.value),
+            if (entry.value.any((p) => p.type == 'number'))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => _rollGroup(entry.value),
+                  icon: const Icon(Icons.casino_outlined, size: 18),
+                  label: Text(t.storyRoll),
+                ),
+              ),
+            const SizedBox(height: 12),
           ],
           const SizedBox(height: 8),
           SizedBox(
@@ -880,6 +939,102 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPart(
+    BuildContext context,
+    StorySetupPart part,
+    List<StorySetupPart> group,
+  ) {
+    // points 仅用于定义分组点数池，不渲染控件
+    if (part.type == 'points') return const SizedBox.shrink();
+    final title = part.required ? '${part.title} *' : part.title;
+    if (part.type == 'number') {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Expanded(child: Text(title, style: const TextStyle(fontSize: 14))),
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: () => _bumpNumber(part, -1, group),
+            ),
+            Text(
+              '${_partNumber(part)}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => _bumpNumber(part, 1, group),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final Widget content;
+    if (part.type == 'multi') {
+      content = Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final o in part.options)
+            FilterChip(
+              label: Text(o),
+              selected: _multiValues[part.key]?.contains(o) ?? false,
+              onSelected: (v) => setState(() {
+                final set = _multiValues.putIfAbsent(part.key, () => {});
+                if (v) {
+                  set.add(o);
+                } else {
+                  set.remove(o);
+                }
+              }),
+            ),
+        ],
+      );
+    } else if (part.type == 'text') {
+      content = TextField(
+        controller: _textValues.putIfAbsent(
+          part.key,
+          () => TextEditingController(),
+        ),
+        decoration: InputDecoration(
+          hintText: part.hint,
+          isDense: true,
+          border: const OutlineInputBorder(),
+        ),
+      );
+    } else {
+      content = Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final o in part.options)
+            ChoiceChip(
+              label: Text(o),
+              selected: _singleValues[part.key] == o,
+              onSelected: (v) {
+                if (v) setState(() => _singleValues[part.key] = o);
+              },
+            ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+        ),
+        content,
+        const SizedBox(height: 14),
+      ],
     );
   }
 

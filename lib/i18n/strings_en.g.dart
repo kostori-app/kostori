@@ -4666,6 +4666,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Start game'
 	String get storyStart => 'Start game';
 
+	/// en: 'Roll'
+	String get storyRoll => 'Roll';
+
+	/// en: 'Points left'
+	String get storyPointsLeft => 'Points left';
+
 	/// en: 'Avatar (emoji)'
 	String get rolePlayAvatar => 'Avatar (emoji)';
 
@@ -9255,6 +9261,8 @@ extension on Translations {
 			'storyWorldBook' => 'World book',
 			'storyChoicesPrompt' => 'Follow-up prompt',
 			'storyStart' => 'Start game',
+			'storyRoll' => 'Roll',
+			'storyPointsLeft' => 'Points left',
 			'rolePlayAvatar' => 'Avatar (emoji)',
 			'storyInventory' => 'Inventory',
 			'storyQuests' => 'Quests',
@@ -9717,10 +9725,10 @@ extension on Translations {
 			'modelDoesNotSupportVision' => 'The current model does not support image understanding',
 			'myMessage' => 'My message',
 			'aiMessage' => 'AI message',
-			'resendFromHere' => 'Resend from here',
-			'regenerateReply' => 'Regenerate this reply',
 			_ => null,
 		} ?? switch (path) {
+			'resendFromHere' => 'Resend from here',
+			'regenerateReply' => 'Regenerate this reply',
 			'noPersonality' => 'No personality',
 			'noSystemPromptUsed' => 'No system prompt used',
 			'queryBalance' => 'Query Balance',

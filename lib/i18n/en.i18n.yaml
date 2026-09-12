@@ -1591,6 +1591,8 @@ storySystemPrompt: System prompt
 storyWorldBook: World book
 storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
+storyRoll: Roll
+storyPointsLeft: Points left
 rolePlayAvatar: Avatar (emoji)
 storyInventory: Inventory
 storyQuests: Quests

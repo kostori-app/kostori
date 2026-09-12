@@ -123,17 +123,28 @@ class GameState {
   };
 }
 
-/// 开局档案的一个设置项（类似 DnD 捏人）：单选 / 多选 / 自填文本
+/// 开局档案的一个设置项（类似 DnD 捏人）：单选 / 多选 / 自填 / 数值
 class StorySetupPart {
   final String key;
   final String title;
 
-  /// single（单选） | multi（多选） | text（自填）
+  /// single（单选） | multi（多选） | text（自填） | number（数值）
   final String type;
 
   final List<String> options;
   final bool required;
   final String hint;
+
+  /// 分组标题（同组展示在一起）
+  final String group;
+
+  /// number 类型的取值范围与默认值
+  final int? min;
+  final int? max;
+  final int? value;
+
+  /// 所在分组的可分配点数池（组内取第一个非空；null = 不限制）
+  final int? pool;
 
   const StorySetupPart({
     required this.key,
@@ -142,6 +153,11 @@ class StorySetupPart {
     this.options = const [],
     this.required = false,
     this.hint = '',
+    this.group = '',
+    this.min,
+    this.max,
+    this.value,
+    this.pool,
   });
 
   factory StorySetupPart.fromJson(Map<String, dynamic> json) => StorySetupPart(
@@ -153,6 +169,11 @@ class StorySetupPart {
         const [],
     required: json['required'] as bool? ?? false,
     hint: json['hint']?.toString() ?? '',
+    group: json['group']?.toString() ?? '',
+    min: (json['min'] as num?)?.toInt(),
+    max: (json['max'] as num?)?.toInt(),
+    value: (json['value'] as num?)?.toInt(),
+    pool: (json['pool'] as num?)?.toInt(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -162,6 +183,11 @@ class StorySetupPart {
     'options': options,
     'required': required,
     'hint': hint,
+    'group': group,
+    if (min != null) 'min': min,
+    if (max != null) 'max': max,
+    if (value != null) 'value': value,
+    if (pool != null) 'pool': pool,
   };
 }
 
