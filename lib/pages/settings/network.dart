@@ -109,11 +109,29 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
     }
   }
 
+  late final TextEditingController _hostCtrl;
+  late final TextEditingController _portCtrl;
+  late final TextEditingController _usernameCtrl;
+  late final TextEditingController _passwordCtrl;
+
   @override
   void initState() {
     var proxy = appdata.settings['proxy'];
     parseProxyString(proxy);
+    _hostCtrl = TextEditingController(text: host);
+    _portCtrl = TextEditingController(text: port);
+    _usernameCtrl = TextEditingController(text: username);
+    _passwordCtrl = TextEditingController(text: password);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _hostCtrl.dispose();
+    _portCtrl.dispose();
+    _usernameCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -138,6 +156,10 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                         password = data['password'];
                       }
                     }
+                    _hostCtrl.text = host;
+                    _portCtrl.text = port;
+                    _usernameCtrl.text = username;
+                    _passwordCtrl.text = password;
                   }
                 });
                 appdata.settings['proxy'] = toProxyStr();
@@ -180,7 +202,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: t.host,
             ),
-            controller: TextEditingController(text: host),
+            controller: _hostCtrl,
             onChanged: (v) {
               host = v;
             },
@@ -197,7 +219,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: t.port,
             ),
-            controller: TextEditingController(text: port),
+            controller: _portCtrl,
             onChanged: (v) {
               port = v;
             },
@@ -217,7 +239,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: t.username,
             ),
-            controller: TextEditingController(text: username),
+            controller: _usernameCtrl,
             onChanged: (v) {
               username = v;
             },
@@ -234,7 +256,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: t.password,
             ),
-            controller: TextEditingController(text: password),
+            controller: _passwordCtrl,
             onChanged: (v) {
               password = v;
             },
@@ -539,7 +561,6 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
                     vertical: 12,
                   ),
                 ),
-                onChanged: (_) => _saveData(),
               ),
             ),
             const SizedBox(width: 8),

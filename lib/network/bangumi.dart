@@ -783,7 +783,9 @@ class Bangumi {
       );
       final jsonData = res.data;
       staffResponse = StaffResponse.fromJson(jsonData);
-    } catch (e) {}
+    } catch (e, s) {
+      NetLog.error('getBangumiStaffByID', '$e\n$s');
+    }
     return staffResponse;
   }
 
@@ -1008,7 +1010,9 @@ class Bangumi {
       if (res.data['type'] == 2) {
         return {true: BangumiItem.fromJson(res.data)};
       }
-    } catch (e) {}
+    } catch (e, s) {
+      NetLog.error('isBangumiExists', '$e\n$s');
+    }
     return {false: null};
   }
 
