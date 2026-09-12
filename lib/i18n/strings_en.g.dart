@@ -4540,6 +4540,39 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'This season'
 	String get summaryThisQuarter => 'This season';
 
+	/// en: 'AI Image'
+	String get aiImageGen => 'AI Image';
+
+	/// en: 'Engine'
+	String get aiImageEngine => 'Engine';
+
+	/// en: 'OpenAI compatible'
+	String get aiImageEngineOpenai => 'OpenAI compatible';
+
+	/// en: 'SD WebUI'
+	String get aiImageEngineSd => 'SD WebUI';
+
+	/// en: 'Image model'
+	String get aiImageModel => 'Image model';
+
+	/// en: 'Size'
+	String get aiImageSize => 'Size';
+
+	/// en: 'Steps'
+	String get aiImageSteps => 'Steps';
+
+	/// en: 'Endpoint (optional)'
+	String get aiImageBaseUrl => 'Endpoint (optional)';
+
+	/// en: 'Generate image'
+	String get aiImageGenerate => 'Generate image';
+
+	/// en: 'Generating'
+	String get aiImageGenerating => 'Generating';
+
+	/// en: 'Generate tags first'
+	String get aiImageNeedTags => 'Generate tags first';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9078,6 +9111,17 @@ extension on Translations {
 			'seasonReview' => 'Season Review',
 			'seasonReviewDescription' => 'Review what you watched this season',
 			'summaryThisQuarter' => 'This season',
+			'aiImageGen' => 'AI Image',
+			'aiImageEngine' => 'Engine',
+			'aiImageEngineOpenai' => 'OpenAI compatible',
+			'aiImageEngineSd' => 'SD WebUI',
+			'aiImageModel' => 'Image model',
+			'aiImageSize' => 'Size',
+			'aiImageSteps' => 'Steps',
+			'aiImageBaseUrl' => 'Endpoint (optional)',
+			'aiImageGenerate' => 'Generate image',
+			'aiImageGenerating' => 'Generating',
+			'aiImageNeedTags' => 'Generate tags first',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9573,6 +9617,8 @@ extension on Translations {
 			'enableTools' => 'Enable tool calling',
 			'disableTools' => 'Disable tool calling',
 			'enterProviderKeyToAddModel' => 'Enter the provider key above to add models',
+			_ => null,
+		} ?? switch (path) {
 			'mcpServers' => 'MCP Servers',
 			'noMcpServers' => 'No MCP servers yet',
 			'mcpServerName' => 'Server Name',
@@ -9584,8 +9630,6 @@ extension on Translations {
 			'args' => 'Arguments (JSON)',
 			'env' => 'Environment (JSON)',
 			'serverUrl' => 'Server URL',
-			_ => null,
-		} ?? switch (path) {
 			'headers' => 'Headers (JSON)',
 			'noSkillsYet' => 'No skills yet',
 			'skillName' => 'Skill Name',

@@ -20,6 +20,7 @@ import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
+import 'package:kostori/foundation/ai_service/ai_image_service.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';

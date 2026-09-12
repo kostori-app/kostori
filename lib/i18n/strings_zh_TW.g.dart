@@ -1539,6 +1539,17 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get seasonReview => '季度回顧';
 	@override String get seasonReviewDescription => '回顧本季度的追番記錄';
 	@override String get summaryThisQuarter => '本季度';
+	@override String get aiImageGen => 'AI 出圖';
+	@override String get aiImageEngine => '生成引擎';
+	@override String get aiImageEngineOpenai => 'OpenAI 相容';
+	@override String get aiImageEngineSd => 'SD WebUI';
+	@override String get aiImageModel => '出圖模型';
+	@override String get aiImageSize => '尺寸';
+	@override String get aiImageSteps => '步數';
+	@override String get aiImageBaseUrl => '介面位址（可選）';
+	@override String get aiImageGenerate => '生成圖片';
+	@override String get aiImageGenerating => '生成中';
+	@override String get aiImageNeedTags => '請先生成 Tag';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4102,6 +4113,17 @@ extension on TranslationsZhTw {
 			'seasonReview' => '季度回顧',
 			'seasonReviewDescription' => '回顧本季度的追番記錄',
 			'summaryThisQuarter' => '本季度',
+			'aiImageGen' => 'AI 出圖',
+			'aiImageEngine' => '生成引擎',
+			'aiImageEngineOpenai' => 'OpenAI 相容',
+			'aiImageEngineSd' => 'SD WebUI',
+			'aiImageModel' => '出圖模型',
+			'aiImageSize' => '尺寸',
+			'aiImageSteps' => '步數',
+			'aiImageBaseUrl' => '介面位址（可選）',
+			'aiImageGenerate' => '生成圖片',
+			'aiImageGenerating' => '生成中',
+			'aiImageNeedTags' => '請先生成 Tag',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4597,6 +4619,8 @@ extension on TranslationsZhTw {
 			'disableTools' => '停用工具呼叫',
 			'enterProviderKeyToAddModel' => '請先在上方填寫服務商 Key 再新增模型',
 			'mcpServers' => 'MCP 伺服器',
+			_ => null,
+		} ?? switch (path) {
 			'noMcpServers' => '暫無 MCP 伺服器',
 			'mcpServerName' => '伺服器名稱',
 			'transport' => '傳輸方式',
@@ -4608,8 +4632,6 @@ extension on TranslationsZhTw {
 			'env' => '環境變數（JSON）',
 			'serverUrl' => '伺服器位址',
 			'headers' => '請求標頭（JSON）',
-			_ => null,
-		} ?? switch (path) {
 			'noSkillsYet' => '暫無技能',
 			'skillName' => '技能名稱',
 			'skillKey' => '技能 Key',

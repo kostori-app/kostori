@@ -1538,6 +1538,17 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get seasonReview => '季度回顾';
 	@override String get seasonReviewDescription => '回顾本季度的追番记录';
 	@override String get summaryThisQuarter => '本季度';
+	@override String get aiImageGen => 'AI 出图';
+	@override String get aiImageEngine => '生成引擎';
+	@override String get aiImageEngineOpenai => 'OpenAI 兼容';
+	@override String get aiImageEngineSd => 'SD WebUI';
+	@override String get aiImageModel => '出图模型';
+	@override String get aiImageSize => '尺寸';
+	@override String get aiImageSteps => '步数';
+	@override String get aiImageBaseUrl => '接口地址（可选）';
+	@override String get aiImageGenerate => '生成图片';
+	@override String get aiImageGenerating => '生成中';
+	@override String get aiImageNeedTags => '请先生成 Tag';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4102,6 +4113,17 @@ extension on TranslationsZhCn {
 			'seasonReview' => '季度回顾',
 			'seasonReviewDescription' => '回顾本季度的追番记录',
 			'summaryThisQuarter' => '本季度',
+			'aiImageGen' => 'AI 出图',
+			'aiImageEngine' => '生成引擎',
+			'aiImageEngineOpenai' => 'OpenAI 兼容',
+			'aiImageEngineSd' => 'SD WebUI',
+			'aiImageModel' => '出图模型',
+			'aiImageSize' => '尺寸',
+			'aiImageSteps' => '步数',
+			'aiImageBaseUrl' => '接口地址（可选）',
+			'aiImageGenerate' => '生成图片',
+			'aiImageGenerating' => '生成中',
+			'aiImageNeedTags' => '请先生成 Tag',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4598,6 +4620,8 @@ extension on TranslationsZhCn {
 			'enableTools' => '启用工具调用',
 			'disableTools' => '禁用工具调用',
 			'enterProviderKeyToAddModel' => '请先在上方填写服务商 Key 再添加模型',
+			_ => null,
+		} ?? switch (path) {
 			'mcpServers' => 'MCP 服务器',
 			'noMcpServers' => '暂无 MCP 服务器',
 			'mcpServerName' => '服务器名称',
@@ -4609,8 +4633,6 @@ extension on TranslationsZhCn {
 			'args' => '参数（JSON）',
 			'env' => '环境变量（JSON）',
 			'serverUrl' => '服务器地址',
-			_ => null,
-		} ?? switch (path) {
 			'headers' => '请求头（JSON）',
 			'noSkillsYet' => '暂无技能',
 			'skillName' => '技能名称',

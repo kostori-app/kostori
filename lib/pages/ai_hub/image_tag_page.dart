@@ -25,6 +25,65 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     'realistic': '写实摄影风格 tag',
   };
 
+  // AI 出图
+  AiImageGenConfig _imageConfig = const AiImageGenConfig();
+  late final TextEditingController _imageModelCtrl;
+  late final TextEditingController _imageBaseUrlCtrl;
+  Uint8List? _imageBytes;
+  bool _generatingImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageConfig = AiImageGenConfig.load();
+    _imageModelCtrl = TextEditingController(text: _imageConfig.model);
+    _imageBaseUrlCtrl = TextEditingController(text: _imageConfig.baseUrl);
+  }
+
+  @override
+  void dispose() {
+    _imageModelCtrl.dispose();
+    _imageBaseUrlCtrl.dispose();
+    super.dispose();
+  }
+
+  void _updateImageConfig(AiImageGenConfig config) {
+    setState(() => _imageConfig = config);
+    config.save();
+  }
+
+  Future<void> _generateImage() async {
+    if (_tags.isEmpty) {
+      App.rootContext.showMessage(message: t.aiImageNeedTags);
+      return;
+    }
+    setState(() => _generatingImage = true);
+    final res = await AiImageService.generate(
+      provider: _source,
+      prompt: _tags.join(', '),
+      config: _imageConfig,
+    );
+    if (!mounted) return;
+    setState(() {
+      _generatingImage = false;
+      if (res.success) _imageBytes = res.data;
+    });
+    if (res.error) {
+      App.rootContext.showMessage(
+        message: '${t.aiImageGen}: ${res.errorMessage}',
+        level: LogLevel.error,
+      );
+    }
+  }
+
+  Future<void> _saveGeneratedImage() async {
+    final bytes = _imageBytes;
+    if (bytes == null) return;
+    final filename =
+        'kostori_ai_${DateTime.now().millisecondsSinceEpoch}.png';
+    await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
+  }
+
   Future<void> _generate() async {
     setState(() {
       _isLoading = true;
@@ -210,8 +269,153 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                 ),
               ),
             ],
+            const SizedBox(height: 8),
+            _buildImageGenCard(context),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildImageGenCard(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget label(String text) => Text(
+      text,
+      style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+    );
+    final isSd = _imageConfig.engine == AiImageEngine.sd;
+
+    return _AiCard(
+      icon: Icons.image_outlined,
+      title: t.aiImageGen,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          label(t.aiImageEngine),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: Text(t.aiImageEngineOpenai),
+                selected: !isSd,
+                onSelected: (v) {
+                  if (v) {
+                    _updateImageConfig(
+                      _imageConfig.copyWith(engine: AiImageEngine.openai),
+                    );
+                  }
+                },
+              ),
+              ChoiceChip(
+                label: Text(t.aiImageEngineSd),
+                selected: isSd,
+                onSelected: (v) {
+                  if (v) {
+                    _updateImageConfig(
+                      _imageConfig.copyWith(engine: AiImageEngine.sd),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          label(t.aiImageSize),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in ['512x512', '768x768', '1024x1024'])
+                ChoiceChip(
+                  label: Text(s),
+                  selected: _imageConfig.size == s,
+                  onSelected: (v) {
+                    if (v) {
+                      _updateImageConfig(_imageConfig.copyWith(size: s));
+                    }
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (isSd) ...[
+            label(t.aiImageSteps),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final n in [20, 30, 50])
+                  ChoiceChip(
+                    label: Text('$n'),
+                    selected: _imageConfig.steps == n,
+                    onSelected: (v) {
+                      if (v) {
+                        _updateImageConfig(_imageConfig.copyWith(steps: n));
+                      }
+                    },
+                  ),
+              ],
+            ),
+          ] else
+            TextField(
+              controller: _imageModelCtrl,
+              decoration: InputDecoration(
+                labelText: t.aiImageModel,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (v) =>
+                  _updateImageConfig(_imageConfig.copyWith(model: v)),
+            ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _imageBaseUrlCtrl,
+            decoration: InputDecoration(
+              labelText: t.aiImageBaseUrl,
+              hintText: isSd ? 'http://127.0.0.1:7860' : '',
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (v) =>
+                _updateImageConfig(_imageConfig.copyWith(baseUrl: v)),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _generatingImage ? null : _generateImage,
+              icon: _generatingImage
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: PolygonRefreshIndicator(),
+                    )
+                  : const Icon(Icons.image),
+              label: Text(
+                _generatingImage ? t.aiImageGenerating : t.aiImageGenerate,
+              ),
+            ),
+          ),
+          if (_imageBytes != null) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(_imageBytes!, fit: BoxFit.contain),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _saveGeneratedImage,
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: Text(t.save),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

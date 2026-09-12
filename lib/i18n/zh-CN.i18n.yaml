@@ -1544,6 +1544,17 @@ tasteRadarDescription: 根据收藏番剧的高频标签生成口味雷达图
 seasonReview: 季度回顾
 seasonReviewDescription: 回顾本季度的追番记录
 summaryThisQuarter: 本季度
+aiImageGen: AI 出图
+aiImageEngine: 生成引擎
+aiImageEngineOpenai: OpenAI 兼容
+aiImageEngineSd: SD WebUI
+aiImageModel: 出图模型
+aiImageSize: 尺寸
+aiImageSteps: 步数
+aiImageBaseUrl: 接口地址（可选）
+aiImageGenerate: 生成图片
+aiImageGenerating: 生成中
+aiImageNeedTags: 请先生成 Tag
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结

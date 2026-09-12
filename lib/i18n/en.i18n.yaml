@@ -1549,6 +1549,17 @@ tasteRadarDescription: Visualize your anime taste as a radar chart from your mos
 seasonReview: Season Review
 seasonReviewDescription: Review what you watched this season
 summaryThisQuarter: This season
+aiImageGen: AI Image
+aiImageEngine: Engine
+aiImageEngineOpenai: OpenAI compatible
+aiImageEngineSd: SD WebUI
+aiImageModel: Image model
+aiImageSize: Size
+aiImageSteps: Steps
+aiImageBaseUrl: Endpoint (optional)
+aiImageGenerate: Generate image
+aiImageGenerating: Generating
+aiImageNeedTags: Generate tags first
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary
