@@ -36,6 +36,9 @@ linter:
   # producing the lint.
   rules:
     collection_methods_unrelated_type: false
+    # 关闭：await 后大量使用 App.rootContext（rootNavigatorKey 的全局稳定 context，
+    # 非当前 widget 的 context），开启会产生约 180 条误报；局部 BuildContext 的异步
+    # 隐患已手工修复。
     use_build_context_synchronously: false
     avoid_print: false
     prefer_relative_imports: false

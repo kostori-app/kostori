@@ -1497,6 +1497,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
 
     if (RegExp(r'^\d+$').hasMatch(value)) {
       final res = await Bangumi.instance.isBangumiExists(int.parse(value));
+      if (!mounted) return;
       if (res.keys.first) {
         App.rootContext.showMessage(message: t.jumping);
         context.to(() => BangumiInfoPage(bangumiItem: res.values.first!));

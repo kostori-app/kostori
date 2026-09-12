@@ -202,6 +202,7 @@ class _RenderHorizontalPicPageState
         ? contentHeight + outerBorderWidth * 2
         : contentHeight;
 
+    if (!mounted) return null;
     return composePainterToPng(
       painter: HorizontalImagePainter(
         images: images,

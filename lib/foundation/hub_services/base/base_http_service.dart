@@ -347,20 +347,20 @@ abstract class BaseHttpService implements BaseService {
         }
         final showWeekly = mode != 'today';
 
-        // 需要一个 BuildContext 来渲染截图，这里复用应用的 navigator 上下文
-        final context = App.mainNavigatorKey?.currentContext;
-        if (context == null) {
-          await sendError(
-            req,
-            HttpStatus.serviceUnavailable,
-            'NO_CONTEXT',
-            'Flutter context not available',
-          );
-          return;
-        }
-
         try {
           final calendar = await loadBangumiCalendar();
+          // 需要一个 BuildContext 来渲染截图，这里复用应用的 navigator 上下文
+          final context = App.mainNavigatorKey?.currentContext;
+          if (context == null) {
+            await sendError(
+              req,
+              HttpStatus.serviceUnavailable,
+              'NO_CONTEXT',
+              'Flutter context not available',
+            );
+            return;
+          }
+          if (!context.mounted) return;
           final bytes = await generateBangumiCalendarPng(
             context: context,
             bangumiCalendar: calendar,

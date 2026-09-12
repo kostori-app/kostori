@@ -77,6 +77,7 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
           continue;
         }
         final modules = await p.render();
+        if (!mounted) break;
         for (final m in modules) {
           final w = _ModuleView.build(context, p, m);
           if (w != null) cards.add(w);

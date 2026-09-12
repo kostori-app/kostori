@@ -201,6 +201,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         ? totalHeight + outerBorderWidth * 2
         : totalHeight;
 
+    if (!mounted) return null;
     return composePainterToPng(
       painter: LongImagePainter(
         images: images,

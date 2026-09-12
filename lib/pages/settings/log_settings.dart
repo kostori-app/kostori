@@ -22,6 +22,7 @@ class _LogSettingsState extends State<LogSettings> {
 
   Future<void> _exportLogFile() async {
     final content = await Log.readAllLogs();
+    if (!mounted) return;
     if (content.trim().isEmpty) {
       context.showMessage(message: t.noData);
       return;

@@ -83,7 +83,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
             App.rootContext.showMessage(message: t.bangumiEntryNotFound);
             return;
           }
-          if (!mounted) return;
+          if (!context.mounted) return;
           context.to(() => BangumiInfoPage(bangumiItem: item));
         } catch (e) {
           App.rootContext.showMessage(message: t.failedToFetchBangumiInfo);
@@ -103,7 +103,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
             App.rootContext.showMessage(message: t.characterNotFound);
             return;
           }
-          if (!mounted) return;
+          if (!context.mounted) return;
           BangumiWidget.showBottomPage(context, CharacterPage(characterID: id));
         } catch (e) {
           App.rootContext.showMessage(message: t.failedToFetchCharacterInfo);
@@ -123,7 +123,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
             App.rootContext.showMessage(message: t.personNotFound);
             return;
           }
-          if (!mounted) return;
+          if (!context.mounted) return;
           BangumiWidget.showBottomPage(context, PersonPage(personID: id));
         } catch (e) {
           App.rootContext.showMessage(message: t.failedToFetchPersonInfo);
@@ -366,6 +366,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         if (result == null || !mounted) return;
         bytes = await result.readAsBytes();
       }
+      if (!context.mounted) return;
       await _decodeQrFromBytes(context, bytes);
     } finally {
       if (mounted) setState(() => _isAnalyzing = false);
@@ -454,6 +455,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
     setState(() => _isAnalyzing = true);
     try {
       final bytes = await file.readAsBytes();
+      if (!context.mounted) return;
       await _decodeQrFromBytes(context, bytes);
     } finally {
       if (mounted) setState(() => _isAnalyzing = false);
@@ -475,6 +477,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         App.rootContext.showMessage(message: t.imageDownloadFailed);
         return;
       }
+      if (!context.mounted) return;
       await _decodeQrFromBytes(context, response.data!);
     } catch (e) {
       App.rootContext.showMessage(message: t.failedToFetchNetworkImage);

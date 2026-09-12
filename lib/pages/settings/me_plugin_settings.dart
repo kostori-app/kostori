@@ -546,6 +546,7 @@ const plugin = {
         return;
       } catch (_) {}
     }
+    if (!mounted) return;
     context.to(
       () => _EditFilePage(p.filePath, () async {
         await MePagePluginManager().reload();
@@ -2503,7 +2504,8 @@ class _PluginAccountPageState extends State<_PluginAccountPage> {
     await p.logout();
     MePagePluginManager().clearCreds(p.key);
     p.setLogged(false);
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
     context.showMessage(message: t.switchSuccessful);
   }
 

@@ -241,7 +241,7 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
         desktopSuccessMessage: t.qrCopiedToClipboard,
         mobileSuccessMessage: t.qrSavedToGallery,
       );
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     } catch (e) {
       ImageSaver.showResult(success: false, message: t.shareFailed);
     } finally {

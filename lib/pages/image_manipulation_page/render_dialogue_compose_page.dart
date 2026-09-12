@@ -318,6 +318,7 @@ class _RenderDialogueComposePageState
     final totalWidth = maxWidth + (showOuterBorder ? 2 * outerBorderWidth : 0);
     final fullSize = Size(totalWidth, totalCropHeight);
 
+    if (!context.mounted) return null;
     // 获取设备像素比，缩放画布保证清晰度
     final dpr = MediaQuery.devicePixelRatioOf(context);
 

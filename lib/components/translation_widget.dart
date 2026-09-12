@@ -325,7 +325,7 @@ class _TranslationWidgetState extends State<TranslationWidget> {
     }
     appdata.settings['translationSource'] = source;
     appdata.saveData();
-    Navigator.of(dialogContext).pop();
+    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     App.rootContext.showMessage(message: t.saved);
   }
 

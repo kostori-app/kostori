@@ -395,7 +395,7 @@ class SearchAnimeSkill extends Skill {
     if (open) {
       final first = results.first;
       final ctx = App.mainNavigatorKey?.currentContext;
-      if (ctx != null) {
+      if (ctx != null && ctx.mounted) {
         try {
           ctx.to(
             () => AnimePage(

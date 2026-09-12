@@ -607,20 +607,20 @@ class _TopBar extends ConsumerWidget {
     try {
       await file.delete();
 
-      context.showMessage(message: t.deleteSuccessful);
+      if (context.mounted) context.showMessage(message: t.deleteSuccessful);
 
       // 同步移除图片操作页列表里对应的图片（磁盘文件已删除）
       ref.read(imagesProvider.notifier).removeFile(file);
 
       final urls = ref.read(imageListProvider);
       if (urls.isEmpty) {
-        Navigator.pop(context);
+        if (context.mounted) Navigator.pop(context);
         return;
       }
 
       final newList = [...urls]..removeAt(index);
       if (newList.isEmpty) {
-        Navigator.pop(context);
+        if (context.mounted) Navigator.pop(context);
         return;
       }
 
@@ -635,7 +635,9 @@ class _TopBar extends ConsumerWidget {
       });
     } catch (e) {
       Log.error('删除失败', e.toString());
-      context.showMessage(message: t.deleteFailed, level: LogLevel.error);
+      if (context.mounted) {
+        context.showMessage(message: t.deleteFailed, level: LogLevel.error);
+      }
     }
   }
 

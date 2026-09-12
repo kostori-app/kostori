@@ -821,6 +821,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       _sessionId!,
     );
     if (session == null) return;
+    if (!mounted) return;
     final ctrl = TextEditingController(text: session.title);
     await showDialog(
       context: context,

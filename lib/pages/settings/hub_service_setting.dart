@@ -550,6 +550,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
       ),
     );
     if (direction == null) return;
+    if (!context.mounted) return;
     _showSubscriptionEditor(
       context,
       type: HubSubscriptionType.ws,
@@ -777,6 +778,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
       provider,
     );
 
+    if (!context.mounted) return;
     await showPopUpWidget(
       context,
       _AiBotConfigPage(

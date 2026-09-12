@@ -2209,6 +2209,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       availableSkills: [for (final s in enabled) s.name],
       injections: injections,
     );
+    if (!mounted) return;
     await ContentDialog.show(
       context: context,
       title: t.previewSystemPrompt,
@@ -2442,6 +2443,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
     if (selected == null) return;
     if (selected == '__custom__') {
+      if (!mounted) return;
       final ctrl = TextEditingController(text: _personaCtrl.text);
       final text = await showDialog<String>(
         context: context,
@@ -2505,6 +2507,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
     if (selected == null) return;
     if (selected == '__custom__') {
+      if (!mounted) return;
       final ctrl = TextEditingController(text: _toneCtrl.text);
       final text = await showDialog<String>(
         context: context,
@@ -3558,6 +3561,7 @@ class _CustomProviderEditorState extends State<_CustomProviderEditor> {
         return;
       }
       final sourceKey = _sourceKey;
+      if (!mounted) return;
       final picked = await _showModelImportDialog(context, ids);
       if (picked == null || picked.isEmpty) return;
       final existing = await AiDatabase.instance.aiModelDao.getModel(

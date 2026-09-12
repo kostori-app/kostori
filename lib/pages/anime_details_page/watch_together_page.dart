@@ -460,6 +460,7 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
     final saved = client.savedAddress ?? '';
     // 回环地址（127.0.0.1/localhost）扫码端连不上，替换为本机局域网地址
     final address = await _resolveShareAddress(saved);
+    if (!mounted) return;
     // 管理员分享时使用用户级 token，避免泄露管理员 key；普通用户用自身 token
     final shareToken = client.isGlobalAdmin
         ? ApiKeyManager().activeKey
