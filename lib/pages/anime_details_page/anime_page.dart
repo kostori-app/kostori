@@ -2953,6 +2953,10 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                 _resolutionLabelByKey[item.key] = label;
               }),
               resolvePlay: widget.resolvePlay,
+              // 已下载条目：重下 = 重新勾选（再次下载会覆盖）
+              onRedownload: () => setState(() {
+                if (!selected.add(item.key)) selected.remove(item.key);
+              }),
             ),
         ],
       ),
@@ -2972,6 +2976,7 @@ class _DownloadItemCard extends StatefulWidget {
     required this.onEditName,
     required this.onResolution,
     required this.resolvePlay,
+    required this.onRedownload,
   });
 
   final _DownloadItem item;
@@ -2993,6 +2998,9 @@ class _DownloadItemCard extends StatefulWidget {
   final void Function(String url, String label) onResolution;
 
   final Future<AnimePlayResult?> Function(String key) resolvePlay;
+
+  /// 已下载时重新下载（重新勾选）
+  final VoidCallback onRedownload;
 
   @override
   State<_DownloadItemCard> createState() => _DownloadItemCardState();
@@ -3118,9 +3126,25 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // 分辨率选择 / 已下载标记
+                // 分辨率选择 / 已下载标记（已下载可重下）
                 if (widget.isDownloaded)
-                  Icon(Icons.download_done, size: 20, color: Colors.green)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.download_done,
+                        size: 20,
+                        color: Colors.green,
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: t.redownload,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        color: colorScheme.primary,
+                        onPressed: widget.onRedownload,
+                      ),
+                    ],
+                  )
                 else
                   TextButton.icon(
                     style: TextButton.styleFrom(

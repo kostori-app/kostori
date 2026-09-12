@@ -463,6 +463,13 @@ class AnimeTile extends ConsumerWidget {
           )
         : null;
 
+    // 下载状态（该番剧有任意下载记录即显示角标）
+    ref.watch(downloadsChangedProvider);
+    final downloaded = DownloadManager.instance.isDownloaded(
+      anime.id,
+      anime.sourceKey,
+    );
+
     // 显示模式：详细 / 瀑布流（错落封面）/ 简洁 / 海报（横向宽卡）
     Widget child = switch (type) {
       'detailed' => _buildDetailedMode(context, ref),
@@ -475,7 +482,7 @@ class AnimeTile extends ConsumerWidget {
       _ => _buildBriefMode(context, ref),
     };
 
-    if (!isFavorite && history == null) {
+    if (!isFavorite && history == null && !downloaded) {
       return child;
     }
 
@@ -503,6 +510,17 @@ class AnimeTile extends ConsumerWidget {
                       color: Colors.redAccent,
                       child: const Icon(
                         Icons.star_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  if (downloaded)
+                    Container(
+                      height: 24,
+                      width: 24,
+                      color: Colors.green,
+                      child: const Icon(
+                        Icons.download_done,
                         size: 16,
                         color: Colors.white,
                       ),

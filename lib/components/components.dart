@@ -33,6 +33,7 @@ import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/foundation/app_page_route.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';

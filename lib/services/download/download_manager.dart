@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
@@ -56,6 +57,30 @@ class DownloadManager extends ChangeNotifier {
 
   /// 进度通知节流：task.id → 上次 notify 时间
   final Map<String, DateTime> _lastProgressNotify = {};
+
+  /// 下载记录变化（完成/删除/移动/重命名）时触发，供卡片下载角标刷新
+  final StreamController<void> _recordsChanged =
+      StreamController<void>.broadcast();
+
+  Stream<void> get recordsChanged => _recordsChanged.stream;
+
+  /// `animeId|sourceKey` → 有下载记录（同步缓存，供列表卡片角标）
+  Set<String> _downloadedKeys = {};
+
+  bool isDownloaded(String? animeId, String? sourceKey) {
+    if (animeId == null || animeId.isEmpty || sourceKey == null) return false;
+    return _downloadedKeys.contains('$animeId|$sourceKey');
+  }
+
+  Future<void> _refreshDownloadedKeys() async {
+    final records = await allRecords();
+    _downloadedKeys = {
+      for (final r in records)
+        if ((r['animeId']?.toString() ?? '').isNotEmpty)
+          '${r['animeId']}|${r['sourceKey']}',
+    };
+    if (!_recordsChanged.isClosed) _recordsChanged.add(null);
+  }
 
   List<DownloadTask> get tasks => List.unmodifiable(_tasks);
 
@@ -155,6 +180,7 @@ class DownloadManager extends ChangeNotifier {
       Directory(_downloadDir).createSync(recursive: true);
       _persist();
       notifyListeners();
+      unawaited(_refreshDownloadedKeys());
       // 兜底：清理残留分片（已完成/失败/孤儿任务的分片目录），
       // 避免旧版本未清理的 TS 切片占用体积越来越大
       unawaited(_cleanupOrphanSegments());
@@ -997,6 +1023,7 @@ class DownloadManager extends ChangeNotifier {
       records.removeWhere((e) => e is Map && e['filePath'] == filePath);
       await file.writeAsString(jsonEncode(records));
     } catch (_) {}
+    await _refreshDownloadedKeys();
   }
 
   /// 已完成任务占用的总字节数
@@ -1052,6 +1079,7 @@ class DownloadManager extends ChangeNotifier {
     } catch (e, s) {
       Log.error('DownloadManager.removeRecord', '$e\n$s');
     }
+    await _refreshDownloadedKeys();
   }
 
   /// 清空已完成/失败任务
@@ -1166,6 +1194,7 @@ class DownloadManager extends ChangeNotifier {
     } catch (e, s) {
       Log.error('DownloadManager.record', '$e\n$s');
     }
+    await _refreshDownloadedKeys();
   }
 
   /// 查询某番剧的下载记录（按 animeId + sourceKey）
@@ -1428,6 +1457,7 @@ class DownloadManager extends ChangeNotifier {
       }
       if (changed) await file.writeAsString(jsonEncode(records));
     } catch (_) {}
+    await _refreshDownloadedKeys();
   }
 
   Future<void> _rewriteRecordGroups(Map<String, String> mapping) async {
@@ -1451,8 +1481,14 @@ class DownloadManager extends ChangeNotifier {
       }
       if (changed) await file.writeAsString(jsonEncode(records));
     } catch (_) {}
+    await _refreshDownloadedKeys();
   }
 }
+
+/// 下载记录变化时通知列表卡片刷新下载角标
+final downloadsChangedProvider = StreamProvider<void>((ref) {
+  return DownloadManager.instance.recordsChanged;
+});
 
 /// 简单信号量：限制并发数量
 class _SimpleSemaphore {
