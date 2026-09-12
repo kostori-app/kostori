@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
@@ -48,6 +49,8 @@ part 'image_tag_page.dart';
 part 'soul_profile_page.dart';
 
 part 'summary_page.dart';
+
+part 'taste_radar_page.dart';
 
 class AiHubEntry extends StatelessWidget {
   const AiHubEntry({super.key});
@@ -141,6 +144,12 @@ class _AiHubPageState extends State<AiHubPage> {
         context.to(() => const ImageTagPage());
       case 'summary':
         context.to(() => const SummaryPage());
+      case 'taste_radar':
+        context.to(() => const TasteRadarPage());
+      case 'season_review':
+        context.to(
+          () => const SummaryPage(initialRange: _SummaryRange.quarter),
+        );
       default:
         context.to(() => PluginModulePage(plugin: plugin));
     }
@@ -727,7 +736,12 @@ class _HubModuleCard extends StatelessWidget {
 // ─────────────────────────────────────────────
 
 mixin _AnimeDataMixin {
-  Future<({List<BangumiItem> likedItems, String animeNames, String topTags})>
+  Future<({
+    List<BangumiItem> likedItems,
+    String animeNames,
+    String topTags,
+    List<Map<String, dynamic>> tagData,
+  })>
   loadAnimeData() async {
     final allStats = await StatsManager().getStatsAll();
     final seenIds = <int>{};
@@ -757,7 +771,12 @@ mixin _AnimeDataMixin {
         .map((item) => '- ${item.nameCn}')
         .join('\n');
 
-    return (likedItems: likedItems, animeNames: animeNames, topTags: topTags);
+    return (
+      likedItems: likedItems,
+      animeNames: animeNames,
+      topTags: topTags,
+      tagData: tagData,
+    );
   }
 }
 

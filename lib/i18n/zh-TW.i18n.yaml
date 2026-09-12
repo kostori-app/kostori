@@ -1544,6 +1544,11 @@ aiTagStyleDanbooru: Danbooru
 aiTagStyleRealistic: 寫實
 aiTagCount: Tag 數量
 aiCustomRange: 自訂範圍
+tasteRadar: 追番口味雷達
+tasteRadarDescription: 根據收藏番劇的高頻標籤生成口味雷達圖
+seasonReview: 季度回顧
+seasonReviewDescription: 回顧本季度的追番記錄
+summaryThisQuarter: 本季度
 noActivityInTimeRange: 該時間段內暫無活動記錄
 weeklySummary: 本週總結
 monthlySummary: 本月總結

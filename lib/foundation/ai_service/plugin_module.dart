@@ -96,6 +96,20 @@ class PluginStore extends ChangeNotifier {
       description: t.summaryDescription,
       isBuiltin: true,
     ),
+    PluginModule(
+      id: 'taste_radar',
+      name: t.tasteRadar,
+      icon: '🕸️',
+      description: t.tasteRadarDescription,
+      isBuiltin: true,
+    ),
+    PluginModule(
+      id: 'season_review',
+      name: t.seasonReview,
+      icon: '🍂',
+      description: t.seasonReviewDescription,
+      isBuiltin: true,
+    ),
   ];
 
   Future<void> init() async {

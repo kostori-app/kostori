@@ -1534,6 +1534,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiTagStyleRealistic => '寫實';
 	@override String get aiTagCount => 'Tag 數量';
 	@override String get aiCustomRange => '自訂範圍';
+	@override String get tasteRadar => '追番口味雷達';
+	@override String get tasteRadarDescription => '根據收藏番劇的高頻標籤生成口味雷達圖';
+	@override String get seasonReview => '季度回顧';
+	@override String get seasonReviewDescription => '回顧本季度的追番記錄';
+	@override String get summaryThisQuarter => '本季度';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4092,6 +4097,11 @@ extension on TranslationsZhTw {
 			_ => null,
 		} ?? switch (path) {
 			'aiCustomRange' => '自訂範圍',
+			'tasteRadar' => '追番口味雷達',
+			'tasteRadarDescription' => '根據收藏番劇的高頻標籤生成口味雷達圖',
+			'seasonReview' => '季度回顧',
+			'seasonReviewDescription' => '回顧本季度的追番記錄',
+			'summaryThisQuarter' => '本季度',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4598,13 +4608,13 @@ extension on TranslationsZhTw {
 			'env' => '環境變數（JSON）',
 			'serverUrl' => '伺服器位址',
 			'headers' => '請求標頭（JSON）',
+			_ => null,
+		} ?? switch (path) {
 			'noSkillsYet' => '暫無技能',
 			'skillName' => '技能名稱',
 			'skillKey' => '技能 Key',
 			'builtin' => '內建',
 			'skillMarkdownHint' => '技能支援 Markdown 格式',
-			_ => null,
-		} ?? switch (path) {
 			'sendMessage' => '發送訊息',
 			'contextAutoCompressed' => '上下文過長，已自動壓縮',
 			'chatGreeting' => '今天有什麼可以幫你？',

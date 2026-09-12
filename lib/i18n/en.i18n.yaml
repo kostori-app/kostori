@@ -1544,6 +1544,11 @@ aiTagStyleDanbooru: Danbooru
 aiTagStyleRealistic: Realistic
 aiTagCount: Tag count
 aiCustomRange: Custom range
+tasteRadar: Taste Radar
+tasteRadarDescription: Visualize your anime taste as a radar chart from your most-liked tags
+seasonReview: Season Review
+seasonReviewDescription: Review what you watched this season
+summaryThisQuarter: This season
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

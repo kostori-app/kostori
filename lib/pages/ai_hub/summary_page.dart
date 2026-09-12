@@ -1,9 +1,11 @@
 part of 'ai_hub_page.dart';
 
-enum _SummaryRange { week, month, custom }
+enum _SummaryRange { week, month, quarter, custom }
 
 class SummaryPage extends ConsumerStatefulWidget {
-  const SummaryPage({super.key});
+  const SummaryPage({super.key, this.initialRange});
+
+  final _SummaryRange? initialRange;
 
   @override
   ConsumerState<SummaryPage> createState() => _SummaryPageState();
@@ -13,8 +15,14 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
   bool _isLoading = false;
   String? _result;
   String _source = 'siliconFlow';
-  _SummaryRange _range = _SummaryRange.week;
+  late _SummaryRange _range;
   DateTimeRange? _customRange;
+
+  @override
+  void initState() {
+    super.initState();
+    _range = widget.initialRange ?? _SummaryRange.week;
+  }
 
   // 本次生成的统计数据（用于结果卡片上方的统计条）
   int _activeTitles = 0;
@@ -32,6 +40,11 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
       final cutoff = switch (_range) {
         _SummaryRange.week => now.subtract(const Duration(days: 7)),
         _SummaryRange.month => DateTime(now.year, now.month, 1),
+        _SummaryRange.quarter => DateTime(
+          now.year,
+          ((now.month - 1) ~/ 3) * 3 + 1,
+          1,
+        ),
         _SummaryRange.custom =>
           _customRange?.start ?? now.subtract(const Duration(days: 7)),
       };
@@ -76,6 +89,7 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
       final rangeLabel = switch (_range) {
         _SummaryRange.week => t.summaryThisWeek,
         _SummaryRange.month => t.summaryThisMonth,
+        _SummaryRange.quarter => t.summaryThisQuarter,
         _SummaryRange.custom => t.aiCustomRange,
       };
       final prompt =
@@ -234,31 +248,26 @@ Generate a $rangeLabel anime watch report based on the following data:
             _AiCard(
               icon: Icons.date_range,
               title: t.timeRange,
-              child: Row(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Expanded(
-                    child: _RangeChip(
-                      label: t.thisWeek,
-                      selected: _range == _SummaryRange.week,
-                      onTap: () => setState(() => _range = _SummaryRange.week),
+                  for (final entry in [
+                    (_SummaryRange.week, t.thisWeek),
+                    (_SummaryRange.month, t.thisMonth),
+                    (_SummaryRange.quarter, t.summaryThisQuarter),
+                    (_SummaryRange.custom, t.aiCustomRange),
+                  ])
+                    SizedBox(
+                      width: 84,
+                      child: _RangeChip(
+                        label: entry.$2,
+                        selected: _range == entry.$1,
+                        onTap: () => entry.$1 == _SummaryRange.custom
+                            ? _pickCustomRange()
+                            : setState(() => _range = entry.$1),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _RangeChip(
-                      label: t.thisMonth,
-                      selected: _range == _SummaryRange.month,
-                      onTap: () => setState(() => _range = _SummaryRange.month),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _RangeChip(
-                      label: t.aiCustomRange,
-                      selected: _range == _SummaryRange.custom,
-                      onTap: _pickCustomRange,
-                    ),
-                  ),
                 ],
               ),
             ),

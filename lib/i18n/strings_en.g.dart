@@ -4525,6 +4525,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Custom range'
 	String get aiCustomRange => 'Custom range';
 
+	/// en: 'Taste Radar'
+	String get tasteRadar => 'Taste Radar';
+
+	/// en: 'Visualize your anime taste as a radar chart from your most-liked tags'
+	String get tasteRadarDescription => 'Visualize your anime taste as a radar chart from your most-liked tags';
+
+	/// en: 'Season Review'
+	String get seasonReview => 'Season Review';
+
+	/// en: 'Review what you watched this season'
+	String get seasonReviewDescription => 'Review what you watched this season';
+
+	/// en: 'This season'
+	String get summaryThisQuarter => 'This season';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9058,6 +9073,11 @@ extension on Translations {
 			_ => null,
 		} ?? switch (path) {
 			'aiCustomRange' => 'Custom range',
+			'tasteRadar' => 'Taste Radar',
+			'tasteRadarDescription' => 'Visualize your anime taste as a radar chart from your most-liked tags',
+			'seasonReview' => 'Season Review',
+			'seasonReviewDescription' => 'Review what you watched this season',
+			'summaryThisQuarter' => 'This season',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9564,13 +9584,13 @@ extension on Translations {
 			'args' => 'Arguments (JSON)',
 			'env' => 'Environment (JSON)',
 			'serverUrl' => 'Server URL',
+			_ => null,
+		} ?? switch (path) {
 			'headers' => 'Headers (JSON)',
 			'noSkillsYet' => 'No skills yet',
 			'skillName' => 'Skill Name',
 			'skillKey' => 'Skill Key',
 			'builtin' => 'Built-in',
-			_ => null,
-		} ?? switch (path) {
 			'skillMarkdownHint' => 'Skills support Markdown',
 			'sendMessage' => 'Send message',
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
