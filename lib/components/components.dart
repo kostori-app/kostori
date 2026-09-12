@@ -60,6 +60,8 @@ import 'package:syntax_highlight/syntax_highlight.dart';
 
 part 'anime.dart';
 
+part 'anime_rating.dart';
+
 part 'appbar.dart';
 
 part 'button.dart';

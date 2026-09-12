@@ -89,6 +89,8 @@ part 'appearance.dart';
 part 'bangumi_settings.dart';
 part 'me_plugin_settings.dart';
 
+part 'me_plugin_editors.dart';
+
 part 'explore_settings.dart';
 
 part 'local_favorites.dart';
@@ -105,9 +107,13 @@ part 'service_settings.dart';
 
 part 'anime_source_settings.dart';
 
+part 'anime_source_text_rules.dart';
+
 part 'anime_source_builder.dart';
 
 part 'hub_service_setting.dart';
+
+part 'hub_service_form_widgets.dart';
 
 part 'hub_client_setting.dart';
 
