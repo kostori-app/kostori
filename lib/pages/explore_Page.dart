@@ -27,6 +27,25 @@ class _ExplorePageState extends State<ExplorePage>
   late TabController sourceController;
   late Map<String, TabController> pageControllers = {};
 
+  /// 上次已持久化的源下标（避免拖动时逐帧写盘）
+  int? _lastSourceIndex;
+
+  /// 悬浮头当前展示的源下标（变化时重建头部，切换分类胶囊）
+  int? _headerSourceIndex;
+
+  /// 悬浮源导航条：测量高度供内容顶部让位
+  final GlobalKey _sourceBarKey = GlobalKey();
+  double _sourceBarH = 0;
+
+  void _syncSourceBarH() {
+    final rb = _sourceBarKey.currentContext?.findRenderObject();
+    if (rb is! RenderBox) return;
+    final h = rb.size.height;
+    if (mounted && (h - _sourceBarH).abs() > 0.5) {
+      setState(() => _sourceBarH = h);
+    }
+  }
+
   // 原 ExploreController 逻辑直接并入本页（无全局共享需求，去掉 mobx）
   bool _showFB = false;
   late AnimationController _fbController;
@@ -111,11 +130,13 @@ class _ExplorePageState extends State<ExplorePage>
 
       final old = sourceController;
       sourceController = TabController(length: sources.length, vsync: this);
+      old.removeListener(_onSourceChanged);
       old.dispose();
       if (prevSourceKey != null) {
         final idx = sources.indexOf(prevSourceKey);
         if (idx != -1) sourceController.index = idx;
       }
+      sourceController.addListener(_onSourceChanged);
     });
   }
 
@@ -185,6 +206,8 @@ class _ExplorePageState extends State<ExplorePage>
     super.initState();
     _initSourcesAndPages();
     sourceController = TabController(length: sources.length, vsync: this);
+    _restoreSourceIndex();
+    sourceController.addListener(_onSourceChanged);
     _rebuildPageControllers();
     appdata.settings.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
@@ -244,6 +267,11 @@ class _ExplorePageState extends State<ExplorePage>
     final savedIndices = <String, dynamic>{
       for (final s in pageControllers.keys) s: pageControllers[s]?.index ?? 0,
     };
+    final savedSourceKey =
+        sourceController.index >= 0 && sourceController.index < sources.length
+        ? sources[sourceController.index]
+        : null;
+    sourceController.removeListener(_onSourceChanged);
     sourceController.dispose();
     for (var c in pageControllers.values) {
       c.dispose();
@@ -253,6 +281,9 @@ class _ExplorePageState extends State<ExplorePage>
     _fbController.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       appdata.implicitData['explorePageIndices'] = savedIndices;
+      if (savedSourceKey != null) {
+        appdata.implicitData['exploreSourceKey'] = savedSourceKey;
+      }
       appdata.writeImplicitData();
     });
     super.dispose();
@@ -267,20 +298,36 @@ class _ExplorePageState extends State<ExplorePage>
     return <String, dynamic>{};
   }
 
+  /// 恢复上次选中的源（按 key，源顺序变化也能对上）
+  void _restoreSourceIndex() {
+    final key = appdata.implicitData['exploreSourceKey']?.toString();
+    if (key == null || key.isEmpty) return;
+    final idx = sources.indexOf(key);
+    if (idx >= 0 && idx < sources.length) {
+      sourceController.index = idx;
+    }
+  }
+
+  /// 源切换：刷新悬浮头（分类胶囊随源变化）+ 持久化
+  void _onSourceChanged() {
+    final i = sourceController.index;
+    if (i < 0 || i >= sources.length) return;
+    if (i != _headerSourceIndex) {
+      _headerSourceIndex = i;
+      if (mounted) setState(() {});
+    }
+    if (sourceController.indexIsChanging) return;
+    if (i == _lastSourceIndex) return;
+    _lastSourceIndex = i;
+    appdata.implicitData['exploreSourceKey'] = sources[i];
+    appdata.writeImplicitData();
+  }
+
   void refresh() {
     String currentSource = sources[sourceController.index];
     int pageIndex = pageControllers[currentSource]?.index ?? 0;
     String currentPageId = sourcePages[currentSource]![pageIndex];
     GlobalState.findOrNull<_SingleExplorePageState>(currentPageId)?.refresh();
-  }
-
-  Tab buildSourceTab(String sourceKey) {
-    var source = AnimeSource.find(sourceKey);
-    return Tab(text: source?.name ?? sourceKey, key: Key(sourceKey));
-  }
-
-  Tab buildPageTab(String title, String sourceKey) {
-    return Tab(text: title.ts(sourceKey), key: Key("${sourceKey}_$title"));
   }
 
   Widget buildEmpty() {
@@ -311,50 +358,129 @@ class _ExplorePageState extends State<ExplorePage>
       return buildEmpty();
     }
 
-    Widget sourceTabBar = Material(
-      child: AppTabBar(
-        key: PageStorageKey(sources.toString()),
-        tabs: sources.map((e) => buildSourceTab(e)).toList(),
-        controller: sourceController,
-        actionButton: TabActionButton(
-          icon: const Icon(Icons.add),
-          text: t.add,
-          onPressed: addPage,
-        ),
-      ),
-    ).paddingTop(context.padding.top);
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Column(
-            children: [
-              sourceTabBar,
-              Expanded(
-                child: MediaQuery.removePadding(
-                  context: context,
-                  removeTop: true,
-                  child: ExtendedTabBarView(
-                    controller: sourceController,
-                    children: sources
-                        .map(
-                          (sourceKey) => _SourceExplorePage(
-                            key: ValueKey(sourceKey),
-                            sourceKey: sourceKey,
-                            pages: sourcePages[sourceKey] ?? [],
-                            pageController: pageControllers[sourceKey]!,
-                            onFloatingShow: _showFloating,
-                            onFloatingHide: _hideFloating,
-                            horizontalLayout: horizontalLayout,
-                          ),
-                        )
-                        .toList(),
+    final cs = Theme.of(context).colorScheme;
+    final headerSource =
+        sourceController.index >= 0 && sourceController.index < sources.length
+        ? sources[sourceController.index]
+        : null;
+    final headerPages = headerSource == null
+        ? const <String>[]
+        : (sourcePages[headerSource] ?? const <String>[]);
+    final headerCtrl = headerSource == null
+        ? null
+        : pageControllers[headerSource];
+    Widget sourceTabBar = BlurEffect(
+      key: _sourceBarKey,
+      child: Container(
+        width: double.infinity,
+        color: cs.surface.toOpacity(0.72),
+        padding: EdgeInsets.fromLTRB(12, 6 + context.padding.top, 12, 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SlidingSegmentedBar(
+                scrollable: true,
+                selectedIndex: sourceController.index,
+                progress: sourceController.animation,
+                actionButton: TabActionButton(
+                  icon: const Icon(Icons.add),
+                  text: t.add,
+                  dense: true,
+                  onPressed: addPage,
+                ),
+                trackDecoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.toOpacity(0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                indicatorDecoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.toOpacity(0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                children: [
+                  for (var i = 0; i < sources.length; i++)
+                    CapsuleOption(
+                      text: AnimeSource.find(sources[i])?.name ?? sources[i],
+                      isSelected: sourceController.index == i,
+                      onTap: () => sourceController.animateTo(i),
+                    ),
+                ],
+              ),
+            ),
+            if (headerCtrl != null && headerPages.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.center,
+                child: SlidingSegmentedBar(
+                  scrollable: true,
+                  selectedIndex: headerCtrl.index,
+                  progress: headerCtrl.animation,
+                  trackDecoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.toOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  indicatorDecoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.toOpacity(0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  children: [
+                    for (var i = 0; i < headerPages.length; i++)
+                      CapsuleOption(
+                        text: headerPages[i].ts(headerSource!),
+                        isSelected: headerCtrl.index == i,
+                        onTap: () => headerCtrl.animateTo(i),
+                      ),
+                  ],
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncSourceBarH());
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: ExtendedTabBarView(
+              controller: sourceController,
+              children: sources
+                  .map(
+                    (sourceKey) => _SourceExplorePage(
+                      key: ValueKey(sourceKey),
+                      sourceKey: sourceKey,
+                      pages: sourcePages[sourceKey] ?? [],
+                      pageController: pageControllers[sourceKey]!,
+                      onFloatingShow: _showFloating,
+                      onFloatingHide: _hideFloating,
+                      horizontalLayout: horizontalLayout,
+                      topInset: _sourceBarH,
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
         ),
+        Positioned(top: 0, left: 0, right: 0, child: sourceTabBar),
         AnimatedBuilder(
           animation: _fbController,
           builder: (_, _) => Positioned(
@@ -482,6 +608,7 @@ class _SingleExplorePage extends StatefulWidget {
     required this.onFloatingShow,
     required this.onFloatingHide,
     this.horizontalLayout = false,
+    this.topInset = 0,
   });
 
   final String title;
@@ -490,6 +617,9 @@ class _SingleExplorePage extends StatefulWidget {
   final VoidCallback onFloatingHide;
 
   final bool horizontalLayout;
+
+  /// 悬浮头高度：作为列表首个 sliver 的顶部留白，滚动时内容从其下方穿过
+  final double topInset;
 
   @override
   State<_SingleExplorePage> createState() => _SingleExplorePageState();
@@ -565,9 +695,17 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     // 每源布局覆盖（null = 用探索设置里的全局默认）
     final sourceMode = ExploreSourceDisplayMode.of(animeSourceKey);
     final modeBar = SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Center(child: _SourceDisplayModeBar(sourceKey: animeSourceKey)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: widget.topInset),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Center(
+              child: _SourceDisplayModeBar(sourceKey: animeSourceKey),
+            ),
+          ),
+        ],
       ),
     );
 
@@ -936,6 +1074,7 @@ class _SourceExplorePage extends StatefulWidget {
     required this.onFloatingShow,
     required this.onFloatingHide,
     this.horizontalLayout = false,
+    this.topInset = 0,
   });
 
   final String sourceKey;
@@ -945,20 +1084,17 @@ class _SourceExplorePage extends StatefulWidget {
   final VoidCallback onFloatingHide;
   final bool horizontalLayout;
 
+  /// 悬浮源导航条的高度：内容顶部让出，滚动时从其下方穿过
+  final double topInset;
+
   @override
   State<_SourceExplorePage> createState() => _SourceExplorePageState();
 }
 
 class _SourceExplorePageState extends State<_SourceExplorePage>
     with AutomaticKeepAliveClientMixin<_SourceExplorePage> {
-  Tab buildPageTab(String title) {
-    return Tab(
-      text: title.ts(widget.sourceKey),
-      key: Key("${widget.sourceKey}_$title"),
-    );
-  }
-
   Widget buildBody(String pageTitle) => Material(
+    color: Colors.transparent,
     child: _SingleExplorePage(
       pageTitle,
       key: PageStorageKey("${widget.sourceKey}_$pageTitle"),
@@ -966,37 +1102,17 @@ class _SourceExplorePageState extends State<_SourceExplorePage>
       onFloatingShow: widget.onFloatingShow,
       onFloatingHide: widget.onFloatingHide,
       horizontalLayout: widget.horizontalLayout,
+      topInset: widget.topInset,
     ),
   );
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
-    return Column(
-      children: [
-        Material(
-          child: TabBar(
-            tabs: widget.pages.map((e) => buildPageTab(e)).toList(),
-            controller: widget.pageController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.center,
-            labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(
-              context,
-            ).colorScheme.onSurfaceVariant,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            dividerColor: Colors.transparent,
-          ),
-        ),
-        Expanded(
-          child: ExtendedTabBarView(
-            key: PageStorageKey('tab_view_${widget.sourceKey}'),
-            controller: widget.pageController,
-            children: widget.pages.map((e) => buildBody(e)).toList(),
-          ),
-        ),
-      ],
+    return ExtendedTabBarView(
+      key: PageStorageKey('tab_view_${widget.sourceKey}'),
+      controller: widget.pageController,
+      children: widget.pages.map((e) => buildBody(e)).toList(),
     );
   }
 

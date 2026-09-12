@@ -671,7 +671,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
                 child: Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: Alignment.center,
                   child: _CapsuleBar(
                     keys: _tabs.map((t) => t['key']?.toString() ?? '').toList(),
                     titles: _tabs
@@ -681,6 +681,7 @@ class _PluginBoardContentState extends State<PluginBoardContent>
                         ? (_tabs[_index]['key']?.toString() ?? '')
                         : '',
                     onChanged: _selectTab,
+                    controller: _tabsCtrl,
                   ),
                 ),
               ),

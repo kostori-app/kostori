@@ -1063,6 +1063,7 @@ class TabActionButton extends StatelessWidget {
     required this.icon,
     required this.text,
     required this.onPressed,
+    this.dense = false,
   });
 
   final Icon icon;
@@ -1071,7 +1072,12 @@ class TabActionButton extends StatelessWidget {
 
   final void Function() onPressed;
 
+  /// 紧凑尺寸：用于分段胶囊等较矮的容器
+  final bool dense;
+
   static const _kTabHeight = 46.0;
+
+  static const _kDenseHeight = 30.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1079,15 +1085,24 @@ class TabActionButton extends StatelessWidget {
       onTap: onPressed,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        height: _kTabHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        height: dense ? _kDenseHeight : _kTabHeight,
+        padding: EdgeInsets.symmetric(horizontal: dense ? 8 : 12),
         child: IconTheme(
-          data: IconThemeData(size: 20, color: context.colorScheme.primary),
+          data: IconThemeData(
+            size: dense ? 16 : 20,
+            color: context.colorScheme.primary,
+          ),
           child: Row(
             children: [
               icon,
-              const SizedBox(width: 8),
-              Text(text, style: ts.withColor(context.colorScheme.primary)),
+              SizedBox(width: dense ? 4 : 8),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: dense ? 12 : null,
+                  color: context.colorScheme.primary,
+                ),
+              ),
             ],
           ),
         ),

@@ -494,6 +494,7 @@ class _PluginShellPageState extends State<PluginShellPage>
                   ? (_nav[_index]['key']?.toString() ?? '')
                   : '',
               onChanged: _select,
+              controller: _outerTabs,
             ),
           ),
         ),
@@ -506,7 +507,7 @@ class _PluginShellPageState extends State<PluginShellPage>
             6,
           ),
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.center,
             child: _CapsuleBar(
               keys: info.tabs
                   .map((t) => t['key']?.toString() ?? '')
@@ -518,6 +519,7 @@ class _PluginShellPageState extends State<PluginShellPage>
                   ? (info.tabs[ctrl.index]['key']?.toString() ?? '')
                   : '',
               onChanged: (i) => _selectBoardTab(_index, i),
+              controller: ctrl,
             ),
           ),
         ),

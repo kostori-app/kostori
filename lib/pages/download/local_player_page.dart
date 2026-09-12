@@ -5,12 +5,13 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
-import 'package:kostori/components/animated.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
 import 'package:kostori/utils/utils.dart';
+import 'package:marquee/marquee.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 /// 本地视频播放页（播放已下载的 mp4）
@@ -354,7 +355,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     return Stack(
       children: [
         _buildSideBar(),
-        _buildTopBar(),
+        _buildTopBar(state),
         _buildBottomBar(state),
       ],
     );
@@ -441,7 +442,50 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         '${now.second.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildTopBar() {
+  /// 标题（照搬 player_item_panel：超宽滚动 Marquee）
+  Widget _buildTitle() {
+    final text = ctrl.title;
+    const style = TextStyle(color: Colors.white, fontSize: 16);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textPainter = TextPainter(
+          text: TextSpan(text: text, style: style),
+          maxLines: 1,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: constraints.maxWidth);
+        final shouldScroll = textPainter.width >= constraints.maxWidth - 30;
+        return SizedBox(
+          height: 24,
+          child: ClipRect(
+            child: shouldScroll
+                ? Marquee(
+                    text: text,
+                    style: style,
+                    scrollAxis: Axis.horizontal,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    blankSpace: 10.0,
+                    velocity: 40.0,
+                    pauseAfterRound: Duration.zero,
+                    startPadding: 10.0,
+                    accelerationDuration: Duration.zero,
+                    decelerationDuration: Duration.zero,
+                  )
+                : Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      text,
+                      style: style,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTopBar(LocalPlayerState state) {
     return Positioned(
       top: 0,
       left: 0,
@@ -457,33 +501,69 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                 icon: const Icon(Icons.arrow_back_ios_new),
                 onPressed: () {
                   // 照搬 watcher player_item_panel：全屏时退出全屏，否则返回
-                  if (st.fullscreen) {
+                  if (state.fullscreen) {
                     ctrl.toggleFullscreen();
                   } else {
                     Navigator.pop(context);
                   }
                 },
               ),
-              const Spacer(),
-              if (st.fullscreen) _buildTimeStatusBar(),
+              // 标题集数显示
+              Expanded(child: _buildTitle()),
+              if (state.fullscreen) _buildTimeStatusBar(),
               TextButton(
                 style: ButtonStyle(
                   padding: WidgetStateProperty.all(EdgeInsets.zero),
                 ),
                 onPressed: () {
-                  if (st.speed < 2) {
+                  if (state.speed < 2) {
                     ctrl.setRate(2);
                   } else {
                     ctrl.setRate(1);
                   }
                 },
                 child: Text(
-                  '${st.speed}X',
+                  '${state.speed}X',
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
+              // 播放器详情（照搬 watcher 的播放器详情 sheet）
+              if (!state.fullscreen)
+                IconButton(
+                  color: Colors.white,
+                  icon: const Icon(Icons.info_outline),
+                  tooltip: t.playerDetails,
+                  onPressed: _showVideoInfo,
+                ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 播放器详情（复用 watcher 的 VideoInfoSheet，直接读取 media_kit Player）
+  void _showVideoInfo() {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+        maxWidth: MediaQuery.of(context).size.width <= 600
+            ? MediaQuery.of(context).size.width
+            : (App.isDesktop
+                  ? MediaQuery.of(context).size.width * 9 / 16
+                  : MediaQuery.of(context).size.width),
+      ),
+      clipBehavior: Clip.antiAlias,
+      context: context,
+      builder: (_) => Sheet(
+        title: t.watcherDetailsLogs,
+        icon: Icons.info_outline_rounded,
+        builder: (_, _) => VideoInfoSheet.fromPlayer(
+          player: ctrl.player,
+          videoUrl: widget.filePath,
+          logs: const [],
         ),
       ),
     );
@@ -501,14 +581,47 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 信息行：时长（右对齐，位于进度条上方，和 anime page 播放器一致）
+            Padding(
+              padding: const EdgeInsets.only(right: 10, bottom: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black12,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${Utils.durationToString(state.position)} / ${Utils.durationToString(state.duration)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             // 控制行：播放/暂停 + 进度条 + 全屏
             Row(
               children: [
                 IconButton(
                   color: Colors.white,
-                  icon: Icon(
-                    state.playing ? Icons.pause : Icons.play_arrow,
-                    size: 30,
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Icon(
+                      state.playing ? Icons.pause : Icons.play_arrow,
+                      key: ValueKey<bool>(state.playing),
+                      size: 30,
+                    ),
                   ),
                   onPressed: ctrl.playOrPause,
                 ),
@@ -537,24 +650,6 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                   onPressed: ctrl.toggleFullscreen,
                 ),
               ],
-            ),
-            // 时间行：当前 / 总时长（集中显示，方便看清）
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-              child: Row(
-                children: [
-                  const Spacer(),
-                  Text(
-                    '${_fmtDuration(state.position)} / ${_fmtDuration(state.duration)}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  const Spacer(),
-                ],
-              ),
             ),
           ],
         ),

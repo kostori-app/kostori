@@ -1204,86 +1204,89 @@ class _CapsuleBar extends StatelessWidget {
   final String selected;
   final ValueChanged<int> onChanged;
 
+  /// 可选：关联的 TabController，传入后指示块随切换动画连续跟随
+  final TabController? controller;
+
   const _CapsuleBar({
     required this.keys,
     required this.titles,
     required this.selected,
     required this.onChanged,
     this.icons,
+    this.controller,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.toOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < keys.length; i++)
-              GestureDetector(
-                onTap: () => onChanged(i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeInOut,
-                  margin: const EdgeInsets.symmetric(horizontal: 1),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected == keys[i]
-                        ? cs.surface
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: selected == keys[i]
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.toOpacity(0.08),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (icons != null && icons![i].isNotEmpty) ...[
-                        Icon(
-                          _navIcon(icons![i]),
-                          size: 13,
-                          color: selected == keys[i]
-                              ? cs.primary
-                              : cs.onSurface.toOpacity(0.45),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      Text(
-                        titles[i],
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: selected == keys[i]
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: selected == keys[i]
-                              ? cs.primary
-                              : cs.onSurface.toOpacity(0.45),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+    final animation = controller?.animation;
+    final selectedIndex = keys.indexOf(selected);
+
+    // 高亮按浮点进度插值：颜色连续过渡，字重在中点切换（与指示块同步）
+    Widget buildBar(double value) {
+      Color fg(int i) {
+        final t = (1 - (value - i).abs()).clamp(0.0, 1.0);
+        return Color.lerp(cs.onSurface.toOpacity(0.45), cs.primary, t)!;
+      }
+
+      return SlidingSegmentedBar(
+        scrollable: true,
+        selectedIndex: selectedIndex,
+        progress: animation,
+        trackDecoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.toOpacity(0.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        indicatorDecoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.toOpacity(0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
           ],
         ),
-      ),
+        children: [
+          for (var i = 0; i < keys.length; i++)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onChanged(i),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icons != null && icons![i].isNotEmpty) ...[
+                      Icon(_navIcon(icons![i]), size: 13, color: fg(i)),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      titles[i],
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: (value - i).abs() < 0.5
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: fg(i),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
+    if (animation == null) return buildBar(selectedIndex.toDouble());
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (_, _) => buildBar(animation.value),
     );
   }
 }

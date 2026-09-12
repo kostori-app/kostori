@@ -70,6 +70,14 @@ class _CategoriesPageState extends State<CategoriesPage>
     showPopUpWidget(App.rootContext, setCategoryPagesWidget());
   }
 
+  String categoryTitle(String key) {
+    try {
+      return getCategoryDataWithKey(key).title;
+    } catch (e) {
+      return key;
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -110,22 +118,30 @@ class _CategoriesPageState extends State<CategoriesPage>
         mainAxisSize: MainAxisSize.min,
         children: [
           Appbar(title: Text(t.categories)),
-          AppTabBar(
-            controller: controller,
-            key: PageStorageKey(categories.toString()),
-            tabs: categories.map((e) {
-              String title = e;
-              try {
-                title = getCategoryDataWithKey(e).title;
-              } catch (e) {
-                //
-              }
-              return Tab(text: title, key: Key(e));
-            }).toList(),
-            actionButton: TabActionButton(
-              icon: const Icon(Icons.add),
-              text: t.add,
-              onPressed: addPage,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: CapsuleOptions(
+                key: PageStorageKey(categories.toString()),
+                scrollable: true,
+                progress: controller.animation,
+                actionButton: TabActionButton(
+                  dense: true,
+                  icon: const Icon(Icons.add),
+                  text: t.add,
+                  onPressed: addPage,
+                ),
+                children: [
+                  for (var i = 0; i < categories.length; i++)
+                    CapsuleOption(
+                      key: Key(categories[i]),
+                      text: categoryTitle(categories[i]),
+                      isSelected: controller.index == i,
+                      onTap: () => controller.animateTo(i),
+                    ),
+                ],
+              ),
             ),
           ),
           Expanded(
