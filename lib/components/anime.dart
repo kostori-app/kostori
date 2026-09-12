@@ -684,19 +684,35 @@ class AnimeTile extends ConsumerWidget {
       children: [
         for (final (text, color) in lines)
           Container(
-            margin: const EdgeInsets.fromLTRB(2, 0, 2, 2),
-            padding: EdgeInsets.fromLTRB(padH, padV, padH, padV),
+            margin: const EdgeInsets.fromLTRB(2, 0, 2, 3),
+            padding: EdgeInsets.symmetric(horizontal: padH + 1, vertical: padV),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.black.toOpacity(0.5),
+              borderRadius: BorderRadius.circular(7),
+              // 半透明黑底 + 细描边 + 轻投影：比纯黑块更精致、在亮封面上也清晰
+              color: Colors.black.toOpacity(0.58),
+              border: Border.all(
+                color: Colors.white.toOpacity(0.18),
+                width: 0.6,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.toOpacity(0.3),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
             constraints: BoxConstraints(maxWidth: constraints.maxWidth),
             child: Text(
               text,
               style: TextStyle(
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 fontSize: fontSize,
+                height: 1.1,
                 color: color ?? Colors.white,
+                shadows: const [
+                  Shadow(color: Colors.black54, blurRadius: 2),
+                ],
               ),
               textAlign: TextAlign.right,
               maxLines: 1,
