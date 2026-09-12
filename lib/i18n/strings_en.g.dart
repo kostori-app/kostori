@@ -4672,6 +4672,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Points left'
 	String get storyPointsLeft => 'Points left';
 
+	/// en: 'Codex'
+	String get storyCodex => 'Codex';
+
 	/// en: 'Avatar (emoji)'
 	String get rolePlayAvatar => 'Avatar (emoji)';
 
@@ -9263,6 +9266,7 @@ extension on Translations {
 			'storyStart' => 'Start game',
 			'storyRoll' => 'Roll',
 			'storyPointsLeft' => 'Points left',
+			'storyCodex' => 'Codex',
 			'rolePlayAvatar' => 'Avatar (emoji)',
 			'storyInventory' => 'Inventory',
 			'storyQuests' => 'Quests',
@@ -9724,9 +9728,9 @@ extension on Translations {
 			'jumpToBottom' => 'Back to bottom',
 			'modelDoesNotSupportVision' => 'The current model does not support image understanding',
 			'myMessage' => 'My message',
-			'aiMessage' => 'AI message',
 			_ => null,
 		} ?? switch (path) {
+			'aiMessage' => 'AI message',
 			'resendFromHere' => 'Resend from here',
 			'regenerateReply' => 'Regenerate this reply',
 			'noPersonality' => 'No personality',

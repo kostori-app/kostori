@@ -59,6 +59,72 @@ class QuestItem {
   };
 }
 
+/// 本回合发生的特殊事件（用于单独高亮渲染）
+class StoryEvent {
+  /// location | damage | heal | item | quest | info
+  final String type;
+  final String title;
+  final String text;
+  final int? value;
+
+  const StoryEvent({
+    required this.type,
+    this.title = '',
+    this.text = '',
+    this.value,
+  });
+
+  factory StoryEvent.fromJson(dynamic v) {
+    if (v is Map) {
+      return StoryEvent(
+        type: v['type']?.toString() ?? 'info',
+        title: v['title']?.toString() ?? '',
+        text: (v['text'] ?? v['desc'] ?? '').toString(),
+        value: (v['value'] as num?)?.toInt(),
+      );
+    }
+    return StoryEvent(type: 'info', text: v.toString());
+  }
+}
+
+/// 设定条目（道具 / 种族 / 特质 / 天赋等）：一层给玩家看，一层给 AI 看
+class StoryDefinition {
+  final String kind; // item | race | trait | talent | skill | ...
+  final String key;
+  final String name;
+
+  /// 给玩家看的表面描述
+  final String display;
+
+  /// 给 AI 看的机制说明（注入 system prompt，避免模型自相矛盾）
+  final String mechanics;
+
+  const StoryDefinition({
+    required this.kind,
+    required this.key,
+    required this.name,
+    this.display = '',
+    this.mechanics = '',
+  });
+
+  factory StoryDefinition.fromJson(Map<String, dynamic> json) =>
+      StoryDefinition(
+        kind: json['kind']?.toString() ?? 'info',
+        key: json['key']?.toString() ?? json['name']?.toString() ?? '',
+        name: json['name']?.toString() ?? json['key']?.toString() ?? '',
+        display: json['display']?.toString() ?? '',
+        mechanics: json['mechanics']?.toString() ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+    'kind': kind,
+    'key': key,
+    'name': name,
+    'display': display,
+    'mechanics': mechanics,
+  };
+}
+
 /// 游戏状态：AI 每回合输出的结构化数值
 class GameState {
   final List<StatBar> resources;
@@ -69,6 +135,9 @@ class GameState {
   final String time;
   final String location;
 
+  /// 设定图鉴（道具/种族/特质/天赋等），持久化并注入 AI 提示词
+  final List<StoryDefinition> codex;
+
   const GameState({
     this.resources = const [],
     this.attributes = const {},
@@ -77,6 +146,7 @@ class GameState {
     this.quests = const [],
     this.time = '',
     this.location = '',
+    this.codex = const [],
   });
 
   static const empty = GameState();
@@ -109,6 +179,14 @@ class GameState {
           : const [],
       time: json['time']?.toString() ?? '',
       location: json['location']?.toString() ?? '',
+      codex:
+          (json['codex'] is List)
+          ? [
+              for (final e in json['codex'] as List)
+                if (e is Map)
+                  StoryDefinition.fromJson(e.cast<String, dynamic>()),
+            ]
+          : const [],
     );
   }
 
@@ -120,6 +198,7 @@ class GameState {
     'quests': [for (final q in quests) q.toJson()],
     'time': time,
     'location': location,
+    'codex': [for (final d in codex) d.toJson()],
   };
 }
 
@@ -309,12 +388,17 @@ class Story {
     "inventory": ["物品 x1"],
     "quests": [{"title": "任务", "desc": "描述", "progress": 0}],
     "time": "第1天 08:00",
-    "location": "地点"
+    "location": "地点",
+    "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}]
   },
+  "events": [{"type":"location|damage|heal|item|quest|info","title":"标题","text":"内容","value":0}],
   "choices": ["选项A", "选项B", "选项C"]
 }
 ```
-规则：state 需给出当前完整状态；choices 提供 3-5 个可供玩家选择的行动。''');
+规则：
+- state 需给出当前完整状态；codex 记录出现或已有的道具/种族/特质/天赋等设定，display 面向玩家，mechanics 供你后续严格遵守，避免自相矛盾。
+- events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
+- choices 提供 3-5 个可供玩家选择的行动。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
       buf.writeln('【后续建议要求】');

@@ -660,10 +660,22 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     await _send(buf.toString());
   }
 
-  String get _systemPrompt {
-    final base = story.buildSystemPrompt();
-    if (story.opening.trim().isEmpty) return base;
-    return '$base\n\n【开局场景（请从这里开始叙事）】\n${story.opening.trim()}';
+  /// 系统提示词：故事定义 + 开局场景 + 已积累的设定图鉴（供 AI 严格遵守）
+  String _systemPromptFor(GameState state) {
+    final buf = StringBuffer(story.buildSystemPrompt());
+    if (story.opening.trim().isNotEmpty) {
+      buf.write('\n\n【开局场景（请从这里开始叙事）】\n${story.opening.trim()}');
+    }
+    if (state.codex.isNotEmpty) {
+      buf.write('\n\n【已知设定（必须严格遵守，不得矛盾）】');
+      for (final d in state.codex) {
+        buf.write(
+          '\n- ${d.name}（${d.kind}）：'
+          '${d.mechanics.isEmpty ? d.display : d.mechanics}',
+        );
+      }
+    }
+    return buf.toString();
   }
 
   Future<void> _send(String text) async {
@@ -676,7 +688,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       taskType: 'story',
       maxContextMessages: 40,
       providerOverride: aiHubProvider(),
-      systemPromptOverride: _systemPrompt,
+      systemPromptOverride: _systemPromptFor(_state),
     );
     if (!mounted) return;
     setState(() => _sending = false);
@@ -756,14 +768,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               }
                               final m = messages[i];
                               final isUser = m.role == 'user';
+                              final parsed = isUser
+                                  ? null
+                                  : _parseReply(m.outputContent ?? '');
                               return _StoryBubble(
                                 content: isUser
                                     ? m.inputContent
-                                    : _parseReply(
-                                        m.outputContent ?? '',
-                                      ).narrative,
+                                    : (parsed?.narrative ?? ''),
                                 isUser: isUser,
                                 task: m,
+                                events: parsed?.events ?? const [],
                               );
                             },
                           ),
@@ -1055,6 +1069,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     var narrative = content;
     GameState? state;
     var choices = <String>[];
+    var events = <StoryEvent>[];
     if (matches.isNotEmpty) {
       final m = matches.last;
       narrative = content.replaceRange(m.start, m.end, '').trim();
@@ -1068,10 +1083,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           }
           final c = decoded['choices'];
           if (c is List) choices = c.map((e) => e.toString()).toList();
+          final ev = decoded['events'];
+          if (ev is List) {
+            events = [for (final e in ev) StoryEvent.fromJson(e)];
+          }
         }
       } catch (_) {}
     }
-    return _ParsedReply(narrative: narrative, state: state, choices: choices);
+    return _ParsedReply(
+      narrative: narrative,
+      state: state,
+      choices: choices,
+      events: events,
+    );
   }
 
   Future<void> _showStateSheet() async {
@@ -1188,11 +1212,35 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                   ),
                 ),
             ],
+            if (state.codex.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _sectionTitle(t.storyCodex),
+              for (final d in state.codex)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(_codexIcon(d.kind), size: 20),
+                  title: Text(d.name),
+                  subtitle: Text(
+                    d.display.isEmpty ? d.mechanics : d.display,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+            ],
           ],
         ),
       ),
     );
   }
+
+  IconData _codexIcon(String kind) => switch (kind) {
+    'item' => Icons.inventory_2_outlined,
+    'race' => Icons.groups_outlined,
+    'trait' => Icons.psychology_alt_outlined,
+    'talent' => Icons.auto_awesome_outlined,
+    'skill' => Icons.sports_martial_arts_outlined,
+    _ => Icons.menu_book_outlined,
+  };
 
   Widget _sectionTitle(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
@@ -1208,10 +1256,12 @@ class _ParsedReply {
   final String narrative;
   final GameState? state;
   final List<String> choices;
+  final List<StoryEvent> events;
 
   const _ParsedReply({
     required this.narrative,
     this.state,
     this.choices = const [],
+    this.events = const [],
   });
 }

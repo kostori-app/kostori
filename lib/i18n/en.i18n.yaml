@@ -1593,6 +1593,7 @@ storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
 storyRoll: Roll
 storyPointsLeft: Points left
+storyCodex: Codex
 rolePlayAvatar: Avatar (emoji)
 storyInventory: Inventory
 storyQuests: Quests

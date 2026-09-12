@@ -1583,6 +1583,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyStart => '開始遊戲';
 	@override String get storyRoll => '擲骰';
 	@override String get storyPointsLeft => '剩餘點數';
+	@override String get storyCodex => '圖鑑';
 	@override String get rolePlayAvatar => '頭像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任務';
@@ -4193,6 +4194,7 @@ extension on TranslationsZhTw {
 			'storyStart' => '開始遊戲',
 			'storyRoll' => '擲骰',
 			'storyPointsLeft' => '剩餘點數',
+			'storyCodex' => '圖鑑',
 			'rolePlayAvatar' => '頭像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任務',
@@ -4654,9 +4656,9 @@ extension on TranslationsZhTw {
 			'modelDoesNotSupportVision' => '目前模型不支援圖片理解',
 			'myMessage' => '我的訊息',
 			'aiMessage' => 'AI 訊息',
-			'resendFromHere' => '從此處重新發送',
 			_ => null,
 		} ?? switch (path) {
+			'resendFromHere' => '從此處重新發送',
 			'regenerateReply' => '重新生成此回覆',
 			'noPersonality' => '無人格',
 			'noSystemPromptUsed' => '不使用系統提示詞',

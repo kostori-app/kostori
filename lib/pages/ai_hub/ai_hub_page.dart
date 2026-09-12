@@ -1241,11 +1241,13 @@ class _StoryBubble extends StatelessWidget {
     required this.content,
     required this.isUser,
     required this.task,
+    this.events = const [],
   });
 
   final String content;
   final bool isUser;
   final AiTask task;
+  final List<StoryEvent> events;
 
   @override
   Widget build(BuildContext context) {
@@ -1285,7 +1287,65 @@ class _StoryBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CustomMarkdownWidget(data: content, indentFirstLine: false),
+          if (!isUser)
+            for (final e in events) _StoryEventCard(event: e),
           if (!isUser) AiUsageMeta(task: task),
+        ],
+      ),
+    );
+  }
+}
+
+/// 特殊事件高亮卡（进入地区 / 受伤掉血 / 获得道具 / 任务等）
+class _StoryEventCard extends StatelessWidget {
+  const _StoryEventCard({required this.event});
+
+  final StoryEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (icon, color) = switch (event.type) {
+      'location' => (Icons.place_outlined, Colors.blue),
+      'damage' => (Icons.favorite_border, Colors.redAccent),
+      'heal' => (Icons.healing_outlined, Colors.green),
+      'item' => (Icons.inventory_2_outlined, Colors.orange),
+      'quest' => (Icons.flag_outlined, Colors.purple),
+      _ => (Icons.info_outline, scheme.primary),
+    };
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 0.8),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  if (event.title.isNotEmpty)
+                    TextSpan(
+                      text: '${event.title}  ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  TextSpan(
+                    text: event.text,
+                    style: TextStyle(color: scheme.onSurface),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

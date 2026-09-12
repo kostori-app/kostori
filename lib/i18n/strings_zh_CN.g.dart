@@ -1582,6 +1582,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyStart => '开始游戏';
 	@override String get storyRoll => '掷骰';
 	@override String get storyPointsLeft => '剩余点数';
+	@override String get storyCodex => '图鉴';
 	@override String get rolePlayAvatar => '头像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任务';
@@ -4193,6 +4194,7 @@ extension on TranslationsZhCn {
 			'storyStart' => '开始游戏',
 			'storyRoll' => '掷骰',
 			'storyPointsLeft' => '剩余点数',
+			'storyCodex' => '图鉴',
 			'rolePlayAvatar' => '头像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任务',
@@ -4655,9 +4657,9 @@ extension on TranslationsZhCn {
 			'jumpToBottom' => '回到底部',
 			'modelDoesNotSupportVision' => '当前模型不支持图片理解',
 			'myMessage' => '我的消息',
-			'aiMessage' => 'AI 消息',
 			_ => null,
 		} ?? switch (path) {
+			'aiMessage' => 'AI 消息',
 			'resendFromHere' => '从此处重新发送',
 			'regenerateReply' => '重新生成此回复',
 			'noPersonality' => '无人格',

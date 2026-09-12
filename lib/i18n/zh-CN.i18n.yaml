@@ -1588,6 +1588,7 @@ storyChoicesPrompt: 后续建议提示词
 storyStart: 开始游戏
 storyRoll: 掷骰
 storyPointsLeft: 剩余点数
+storyCodex: 图鉴
 rolePlayAvatar: 头像（Emoji）
 storyInventory: 物品
 storyQuests: 任务
