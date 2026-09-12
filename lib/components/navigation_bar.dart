@@ -478,19 +478,20 @@ class NaviPaneState extends State<NaviPane>
     required bool open,
     required VoidCallback onToggle,
   }) {
+    const size = 40.0;
     Widget circle({required Widget child}) => _frostedPill(
-      child: SizedBox(width: 44, height: 44, child: child),
+      child: SizedBox(width: size, height: size, child: child),
     );
     Widget item(PaneActionEntry a) => Tooltip(
       message: a.label,
       child: circle(
         child: InkWell(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           onTap: () {
             onToggle();
             a.onTap();
           },
-          child: Icon(a.icon, size: 20),
+          child: Icon(a.icon, size: 18),
         ),
       ),
     );
@@ -507,12 +508,11 @@ class NaviPaneState extends State<NaviPane>
           message: t.more,
           child: circle(
             child: InkWell(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
               onTap: onToggle,
-              child: AnimatedRotation(
-                turns: open ? 0.125 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(open ? Icons.close : Icons.add, size: 22),
+              child: Icon(
+                open ? Icons.close_rounded : Icons.grid_view_rounded,
+                size: 20,
               ),
             ),
           ),
@@ -1073,15 +1073,19 @@ class _NaviMainViewState extends State<_NaviMainView> {
         Column(
           children: [
             Expanded(
-              child: MediaQuery.removePadding(
-                context: context,
-                removeTop: true,
-                removeBottom: true,
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: _onScrollNotification,
-                  // 内容直接延伸到窗口底部（悬浮栏后），页面背景覆盖到底，
-                  // 避免 Padding 间隙露出父容器背景形成黑条
-                  child: state.buildPageStack(),
+              child: Padding(
+                // 顶部安全距离（去掉了原顶部头部，这里补回状态栏高度）
+                padding: EdgeInsets.only(top: context.padding.top),
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  removeBottom: true,
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _onScrollNotification,
+                    // 内容直接延伸到窗口底部（悬浮栏后），页面背景覆盖到底，
+                    // 避免 Padding 间隙露出父容器背景形成黑条
+                    child: state.buildPageStack(),
+                  ),
                 ),
               ),
             ),
@@ -1094,17 +1098,18 @@ class _NaviMainViewState extends State<_NaviMainView> {
           bottom: bottomPad,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              const btnW = 44.0;
+              const btnW = 40.0;
               const navH = NaviPaneState._kBottomBarHeight;
               final navW = state.floatingNavWidth;
               final open = _actionsOpen;
               final btnColH = open
                   ? state.widget.paneActions.length * (btnW + 8) + btnW
                   : btnW;
-              final stackH = math.max(navH, (navH - btnW) / 2 + btnColH);
+              // 留出顶部余量，避免展开后最上面的按钮被裁掉
+              final stackH = math.max(navH, (navH - btnW) / 2 + btnColH + 12);
               final btnLeft = math.max(
                 8.0,
-                (constraints.maxWidth - navW) / 2 - btnW - 8,
+                (constraints.maxWidth - navW) / 2 - btnW - 14,
               );
               return SizedBox(
                 height: stackH,
