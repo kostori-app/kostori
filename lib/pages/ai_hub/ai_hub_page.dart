@@ -39,6 +39,8 @@ import 'package:pasteboard/pasteboard.dart';
 
 part 'ai_chat_page.dart';
 
+part 'ai_chat_message_widgets.dart';
+
 part 'image_tag_page.dart';
 
 part 'soul_profile_page.dart';
