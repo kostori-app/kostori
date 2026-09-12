@@ -1586,6 +1586,23 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get rolePlayAvatar => '头像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任务';
+	@override String get storyDetails => '详情';
+	@override String get storySituation => '局势';
+	@override String get storyBackground => '背景';
+	@override String get storyNoSituation => '暂无局势信息';
+	@override String get storyMore => '更多';
+	@override String get storyNoActions => '该故事未定义操作';
+	@override String get storyInspect => '检查';
+	@override String get storyUse => '使用';
+	@override String get storyDrop => '丢弃';
+	@override String get storyDefinition => '设定';
+	@override String get storyInitialState => '初始状态';
+	@override String get storyActions => '操作';
+	@override String get storyActionLabel => '按钮名称';
+	@override String get storyActionPrompt => '发送的指令';
+	@override String get storyActionIcon => '图标（可选）';
+	@override String get storyAddAction => '添加操作';
+	@override String get storyInvalidState => '初始状态 JSON 格式错误';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4198,6 +4215,23 @@ extension on TranslationsZhCn {
 			'rolePlayAvatar' => '头像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任务',
+			'storyDetails' => '详情',
+			'storySituation' => '局势',
+			'storyBackground' => '背景',
+			'storyNoSituation' => '暂无局势信息',
+			'storyMore' => '更多',
+			'storyNoActions' => '该故事未定义操作',
+			'storyInspect' => '检查',
+			'storyUse' => '使用',
+			'storyDrop' => '丢弃',
+			'storyDefinition' => '设定',
+			'storyInitialState' => '初始状态',
+			'storyActions' => '操作',
+			'storyActionLabel' => '按钮名称',
+			'storyActionPrompt' => '发送的指令',
+			'storyActionIcon' => '图标（可选）',
+			'storyAddAction' => '添加操作',
+			'storyInvalidState' => '初始状态 JSON 格式错误',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4640,6 +4674,8 @@ extension on TranslationsZhCn {
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}点击${value}次',
 			'statsDailyClicks' => ({required Object total}) => '本日点击次数: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} ${platform}观看: ${duration}',
+			_ => null,
+		} ?? switch (path) {
 			'statsDailyWatch' => ({required Object duration}) => '本日观看时长: ${duration}',
 			'statsRecords' => '记录',
 			'statsLastClickAt' => ({required Object time}) => '当日最后点击: \n${time}',
@@ -4657,8 +4693,6 @@ extension on TranslationsZhCn {
 			'jumpToBottom' => '回到底部',
 			'modelDoesNotSupportVision' => '当前模型不支持图片理解',
 			'myMessage' => '我的消息',
-			_ => null,
-		} ?? switch (path) {
 			'aiMessage' => 'AI 消息',
 			'resendFromHere' => '从此处重新发送',
 			'regenerateReply' => '重新生成此回复',

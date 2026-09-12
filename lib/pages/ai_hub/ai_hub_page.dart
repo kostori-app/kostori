@@ -1153,6 +1153,7 @@ class _AiComposerBar extends StatelessWidget {
     this.onStop,
     this.hintText,
     this.bottomLeading,
+    this.bottomTrailing,
   });
 
   final TextEditingController controller;
@@ -1163,6 +1164,9 @@ class _AiComposerBar extends StatelessWidget {
 
   /// 底部工具行左侧内容（如模型选择器），与 AI 聊天输入栏一致
   final Widget? bottomLeading;
+
+  /// 底部工具行右侧、发送键之前的内容（如详情 / 更多）
+  final Widget? bottomTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -1212,6 +1216,10 @@ class _AiComposerBar extends StatelessWidget {
                   const SizedBox(width: 6),
                 ],
                 const Spacer(),
+                if (bottomTrailing != null) ...[
+                  bottomTrailing!,
+                  const SizedBox(width: 4),
+                ],
                 if (sending)
                   IconButton(
                     icon: const Icon(Icons.stop_rounded, size: 20),
@@ -1310,6 +1318,10 @@ class _StoryEventCard extends StatelessWidget {
       'heal' => (Icons.healing_outlined, Colors.green),
       'item' => (Icons.inventory_2_outlined, Colors.orange),
       'quest' => (Icons.flag_outlined, Colors.purple),
+      'dice' => (
+        Icons.casino_outlined,
+        event.success == false ? Colors.redAccent : Colors.teal,
+      ),
       _ => (Icons.info_outline, scheme.primary),
     };
     return Container(

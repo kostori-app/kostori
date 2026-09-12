@@ -1597,6 +1597,23 @@ storyCodex: Codex
 rolePlayAvatar: Avatar (emoji)
 storyInventory: Inventory
 storyQuests: Quests
+storyDetails: Details
+storySituation: Situation
+storyBackground: Background
+storyNoSituation: No situation info yet
+storyMore: More
+storyNoActions: This story has no actions defined
+storyInspect: Inspect
+storyUse: Use
+storyDrop: Drop
+storyDefinition: Definition
+storyInitialState: Initial state
+storyActions: Actions
+storyActionLabel: Button label
+storyActionPrompt: Command to send
+storyActionIcon: Icon (optional)
+storyAddAction: Add action
+storyInvalidState: Invalid initial state JSON
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

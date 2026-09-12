@@ -1592,6 +1592,23 @@ storyCodex: 图鉴
 rolePlayAvatar: 头像（Emoji）
 storyInventory: 物品
 storyQuests: 任务
+storyDetails: 详情
+storySituation: 局势
+storyBackground: 背景
+storyNoSituation: 暂无局势信息
+storyMore: 更多
+storyNoActions: 该故事未定义操作
+storyInspect: 检查
+storyUse: 使用
+storyDrop: 丢弃
+storyDefinition: 设定
+storyInitialState: 初始状态
+storyActions: 操作
+storyActionLabel: 按钮名称
+storyActionPrompt: 发送的指令
+storyActionIcon: 图标（可选）
+storyAddAction: 添加操作
+storyInvalidState: 初始状态 JSON 格式错误
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结

@@ -61,17 +61,21 @@ class QuestItem {
 
 /// 本回合发生的特殊事件（用于单独高亮渲染）
 class StoryEvent {
-  /// location | damage | heal | item | quest | info
+  /// location | damage | heal | item | quest | dice | info
   final String type;
   final String title;
   final String text;
   final int? value;
+
+  /// dice：是否为成功检定
+  final bool? success;
 
   const StoryEvent({
     required this.type,
     this.title = '',
     this.text = '',
     this.value,
+    this.success,
   });
 
   factory StoryEvent.fromJson(dynamic v) {
@@ -81,10 +85,38 @@ class StoryEvent {
         title: v['title']?.toString() ?? '',
         text: (v['text'] ?? v['desc'] ?? '').toString(),
         value: (v['value'] as num?)?.toInt(),
+        success: v['success'] as bool?,
       );
     }
     return StoryEvent(type: 'info', text: v.toString());
   }
+}
+
+/// 故事自定义操作（「更多」菜单里的按钮），点击后把 prompt 作为指令发送
+class StoryAction {
+  final String label;
+  final String prompt;
+
+  /// 图标名（见 _storyActionIcon 映射）
+  final String icon;
+
+  const StoryAction({
+    required this.label,
+    required this.prompt,
+    this.icon = '',
+  });
+
+  factory StoryAction.fromJson(Map<String, dynamic> json) => StoryAction(
+    label: json['label']?.toString() ?? '',
+    prompt: json['prompt']?.toString() ?? json['label']?.toString() ?? '',
+    icon: json['icon']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    'prompt': prompt,
+    'icon': icon,
+  };
 }
 
 /// 设定条目（道具 / 种族 / 特质 / 天赋等）：一层给玩家看，一层给 AI 看
@@ -138,6 +170,9 @@ class GameState {
   /// 设定图鉴（道具/种族/特质/天赋等），持久化并注入 AI 提示词
   final List<StoryDefinition> codex;
 
+  /// 动态局势（由 AI 每回合可选输出，展示在「局势」页签）
+  final String situation;
+
   const GameState({
     this.resources = const [],
     this.attributes = const {},
@@ -147,6 +182,7 @@ class GameState {
     this.time = '',
     this.location = '',
     this.codex = const [],
+    this.situation = '',
   });
 
   static const empty = GameState();
@@ -160,6 +196,7 @@ class GameState {
     String? time,
     String? location,
     List<StoryDefinition>? codex,
+    String? situation,
   }) => GameState(
     resources: resources ?? this.resources,
     attributes: attributes ?? this.attributes,
@@ -169,6 +206,7 @@ class GameState {
     time: time ?? this.time,
     location: location ?? this.location,
     codex: codex ?? this.codex,
+    situation: situation ?? this.situation,
   );
 
   factory GameState.fromJson(Map<String, dynamic> json) {
@@ -207,6 +245,7 @@ class GameState {
                   StoryDefinition.fromJson(e.cast<String, dynamic>()),
             ]
           : const [],
+      situation: json['situation']?.toString() ?? '',
     );
   }
 
@@ -219,6 +258,7 @@ class GameState {
     'time': time,
     'location': location,
     'codex': [for (final d in codex) d.toJson()],
+    'situation': situation,
   };
 }
 
@@ -306,6 +346,12 @@ class Story {
   /// 开局档案设置项（开局只做一次；为空则直接开始）
   final List<StorySetupPart> setup;
 
+  /// 故事背景 / 局势（展示在「局势」页签）
+  final String situation;
+
+  /// 故事自定义操作（「更多」菜单里的按钮）
+  final List<StoryAction> actions;
+
   final GameState initialState;
   final bool isBuiltin;
 
@@ -319,6 +365,8 @@ class Story {
     this.worldBook = '',
     this.choicesPrompt = '',
     this.setup = const [],
+    this.situation = '',
+    this.actions = const [],
     this.initialState = GameState.empty,
     this.isBuiltin = false,
   });
@@ -332,6 +380,8 @@ class Story {
     String? worldBook,
     String? choicesPrompt,
     List<StorySetupPart>? setup,
+    String? situation,
+    List<StoryAction>? actions,
     GameState? initialState,
   }) => Story(
     id: id,
@@ -343,6 +393,8 @@ class Story {
     worldBook: worldBook ?? this.worldBook,
     choicesPrompt: choicesPrompt ?? this.choicesPrompt,
     setup: setup ?? this.setup,
+    situation: situation ?? this.situation,
+    actions: actions ?? this.actions,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
   );
@@ -362,6 +414,13 @@ class Story {
               if (e is Map) StorySetupPart.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    situation: (json['situation'] as String?) ?? '',
+    actions: json['actions'] is List
+        ? [
+            for (final e in json['actions'] as List)
+              if (e is Map) StoryAction.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     initialState: json['initialState'] is Map
         ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
         : GameState.empty,
@@ -378,6 +437,8 @@ class Story {
     'worldBook': worldBook,
     'choicesPrompt': choicesPrompt,
     'setup': [for (final p in setup) p.toJson()],
+    'situation': situation,
+    'actions': [for (final a in actions) a.toJson()],
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
   };
@@ -409,15 +470,16 @@ class Story {
     "quests": [{"title": "任务", "desc": "描述", "progress": 0}],
     "time": "第1天 08:00",
     "location": "地点",
-    "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}]
+    "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}],
+    "situation": "当前局势/所在环境的简述（可选，展示在局势页签）"
   },
-  "events": [{"type":"location|damage|heal|item|quest|info","title":"标题","text":"内容","value":0}],
+  "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
   "choices": ["选项A", "选项B", "选项C"]
 }
 ```
 规则：
 - state 需给出当前完整状态；codex 记录出现或已有的道具/种族/特质/天赋等设定，display 面向玩家，mechanics 供你后续严格遵守，避免自相矛盾。
-- events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
+- events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务 / 检定等），会单独高亮展示。需要检定时用 type=dice，并在 text 里写明「N d M + 修正 = 结果 vs DC」及 success。
 - choices 提供 3-5 个可供玩家选择的行动。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
@@ -530,6 +592,19 @@ class StoryStore extends ChangeNotifier {
         }
       } catch (_) {}
     }
+    var actions = <StoryAction>[];
+    final actionsText = _section(text, '操作');
+    if (actionsText != null) {
+      try {
+        final decoded = jsonDecode(actionsText);
+        if (decoded is List) {
+          actions = [
+            for (final e in decoded)
+              if (e is Map) StoryAction.fromJson(e.cast<String, dynamic>()),
+          ];
+        }
+      } catch (_) {}
+    }
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -539,6 +614,8 @@ class StoryStore extends ChangeNotifier {
       worldBook: _section(text, '世界书') ?? '',
       choicesPrompt: _section(text, '后续建议提示词') ?? '',
       setup: setup,
+      situation: _section(text, '局势') ?? '',
+      actions: actions,
       initialState: initialState,
     );
   }
@@ -560,9 +637,13 @@ class StoryStore extends ChangeNotifier {
     section('开局', s.opening);
     section('系统提示词', s.systemPrompt);
     section('世界书', s.worldBook);
+    if (s.situation.isNotEmpty) section('局势', s.situation);
     section('后续建议提示词', s.choicesPrompt);
     if (s.setup.isNotEmpty) {
       section('开局设置', jsonEncode([for (final p in s.setup) p.toJson()]));
+    }
+    if (s.actions.isNotEmpty) {
+      section('操作', jsonEncode([for (final a in s.actions) a.toJson()]));
     }
     section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();

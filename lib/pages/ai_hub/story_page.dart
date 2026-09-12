@@ -283,6 +283,23 @@ class _WorldBookDraft {
   }
 }
 
+class _StoryActionDraft {
+  final TextEditingController label;
+  final TextEditingController prompt;
+  final TextEditingController icon;
+
+  _StoryActionDraft({String labelText = '', String promptText = '', String iconText = ''})
+    : label = TextEditingController(text: labelText),
+      prompt = TextEditingController(text: promptText),
+      icon = TextEditingController(text: iconText);
+
+  void dispose() {
+    label.dispose();
+    prompt.dispose();
+    icon.dispose();
+  }
+}
+
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
@@ -296,12 +313,29 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _systemCtrl = TextEditingController(
     text: widget.story?.systemPrompt ?? '',
   );
+  late final _situationCtrl = TextEditingController(
+    text: widget.story?.situation ?? '',
+  );
   late final _choicesCtrl = TextEditingController(
     text: widget.story?.choicesPrompt ?? '',
+  );
+  late final _stateCtrl = TextEditingController(
+    text: widget.story == null
+        ? '{\n  "resources": {},\n  "attributes": {},\n  "skills": [],\n  "inventory": [],\n  "quests": []\n}'
+        : const JsonEncoder.withIndent('  ')
+              .convert(widget.story!.initialState.toJson()),
   );
   late final List<_WorldBookDraft> _worldBook = _parseWorldBook(
     widget.story?.worldBook ?? '',
   );
+  late final List<_StoryActionDraft> _actions = [
+    for (final a in widget.story?.actions ?? const <StoryAction>[])
+      _StoryActionDraft(
+        labelText: a.label,
+        promptText: a.prompt,
+        iconText: a.icon,
+      ),
+  ];
 
   bool get _isNew => widget.story == null;
 
@@ -347,15 +381,38 @@ class _StoryEditorState extends State<_StoryEditor> {
     _descCtrl.dispose();
     _openingCtrl.dispose();
     _systemCtrl.dispose();
+    _situationCtrl.dispose();
     _choicesCtrl.dispose();
+    _stateCtrl.dispose();
     for (final e in _worldBook) {
       e.dispose();
+    }
+    for (final a in _actions) {
+      a.dispose();
     }
     super.dispose();
   }
 
+  GameState? _parseState() {
+    try {
+      final decoded = jsonDecode(_stateCtrl.text.trim());
+      if (decoded is Map) {
+        return GameState.fromJson(decoded.cast<String, dynamic>());
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final initialState = _parseState();
+    if (initialState == null) {
+      App.rootContext.showMessage(
+        message: t.storyInvalidState,
+        level: LogLevel.error,
+      );
+      return;
+    }
     final story = Story(
       id: widget.story?.id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),
@@ -364,9 +421,21 @@ class _StoryEditorState extends State<_StoryEditor> {
       opening: _openingCtrl.text.trim(),
       systemPrompt: _systemCtrl.text.trim(),
       worldBook: _serializeWorldBook(),
+      situation: _situationCtrl.text.trim(),
       choicesPrompt: _choicesCtrl.text.trim(),
       setup: widget.story?.setup ?? const [],
-      initialState: widget.story?.initialState ?? GameState.empty,
+      actions: [
+        for (final a in _actions)
+          if (a.label.text.trim().isNotEmpty)
+            StoryAction(
+              label: a.label.text.trim(),
+              prompt: a.prompt.text.trim().isEmpty
+                  ? a.label.text.trim()
+                  : a.prompt.text.trim(),
+              icon: a.icon.text.trim(),
+            ),
+      ],
+      initialState: initialState,
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
     await StoryStore.instance.upsert(story);
@@ -379,7 +448,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 8,
       child: PopUpWidgetScaffold(
         title: _isNew ? t.storyNew : t.storyEdit,
         tailing: [
@@ -400,7 +469,10 @@ class _StoryEditorState extends State<_StoryEditor> {
                   Tab(text: t.storyOpening),
                   Tab(text: t.storySystemPrompt),
                   Tab(text: t.storyWorldBook),
+                  Tab(text: t.storySituation),
+                  Tab(text: t.storyInitialState),
                   Tab(text: t.storyChoicesPrompt),
+                  Tab(text: t.storyActions),
                 ],
               ),
               Expanded(
@@ -410,7 +482,10 @@ class _StoryEditorState extends State<_StoryEditor> {
                     _textTab(_openingCtrl),
                     _textTab(_systemCtrl),
                     _worldBookTab(),
+                    _textTab(_situationCtrl),
+                    _textTab(_stateCtrl),
                     _textTab(_choicesCtrl),
+                    _actionsTab(),
                   ],
                 ),
               ),
@@ -508,6 +583,78 @@ class _StoryEditorState extends State<_StoryEditor> {
     );
   }
 
+  Widget _actionsTab() {
+    final scheme = Theme.of(context).colorScheme;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (var i = 0; i < _actions.length; i++)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: scheme.outlineVariant, width: 0.6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _actions[i].label,
+                        decoration: InputDecoration(
+                          labelText: t.storyActionLabel,
+                          isDense: true,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 96,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: TextFormField(
+                          controller: _actions[i].icon,
+                          decoration: InputDecoration(
+                            labelText: t.storyActionIcon,
+                            isDense: true,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => setState(() {
+                        _actions[i].dispose();
+                        _actions.removeAt(i);
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _actions[i].prompt,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: t.storyActionPrompt,
+                    alignLabelWithHint: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        TextButton.icon(
+          onPressed: () => setState(() => _actions.add(_StoryActionDraft())),
+          icon: const Icon(Icons.add),
+          label: Text(t.storyAddAction),
+        ),
+      ],
+    );
+  }
+
   Widget _field(
     String label,
     TextEditingController ctrl, {
@@ -548,6 +695,7 @@ class StoryGamePage extends ConsumerStatefulWidget {
 
 class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   final _input = TextEditingController();
+  final _scrollController = ScrollController();
   String? _sessionId;
   GameState _state = GameState.empty;
   bool _sending = false;
@@ -555,6 +703,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   bool _showStreamBubble = false;
   String _streamText = '';
   CancelToken? _cancelToken;
+  int _lastMessageCount = 0;
 
   /// 需要先做开局档案设置（仅新游戏且故事定义了 setup 时）
   bool _needsSetup = false;
@@ -574,10 +723,28 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   @override
   void dispose() {
     _input.dispose();
+    _scrollController.dispose();
     for (final c in _textValues.values) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// 滚到底部（流式时用 jump，新消息时用动画），与 AI 聊天的焦点逻辑对齐
+  void _scrollToBottom({bool animate = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (animate) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      } else if ((_scrollController.offset - target).abs() > 1) {
+        _scrollController.jumpTo(target);
+      }
+    });
   }
 
   Future<void> _boot() async {
@@ -649,15 +816,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.writeln('${part.title}：$value');
       if (part.type == 'number') attrs[part.title] = _partNumber(part);
     }
-    final initial = GameState(
-      resources: story.initialState.resources,
-      attributes: attrs,
-      skills: story.initialState.skills,
-      inventory: story.initialState.inventory,
-      quests: story.initialState.quests,
-      time: story.initialState.time,
-      location: story.initialState.location,
-    );
+    final initial = story.initialState.copyWith(attributes: attrs);
     setState(() => _needsSetup = false);
     await _newSession(initialState: initial);
     await _send(buf.toString());
@@ -677,6 +836,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           '${d.mechanics.isEmpty ? d.display : d.mechanics}',
         );
       }
+    }
+    if (state.situation.trim().isNotEmpty) {
+      buf.write('\n\n【当前局势（延续此设定，除非剧情已推进）】\n');
+      buf.write(state.situation.trim());
     }
     return buf.toString();
   }
@@ -714,6 +877,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           return;
         }
         setState(() => _streamText = u.text);
+        _scrollToBottom(animate: false);
         if (u.done) break;
       }
       if (!mounted) return;
@@ -724,6 +888,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         _showStreamBubble = false;
         _streamText = '';
       });
+      _scrollToBottom();
       // 取消时服务端不落库，忽略本次结果
       if (cancelled || finalText.trim().isEmpty) return;
       final parsed = _parseReply(finalText);
@@ -778,16 +943,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (_needsSetup) return _buildSetup(context);
     final sessionId = _sessionId;
     return Scaffold(
-      appBar: Appbar(
-        title: Text('${story.icon} ${story.name}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.assessment_outlined),
-            tooltip: t.storyState,
-            onPressed: _showStateSheet,
-          ),
-        ],
-      ),
+      appBar: Appbar(title: Text('${story.icon} ${story.name}')),
       body: sessionId == null
           ? const Center(child: PolygonRefreshIndicator())
           : StreamBuilder<List<AiTask>>(
@@ -795,6 +951,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               builder: (context, snap) {
                 final messages = snap.data ?? [];
                 final choices = _lastAiReply(messages)?.choices ?? const <String>[];
+                if (messages.length != _lastMessageCount) {
+                  _lastMessageCount = messages.length;
+                  _scrollToBottom();
+                }
                 return Column(
                   children: [
                     Expanded(
@@ -804,6 +964,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                             maxWidth: _chatContentMaxWidth(context),
                           ),
                           child: ListView.builder(
+                            controller: _scrollController,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 12,
@@ -882,6 +1043,25 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           setAiHubProvider(p);
                           setState(() {});
                         },
+                      ),
+                      bottomTrailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.auto_stories_outlined),
+                            iconSize: 20,
+                            visualDensity: VisualDensity.compact,
+                            tooltip: t.storyDetails,
+                            onPressed: _showDetailsSheet,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.more_horiz),
+                            iconSize: 20,
+                            visualDensity: VisualDensity.compact,
+                            tooltip: t.storyMore,
+                            onPressed: _showMore,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1173,7 +1353,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
-  Future<void> _showStateSheet() async {
+  /// 详情面板：状态 / 局势两个页签（用项目胶囊布局）
+  Future<void> _showDetailsSheet() async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
     final messages = await AiConversationService()
@@ -1184,148 +1365,420 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => Sheet(
-        title: t.storyState,
-        icon: Icons.assessment_outlined,
-        initialSize: 0.6,
-        builder: (ctx, sc) => ListView(
-          controller: sc,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      builder: (ctx) => _StoryDetailsSheet(
+        story: story,
+        state: state,
+        onCommand: _send,
+      ),
+    );
+  }
+
+  /// 「更多」：故事自定义的操作按钮（一键 / 批量等）
+  Future<void> _showMore() async {
+    if (story.actions.isEmpty) {
+      App.rootContext.showMessage(
+        message: t.storyNoActions,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (state.location.isNotEmpty || state.time.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 16, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  [state.location, state.time]
-                      .where((e) => e.isNotEmpty)
-                      .join(' · '),
-                  style: TextStyle(
+                  t.storyMore,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            for (final a in story.actions)
+              ListTile(
+                leading: Icon(_storyActionIcon(a.icon)),
+                title: Text(a.label),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _send(a.prompt);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 详情面板：状态 / 局势（胶囊切换），条目可点击查看设定
+class _StoryDetailsSheet extends StatefulWidget {
+  const _StoryDetailsSheet({
+    required this.story,
+    required this.state,
+    required this.onCommand,
+  });
+
+  final Story story;
+  final GameState state;
+  final ValueChanged<String> onCommand;
+
+  @override
+  State<_StoryDetailsSheet> createState() => _StoryDetailsSheetState();
+}
+
+class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
+  int _tab = 0;
+
+  GameState get state => widget.state;
+
+  /// 在 codex 里按名称/键查找设定（容忍「物品 x2」这类后缀）
+  StoryDefinition? _findDef(String name) {
+    final key = name.split(' x').first.split('×').first.trim();
+    for (final d in state.codex) {
+      if (d.key == name || d.name == name || d.key == key || d.name == key) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  IconData _iconFor(String name, String fallbackKind) =>
+      _codexIcon(_findDef(name)?.kind ?? fallbackKind);
+
+  /// 查看条目说明：图鉴里显示图鉴描述，否则提示暂无
+  Future<void> _inspect(String name, String kind) async {
+    final def = _findDef(name);
+    final scheme = Theme.of(context).colorScheme;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(_codexIcon(def?.kind ?? kind), size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(def?.name ?? name)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                def == null
+                    ? t.storyNoSituation
+                    : (def.display.isEmpty ? def.mechanics : def.display),
+              ),
+              if (def != null && def.mechanics.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  t.storyDefinition,
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            for (final r in state.resources)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${r.name}  ${r.cur}/${r.max}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: r.max <= 0
-                            ? 0
-                            : (r.cur / r.max).clamp(0.0, 1.0),
-                        minHeight: 6,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  def.mechanics,
+                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                 ),
-              ),
-            if (state.attributes.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _sectionTitle(t.storyState),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final e in state.attributes.entries)
-                    Chip(label: Text('${e.key} ${e.value}')),
-                ],
-              ),
+              ],
             ],
-            if (state.skills.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _sectionTitle(t.skills),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final s in state.skills) Chip(label: Text(s)),
-                ],
-              ),
-            ],
-            if (state.inventory.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _sectionTitle(t.storyInventory),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final s in state.inventory) Chip(label: Text(s)),
-                ],
-              ),
-            ],
-            if (state.quests.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _sectionTitle(t.storyQuests),
-              for (final q in state.quests)
-                ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(q.title),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (q.desc.isNotEmpty)
-                        Text(q.desc, style: const TextStyle(fontSize: 12)),
-                      const SizedBox(height: 4),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: (q.progress / 100).clamp(0.0, 1.0),
-                          minHeight: 6,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-            if (state.codex.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _sectionTitle(t.storyCodex),
-              for (final d in state.codex)
-                ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(_codexIcon(d.kind), size: 20),
-                  title: Text(d.name),
-                  subtitle: Text(
-                    d.display.isEmpty ? d.mechanics : d.display,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
-            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 物品菜单：检查 / 使用 / 丢弃
+  Future<void> _itemMenu(String item) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.search),
+              title: Text(t.storyInspect),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _inspect(item, 'item');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.play_arrow_outlined),
+              title: Text(t.storyUse),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                widget.onCommand('使用 $item');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(t.storyDrop),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                widget.onCommand('丢弃 $item');
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  IconData _codexIcon(String kind) => switch (kind) {
-    'item' => Icons.inventory_2_outlined,
-    'race' => Icons.groups_outlined,
-    'trait' => Icons.psychology_alt_outlined,
-    'talent' => Icons.auto_awesome_outlined,
-    'skill' => Icons.sports_martial_arts_outlined,
-    _ => Icons.menu_book_outlined,
-  };
+  /// 可点击条目：点击看说明，长按 / 右键弹菜单（有菜单时）
+  Widget _entry({
+    required String label,
+    required String kind,
+    VoidCallback? onLongPress,
+    VoidCallback? onSecondaryTap,
+  }) {
+    return GestureDetector(
+      onLongPress: onLongPress,
+      onSecondaryTapDown: onSecondaryTap == null ? null : (_) => onSecondaryTap(),
+      child: ActionChip(
+        avatar: Icon(_iconFor(label, kind), size: 16),
+        label: Text(label),
+        onPressed: () => _inspect(label, kind),
+      ),
+    );
+  }
 
-  Widget _sectionTitle(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(
-      text,
-      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-    ),
-  );
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Sheet(
+      title: t.storyDetails,
+      icon: Icons.auto_stories_outlined,
+      initialSize: 0.7,
+      builder: (ctx, sc) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: CapsuleOptions(
+              children: [
+                CapsuleOption(
+                  text: t.storyState,
+                  isSelected: _tab == 0,
+                  onTap: () => setState(() => _tab = 0),
+                ),
+                CapsuleOption(
+                  text: t.storySituation,
+                  isSelected: _tab == 1,
+                  onTap: () => setState(() => _tab = 1),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              controller: sc,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: _tab == 0 ? _buildState(scheme) : _buildSituation(scheme),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  List<Widget> _buildState(ColorScheme scheme) {
+    return [
+      if (state.location.isNotEmpty || state.time.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            [state.location, state.time].where((e) => e.isNotEmpty).join(' · '),
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+        ),
+      for (final r in state.resources)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${r.name}  ${r.cur}/${r.max}',
+                  style: const TextStyle(fontSize: 12)),
+              const SizedBox(height: 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: r.max <= 0 ? 0 : (r.cur / r.max).clamp(0.0, 1.0),
+                  minHeight: 6,
+                ),
+              ),
+            ],
+          ),
+        ),
+      if (state.attributes.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        _sectionTitle(t.storyState),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final e in state.attributes.entries)
+              Chip(label: Text('${e.key} ${e.value}')),
+          ],
+        ),
+      ],
+      if (state.skills.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _sectionTitle(t.skills),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final s in state.skills) _entry(label: s, kind: 'skill'),
+          ],
+        ),
+      ],
+      if (state.inventory.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _sectionTitle(t.storyInventory),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final s in state.inventory)
+              _entry(
+                label: s,
+                kind: 'item',
+                onLongPress: () => _itemMenu(s),
+                onSecondaryTap: () => _itemMenu(s),
+              ),
+          ],
+        ),
+      ],
+      if (state.quests.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _sectionTitle(t.storyQuests),
+        for (final q in state.quests)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(q.title),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (q.desc.isNotEmpty)
+                  Text(q.desc, style: const TextStyle(fontSize: 12)),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (q.progress / 100).clamp(0.0, 1.0),
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+      if (state.codex.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _sectionTitle(t.storyCodex),
+        for (final d in state.codex)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(_codexIcon(d.kind), size: 20),
+            title: Text(d.name),
+            subtitle: Text(
+              d.display.isEmpty ? d.mechanics : d.display,
+              style: const TextStyle(fontSize: 12),
+            ),
+            onTap: () => _inspect(d.name, d.kind),
+          ),
+      ],
+    ];
+  }
+
+  List<Widget> _buildSituation(ColorScheme scheme) {
+    final blocks = <Widget>[];
+    if (widget.story.situation.trim().isNotEmpty) {
+      blocks.add(_sectionTitle(t.storyBackground));
+      blocks.add(
+        Text(
+          widget.story.situation.trim(),
+          style: TextStyle(height: 1.5, color: scheme.onSurface),
+        ),
+      );
+    }
+    if (state.situation.trim().isNotEmpty) {
+      blocks.add(const SizedBox(height: 16));
+      blocks.add(_sectionTitle(t.storySituation));
+      blocks.add(
+        Text(
+          state.situation.trim(),
+          style: TextStyle(height: 1.5, color: scheme.onSurface),
+        ),
+      );
+    }
+    if (blocks.isEmpty) {
+      blocks.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 24),
+          child: Center(
+            child: Text(
+              t.storyNoSituation,
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
+          ),
+        ),
+      );
+    }
+    return blocks;
+  }
 }
+
+IconData _storyActionIcon(String name) => switch (name) {
+  'use' => Icons.play_arrow_outlined,
+  'drop' => Icons.delete_outline,
+  'rest' => Icons.bedtime_outlined,
+  'move' => Icons.directions_walk,
+  'inspect' => Icons.search,
+  'trade' => Icons.swap_horiz,
+  'talk' => Icons.chat_bubble_outline,
+  'fight' => Icons.sports_martial_arts_outlined,
+  'map' => Icons.map_outlined,
+  _ => Icons.bolt_outlined,
+};
+
+IconData _codexIcon(String kind) => switch (kind) {
+  'item' => Icons.inventory_2_outlined,
+  'race' => Icons.groups_outlined,
+  'trait' => Icons.psychology_alt_outlined,
+  'talent' => Icons.auto_awesome_outlined,
+  'skill' => Icons.sports_martial_arts_outlined,
+  _ => Icons.menu_book_outlined,
+};
+
+Widget _sectionTitle(String text) => Padding(
+  padding: const EdgeInsets.only(bottom: 8),
+  child: Text(
+    text,
+    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  ),
+);
 
 class _ParsedReply {
   final String narrative;

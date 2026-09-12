@@ -4684,6 +4684,57 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Quests'
 	String get storyQuests => 'Quests';
 
+	/// en: 'Details'
+	String get storyDetails => 'Details';
+
+	/// en: 'Situation'
+	String get storySituation => 'Situation';
+
+	/// en: 'Background'
+	String get storyBackground => 'Background';
+
+	/// en: 'No situation info yet'
+	String get storyNoSituation => 'No situation info yet';
+
+	/// en: 'More'
+	String get storyMore => 'More';
+
+	/// en: 'This story has no actions defined'
+	String get storyNoActions => 'This story has no actions defined';
+
+	/// en: 'Inspect'
+	String get storyInspect => 'Inspect';
+
+	/// en: 'Use'
+	String get storyUse => 'Use';
+
+	/// en: 'Drop'
+	String get storyDrop => 'Drop';
+
+	/// en: 'Definition'
+	String get storyDefinition => 'Definition';
+
+	/// en: 'Initial state'
+	String get storyInitialState => 'Initial state';
+
+	/// en: 'Actions'
+	String get storyActions => 'Actions';
+
+	/// en: 'Button label'
+	String get storyActionLabel => 'Button label';
+
+	/// en: 'Command to send'
+	String get storyActionPrompt => 'Command to send';
+
+	/// en: 'Icon (optional)'
+	String get storyActionIcon => 'Icon (optional)';
+
+	/// en: 'Add action'
+	String get storyAddAction => 'Add action';
+
+	/// en: 'Invalid initial state JSON'
+	String get storyInvalidState => 'Invalid initial state JSON';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9270,6 +9321,23 @@ extension on Translations {
 			'rolePlayAvatar' => 'Avatar (emoji)',
 			'storyInventory' => 'Inventory',
 			'storyQuests' => 'Quests',
+			'storyDetails' => 'Details',
+			'storySituation' => 'Situation',
+			'storyBackground' => 'Background',
+			'storyNoSituation' => 'No situation info yet',
+			'storyMore' => 'More',
+			'storyNoActions' => 'This story has no actions defined',
+			'storyInspect' => 'Inspect',
+			'storyUse' => 'Use',
+			'storyDrop' => 'Drop',
+			'storyDefinition' => 'Definition',
+			'storyInitialState' => 'Initial state',
+			'storyActions' => 'Actions',
+			'storyActionLabel' => 'Button label',
+			'storyActionPrompt' => 'Command to send',
+			'storyActionIcon' => 'Icon (optional)',
+			'storyAddAction' => 'Add action',
+			'storyInvalidState' => 'Invalid initial state JSON',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9711,6 +9779,8 @@ extension on Translations {
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} clicked ${platform} ${value} times',
 			'statsDailyClicks' => ({required Object total}) => 'Today\'s clicks: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} watched ${platform} ${duration}',
+			_ => null,
+		} ?? switch (path) {
 			'statsDailyWatch' => ({required Object duration}) => 'Today\'s watch time: ${duration}',
 			'statsRecords' => 'Records',
 			'statsLastClickAt' => ({required Object time}) => 'Last click today: \n${time}',
@@ -9728,8 +9798,6 @@ extension on Translations {
 			'jumpToBottom' => 'Back to bottom',
 			'modelDoesNotSupportVision' => 'The current model does not support image understanding',
 			'myMessage' => 'My message',
-			_ => null,
-		} ?? switch (path) {
 			'aiMessage' => 'AI message',
 			'resendFromHere' => 'Resend from here',
 			'regenerateReply' => 'Regenerate this reply',

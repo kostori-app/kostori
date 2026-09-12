@@ -1587,6 +1587,23 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get rolePlayAvatar => '頭像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任務';
+	@override String get storyDetails => '詳情';
+	@override String get storySituation => '局勢';
+	@override String get storyBackground => '背景';
+	@override String get storyNoSituation => '暫無局勢資訊';
+	@override String get storyMore => '更多';
+	@override String get storyNoActions => '該故事未定義操作';
+	@override String get storyInspect => '檢查';
+	@override String get storyUse => '使用';
+	@override String get storyDrop => '丟棄';
+	@override String get storyDefinition => '設定';
+	@override String get storyInitialState => '初始狀態';
+	@override String get storyActions => '操作';
+	@override String get storyActionLabel => '按鈕名稱';
+	@override String get storyActionPrompt => '發送的指令';
+	@override String get storyActionIcon => '圖示（可選）';
+	@override String get storyAddAction => '新增操作';
+	@override String get storyInvalidState => '初始狀態 JSON 格式錯誤';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4198,6 +4215,23 @@ extension on TranslationsZhTw {
 			'rolePlayAvatar' => '頭像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任務',
+			'storyDetails' => '詳情',
+			'storySituation' => '局勢',
+			'storyBackground' => '背景',
+			'storyNoSituation' => '暫無局勢資訊',
+			'storyMore' => '更多',
+			'storyNoActions' => '該故事未定義操作',
+			'storyInspect' => '檢查',
+			'storyUse' => '使用',
+			'storyDrop' => '丟棄',
+			'storyDefinition' => '設定',
+			'storyInitialState' => '初始狀態',
+			'storyActions' => '操作',
+			'storyActionLabel' => '按鈕名稱',
+			'storyActionPrompt' => '發送的指令',
+			'storyActionIcon' => '圖示（可選）',
+			'storyAddAction' => '新增操作',
+			'storyInvalidState' => '初始狀態 JSON 格式錯誤',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4639,6 +4673,8 @@ extension on TranslationsZhTw {
 			'statsDailyClicks' => ({required Object total}) => '本日點擊次數: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} ${platform}觀看: ${duration}',
 			'statsDailyWatch' => ({required Object duration}) => '本日觀看時長: ${duration}',
+			_ => null,
+		} ?? switch (path) {
 			'statsRecords' => '記錄',
 			'statsLastClickAt' => ({required Object time}) => '當日最後點擊: \n${time}',
 			'statsLastWatchAt' => ({required Object time}) => '當日最後觀看: \n${time}',
@@ -4656,8 +4692,6 @@ extension on TranslationsZhTw {
 			'modelDoesNotSupportVision' => '目前模型不支援圖片理解',
 			'myMessage' => '我的訊息',
 			'aiMessage' => 'AI 訊息',
-			_ => null,
-		} ?? switch (path) {
 			'resendFromHere' => '從此處重新發送',
 			'regenerateReply' => '重新生成此回覆',
 			'noPersonality' => '無人格',
