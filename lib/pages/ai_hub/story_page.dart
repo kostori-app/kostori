@@ -66,6 +66,33 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     if (mounted) setState(() {});
   }
 
+  /// 重启世界：删除该故事存档（会话 + 状态），下次进入即从头开始
+  Future<void> _restart(Story s) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.storyRestart,
+        content: Text(t.storyRestartConfirm),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await StorySessionStore.instance.ensureLoaded();
+    final session = StorySessionStore.instance.get(s.id);
+    if (session != null) {
+      await AiConversationService().deleteSession(session.sessionId);
+      await StorySessionStore.instance.clear(s.id);
+    }
+    if (mounted) {
+      App.rootContext.showMessage(message: t.saved);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,10 +129,10 @@ class _StoryPageState extends ConsumerState<StoryPage> {
               for (final s in stories)
                 _StoryCard(
                   story: s,
-                  onTap: () =>
-                      context.to(() => StoryGamePage(story: s)),
+                  onTap: () => context.to(() => StoryGamePage(story: s)),
                   onEdit: () => _edit(s),
                   onExport: () => _export(s),
+                  onRestart: () => _restart(s),
                   onDelete: s.isBuiltin ? null : () => _delete(s),
                 ),
             ],
@@ -122,6 +149,7 @@ class _StoryCard extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onExport,
+    required this.onRestart,
     this.onDelete,
   });
 
@@ -129,6 +157,7 @@ class _StoryCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onExport;
+  final VoidCallback onRestart;
   final VoidCallback? onDelete;
 
   @override
@@ -208,11 +237,13 @@ class _StoryCard extends StatelessWidget {
                 onSelected: (v) {
                   if (v == 'edit') onEdit();
                   if (v == 'export') onExport();
+                  if (v == 'restart') onRestart();
                   if (v == 'delete') onDelete?.call();
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 'edit', child: Text(t.edit)),
                   PopupMenuItem(value: 'export', child: Text(t.exportEntries)),
+                  PopupMenuItem(value: 'restart', child: Text(t.storyRestart)),
                   if (onDelete != null)
                     PopupMenuItem(value: 'delete', child: Text(t.delete)),
                 ],
@@ -238,6 +269,20 @@ class _StoryEditor extends StatefulWidget {
   State<_StoryEditor> createState() => _StoryEditorState();
 }
 
+class _WorldBookDraft {
+  final TextEditingController name;
+  final TextEditingController content;
+
+  _WorldBookDraft({String nameText = '', String contentText = ''})
+    : name = TextEditingController(text: nameText),
+      content = TextEditingController(text: contentText);
+
+  void dispose() {
+    name.dispose();
+    content.dispose();
+  }
+}
+
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
@@ -251,14 +296,49 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _systemCtrl = TextEditingController(
     text: widget.story?.systemPrompt ?? '',
   );
-  late final _worldCtrl = TextEditingController(
-    text: widget.story?.worldBook ?? '',
-  );
   late final _choicesCtrl = TextEditingController(
     text: widget.story?.choicesPrompt ?? '',
   );
+  late final List<_WorldBookDraft> _worldBook = _parseWorldBook(
+    widget.story?.worldBook ?? '',
+  );
 
   bool get _isNew => widget.story == null;
+
+  static List<_WorldBookDraft> _parseWorldBook(String text) {
+    final entries = <_WorldBookDraft>[];
+    if (text.trim().isEmpty) return entries;
+    final matches = RegExp(r'【([^】]*)】').allMatches(text).toList();
+    if (matches.isEmpty) {
+      entries.add(_WorldBookDraft(contentText: text.trim()));
+      return entries;
+    }
+    for (var i = 0; i < matches.length; i++) {
+      final name = matches[i].group(1) ?? '';
+      final start = matches[i].end;
+      final end = i + 1 < matches.length ? matches[i + 1].start : text.length;
+      entries.add(
+        _WorldBookDraft(
+          nameText: name,
+          contentText: text.substring(start, end).trim(),
+        ),
+      );
+    }
+    return entries;
+  }
+
+  String _serializeWorldBook() {
+    final buf = StringBuffer();
+    for (final e in _worldBook) {
+      final name = e.name.text.trim();
+      final content = e.content.text.trim();
+      if (name.isEmpty && content.isEmpty) continue;
+      buf.writeln('【${name.isEmpty ? '设定' : name}】');
+      buf.writeln(content);
+      buf.writeln();
+    }
+    return buf.toString().trim();
+  }
 
   @override
   void dispose() {
@@ -267,8 +347,10 @@ class _StoryEditorState extends State<_StoryEditor> {
     _descCtrl.dispose();
     _openingCtrl.dispose();
     _systemCtrl.dispose();
-    _worldCtrl.dispose();
     _choicesCtrl.dispose();
+    for (final e in _worldBook) {
+      e.dispose();
+    }
     super.dispose();
   }
 
@@ -281,7 +363,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       description: _descCtrl.text.trim(),
       opening: _openingCtrl.text.trim(),
       systemPrompt: _systemCtrl.text.trim(),
-      worldBook: _worldCtrl.text.trim(),
+      worldBook: _serializeWorldBook(),
       choicesPrompt: _choicesCtrl.text.trim(),
       initialState: widget.story?.initialState ?? GameState.empty,
       isBuiltin: widget.story?.isBuiltin ?? false,
@@ -295,65 +377,133 @@ class _StoryEditorState extends State<_StoryEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return PopUpWidgetScaffold(
-      title: _isNew ? t.storyNew : t.storyEdit,
-      body: Form(
-        key: _formKey,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+    return DefaultTabController(
+      length: 5,
+      child: PopUpWidgetScaffold(
+        title: _isNew ? t.storyNew : t.storyEdit,
+        tailing: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            tooltip: t.apply,
+            onPressed: _save,
           ),
-          child: Stack(
+        ],
+        body: Form(
+          key: _formKey,
+          child: Column(
             children: [
-              Positioned.fill(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                  child: Column(
-                    children: [
-                      _field(t.name, _nameCtrl),
-                      _field(t.rolePlayAvatar, _iconCtrl, required: false),
-                      _field(t.rolePlayDescription, _descCtrl, required: false),
-                      _field(
-                        t.storyOpening,
-                        _openingCtrl,
-                        required: false,
-                        multiline: true,
-                      ),
-                      _field(
-                        t.storySystemPrompt,
-                        _systemCtrl,
-                        required: false,
-                        multiline: true,
-                      ),
-                      _field(
-                        t.storyWorldBook,
-                        _worldCtrl,
-                        required: false,
-                        multiline: true,
-                      ),
-                      _field(
-                        t.storyChoicesPrompt,
-                        _choicesCtrl,
-                        required: false,
-                        multiline: true,
-                      ),
-                    ],
-                  ),
-                ),
+              TabBar(
+                isScrollable: true,
+                tabs: [
+                  Tab(text: t.basicInfo),
+                  Tab(text: t.storyOpening),
+                  Tab(text: t.storySystemPrompt),
+                  Tab(text: t.storyWorldBook),
+                  Tab(text: t.storyChoicesPrompt),
+                ],
               ),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: FloatingActionButton.extended(
-                  onPressed: _save,
-                  label: Text(t.apply),
-                  icon: const Icon(Icons.check),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _basicTab(),
+                    _textTab(_openingCtrl),
+                    _textTab(_systemCtrl),
+                    _worldBookTab(),
+                    _textTab(_choicesCtrl),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _basicTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _field(t.name, _nameCtrl),
+        _field(t.rolePlayAvatar, _iconCtrl, required: false),
+        _field(
+          t.rolePlayDescription,
+          _descCtrl,
+          required: false,
+          multiline: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _textTab(TextEditingController ctrl) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: TextFormField(
+        controller: ctrl,
+        maxLines: null,
+        expands: true,
+        textAlignVertical: TextAlignVertical.top,
+        decoration: const InputDecoration(border: OutlineInputBorder()),
+      ),
+    );
+  }
+
+  Widget _worldBookTab() {
+    final scheme = Theme.of(context).colorScheme;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (var i = 0; i < _worldBook.length; i++)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: scheme.outlineVariant, width: 0.6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _worldBook[i].name,
+                        decoration: InputDecoration(
+                          labelText: t.worldBookName,
+                          isDense: true,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => setState(() {
+                        _worldBook[i].dispose();
+                        _worldBook.removeAt(i);
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _worldBook[i].content,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: t.worldBookContent,
+                    alignLabelWithHint: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        TextButton.icon(
+          onPressed: () => setState(() => _worldBook.add(_WorldBookDraft())),
+          icon: const Icon(Icons.add),
+          label: Text(t.add),
+        ),
+      ],
     );
   }
 
@@ -367,7 +517,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       padding: const EdgeInsets.all(8),
       child: TextFormField(
         controller: ctrl,
-        maxLines: multiline ? 8 : 1,
+        maxLines: multiline ? 6 : 1,
         decoration: InputDecoration(
           labelText: label,
           alignLabelWithHint: true,
@@ -380,6 +530,7 @@ class _StoryEditorState extends State<_StoryEditor> {
     );
   }
 }
+
 
 // ─────────────────────────────────────────────
 // 文字冒险游戏页
@@ -453,23 +604,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     await _send('开始游戏');
   }
 
-  Future<void> _confirmRestart() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => ContentDialog(
-        title: t.storyRestart,
-        content: Text(t.storyRestartConfirm),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(t.confirm),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) await _restart();
-  }
-
   String get _systemPrompt {
     final base = story.buildSystemPrompt();
     if (story.opening.trim().isEmpty) return base;
@@ -530,11 +664,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             icon: const Icon(Icons.assessment_outlined),
             tooltip: t.storyState,
             onPressed: _showStateSheet,
-          ),
-          IconButton(
-            icon: const Icon(Icons.restart_alt),
-            tooltip: t.storyRestart,
-            onPressed: _confirmRestart,
           ),
         ],
       ),
