@@ -1580,6 +1580,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storySystemPrompt => '系統提示詞';
 	@override String get storyWorldBook => '世界書';
 	@override String get storyChoicesPrompt => '後續建議提示詞';
+	@override String get storyStart => '開始遊戲';
 	@override String get rolePlayAvatar => '頭像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任務';
@@ -4187,6 +4188,7 @@ extension on TranslationsZhTw {
 			'storySystemPrompt' => '系統提示詞',
 			'storyWorldBook' => '世界書',
 			'storyChoicesPrompt' => '後續建議提示詞',
+			'storyStart' => '開始遊戲',
 			'rolePlayAvatar' => '頭像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任務',
@@ -4651,9 +4653,9 @@ extension on TranslationsZhTw {
 			'resendFromHere' => '從此處重新發送',
 			'regenerateReply' => '重新生成此回覆',
 			'noPersonality' => '無人格',
-			'noSystemPromptUsed' => '不使用系統提示詞',
 			_ => null,
 		} ?? switch (path) {
+			'noSystemPromptUsed' => '不使用系統提示詞',
 			'queryBalance' => '查詢餘額',
 			'balance' => '餘額',
 			'queryingBalance' => '查詢中...',

@@ -123,6 +123,48 @@ class GameState {
   };
 }
 
+/// 开局档案的一个设置项（类似 DnD 捏人）：单选 / 多选 / 自填文本
+class StorySetupPart {
+  final String key;
+  final String title;
+
+  /// single（单选） | multi（多选） | text（自填）
+  final String type;
+
+  final List<String> options;
+  final bool required;
+  final String hint;
+
+  const StorySetupPart({
+    required this.key,
+    required this.title,
+    this.type = 'single',
+    this.options = const [],
+    this.required = false,
+    this.hint = '',
+  });
+
+  factory StorySetupPart.fromJson(Map<String, dynamic> json) => StorySetupPart(
+    key: json['key']?.toString() ?? '',
+    title: json['title']?.toString() ?? json['key']?.toString() ?? '',
+    type: json['type']?.toString() ?? 'single',
+    options:
+        (json['options'] as List?)?.map((e) => e.toString()).toList() ??
+        const [],
+    required: json['required'] as bool? ?? false,
+    hint: json['hint']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'title': title,
+    'type': type,
+    'options': options,
+    'required': required,
+    'hint': hint,
+  };
+}
+
 /// 故事：整合好的世界书 + 设定 + 提示词 + 开局 + 后续建议提示词
 class Story {
   final String id;
@@ -136,6 +178,9 @@ class Story {
   /// 后续建议（选项）生成提示词，可自定义（DnD 风格引导）
   final String choicesPrompt;
 
+  /// 开局档案设置项（开局只做一次；为空则直接开始）
+  final List<StorySetupPart> setup;
+
   final GameState initialState;
   final bool isBuiltin;
 
@@ -148,6 +193,7 @@ class Story {
     this.systemPrompt = '',
     this.worldBook = '',
     this.choicesPrompt = '',
+    this.setup = const [],
     this.initialState = GameState.empty,
     this.isBuiltin = false,
   });
@@ -160,6 +206,7 @@ class Story {
     String? systemPrompt,
     String? worldBook,
     String? choicesPrompt,
+    List<StorySetupPart>? setup,
     GameState? initialState,
   }) => Story(
     id: id,
@@ -170,6 +217,7 @@ class Story {
     systemPrompt: systemPrompt ?? this.systemPrompt,
     worldBook: worldBook ?? this.worldBook,
     choicesPrompt: choicesPrompt ?? this.choicesPrompt,
+    setup: setup ?? this.setup,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
   );
@@ -183,6 +231,12 @@ class Story {
     systemPrompt: (json['systemPrompt'] as String?) ?? '',
     worldBook: (json['worldBook'] as String?) ?? '',
     choicesPrompt: (json['choicesPrompt'] as String?) ?? '',
+    setup: json['setup'] is List
+        ? [
+            for (final e in json['setup'] as List)
+              if (e is Map) StorySetupPart.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     initialState: json['initialState'] is Map
         ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
         : GameState.empty,
@@ -198,6 +252,7 @@ class Story {
     'systemPrompt': systemPrompt,
     'worldBook': worldBook,
     'choicesPrompt': choicesPrompt,
+    'setup': [for (final p in setup) p.toJson()],
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
   };
@@ -332,6 +387,19 @@ class StoryStore extends ChangeNotifier {
         }
       } catch (_) {}
     }
+    var setup = <StorySetupPart>[];
+    final setupText = _section(text, '开局设置');
+    if (setupText != null) {
+      try {
+        final decoded = jsonDecode(setupText);
+        if (decoded is List) {
+          setup = [
+            for (final e in decoded)
+              if (e is Map) StorySetupPart.fromJson(e.cast<String, dynamic>()),
+          ];
+        }
+      } catch (_) {}
+    }
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -340,6 +408,7 @@ class StoryStore extends ChangeNotifier {
       systemPrompt: _section(text, '系统提示词') ?? '',
       worldBook: _section(text, '世界书') ?? '',
       choicesPrompt: _section(text, '后续建议提示词') ?? '',
+      setup: setup,
       initialState: initialState,
     );
   }
@@ -362,6 +431,9 @@ class StoryStore extends ChangeNotifier {
     section('系统提示词', s.systemPrompt);
     section('世界书', s.worldBook);
     section('后续建议提示词', s.choicesPrompt);
+    if (s.setup.isNotEmpty) {
+      section('开局设置', jsonEncode([for (final p in s.setup) p.toJson()]));
+    }
     section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();
   }

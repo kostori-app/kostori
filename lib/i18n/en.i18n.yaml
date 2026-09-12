@@ -1590,6 +1590,7 @@ storyOpening: Opening
 storySystemPrompt: System prompt
 storyWorldBook: World book
 storyChoicesPrompt: Follow-up prompt
+storyStart: Start game
 rolePlayAvatar: Avatar (emoji)
 storyInventory: Inventory
 storyQuests: Quests

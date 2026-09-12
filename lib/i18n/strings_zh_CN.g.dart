@@ -1579,6 +1579,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storySystemPrompt => '系统提示词';
 	@override String get storyWorldBook => '世界书';
 	@override String get storyChoicesPrompt => '后续建议提示词';
+	@override String get storyStart => '开始游戏';
 	@override String get rolePlayAvatar => '头像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任务';
@@ -4187,6 +4188,7 @@ extension on TranslationsZhCn {
 			'storySystemPrompt' => '系统提示词',
 			'storyWorldBook' => '世界书',
 			'storyChoicesPrompt' => '后续建议提示词',
+			'storyStart' => '开始游戏',
 			'rolePlayAvatar' => '头像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任务',
@@ -4652,9 +4654,9 @@ extension on TranslationsZhCn {
 			'aiMessage' => 'AI 消息',
 			'resendFromHere' => '从此处重新发送',
 			'regenerateReply' => '重新生成此回复',
-			'noPersonality' => '无人格',
 			_ => null,
 		} ?? switch (path) {
+			'noPersonality' => '无人格',
 			'noSystemPromptUsed' => '不使用系统提示词',
 			'queryBalance' => '查询余额',
 			'balance' => '余额',

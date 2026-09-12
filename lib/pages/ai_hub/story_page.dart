@@ -365,6 +365,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       systemPrompt: _systemCtrl.text.trim(),
       worldBook: _serializeWorldBook(),
       choicesPrompt: _choicesCtrl.text.trim(),
+      setup: widget.story?.setup ?? const [],
       initialState: widget.story?.initialState ?? GameState.empty,
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
@@ -552,6 +553,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   bool _sending = false;
   bool _booting = true;
 
+  /// 需要先做开局档案设置（仅新游戏且故事定义了 setup 时）
+  bool _needsSetup = false;
+  final Map<String, String> _singleValues = {};
+  final Map<String, Set<String>> _multiValues = {};
+  final Map<String, TextEditingController> _textValues = {};
+
   Story get story => widget.story;
 
   @override
@@ -563,6 +570,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   @override
   void dispose() {
     _input.dispose();
+    for (final c in _textValues.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -578,10 +588,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       });
       return;
     }
-    await _restart();
+    // 新游戏：有开局档案则先让玩家设置，否则直接开始
+    if (story.setup.isNotEmpty) {
+      setState(() {
+        _booting = false;
+        _needsSetup = true;
+      });
+      return;
+    }
+    await _newSession();
+    await _send('开始游戏');
   }
 
-  Future<void> _restart() async {
+  Future<void> _newSession() async {
     final old = _sessionId;
     if (old != null) {
       await AiConversationService().deleteSession(old);
@@ -601,7 +620,30 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       story.id,
       StorySession(sessionId: sessionId, state: story.initialState),
     );
-    await _send('开始游戏');
+  }
+
+  /// 校验并生成开局档案文本，然后开局
+  Future<void> _startWithSetup() async {
+    final buf = StringBuffer('【角色档案】');
+    for (final part in story.setup) {
+      final value = switch (part.type) {
+        'multi' => (_multiValues[part.key] ?? const <String>{}).join('、'),
+        'text' => (_textValues[part.key]?.text.trim() ?? ''),
+        _ => (_singleValues[part.key] ?? ''),
+      };
+      if (part.required && value.isEmpty) {
+        App.rootContext.showMessage(
+          message: '${t.required}: ${part.title}',
+          level: LogLevel.warning,
+        );
+        return;
+      }
+      if (value.isEmpty) continue;
+      buf.writeln('${part.title}：$value');
+    }
+    setState(() => _needsSetup = false);
+    await _newSession();
+    await _send(buf.toString());
   }
 
   String get _systemPrompt {
@@ -655,6 +697,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         body: const Center(child: PolygonRefreshIndicator()),
       );
     }
+    if (_needsSetup) return _buildSetup(context);
     final sessionId = _sessionId;
     return Scaffold(
       appBar: Appbar(
@@ -747,6 +790,96 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 );
               },
             ),
+    );
+  }
+
+  /// 开局档案设置（类似 DnD 捏人）：单选 / 多选 / 自填，仅开局一次
+  Widget _buildSetup(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: Appbar(title: Text('${story.icon} ${story.name}')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (story.description.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                story.description,
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          for (final part in story.setup) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                part.required ? '${part.title} *' : part.title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (part.type == 'multi')
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final o in part.options)
+                    FilterChip(
+                      label: Text(o),
+                      selected: _multiValues[part.key]?.contains(o) ?? false,
+                      onSelected: (v) => setState(() {
+                        final set = _multiValues.putIfAbsent(part.key, () => {});
+                        if (v) {
+                          set.add(o);
+                        } else {
+                          set.remove(o);
+                        }
+                      }),
+                    ),
+                ],
+              )
+            else if (part.type == 'text')
+              TextField(
+                controller: _textValues.putIfAbsent(
+                  part.key,
+                  () => TextEditingController(),
+                ),
+                decoration: InputDecoration(
+                  hintText: part.hint,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final o in part.options)
+                    ChoiceChip(
+                      label: Text(o),
+                      selected: _singleValues[part.key] == o,
+                      onSelected: (v) {
+                        if (v) setState(() => _singleValues[part.key] = o);
+                      },
+                    ),
+                ],
+              ),
+            const SizedBox(height: 16),
+          ],
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _startWithSetup,
+              icon: const Icon(Icons.play_arrow),
+              label: Text(t.storyStart),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

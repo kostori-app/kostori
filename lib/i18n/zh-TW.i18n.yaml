@@ -1590,6 +1590,7 @@ storyOpening: 開局引導
 storySystemPrompt: 系統提示詞
 storyWorldBook: 世界書
 storyChoicesPrompt: 後續建議提示詞
+storyStart: 開始遊戲
 rolePlayAvatar: 頭像（Emoji）
 storyInventory: 物品
 storyQuests: 任務

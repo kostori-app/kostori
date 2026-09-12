@@ -1585,6 +1585,7 @@ storyOpening: 开局引导
 storySystemPrompt: 系统提示词
 storyWorldBook: 世界书
 storyChoicesPrompt: 后续建议提示词
+storyStart: 开始游戏
 rolePlayAvatar: 头像（Emoji）
 storyInventory: 物品
 storyQuests: 任务

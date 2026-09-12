@@ -4663,6 +4663,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Follow-up prompt'
 	String get storyChoicesPrompt => 'Follow-up prompt';
 
+	/// en: 'Start game'
+	String get storyStart => 'Start game';
+
 	/// en: 'Avatar (emoji)'
 	String get rolePlayAvatar => 'Avatar (emoji)';
 
@@ -9251,6 +9254,7 @@ extension on Translations {
 			'storySystemPrompt' => 'System prompt',
 			'storyWorldBook' => 'World book',
 			'storyChoicesPrompt' => 'Follow-up prompt',
+			'storyStart' => 'Start game',
 			'rolePlayAvatar' => 'Avatar (emoji)',
 			'storyInventory' => 'Inventory',
 			'storyQuests' => 'Quests',
@@ -9715,9 +9719,9 @@ extension on Translations {
 			'aiMessage' => 'AI message',
 			'resendFromHere' => 'Resend from here',
 			'regenerateReply' => 'Regenerate this reply',
-			'noPersonality' => 'No personality',
 			_ => null,
 		} ?? switch (path) {
+			'noPersonality' => 'No personality',
 			'noSystemPromptUsed' => 'No system prompt used',
 			'queryBalance' => 'Query Balance',
 			'balance' => 'Balance',
