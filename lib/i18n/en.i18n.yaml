@@ -1614,6 +1614,9 @@ storyActionPrompt: Command to send
 storyActionIcon: Icon (optional)
 storyAddAction: Add action
 storyInvalidState: Invalid initial state JSON
+storyLibrary: Library
+storyLibraryHint: Only the selected entries are injected into this story.
+storyLibraryEmpty: No library entries yet. Add them in AI settings first.
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary
@@ -2191,6 +2194,8 @@ profileTabRequest: Request
 profileTabMcp: MCP
 profileMcpHint: Bind MCP servers for this assistant (tools are imported on connection)
 profileTabLocalTools: Tools
+profileTabLibrary: Library
+profileLibraryHint: Leave unselected to use the globally enabled entries. Selecting entries applies only to this assistant.
 userNickname: User nickname
 userNicknameHint: Shown as the user name and injected into {{user_nickname}}
 animeRecognize: Anime recognition
@@ -2315,6 +2320,7 @@ worldBookHitTestPlaceholder: Type a sentence...
 worldBookHitsResult: Matching entries
 worldBookNoHits: No entries matched
 noWorldBookEntriesYet: No world book entries yet
+noPromptInjectionsYet: No prompt injections yet
 auxTemperature: Temperature
 selectAssistantProfile: Select an assistant
 selectModel: Select model

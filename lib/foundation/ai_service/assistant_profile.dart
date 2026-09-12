@@ -311,6 +311,12 @@ class AssistantProfile {
   /// 技能绑定：扩展管理（改造点 7）中导入/启用的技能 key 列表
   final List<String> skillIds;
 
+  /// 世界书库选择：为空表示沿用全局启用项（向后兼容）
+  final List<String> worldBookIds;
+
+  /// 提示词注入库选择：为空表示沿用全局启用项（向后兼容）
+  final List<String> injectionIds;
+
   /// ③ 扩展管理设定：应用级可选模块
   final List<AssistantExtension> extensions;
 
@@ -350,6 +356,8 @@ class AssistantProfile {
     this.knowledge = const [],
     this.enabledSkillIds = const {},
     this.skillIds = const [],
+    this.worldBookIds = const [],
+    this.injectionIds = const [],
     this.extensions = const [],
     this.memory = const MemorySettings(),
     this.request = const RequestSettings(),
@@ -374,6 +382,8 @@ class AssistantProfile {
     List<String>? knowledge,
     Set<String>? enabledSkillIds,
     List<String>? skillIds,
+    List<String>? worldBookIds,
+    List<String>? injectionIds,
     List<AssistantExtension>? extensions,
     MemorySettings? memory,
     RequestSettings? request,
@@ -395,6 +405,8 @@ class AssistantProfile {
     knowledge: knowledge ?? this.knowledge,
     enabledSkillIds: enabledSkillIds ?? this.enabledSkillIds,
     skillIds: skillIds ?? this.skillIds,
+    worldBookIds: worldBookIds ?? this.worldBookIds,
+    injectionIds: injectionIds ?? this.injectionIds,
     extensions: extensions ?? this.extensions,
     memory: memory ?? this.memory,
     request: request ?? this.request,
@@ -435,6 +447,8 @@ class AssistantProfile {
           ? (json['enabledSkillIds'] as List).whereType<String>().toSet()
           : const <String>{}),
       skillIds: strList(json['skillIds']),
+      worldBookIds: strList(json['worldBookIds']),
+      injectionIds: strList(json['injectionIds']),
       extensions: [
         for (final e in objList(json['extensions']))
           if (e is Map) AssistantExtension.fromJson(e.cast<String, dynamic>()),
@@ -481,6 +495,8 @@ class AssistantProfile {
     'knowledge': knowledge,
     'enabledSkillIds': enabledSkillIds.toList(),
     'skillIds': skillIds,
+    'worldBookIds': worldBookIds,
+    'injectionIds': injectionIds,
     'extensions': [for (final e in extensions) e.toJson()],
     'memory': memory.toJson(),
     'request': request.toJson(),

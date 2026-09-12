@@ -352,6 +352,12 @@ class Story {
   /// 故事自定义操作（「更多」菜单里的按钮）
   final List<StoryAction> actions;
 
+  /// 从世界书库中选择注入的条目（为空表示不注入库条目）
+  final List<String> worldBookIds;
+
+  /// 从提示词注入库中选择的条目（为空表示不注入库条目）
+  final List<String> injectionIds;
+
   final GameState initialState;
   final bool isBuiltin;
 
@@ -367,6 +373,8 @@ class Story {
     this.setup = const [],
     this.situation = '',
     this.actions = const [],
+    this.worldBookIds = const [],
+    this.injectionIds = const [],
     this.initialState = GameState.empty,
     this.isBuiltin = false,
   });
@@ -382,6 +390,8 @@ class Story {
     List<StorySetupPart>? setup,
     String? situation,
     List<StoryAction>? actions,
+    List<String>? worldBookIds,
+    List<String>? injectionIds,
     GameState? initialState,
   }) => Story(
     id: id,
@@ -395,6 +405,8 @@ class Story {
     setup: setup ?? this.setup,
     situation: situation ?? this.situation,
     actions: actions ?? this.actions,
+    worldBookIds: worldBookIds ?? this.worldBookIds,
+    injectionIds: injectionIds ?? this.injectionIds,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
   );
@@ -421,6 +433,10 @@ class Story {
               if (e is Map) StoryAction.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    worldBookIds: (json['worldBookIds'] as List?)?.whereType<String>().toList() ??
+        const [],
+    injectionIds: (json['injectionIds'] as List?)?.whereType<String>().toList() ??
+        const [],
     initialState: json['initialState'] is Map
         ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
         : GameState.empty,
@@ -439,6 +455,8 @@ class Story {
     'setup': [for (final p in setup) p.toJson()],
     'situation': situation,
     'actions': [for (final a in actions) a.toJson()],
+    'worldBookIds': worldBookIds,
+    'injectionIds': injectionIds,
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
   };
@@ -605,6 +623,15 @@ class StoryStore extends ChangeNotifier {
         }
       } catch (_) {}
     }
+    List<String> idList(String section) {
+      final raw = _section(text, section);
+      if (raw == null) return const [];
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) return decoded.whereType<String>().toList();
+      } catch (_) {}
+      return const [];
+    }
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -616,6 +643,8 @@ class StoryStore extends ChangeNotifier {
       setup: setup,
       situation: _section(text, '局势') ?? '',
       actions: actions,
+      worldBookIds: idList('世界书库'),
+      injectionIds: idList('提示词库'),
       initialState: initialState,
     );
   }
@@ -644,6 +673,12 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.actions.isNotEmpty) {
       section('操作', jsonEncode([for (final a in s.actions) a.toJson()]));
+    }
+    if (s.worldBookIds.isNotEmpty) {
+      section('世界书库', jsonEncode(s.worldBookIds));
+    }
+    if (s.injectionIds.isNotEmpty) {
+      section('提示词库', jsonEncode(s.injectionIds));
     }
     section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();

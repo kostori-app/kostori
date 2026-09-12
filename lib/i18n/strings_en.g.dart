@@ -4735,6 +4735,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Invalid initial state JSON'
 	String get storyInvalidState => 'Invalid initial state JSON';
 
+	/// en: 'Library'
+	String get storyLibrary => 'Library';
+
+	/// en: 'Only the selected entries are injected into this story.'
+	String get storyLibraryHint => 'Only the selected entries are injected into this story.';
+
+	/// en: 'No library entries yet. Add them in AI settings first.'
+	String get storyLibraryEmpty => 'No library entries yet. Add them in AI settings first.';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -6430,6 +6439,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Tools'
 	String get profileTabLocalTools => 'Tools';
 
+	/// en: 'Library'
+	String get profileTabLibrary => 'Library';
+
+	/// en: 'Leave unselected to use the globally enabled entries. Selecting entries applies only to this assistant.'
+	String get profileLibraryHint => 'Leave unselected to use the globally enabled entries. Selecting entries applies only to this assistant.';
+
 	/// en: 'User nickname'
 	String get userNickname => 'User nickname';
 
@@ -6795,6 +6810,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'No world book entries yet'
 	String get noWorldBookEntriesYet => 'No world book entries yet';
+
+	/// en: 'No prompt injections yet'
+	String get noPromptInjectionsYet => 'No prompt injections yet';
 
 	/// en: 'Temperature'
 	String get auxTemperature => 'Temperature';
@@ -9338,6 +9356,9 @@ extension on Translations {
 			'storyActionIcon' => 'Icon (optional)',
 			'storyAddAction' => 'Add action',
 			'storyInvalidState' => 'Invalid initial state JSON',
+			'storyLibrary' => 'Library',
+			'storyLibraryHint' => 'Only the selected entries are injected into this story.',
+			'storyLibraryEmpty' => 'No library entries yet. Add them in AI settings first.',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9776,11 +9797,11 @@ extension on Translations {
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} rated ${duration}:',
 			'statsRateAndComment' => 'rated & commented',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} changed the rating ${n} times ${duration}:',
+			_ => null,
+		} ?? switch (path) {
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} clicked ${platform} ${value} times',
 			'statsDailyClicks' => ({required Object total}) => 'Today\'s clicks: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} watched ${platform} ${duration}',
-			_ => null,
-		} ?? switch (path) {
 			'statsDailyWatch' => ({required Object duration}) => 'Today\'s watch time: ${duration}',
 			'statsRecords' => 'Records',
 			'statsLastClickAt' => ({required Object time}) => 'Last click today: \n${time}',
@@ -9905,6 +9926,8 @@ extension on Translations {
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
+			'profileTabLibrary' => 'Library',
+			'profileLibraryHint' => 'Leave unselected to use the globally enabled entries. Selecting entries applies only to this assistant.',
 			'userNickname' => 'User nickname',
 			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
 			'animeRecognize' => 'Anime recognition',
@@ -10027,6 +10050,7 @@ extension on Translations {
 			'worldBookHitsResult' => 'Matching entries',
 			'worldBookNoHits' => 'No entries matched',
 			'noWorldBookEntriesYet' => 'No world book entries yet',
+			'noPromptInjectionsYet' => 'No prompt injections yet',
 			'auxTemperature' => 'Temperature',
 			'selectAssistantProfile' => 'Select an assistant',
 			'selectModel' => 'Select model',

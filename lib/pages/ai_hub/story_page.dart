@@ -336,6 +336,19 @@ class _StoryEditorState extends State<_StoryEditor> {
         iconText: a.icon,
       ),
   ];
+  late final Set<String> _worldBookIds = {
+    ...widget.story?.worldBookIds ?? const <String>[],
+  };
+  late final Set<String> _injectionIds = {
+    ...widget.story?.injectionIds ?? const <String>[],
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    WorldBookStore.instance.ensureLoaded();
+    PromptInjectionStore.instance.ensureLoaded();
+  }
 
   bool get _isNew => widget.story == null;
 
@@ -435,6 +448,8 @@ class _StoryEditorState extends State<_StoryEditor> {
               icon: a.icon.text.trim(),
             ),
       ],
+      worldBookIds: _worldBookIds.toList(),
+      injectionIds: _injectionIds.toList(),
       initialState: initialState,
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
@@ -448,7 +463,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 8,
+      length: 9,
       child: PopUpWidgetScaffold(
         title: _isNew ? t.storyNew : t.storyEdit,
         tailing: [
@@ -473,6 +488,7 @@ class _StoryEditorState extends State<_StoryEditor> {
                   Tab(text: t.storyInitialState),
                   Tab(text: t.storyChoicesPrompt),
                   Tab(text: t.storyActions),
+                  Tab(text: t.storyLibrary),
                 ],
               ),
               Expanded(
@@ -486,6 +502,7 @@ class _StoryEditorState extends State<_StoryEditor> {
                     _textTab(_stateCtrl),
                     _textTab(_choicesCtrl),
                     _actionsTab(),
+                    _libraryTab(),
                   ],
                 ),
               ),
@@ -652,6 +669,79 @@ class _StoryEditorState extends State<_StoryEditor> {
           label: Text(t.storyAddAction),
         ),
       ],
+    );
+  }
+
+  Widget _libraryTab() {
+    final scheme = Theme.of(context).colorScheme;
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        WorldBookStore.instance,
+        PromptInjectionStore.instance,
+      ]),
+      builder: (context, _) {
+        final worldBook = WorldBookStore.instance.entries;
+        final injections = PromptInjectionStore.instance.items;
+        if (worldBook.isEmpty && injections.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(t.storyLibraryEmpty, textAlign: TextAlign.center),
+            ),
+          );
+        }
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              t.storyLibraryHint,
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            if (worldBook.isNotEmpty) ...[
+              Text(
+                t.worldBook,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              for (final e in worldBook)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(e.name.isEmpty ? e.content : e.name),
+                  value: _worldBookIds.contains(e.id),
+                  onChanged: (v) => setState(() {
+                    if (v == true) {
+                      _worldBookIds.add(e.id);
+                    } else {
+                      _worldBookIds.remove(e.id);
+                    }
+                  }),
+                ),
+              const SizedBox(height: 12),
+            ],
+            if (injections.isNotEmpty) ...[
+              Text(
+                t.promptInjection,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              for (final i in injections)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(i.name),
+                  value: _injectionIds.contains(i.id),
+                  onChanged: (v) => setState(() {
+                    if (v == true) {
+                      _injectionIds.add(i.id);
+                    } else {
+                      _injectionIds.remove(i.id);
+                    }
+                  }),
+                ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -823,7 +913,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 系统提示词：故事定义 + 开局场景 + 已积累的设定图鉴（供 AI 严格遵守）
-  String _systemPromptFor(GameState state) {
+  Future<String> _systemPromptFor(GameState state) async {
     final buf = StringBuffer(story.buildSystemPrompt());
     if (story.opening.trim().isNotEmpty) {
       buf.write('\n\n【开局场景（请从这里开始叙事）】\n${story.opening.trim()}');
@@ -840,6 +930,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (state.situation.trim().isNotEmpty) {
       buf.write('\n\n【当前局势（延续此设定，除非剧情已推进）】\n');
       buf.write(state.situation.trim());
+    }
+    // 故事从库里显式选择的世界书 / 提示词（未选则不注入）
+    final injections = await PromptInjectionStore.instance.selectExact(
+      story.injectionIds.toSet(),
+    );
+    for (final inj in injections) {
+      if (inj.content.trim().isEmpty) continue;
+      buf.write('\n\n【${inj.name.trim().isEmpty ? '提示词' : inj.name.trim()}】\n');
+      buf.write(inj.content.trim());
+    }
+    final worldBook = await WorldBookStore.instance.selectAll(
+      story.worldBookIds.toSet(),
+    );
+    if (worldBook.isNotEmpty) {
+      buf.write('\n\n【世界书】');
+      var seq = 0;
+      for (final e in worldBook) {
+        if (e.content.trim().isEmpty) continue;
+        seq++;
+        buf.write('\n$seq. ${e.content.trim()}');
+      }
     }
     return buf.toString();
   }
@@ -860,7 +971,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         userMessage: text,
         taskType: 'story',
         providerOverride: aiHubProvider(),
-        systemPromptOverride: _systemPromptFor(_state),
+        systemPromptOverride: await _systemPromptFor(_state),
         cancelToken: cancelToken,
       )) {
         if (!mounted) return;

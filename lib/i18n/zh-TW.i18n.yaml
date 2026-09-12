@@ -1614,6 +1614,9 @@ storyActionPrompt: 發送的指令
 storyActionIcon: 圖示（可選）
 storyAddAction: 新增操作
 storyInvalidState: 初始狀態 JSON 格式錯誤
+storyLibrary: 知識庫
+storyLibraryHint: 僅勾選的條目會注入到本故事。
+storyLibraryEmpty: 知識庫還是空的，請先在 AI 設定裡新增。
 noActivityInTimeRange: 該時間段內暫無活動記錄
 weeklySummary: 本週總結
 monthlySummary: 本月總結
@@ -2192,6 +2195,8 @@ profileTabRequest: 請求
 profileTabMcp: MCP
 profileMcpHint: 綁定本助手的 MCP 伺服器（連線後自動匯入工具）
 profileTabLocalTools: 工具技能
+profileTabLibrary: 知識庫
+profileLibraryHint: 不勾選則沿用全域啟用的條目；勾選後僅對目前助手生效。
 userNickname: 使用者暱稱
 userNicknameHint: 聊天中顯示的使用者名稱，並注入 {{user_nickname}}
 animeRecognize: 動漫識別
@@ -2316,6 +2321,7 @@ worldBookHitTestPlaceholder: 輸入一句話...
 worldBookHitsResult: 命中條目
 worldBookNoHits: 沒有條目命中
 noWorldBookEntriesYet: 暫無世界書條目
+noPromptInjectionsYet: 暫無提示詞注入
 auxTemperature: Temperature
 selectAssistantProfile: 選擇助手檔案
 selectModel: 選擇模型

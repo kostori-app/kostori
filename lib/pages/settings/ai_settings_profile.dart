@@ -75,6 +75,8 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
 
   late Set<String> _enabledSkillIds;
   late List<String> _skillIds;
+  late Set<String> _worldBookIds;
+  late Set<String> _injectionIds;
   late List<AssistantExtension> _extensions;
   late MemorySettings _memory;
   late List<McpBinding> _mcpServers;
@@ -145,7 +147,11 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
     _enabledSkillIds = {...?p?.enabledSkillIds};
     _skillIds = [...?p?.skillIds];
+    _worldBookIds = {...?p?.worldBookIds};
+    _injectionIds = {...?p?.injectionIds};
     _extensions = [...?p?.extensions];
+    WorldBookStore.instance.ensureLoaded();
+    PromptInjectionStore.instance.ensureLoaded();
     _memory = p?.memory ?? const MemorySettings();
     _mcpServers = [...?p?.mcpServers];
     _behaviorPrefs = {
@@ -229,6 +235,8 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       knowledge: _lines(_knowledgeCtrl),
       enabledSkillIds: skills,
       skillIds: _skillIds,
+      worldBookIds: _worldBookIds.toList(),
+      injectionIds: _injectionIds.toList(),
       extensions: _extensions,
       memory: MemorySettings(
         enabled: _memory.enabled,
@@ -936,6 +944,95 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
   }
 
+  Widget _buildLibraryTab() {
+    final scheme = Theme.of(context).colorScheme;
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        WorldBookStore.instance,
+        PromptInjectionStore.instance,
+      ]),
+      builder: (context, _) {
+        final worldBook = WorldBookStore.instance.entries;
+        final injections = PromptInjectionStore.instance.items;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t.profileLibraryHint,
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.menu_book_outlined, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  t.worldBook,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (worldBook.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(t.noWorldBookEntriesYet, style: ts.s12),
+              )
+            else
+              for (final e in worldBook)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(e.name.isEmpty ? e.content : e.name),
+                  value: _worldBookIds.contains(e.id),
+                  onChanged: (v) => setState(() {
+                    if (v == true) {
+                      _worldBookIds.add(e.id);
+                    } else {
+                      _worldBookIds.remove(e.id);
+                    }
+                  }),
+                ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(Icons.push_pin_outlined, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  t.promptInjection,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (injections.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(t.noPromptInjectionsYet, style: ts.s12),
+              )
+            else
+              for (final i in injections)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(i.name),
+                  value: _injectionIds.contains(i.id),
+                  onChanged: (v) => setState(() {
+                    if (v == true) {
+                      _injectionIds.add(i.id);
+                    } else {
+                      _injectionIds.remove(i.id);
+                    }
+                  }),
+                ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildRequestTab() {
     final scheme = Theme.of(context).colorScheme;
     final prefs = [
@@ -1314,7 +1411,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
           ),
       ],
       body: DefaultTabController(
-        length: 7,
+        length: 8,
         child: Stack(
           children: [
             Positioned.fill(
@@ -1333,6 +1430,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                         Tab(text: t.profileTabRequest),
                         Tab(text: t.profileTabMcp),
                         Tab(text: t.profileTabLocalTools),
+                        Tab(text: t.profileTabLibrary),
                       ],
                     ),
                     Expanded(
@@ -1345,6 +1443,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                           _tabScroll(_buildRequestTab()),
                           _tabScroll(_buildMcpTab()),
                           _tabScroll(_buildLocalToolsTab()),
+                          _tabScroll(_buildLibraryTab()),
                         ],
                       ),
                     ),

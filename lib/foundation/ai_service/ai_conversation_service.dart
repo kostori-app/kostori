@@ -1098,10 +1098,16 @@ class AiConversationService {
     AssistantProfile? profile,
     String? userMessage,
   }) async {
-    final injections = await PromptInjectionStore.instance.enabledSorted();
+    // 档案可自定义选择库中条目；未选择时沿用全局启用项
+    final injections = await PromptInjectionStore.instance.select(
+      profile?.injectionIds.toSet() ?? const {},
+    );
     final worldHits = (userMessage == null || userMessage.trim().isEmpty)
         ? const <WorldBookEntry>[]
-        : await WorldBookStore.instance.hits(userMessage);
+        : await WorldBookStore.instance.select(
+            profile?.worldBookIds.toSet() ?? const {},
+            userMessage,
+          );
     final memoryEntries = profile == null
         ? const <String>[]
         : await AssistantMemoryStore.instance.entriesFor(profile.id);

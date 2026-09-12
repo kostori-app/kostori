@@ -1604,6 +1604,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyActionIcon => '圖示（可選）';
 	@override String get storyAddAction => '新增操作';
 	@override String get storyInvalidState => '初始狀態 JSON 格式錯誤';
+	@override String get storyLibrary => '知識庫';
+	@override String get storyLibraryHint => '僅勾選的條目會注入到本故事。';
+	@override String get storyLibraryEmpty => '知識庫還是空的，請先在 AI 設定裡新增。';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -2168,6 +2171,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileTabMcp => 'MCP';
 	@override String get profileMcpHint => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）';
 	@override String get profileTabLocalTools => '工具技能';
+	@override String get profileTabLibrary => '知識庫';
+	@override String get profileLibraryHint => '不勾選則沿用全域啟用的條目；勾選後僅對目前助手生效。';
 	@override String get userNickname => '使用者暱稱';
 	@override String get userNicknameHint => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}';
 	@override String get animeRecognize => '動漫識別';
@@ -2290,6 +2295,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookHitsResult => '命中條目';
 	@override String get worldBookNoHits => '沒有條目命中';
 	@override String get noWorldBookEntriesYet => '暫無世界書條目';
+	@override String get noPromptInjectionsYet => '暫無提示詞注入';
 	@override String get auxTemperature => 'Temperature';
 	@override String get selectAssistantProfile => '選擇助手檔案';
 	@override String get selectModel => '選擇模型';
@@ -4232,6 +4238,9 @@ extension on TranslationsZhTw {
 			'storyActionIcon' => '圖示（可選）',
 			'storyAddAction' => '新增操作',
 			'storyInvalidState' => '初始狀態 JSON 格式錯誤',
+			'storyLibrary' => '知識庫',
+			'storyLibraryHint' => '僅勾選的條目會注入到本故事。',
+			'storyLibraryEmpty' => '知識庫還是空的，請先在 AI 設定裡新增。',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4670,11 +4679,11 @@ extension on TranslationsZhTw {
 			'statsRateAndComment' => '評分並評論',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評級 ${duration}:',
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}點擊${value}次',
+			_ => null,
+		} ?? switch (path) {
 			'statsDailyClicks' => ({required Object total}) => '本日點擊次數: ${total}',
 			'statsWatchAt' => ({required Object source, required Object platform, required Object duration}) => '${source} ${platform}觀看: ${duration}',
 			'statsDailyWatch' => ({required Object duration}) => '本日觀看時長: ${duration}',
-			_ => null,
-		} ?? switch (path) {
 			'statsRecords' => '記錄',
 			'statsLastClickAt' => ({required Object time}) => '當日最後點擊: \n${time}',
 			'statsLastWatchAt' => ({required Object time}) => '當日最後觀看: \n${time}',
@@ -4798,6 +4807,8 @@ extension on TranslationsZhTw {
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
 			'profileTabLocalTools' => '工具技能',
+			'profileTabLibrary' => '知識庫',
+			'profileLibraryHint' => '不勾選則沿用全域啟用的條目；勾選後僅對目前助手生效。',
 			'userNickname' => '使用者暱稱',
 			'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',
 			'animeRecognize' => '動漫識別',
@@ -4920,6 +4931,7 @@ extension on TranslationsZhTw {
 			'worldBookHitsResult' => '命中條目',
 			'worldBookNoHits' => '沒有條目命中',
 			'noWorldBookEntriesYet' => '暫無世界書條目',
+			'noPromptInjectionsYet' => '暫無提示詞注入',
 			'auxTemperature' => 'Temperature',
 			'selectAssistantProfile' => '選擇助手檔案',
 			'selectModel' => '選擇模型',

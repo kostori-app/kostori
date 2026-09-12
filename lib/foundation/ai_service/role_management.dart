@@ -190,12 +190,29 @@ class PromptInjectionStore extends ChangeNotifier {
   /// 启用的注入片段，按（位置, 排序号）升序
   Future<List<PromptInjection>> enabledSorted() async {
     await ensureLoaded();
-    final list = _items.where((i) => i.enabled).toList()
+    return _sorted(_items.where((i) => i.enabled));
+  }
+
+  /// 按选择集返回注入片段：ids 为空表示沿用全局启用项（向后兼容）
+  Future<List<PromptInjection>> select(Set<String> ids) async {
+    if (ids.isEmpty) return enabledSorted();
+    await ensureLoaded();
+    return _sorted(_items.where((i) => ids.contains(i.id)));
+  }
+
+  /// 只返回选择集内的注入片段（ids 为空则不注入任何片段）
+  Future<List<PromptInjection>> selectExact(Set<String> ids) async {
+    if (ids.isEmpty) return const [];
+    await ensureLoaded();
+    return _sorted(_items.where((i) => ids.contains(i.id)));
+  }
+
+  static List<PromptInjection> _sorted(Iterable<PromptInjection> source) {
+    return source.toList()
       ..sort((a, b) {
         final byPos = a.position.index.compareTo(b.position.index);
         return byPos != 0 ? byPos : a.sortOrder.compareTo(b.sortOrder);
       });
-    return list;
   }
 
   Future<void> upsert(PromptInjection item) async {
@@ -339,6 +356,25 @@ class WorldBookStore extends ChangeNotifier {
   Future<List<WorldBookEntry>> hits(String text) async {
     await ensureLoaded();
     final list = _entries.where((e) => e.enabled && e.hits(text)).toList()
+      ..sort((a, b) => b.priority.compareTo(a.priority));
+    return list;
+  }
+
+  /// 按选择集命中用户消息的条目：ids 为空表示沿用全局启用项（向后兼容）
+  Future<List<WorldBookEntry>> select(Set<String> ids, String text) async {
+    await ensureLoaded();
+    final list = _entries
+        .where((e) => (ids.isEmpty ? e.enabled : ids.contains(e.id)) && e.hits(text))
+        .toList()
+      ..sort((a, b) => b.priority.compareTo(a.priority));
+    return list;
+  }
+
+  /// 只返回选择集内的条目且不做触发词匹配（供故事等显式选择场景）
+  Future<List<WorldBookEntry>> selectAll(Set<String> ids) async {
+    if (ids.isEmpty) return const [];
+    await ensureLoaded();
+    final list = _entries.where((e) => ids.contains(e.id)).toList()
       ..sort((a, b) => b.priority.compareTo(a.priority));
     return list;
   }
