@@ -1162,6 +1162,17 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     await _openDownloadPicker(
       items: items,
       downloaded: records.map((r) => r['episode'] as String? ?? '').toSet(),
+      // 系列条目逐个访问详情取自身标题用于命名
+      resolveAnimeTitle: (id) async {
+        final load = source.loadAnimeInfo;
+        if (load == null) return null;
+        try {
+          final info = await load(id);
+          return info.dataOrNull?.title;
+        } catch (_) {
+          return null;
+        }
+      },
     );
   }
 
@@ -1169,6 +1180,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   Future<void> _openDownloadPicker({
     required List<_DownloadItem> items,
     required Set<String> downloaded,
+    Future<String?> Function(String id)? resolveAnimeTitle,
   }) async {
     final result = await showModalBottomSheet<List<_DownloadPick>>(
       context: context,
@@ -1179,6 +1191,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         resolvePlay: _resolvePlayResult,
         animeTitle: data!.title,
         sourceKey: _sourceKey,
+        resolveAnimeTitle: resolveAnimeTitle,
       ),
     );
     if (result == null || result.isEmpty || !mounted) return;
@@ -2580,6 +2593,7 @@ class _EpisodeDownloadPicker extends StatefulWidget {
     required this.resolvePlay,
     required this.animeTitle,
     required this.sourceKey,
+    this.resolveAnimeTitle,
   });
 
   final List<_DownloadItem> items;
@@ -2595,6 +2609,9 @@ class _EpisodeDownloadPicker extends StatefulWidget {
 
   /// 所属番源 key（决定可用文本规则）
   final String sourceKey;
+
+  /// 系列条目：需单独访问其详情获取自身标题（用于命名）；剧集模式为 null
+  final Future<String?> Function(String id)? resolveAnimeTitle;
 
   @override
   State<_EpisodeDownloadPicker> createState() => _EpisodeDownloadPickerState();
@@ -2775,12 +2792,23 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
           if (best.label.isNotEmpty) resLabel = best.label;
         }
       }
+      // 系列条目：单独访问其详情取自身标题，避免全部用当前番剧标题命名
+      String? itemTitle;
+      final resolver = widget.resolveAnimeTitle;
+      if (resolver != null) {
+        try {
+          itemTitle = await resolver(item.key);
+        } catch (_) {}
+      }
+      final resolvedTitle = (itemTitle != null && itemTitle.trim().isNotEmpty)
+          ? itemTitle.trim()
+          : (_animeTitle.trim().isEmpty ? null : _animeTitle.trim());
       picks.add(
         _DownloadPick(
           key: item.key,
           // 用户编辑过标题时用它（用于文件名），否则用原始集名
           episodeName: _nameOverrides[item.key] ?? item.episodeName,
-          animeTitle: _animeTitle.trim().isEmpty ? null : _animeTitle.trim(),
+          animeTitle: resolvedTitle,
           episodeNo: item.episodeNo,
           url: url,
           resolution: resLabel,
