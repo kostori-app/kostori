@@ -29,6 +29,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
   AiImageGenConfig _imageConfig = const AiImageGenConfig();
   late final TextEditingController _imageBaseUrlCtrl;
   Uint8List? _imageBytes;
+  String? _savedPath;
   bool _generatingImage = false;
 
   @override
@@ -62,7 +63,10 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     if (!mounted) return;
     setState(() {
       _generatingImage = false;
-      if (res.success) _imageBytes = res.data;
+      if (res.success) {
+        _imageBytes = res.data;
+        _savedPath = null;
+      }
     });
     if (res.error) {
       App.rootContext.showMessage(
@@ -77,7 +81,49 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     if (bytes == null) return;
     final filename =
         'kostori_ai_${DateTime.now().millisecondsSinceEpoch}.png';
-    await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
+    // 保存到 Kostori 文件夹（图片操作页扫描的目录），而非仅分享/复制
+    final file = await ImageSaver.writeFile(bytes: bytes, filename: filename);
+    if (!mounted) return;
+    if (file == null) {
+      ImageSaver.showResult(
+        success: false,
+        message: t.saveFailedPermissionOrDirectory,
+      );
+      return;
+    }
+    ImageSaver.showResult(success: true, message: t.saveSuccess);
+    setState(() => _savedPath = file.path);
+    await ref.read(imagesProvider.notifier).loadImages();
+  }
+
+  void _openPreview() {
+    final bytes = _imageBytes;
+    if (bytes == null) return;
+    final path = _savedPath;
+    if (path != null) {
+      final images = ref.read(imagesProvider);
+      final index = images.indexWhere((f) => f.path == path);
+      BangumiWidget.showImagePreview(
+        context: context,
+        url: path,
+        title: path.split(RegExp(r'[\\/]')).last,
+        heroTag: path,
+        allUrls: images,
+        initialIndex: index < 0 ? 0 : index,
+      );
+    } else {
+      final provider = MemoryImage(bytes);
+      BangumiWidget.showImagePreview(
+        context: context,
+        url: '',
+        title: t.aiImageGen,
+        heroTag: 'kostori_ai_preview',
+        imageProvider: provider,
+        galleryProviders: [provider],
+        galleryHeroTags: const ['kostori_ai_preview'],
+        initialIndex: 0,
+      );
+    }
   }
 
   Future<void> _generate() async {
@@ -415,9 +461,12 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
           ),
           if (_imageBytes != null) ...[
             const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.memory(_imageBytes!, fit: BoxFit.contain),
+            GestureDetector(
+              onTap: _openPreview,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(_imageBytes!, fit: BoxFit.contain),
+              ),
             ),
             Align(
               alignment: Alignment.centerRight,
