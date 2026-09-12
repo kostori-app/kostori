@@ -700,7 +700,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > maxWidth
                                   ? maxWidth
@@ -875,11 +875,14 @@ class _InfoTabViewState extends State<InfoTabView>
                     itemBuilder: (context, _) {
                       return Align(
                         alignment: Alignment.topCenter,
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: ReviewsCard.bone(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: ReviewsCard.bone(),
+                          ),
                         ),
                       );
                     },
