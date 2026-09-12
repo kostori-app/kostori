@@ -577,6 +577,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                         m.outputContent ?? '',
                                       ).narrative,
                                 isUser: isUser,
+                                task: m,
                               );
                             },
                           ),

@@ -632,6 +632,102 @@ class _StreamingBubble extends StatelessWidget {
   }
 }
 
+/// 底部元数据：输入 / 缓存 / 输出 tokens · 速度 · 耗时（AI 聊天与冒险复用）
+class AiUsageMeta extends StatelessWidget {
+  const AiUsageMeta({super.key, required this.task});
+
+  final AiTask task;
+
+  Map<String, dynamic>? get _thoughtMap {
+    final thought = task.thought;
+    if (thought == null || thought.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(thought);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (_) {}
+    return null;
+  }
+
+  Map<String, dynamic>? get _usageMap {
+    final map = _thoughtMap;
+    if (map == null) return null;
+    final usage = map['usage'];
+    if (usage is Map<String, dynamic>) return usage;
+    return map;
+  }
+
+  static String _thousands(num v) {
+    final s = v.toInt().toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(fontSize: 11, color: Colors.grey.shade500);
+    final segments = <Widget>[];
+    void addSegment(IconData icon, String text) {
+      segments.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: Colors.grey.shade500),
+            const SizedBox(width: 2),
+            Text(text, style: style),
+          ],
+        ),
+      );
+    }
+
+    final u = _usageMap;
+    final prompt = (u?['prompt'] as num?)?.toInt();
+    final completion = (u?['completion'] as num?)?.toInt();
+    final cached = (u?['cached'] as num?)?.toInt();
+    final durationMs = (_thoughtMap?['durationMs'] as num?)?.toInt();
+
+    if (prompt != null) {
+      addSegment(
+        Icons.subdirectory_arrow_left,
+        '${_thousands(prompt)} ${t.tokens}',
+      );
+    }
+    if (cached != null && cached > 0) {
+      addSegment(Icons.cached, '(${_thousands(cached)} ${t.statsCached})');
+    }
+    if (completion != null) {
+      addSegment(
+        Icons.subdirectory_arrow_right,
+        '${_thousands(completion)} ${t.tokens}',
+      );
+    }
+    if (completion != null && durationMs != null && durationMs > 0) {
+      final speed = completion / (durationMs / 1000);
+      addSegment(Icons.speed, '${speed.toStringAsFixed(1)} tok/s');
+    }
+    if (durationMs != null && durationMs > 0) {
+      addSegment(
+        Icons.timer_outlined,
+        '${(durationMs / 1000).toStringAsFixed(1)}s',
+      );
+    }
+
+    if (segments.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 2),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 2,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: segments,
+      ),
+    );
+  }
+}
+
 class _ChatBubble extends StatelessWidget {
   const _ChatBubble({
     required this.content,

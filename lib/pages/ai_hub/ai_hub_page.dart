@@ -1236,10 +1236,15 @@ class _AiComposerBar extends StatelessWidget {
 /// 冒险叙事的干净气泡：AI 全文 Markdown（无模型名/时间/操作/用量），
 /// 用户消息与 AI 聊天同款（secondaryContainer 气泡、右对齐、限宽）
 class _StoryBubble extends StatelessWidget {
-  const _StoryBubble({required this.content, required this.isUser});
+  const _StoryBubble({
+    required this.content,
+    required this.isUser,
+    required this.task,
+  });
 
   final String content;
   final bool isUser;
+  final AiTask task;
 
   @override
   Widget build(BuildContext context) {
@@ -1275,7 +1280,13 @@ class _StoryBubble extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: CustomMarkdownWidget(data: content, indentFirstLine: false),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CustomMarkdownWidget(data: content, indentFirstLine: false),
+          if (!isUser) AiUsageMeta(task: task),
+        ],
+      ),
     );
   }
 }
