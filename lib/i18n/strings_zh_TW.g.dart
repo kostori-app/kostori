@@ -1610,6 +1610,14 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRollAttribute => '屬性';
 	@override String get storyNoAttributes => '沒有可用於檢定的屬性';
 	@override String get storyRollResult => '擲骰結果';
+	@override String get storyResources => '資源';
+	@override String get storyAttributes => '屬性';
+	@override String get storyPanels => '面板';
+	@override String get storyPanelTitle => '分區標題';
+	@override String get storyPanelSource => '資料來源';
+	@override String get storyPanelKind => '圖鑑類型';
+	@override String get storyAddPanel => '新增分區';
+	@override String get storyResetPanels => '重設為預設';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4247,6 +4255,14 @@ extension on TranslationsZhTw {
 			'storyRollAttribute' => '屬性',
 			'storyNoAttributes' => '沒有可用於檢定的屬性',
 			'storyRollResult' => '擲骰結果',
+			'storyResources' => '資源',
+			'storyAttributes' => '屬性',
+			'storyPanels' => '面板',
+			'storyPanelTitle' => '分區標題',
+			'storyPanelSource' => '資料來源',
+			'storyPanelKind' => '圖鑑類型',
+			'storyAddPanel' => '新增分區',
+			'storyResetPanels' => '重設為預設',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4674,6 +4690,8 @@ extension on TranslationsZhTw {
 			'statsMonth6' => '六月',
 			'statsMonth7' => '七月',
 			'statsMonth8' => '八月',
+			_ => null,
+		} ?? switch (path) {
 			'statsMonth9' => '九月',
 			'statsMonth10' => '十月',
 			'statsMonth11' => '十一月',
@@ -4682,8 +4700,6 @@ extension on TranslationsZhTw {
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} 建立了評論 ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評論 ${duration}:',
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} 建立了評級 ${duration}:',
-			_ => null,
-		} ?? switch (path) {
 			'statsRateAndComment' => '評分並評論',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了評級 ${duration}:',
 			'statsClickAt' => ({required Object source, required Object platform, required Object value}) => '${source} ${platform}點擊${value}次',
@@ -5188,6 +5204,8 @@ extension on TranslationsZhTw {
 			'monthNames.mar' => '三月',
 			'monthNames.apr' => '四月',
 			'monthNames.may' => '五月',
+			_ => null,
+		} ?? switch (path) {
 			'monthNames.jun' => '六月',
 			'monthNames.jul' => '七月',
 			'monthNames.aug' => '八月',

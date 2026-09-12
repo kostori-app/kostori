@@ -1615,6 +1615,14 @@ storyLibraryEmpty: 知识库还是空的，请先在 AI 设置里添加。
 storyRollAttribute: 属性
 storyNoAttributes: 没有可用于检定的属性
 storyRollResult: 掷骰结果
+storyResources: 资源
+storyAttributes: 属性
+storyPanels: 面板
+storyPanelTitle: 分区标题
+storyPanelSource: 数据源
+storyPanelKind: 图鉴类型
+storyAddPanel: 添加分区
+storyResetPanels: 重置为默认
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结

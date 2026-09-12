@@ -1620,6 +1620,14 @@ storyLibraryEmpty: No library entries yet. Add them in AI settings first.
 storyRollAttribute: Attribute
 storyNoAttributes: No attributes available to roll
 storyRollResult: Roll result
+storyResources: Resources
+storyAttributes: Attributes
+storyPanels: Panels
+storyPanelTitle: Section title
+storyPanelSource: Data source
+storyPanelKind: Codex kind
+storyAddPanel: Add section
+storyResetPanels: Reset to default
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

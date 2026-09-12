@@ -300,6 +300,28 @@ class _StoryActionDraft {
   }
 }
 
+class _StoryPanelDraft {
+  final TextEditingController title;
+  final TextEditingController kind;
+  final TextEditingController icon;
+  String source;
+
+  _StoryPanelDraft({
+    String titleText = '',
+    this.source = 'attributes',
+    String kindText = '',
+    String iconText = '',
+  }) : title = TextEditingController(text: titleText),
+       kind = TextEditingController(text: kindText),
+       icon = TextEditingController(text: iconText);
+
+  void dispose() {
+    title.dispose();
+    kind.dispose();
+    icon.dispose();
+  }
+}
+
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
@@ -334,6 +356,17 @@ class _StoryEditorState extends State<_StoryEditor> {
         labelText: a.label,
         promptText: a.prompt,
         iconText: a.icon,
+      ),
+  ];
+  late final List<_StoryPanelDraft> _panels = [
+    for (final p in (widget.story?.panels.isNotEmpty == true
+        ? widget.story!.panels
+        : Story.defaultPanels))
+      _StoryPanelDraft(
+        titleText: p.title,
+        source: p.source,
+        kindText: p.kind,
+        iconText: p.icon,
       ),
   ];
   late final Set<String> _worldBookIds = {
@@ -403,6 +436,9 @@ class _StoryEditorState extends State<_StoryEditor> {
     for (final a in _actions) {
       a.dispose();
     }
+    for (final p in _panels) {
+      p.dispose();
+    }
     super.dispose();
   }
 
@@ -450,6 +486,15 @@ class _StoryEditorState extends State<_StoryEditor> {
       ],
       worldBookIds: _worldBookIds.toList(),
       injectionIds: _injectionIds.toList(),
+      panels: [
+        for (final p in _panels)
+          StoryPanel(
+            title: p.title.text.trim(),
+            source: p.source,
+            kind: p.kind.text.trim(),
+            icon: p.icon.text.trim(),
+          ),
+      ],
       initialState: initialState,
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
@@ -463,7 +508,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 9,
+      length: 10,
       child: PopUpWidgetScaffold(
         title: _isNew ? t.storyNew : t.storyEdit,
         tailing: [
@@ -489,6 +534,7 @@ class _StoryEditorState extends State<_StoryEditor> {
                   Tab(text: t.storyChoicesPrompt),
                   Tab(text: t.storyActions),
                   Tab(text: t.storyLibrary),
+                  Tab(text: t.storyPanels),
                 ],
               ),
               Expanded(
@@ -503,6 +549,7 @@ class _StoryEditorState extends State<_StoryEditor> {
                     _textTab(_choicesCtrl),
                     _actionsTab(),
                     _libraryTab(),
+                    _panelsTab(),
                   ],
                 ),
               ),
@@ -742,6 +789,144 @@ class _StoryEditorState extends State<_StoryEditor> {
           ],
         );
       },
+    );
+  }
+
+  Widget _panelsTab() {
+    final scheme = Theme.of(context).colorScheme;
+    const sources = [
+      'resources',
+      'attributes',
+      'skills',
+      'inventory',
+      'quests',
+      'codex',
+    ];
+    String sourceLabel(String s) => switch (s) {
+      'resources' => t.storyResources,
+      'attributes' => t.storyAttributes,
+      'skills' => t.skills,
+      'inventory' => t.storyInventory,
+      'quests' => t.storyQuests,
+      'codex' => t.storyCodex,
+      _ => s,
+    };
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (var i = 0; i < _panels.length; i++)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: scheme.outlineVariant, width: 0.6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _panels[i].title,
+                        decoration: InputDecoration(
+                          labelText: t.storyPanelTitle,
+                          isDense: true,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 96,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: TextFormField(
+                          controller: _panels[i].icon,
+                          decoration: InputDecoration(
+                            labelText: t.storyActionIcon,
+                            isDense: true,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => setState(() {
+                        _panels[i].dispose();
+                        _panels.removeAt(i);
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      '${t.storyPanelSource}: ',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(width: 8),
+                    DropdownButton<String>(
+                      value: _panels[i].source,
+                      items: [
+                        for (final s in sources)
+                          DropdownMenuItem(
+                            value: s,
+                            child: Text(sourceLabel(s)),
+                          ),
+                      ],
+                      onChanged: (v) => setState(
+                        () => _panels[i].source = v ?? 'attributes',
+                      ),
+                    ),
+                  ],
+                ),
+                if (_panels[i].source == 'codex') ...[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _panels[i].kind,
+                    decoration: InputDecoration(
+                      labelText: t.storyPanelKind,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        Row(
+          children: [
+            TextButton.icon(
+              onPressed: () => setState(() => _panels.add(_StoryPanelDraft())),
+              icon: const Icon(Icons.add),
+              label: Text(t.storyAddPanel),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: () => setState(() {
+                for (final p in _panels) {
+                  p.dispose();
+                }
+                _panels
+                  ..clear()
+                  ..addAll([
+                    for (final p in Story.defaultPanels)
+                      _StoryPanelDraft(
+                        titleText: p.title,
+                        source: p.source,
+                        kindText: p.kind,
+                        iconText: p.icon,
+                      ),
+                  ]);
+              }),
+              icon: const Icon(Icons.restart_alt),
+              label: Text(t.storyResetPanels),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -1854,116 +2039,153 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
   }
 
   List<Widget> _buildState(ColorScheme scheme) {
-    return [
-      if (state.location.isNotEmpty || state.time.isNotEmpty)
+    final panels = widget.story.panels.isNotEmpty
+        ? widget.story.panels
+        : Story.defaultPanels;
+    final widgets = <Widget>[];
+    if (state.location.isNotEmpty || state.time.isNotEmpty) {
+      widgets.add(
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: 4),
           child: Text(
             [state.location, state.time].where((e) => e.isNotEmpty).join(' · '),
             style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
         ),
-      for (final r in state.resources)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${r.name}  ${r.cur}/${r.max}',
-                  style: const TextStyle(fontSize: 12)),
-              const SizedBox(height: 4),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: r.max <= 0 ? 0 : (r.cur / r.max).clamp(0.0, 1.0),
-                  minHeight: 6,
-                ),
+      );
+    }
+    for (final p in panels) {
+      final section = _buildPanel(p, scheme);
+      if (section.isEmpty) continue;
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 12));
+      widgets.addAll(section);
+    }
+    return widgets;
+  }
+
+  /// 渲染单个面板分区（由故事自定义 source/title/kind/icon）
+  List<Widget> _buildPanel(StoryPanel panel, ColorScheme scheme) {
+    final icon = _panelIcon(panel.icon);
+    switch (panel.source) {
+      case 'resources':
+        if (state.resources.isEmpty) return const [];
+        return [
+          _sectionTitle(panel.title.isEmpty ? t.storyState : panel.title, icon),
+          for (final r in state.resources)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${r.name}  ${r.cur}/${r.max}',
+                      style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: r.max <= 0 ? 0 : (r.cur / r.max).clamp(0.0, 1.0),
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
               ),
+            ),
+        ];
+      case 'attributes':
+        if (state.attributes.isEmpty) return const [];
+        return [
+          _sectionTitle(panel.title.isEmpty ? t.storyState : panel.title, icon),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final e in state.attributes.entries)
+                Chip(label: Text('${e.key} ${e.value}')),
             ],
           ),
-        ),
-      if (state.attributes.isNotEmpty) ...[
-        const SizedBox(height: 8),
-        _sectionTitle(t.storyState),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final e in state.attributes.entries)
-              Chip(label: Text('${e.key} ${e.value}')),
-          ],
-        ),
-      ],
-      if (state.skills.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        _sectionTitle(t.skills),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final s in state.skills) _entry(label: s, kind: 'skill'),
-          ],
-        ),
-      ],
-      if (state.inventory.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        _sectionTitle(t.storyInventory),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final s in state.inventory)
-              _entry(
-                label: s,
-                kind: 'item',
-                onLongPress: () => _itemMenu(s),
-                onSecondaryTap: () => _itemMenu(s),
-              ),
-          ],
-        ),
-      ],
-      if (state.quests.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        _sectionTitle(t.storyQuests),
-        for (final q in state.quests)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            title: Text(q.title),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (q.desc.isNotEmpty)
-                  Text(q.desc, style: const TextStyle(fontSize: 12)),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: (q.progress / 100).clamp(0.0, 1.0),
-                    minHeight: 6,
-                  ),
+        ];
+      case 'skills':
+        if (state.skills.isEmpty) return const [];
+        return [
+          _sectionTitle(panel.title.isEmpty ? t.skills : panel.title, icon),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in state.skills) _entry(label: s, kind: 'skill'),
+            ],
+          ),
+        ];
+      case 'inventory':
+        if (state.inventory.isEmpty) return const [];
+        return [
+          _sectionTitle(
+            panel.title.isEmpty ? t.storyInventory : panel.title,
+            icon,
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in state.inventory)
+                _entry(
+                  label: s,
+                  kind: 'item',
+                  onLongPress: () => _itemMenu(s),
+                  onSecondaryTap: () => _itemMenu(s),
                 ),
-              ],
-            ),
+            ],
           ),
-      ],
-      if (state.codex.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        _sectionTitle(t.storyCodex),
-        for (final d in state.codex)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(_codexIcon(d.kind), size: 20),
-            title: Text(d.name),
-            subtitle: Text(
-              d.display.isEmpty ? d.mechanics : d.display,
-              style: const TextStyle(fontSize: 12),
+        ];
+      case 'quests':
+        if (state.quests.isEmpty) return const [];
+        return [
+          _sectionTitle(panel.title.isEmpty ? t.storyQuests : panel.title, icon),
+          for (final q in state.quests)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(q.title),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (q.desc.isNotEmpty)
+                    Text(q.desc, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (q.progress / 100).clamp(0.0, 1.0),
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            onTap: () => _inspect(d.name, d.kind),
-          ),
-      ],
-    ];
+        ];
+      case 'codex':
+        final defs = panel.kind.isEmpty
+            ? state.codex
+            : state.codex.where((d) => d.kind == panel.kind).toList();
+        if (defs.isEmpty) return const [];
+        return [
+          _sectionTitle(panel.title.isEmpty ? t.storyCodex : panel.title, icon),
+          for (final d in defs)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(_codexIcon(d.kind), size: 20),
+              title: Text(d.name),
+              subtitle: Text(
+                d.display.isEmpty ? d.mechanics : d.display,
+                style: const TextStyle(fontSize: 12),
+              ),
+              onTap: () => _inspect(d.name, d.kind),
+            ),
+        ];
+      default:
+        return const [];
+    }
   }
 
   List<Widget> _buildSituation(ColorScheme scheme) {
@@ -2026,13 +2248,36 @@ IconData _codexIcon(String kind) => switch (kind) {
   _ => Icons.menu_book_outlined,
 };
 
-Widget _sectionTitle(String text) => Padding(
+Widget _sectionTitle(String text, [IconData? icon]) => Padding(
   padding: const EdgeInsets.only(bottom: 8),
-  child: Text(
-    text,
-    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  child: Row(
+    children: [
+      if (icon != null) ...[
+        Icon(icon, size: 16),
+        const SizedBox(width: 6),
+      ],
+      Flexible(
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+      ),
+    ],
   ),
 );
+
+IconData? _panelIcon(String name) {
+  if (name.isEmpty) return null;
+  return switch (name) {
+    'resources' => Icons.favorite_border,
+    'attributes' => Icons.insights_outlined,
+    'skills' => Icons.sports_martial_arts_outlined,
+    'inventory' => Icons.inventory_2_outlined,
+    'quests' => Icons.flag_outlined,
+    'codex' => Icons.menu_book_outlined,
+    _ => _storyActionIcon(name),
+  };
+}
 
 class _ParsedReply {
   final String narrative;

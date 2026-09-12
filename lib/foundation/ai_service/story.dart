@@ -120,6 +120,39 @@ class StoryAction {
   };
 }
 
+/// 面板分区：由故事自定义（标题 / 数据源 / 图标），空则用默认分区
+class StoryPanel {
+  final String title;
+
+  /// resources | attributes | skills | inventory | quests | codex
+  final String source;
+
+  /// source=codex 时按 kind 过滤（空 = 全部）
+  final String kind;
+  final String icon;
+
+  const StoryPanel({
+    this.title = '',
+    this.source = 'attributes',
+    this.kind = '',
+    this.icon = '',
+  });
+
+  factory StoryPanel.fromJson(Map<String, dynamic> json) => StoryPanel(
+    title: json['title']?.toString() ?? '',
+    source: json['source']?.toString() ?? 'attributes',
+    kind: json['kind']?.toString() ?? '',
+    icon: json['icon']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'source': source,
+    if (kind.isNotEmpty) 'kind': kind,
+    if (icon.isNotEmpty) 'icon': icon,
+  };
+}
+
 /// 检定请求：由 AI 声明、项目负责掷骰（避免模型自编点数）
 class StoryCheck {
   final String label;
@@ -461,6 +494,19 @@ class Story {
   /// 从提示词注入库中选择的条目（为空表示不注入库条目）
   final List<String> injectionIds;
 
+  /// 自定义面板分区（为空表示使用默认分区）
+  final List<StoryPanel> panels;
+
+  /// 默认面板分区（详情面板未自定义时使用）
+  static const defaultPanels = <StoryPanel>[
+    StoryPanel(source: 'resources'),
+    StoryPanel(source: 'attributes'),
+    StoryPanel(source: 'skills'),
+    StoryPanel(source: 'inventory'),
+    StoryPanel(source: 'quests'),
+    StoryPanel(source: 'codex'),
+  ];
+
   final GameState initialState;
   final bool isBuiltin;
 
@@ -478,6 +524,7 @@ class Story {
     this.actions = const [],
     this.worldBookIds = const [],
     this.injectionIds = const [],
+    this.panels = const [],
     this.initialState = GameState.empty,
     this.isBuiltin = false,
   });
@@ -495,6 +542,7 @@ class Story {
     List<StoryAction>? actions,
     List<String>? worldBookIds,
     List<String>? injectionIds,
+    List<StoryPanel>? panels,
     GameState? initialState,
   }) => Story(
     id: id,
@@ -510,6 +558,7 @@ class Story {
     actions: actions ?? this.actions,
     worldBookIds: worldBookIds ?? this.worldBookIds,
     injectionIds: injectionIds ?? this.injectionIds,
+    panels: panels ?? this.panels,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
   );
@@ -540,6 +589,12 @@ class Story {
         const [],
     injectionIds: (json['injectionIds'] as List?)?.whereType<String>().toList() ??
         const [],
+    panels: json['panels'] is List
+        ? [
+            for (final e in json['panels'] as List)
+              if (e is Map) StoryPanel.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     initialState: json['initialState'] is Map
         ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
         : GameState.empty,
@@ -560,6 +615,7 @@ class Story {
     'actions': [for (final a in actions) a.toJson()],
     'worldBookIds': worldBookIds,
     'injectionIds': injectionIds,
+    'panels': [for (final p in panels) p.toJson()],
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
   };
@@ -737,6 +793,19 @@ class StoryStore extends ChangeNotifier {
       } catch (_) {}
       return const [];
     }
+    var panels = <StoryPanel>[];
+    final panelsText = _section(text, '面板');
+    if (panelsText != null) {
+      try {
+        final decoded = jsonDecode(panelsText);
+        if (decoded is List) {
+          panels = [
+            for (final e in decoded)
+              if (e is Map) StoryPanel.fromJson(e.cast<String, dynamic>()),
+          ];
+        }
+      } catch (_) {}
+    }
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -750,6 +819,7 @@ class StoryStore extends ChangeNotifier {
       actions: actions,
       worldBookIds: idList('世界书库'),
       injectionIds: idList('提示词库'),
+      panels: panels,
       initialState: initialState,
     );
   }
@@ -784,6 +854,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.injectionIds.isNotEmpty) {
       section('提示词库', jsonEncode(s.injectionIds));
+    }
+    if (s.panels.isNotEmpty) {
+      section('面板', jsonEncode([for (final p in s.panels) p.toJson()]));
     }
     section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();

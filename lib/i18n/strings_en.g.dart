@@ -4753,6 +4753,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Roll result'
 	String get storyRollResult => 'Roll result';
 
+	/// en: 'Resources'
+	String get storyResources => 'Resources';
+
+	/// en: 'Attributes'
+	String get storyAttributes => 'Attributes';
+
+	/// en: 'Panels'
+	String get storyPanels => 'Panels';
+
+	/// en: 'Section title'
+	String get storyPanelTitle => 'Section title';
+
+	/// en: 'Data source'
+	String get storyPanelSource => 'Data source';
+
+	/// en: 'Codex kind'
+	String get storyPanelKind => 'Codex kind';
+
+	/// en: 'Add section'
+	String get storyAddPanel => 'Add section';
+
+	/// en: 'Reset to default'
+	String get storyResetPanels => 'Reset to default';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9371,6 +9395,14 @@ extension on Translations {
 			'storyRollAttribute' => 'Attribute',
 			'storyNoAttributes' => 'No attributes available to roll',
 			'storyRollResult' => 'Roll result',
+			'storyResources' => 'Resources',
+			'storyAttributes' => 'Attributes',
+			'storyPanels' => 'Panels',
+			'storyPanelTitle' => 'Section title',
+			'storyPanelSource' => 'Data source',
+			'storyPanelKind' => 'Codex kind',
+			'storyAddPanel' => 'Add section',
+			'storyResetPanels' => 'Reset to default',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9798,6 +9830,8 @@ extension on Translations {
 			'statsMonth5' => 'May',
 			'statsMonth6' => 'June',
 			'statsMonth7' => 'July',
+			_ => null,
+		} ?? switch (path) {
 			'statsMonth8' => 'August',
 			'statsMonth9' => 'September',
 			'statsMonth10' => 'October',
@@ -9806,8 +9840,6 @@ extension on Translations {
 			'statsRatedAt' => ({required Object duration}) => '(at rating ${duration})',
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} created a comment ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} modified the comment ${n} times ${duration}:',
-			_ => null,
-		} ?? switch (path) {
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} rated ${duration}:',
 			'statsRateAndComment' => 'rated & commented',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} changed the rating ${n} times ${duration}:',
@@ -10312,6 +10344,8 @@ extension on Translations {
 			'monthNames.feb' => 'February',
 			'monthNames.mar' => 'March',
 			'monthNames.apr' => 'April',
+			_ => null,
+		} ?? switch (path) {
 			'monthNames.may' => 'May',
 			'monthNames.jun' => 'June',
 			'monthNames.jul' => 'July',

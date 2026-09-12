@@ -1609,6 +1609,14 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRollAttribute => '属性';
 	@override String get storyNoAttributes => '没有可用于检定的属性';
 	@override String get storyRollResult => '掷骰结果';
+	@override String get storyResources => '资源';
+	@override String get storyAttributes => '属性';
+	@override String get storyPanels => '面板';
+	@override String get storyPanelTitle => '分区标题';
+	@override String get storyPanelSource => '数据源';
+	@override String get storyPanelKind => '图鉴类型';
+	@override String get storyAddPanel => '添加分区';
+	@override String get storyResetPanels => '重置为默认';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4247,6 +4255,14 @@ extension on TranslationsZhCn {
 			'storyRollAttribute' => '属性',
 			'storyNoAttributes' => '没有可用于检定的属性',
 			'storyRollResult' => '掷骰结果',
+			'storyResources' => '资源',
+			'storyAttributes' => '属性',
+			'storyPanels' => '面板',
+			'storyPanelTitle' => '分区标题',
+			'storyPanelSource' => '数据源',
+			'storyPanelKind' => '图鉴类型',
+			'storyAddPanel' => '添加分区',
+			'storyResetPanels' => '重置为默认',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4675,6 +4691,8 @@ extension on TranslationsZhCn {
 			'statsMonth5' => '五月',
 			'statsMonth6' => '六月',
 			'statsMonth7' => '七月',
+			_ => null,
+		} ?? switch (path) {
 			'statsMonth8' => '八月',
 			'statsMonth9' => '九月',
 			'statsMonth10' => '十月',
@@ -4683,8 +4701,6 @@ extension on TranslationsZhCn {
 			'statsRatedAt' => ({required Object duration}) => '(评价时 ${duration})',
 			'statsCreatedComment' => ({required Object time, required Object duration}) => '${time} 创建了评论 ${duration}:',
 			'statsModifiedComment' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评论 ${duration}:',
-			_ => null,
-		} ?? switch (path) {
 			'statsCreatedRating' => ({required Object time, required Object duration}) => '${time} 创建了评级 ${duration}:',
 			'statsRateAndComment' => '评分并评论',
 			'statsModifiedRating' => ({required Object time, required Object n, required Object duration}) => '${time} 第${n}次修改了评级 ${duration}:',
@@ -5189,6 +5205,8 @@ extension on TranslationsZhCn {
 			'monthNames.feb' => '二月',
 			'monthNames.mar' => '三月',
 			'monthNames.apr' => '四月',
+			_ => null,
+		} ?? switch (path) {
 			'monthNames.may' => '五月',
 			'monthNames.jun' => '六月',
 			'monthNames.jul' => '七月',

@@ -1620,6 +1620,14 @@ storyLibraryEmpty: 知識庫還是空的，請先在 AI 設定裡新增。
 storyRollAttribute: 屬性
 storyNoAttributes: 沒有可用於檢定的屬性
 storyRollResult: 擲骰結果
+storyResources: 資源
+storyAttributes: 屬性
+storyPanels: 面板
+storyPanelTitle: 分區標題
+storyPanelSource: 資料來源
+storyPanelKind: 圖鑑類型
+storyAddPanel: 新增分區
+storyResetPanels: 重設為預設
 noActivityInTimeRange: 該時間段內暫無活動記錄
 weeklySummary: 本週總結
 monthlySummary: 本月總結
