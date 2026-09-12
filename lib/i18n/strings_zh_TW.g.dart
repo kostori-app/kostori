@@ -1618,6 +1618,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyPanelKind => '圖鑑類型';
 	@override String get storyAddPanel => '新增分區';
 	@override String get storyResetPanels => '重設為預設';
+	@override String get storyUnregisteredItems => '未登記道具';
+	@override String get storyRegisterItems => '補全設定';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4263,6 +4265,8 @@ extension on TranslationsZhTw {
 			'storyPanelKind' => '圖鑑類型',
 			'storyAddPanel' => '新增分區',
 			'storyResetPanels' => '重設為預設',
+			'storyUnregisteredItems' => '未登記道具',
+			'storyRegisterItems' => '補全設定',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4688,10 +4692,10 @@ extension on TranslationsZhTw {
 			'statsMonth4' => '四月',
 			'statsMonth5' => '五月',
 			'statsMonth6' => '六月',
-			'statsMonth7' => '七月',
-			'statsMonth8' => '八月',
 			_ => null,
 		} ?? switch (path) {
+			'statsMonth7' => '七月',
+			'statsMonth8' => '八月',
 			'statsMonth9' => '九月',
 			'statsMonth10' => '十月',
 			'statsMonth11' => '十一月',
@@ -5202,10 +5206,10 @@ extension on TranslationsZhTw {
 			'monthNames.jan' => '一月',
 			'monthNames.feb' => '二月',
 			'monthNames.mar' => '三月',
-			'monthNames.apr' => '四月',
-			'monthNames.may' => '五月',
 			_ => null,
 		} ?? switch (path) {
+			'monthNames.apr' => '四月',
+			'monthNames.may' => '五月',
 			'monthNames.jun' => '六月',
 			'monthNames.jul' => '七月',
 			'monthNames.aug' => '八月',

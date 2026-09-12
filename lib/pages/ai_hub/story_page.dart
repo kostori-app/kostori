@@ -95,49 +95,93 @@ class _StoryPageState extends ConsumerState<StoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: Appbar(
-        title: Text(t.rolePlay),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.file_open_outlined),
-            tooltip: t.importEntries,
-            onPressed: _import,
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: t.storyNew,
-            onPressed: _new,
-          ),
-        ],
-      ),
-      body: ListenableBuilder(
-        listenable: StoryStore.instance,
-        builder: (context, _) {
-          final stories = StoryStore.instance.stories;
-          if (stories.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(t.storyNoStories, textAlign: TextAlign.center),
+    return ListenableBuilder(
+      listenable: StoryStore.instance,
+      builder: (context, _) {
+        final stories = StoryStore.instance.stories;
+        return Scaffold(
+          appBar: Appbar(
+            title: Text(t.rolePlay),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.file_open_outlined),
+                tooltip: t.importEntries,
+                onPressed: _import,
               ),
-            );
-          }
-          return ListView(
-            padding: const EdgeInsets.all(12),
-            children: [
-              for (final s in stories)
-                _StoryCard(
-                  story: s,
-                  onTap: () => context.to(() => StoryGamePage(story: s)),
-                  onEdit: () => _edit(s),
-                  onExport: () => _export(s),
-                  onRestart: () => _restart(s),
-                  onDelete: s.isBuiltin ? null : () => _delete(s),
-                ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: t.storyNew,
+                onPressed: _new,
+              ),
             ],
-          );
-        },
+          ),
+          body: stories.isEmpty
+              ? _emptyState(context)
+              : ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    for (final s in stories)
+                      _StoryCard(
+                        story: s,
+                        onTap: () => context.to(() => StoryGamePage(story: s)),
+                        onEdit: () => _edit(s),
+                        onExport: () => _export(s),
+                        onRestart: () => _restart(s),
+                        onDelete: s.isBuiltin ? null : () => _delete(s),
+                      ),
+                  ],
+                ),
+          floatingActionButton: stories.isEmpty
+              ? null
+              : FloatingActionButton(
+                  onPressed: _new,
+                  tooltip: t.storyNew,
+                  child: const Icon(Icons.add),
+                ),
+        );
+      },
+    );
+  }
+
+  /// 空状态：图标 + 引导 + 新建 / 导入两个入口
+  Widget _emptyState(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_stories_outlined,
+              size: 64,
+              color: scheme.onSurfaceVariant.toOpacity(0.6),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              t.storyNoStories,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _new,
+                  icon: const Icon(Icons.add),
+                  label: Text(t.storyNew),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: _import,
+                  icon: const Icon(Icons.file_open_outlined),
+                  label: Text(t.importEntries),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -980,6 +1024,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   CancelToken? _cancelToken;
   int _lastMessageCount = 0;
 
+  /// 新增但未在图鉴登记的物品（故事层校验结果）
+  List<String> _unregistered = const [];
+
   /// 需要先做开局档案设置（仅新游戏且故事定义了 setup 时）
   bool _needsSetup = false;
   final Map<String, String> _singleValues = {};
@@ -1201,7 +1248,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           }
           state = state.copyWith(inventory: inv);
         }
-        setState(() => _state = state);
+        // 故事层校验：新道具是否已在图鉴登记（未登记则提示补全）
+        final unregistered = _unregisteredItems(_state, state);
+        setState(() {
+          _state = state;
+          _unregistered = unregistered;
+        });
         await StorySessionStore.instance.put(
           story.id,
           StorySession(sessionId: sessionId, state: state),
@@ -1219,6 +1271,30 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     } finally {
       _cancelToken = null;
     }
+  }
+
+  /// 找出新增但未在 codex 登记的物品
+  List<String> _unregisteredItems(GameState prev, GameState next) {
+    final prevItems = prev.inventory.toSet();
+    final registered = <String>{
+      for (final d in next.codex.where((d) => d.kind == 'item')) ...[d.key, d.name],
+    };
+    final result = <String>[];
+    for (final item in next.inventory) {
+      if (prevItems.contains(item)) continue;
+      final base = item.split(' x').first.split('×').first.trim();
+      if (registered.contains(item) || registered.contains(base)) continue;
+      result.add(item);
+    }
+    return result;
+  }
+
+  /// 请 GM 为未登记的道具补充图鉴设定
+  void _registerUnregistered() {
+    if (_unregistered.isEmpty) return;
+    final items = _unregistered.join('、');
+    setState(() => _unregistered = const []);
+    _send('请为以下道具补充图鉴设定（在 codex 中给出 kind=item 的 display 与 mechanics）：$items');
   }
 
   void _sendInput() {
@@ -1347,6 +1423,33 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               onTap: _sending ? () {} : () => _send(choices[i]),
                             ),
                           ),
+                        ),
+                      ),
+                    if (_unregistered.isNotEmpty && !_sending)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 16,
+                              color: Colors.orange,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${t.storyUnregisteredItems}: '
+                                '${_unregistered.join('、')}',
+                                style: const TextStyle(fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _registerUnregistered,
+                              child: Text(t.storyRegisterItems),
+                            ),
+                          ],
                         ),
                       ),
                     _AiComposerBar(

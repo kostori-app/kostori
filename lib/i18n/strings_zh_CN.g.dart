@@ -1617,6 +1617,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyPanelKind => '图鉴类型';
 	@override String get storyAddPanel => '添加分区';
 	@override String get storyResetPanels => '重置为默认';
+	@override String get storyUnregisteredItems => '未登记道具';
+	@override String get storyRegisterItems => '补全设定';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4263,6 +4265,8 @@ extension on TranslationsZhCn {
 			'storyPanelKind' => '图鉴类型',
 			'storyAddPanel' => '添加分区',
 			'storyResetPanels' => '重置为默认',
+			'storyUnregisteredItems' => '未登记道具',
+			'storyRegisterItems' => '补全设定',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4689,10 +4693,10 @@ extension on TranslationsZhCn {
 			'statsMonth3' => '三月',
 			'statsMonth4' => '四月',
 			'statsMonth5' => '五月',
-			'statsMonth6' => '六月',
-			'statsMonth7' => '七月',
 			_ => null,
 		} ?? switch (path) {
+			'statsMonth6' => '六月',
+			'statsMonth7' => '七月',
 			'statsMonth8' => '八月',
 			'statsMonth9' => '九月',
 			'statsMonth10' => '十月',
@@ -5203,10 +5207,10 @@ extension on TranslationsZhCn {
 			'logFileSizeMb' => '日志文件大小上限(MB)',
 			'monthNames.jan' => '一月',
 			'monthNames.feb' => '二月',
-			'monthNames.mar' => '三月',
-			'monthNames.apr' => '四月',
 			_ => null,
 		} ?? switch (path) {
+			'monthNames.mar' => '三月',
+			'monthNames.apr' => '四月',
 			'monthNames.may' => '五月',
 			'monthNames.jun' => '六月',
 			'monthNames.jul' => '七月',

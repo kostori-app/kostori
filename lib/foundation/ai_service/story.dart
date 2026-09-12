@@ -659,6 +659,7 @@ class Story {
 - state 需给出当前完整状态；codex 记录出现或已有的道具/种族/特质/天赋等设定，display 面向玩家，mechanics 供你后续严格遵守，避免自相矛盾。
 - events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
 - choices 提供 3-5 个可供玩家选择的行动。
+- **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
 - **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();

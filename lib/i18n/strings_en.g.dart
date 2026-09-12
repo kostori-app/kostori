@@ -4777,6 +4777,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Reset to default'
 	String get storyResetPanels => 'Reset to default';
 
+	/// en: 'Unregistered items'
+	String get storyUnregisteredItems => 'Unregistered items';
+
+	/// en: 'Register'
+	String get storyRegisterItems => 'Register';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9403,6 +9409,8 @@ extension on Translations {
 			'storyPanelKind' => 'Codex kind',
 			'storyAddPanel' => 'Add section',
 			'storyResetPanels' => 'Reset to default',
+			'storyUnregisteredItems' => 'Unregistered items',
+			'storyRegisterItems' => 'Register',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9828,10 +9836,10 @@ extension on Translations {
 			'statsMonth3' => 'March',
 			'statsMonth4' => 'April',
 			'statsMonth5' => 'May',
-			'statsMonth6' => 'June',
-			'statsMonth7' => 'July',
 			_ => null,
 		} ?? switch (path) {
+			'statsMonth6' => 'June',
+			'statsMonth7' => 'July',
 			'statsMonth8' => 'August',
 			'statsMonth9' => 'September',
 			'statsMonth10' => 'October',
@@ -10342,10 +10350,10 @@ extension on Translations {
 			'logFileSizeMb' => 'Log file size limit (MB)',
 			'monthNames.jan' => 'January',
 			'monthNames.feb' => 'February',
-			'monthNames.mar' => 'March',
-			'monthNames.apr' => 'April',
 			_ => null,
 		} ?? switch (path) {
+			'monthNames.mar' => 'March',
+			'monthNames.apr' => 'April',
 			'monthNames.may' => 'May',
 			'monthNames.jun' => 'June',
 			'monthNames.jul' => 'July',

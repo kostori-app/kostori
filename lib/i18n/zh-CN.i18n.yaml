@@ -1623,6 +1623,8 @@ storyPanelSource: 数据源
 storyPanelKind: 图鉴类型
 storyAddPanel: 添加分区
 storyResetPanels: 重置为默认
+storyUnregisteredItems: 未登记道具
+storyRegisterItems: 补全设定
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结
