@@ -473,6 +473,54 @@ class NaviPaneState extends State<NaviPane>
     );
   }
 
+  /// 悬浮导航左侧的“更多”按钮：点击向上展开 设置/分类/搜索（与导航栏分离）
+  Widget buildFloatingActions({
+    required bool open,
+    required VoidCallback onToggle,
+  }) {
+    Widget circle({required Widget child}) => _frostedPill(
+      child: SizedBox(width: 44, height: 44, child: child),
+    );
+    Widget item(PaneActionEntry a) => Tooltip(
+      message: a.label,
+      child: circle(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () {
+            onToggle();
+            a.onTap();
+          },
+          child: Icon(a.icon, size: 20),
+        ),
+      ),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (open)
+          for (final a in widget.paneActions.reversed) ...[
+            item(a),
+            const SizedBox(height: 8),
+          ],
+        Tooltip(
+          message: t.more,
+          child: circle(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: onToggle,
+              child: AnimatedRotation(
+                turns: open ? 0.125 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(open ? Icons.close : Icons.add, size: 22),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget buildLeft() {
     final value = controller.value;
     const paddingHorizontal = 12.0;
@@ -850,6 +898,9 @@ class _NaviMainViewState extends State<_NaviMainView> {
   /// 底部导航栏是否收缩成一条粗短横线（滚动浏览时）
   bool _minimized = false;
 
+  /// 悬浮导航左侧的“更多”动作菜单是否展开
+  bool _actionsOpen = false;
+
   @override
   void initState() {
     state.mainViewUpdateHandler = () {
@@ -863,8 +914,11 @@ class _NaviMainViewState extends State<_NaviMainView> {
     super.didUpdateWidget(oldWidget);
     // 切换 tab 时恢复完整导航栏
     if (oldWidget.state.currentPage != widget.state.currentPage) {
-      if (_minimized) {
-        setState(() => _minimized = false);
+      if (_minimized || _actionsOpen) {
+        setState(() {
+          _minimized = false;
+          _actionsOpen = false;
+        });
       }
     }
   }
@@ -889,7 +943,10 @@ class _NaviMainViewState extends State<_NaviMainView> {
         return false;
       }
       if (delta > 0 && !_minimized) {
-        setState(() => _minimized = true);
+        setState(() {
+          _minimized = true;
+          _actionsOpen = false;
+        });
       } else if (delta < 0 && _minimized) {
         setState(() => _minimized = false);
       }
@@ -1010,11 +1067,11 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ],
       );
     }
+    final bottomPad = MediaQuery.of(context).padding.bottom + 12;
     return Stack(
       children: [
         Column(
           children: [
-            state.buildTop().paddingTop(context.padding.top),
             Expanded(
               child: MediaQuery.removePadding(
                 context: context,
@@ -1030,45 +1087,85 @@ class _NaviMainViewState extends State<_NaviMainView> {
             ),
           ],
         ),
-        // 底部：完整导航栏 ↔ 磨砂粗短横线，过渡动画（底部对齐，避免动画结束下坠）
+        // 底部：动作按钮（分离，位于悬浮导航左侧，可向上展开）+ 悬浮导航
         Positioned(
           left: 0,
           right: 0,
-          bottom: MediaQuery.of(context).padding.bottom + 12,
-          child: Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              layoutBuilder: (currentChild, previousChildren) {
-                return Stack(
-                  alignment: Alignment.bottomCenter,
+          bottom: bottomPad,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const btnW = 44.0;
+              const navH = NaviPaneState._kBottomBarHeight;
+              final navW = state.floatingNavWidth;
+              final open = _actionsOpen;
+              final btnColH = open
+                  ? state.widget.paneActions.length * (btnW + 8) + btnW
+                  : btnW;
+              final stackH = math.max(navH, (navH - btnW) / 2 + btnColH);
+              final btnLeft = math.max(
+                8.0,
+                (constraints.maxWidth - navW) / 2 - btnW - 8,
+              );
+              return SizedBox(
+                height: stackH,
+                child: Stack(
                   children: [
-                    ...previousChildren,
-                    if (currentChild != null) currentChild,
-                  ],
-                );
-              },
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.6, end: 1).animate(animation),
-                    alignment: Alignment.bottomCenter,
-                    child: child,
-                  ),
-                );
-              },
-              child: _minimized
-                  ? _MiniBar(
-                      key: const ValueKey('mini'),
-                      onTap: () => setState(() => _minimized = false),
-                    )
-                  : KeyedSubtree(
-                      key: const ValueKey('full'),
-                      child: state.buildBottom(),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          layoutBuilder: (currentChild, previousChildren) {
+                            return Stack(
+                              alignment: Alignment.bottomCenter,
+                              children: [
+                                ...previousChildren,
+                                if (currentChild != null) currentChild,
+                              ],
+                            );
+                          },
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: ScaleTransition(
+                                scale: Tween<double>(begin: 0.6, end: 1)
+                                    .animate(animation),
+                                alignment: Alignment.bottomCenter,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _minimized
+                              ? _MiniBar(
+                                  key: const ValueKey('mini'),
+                                  onTap: () =>
+                                      setState(() => _minimized = false),
+                                )
+                              : KeyedSubtree(
+                                  key: const ValueKey('full'),
+                                  child: state.buildBottom(),
+                                ),
+                        ),
+                      ),
                     ),
-            ),
+                    if (!_minimized)
+                      Positioned(
+                        left: btnLeft,
+                        bottom: (navH - btnW) / 2,
+                        child: state.buildFloatingActions(
+                          open: open,
+                          onToggle: () =>
+                              setState(() => _actionsOpen = !_actionsOpen),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ],
