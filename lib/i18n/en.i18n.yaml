@@ -1560,6 +1560,7 @@ aiImageBaseUrl: Endpoint (optional)
 aiImageGenerate: Generate image
 aiImageGenerating: Generating
 aiImageNeedTags: Generate tags first
+aiTagHistory: History tags
 rolePlay: AI Roleplay
 rolePlayDescription: Chat in character with AI roles
 rolePlayNew: New Role

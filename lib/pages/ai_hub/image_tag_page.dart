@@ -45,6 +45,91 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     super.dispose();
   }
 
+  /// 从历史「AI Tag」会话中选取一套 tag，直接用于出图
+  Future<void> _pickHistoryTags() async {
+    final sessions = await AiConversationService()
+        .watchSessions(type: 'image_tag')
+        .first;
+    if (!mounted) return;
+    if (sessions.isEmpty) {
+      App.rootContext.showMessage(message: t.noHistoryYet);
+      return;
+    }
+    final entries = <({AiSession session, String tags})>[];
+    for (final s in sessions) {
+      final messages = await AiConversationService()
+          .watchMessages(s.sessionId)
+          .first;
+      String tags = '';
+      for (final m in messages.reversed) {
+        if (m.role == 'model' &&
+            (m.outputContent?.trim().isNotEmpty ?? false)) {
+          tags = m.outputContent!;
+          break;
+        }
+      }
+      if (tags.trim().isNotEmpty) entries.add((session: s, tags: tags));
+    }
+    if (!mounted) return;
+    if (entries.isEmpty) {
+      App.rootContext.showMessage(message: t.noHistoryYet);
+      return;
+    }
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  t.aiTagHistory,
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: entries.length,
+                itemBuilder: (ctx, i) {
+                  final e = entries[i];
+                  final tags = e.tags
+                      .split(',')
+                      .map((x) => x.trim())
+                      .where((x) => x.isNotEmpty)
+                      .toList();
+                  return ListTile(
+                    leading: const Icon(Icons.tag),
+                    title: Text(
+                      e.session.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      tags.take(8).join(', '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onTap: () {
+                      setState(() => _tags = tags);
+                      Navigator.pop(ctx);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _updateImageConfig(AiImageGenConfig config) {
     setState(() => _imageConfig = config);
     config.save();
@@ -443,21 +528,32 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
             ),
           ],
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _generatingImage ? null : _generateImage,
-              icon: _generatingImage
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: PolygonRefreshIndicator(),
-                    )
-                  : const Icon(Icons.image),
-              label: Text(
-                _generatingImage ? t.aiImageGenerating : t.aiImageGenerate,
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickHistoryTags,
+                  icon: const Icon(Icons.history, size: 18),
+                  label: Text(t.aiTagHistory),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _generatingImage ? null : _generateImage,
+                  icon: _generatingImage
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: PolygonRefreshIndicator(),
+                        )
+                      : const Icon(Icons.image),
+                  label: Text(
+                    _generatingImage ? t.aiImageGenerating : t.aiImageGenerate,
+                  ),
+                ),
+              ),
+            ],
           ),
           if (_imageBytes != null) ...[
             const SizedBox(height: 12),

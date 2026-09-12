@@ -1549,6 +1549,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageGenerate => '生成图片';
 	@override String get aiImageGenerating => '生成中';
 	@override String get aiImageNeedTags => '请先生成 Tag';
+	@override String get aiTagHistory => '历史 Tag';
 	@override String get rolePlay => 'AI 扮演';
 	@override String get rolePlayDescription => '与 AI 角色进行扮演式对话';
 	@override String get rolePlayNew => '新建角色';
@@ -4146,6 +4147,7 @@ extension on TranslationsZhCn {
 			'aiImageGenerate' => '生成图片',
 			'aiImageGenerating' => '生成中',
 			'aiImageNeedTags' => '请先生成 Tag',
+			'aiTagHistory' => '历史 Tag',
 			'rolePlay' => 'AI 扮演',
 			'rolePlayDescription' => '与 AI 角色进行扮演式对话',
 			'rolePlayNew' => '新建角色',
@@ -4641,9 +4643,9 @@ extension on TranslationsZhCn {
 			'balanceQueryUrlHint' => '相对路径或完整 URL',
 			'balanceKeyPathHint' => '点号路径，如 data.balance',
 			'balanceQueryConfig' => '余额查询配置',
-			'customProviders' => '自定义服务商',
 			_ => null,
 		} ?? switch (path) {
+			'customProviders' => '自定义服务商',
 			'noCustomProviders' => '暂无自定义服务商',
 			'newCustomProvider' => '新建自定义服务商',
 			'newMcpServer' => '新建 MCP 服务器',

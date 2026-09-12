@@ -1550,6 +1550,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageGenerate => '生成圖片';
 	@override String get aiImageGenerating => '生成中';
 	@override String get aiImageNeedTags => '請先生成 Tag';
+	@override String get aiTagHistory => '歷史 Tag';
 	@override String get rolePlay => 'AI 扮演';
 	@override String get rolePlayDescription => '與 AI 角色進行扮演式對話';
 	@override String get rolePlayNew => '新建角色';
@@ -4146,6 +4147,7 @@ extension on TranslationsZhTw {
 			'aiImageGenerate' => '生成圖片',
 			'aiImageGenerating' => '生成中',
 			'aiImageNeedTags' => '請先生成 Tag',
+			'aiTagHistory' => '歷史 Tag',
 			'rolePlay' => 'AI 扮演',
 			'rolePlayDescription' => '與 AI 角色進行扮演式對話',
 			'rolePlayNew' => '新建角色',
@@ -4640,9 +4642,9 @@ extension on TranslationsZhTw {
 			'balanceKeyPathHint' => '點號路徑，如 data.balance',
 			'balanceQueryConfig' => '餘額查詢設定',
 			'customProviders' => '自訂服務商',
-			'noCustomProviders' => '暫無自訂服務商',
 			_ => null,
 		} ?? switch (path) {
+			'noCustomProviders' => '暫無自訂服務商',
 			'newCustomProvider' => '新增自訂服務商',
 			'newMcpServer' => '新增 MCP 伺服器',
 			'newSkill' => '新增技能',

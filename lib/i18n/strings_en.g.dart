@@ -4573,6 +4573,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Generate tags first'
 	String get aiImageNeedTags => 'Generate tags first';
 
+	/// en: 'History tags'
+	String get aiTagHistory => 'History tags';
+
 	/// en: 'AI Roleplay'
 	String get rolePlay => 'AI Roleplay';
 
@@ -9188,6 +9191,7 @@ extension on Translations {
 			'aiImageGenerate' => 'Generate image',
 			'aiImageGenerating' => 'Generating',
 			'aiImageNeedTags' => 'Generate tags first',
+			'aiTagHistory' => 'History tags',
 			'rolePlay' => 'AI Roleplay',
 			'rolePlayDescription' => 'Chat in character with AI roles',
 			'rolePlayNew' => 'New Role',
@@ -9682,9 +9686,9 @@ extension on Translations {
 			'balanceQueryUrlHint' => 'Relative path or absolute URL',
 			'balanceKeyPathHint' => 'Dot notation, e.g. data.balance',
 			'balanceQueryConfig' => 'Balance Query Config',
-			'customProviders' => 'Custom Providers',
 			_ => null,
 		} ?? switch (path) {
+			'customProviders' => 'Custom Providers',
 			'noCustomProviders' => 'No custom providers yet',
 			'newCustomProvider' => 'New Custom Provider',
 			'newMcpServer' => 'New MCP Server',

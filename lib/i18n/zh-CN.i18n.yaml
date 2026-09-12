@@ -1555,6 +1555,7 @@ aiImageBaseUrl: 接口地址（可选）
 aiImageGenerate: 生成图片
 aiImageGenerating: 生成中
 aiImageNeedTags: 请先生成 Tag
+aiTagHistory: 历史 Tag
 rolePlay: AI 扮演
 rolePlayDescription: 与 AI 角色进行扮演式对话
 rolePlayNew: 新建角色

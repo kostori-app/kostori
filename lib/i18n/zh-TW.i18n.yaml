@@ -1560,6 +1560,7 @@ aiImageBaseUrl: 介面位址（可選）
 aiImageGenerate: 生成圖片
 aiImageGenerating: 生成中
 aiImageNeedTags: 請先生成 Tag
+aiTagHistory: 歷史 Tag
 rolePlay: AI 扮演
 rolePlayDescription: 與 AI 角色進行扮演式對話
 rolePlayNew: 新建角色
