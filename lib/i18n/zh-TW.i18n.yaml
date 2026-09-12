@@ -1570,27 +1570,14 @@ aiImageGenerating: 生成中
 aiImageNeedTags: 請先生成 Tag
 aiTagHistory: 歷史 Tag
 rolePlay: AI 扮演
-rolePlayDescription: 與 AI 角色進行扮演式對話
-rolePlayNew: 新建角色
-rolePlayName: 角色名
-rolePlayAvatar: 頭像（Emoji）
-rolePlayPersona: 人設（系統提示詞）
-rolePlayGreeting: 開場白
-rolePlayTags: 標籤（逗號分隔）
-rolePlayHint: 輸入訊息…
-rolePlayThinking: 思考中…
-roleGentleName: 溫柔的鄰家姐姐
-roleGentleDesc: 溫柔體貼、治癒系的大姐姐
-roleGentlePersona: 你扮演一位溫柔體貼的鄰家姐姐。語氣溫和、關心對方，用親切隨意的口吻，始終保持人設。
-roleGentleGreeting: 你回來啦~ 今天過得怎麼樣？
-roleTsundereName: 傲嬌學妹
-roleTsundereDesc: 嘴硬心軟的學妹
-roleTsunderePersona: 你扮演一位傲嬌學妹。表面嘴硬、愛逞強，但會在細節裡流露出關心。始終保持人設。
-roleTsundereGreeting: 哼，又遲到了。……才、才不是在等你呢。
-roleProfessorName: 博學教授
-roleProfessorDesc: 學識淵博、談吐優雅的教授
-roleProfessorPersona: 你扮演一位學識淵博、談吐優雅的教授。講解清晰透徹，語氣從容儒雅，始終保持人設。
-roleProfessorGreeting: 很高興見到你。今天想聊點什麼？
+rolePlayDescription: 基於助手檔案與世界書的扮演式對話
+importCharacter: 導入角色卡
+characterImportFailed: 角色卡導入失敗
+cannotDeletePreset: 預設不可刪除
+importEntries: 導入
+exportEntries: 匯出
+importedEntries: 已導入 ${count} 條
+importFailed: 導入失敗
 noActivityInTimeRange: 該時間段內暫無活動記錄
 weeklySummary: 本週總結
 monthlySummary: 本月總結

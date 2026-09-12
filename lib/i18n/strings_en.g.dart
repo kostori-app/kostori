@@ -4603,68 +4603,29 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'AI Roleplay'
 	String get rolePlay => 'AI Roleplay';
 
-	/// en: 'Chat in character with AI roles'
-	String get rolePlayDescription => 'Chat in character with AI roles';
+	/// en: 'Chat in character using assistant profiles and world book'
+	String get rolePlayDescription => 'Chat in character using assistant profiles and world book';
 
-	/// en: 'New Role'
-	String get rolePlayNew => 'New Role';
+	/// en: 'Import character card'
+	String get importCharacter => 'Import character card';
 
-	/// en: 'Role name'
-	String get rolePlayName => 'Role name';
+	/// en: 'Failed to import character card'
+	String get characterImportFailed => 'Failed to import character card';
 
-	/// en: 'Avatar (emoji)'
-	String get rolePlayAvatar => 'Avatar (emoji)';
+	/// en: 'Preset cannot be deleted'
+	String get cannotDeletePreset => 'Preset cannot be deleted';
 
-	/// en: 'Persona (system prompt)'
-	String get rolePlayPersona => 'Persona (system prompt)';
+	/// en: 'Import'
+	String get importEntries => 'Import';
 
-	/// en: 'Greeting'
-	String get rolePlayGreeting => 'Greeting';
+	/// en: 'Export'
+	String get exportEntries => 'Export';
 
-	/// en: 'Tags (comma separated)'
-	String get rolePlayTags => 'Tags (comma separated)';
+	/// en: 'Imported ${count} entries'
+	String importedEntries({required Object count}) => 'Imported ${count} entries';
 
-	/// en: 'Type a message...'
-	String get rolePlayHint => 'Type a message...';
-
-	/// en: 'Thinking...'
-	String get rolePlayThinking => 'Thinking...';
-
-	/// en: 'Gentle Sister'
-	String get roleGentleName => 'Gentle Sister';
-
-	/// en: 'A warm, caring big-sister type'
-	String get roleGentleDesc => 'A warm, caring big-sister type';
-
-	/// en: 'You are a warm, caring older-sister character. Speak gently, be supportive, use casual and affectionate language, and stay fully in character.'
-	String get roleGentlePersona => 'You are a warm, caring older-sister character. Speak gently, be supportive, use casual and affectionate language, and stay fully in character.';
-
-	/// en: 'Hey, you're back~ How was your day?'
-	String get roleGentleGreeting => 'Hey, you\'re back~ How was your day?';
-
-	/// en: 'Tsundere Junior'
-	String get roleTsundereName => 'Tsundere Junior';
-
-	/// en: 'A proud but secretly caring junior'
-	String get roleTsundereDesc => 'A proud but secretly caring junior';
-
-	/// en: 'You are a tsundere junior character. Act proud and slightly annoyed on the surface, but show you care in subtle ways. Stay in character.'
-	String get roleTsunderePersona => 'You are a tsundere junior character. Act proud and slightly annoyed on the surface, but show you care in subtle ways. Stay in character.';
-
-	/// en: 'Hmph, you're late again. ...It's not like I was waiting for you or anything.'
-	String get roleTsundereGreeting => 'Hmph, you\'re late again. ...It\'s not like I was waiting for you or anything.';
-
-	/// en: 'Erudite Professor'
-	String get roleProfessorName => 'Erudite Professor';
-
-	/// en: 'A knowledgeable, articulate professor'
-	String get roleProfessorDesc => 'A knowledgeable, articulate professor';
-
-	/// en: 'You are a knowledgeable and articulate professor character. Explain things clearly and thoroughly, with a calm and refined tone. Stay in character.'
-	String get roleProfessorPersona => 'You are a knowledgeable and articulate professor character. Explain things clearly and thoroughly, with a calm and refined tone. Stay in character.';
-
-	/// en: 'Good to see you. What would you like to discuss today?'
-	String get roleProfessorGreeting => 'Good to see you. What would you like to discuss today?';
+	/// en: 'Import failed'
+	String get importFailed => 'Import failed';
 
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
@@ -9225,27 +9186,14 @@ extension on Translations {
 			'aiImageNeedTags' => 'Generate tags first',
 			'aiTagHistory' => 'History tags',
 			'rolePlay' => 'AI Roleplay',
-			'rolePlayDescription' => 'Chat in character with AI roles',
-			'rolePlayNew' => 'New Role',
-			'rolePlayName' => 'Role name',
-			'rolePlayAvatar' => 'Avatar (emoji)',
-			'rolePlayPersona' => 'Persona (system prompt)',
-			'rolePlayGreeting' => 'Greeting',
-			'rolePlayTags' => 'Tags (comma separated)',
-			'rolePlayHint' => 'Type a message...',
-			'rolePlayThinking' => 'Thinking...',
-			'roleGentleName' => 'Gentle Sister',
-			'roleGentleDesc' => 'A warm, caring big-sister type',
-			'roleGentlePersona' => 'You are a warm, caring older-sister character. Speak gently, be supportive, use casual and affectionate language, and stay fully in character.',
-			'roleGentleGreeting' => 'Hey, you\'re back~ How was your day?',
-			'roleTsundereName' => 'Tsundere Junior',
-			'roleTsundereDesc' => 'A proud but secretly caring junior',
-			'roleTsunderePersona' => 'You are a tsundere junior character. Act proud and slightly annoyed on the surface, but show you care in subtle ways. Stay in character.',
-			'roleTsundereGreeting' => 'Hmph, you\'re late again. ...It\'s not like I was waiting for you or anything.',
-			'roleProfessorName' => 'Erudite Professor',
-			'roleProfessorDesc' => 'A knowledgeable, articulate professor',
-			'roleProfessorPersona' => 'You are a knowledgeable and articulate professor character. Explain things clearly and thoroughly, with a calm and refined tone. Stay in character.',
-			'roleProfessorGreeting' => 'Good to see you. What would you like to discuss today?',
+			'rolePlayDescription' => 'Chat in character using assistant profiles and world book',
+			'importCharacter' => 'Import character card',
+			'characterImportFailed' => 'Failed to import character card',
+			'cannotDeletePreset' => 'Preset cannot be deleted',
+			'importEntries' => 'Import',
+			'exportEntries' => 'Export',
+			'importedEntries' => ({required Object count}) => 'Imported ${count} entries',
+			'importFailed' => 'Import failed',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9710,8 +9658,6 @@ extension on Translations {
 			'noPersonality' => 'No personality',
 			'noSystemPromptUsed' => 'No system prompt used',
 			'queryBalance' => 'Query Balance',
-			_ => null,
-		} ?? switch (path) {
 			'balance' => 'Balance',
 			'queryingBalance' => 'Querying balance...',
 			'balanceQueryUnsupported' => 'This provider does not support balance query',
@@ -9725,6 +9671,8 @@ extension on Translations {
 			'newCustomProvider' => 'New Custom Provider',
 			'newMcpServer' => 'New MCP Server',
 			'newSkill' => 'New Skill',
+			_ => null,
+		} ?? switch (path) {
 			'invalidJson' => 'Invalid JSON format',
 			'providerKey' => 'Provider Key',
 			'providerKeyHint' => 'e.g. my-provider',

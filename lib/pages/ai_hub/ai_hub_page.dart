@@ -21,7 +21,6 @@ import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/ai_service/ai_image_service.dart';
-import 'package:kostori/foundation/ai_service/ai_role.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
@@ -55,7 +54,7 @@ part 'summary_page.dart';
 
 part 'taste_radar_page.dart';
 
-part 'role_play_page.dart';
+part 'character_page.dart';
 
 class AiHubEntry extends StatelessWidget {
   const AiHubEntry({super.key});
@@ -152,7 +151,7 @@ class _AiHubPageState extends State<AiHubPage> {
       case 'taste_radar':
         context.to(() => const TasteRadarPage());
       case 'role_play':
-        context.to(() => const RolePlayPage());
+        context.to(() => const CharacterPage());
       case 'season_review':
         context.to(
           () => const SummaryPage(initialRange: _SummaryRange.quarter),
@@ -1143,33 +1142,12 @@ void setAiHubProvider(String provider) {
   appdata.writeImplicitData();
 }
 
-/// AI 扮演独立选中的服务商（与聊天/出图分离）
-String aiRoleProvider() {
-  final v = appdata.implicitData['aiRoleProvider'];
-  if (v is String && OpenAiProviderRegistry.allProviders.containsKey(v)) {
-    return v;
-  }
-  return aiHubProvider();
-}
-
-void setAiRoleProvider(String provider) {
-  appdata.implicitData['aiRoleProvider'] = provider;
-  appdata.writeImplicitData();
-}
-
 /// 共用的 AI 设置卡片：服务商选择 + 当前模型，风格与其它设置卡片一致
 class _AiSettingsCard extends StatelessWidget {
-  const _AiSettingsCard({
-    required this.provider,
-    required this.onChanged,
-    this.persist,
-  });
+  const _AiSettingsCard({required this.provider, required this.onChanged});
 
   final String provider;
   final ValueChanged<String> onChanged;
-
-  /// 服务商持久化方式（默认写 aiHubProvider）
-  final ValueChanged<String>? persist;
 
   @override
   Widget build(BuildContext context) {
@@ -1177,7 +1155,7 @@ class _AiSettingsCard extends StatelessWidget {
 
     void select(String key) {
       if (key == provider) return;
-      (persist ?? setAiHubProvider)(key);
+      setAiHubProvider(key);
       onChanged(key);
     }
 

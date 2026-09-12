@@ -51,6 +51,122 @@ String _injectionPositionLabel(PromptInjectionPosition position) =>
     };
 
 // ─────────────────────────────────────────────
+// 世界书 / 提示词注入 导入导出
+// ─────────────────────────────────────────────
+
+Future<void> _exportJson(List<Map<String, dynamic>> items, String filename) async {
+  await saveFile(data: utf8.encode(jsonEncode(items)), filename: filename);
+}
+
+/// 解析世界书：兼容本应用格式（List）与 SillyTavern 世界书（{entries:{...}}）
+List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
+  final out = <WorldBookEntry>[];
+  final now = DateTime.now().millisecondsSinceEpoch;
+  var seq = 0;
+
+  List<String> triggersOf(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .toList();
+    }
+    if (raw is String) {
+      return raw
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
+
+  void addFromMap(Map<String, dynamic> m, {bool skipDisabled = false}) {
+    if (skipDisabled && m['disable'] == true) return;
+    final triggers = triggersOf(m['triggers'] ?? m['keys'] ?? m['key']);
+    final content = (m['content'] ?? '').toString();
+    if (triggers.isEmpty || content.trim().isEmpty) return;
+    out.add(
+      WorldBookEntry(
+        id: m['id']?.toString() ?? 'wb_${now}_${seq++}',
+        name: (m['name'] ?? m['comment'] ?? 'Entry').toString(),
+        triggers: triggers,
+        content: content,
+        priority:
+            (m['priority'] as num?)?.toInt() ??
+            (m['order'] as num?)?.toInt() ??
+            0,
+        enabled: (m['enabled'] as bool?) ?? true,
+      ),
+    );
+  }
+
+  if (decoded is List) {
+    for (final e in decoded) {
+      if (e is Map) addFromMap(e.cast<String, dynamic>());
+    }
+  } else if (decoded is Map) {
+    final entries = decoded['entries'];
+    if (entries is Map) {
+      for (final v in entries.values) {
+        if (v is Map) addFromMap(v.cast<String, dynamic>(), skipDisabled: true);
+      }
+    } else {
+      addFromMap(decoded.cast<String, dynamic>());
+    }
+  }
+  return out;
+}
+
+Future<void> _importWorldBook() async {
+  final result = await FilePicker.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['json'],
+  );
+  if (result == null || result.files.isEmpty) return;
+  try {
+    final text = utf8.decode(await result.files.first.readAsBytes());
+    final entries = _parseWorldBookEntries(jsonDecode(text));
+    if (entries.isEmpty) throw 'empty';
+    for (final e in entries) {
+      await WorldBookStore.instance.upsert(e);
+    }
+    App.rootContext.showMessage(
+      message: t.importedEntries(count: entries.length),
+    );
+  } catch (e) {
+    Log.error('importWorldBook', e.toString());
+    App.rootContext.showMessage(message: t.importFailed, level: LogLevel.error);
+  }
+}
+
+Future<void> _importPromptInjections() async {
+  final result = await FilePicker.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['json'],
+  );
+  if (result == null || result.files.isEmpty) return;
+  try {
+    final text = utf8.decode(await result.files.first.readAsBytes());
+    final decoded = jsonDecode(text);
+    if (decoded is! List) throw 'invalid';
+    var count = 0;
+    for (final e in decoded) {
+      if (e is Map) {
+        await PromptInjectionStore.instance.upsert(
+          PromptInjection.fromJson(e.cast<String, dynamic>()),
+        );
+        count++;
+      }
+    }
+    App.rootContext.showMessage(message: t.importedEntries(count: count));
+  } catch (e) {
+    Log.error('importPromptInjections', e.toString());
+    App.rootContext.showMessage(message: t.importFailed, level: LogLevel.error);
+  }
+}
+
+// ─────────────────────────────────────────────
 // 提示词注入 页签
 // ─────────────────────────────────────────────
 
@@ -86,6 +202,19 @@ class _PromptInjectionPanelState extends State<_PromptInjectionPanel> {
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.file_open_outlined),
+                tooltip: t.importEntries,
+                onPressed: _importPromptInjections,
+              ),
+              IconButton(
+                icon: const Icon(Icons.save_alt),
+                tooltip: t.exportEntries,
+                onPressed: () => _exportJson(
+                  [for (final i in store.items) i.toJson()],
+                  'prompt_injections.json',
                 ),
               ),
               IconButton(
@@ -499,6 +628,19 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                 onPressed: () => showDialog(
                   context: context,
                   builder: (ctx) => const _WorldBookHitTestDialog(),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.file_open_outlined),
+                tooltip: t.importEntries,
+                onPressed: _importWorldBook,
+              ),
+              IconButton(
+                icon: const Icon(Icons.save_alt),
+                tooltip: t.exportEntries,
+                onPressed: () => _exportJson(
+                  [for (final e in store.entries) e.toJson()],
+                  'world_book.json',
                 ),
               ),
               IconButton(

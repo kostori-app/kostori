@@ -165,6 +165,7 @@ class PluginStore extends ChangeNotifier {
       name: t.rolePlay,
       icon: '🎭',
       description: t.rolePlayDescription,
+      chatMode: true,
       isBuiltin: true,
     ),
     PluginModule(
