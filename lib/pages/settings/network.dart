@@ -334,7 +334,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
               settingKey: "enableDnsOverrides",
             ),
             _SwitchSetting(
-              title: 'Server Name Indication',
+              title: t.serverNameIndication,
               settingKey: "sni",
             ),
             const SizedBox(height: 8),

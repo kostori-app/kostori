@@ -49,7 +49,11 @@ abstract class SettingsData with _$SettingsData {
     @Default(false) bool amoled,
     @Default(false) bool dynamicColor,
     @Default(true) bool enableNoProxyOverrides,
-    @Default(['bgm', 'bangumi']) List<String> noProxyOverrides,
+    @Default([
+      {'domain': 'bgm', 'enabled': true},
+      {'domain': 'bangumi', 'enabled': true},
+    ])
+    List<dynamic> noProxyOverrides,
     @Default(false) bool ignoreBadCertificate,
     @Default([]) List<dynamic> statsSelectors,
     @Default('none') String favoriteTypeWish,

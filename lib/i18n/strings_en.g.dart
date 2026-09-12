@@ -3190,6 +3190,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Server Name'
 	String get serverName => 'Server Name';
 
+	/// en: 'Server Name Indication'
+	String get serverNameIndication => 'Server Name Indication';
+
 	/// en: 'Select a server'
 	String get selectServer => 'Select a server';
 
@@ -8566,6 +8569,7 @@ extension on Translations {
 			'noSavedServers' => 'No saved servers yet',
 			'saveCurrentConfig' => 'Save Current Config',
 			'serverName' => 'Server Name',
+			'serverNameIndication' => 'Server Name Indication',
 			'selectServer' => 'Select a server',
 			'exportRooms' => 'Export Rooms',
 			'importRooms' => 'Import Rooms',
@@ -9009,9 +9013,9 @@ extension on Translations {
 			'auxFollowSessionHint' => 'This task will use the provider configured in the current chat session.',
 			'contextCompression' => 'Context Compression',
 			'followUpSuggestions' => 'Follow-up Suggestions',
-			'autoTitle' => 'Auto Title',
 			_ => null,
 		} ?? switch (path) {
+			'autoTitle' => 'Auto Title',
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
@@ -9523,9 +9527,9 @@ extension on Translations {
 			'importSkillsFromFolder' => 'Folder with SKILL.md',
 			'importSkillsFromFolderHint' => 'Import a folder containing a SKILL.md file',
 			'importingSkills' => 'Importing skills...',
-			'noSkillFileFound' => 'No SKILL.md found in the selected folder',
 			_ => null,
 		} ?? switch (path) {
+			'noSkillFileFound' => 'No SKILL.md found in the selected folder',
 			'importedSkillCount' => ({required Object count}) => 'Imported ${count} skill(s)',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)',
 			'assistantProfiles' => 'Assistant Profiles',

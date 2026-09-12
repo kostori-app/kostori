@@ -1099,6 +1099,7 @@ savedServers: Saved Servers
 noSavedServers: No saved servers yet
 saveCurrentConfig: Save Current Config
 serverName: Server Name
+serverNameIndication: Server Name Indication
 selectServer: Select a server
 exportRooms: Export Rooms
 importRooms: Import Rooms

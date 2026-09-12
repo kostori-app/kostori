@@ -59,10 +59,11 @@ _SettingsData _$SettingsDataFromJson(
   dynamicColor: json['dynamicColor'] as bool? ?? false,
   enableNoProxyOverrides: json['enableNoProxyOverrides'] as bool? ?? true,
   noProxyOverrides:
-      (json['noProxyOverrides'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ??
-      const ['bgm', 'bangumi'],
+      json['noProxyOverrides'] as List<dynamic>? ??
+      const [
+        {'domain': 'bgm', 'enabled': true},
+        {'domain': 'bangumi', 'enabled': true},
+      ],
   ignoreBadCertificate: json['ignoreBadCertificate'] as bool? ?? false,
   statsSelectors: json['statsSelectors'] as List<dynamic>? ?? const [],
   favoriteTypeWish: json['favoriteTypeWish'] as String? ?? 'none',

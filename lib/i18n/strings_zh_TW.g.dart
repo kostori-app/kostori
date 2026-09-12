@@ -1088,6 +1088,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noSavedServers => '暫無已儲存的伺服器';
 	@override String get saveCurrentConfig => '保存當前配置';
 	@override String get serverName => '伺服器名稱';
+	@override String get serverNameIndication => '伺服器名稱指示（SNI）';
 	@override String get selectServer => '選擇一個伺服器';
 	@override String get exportRooms => '匯出房間';
 	@override String get importRooms => '匯入房間';
@@ -3629,6 +3630,7 @@ extension on TranslationsZhTw {
 			'noSavedServers' => '暫無已儲存的伺服器',
 			'saveCurrentConfig' => '保存當前配置',
 			'serverName' => '伺服器名稱',
+			'serverNameIndication' => '伺服器名稱指示（SNI）',
 			'selectServer' => '選擇一個伺服器',
 			'exportRooms' => '匯出房間',
 			'importRooms' => '匯入房間',
@@ -4073,9 +4075,9 @@ extension on TranslationsZhTw {
 			'auxFollowSessionHint' => '該任務將使用目前對話會話中配置的服務商。',
 			'contextCompression' => '上下文壓縮',
 			'followUpSuggestions' => '後續追問建議',
-			'autoTitle' => '自動標題',
 			_ => null,
 		} ?? switch (path) {
+			'autoTitle' => '自動標題',
 			'connectionDisconnected' => '連線已斷開',
 			'enterServerAddress' => '輸入伺服器位址',
 			'tapToShare' => '點擊分享',
@@ -4587,9 +4589,9 @@ extension on TranslationsZhTw {
 			'importSkillsFromFolderHint' => '匯入包含 SKILL.md 檔案的資料夾',
 			'importingSkills' => '正在匯入技能...',
 			'noSkillFileFound' => '所選資料夾中找不到 SKILL.md',
-			'importedSkillCount' => ({required Object count}) => '已匯入 ${count} 個技能',
 			_ => null,
 		} ?? switch (path) {
+			'importedSkillCount' => ({required Object count}) => '已匯入 ${count} 個技能',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案',
 			'assistantProfiles' => '助手檔案',
 			'newProfile' => '新增檔案',

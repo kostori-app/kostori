@@ -1092,8 +1092,9 @@ disconnect: 断开
 savedServers: 已保存的服务器
 noSavedServers: 暂无已保存的服务器
 saveCurrentConfig: 保存当前配置
-serverName: 伺服器名稱
-selectServer: 選擇一個伺服器
+serverName: 服务器名称
+serverNameIndication: 服务器名称指示（SNI）
+selectServer: 选择一个服务器
 exportRooms: 匯出房間
 importRooms: 匯入房間
 connect: 连接

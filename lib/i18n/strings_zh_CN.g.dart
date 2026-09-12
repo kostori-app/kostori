@@ -1086,8 +1086,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get savedServers => '已保存的服务器';
 	@override String get noSavedServers => '暂无已保存的服务器';
 	@override String get saveCurrentConfig => '保存当前配置';
-	@override String get serverName => '伺服器名稱';
-	@override String get selectServer => '選擇一個伺服器';
+	@override String get serverName => '服务器名称';
+	@override String get serverNameIndication => '服务器名称指示（SNI）';
+	@override String get selectServer => '选择一个服务器';
 	@override String get exportRooms => '匯出房間';
 	@override String get importRooms => '匯入房間';
 	@override String get connect => '连接';
@@ -3628,8 +3629,9 @@ extension on TranslationsZhCn {
 			'savedServers' => '已保存的服务器',
 			'noSavedServers' => '暂无已保存的服务器',
 			'saveCurrentConfig' => '保存当前配置',
-			'serverName' => '伺服器名稱',
-			'selectServer' => '選擇一個伺服器',
+			'serverName' => '服务器名称',
+			'serverNameIndication' => '服务器名称指示（SNI）',
+			'selectServer' => '选择一个服务器',
 			'exportRooms' => '匯出房間',
 			'importRooms' => '匯入房間',
 			'connect' => '连接',
@@ -4074,9 +4076,9 @@ extension on TranslationsZhCn {
 			'contextCompression' => '上下文压缩',
 			'followUpSuggestions' => '后续追问建议',
 			'autoTitle' => '自动标题',
-			'connectionDisconnected' => '连接已断开',
 			_ => null,
 		} ?? switch (path) {
+			'connectionDisconnected' => '连接已断开',
 			'enterServerAddress' => '输入服务器地址',
 			'tapToShare' => '点击分享',
 			'noConfigurationsFound' => '未找到配置',
@@ -4588,9 +4590,9 @@ extension on TranslationsZhCn {
 			'importSkillsFromFolder' => '含 SKILL.md 的文件夹',
 			'importSkillsFromFolderHint' => '导入包含 SKILL.md 文件的文件夹',
 			'importingSkills' => '正在导入技能...',
-			'noSkillFileFound' => '所选文件夹中未找到 SKILL.md',
 			_ => null,
 		} ?? switch (path) {
+			'noSkillFileFound' => '所选文件夹中未找到 SKILL.md',
 			'importedSkillCount' => ({required Object count}) => '已导入 ${count} 个技能',
 			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => '已导入 ${imported} 个技能，跳过 ${skipped} 个无效文件',
 			'assistantProfiles' => '助手档案',

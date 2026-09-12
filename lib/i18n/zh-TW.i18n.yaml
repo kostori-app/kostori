@@ -1098,6 +1098,7 @@ savedServers: 已儲存的伺服器
 noSavedServers: 暫無已儲存的伺服器
 saveCurrentConfig: 保存當前配置
 serverName: 伺服器名稱
+serverNameIndication: 伺服器名稱指示（SNI）
 selectServer: 選擇一個伺服器
 exportRooms: 匯出房間
 importRooms: 匯入房間
