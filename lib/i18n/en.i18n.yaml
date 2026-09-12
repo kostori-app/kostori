@@ -1532,6 +1532,7 @@ thisMonth: This Month
 generateSummary: Generate Summary
 generateTag: Generate Tag
 summaryReport: Summary Report
+aiStatActiveTitles: Active titles
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

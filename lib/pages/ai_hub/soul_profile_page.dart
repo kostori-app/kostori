@@ -56,40 +56,6 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
     }
   }
 
-  Future<void> _exportScreenshot() async {
-    if (_result == null) return;
-    try {
-      final bytes = await ImageSaver.captureWidgetToImage(
-        context: context,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                t.soulProfileTitle,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              CustomMarkdownWidget(data: _result!),
-            ],
-          ),
-        ),
-      );
-      if (bytes == null) return;
-      final filename = 'summary_${DateTime.now().millisecondsSinceEpoch}.png';
-      await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
-    } catch (e) {
-      ImageSaver.showResult(success: false, message: t.screenshotFailed);
-    } finally {
-      await ref.read(imagesProvider.notifier).loadImages();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,21 +116,10 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
             ),
             if (_result != null) ...[
               const SizedBox(height: 8),
-              _AiCard(
+              _AiResultCard(
                 icon: Icons.auto_awesome,
-                title: t.result,
-                trailing: IconButton(
-                  icon: const Icon(Icons.download_outlined, size: 18),
-                  tooltip: t.exportScreenshot,
-                  onPressed: _exportScreenshot,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Divider(),
-                    CustomMarkdownWidget(data: _result!),
-                  ],
-                ),
+                title: t.soulProfileTitle,
+                content: _result!,
               ),
             ],
           ],

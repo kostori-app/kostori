@@ -4489,6 +4489,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Summary Report'
 	String get summaryReport => 'Summary Report';
 
+	/// en: 'Active titles'
+	String get aiStatActiveTitles => 'Active titles';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9008,6 +9011,7 @@ extension on Translations {
 			'generateSummary' => 'Generate Summary',
 			'generateTag' => 'Generate Tag',
 			'summaryReport' => 'Summary Report',
+			'aiStatActiveTitles' => 'Active titles',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9018,9 +9022,9 @@ extension on Translations {
 			'auxFollowSession' => 'Follow session provider',
 			'auxFollowSessionHint' => 'This task will use the provider configured in the current chat session.',
 			'contextCompression' => 'Context Compression',
-			'followUpSuggestions' => 'Follow-up Suggestions',
 			_ => null,
 		} ?? switch (path) {
+			'followUpSuggestions' => 'Follow-up Suggestions',
 			'autoTitle' => 'Auto Title',
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
@@ -9532,9 +9536,9 @@ extension on Translations {
 			'importSkills' => 'Import Skills',
 			'importSkillsFromFiles' => 'Markdown file(s)',
 			'importSkillsFromFilesHint' => 'Import one or more .md skill files with YAML frontmatter',
-			'importSkillsFromFolder' => 'Folder with SKILL.md',
 			_ => null,
 		} ?? switch (path) {
+			'importSkillsFromFolder' => 'Folder with SKILL.md',
 			'importSkillsFromFolderHint' => 'Import a folder containing a SKILL.md file',
 			'importingSkills' => 'Importing skills...',
 			'noSkillFileFound' => 'No SKILL.md found in the selected folder',

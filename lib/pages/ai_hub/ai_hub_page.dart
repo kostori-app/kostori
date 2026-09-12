@@ -10,8 +10,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/ai_model_card.dart';
-import 'package:kostori/components/bangumi_widget.dart';import 'package:kostori/components/components.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
+import 'package:kostori/components/watermark.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/stats.dart';
@@ -481,48 +483,10 @@ class _PluginModulePageState extends State<PluginModulePage> {
           ],
           if (_result != null) ...[
             const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: scheme.outlineVariant, width: 0.6),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.output, size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          t.output,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.copy_outlined, size: 18),
-                          tooltip: t.copy,
-                          onPressed: () async {
-                            await Clipboard.setData(
-                              ClipboardData(text: _result!),
-                            );
-                            if (mounted) {
-                              App.rootContext.showMessage(message: t.copied);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    child: CustomMarkdownWidget(data: _result!),
-                  ),
-                ],
-              ),
+            _AiResultCard(
+              icon: Icons.output,
+              title: t.output,
+              content: _result!,
             ),
           ],
         ],
@@ -877,6 +841,109 @@ class _AiCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// 共用：AI 结果卡片（复制 / 导出图片带水印）
+// ─────────────────────────────────────────────
+
+class _AiResultCard extends ConsumerWidget {
+  const _AiResultCard({
+    required this.icon,
+    required this.title,
+    required this.content,
+    this.header,
+  });
+
+  final IconData icon;
+  final String title;
+
+  /// Markdown 正文
+  final String content;
+
+  /// 正文上方的附加内容（如统计卡片），会一并出现在导出图片中
+  final Widget? header;
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: content));
+    App.rootContext.showMessage(message: t.copied);
+  }
+
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    try {
+      final bytes = await ImageSaver.captureWidgetToImage(
+        context: context,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (header != null) ...[header!, const SizedBox(height: 12)],
+              CustomMarkdownWidget(data: content),
+              const SizedBox(height: 16),
+              const Center(child: KostoriWatermark()),
+            ],
+          ),
+        ),
+      );
+      if (bytes == null) return;
+      final filename =
+          'kostori_ai_${DateTime.now().millisecondsSinceEpoch}.png';
+      await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
+    } catch (e) {
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
+    } finally {
+      await ref.read(imagesProvider.notifier).loadImages();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _AiCard(
+      icon: icon,
+      title: title,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.copy_outlined, size: 18),
+            tooltip: t.copy,
+            onPressed: _copy,
+          ),
+          IconButton(
+            icon: const Icon(Icons.download_outlined, size: 18),
+            tooltip: t.exportScreenshot,
+            onPressed: () => _export(context, ref),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (header != null) ...[header!, const SizedBox(height: 12)],
+          const Divider(),
+          CustomMarkdownWidget(data: content),
         ],
       ),
     );

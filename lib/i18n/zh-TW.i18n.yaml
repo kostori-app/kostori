@@ -1532,6 +1532,7 @@ thisMonth: 本月
 generateSummary: 生成總結
 generateTag: 生成 Tag
 summaryReport: 總結報告
+aiStatActiveTitles: 活躍條目
 noActivityInTimeRange: 該時間段內暫無活動記錄
 weeklySummary: 本週總結
 monthlySummary: 本月總結

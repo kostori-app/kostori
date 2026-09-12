@@ -1521,6 +1521,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get generateSummary => '生成总结';
 	@override String get generateTag => '生成 Tag';
 	@override String get summaryReport => '总结报告';
+	@override String get aiStatActiveTitles => '活跃条目';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4066,6 +4067,7 @@ extension on TranslationsZhCn {
 			'generateSummary' => '生成总结',
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '总结报告',
+			'aiStatActiveTitles' => '活跃条目',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4077,9 +4079,9 @@ extension on TranslationsZhCn {
 			'auxFollowSessionHint' => '该任务将使用当前对话会话中配置的服务商。',
 			'contextCompression' => '上下文压缩',
 			'followUpSuggestions' => '后续追问建议',
-			'autoTitle' => '自动标题',
 			_ => null,
 		} ?? switch (path) {
+			'autoTitle' => '自动标题',
 			'connectionDisconnected' => '连接已断开',
 			'enterServerAddress' => '输入服务器地址',
 			'tapToShare' => '点击分享',
@@ -4591,9 +4593,9 @@ extension on TranslationsZhCn {
 			'importSkills' => '导入技能',
 			'importSkillsFromFiles' => 'Markdown 文件',
 			'importSkillsFromFilesHint' => '导入一个或多个带 YAML frontmatter 的 .md 技能文件',
-			'importSkillsFromFolder' => '含 SKILL.md 的文件夹',
 			_ => null,
 		} ?? switch (path) {
+			'importSkillsFromFolder' => '含 SKILL.md 的文件夹',
 			'importSkillsFromFolderHint' => '导入包含 SKILL.md 文件的文件夹',
 			'importingSkills' => '正在导入技能...',
 			'noSkillFileFound' => '所选文件夹中未找到 SKILL.md',

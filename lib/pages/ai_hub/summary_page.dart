@@ -15,6 +15,11 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
   String _source = 'siliconFlow';
   _SummaryRange _range = _SummaryRange.week;
 
+  // 本次生成的统计数据（用于结果卡片上方的统计条）
+  int _activeTitles = 0;
+  int _totalWatchSec = 0;
+  int _totalClicks = 0;
+
   Future<void> _generate() async {
     setState(() {
       _isLoading = true;
@@ -90,7 +95,12 @@ Generate a $rangeLabel anime watch report based on the following data:
       );
 
       if (result.success) {
-        setState(() => _result = result.data);
+        setState(() {
+          _result = result.data;
+          _activeTitles = activeStats.length;
+          _totalWatchSec = totalWatch;
+          _totalClicks = totalClicks;
+        });
       } else {
         App.rootContext.showMessage(message: result.errorMessage ?? 'Error');
       }
@@ -102,38 +112,56 @@ Generate a $rangeLabel anime watch report based on the following data:
     }
   }
 
-  Future<void> _exportScreenshot() async {
-    if (_result == null) return;
-    try {
-      final bytes = await ImageSaver.captureWidgetToImage(
-        context: context,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _range == _SummaryRange.week ? t.summaryThisWeekTitle : t.summaryThisMonthTitle,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+  Widget _statHeader(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget stat(IconData icon, String label, String value) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: scheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              CustomMarkdownWidget(data: _result!),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       );
-      if (bytes == null) return;
-      final filename = 'summary_${DateTime.now().millisecondsSinceEpoch}.png';
-      await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
-    } catch (e) {
-      ImageSaver.showResult(success: false, message: t.screenshotFailed);
-    } finally {
-      await ref.read(imagesProvider.notifier).loadImages();
     }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        stat(
+          Icons.schedule,
+          t.statsWatchDuration,
+          Utils.formatHMS(_totalWatchSec),
+        ),
+        stat(Icons.movie_outlined, t.aiStatActiveTitles, '$_activeTitles'),
+        stat(Icons.touch_app_outlined, t.statsClicks, '$_totalClicks'),
+      ],
+    );
   }
 
   @override
@@ -220,22 +248,11 @@ Generate a $rangeLabel anime watch report based on the following data:
             ),
             if (_result != null) ...[
               const SizedBox(height: 8),
-              _AiCard(
+              _AiResultCard(
                 icon: Icons.article_outlined,
                 title: t.summaryReport,
-                trailing: IconButton(
-                  icon: const Icon(Icons.download_outlined, size: 18),
-                  tooltip: t.exportScreenshot,
-                  onPressed: _exportScreenshot,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Divider(),
-                    CustomMarkdownWidget(data: _result!),
-                  ],
-                ),
+                content: _result!,
+                header: _statHeader(context),
               ),
             ],
           ],

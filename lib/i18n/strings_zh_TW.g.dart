@@ -1522,6 +1522,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get generateSummary => '生成總結';
 	@override String get generateTag => '生成 Tag';
 	@override String get summaryReport => '總結報告';
+	@override String get aiStatActiveTitles => '活躍條目';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4066,6 +4067,7 @@ extension on TranslationsZhTw {
 			'generateSummary' => '生成總結',
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '總結報告',
+			'aiStatActiveTitles' => '活躍條目',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4076,9 +4078,9 @@ extension on TranslationsZhTw {
 			'auxFollowSession' => '跟隨會話服務商',
 			'auxFollowSessionHint' => '該任務將使用目前對話會話中配置的服務商。',
 			'contextCompression' => '上下文壓縮',
-			'followUpSuggestions' => '後續追問建議',
 			_ => null,
 		} ?? switch (path) {
+			'followUpSuggestions' => '後續追問建議',
 			'autoTitle' => '自動標題',
 			'connectionDisconnected' => '連線已斷開',
 			'enterServerAddress' => '輸入伺服器位址',
@@ -4590,9 +4592,9 @@ extension on TranslationsZhTw {
 			'importSkillsFromFiles' => 'Markdown 檔案',
 			'importSkillsFromFilesHint' => '匯入一個或多個帶 YAML frontmatter 的 .md 技能檔案',
 			'importSkillsFromFolder' => '含 SKILL.md 的資料夾',
-			'importSkillsFromFolderHint' => '匯入包含 SKILL.md 檔案的資料夾',
 			_ => null,
 		} ?? switch (path) {
+			'importSkillsFromFolderHint' => '匯入包含 SKILL.md 檔案的資料夾',
 			'importingSkills' => '正在匯入技能...',
 			'noSkillFileFound' => '所選資料夾中找不到 SKILL.md',
 			'importedSkillCount' => ({required Object count}) => '已匯入 ${count} 個技能',
