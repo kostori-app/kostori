@@ -213,7 +213,7 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       _singleTapTimer?.cancel();
       _singleTapTimer = Timer(const Duration(milliseconds: 200), () {
         final x = details.localPosition.dx;
-        final width = MediaQuery.of(context).size.width;
+        final width = MediaQuery.sizeOf(context).width;
         if (!widget.isLocal) {
           context.pop();
         } else {

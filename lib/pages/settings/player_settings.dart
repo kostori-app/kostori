@@ -202,7 +202,7 @@ Future<void> showSelection({
           title: title,
           body: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
+              maxHeight: MediaQuery.sizeOf(context).height * 0.6,
             ),
             child: RadioGroup<String>(
               groupValue: selectedValue,

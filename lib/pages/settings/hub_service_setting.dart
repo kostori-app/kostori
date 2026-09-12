@@ -591,7 +591,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
           title: isEdit ? t.edit : t.addSubscription,
           content: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+              maxHeight: MediaQuery.sizeOf(ctx).height * 0.6,
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -1774,7 +1774,7 @@ class _MuteSheetState extends State<_MuteSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -43,7 +43,7 @@ class _VolumeSliderRoute<T> extends PopupRoute<T> {
   ) {
     const width = 280.0;
     const height = 64.0;
-    final size = MediaQuery.of(context).size;
+    final size = MediaQuery.sizeOf(context);
     var left = location.dx;
     if (left + width > size.width - 12) {
       left = size.width - width - 12;

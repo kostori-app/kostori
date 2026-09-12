@@ -328,7 +328,7 @@ class AnimeTile extends ConsumerWidget {
               title: t.debugInfo,
               content: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(App.rootContext).size.height * 0.6,
+                  maxHeight: MediaQuery.sizeOf(App.rootContext).height * 0.6,
                 ),
                 child: SingleChildScrollView(
                   child: Column(
@@ -1599,7 +1599,7 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
   }
 
   int _resolveColumns(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     // 按每列最小宽度动态计算：窄屏少列，宽屏多列
     const minColWidth = 140.0;
     final cols = (width / minColWidth).floor();

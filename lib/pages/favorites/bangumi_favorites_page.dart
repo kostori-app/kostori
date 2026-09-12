@@ -175,7 +175,7 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
     }
     if (!useBriefMode) {
       final columns =
-          ((MediaQuery.of(context).size.width / 140).floor()).clamp(2, 6);
+          ((MediaQuery.sizeOf(context).width / 140).floor()).clamp(2, 6);
       return SliverMasonryGrid.count(
         crossAxisCount: columns,
         mainAxisSpacing: 4,

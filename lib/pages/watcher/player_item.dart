@@ -219,12 +219,12 @@ class _PlayerItemState extends State<PlayerItem>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-        maxWidth: MediaQuery.of(context).size.width <= 600
-            ? MediaQuery.of(context).size.width
+        maxHeight: MediaQuery.sizeOf(context).height * 3 / 4,
+        maxWidth: MediaQuery.sizeOf(context).width <= 600
+            ? MediaQuery.sizeOf(context).width
             : (App.isDesktop)
-            ? MediaQuery.of(context).size.width * 9 / 16
-            : MediaQuery.of(context).size.width,
+            ? MediaQuery.sizeOf(context).width * 9 / 16
+            : MediaQuery.sizeOf(context).width,
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
@@ -284,12 +284,12 @@ class _PlayerItemState extends State<PlayerItem>
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.85,
-                maxWidth: MediaQuery.of(context).size.width <= 600
-                    ? MediaQuery.of(context).size.width
+                maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+                maxWidth: MediaQuery.sizeOf(context).width <= 600
+                    ? MediaQuery.sizeOf(context).width
                     : (App.isDesktop)
-                    ? MediaQuery.of(context).size.width * 9 / 16
-                    : MediaQuery.of(context).size.width,
+                    ? MediaQuery.sizeOf(context).width * 9 / 16
+                    : MediaQuery.sizeOf(context).width,
               ),
               clipBehavior: Clip.antiAlias,
               context: context,
@@ -578,7 +578,7 @@ class _PlayerItemState extends State<PlayerItem>
                 if (App.isDesktop) {
                   if (pointerEvent.position.dy > 50 &&
                       pointerEvent.position.dy <
-                          MediaQuery.of(context).size.height - 70) {
+                          MediaQuery.sizeOf(context).height - 70) {
                     _handleHove();
                   } else {
                     if (!playerController.showVideoController) {
@@ -603,9 +603,9 @@ class _PlayerItemState extends State<PlayerItem>
                 },
                 child: SizedBox(
                   height: playerController.isFullScreen
-                      ? (MediaQuery.of(context).size.height)
+                      ? (MediaQuery.sizeOf(context).height)
                       : double.infinity,
-                  width: MediaQuery.of(context).size.width,
+                  width: MediaQuery.sizeOf(context).width,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [

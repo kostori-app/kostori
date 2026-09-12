@@ -198,7 +198,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
             Future.delayed(const Duration(milliseconds: 300), () => offset = 0);
             currentPage = -1;
           });
-        } else if (offset > MediaQuery.of(context).size.width / 2) {
+        } else if (offset > MediaQuery.sizeOf(context).width / 2) {
           setState(() {
             Future.delayed(const Duration(milliseconds: 300), () => offset = 0);
             currentPage = -1;
@@ -253,7 +253,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   Widget buildBackground(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = context.isDarkMode;
-    final height = MediaQuery.of(context).size.height;
+    final height = MediaQuery.sizeOf(context).height;
 
     // 自顶部到底部的主色线性渐变：浅色顶部略作着色，深色顶部保持底色
     final topColor = isDark ? cs.primary.toOpacity(0.0) : cs.primary.toOpacity(0.1);
@@ -419,7 +419,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
           color: Colors.transparent,
           child: Column(
             children: [
-              SizedBox(height: MediaQuery.of(context).padding.top),
+              SizedBox(height: MediaQuery.paddingOf(context).top),
               SizedBox(
                 height: 56,
                 child: Row(

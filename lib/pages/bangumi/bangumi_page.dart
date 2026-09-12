@@ -110,7 +110,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     // 保持本页所有条目封面，避免跳详情页加载新图后逐出列表页缓存
     if (mounted) {
       final columns = _getFixedCrossAxisCount() ?? _resolveMasonryColumns();
-      final cardW = (MediaQuery.of(context).size.width - 32) / columns;
+      final cardW = (MediaQuery.sizeOf(context).width - 32) / columns;
       _imageCache.precacheAll(
         context,
         bangumiItems
@@ -159,7 +159,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
 
   /// 瀑布流列数：按每列最小宽度动态计算，窄屏少列
   int _resolveMasonryColumns() {
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     const minColWidth = 140.0;
     return (width / minColWidth).floor().clamp(2, 6);
   }

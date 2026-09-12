@@ -318,7 +318,7 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
         key: _formKey,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
           child: Stack(
             children: [
@@ -672,7 +672,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
         key: _formKey,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
           child: Stack(
             children: [

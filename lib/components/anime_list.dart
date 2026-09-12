@@ -650,7 +650,7 @@ class AnimeListState extends State<AnimeList>
               if (widget.trailingSliver != null) widget.trailingSliver!,
               SliverPadding(
                 padding: EdgeInsets.only(
-                  bottom: 46 + MediaQuery.of(context).padding.bottom + 4,
+                  bottom: 46 + MediaQuery.paddingOf(context).bottom + 4,
                 ),
               ),
             ],
@@ -790,7 +790,7 @@ class AnimeListState extends State<AnimeList>
           Positioned(
             left: 0,
             right: 0,
-            bottom: MediaQuery.of(context).padding.bottom + 12,
+            bottom: MediaQuery.paddingOf(context).bottom + 12,
             child: IgnorePointer(
               child: SizedBox(
                 height: 64,

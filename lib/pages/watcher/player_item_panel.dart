@@ -792,7 +792,7 @@ class _QuickChatInputState extends ConsumerState<_QuickChatInput> {
       curve: Curves.easeOut,
       // 跟随软键盘上移，避免输入法遮挡输入框
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Container(
         height: 34,

@@ -193,7 +193,7 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
           context: context,
           position: RelativeRect.fromRect(
             rect,
-            Offset.zero & MediaQuery.of(context).size,
+            Offset.zero & MediaQuery.sizeOf(context),
           ),
           items: widget.optionTranslation.keys
               .map(

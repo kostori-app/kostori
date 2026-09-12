@@ -289,7 +289,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
 
   @override
   Widget build(BuildContext context) {
-    final bool showRightButton = MediaQuery.of(context).size.width >= 626;
+    final bool showRightButton = MediaQuery.sizeOf(context).width >= 626;
     final bool showBottomButton = !showRightButton;
     double standardDeviation = Utils.getDeviation(
       widget.bangumiItem.total,
@@ -306,7 +306,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
         children: [
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width <= 550 ? 450 : 475,
+              maxWidth: MediaQuery.sizeOf(context).width <= 550 ? 450 : 475,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,7 +315,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     double height =
-                        MediaQuery.of(context).size.width <=
+                        MediaQuery.sizeOf(context).width <=
                             constraints.maxWidth + 150
                         ? 210
                         : 260;

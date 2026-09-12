@@ -593,7 +593,7 @@ class _PluginEditorState extends State<_PluginEditor> {
         key: _formKey,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
           child: Stack(
             children: [
@@ -992,7 +992,7 @@ class _SessionDetailDialog extends StatelessWidget {
           );
           return ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: MediaQuery.sizeOf(context).height * 0.7,
             ),
             child: ScrollConfiguration(
               behavior: ScrollConfiguration.of(

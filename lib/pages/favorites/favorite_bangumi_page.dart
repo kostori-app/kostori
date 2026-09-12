@@ -71,7 +71,7 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
     }
     if (!useBriefMode) {
       final columns =
-          ((MediaQuery.of(context).size.width / 140).floor()).clamp(2, 6);
+          ((MediaQuery.sizeOf(context).width / 140).floor()).clamp(2, 6);
       return SliverMasonryGrid.count(
         crossAxisCount: columns,
         mainAxisSpacing: 4,
@@ -148,7 +148,7 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
       ],
     );
     body = AppScrollBar(
-      topPadding: 52.0 + MediaQuery.of(context).padding.top,
+      topPadding: 52.0 + MediaQuery.paddingOf(context).top,
       controller: scrollController,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),

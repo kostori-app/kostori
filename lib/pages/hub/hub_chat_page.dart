@@ -967,12 +967,12 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         isScrollControlled: true,
         context: context,
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-          maxWidth: MediaQuery.of(context).size.width <= 600
-              ? MediaQuery.of(context).size.width
+          maxHeight: MediaQuery.sizeOf(context).height * 3 / 4,
+          maxWidth: MediaQuery.sizeOf(context).width <= 600
+              ? MediaQuery.sizeOf(context).width
               : App.isDesktop
-                  ? MediaQuery.of(context).size.width * 9 / 16
-                  : MediaQuery.of(context).size.width,
+                  ? MediaQuery.sizeOf(context).width * 9 / 16
+                  : MediaQuery.sizeOf(context).width,
         ),
         builder: (_) => BottomInfo(
           bangumiId: bangumiId,
@@ -1068,7 +1068,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
             Divider(height: 1, color: cs.outlineVariant.toOpacity(0.3)),
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.5,
+                maxHeight: MediaQuery.sizeOf(context).height * 0.5,
               ),
               child: ListView.separated(
                 shrinkWrap: true,
@@ -1532,7 +1532,7 @@ class _AnnouncementCarouselState extends State<_AnnouncementCarousel> {
                   title: t.announcement,
                   content: Container(
                     constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 2 / 3,
+                      maxHeight: MediaQuery.sizeOf(context).height * 2 / 3,
                     ),
                     child: ScrollConfiguration(
                       behavior: const ScrollBehavior().copyWith(

@@ -445,9 +445,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       }
     });
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final topPadding = MediaQuery.of(context).padding.top;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final topPadding = MediaQuery.paddingOf(context).top;
     final isDesktop = screenWidth > 800;
     final playerHeight = isDesktop ? screenWidth * 0.35 : screenWidth * 0.6;
     // 宽屏（>2000 且为横向）改为左右布局：播放器在左，Tab 内容在右。
@@ -1678,8 +1678,8 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     // 与正文一致的宽屏判定：>2000 且横向
     final sideBySide = screenWidth > 2000 && screenWidth > screenHeight;
 
@@ -1878,12 +1878,12 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
 
   Widget buildVideoPlaceholder(BuildContext context) {
     final double aspectRatioMultiplier = App.isDesktop ? 0.45 : 0.6;
-    final double maxWidth = MediaQuery.of(context).size.width;
+    final double maxWidth = MediaQuery.sizeOf(context).width;
     final double maxHeight = maxWidth * aspectRatioMultiplier;
 
     return Padding(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
+        top: MediaQuery.paddingOf(context).top + 8,
         left: 16,
         right: 16,
         bottom: 8,

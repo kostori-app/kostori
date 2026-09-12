@@ -226,7 +226,7 @@ class _SearchPageState extends State<SearchPage> {
       ),
     );
     widget = AppScrollBar(
-      topPadding: 52 + MediaQuery.of(context).padding.top,
+      topPadding: 52 + MediaQuery.paddingOf(context).top,
       controller: scrollController,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),

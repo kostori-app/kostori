@@ -59,13 +59,13 @@ extension Navigation on BuildContext {
     ).push<T>(FadeScalePageRoute<T>(builder: (_) => builder()));
   }
 
-  double get width => MediaQuery.of(this).size.width;
+  double get width => MediaQuery.sizeOf(this).width;
 
-  double get height => MediaQuery.of(this).size.height;
+  double get height => MediaQuery.sizeOf(this).height;
 
-  EdgeInsets get padding => MediaQuery.of(this).padding;
+  EdgeInsets get padding => MediaQuery.paddingOf(this);
 
-  EdgeInsets get viewInsets => MediaQuery.of(this).viewInsets;
+  EdgeInsets get viewInsets => MediaQuery.viewInsetsOf(this);
 
   ColorScheme get colorScheme => Theme.of(this).colorScheme;
 

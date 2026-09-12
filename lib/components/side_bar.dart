@@ -52,7 +52,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     if (addTopPadding) {
       body = Padding(
-        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+        padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
         child: MediaQuery.removePadding(
           context: context,
           removeTop: true,
@@ -65,7 +65,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     bool shouldPop = true;
 
-    final sideBarWidth = math.min(width, MediaQuery.of(context).size.width);
+    final sideBarWidth = math.min(width, MediaQuery.sizeOf(context).width);
 
     bool enableDrag = false;
 
@@ -73,7 +73,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
       child: StatefulBuilder(
         builder: (context, stateUpdater) => Container(
           width: sideBarWidth,
-          height: MediaQuery.of(context).size.height * 0.6,
+          height: MediaQuery.sizeOf(context).height * 0.6,
           decoration: BoxDecoration(
             color: useSurfaceTintColor
                 ? Theme.of(context).colorScheme.surfaceTint.withAlpha(20)
@@ -191,11 +191,11 @@ class _SidebarBodyState extends State<SidebarBody> {
       children: [
         if (widget.title != null)
           Container(
-            height: 60 + MediaQuery.of(context).padding.top,
+            height: 60 + MediaQuery.paddingOf(context).top,
             color: top
                 ? null
                 : Theme.of(context).colorScheme.surfaceTint.withAlpha(20),
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
             child: Row(
               children: [
                 const SizedBox(

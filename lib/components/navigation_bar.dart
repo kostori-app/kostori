@@ -117,7 +117,7 @@ class NaviPaneState extends State<NaviPane>
   static const _kTopBarHeight = 48.0;
 
   double get bottomBarHeight =>
-      _kBottomBarHeight + MediaQuery.of(context).padding.bottom;
+      _kBottomBarHeight + MediaQuery.paddingOf(context).bottom;
 
   void onNavigatorStateChange() {
     onRebuild(context);
@@ -171,7 +171,7 @@ class NaviPaneState extends State<NaviPane>
   }
 
   double targetFormContext(BuildContext context) {
-    var width = MediaQuery.of(context).size.width;
+    var width = MediaQuery.sizeOf(context).width;
     double target = 0;
     if (width > changePoint) {
       // 桌面端：展开显示侧边栏；收起则完全隐藏（value=1）
@@ -325,7 +325,7 @@ class NaviPaneState extends State<NaviPane>
           ),
       ],
     );
-    final isMobileLayout = MediaQuery.of(context).size.width <= changePoint;
+    final isMobileLayout = MediaQuery.sizeOf(context).width <= changePoint;
     if (!isMobileLayout) {
       return stack;
     }
@@ -577,7 +577,7 @@ class NaviPaneState extends State<NaviPane>
         child: Column(
           children: [
             const SizedBox(height: 16),
-            SizedBox(height: MediaQuery.of(context).padding.top),
+            SizedBox(height: MediaQuery.paddingOf(context).top),
             ...List<Widget>.generate(
               widget.paneItems.length,
               (index) => _SideNaviWidget(
@@ -1012,12 +1012,12 @@ class _NaviMainViewState extends State<_NaviMainView> {
 
   @override
   Widget build(BuildContext context) {
-    final mqSize = MediaQuery.of(context).size;
+    final mqSize = MediaQuery.sizeOf(context);
     final isWide = mqSize.width > changePoint;
     // 仅移动端（窄屏）显示顶部/底部导航栏；桌面端即使侧边栏收起也不显示
     var shouldShowAppBar =
         state.controller.value < 2 &&
-        MediaQuery.of(context).size.width <= changePoint;
+        MediaQuery.sizeOf(context).width <= changePoint;
 
     // 宽屏下侧边栏被完全收起：显示窄屏风格悬浮导航 + 紧邻其右侧的动作坞；
     // 与窄屏一致，跟随滚动收缩成横线（点一下展开）
@@ -1038,7 +1038,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
           ),
         ],
       );
-      final bottomPad = MediaQuery.of(context).padding.bottom + 12;
+      final bottomPad = MediaQuery.paddingOf(context).bottom + 12;
       // 完整态：主悬浮导航居中 + 动作坞紧贴其右侧（不合并成整行居中）
       final Widget fullBars = SizedBox(
         height: NaviPaneState._kBottomBarHeight,
@@ -1123,8 +1123,8 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ],
       );
     }
-    final bottomPad = MediaQuery.of(context).padding.bottom + 12;
-    final topInset = MediaQuery.of(context).padding.top;
+    final bottomPad = MediaQuery.paddingOf(context).bottom + 12;
+    final topInset = MediaQuery.paddingOf(context).top;
     return Stack(
       children: [
         Column(

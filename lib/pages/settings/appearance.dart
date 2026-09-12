@@ -138,18 +138,18 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
         ? ColorScheme.fromSeed(
             seedColor: selected!,
             brightness:
-                MediaQuery.of(context).platformBrightness == Brightness.dark
+                MediaQuery.platformBrightnessOf(context) == Brightness.dark
                 ? Brightness.dark
                 : Brightness.light,
           )
         : null;
 
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     const kTwoPanelChangeWidth = 720.0;
 
     final isNarrow = width <= kTwoPanelChangeWidth;
 
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = MediaQuery.platformBrightnessOf(context);
 
     final selectedWidget = selectedScheme == null
         ? const SizedBox()

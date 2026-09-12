@@ -859,7 +859,7 @@ class _MixedExplorePageState
           Positioned(
             left: 0,
             right: 0,
-            bottom: MediaQuery.of(context).padding.bottom + 12,
+            bottom: MediaQuery.paddingOf(context).bottom + 12,
             child: IgnorePointer(
               child: SizedBox(
                 height: 64,

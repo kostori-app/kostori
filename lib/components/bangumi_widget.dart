@@ -32,12 +32,12 @@ class BangumiWidget {
     showModalBottomSheet(
       isScrollControlled: true,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-        maxWidth: MediaQuery.of(context).size.width < 600
-            ? MediaQuery.of(context).size.width
+        maxHeight: MediaQuery.sizeOf(context).height * 3 / 4,
+        maxWidth: MediaQuery.sizeOf(context).width < 600
+            ? MediaQuery.sizeOf(context).width
             : App.isDesktop
-            ? MediaQuery.of(context).size.width * 9 / 16
-            : MediaQuery.of(context).size.width,
+            ? MediaQuery.sizeOf(context).width * 9 / 16
+            : MediaQuery.sizeOf(context).width,
       ),
       clipBehavior: Clip.antiAlias,
       context: context,

@@ -745,7 +745,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
 
     // 瀑布流（仅条目搜索；样式与 bangumi 主页瀑布流一致，多选沿用选中高亮）
     if (layoutMode == 'masonry') {
-      final width = MediaQuery.of(context).size.width;
+      final width = MediaQuery.sizeOf(context).width;
       final perRow = fixedCrossAxisCount;
       final cols =
           perRow ?? (width / 140).floor().clamp(2, 6);
@@ -1326,7 +1326,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   Widget _toolBoxWidget(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16),
-      width: MediaQuery.of(context).size.width - 30,
+      width: MediaQuery.sizeOf(context).width - 30,
       color: Colors.transparent,
       child: Row(
         children: [
@@ -1407,7 +1407,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   Widget _multiSelectBoxWidget(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16),
-      width: MediaQuery.of(context).size.width - 30,
+      width: MediaQuery.sizeOf(context).width - 30,
       color: Colors.transparent,
       child: Row(
         children: [

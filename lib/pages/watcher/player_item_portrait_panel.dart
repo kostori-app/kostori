@@ -101,7 +101,7 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                           padding: EdgeInsets.only(
                             left: 0,
                             right: 10,
-                            top: MediaQuery.of(context).padding.top,
+                            top: MediaQuery.paddingOf(context).top,
                           ),
                           child: Row(
                             children: [

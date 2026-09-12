@@ -144,7 +144,7 @@ class Utils {
   }
 
   static bool isSmallScreen(BuildContext context) =>
-      MediaQuery.of(context).size.width < 850;
+      MediaQuery.sizeOf(context).width < 850;
 
   static String dur2str(Duration duration) => durationToString(duration);
 

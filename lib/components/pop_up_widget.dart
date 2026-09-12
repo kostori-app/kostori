@@ -41,8 +41,8 @@ class PopUpWidget<T> extends PopupRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
-    final height = MediaQuery.of(context).size.height * 0.9;
-    final showPopUp = MediaQuery.of(context).size.width > 500;
+    final height = MediaQuery.sizeOf(context).height * 0.9;
+    final showPopUp = MediaQuery.sizeOf(context).width > 500;
 
     Widget body = PopupIndicatorWidget(
       child: Container(
@@ -177,8 +177,8 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final keyboardOffset = keyboardHeight > 0
         ? (keyboardHeight - bottomPadding).clamp(0.0, double.infinity)
         : 0.0;

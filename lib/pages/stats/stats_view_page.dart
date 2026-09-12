@@ -137,7 +137,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
 
   /// 加载骨架：复刻真实卡片的边框/头部/统计瓦片/图表布局，与项目风格一致
   Widget _buildSkeleton(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final isWide = screenWidth > 850;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -230,7 +230,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
   }
 
   Widget buildViewWidget(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final isWide = screenWidth > 850;
 
     return KeyedSubtree(
@@ -432,12 +432,12 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
       context: context,
       isScrollControlled: true,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-        maxWidth: MediaQuery.of(context).size.width < 600
-            ? MediaQuery.of(context).size.width
+        maxHeight: MediaQuery.sizeOf(context).height * 3 / 4,
+        maxWidth: MediaQuery.sizeOf(context).width < 600
+            ? MediaQuery.sizeOf(context).width
             : App.isDesktop
-            ? MediaQuery.of(context).size.width * 9 / 16
-            : MediaQuery.of(context).size.width,
+            ? MediaQuery.sizeOf(context).width * 9 / 16
+            : MediaQuery.sizeOf(context).width,
       ),
       builder: (_) => Sheet(
         title: word,

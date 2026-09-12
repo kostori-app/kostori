@@ -20,7 +20,7 @@ void showHubRoomSettingsSheet(BuildContext context, HubRoomDto room) {
     backgroundColor: Colors.transparent,
     useSafeArea: true,
     constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+      maxHeight: MediaQuery.sizeOf(context).height * 3 / 4,
     ),
     builder: (_) => _RoomSettingsSheet(room: room),
   );

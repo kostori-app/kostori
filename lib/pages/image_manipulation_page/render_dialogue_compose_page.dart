@@ -319,7 +319,7 @@ class _RenderDialogueComposePageState
     final fullSize = Size(totalWidth, totalCropHeight);
 
     // 获取设备像素比，缩放画布保证清晰度
-    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
 
     return composePainterToPng(
       painter: DialogueImagePainter(
@@ -406,12 +406,12 @@ class _RenderDialogueComposePageState
       enableDrag: false,
       clipBehavior: Clip.antiAlias,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-        maxWidth: MediaQuery.of(context).size.width <= 600
-            ? MediaQuery.of(context).size.width
+        maxHeight: MediaQuery.sizeOf(context).height * 3 / 4,
+        maxWidth: MediaQuery.sizeOf(context).width <= 600
+            ? MediaQuery.sizeOf(context).width
             : (App.isDesktop)
-            ? MediaQuery.of(context).size.width * 9 / 16
-            : MediaQuery.of(context).size.width,
+            ? MediaQuery.sizeOf(context).width * 9 / 16
+            : MediaQuery.sizeOf(context).width,
       ),
       builder: (_) => const BorderSettingsSheet(),
     );

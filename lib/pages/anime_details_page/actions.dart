@@ -217,14 +217,14 @@ abstract mixin class _AnimePageActions {
       isScrollControlled: true,
       enableDrag: false,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
-        maxWidth: MediaQuery.of(context).size.width <= 600
-            ? MediaQuery.of(context).size.width
+        maxHeight: MediaQuery.sizeOf(context).height * 3 / 4, // 设置最大高度
+        maxWidth: MediaQuery.sizeOf(context).width <= 600
+            ? MediaQuery.sizeOf(context).width
             : (App.isDesktop)
-            ? MediaQuery.of(context).size.width *
+            ? MediaQuery.sizeOf(context).width *
                   9 /
                   16 // 设置最大宽度
-            : MediaQuery.of(context).size.width,
+            : MediaQuery.sizeOf(context).width,
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
@@ -284,14 +284,14 @@ abstract mixin class _AnimePageActions {
       isScrollControlled: true,
       enableDrag: false,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
-        maxWidth: MediaQuery.of(context).size.width <= 600
-            ? MediaQuery.of(context).size.width
+        maxHeight: MediaQuery.sizeOf(context).height * 3 / 4, // 设置最大高度
+        maxWidth: MediaQuery.sizeOf(context).width <= 600
+            ? MediaQuery.sizeOf(context).width
             : (App.isDesktop)
-            ? MediaQuery.of(context).size.width *
+            ? MediaQuery.sizeOf(context).width *
                   9 /
                   16 // 设置最大宽度
-            : MediaQuery.of(context).size.width,
+            : MediaQuery.sizeOf(context).width,
       ),
       clipBehavior: Clip.antiAlias,
       context: context,

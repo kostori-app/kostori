@@ -81,7 +81,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
   }
 
   final double height =
-      (App.isAndroid || MediaQuery.of(App.rootContext).size.width <= 700)
+      (App.isAndroid || MediaQuery.sizeOf(App.rootContext).width <= 700)
       ? 210.0
       : 300.0;
 
@@ -900,7 +900,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
 
     return Padding(
       padding: const EdgeInsets.all(12.0),
-      child: MediaQuery.of(context).size.width >= 850
+      child: MediaQuery.sizeOf(context).width >= 850
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

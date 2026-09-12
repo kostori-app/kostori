@@ -434,7 +434,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
 
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final screenWidth = MediaQuery.of(context).size.width;
+                  final screenWidth = MediaQuery.sizeOf(context).width;
                   final availableWidth =
                       constraints.maxWidth - 16; // subtract horizontal padding
                   final crossAxisCount = screenWidth < 1200 ? 3 : 4;

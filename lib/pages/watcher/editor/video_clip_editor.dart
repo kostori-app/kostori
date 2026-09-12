@@ -1061,7 +1061,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final topPad = MediaQuery.of(context).padding.top;
+    final topPad = MediaQuery.paddingOf(context).top;
 
     return PopScope(
       canPop: false,
@@ -1134,8 +1134,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
             // 竖屏保持纵向滚动（预览在上、控件在下）
             Expanded(
               child:
-                  MediaQuery.of(context).size.width >
-                      MediaQuery.of(context).size.height
+                  MediaQuery.sizeOf(context).width >
+                      MediaQuery.sizeOf(context).height
                   ? _buildLandscapeBody()
                   : _buildControlsScroll(),
             ),
@@ -2081,7 +2081,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
   Widget _buildExportBar() {
     final cs = Theme.of(context).colorScheme;
-    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottomPad),

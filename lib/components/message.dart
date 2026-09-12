@@ -50,7 +50,7 @@ class _CenterOverlay extends StatelessWidget {
       top: rect?.top ?? 0,
       left: rect?.left ?? 0,
       right: rect == null ? 0 : null,
-      bottom: rect == null ? MediaQuery.of(context).viewInsets.bottom : null,
+      bottom: rect == null ? MediaQuery.viewInsetsOf(context).bottom : null,
       width: rect?.width,
       height: rect?.height,
       child: Align(
@@ -77,7 +77,7 @@ class _CenterOverlay extends StatelessWidget {
                       horizontal: 24,
                     ),
                     constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.8,
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.8,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -816,7 +816,7 @@ class _ToastOverlayState extends State<_ToastOverlay> {
     );
 
     final topOffset =
-        widget.position + MediaQuery.of(context).viewPadding.top + 16;
+        widget.position + MediaQuery.viewPaddingOf(context).top + 16;
 
     return switch (widget.style) {
       ToastStyle.topRight => Positioned(
@@ -836,7 +836,7 @@ class _ToastOverlayState extends State<_ToastOverlay> {
         child: Align(alignment: Alignment.topCenter, child: animated),
       ),
       ToastStyle.bottom => Positioned(
-        bottom: widget.position + MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: widget.position + MediaQuery.viewInsetsOf(context).bottom + 24,
         left: 0,
         right: 0,
         child: Align(alignment: Alignment.bottomCenter, child: animated),
@@ -850,7 +850,7 @@ class _ToastOverlayState extends State<_ToastOverlay> {
       borderRadius: BorderRadius.circular(14),
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width - 32,
+          maxWidth: MediaQuery.sizeOf(context).width - 32,
         ),
         decoration: BoxDecoration(
           color: cs.surfaceContainer.toOpacity(0.62),
@@ -934,7 +934,7 @@ class _ToastOverlayState extends State<_ToastOverlay> {
       borderRadius: borderRadius,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width - 32,
+          maxWidth: MediaQuery.sizeOf(context).width - 32,
         ),
         margin: isCenter
             ? EdgeInsets.zero

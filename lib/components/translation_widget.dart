@@ -178,7 +178,7 @@ class _TranslationWidgetState extends State<TranslationWidget> {
                   ],
                 ),
                 SizedBox(
-                  height: MediaQuery.of(dialogContext).size.height * 0.6,
+                  height: MediaQuery.sizeOf(dialogContext).height * 0.6,
                   child: TabBarView(
                     children: [
                       _buildLanguageList(dialogContext),

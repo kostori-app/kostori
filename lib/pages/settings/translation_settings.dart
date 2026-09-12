@@ -67,7 +67,7 @@ class _DeepLConfigPageState extends State<DeepLConfigPage> {
       title: 'DeepL',
       body: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.5,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.5,
         ),
         child: Stack(
           children: [

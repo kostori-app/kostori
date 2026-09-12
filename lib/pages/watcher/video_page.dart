@@ -210,7 +210,7 @@ class _VideoPageState extends State<VideoPage>
             curve: Curves.easeOut,
             // 键盘弹出时面板底部上移，输入框不被遮挡
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
             ),
             child: FadeTransition(
               opacity: _chatFade,
@@ -301,8 +301,8 @@ class _VideoPageState extends State<VideoPage>
               Positioned.fill(
                 child: Container(
                   color: Colors.black,
-                  height: MediaQuery.of(context).size.height,
-                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.sizeOf(context).height,
+                  width: MediaQuery.sizeOf(context).width,
                   child: playerBody,
                 ),
               ),
@@ -419,12 +419,12 @@ bool get _isSeries =>
 
     // 面板尺寸：竖屏底部约 1/3 屏高，横屏右侧约 1/3 屏宽（限宽 420+160）
     final height = isPortrait
-        ? MediaQuery.of(context).size.height / 3 + 80
-        : MediaQuery.of(context).size.height;
+        ? MediaQuery.sizeOf(context).height / 3 + 80
+        : MediaQuery.sizeOf(context).height;
 
     final width = isPortrait
-        ? MediaQuery.of(context).size.width
-        : (MediaQuery.of(context).size.width / 3).clamp(0, 420) + 160;
+        ? MediaQuery.sizeOf(context).width
+        : (MediaQuery.sizeOf(context).width / 3).clamp(0, 420) + 160;
 
     return Container(
       height: height.toDouble(),
@@ -702,7 +702,7 @@ bool get _isSeries =>
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width,
+              maxWidth: MediaQuery.sizeOf(context).width,
             ),
             child: Material(
               color: colorScheme.primary.toOpacity(0.3),

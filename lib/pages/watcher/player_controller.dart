@@ -970,7 +970,7 @@ abstract class _PlayerController with Store {
     _overlayEntry?.remove();
     _overlayEntry = null;
 
-    final screenSize = MediaQuery.of(context).size;
+    final screenSize = MediaQuery.sizeOf(context);
     double overlayWidth = screenSize.width * 0.2;
     overlayWidth = overlayWidth.clamp(180.0, 240.0);
     final overlayHeight = overlayWidth * 9 / 16;

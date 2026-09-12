@@ -832,7 +832,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

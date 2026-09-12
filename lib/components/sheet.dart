@@ -22,7 +22,7 @@ class Sheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sc = ScrollController();
-    final height = MediaQuery.of(context).size.height * initialSize;
+    final height = MediaQuery.sizeOf(context).height * initialSize;
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),

@@ -662,7 +662,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
       ],
       body: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.7,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
         ),
         child: DefaultTabController(
           length: 2,
@@ -3677,7 +3677,7 @@ class _CustomProviderEditorState extends State<_CustomProviderEditor> {
         key: _formKey,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.8,
           ),
           child: Stack(
             children: [
@@ -4037,7 +4037,7 @@ class _McpServerEditorState extends State<_McpServerEditor> {
         key: _formKey,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
           child: Stack(
             children: [
@@ -4354,7 +4354,7 @@ class _AuxModelEditorState extends State<_AuxModelEditor> {
       title: widget.title,
       body: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.75,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.75,
         ),
         child: Stack(
           children: [
@@ -4734,7 +4734,7 @@ class _SkillEditorState extends State<_SkillEditor> {
         key: _formKey,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
           child: Stack(
             children: [

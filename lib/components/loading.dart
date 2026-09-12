@@ -98,7 +98,7 @@ class SliverListLoadingIndicator extends StatelessWidget {
     // SliverToBoxAdapter can not been lazy loaded.
     // Use SliverList to make sure the animation can be lazy loaded.
     // 末尾预留底部安全区：避免滚到底时转圈被手势条/底部导航压到屏幕外
-    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
     return SliverMainAxisGroup(
       slivers: [
         SliverList.list(

@@ -394,7 +394,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
     } catch (_) {}
 
     final overlay = Overlay.of(context, rootOverlay: true);
-    final screenSize = MediaQuery.of(context).size;
+    final screenSize = MediaQuery.sizeOf(context);
 
     final entry = OverlayEntry(
       builder: (_) => _MessageActionMenu(
@@ -437,7 +437,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
     const avatarDiam = avatarRadius * 2;
     const avatarGap = 8.0;
     final maxW =
-        MediaQuery.of(context).size.width -
+        MediaQuery.sizeOf(context).width -
         24 -
         avatarDiam -
         avatarGap -
@@ -1515,8 +1515,8 @@ class HubInputBar extends ConsumerWidget {
     // 跟随软键盘：弹出时输入框上移（嵌入式/无 Scaffold 调整时也生效）。
     // 仅当需要手动补偿时启用；弹层内 PopUpWidgetScaffold 已统一处理，避免双重叠加
     final keyboardBottom = applyKeyboardPadding
-        ? (MediaQuery.of(context).viewInsets.bottom -
-                  MediaQuery.of(context).padding.bottom)
+        ? (MediaQuery.viewInsetsOf(context).bottom -
+                  MediaQuery.paddingOf(context).bottom)
               .clamp(0.0, double.infinity)
         : 0.0;
     return AnimatedPadding(
@@ -1976,7 +1976,7 @@ class _EmojiPickerOverlayState extends State<_EmojiPickerOverlay>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final size = MediaQuery.of(context).size;
+    final size = MediaQuery.sizeOf(context);
     const popW = 280.0;
     const fullH = 360.0;
     final h = fullH;

@@ -340,7 +340,7 @@ class _ScanOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final size = MediaQuery.sizeOf(context);
     final boxSize = size.width * 0.68;
     final top = (size.height - boxSize) / 2 - 40;
 

@@ -423,7 +423,7 @@ Future<void> updateLog(BuildContext context) async {
             ).animate(anim1),
             child: _DraggableBlurSheet(
               releases: releases.map((r) => ReleaseCard(release: r)).toList(),
-              maxHeight: MediaQuery.of(context).size.height * 0.75,
+              maxHeight: MediaQuery.sizeOf(context).height * 0.75,
               onDragProgress: (progress) => dragProgress.value = progress,
             ),
           ),
@@ -478,7 +478,7 @@ class _DraggableBlurSheetState extends State<_DraggableBlurSheet> {
           offset: Offset(0, _dragOffset),
           child: Container(
             height: widget.maxHeight,
-            width: MediaQuery.of(context).size.width,
+            width: MediaQuery.sizeOf(context).width,
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor.toOpacity(0.9),
               borderRadius: const BorderRadius.vertical(
