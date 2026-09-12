@@ -525,18 +525,30 @@ class AnimeTile extends ConsumerWidget {
                         color: Colors.white,
                       ),
                     ),
-                  if (history != null && type == 'detailed')
+                  if (history != null)
                     Container(
                       height: 24,
-                      color: Colors.black.toOpacity(0.5),
+                      color: Colors.black.toOpacity(0.55),
                       constraints: const BoxConstraints(minWidth: 24),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        history,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.play_circle_fill_rounded,
+                            size: 13,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            history,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
