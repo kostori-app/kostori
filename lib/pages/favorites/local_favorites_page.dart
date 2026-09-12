@@ -3,6 +3,10 @@ part of 'favorites_page.dart';
 const _asyncDataFetchLimit = 500;
 const excludedFolders = [kUnassignedFolder, 'default', '默认'];
 
+/// 分组胶囊条与布局胶囊的高度（appbar bottom 预留高度需精确匹配）
+const _kFolderBarHeight = 40.0;
+const _kLayoutCapsuleHeight = 32.0;
+
 class _LocalFavoritesPage extends ConsumerStatefulWidget {
   const _LocalFavoritesPage({required this.favoritesController});
 
@@ -217,7 +221,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     return v == keyword;
   }
 
-  List<Tab> _buildTabs() {
+  List<CapsuleOption> _buildTabs() {
     final wish = appdata.settings.s.favoriteTypeWish;
     final doing = appdata.settings.s.favoriteTypeDoing;
     final collect = appdata.settings.s.favoriteTypeCollect;
@@ -232,31 +236,34 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       dropped: Icons.heart_broken,
     };
 
-    return favState.folders.map((name) {
+    final controller = favoritesController.tabController;
+
+    return favState.folders.asMap().entries.map((entry) {
+      final index = entry.key;
+      final name = entry.value;
       final count = manager.folderAnimes(name);
       final displayCount = searchAllMode
           ? (searchResults[name]?.length ?? 0).toString()
           : count.toString();
       final icon = iconMap[name];
+      final label = isUnassignedFolder(name) ? t.kDefault : name;
 
-      return Tab(
+      return CapsuleOption(
+        text: label,
+        isSelected: controller?.index == index,
+        onTap: () => controller?.animateTo(index),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: context.colorScheme.onSurface),
+              Icon(icon, size: 15),
               const SizedBox(width: 4),
             ],
-            Flexible(
-              fit: FlexFit.loose,
-              child: Text(
-                isUnassignedFolder(name) ? t.kDefault : name,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Text(label, overflow: TextOverflow.ellipsis),
             const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
                 color: context.colorScheme.secondaryContainer.toOpacity(0.72),
                 borderRadius: BorderRadius.circular(8),
@@ -272,22 +279,18 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     }).toList();
   }
 
-  PreferredSizeWidget _buildTabBar() {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: TabBar(
-        controller: favoritesController.tabController,
-        isScrollable: true,
-        tabs: _buildTabs(),
-        dividerHeight: 0,
-        tabAlignment: TabAlignment.start,
-        labelColor: context.colorScheme.primary,
-      ),
+  Widget _buildFolderBar() {
+    final controller = favoritesController.tabController;
+    return CapsuleOptions(
+      key: PageStorageKey('${favState.folders}'),
+      scrollable: true,
+      progress: controller?.animation,
+      children: _buildTabs(),
     );
   }
 
-  /// TabBar 与布局胶囊合成一段（胶囊紧贴 TabBar 下方，无 header/body 间隙）
-  PreferredSizeWidget _buildTabWithCapsule(PreferredSizeWidget tab) {
+  /// 分组胶囊与布局胶囊合成一段（紧贴，无 header/body 间隙）
+  PreferredSizeWidget _buildTabWithCapsule(Widget tab) {
     final capsule = favoritesLayoutCapsule(
       context,
       value:
@@ -302,17 +305,40 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       ],
     );
     return PreferredSize(
-      preferredSize: Size.fromHeight(tab.preferredSize.height + 28),
+      preferredSize: const Size.fromHeight(
+        _kFolderBarHeight + _kLayoutCapsuleHeight,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          tab,
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
+          _buildFolderBarArea(tab),
+          SizedBox(
+            height: _kLayoutCapsuleHeight,
             child: Center(child: capsule),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFolderBarArea(Widget tab) {
+    return SizedBox(
+      height: _kFolderBarHeight,
+      child: Align(
+        alignment: Alignment.center,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: tab,
+        ),
+      ),
+    );
+  }
+
+  /// 多选/搜索模式：只保留分组胶囊条（不显示布局胶囊）
+  PreferredSizeWidget _buildFolderBarOnly(Widget tab) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(_kFolderBarHeight),
+      child: _buildFolderBarArea(tab),
     );
   }
 
@@ -378,7 +404,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
   }
 
-  Appbar _buildNormalAppbar(PreferredSizeWidget tab) {
+  Appbar _buildNormalAppbar(Widget tab) {
     return _buildAppbar(
       key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
@@ -438,7 +464,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
   }
 
-  Appbar _buildMultiSelectAppbar(PreferredSizeWidget tab) {
+  Appbar _buildMultiSelectAppbar(Widget tab) {
     return _buildAppbar(
       key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
@@ -480,11 +506,11 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           ],
         ),
       ],
-      tab: tab,
+      tab: _buildFolderBarOnly(tab),
     );
   }
 
-  Appbar _buildSearchAppbar(PreferredSizeWidget tab) {
+  Appbar _buildSearchAppbar(Widget tab) {
     return _buildAppbar(
       key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
@@ -505,7 +531,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           updateSearchAllResult();
         },
       ).paddingBottom(4).paddingRight(8),
-      tab: tab,
+      tab: _buildFolderBarOnly(tab),
     );
   }
 
@@ -785,7 +811,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final tab = _buildTabBar();
+    final tab = _buildFolderBar();
     // 固定 app bar（不放进 TabBarView，避免左右滑动切分组时一起被划走）
     final Appbar appbar = !searchAllMode && !searchMode && !multiSelectMode
         ? _buildNormalAppbar(tab)

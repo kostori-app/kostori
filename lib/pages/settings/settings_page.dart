@@ -251,17 +251,22 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   }
 
   Widget buildBackground(BuildContext context) {
-    final themeColor = Theme.of(context).colorScheme.primary.toOpacity(0.1);
+    final cs = Theme.of(context).colorScheme;
+    final isDark = context.isDarkMode;
     final height = MediaQuery.of(context).size.height;
 
-    Widget base = SizedBox(
+    // 自顶部到底部的主色线性渐变：浅色顶部略作着色，深色顶部保持底色
+    final topColor = isDark ? cs.primary.toOpacity(0.0) : cs.primary.toOpacity(0.1);
+    final bottomColor = cs.primary.toOpacity(isDark ? 0.24 : 0.42);
+
+    final base = SizedBox(
       height: height,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [themeColor.toOpacity(0.0), themeColor.toOpacity(0.4)],
+            colors: [topColor, bottomColor],
             stops: const [0.2, 1.0],
           ),
         ),

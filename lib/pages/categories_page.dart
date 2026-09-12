@@ -162,18 +162,37 @@ class _CategoriesPageState extends State<CategoriesPage>
 
 typedef ClickTagCallback = void Function(String, String?);
 
-class _CategoryPage extends StatelessWidget {
-  _CategoryPage(this.category);
+class _CategoryPage extends StatefulWidget {
+  const _CategoryPage(this.category);
 
   final String category;
 
-  final scrollController = ScrollController();
+  @override
+  State<_CategoryPage> createState() => _CategoryPageState();
+}
 
-  CategoryData get data => getCategoryDataWithKey(category);
+/// 搜索用：把分类项按分区展开，便于跨分区过滤（随机分区取全量）
+class _SearchPart {
+  final String title;
+  final List<CategoryItem> items;
+
+  const _SearchPart(this.title, this.items);
+}
+
+class _CategoryPageState extends State<_CategoryPage>
+    with AutomaticKeepAliveClientMixin {
+  final scrollController = ScrollController();
+  final searchController = TextEditingController();
+
+  String query = '';
+
+  List<_SearchPart> searchParts = const [];
+
+  CategoryData get data => getCategoryDataWithKey(widget.category);
 
   String findAnimeSourceKey() {
     for (var source in AnimeSource.all()) {
-      if (source.categoryData?.key == category) {
+      if (source.categoryData?.key == widget.category) {
         return source.key;
       }
     }
@@ -181,7 +200,100 @@ class _CategoryPage extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    resolveSearchParts();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CategoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.category != widget.category) {
+      resolveSearchParts();
+    }
+  }
+
+  void resolveSearchParts() {
+    searchParts = [
+      for (var part in data.categories)
+        _SearchPart(
+          part.title,
+          part is RandomCategoryPart ? part.all : part.categories,
+        ),
+    ];
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  bool get hasSearchableItems =>
+      searchParts.any((part) => part.items.isNotEmpty);
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasSearchableItems) buildSearchField(),
+        Expanded(child: buildContent()),
+      ],
+    );
+  }
+
+  Widget buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: TextField(
+        controller: searchController,
+        onChanged: (value) => setState(() => query = value),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: t.search,
+          isDense: true,
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: query.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () {
+                    searchController.clear();
+                    setState(() => query = '');
+                  },
+                ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+      ),
+    );
+  }
+
+  Widget buildContent() {
+    final keyword = query.trim();
+    final children = keyword.isEmpty
+        ? buildDefaultChildren()
+        : buildSearchResults(keyword);
+
+    return AppScrollBar(
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: SingleChildScrollView(
+          controller: scrollController,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> buildDefaultChildren() {
     var children = <Widget>[];
 
     if (data.enableRankingPage || data.buttons.isNotEmpty) {
@@ -206,22 +318,34 @@ class _CategoryPage extends StatelessWidget {
     for (var part in data.categories) {
       children.add(CollapsibleCategory(part: part));
     }
+    return children;
+  }
 
-    Widget widget = AppScrollBar(
-      controller: scrollController,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: SingleChildScrollView(
-          controller: scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
+  List<Widget> buildSearchResults(String keyword) {
+    final lower = keyword.toLowerCase();
+    var children = <Widget>[];
+    for (var part in searchParts) {
+      final matched = part.items
+          .where((item) => item.label.toLowerCase().contains(lower))
+          .toList();
+      if (matched.isEmpty) continue;
+      children.add(buildTitle(part.title));
+      children.add(buildTags(matched));
+    }
+    if (children.isEmpty) {
+      return [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+          child: Center(
+            child: Text(
+              t.noResultsTryOtherKeywords,
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+            ),
           ),
         ),
-      ),
-    );
-
-    return widget;
+      ];
+    }
+    return children;
   }
 
   Widget buildTitle(String title) {
@@ -292,6 +416,9 @@ class _CategoryPage extends StatelessWidget {
   }
 
   bool get enableTranslation => App.locale.languageCode == 'zh';
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class CollapsibleCategory extends StatefulWidget {

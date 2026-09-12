@@ -1208,18 +1208,26 @@ class _StaticStars extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final filledColor = cs.primary;
     final emptyColor = cs.onSurface.withValues(alpha: 0.2);
+    // 星形图标自带横向留白，收紧每颗星的槽宽让星星靠得更近
+    final slot = size * 0.84;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < 5; i++) ...[
-          _Star(
-            size: size,
-            fill: (rating - i).clamp(0.0, 1.0),
-            filledColor: filledColor,
-            emptyColor: emptyColor,
+        for (var i = 0; i < 5; i++)
+          SizedBox(
+            width: slot,
+            height: size,
+            child: OverflowBox(
+              maxWidth: size,
+              maxHeight: size,
+              child: _Star(
+                size: size,
+                fill: (rating - i).clamp(0.0, 1.0),
+                filledColor: filledColor,
+                emptyColor: emptyColor,
+              ),
+            ),
           ),
-          if (i < 4) const SizedBox(width: 1),
-        ],
       ],
     );
   }

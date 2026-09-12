@@ -271,6 +271,30 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
     loadMore: (o) => loadDroppedList(offset: o),
   );
 
+  PreferredSizeWidget _buildTabBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(40),
+      child: Align(
+        alignment: Alignment.center,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: CapsuleOptions(
+            scrollable: true,
+            progress: controller.animation,
+            children: [
+              for (var i = 0; i < tab.length; i++)
+                CapsuleOption(
+                  text: tab[i],
+                  isSelected: controller.index == i,
+                  onTap: () => controller.animateTo(i),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -296,11 +320,7 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
             ),
           ),
         ],
-        bottom: TabBar(
-          tabs: tab.map((title) => Tab(text: title)).toList(),
-          controller: controller,
-          tabAlignment: TabAlignment.center,
-        ),
+        bottom: _buildTabBar(),
       ),
       body: Column(
         children: [

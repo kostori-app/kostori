@@ -237,7 +237,7 @@ class _VideoTestPageState extends ConsumerState<VideoTestPage> {
   }
 }
 
-/// 播放器视图（布局照搬本地播放器）：全屏 Video + 径向渐变遮罩 +
+/// 播放器视图：全屏 Video + 径向渐变遮罩 +
 /// 点击/双击/长按 2x / 左右滑动 seek / 上下音量亮度 + 底部控件 + HUD。
 class _PlayerView extends ConsumerStatefulWidget {
   const _PlayerView({required this.videoController});
@@ -393,7 +393,7 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
             fill: Colors.black,
           ),
         ),
-        // 径向渐变遮罩（照搬本地播放器）
+        // 径向渐变遮罩
         FadeTransition(
           opacity: _fade,
           child: Container(

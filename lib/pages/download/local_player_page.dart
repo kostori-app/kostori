@@ -63,10 +63,8 @@ class _LocalFullscreenVideoPageState
   }
 }
 
-/// 本地播放器视图：控件布局与手势照搬 watcher 播放器
-/// （player_item_panel / player_item / player_item_base_panel）：
-/// 侧边栏、顶部、底部进度+控制、FadeTransition、MouseRegion、
-/// 点击/双击/长按 2x / 左右滑动 seek / 上下滑动音量·亮度、磨砂 HUD。
+/// 本地播放器视图：侧边栏、顶部、底部进度+控制、FadeTransition、
+/// MouseRegion、点击/双击/长按 2x / 左右滑动 seek / 上下滑动音量·亮度、磨砂 HUD。
 class LocalPlayerView extends ConsumerStatefulWidget {
   final String filePath;
 
@@ -109,7 +107,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     super.dispose();
   }
 
-  // ---- 控件显示/隐藏（照搬 player_item）----
+  // ---- 控件显示/隐藏 ----
 
   void displayVideoController() {
     animationController.forward();
@@ -165,7 +163,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     if (st.showControls) {
       animationController.reverse();
     }
-    // 照搬 watcher：拖动时停止进度同步 + 暂停，避免进度回退
+    // 拖动时停止进度同步 + 暂停，避免进度回退
     ctrl.stopPositionSync();
     ctrl.pause();
     ctrl.setShowSeekTime(true);
@@ -173,7 +171,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     final scale = 180000 / MediaQuery.sizeOf(context).width;
-    // 基于上次 seekPreview 累积（watcher 同款），避免只反映最后一段位移
+    // 基于上次 seekPreview 累积，避免只反映最后一段位移
     final base = st.seekPreview ?? st.position;
     final ms = (base.inMilliseconds + (details.delta.dx * scale).round())
         .clamp(0, st.duration.inMilliseconds);
@@ -182,7 +180,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   void _onHorizontalDragEnd() {
     final target = st.seekPreview ?? st.position;
-    // 照搬 watcher onHorizontalDragEnd 顺序：play → seek → 恢复同步
+    // 顺序：play → seek → 恢复同步
     ctrl.play();
     ctrl.seek(target);
     ctrl.startPositionSync();
@@ -267,8 +265,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
             fit: BoxFit.contain,
           ),
         ),
-        // 径向渐变遮罩（照搬 player_item AmbientShaderVideo）：
-        // 边缘渐暗，随控件淡入淡出
+        // 径向渐变遮罩：边缘渐暗，随控件淡入淡出
         FadeTransition(
           opacity: fadeAnimation,
           child: Container(
@@ -289,7 +286,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
             ),
           ),
         ),
-        // tap 手势层（照搬 player_item 618：点击/双击/长按 2x，位于面板之下）
+        // tap 手势层：点击/双击/长按 2x，位于面板之下
         // opaque：命中并短路，确保 tap/双击/长按收到事件
         Positioned.fill(
           child: GestureDetector(
@@ -306,7 +303,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
             opacity: fadeAnimation,
             child: _buildPanel(state),
           ),
-        // 滑动手势层（照搬 player_item 679：位于面板之上）
+        // 滑动手势层：位于面板之上
         // translucent：加入 hit path 但不短路，让下层 tap 层也能收事件。
         // bottom 避开底部控制面板，避免面板内横向拖动（进度条等）误触发 seek
         Positioned.fill(
@@ -350,7 +347,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  /// 控件层面板：照搬 PlayerItemPanel（侧边栏/顶部/底部，全屏透明 Stack）
+  /// 控件层面板：侧边栏/顶部/底部，全屏透明 Stack
   Widget _buildPanel(LocalPlayerState state) {
     return Stack(
       children: [
@@ -361,7 +358,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  // ---- 侧边栏（照搬 right:10 top:40）----
+  // ---- 侧边栏 ----
 
   Widget _buildSideBar() {
     return Positioned(
@@ -386,9 +383,9 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  // ---- 顶部（照搬：返回 + Marquee 标题 + 倍速）----
+  // ---- 顶部（返回 + Marquee 标题 + 倍速）----
 
-  /// 顶部时间状态条（照搬 player_item_panel 全屏时的时间/电池/网络）
+  /// 顶部时间状态条（全屏时的时间/电池/网络）
   Widget _buildTimeStatusBar() {
     final now = DateTime.now();
     return Container(
@@ -442,7 +439,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         '${now.second.toString().padLeft(2, '0')}';
   }
 
-  /// 标题（照搬 player_item_panel：超宽滚动 Marquee）
+  /// 标题（超宽时滚动 Marquee）
   Widget _buildTitle() {
     final text = ctrl.title;
     const style = TextStyle(color: Colors.white, fontSize: 16);
@@ -500,7 +497,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                 color: Colors.white,
                 icon: const Icon(Icons.arrow_back_ios_new),
                 onPressed: () {
-                  // 照搬 watcher player_item_panel：全屏时退出全屏，否则返回
+                  // 全屏时退出全屏，否则返回
                   if (state.fullscreen) {
                     ctrl.toggleFullscreen();
                   } else {
@@ -527,7 +524,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
-              // 播放器详情（照搬 watcher 的播放器详情 sheet）
+              // 播放器详情
               if (!state.fullscreen)
                 IconButton(
                   color: Colors.white,
@@ -569,7 +566,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  // ---- 底部（照搬：信息行 + 进度条 + 控制行）----
+  // ---- 底部（信息行 + 进度条 + 控制行）----
 
   Widget _buildBottomBar(LocalPlayerState state) {
     return Positioned(
@@ -660,7 +657,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   // ---- HUD 指示 ----
 
   Widget _buildSeekIndicator(LocalPlayerState state) {
-    // 照搬 base_panel 的 _SeekHUD：方向配色 + 磨砂玻璃 + 目标时间/总时长 + 进度条
+    // 方向配色 + 磨砂玻璃 + 目标时间/总时长 + 进度条
     final target = state.seekPreview ?? state.position;
     final current = state.position;
     final total = state.duration;
@@ -790,8 +787,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     return h > 0 ? '$h:$m:$s' : '$m:$s';
   }
 
-  /// 亮度/音量 HUD（照搬 base_panel _LevelSliderHUD）：
-  /// 顶部居中 top:50，磨砂玻璃 + 等级图标 + 进度条 + 数值
+  /// 亮度/音量 HUD：顶部居中，磨砂玻璃 + 等级图标 + 进度条 + 数值
   Widget _buildLevelHUD(
     LocalPlayerState state, {
     required bool isBrightness,
@@ -869,7 +865,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  /// 播放速度 HUD（照搬 base_panel showPlaySpeed）：顶部居中
+  /// 播放速度 HUD：顶部居中
   Widget _buildSpeedIndicator(LocalPlayerState state) {
     return Positioned(
       top: MediaQuery.paddingOf(context).top + 80,
@@ -909,7 +905,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  /// 磨砂玻璃容器（照搬 base_panel _FrostedGlass）
+  /// 磨砂玻璃容器
   Widget _frostedGlass({required Widget child}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),

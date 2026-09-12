@@ -610,18 +610,24 @@ class CapsuleOptions extends StatelessWidget {
   }
 }
 
-/// CapsuleOptions 内的单个选项（浮起胶囊由 CapsuleOptions 统一绘制并滑动）
+/// CapsuleOptions 内的单个选项（浮起胶囊由 CapsuleOptions 统一绘制并滑动）。
+/// 默认渲染 [text]；需要图标/计数等自定义内容时传 [child]（文字与图标会
+/// 继承选中态的主题色插值）。
 class CapsuleOption extends StatelessWidget {
-  final String text;
+  final String? text;
+  final Widget? child;
   final bool isSelected;
   final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
 
   const CapsuleOption({
     super.key,
-    required this.text,
+    this.text,
+    this.child,
     required this.isSelected,
     this.onTap,
-  });
+    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+  }) : assert(text != null || child != null);
 
   @override
   Widget build(BuildContext context) {
@@ -632,17 +638,22 @@ class CapsuleOption extends StatelessWidget {
     final t = scope != null
         ? (1 - (scope.value - scope.index).abs()).clamp(0.0, 1.0)
         : (isSelected ? 1.0 : 0.0);
+    final color = Color.lerp(cs.onSurfaceVariant, cs.primary, t)!;
+    final style = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+      color: color,
+    );
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: t >= 0.5 ? FontWeight.w600 : FontWeight.w400,
-            color: Color.lerp(cs.onSurface.toOpacity(0.45), cs.onSurface, t),
+        padding: padding,
+        child: DefaultTextStyle.merge(
+          style: style,
+          child: IconTheme.merge(
+            data: IconThemeData(size: 16, color: color),
+            child: child ?? Text(text!, style: style),
           ),
         ),
       ),

@@ -849,7 +849,9 @@ class _SettingCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Material(
-        color: cs.surfaceContainerLow,
+        // 半透明卡片：让设置页的背景渐变透出来
+        color: cs.surfaceContainerLow.withValues(alpha: 0.6),
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(

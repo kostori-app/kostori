@@ -555,13 +555,15 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: Material(
-        color: selected
-            ? cs.secondaryContainer.withValues(alpha: 0.65)
-            : Colors.transparent,
+        color: selected ? cs.primaryContainer.toOpacity(0.36) : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => favPage.setPage(index),
+          onTap: () {
+            favPage.setPage(index);
+            // 窄屏侧边栏为浮层，跳转后自动收起
+            widget.onSelected?.call();
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(

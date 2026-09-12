@@ -290,14 +290,14 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     _resetHideTimer();
   }
 
-  /// 停止进度同步（左右滑动 seek 时暂停，照搬 watcher stopPlayerStreams）
+  /// 停止进度同步（左右滑动 seek 时暂停）
   void stopPositionSync() {
     _posSub?.cancel();
     _durSub?.cancel();
     _bufSub?.cancel();
   }
 
-  /// 恢复进度同步（照搬 watcher startPlayerStreams）
+  /// 恢复进度同步
   void startPositionSync() {
     stopPositionSync();
     _posSub = player.stream.position.listen(
