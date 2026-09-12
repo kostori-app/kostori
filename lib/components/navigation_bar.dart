@@ -989,6 +989,27 @@ class _NaviMainViewState extends State<_NaviMainView> {
     return false;
   }
 
+  /// 顶部状态栏的磨砂玻璃（内容从下方滚过时被模糊）
+  Widget _frostedStatusBar() {
+    final cs = Theme.of(context).colorScheme;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: cs.surface.withValues(alpha: 0.7),
+            border: Border(
+              bottom: BorderSide(
+                color: cs.outlineVariant.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final mqSize = MediaQuery.of(context).size;
@@ -1103,6 +1124,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
       );
     }
     final bottomPad = MediaQuery.of(context).padding.bottom + 12;
+    final topInset = MediaQuery.of(context).padding.top;
     return Stack(
       children: [
         Column(
@@ -1124,6 +1146,15 @@ class _NaviMainViewState extends State<_NaviMainView> {
             ),
           ],
         ),
+        // 顶部状态栏区域：磨砂玻璃（内容从下方滚过时被模糊）
+        if (topInset > 0)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: topInset,
+            child: _frostedStatusBar(),
+          ),
         // 底部：动作按钮（分离，位于悬浮导航左侧，可向上展开）+ 悬浮导航
         Positioned(
           left: 0,
