@@ -229,6 +229,14 @@ pluginIcon: 图标（emoji）
 pluginDescription: 描述
 pluginPrompt: 提示词
 pluginPromptHint: "提示词定义该模块的功能，你输入的文本会作为输入发送；留空则使用通用提示词。"
+pluginStarters: 开场引导
+pluginStartersHint: 每行一条，点击即发送
+pluginTags: 标签（逗号分隔）
+pluginModel: 模型
+pluginChatMode: 多轮对话
+pluginChatModeDesc: 开启后保留上下文进行多轮对话；关闭为一问一答
+pluginTemperature: 温度
+pluginContextMessages: 上下文条数
 processing: 处理中...
 run: 运行
 output: 输出

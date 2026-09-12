@@ -228,6 +228,14 @@ pluginIcon: 圖示（emoji）
 pluginDescription: 描述
 pluginPrompt: 提示詞
 pluginPromptHint: "提示詞定義該模組的功能，你輸入的文字會作為輸入發送；留空則使用通用提示詞。"
+pluginStarters: 開場引導
+pluginStartersHint: 每行一條，點擊即發送
+pluginTags: 標籤（逗號分隔）
+pluginModel: 模型
+pluginChatMode: 多輪對話
+pluginChatModeDesc: 開啟後保留上下文進行多輪對話；關閉為一問一答
+pluginTemperature: 溫度
+pluginContextMessages: 上下文條數
 processing: 處理中...
 run: 執行
 output: 輸出

@@ -377,21 +377,37 @@ class _PluginCard extends StatelessWidget {
 // 自定义插件：提示词驱动的一问一答模块
 // ─────────────────────────────────────────────
 
-class PluginModulePage extends StatefulWidget {
+class PluginModulePage extends ConsumerStatefulWidget {
   const PluginModulePage({super.key, required this.plugin});
 
   final PluginModule plugin;
 
   @override
-  State<PluginModulePage> createState() => _PluginModulePageState();
+  ConsumerState<PluginModulePage> createState() => _PluginModulePageState();
 }
 
-class _PluginModulePageState extends State<PluginModulePage> {
+class _PluginModulePageState extends ConsumerState<PluginModulePage> {
   final TextEditingController _inputController = TextEditingController();
-  String _source = aiHubProvider();
+  String? _sessionId;
   String? _result;
   bool _running = false;
   String? _error;
+
+  PluginModule get plugin => widget.plugin;
+
+  /// 插件自带服务商优先，否则跟随 AI 工坊当前选择
+  String get _provider =>
+      plugin.provider.isNotEmpty ? plugin.provider : aiHubProvider();
+
+  AiGenerationParams? get _params => plugin.temperature == null
+      ? null
+      : AiGenerationParams(temperature: plugin.temperature);
+
+  @override
+  void initState() {
+    super.initState();
+    if (plugin.chatMode) _ensureSession();
+  }
 
   @override
   void dispose() {
@@ -399,32 +415,49 @@ class _PluginModulePageState extends State<PluginModulePage> {
     super.dispose();
   }
 
-  Future<void> _run() async {
-    final text = _inputController.text.trim();
+  Future<String> _ensureSession() async {
+    final existing = _sessionId;
+    if (existing != null) return existing;
+    final id = await AiConversationService().createSession(
+      type: 'plugin_${plugin.id}',
+      provider: _provider,
+      title: plugin.name,
+    );
+    if (mounted) setState(() => _sessionId = id);
+    return id;
+  }
+
+  Future<void> _send([String? preset]) async {
+    if (_running) return;
+    final text = (preset ?? _inputController.text).trim();
     if (text.isEmpty) {
       App.rootContext.showMessage(message: t.pleaseEnterTextToTranslate);
       return;
     }
+    if (preset == null) _inputController.clear();
     setState(() {
       _running = true;
       _error = null;
     });
-    final result = await AiConversationService().runTask(
-      provider: _source,
-      taskType: 'plugin_${widget.plugin.id}',
-      prompt: text,
-      systemPrompt: widget.plugin.prompt.trim().isEmpty
+    final sessionId = await _ensureSession();
+    final res = await AiConversationService().sendMessage(
+      sessionId: sessionId,
+      userMessage: text,
+      taskType: 'plugin_${plugin.id}',
+      maxContextMessages: plugin.chatMode ? plugin.maxContextMessages : 0,
+      providerOverride: _provider,
+      systemPromptOverride: plugin.prompt.trim().isEmpty
           ? null
-          : widget.plugin.prompt.trim(),
-      sessionTitle: widget.plugin.name,
+          : plugin.prompt.trim(),
+      paramsOverride: _params,
     );
     if (!mounted) return;
     setState(() {
       _running = false;
-      if (result.success) {
-        _result = result.data;
+      if (res.success) {
+        if (!plugin.chatMode) _result = res.data;
       } else {
-        _error = result.errorMessage ?? 'Error';
+        _error = res.errorMessage ?? 'Error';
       }
     });
   }
@@ -433,79 +466,217 @@ class _PluginModulePageState extends State<PluginModulePage> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: Appbar(
-        title: Text('${widget.plugin.icon} ${widget.plugin.name}'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          tooltip: t.back,
-          onPressed: () => context.canPop() ? context.pop() : App.pop(),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      appBar: Appbar(title: Text('${plugin.icon} ${plugin.name}')),
+      body: Column(
         children: [
-          // 源选择
-          _AiSettingsCard(
-            provider: _source,
-            onChanged: (v) => setState(() => _source = v),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _inputController,
-            maxLines: 6,
-            minLines: 3,
-            decoration: InputDecoration(
-              hintText: t.enterTextToTranslate,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _pluginHeader(scheme),
+                if (plugin.starters.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final s in plugin.starters)
+                        ActionChip(
+                          label: Text(s),
+                          onPressed: _running ? null : () => _send(s),
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                if (_error != null) _errorBox(scheme),
+                if (plugin.chatMode)
+                  _chatMessages(scheme)
+                else if (_result != null)
+                  _AiResultCard(
+                    icon: Icons.output,
+                    title: t.output,
+                    content: _result!,
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
+          _inputBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _pluginHeader(ColorScheme scheme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(plugin.icon, style: const TextStyle(fontSize: 30)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                t.charCount(count: _inputController.text.length),
-                style: TextStyle(fontSize: 12, color: scheme.outline),
+                plugin.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: _running ? null : _run,
-                icon: _running
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: PolygonRefreshIndicator(),
-                      )
-                    : const Icon(Icons.auto_awesome, size: 18),
-                label: Text(_running ? t.processing : t.run),
-              ),
+              if (plugin.description.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  plugin.description,
+                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                ),
+              ],
+              if (plugin.tags.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final tag in plugin.tags)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          tag,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: scheme.onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: scheme.errorContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _error!,
-                style: TextStyle(color: scheme.onErrorContainer),
+        ),
+      ],
+    );
+  }
+
+  Widget _errorBox(ColorScheme scheme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(_error!, style: TextStyle(color: scheme.onErrorContainer)),
+    );
+  }
+
+  Widget _chatMessages(ColorScheme scheme) {
+    final sessionId = _sessionId;
+    if (sessionId == null) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(child: PolygonRefreshIndicator()),
+      );
+    }
+    return StreamBuilder<List<AiTask>>(
+      stream: AiConversationService().watchMessages(sessionId),
+      builder: (context, snap) {
+        final messages = snap.data ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final m in messages) _bubble(context, scheme, m),
+            if (_running) _thinking(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _bubble(BuildContext context, ColorScheme scheme, AiTask m) {
+    final isUser = m.role == 'user';
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * 0.8,
+        ),
+        decoration: BoxDecoration(
+          color: isUser
+              ? scheme.primaryContainer
+              : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: CustomMarkdownWidget(
+          data: isUser ? m.inputContent : (m.outputContent ?? ''),
+        ),
+      ),
+    );
+  }
+
+  Widget _thinking() {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.all(8),
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: PolygonRefreshIndicator(),
+        ),
+      ),
+    );
+  }
+
+  Widget _inputBar() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _inputController,
+                minLines: 1,
+                maxLines: plugin.chatMode ? 4 : 6,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _send(),
+                decoration: InputDecoration(
+                  hintText: t.enterTextToTranslate,
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                ),
               ),
             ),
-          ],
-          if (_result != null) ...[
-            const SizedBox(height: 16),
-            _AiResultCard(
-              icon: Icons.output,
-              title: t.output,
-              content: _result!,
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: _running ? null : () => _send(),
+              icon: _running
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: PolygonRefreshIndicator(),
+                    )
+                  : const Icon(Icons.send),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -536,6 +707,21 @@ class _PluginEditorState extends State<_PluginEditor> {
   late final _promptCtrl = TextEditingController(
     text: widget.plugin?.prompt ?? '',
   );
+  late final _startersCtrl = TextEditingController(
+    text: (widget.plugin?.starters ?? const []).join('\n'),
+  );
+  late final _tagsCtrl = TextEditingController(
+    text: (widget.plugin?.tags ?? const []).join(', '),
+  );
+
+  late String _provider = (widget.plugin?.provider.isNotEmpty ?? false)
+      ? widget.plugin!.provider
+      : aiHubProvider();
+  late String _model = widget.plugin?.model ?? '';
+  late bool _chatMode = widget.plugin?.chatMode ?? false;
+  late bool _useTemperature = widget.plugin?.temperature != null;
+  late double _temperature = widget.plugin?.temperature ?? 0.7;
+  late int _maxContext = widget.plugin?.maxContextMessages ?? 20;
 
   bool get _isNew => widget.plugin == null;
 
@@ -545,8 +731,22 @@ class _PluginEditorState extends State<_PluginEditor> {
     _iconCtrl.dispose();
     _descCtrl.dispose();
     _promptCtrl.dispose();
+    _startersCtrl.dispose();
+    _tagsCtrl.dispose();
     super.dispose();
   }
+
+  List<String> _lines(TextEditingController c) => c.text
+      .split('\n')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+
+  List<String> _csv(TextEditingController c) => c.text
+      .split(',')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -558,6 +758,13 @@ class _PluginEditorState extends State<_PluginEditor> {
       icon: _iconCtrl.text.trim().isEmpty ? '🧩' : _iconCtrl.text.trim(),
       description: _descCtrl.text.trim(),
       prompt: _promptCtrl.text.trim(),
+      starters: _lines(_startersCtrl),
+      tags: _csv(_tagsCtrl),
+      provider: _provider,
+      model: _model,
+      temperature: _useTemperature ? _temperature : null,
+      maxContextMessages: _maxContext,
+      chatMode: _chatMode,
       isBuiltin: widget.plugin?.isBuiltin ?? false,
     );
     await PluginStore.instance.upsert(module);
@@ -569,6 +776,7 @@ class _PluginEditorState extends State<_PluginEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return PopUpWidgetScaffold(
       title: _isNew ? t.addPlugin : t.editPlugin,
       body: Form(
@@ -581,46 +789,110 @@ class _PluginEditorState extends State<_PluginEditor> {
             children: [
               Positioned.fill(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                        width: 0.6,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                  child: Column(
+                    children: [
+                      _field(t.name, _nameCtrl),
+                      _field(t.pluginIcon, _iconCtrl, required: false),
+                      _field(t.pluginDescription, _descCtrl, required: false),
+                      _field(
+                        t.pluginPrompt,
+                        _promptCtrl,
+                        required: false,
+                        multiline: true,
+                        hint: t.pluginPromptHint,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        _field(t.name, _nameCtrl),
-                        _field(
-                          t.pluginIcon,
-                          _iconCtrl,
-                          required: false,
-                        ),
-                        _field(
-                          t.pluginDescription,
-                          _descCtrl,
-                          required: false,
-                        ),
-                        _field(
-                          t.pluginPrompt,
-                          _promptCtrl,
-                          required: false,
-                          multiline: true,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            t.pluginPromptHint,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.outline,
+                      _field(
+                        t.pluginStarters,
+                        _startersCtrl,
+                        required: false,
+                        multiline: true,
+                        hint: t.pluginStartersHint,
+                      ),
+                      _field(t.pluginTags, _tagsCtrl, required: false),
+                      _card(
+                        scheme,
+                        title: t.pluginModel,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                t.model,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const Spacer(),
+                              _ModelSelector(
+                                provider: _provider,
+                                currentModel: _model,
+                                onProviderChanged: (p) => setState(() {
+                                  _provider = p;
+                                  _model = '';
+                                }),
+                                onModelSelected: (m) =>
+                                    setState(() => _model = m),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      _card(
+                        scheme,
+                        title: t.aiSettings,
+                        children: [
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(t.pluginChatMode),
+                            subtitle: Text(
+                              t.pluginChatModeDesc,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            value: _chatMode,
+                            onChanged: (v) => setState(() => _chatMode = v),
+                          ),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(t.pluginTemperature),
+                            subtitle: Text(
+                              _useTemperature
+                                  ? _temperature.toStringAsFixed(2)
+                                  : t.auto,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            value: _useTemperature,
+                            onChanged: (v) =>
+                                setState(() => _useTemperature = v),
+                          ),
+                          if (_useTemperature)
+                            Slider(
+                              value: _temperature,
+                              min: 0,
+                              max: 2,
+                              divisions: 20,
+                              label: _temperature.toStringAsFixed(2),
+                              onChanged: (v) =>
+                                  setState(() => _temperature = v),
+                            ),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              '${t.pluginContextMessages}: $_maxContext',
+                            ),
+                            subtitle: Slider(
+                              value: _maxContext.toDouble(),
+                              min: 0,
+                              max: 50,
+                              divisions: 50,
+                              label: '$_maxContext',
+                              onChanged: (v) =>
+                                  setState(() => _maxContext = v.round()),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -640,19 +912,55 @@ class _PluginEditorState extends State<_PluginEditor> {
     );
   }
 
+  Widget _card(
+    ColorScheme scheme, {
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outlineVariant, width: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: scheme.primary,
+              ),
+            ),
+          ),
+          ...children,
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
   Widget _field(
     String label,
     TextEditingController ctrl, {
     bool required = true,
     bool multiline = false,
+    String? hint,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       child: TextFormField(
         controller: ctrl,
-        maxLines: multiline ? 8 : 1,
+        maxLines: multiline ? 6 : 1,
         decoration: InputDecoration(
           labelText: label,
+          helperText: hint,
+          helperMaxLines: 3,
           border: const OutlineInputBorder(),
         ),
         validator: required

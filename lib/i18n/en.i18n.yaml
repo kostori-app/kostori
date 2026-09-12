@@ -240,6 +240,14 @@ pluginIcon: Icon (emoji)
 pluginDescription: Description
 pluginPrompt: Prompt
 pluginPromptHint: "The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt."
+pluginStarters: Conversation starters
+pluginStartersHint: One per line; tap to send
+pluginTags: Tags (comma separated)
+pluginModel: Model
+pluginChatMode: Multi-turn chat
+pluginChatModeDesc: Keep context for multi-turn chat; off means one-shot Q&A
+pluginTemperature: Temperature
+pluginContextMessages: Context messages
 processing: Processing...
 run: Run
 output: Output

@@ -265,6 +265,7 @@ class AiConversationService {
     void Function(String toolName)? onToolCall,
     void Function()? onAutoCompressed,
     String? systemPromptOverride,
+    AiGenerationParams? paramsOverride,
   }) async {
     var session = await _sessionDao.getSession(sessionId);
     if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
@@ -382,7 +383,7 @@ class AiConversationService {
       session: session,
       useTools: useTools,
       onToolCall: onToolCall,
-      params: _profileParams(profile),
+      params: paramsOverride ?? _profileParams(profile),
       configOverride: await _configOverrideFor(ai, provider, profile),
     );
     SkillRegistry.instance.setContextImage(null);

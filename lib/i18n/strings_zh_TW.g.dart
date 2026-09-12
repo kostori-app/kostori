@@ -269,6 +269,14 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get pluginDescription => '描述';
 	@override String get pluginPrompt => '提示詞';
 	@override String get pluginPromptHint => '提示詞定義該模組的功能，你輸入的文字會作為輸入發送；留空則使用通用提示詞。';
+	@override String get pluginStarters => '開場引導';
+	@override String get pluginStartersHint => '每行一條，點擊即發送';
+	@override String get pluginTags => '標籤（逗號分隔）';
+	@override String get pluginModel => '模型';
+	@override String get pluginChatMode => '多輪對話';
+	@override String get pluginChatModeDesc => '開啟後保留上下文進行多輪對話；關閉為一問一答';
+	@override String get pluginTemperature => '溫度';
+	@override String get pluginContextMessages => '上下文條數';
 	@override String get processing => '處理中...';
 	@override String get run => '執行';
 	@override String get output => '輸出';
@@ -2818,6 +2826,14 @@ extension on TranslationsZhTw {
 			'pluginDescription' => '描述',
 			'pluginPrompt' => '提示詞',
 			'pluginPromptHint' => '提示詞定義該模組的功能，你輸入的文字會作為輸入發送；留空則使用通用提示詞。',
+			'pluginStarters' => '開場引導',
+			'pluginStartersHint' => '每行一條，點擊即發送',
+			'pluginTags' => '標籤（逗號分隔）',
+			'pluginModel' => '模型',
+			'pluginChatMode' => '多輪對話',
+			'pluginChatModeDesc' => '開啟後保留上下文進行多輪對話；關閉為一問一答',
+			'pluginTemperature' => '溫度',
+			'pluginContextMessages' => '上下文條數',
 			'processing' => '處理中...',
 			'run' => '執行',
 			'output' => '輸出',
@@ -3092,6 +3108,8 @@ extension on TranslationsZhTw {
 			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
 			'firstImageFullHeight' => '首張全高顯示',
 			'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
+			_ => null,
+		} ?? switch (path) {
 			'showImageBorders' => '顯示圖片邊框',
 			'outerBorderRadius' => '外邊框圓角',
 			'outerBorderWidth' => '外邊框寬度',
@@ -3100,8 +3118,6 @@ extension on TranslationsZhTw {
 			'innerBorderWidth' => '內邊框寬度',
 			'innerBorderColor' => '內邊框顏色',
 			'borderSettings' => '邊框設定',
-			_ => null,
-		} ?? switch (path) {
 			'saving' => '正在儲存',
 			'saveSuccessful' => '儲存成功',
 			'saveFailedE' => ({required Object e}) => '儲存失敗：${e}',
@@ -3606,6 +3622,8 @@ extension on TranslationsZhTw {
 			'deleteGroup' => '刪除分組',
 			'deleteGroupConfirm' => '確定刪除該分組？',
 			'translation' => '翻譯',
+			_ => null,
+		} ?? switch (path) {
 			'translationService' => '翻譯服務',
 			'apiKeyCannotBeEmpty' => 'API Key 不能為空',
 			'pleaseConfigureApiKeyInAiSettingsFirst' => '請先在AI設定中設定API金鑰',
@@ -3614,8 +3632,6 @@ extension on TranslationsZhTw {
 			'screenshotInProgress' => '正在擷圖...',
 			'moveOperationTargetUnknown' => '移動操作目標未知',
 			'operationUnknown' => '操作未知',
-			_ => null,
-		} ?? switch (path) {
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符',
 			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符',
 			'thisFieldCannotBeEmpty' => '此欄位不能為空',
@@ -4120,6 +4136,8 @@ extension on TranslationsZhTw {
 			'aiStatActiveTitles' => '活躍條目',
 			'aiSoulStyle' => '分析風格',
 			'aiStyleBalanced' => '均衡',
+			_ => null,
+		} ?? switch (path) {
 			'aiStyleDetailed' => '詳細',
 			'aiStyleSharp' => '毒舌',
 			'aiStylePoetic' => '文藝',
@@ -4128,8 +4146,6 @@ extension on TranslationsZhTw {
 			'aiTagStyleDanbooru' => 'Danbooru',
 			'aiTagStyleRealistic' => '寫實',
 			'aiTagCount' => 'Tag 數量',
-			_ => null,
-		} ?? switch (path) {
 			'aiCustomRange' => '自訂範圍',
 			'tasteRadar' => '追番口味雷達',
 			'tasteRadarDescription' => '根據收藏番劇的高頻標籤生成口味雷達圖',
@@ -4634,6 +4650,8 @@ extension on TranslationsZhTw {
 			'noSystemPromptUsed' => '不使用系統提示詞',
 			'queryBalance' => '查詢餘額',
 			'balance' => '餘額',
+			_ => null,
+		} ?? switch (path) {
 			'queryingBalance' => '查詢中...',
 			'balanceQueryUnsupported' => '該服務商不支援查詢餘額',
 			'balanceQueryUrl' => '餘額查詢位址',
@@ -4642,8 +4660,6 @@ extension on TranslationsZhTw {
 			'balanceKeyPathHint' => '點號路徑，如 data.balance',
 			'balanceQueryConfig' => '餘額查詢設定',
 			'customProviders' => '自訂服務商',
-			_ => null,
-		} ?? switch (path) {
 			'noCustomProviders' => '暫無自訂服務商',
 			'newCustomProvider' => '新增自訂服務商',
 			'newMcpServer' => '新增 MCP 伺服器',

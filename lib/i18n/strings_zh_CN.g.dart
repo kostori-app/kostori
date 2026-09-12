@@ -270,6 +270,14 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get pluginDescription => '描述';
 	@override String get pluginPrompt => '提示词';
 	@override String get pluginPromptHint => '提示词定义该模块的功能，你输入的文本会作为输入发送；留空则使用通用提示词。';
+	@override String get pluginStarters => '开场引导';
+	@override String get pluginStartersHint => '每行一条，点击即发送';
+	@override String get pluginTags => '标签（逗号分隔）';
+	@override String get pluginModel => '模型';
+	@override String get pluginChatMode => '多轮对话';
+	@override String get pluginChatModeDesc => '开启后保留上下文进行多轮对话；关闭为一问一答';
+	@override String get pluginTemperature => '温度';
+	@override String get pluginContextMessages => '上下文条数';
 	@override String get processing => '处理中...';
 	@override String get run => '运行';
 	@override String get output => '输出';
@@ -2820,6 +2828,14 @@ extension on TranslationsZhCn {
 			'pluginDescription' => '描述',
 			'pluginPrompt' => '提示词',
 			'pluginPromptHint' => '提示词定义该模块的功能，你输入的文本会作为输入发送；留空则使用通用提示词。',
+			'pluginStarters' => '开场引导',
+			'pluginStartersHint' => '每行一条，点击即发送',
+			'pluginTags' => '标签（逗号分隔）',
+			'pluginModel' => '模型',
+			'pluginChatMode' => '多轮对话',
+			'pluginChatModeDesc' => '开启后保留上下文进行多轮对话；关闭为一问一答',
+			'pluginTemperature' => '温度',
+			'pluginContextMessages' => '上下文条数',
 			'processing' => '处理中...',
 			'run' => '运行',
 			'output' => '输出',
@@ -3093,6 +3109,8 @@ extension on TranslationsZhCn {
 			'saveAndShare' => '保存并分享',
 			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
 			'firstImageFullHeight' => '首张全高显示',
+			_ => null,
+		} ?? switch (path) {
 			'enterHexColorCode' => '输入十六进制颜色代码，例如 #FF000000',
 			'showImageBorders' => '显示图片边框',
 			'outerBorderRadius' => '外边框圆角',
@@ -3101,8 +3119,6 @@ extension on TranslationsZhCn {
 			'showOuterBorder' => '显示外边框',
 			'innerBorderWidth' => '内边框宽度',
 			'innerBorderColor' => '内边框颜色',
-			_ => null,
-		} ?? switch (path) {
 			'borderSettings' => '边框设置',
 			'saving' => '保存中',
 			'saveSuccessful' => '保存成功',
@@ -3607,6 +3623,8 @@ extension on TranslationsZhCn {
 			'deleteGroupConfirm' => '确定删除该分组？',
 			'translation' => '翻译',
 			'translationService' => '翻译服务',
+			_ => null,
+		} ?? switch (path) {
 			'apiKeyCannotBeEmpty' => 'API Key 不能为空',
 			'pleaseConfigureApiKeyInAiSettingsFirst' => '请先在AI设置中配置API密钥',
 			'usage' => '使用情况',
@@ -3615,8 +3633,6 @@ extension on TranslationsZhCn {
 			'moveOperationTargetUnknown' => '移动操作目标未知',
 			'operationUnknown' => '操作未知',
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => '请输入翻译提示词，使用 ${a} 作为目标语言的占位符',
-			_ => null,
-		} ?? switch (path) {
 			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示词必须包含 ${a} 作为目标语言的占位符',
 			'thisFieldCannotBeEmpty' => '此字段不能为空',
 			'thePromptMustContainAPlaceholder' => ({required Object a}) => '提示词必须包含 ${a} 占位符',
@@ -4121,6 +4137,8 @@ extension on TranslationsZhCn {
 			'aiSoulStyle' => '分析风格',
 			'aiStyleBalanced' => '均衡',
 			'aiStyleDetailed' => '详细',
+			_ => null,
+		} ?? switch (path) {
 			'aiStyleSharp' => '毒舌',
 			'aiStylePoetic' => '文艺',
 			'aiTagStyle' => 'Tag 风格',
@@ -4129,8 +4147,6 @@ extension on TranslationsZhCn {
 			'aiTagStyleRealistic' => '写实',
 			'aiTagCount' => 'Tag 数量',
 			'aiCustomRange' => '自定义范围',
-			_ => null,
-		} ?? switch (path) {
 			'tasteRadar' => '追番口味雷达',
 			'tasteRadarDescription' => '根据收藏番剧的高频标签生成口味雷达图',
 			'seasonReview' => '季度回顾',
@@ -4635,6 +4651,8 @@ extension on TranslationsZhCn {
 			'noPersonality' => '无人格',
 			'noSystemPromptUsed' => '不使用系统提示词',
 			'queryBalance' => '查询余额',
+			_ => null,
+		} ?? switch (path) {
 			'balance' => '余额',
 			'queryingBalance' => '查询中...',
 			'balanceQueryUnsupported' => '该服务商不支持查询余额',
@@ -4643,8 +4661,6 @@ extension on TranslationsZhCn {
 			'balanceQueryUrlHint' => '相对路径或完整 URL',
 			'balanceKeyPathHint' => '点号路径，如 data.balance',
 			'balanceQueryConfig' => '余额查询配置',
-			_ => null,
-		} ?? switch (path) {
 			'customProviders' => '自定义服务商',
 			'noCustomProviders' => '暂无自定义服务商',
 			'newCustomProvider' => '新建自定义服务商',

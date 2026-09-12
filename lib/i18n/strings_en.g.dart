@@ -755,6 +755,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt.'
 	String get pluginPromptHint => 'The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt.';
 
+	/// en: 'Conversation starters'
+	String get pluginStarters => 'Conversation starters';
+
+	/// en: 'One per line; tap to send'
+	String get pluginStartersHint => 'One per line; tap to send';
+
+	/// en: 'Tags (comma separated)'
+	String get pluginTags => 'Tags (comma separated)';
+
+	/// en: 'Model'
+	String get pluginModel => 'Model';
+
+	/// en: 'Multi-turn chat'
+	String get pluginChatMode => 'Multi-turn chat';
+
+	/// en: 'Keep context for multi-turn chat; off means one-shot Q&A'
+	String get pluginChatModeDesc => 'Keep context for multi-turn chat; off means one-shot Q&A';
+
+	/// en: 'Temperature'
+	String get pluginTemperature => 'Temperature';
+
+	/// en: 'Context messages'
+	String get pluginContextMessages => 'Context messages';
+
 	/// en: 'Processing...'
 	String get processing => 'Processing...';
 
@@ -7870,6 +7894,14 @@ extension on Translations {
 			'pluginDescription' => 'Description',
 			'pluginPrompt' => 'Prompt',
 			'pluginPromptHint' => 'The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt.',
+			'pluginStarters' => 'Conversation starters',
+			'pluginStartersHint' => 'One per line; tap to send',
+			'pluginTags' => 'Tags (comma separated)',
+			'pluginModel' => 'Model',
+			'pluginChatMode' => 'Multi-turn chat',
+			'pluginChatModeDesc' => 'Keep context for multi-turn chat; off means one-shot Q&A',
+			'pluginTemperature' => 'Temperature',
+			'pluginContextMessages' => 'Context messages',
 			'processing' => 'Processing...',
 			'run' => 'Run',
 			'output' => 'Output',
@@ -8136,6 +8168,8 @@ extension on Translations {
 			'sortImages' => 'Sort Images',
 			'finishSorting' => 'Finish Sorting',
 			'noImages' => 'No Images',
+			_ => null,
+		} ?? switch (path) {
 			'cropHeightCPx' => ({required Object c}) => 'Crop Height: ${c} px',
 			'firstImageFullHeight' => 'First image shown at full height',
 			'enterHexColorCode' => 'Enter hex color code, e.g. #FF000000',
@@ -8144,8 +8178,6 @@ extension on Translations {
 			'outerBorderWidth' => 'Outer Border Width',
 			'outerBorderColor' => 'Outer Border Color',
 			'showOuterBorder' => 'Show Outer Border',
-			_ => null,
-		} ?? switch (path) {
 			'innerBorderWidth' => 'Inner Border Width',
 			'innerBorderColor' => 'Inner Border Color',
 			'borderSettings' => 'Border Settings',
@@ -8650,6 +8682,8 @@ extension on Translations {
 			'deleteGroup' => 'Delete Group',
 			'deleteGroupConfirm' => 'Delete this group?',
 			'translation' => 'Translation',
+			_ => null,
+		} ?? switch (path) {
 			'translationService' => 'Translation Service',
 			'apiKeyCannotBeEmpty' => 'API key cannot be empty',
 			'pleaseConfigureApiKeyInAiSettingsFirst' => 'Please configure API key in AI settings first',
@@ -8658,8 +8692,6 @@ extension on Translations {
 			'screenshotInProgress' => 'Screenshot in progress...',
 			'moveOperationTargetUnknown' => 'Move operation, target unknown',
 			'operationUnknown' => 'Operation unknown',
-			_ => null,
-		} ?? switch (path) {
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => 'Please enter translation prompt, use ${a} as the placeholder for the target language',
 			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => 'The prompt must contain ${a} as the placeholder for the target language',
 			'thisFieldCannotBeEmpty' => 'This field cannot be empty',
@@ -9164,6 +9196,8 @@ extension on Translations {
 			'aiStatActiveTitles' => 'Active titles',
 			'aiSoulStyle' => 'Analysis style',
 			'aiStyleBalanced' => 'Balanced',
+			_ => null,
+		} ?? switch (path) {
 			'aiStyleDetailed' => 'Detailed',
 			'aiStyleSharp' => 'Sharp',
 			'aiStylePoetic' => 'Poetic',
@@ -9172,8 +9206,6 @@ extension on Translations {
 			'aiTagStyleDanbooru' => 'Danbooru',
 			'aiTagStyleRealistic' => 'Realistic',
 			'aiTagCount' => 'Tag count',
-			_ => null,
-		} ?? switch (path) {
 			'aiCustomRange' => 'Custom range',
 			'tasteRadar' => 'Taste Radar',
 			'tasteRadarDescription' => 'Visualize your anime taste as a radar chart from your most-liked tags',
@@ -9678,6 +9710,8 @@ extension on Translations {
 			'noPersonality' => 'No personality',
 			'noSystemPromptUsed' => 'No system prompt used',
 			'queryBalance' => 'Query Balance',
+			_ => null,
+		} ?? switch (path) {
 			'balance' => 'Balance',
 			'queryingBalance' => 'Querying balance...',
 			'balanceQueryUnsupported' => 'This provider does not support balance query',
@@ -9686,8 +9720,6 @@ extension on Translations {
 			'balanceQueryUrlHint' => 'Relative path or absolute URL',
 			'balanceKeyPathHint' => 'Dot notation, e.g. data.balance',
 			'balanceQueryConfig' => 'Balance Query Config',
-			_ => null,
-		} ?? switch (path) {
 			'customProviders' => 'Custom Providers',
 			'noCustomProviders' => 'No custom providers yet',
 			'newCustomProvider' => 'New Custom Provider',

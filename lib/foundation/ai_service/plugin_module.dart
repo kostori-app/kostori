@@ -12,7 +12,27 @@ class PluginModule {
   final String name;
   final String icon;
   final String description;
+
+  /// 系统提示词 / 指令
   final String prompt;
+
+  /// 开场引导（点击即发送）
+  final List<String> starters;
+
+  /// 分类标签
+  final List<String> tags;
+
+  /// 独立服务商 / 模型（为空则跟随 AI 工坊当前选择）
+  final String provider;
+  final String model;
+
+  /// 生成参数（为空跟随默认）
+  final double? temperature;
+  final int maxContextMessages;
+
+  /// true = 多轮对话；false = 一问一答
+  final bool chatMode;
+
   final bool isBuiltin;
 
   const PluginModule({
@@ -21,6 +41,13 @@ class PluginModule {
     this.icon = '🧩',
     this.description = '',
     this.prompt = '',
+    this.starters = const [],
+    this.tags = const [],
+    this.provider = '',
+    this.model = '',
+    this.temperature,
+    this.maxContextMessages = 20,
+    this.chatMode = false,
     this.isBuiltin = false,
   });
 
@@ -29,12 +56,27 @@ class PluginModule {
     String? icon,
     String? description,
     String? prompt,
+    List<String>? starters,
+    List<String>? tags,
+    String? provider,
+    String? model,
+    double? temperature,
+    bool clearTemperature = false,
+    int? maxContextMessages,
+    bool? chatMode,
   }) => PluginModule(
     id: id,
     name: name ?? this.name,
     icon: icon ?? this.icon,
     description: description ?? this.description,
     prompt: prompt ?? this.prompt,
+    starters: starters ?? this.starters,
+    tags: tags ?? this.tags,
+    provider: provider ?? this.provider,
+    model: model ?? this.model,
+    temperature: clearTemperature ? null : (temperature ?? this.temperature),
+    maxContextMessages: maxContextMessages ?? this.maxContextMessages,
+    chatMode: chatMode ?? this.chatMode,
     isBuiltin: isBuiltin,
   );
 
@@ -46,6 +88,14 @@ class PluginModule {
     icon: (json['icon'] as String?) ?? '🧩',
     description: (json['description'] as String?) ?? '',
     prompt: (json['prompt'] as String?) ?? '',
+    starters:
+        (json['starters'] as List?)?.whereType<String>().toList() ?? const [],
+    tags: (json['tags'] as List?)?.whereType<String>().toList() ?? const [],
+    provider: (json['provider'] as String?) ?? '',
+    model: (json['model'] as String?) ?? '',
+    temperature: (json['temperature'] as num?)?.toDouble(),
+    maxContextMessages: (json['maxContextMessages'] as num?)?.toInt() ?? 20,
+    chatMode: (json['chatMode'] as bool?) ?? false,
     isBuiltin: (json['isBuiltin'] as bool?) ?? false,
   );
 
@@ -55,6 +105,13 @@ class PluginModule {
     'icon': icon,
     'description': description,
     'prompt': prompt,
+    'starters': starters,
+    'tags': tags,
+    'provider': provider,
+    'model': model,
+    'temperature': temperature,
+    'maxContextMessages': maxContextMessages,
+    'chatMode': chatMode,
     'isBuiltin': isBuiltin,
   };
 }
