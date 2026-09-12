@@ -548,25 +548,39 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 return Column(
                   children: [
                     Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: messages.length + (_sending ? 1 : 0),
-                        itemBuilder: (context, i) {
-                          if (i == messages.length) {
-                            return const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Center(child: PolygonRefreshIndicator()),
-                            );
-                          }
-                          final m = messages[i];
-                          final isUser = m.role == 'user';
-                          return _StoryBubble(
-                            content: isUser
-                                ? m.inputContent
-                                : _parseReply(m.outputContent ?? '').narrative,
-                            isUser: isUser,
-                          );
-                        },
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: _chatContentMaxWidth(context),
+                          ),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            itemCount: messages.length + (_sending ? 1 : 0),
+                            itemBuilder: (context, i) {
+                              if (i == messages.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: Center(
+                                    child: PolygonRefreshIndicator(),
+                                  ),
+                                );
+                              }
+                              final m = messages[i];
+                              final isUser = m.role == 'user';
+                              return _StoryBubble(
+                                content: isUser
+                                    ? m.inputContent
+                                    : _parseReply(
+                                        m.outputContent ?? '',
+                                      ).narrative,
+                                isUser: isUser,
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
                     if (choices.isNotEmpty)

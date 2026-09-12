@@ -1233,7 +1233,8 @@ class _AiComposerBar extends StatelessWidget {
   }
 }
 
-/// 冒险叙事的干净气泡：AI 全文 Markdown（无模型名/时间/操作/用量），用户右对齐气泡
+/// 冒险叙事的干净气泡：AI 全文 Markdown（无模型名/时间/操作/用量），
+/// 用户消息与 AI 聊天同款（secondaryContainer 气泡、右对齐、限宽）
 class _StoryBubble extends StatelessWidget {
   const _StoryBubble({required this.content, required this.isUser});
 
@@ -1245,24 +1246,35 @@ class _StoryBubble extends StatelessWidget {
     if (content.trim().isEmpty) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
     if (isUser) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.8,
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: _chatContentMaxWidth(context),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: scheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SelectableText(
+                content,
+                style: TextStyle(
+                  color: scheme.onSecondaryContainer,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ),
           ),
-          decoration: BoxDecoration(
-            color: scheme.primaryContainer,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: CustomMarkdownWidget(data: content),
         ),
       );
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: CustomMarkdownWidget(data: content, indentFirstLine: false),
     );
   }
