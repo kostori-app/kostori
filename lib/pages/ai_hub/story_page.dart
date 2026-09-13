@@ -2413,7 +2413,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _editMessage(AiTask m) async {
     final isUser = m.role == 'user';
     await showInputDialog(
-      context: context,
+      context: App.rootContext,
       title: t.edit,
       initialValue: isUser ? m.inputContent : (m.outputContent ?? ''),
       minLines: 4,
@@ -3335,7 +3335,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                         borderRadius: BorderRadius.circular(20),
                         onTap: () async {
                           final c = await showDialog<Color>(
-                            context: ctx,
+                            context: App.rootContext,
                             builder: (_) => ColorPickPage(initialColor: color),
                           );
                           if (c != null) onChanged(withColor(role, c));
@@ -3562,7 +3562,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 展示掷骰结果弹窗
   Future<void> _showRollResult(DiceRoll roll, String title) async {
     await ContentDialog.show<void>(
-      context: context,
+      context: App.rootContext,
       title: title,
       content: Text(
         roll.detail,
@@ -3570,7 +3570,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       ),
       actions: [
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(App.rootContext).pop(),
           child: Text(t.confirm),
         ),
       ],
@@ -3599,7 +3599,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     var index = 0;
     final dcCtrl = TextEditingController(text: '12');
     final ok = await showDialog<bool>(
-      context: context,
+      context: App.rootContext,
       builder: (ctx) => ContentDialog(
         title: t.storyRoll,
         isDismissible: true,
@@ -3694,7 +3694,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     final def = _findDef(name);
     final scheme = Theme.of(context).colorScheme;
     await ContentDialog.show<void>(
-      context: context,
+      context: App.rootContext,
       title: def?.name ?? name,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3724,7 +3724,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
       ),
       actions: [
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(App.rootContext).pop(),
           child: Text(t.confirm),
         ),
       ],
