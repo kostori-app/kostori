@@ -1859,6 +1859,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         _state = saved.state;
         _booting = false;
       });
+      // 按消息折叠变量，恢复分支正确的最新值
+      await _applyFoldedVariables();
       return;
     }
     // 新游戏：有开局档案则先让玩家设置，否则直接开始
@@ -2160,8 +2162,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       // 取消时服务端不落库，忽略本次结果
       if (cancelled || finalText.trim().isEmpty) return;
       final parsed = _parseReply(finalText);
-      if (parsed.state != null) {
-        var state = parsed.state!;
+      if (parsed.state != null || parsed.varOps.isNotEmpty) {
+        var state = parsed.state ?? _state;
+        // 变量：增量叠加到当前值
+        if (parsed.varOps.isNotEmpty) {
+          state = state.copyWith(
+            variables: applyVarOps(_state.variables, parsed.varOps),
+          );
+        } else if (state.variables.isEmpty) {
+          state = state.copyWith(variables: _state.variables);
+        }
         // 把「获得道具」事件并入背包（去重），保证道具一定被持久化
         final gained = parsed.events
             .where((e) => e.type == 'item' && e.text.trim().isNotEmpty)
@@ -2188,6 +2198,49 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     } finally {
       _cancelToken = null;
     }
+  }
+
+  /// 初始变量：故事初始状态 + 声明的默认值
+  Map<String, String> _initialVars() {
+    final vars = Map<String, String>.from(story.initialState.variables);
+    for (final v in story.variables) {
+      final name = v.name.trim();
+      if (name.isEmpty) continue;
+      vars.putIfAbsent(name, () => v.value);
+    }
+    return vars;
+  }
+
+  /// 事件溯源：沿消息顺序折叠变量增量（尊重每条消息所选候选）
+  Map<String, String> _foldVariables(List<AiTask> messages) {
+    var vars = _initialVars();
+    for (final m in messages) {
+      if (m.role != 'model') continue;
+      final parsed = _parseReply(m.outputContent ?? '');
+      if (parsed.varOps.isNotEmpty) {
+        vars = applyVarOps(vars, parsed.varOps);
+      } else if (parsed.state != null) {
+        // 旧消息：整表覆盖
+        vars = {...vars, ...parsed.state!.variables};
+      }
+    }
+    return normalizeVariables(vars, story.variables);
+  }
+
+  /// 重新折叠变量并持久化（swipe / 删除 / 启动时调用）
+  Future<void> _applyFoldedVariables() async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    final messages = await AiConversationService()
+        .watchMessages(sessionId)
+        .first;
+    if (!mounted) return;
+    final next = _state.copyWith(variables: _foldVariables(messages));
+    setState(() => _state = next);
+    await StorySessionStore.instance.put(
+      story.id,
+      StorySession(sessionId: sessionId, state: next),
+    );
   }
 
   /// 找出背包里未在 codex 登记的道具（按基础名归一）
@@ -2406,13 +2459,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         return;
       }
       await _applyState(_parseReply(res.data).state);
+      await _applyFoldedVariables();
     } finally {
       if (mounted) setState(() => _sending = false);
     }
   }
 
-  Future<void> _deleteMessage(AiTask m) =>
-      AiConversationService().deleteMessage(m.id);
+  Future<void> _deleteMessage(AiTask m) async {
+    await AiConversationService().deleteMessage(m.id);
+    await _applyFoldedVariables();
+  }
 
   /// 候选切换（swipe）导航
   Widget _variantNav(AiTask m, List<String> variants) {
@@ -2454,6 +2510,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   ) async {
     await AiConversationService().selectVariant(m.id, variants, index);
     await _applyState(_parseReply(variants[index]).state);
+    await _applyFoldedVariables();
   }
 
   /// 后台为未登记的道具补全图鉴设定（不进入当前对话上下文）
@@ -3153,6 +3210,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     GameState? state;
     var choices = <String>[];
     var events = <StoryEvent>[];
+    var varOps = <VarOp>[];
     StoryCheck? check;
     if (matches.isNotEmpty) {
       final m = matches.last;
@@ -3176,6 +3234,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               (decoded['check'] as Map).cast<String, dynamic>(),
             );
           }
+          final vo = decoded['varOps'];
+          if (vo is List) varOps = [for (final e in vo) VarOp.fromJson(e)];
         }
       } catch (_) {}
     } else if ('```'.allMatches(content).length.isOdd) {
@@ -3189,6 +3249,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       state: state,
       choices: choices,
       events: events,
+      varOps: varOps,
       check: check,
       segments: _splitSegments(narrative),
     );
@@ -4165,6 +4226,7 @@ class _ParsedReply {
   final GameState? state;
   final List<String> choices;
   final List<StoryEvent> events;
+  final List<VarOp> varOps;
   final StoryCheck? check;
   final List<StorySegment> segments;
 
@@ -4173,6 +4235,7 @@ class _ParsedReply {
     this.state,
     this.choices = const [],
     this.events = const [],
+    this.varOps = const [],
     this.check,
     this.segments = const [],
   });

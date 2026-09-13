@@ -330,6 +330,46 @@ Map<String, String> normalizeVariables(
   };
 }
 
+/// 变量增量：set 直接赋值，delta 数值增减（事件溯源用）
+class VarOp {
+  final String name;
+  final String? set;
+  final int? delta;
+
+  const VarOp({required this.name, this.set, this.delta});
+
+  factory VarOp.fromJson(dynamic v) {
+    if (v is! Map) return VarOp(name: v.toString());
+    final name = (v['name'] ?? v['key'] ?? '').toString();
+    final set = v['set'] ?? v['value'];
+    return VarOp(
+      name: name,
+      set: set?.toString(),
+      delta: (v['delta'] as num?)?.toInt(),
+    );
+  }
+}
+
+/// 把变量增量叠加到现有变量表
+Map<String, String> applyVarOps(
+  Map<String, String> vars,
+  List<VarOp> ops,
+) {
+  final out = Map<String, String>.from(vars);
+  for (final op in ops) {
+    if (op.name.trim().isEmpty) continue;
+    if (op.set != null) {
+      out[op.name] = op.set!;
+      continue;
+    }
+    if (op.delta != null) {
+      final cur = int.tryParse(out[op.name] ?? '') ?? 0;
+      out[op.name] = '${cur + op.delta!}';
+    }
+  }
+  return out;
+}
+
 /// 正则替换规则：按阶段生效 + 可限定消息深度窗口
 class StoryRegex {
   final String name;
@@ -1122,7 +1162,7 @@ class Story {
     "location": "地点",
     "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}],
     "situation": "当前局势/所在环境的简述（可选，展示在局势页签）",
-    "variables": {"好感度": "10"},
+    "varOps": [{"name": "好感度", "delta": 5}, {"name": "线索", "set": "已找到"}],
     "present": ["在场角色名"]
   },
   "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
@@ -1135,7 +1175,7 @@ class Story {
 - events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
 - choices 提供 3-5 个可供玩家选择的行动：每条不超过 15 个字，动词开头，只写行动本身，不要解释、后果或括号补充。
 - **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
-- **变量**：variables 用于记录剧情状态（好感度、线索、进度等），键值均为字符串，每回合给出当前完整值；有变化时才需要改动。
+- **变量**：用 varOps 记录本回合变量的变化（只写变化的项）：数值增减用 delta，其它用 set 赋值；键名须与已声明变量一致，并遵守其类型/范围/取值。没有变化时给空数组。
 - **在场角色**：present 列出当前场景中出场的角色名（对应角色设定），随剧情进出更新。
 - **装备**：equipped 列出当前已装备的物品（必须在 inventory 中）；装备的 codex 机制生效，未装备则不生效。
 - **战斗**：进入战斗时给出 combat（active=true、round、敌人血量），战斗结束设 active=false；回合推进由玩家发起。
