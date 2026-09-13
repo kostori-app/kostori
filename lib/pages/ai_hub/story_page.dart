@@ -883,6 +883,13 @@ class _StoryEditorState extends State<_StoryEditor> {
         return;
       }
       if (!mounted) return;
+      if (_hasCharacter(card)) {
+        App.rootContext.showMessage(
+          message: t.storyCharacterAlreadyAdded,
+          level: LogLevel.warning,
+        );
+        return;
+      }
       setState(() => _characters.add(card));
       App.rootContext.showMessage(message: t.storyImported);
     } catch (e) {
@@ -893,13 +900,31 @@ class _StoryEditorState extends State<_StoryEditor> {
     }
   }
 
-  /// 弹出全局角色卡库选择器
-  Future<CharacterCard?> _pickCardFromLibrary() async {
+  /// 该角色卡是否已在本故事中（按 id 或名字去重）
+  bool _hasCharacter(CharacterCard c) {
+    for (final x in _characters) {
+      if (x.id.isNotEmpty && x.id == c.id) return true;
+      if (x.name.trim().isNotEmpty && x.name.trim() == c.name.trim()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// 弹出全局角色卡库选择器；[excludeAdded] 时不显示已添加过的
+  Future<CharacterCard?> _pickCardFromLibrary({
+    bool excludeAdded = false,
+  }) async {
     await CharacterCardStore.instance.ensureLoaded();
-    final cards = CharacterCardStore.instance.cards;
+    final all = CharacterCardStore.instance.cards;
+    final cards = excludeAdded
+        ? [for (final c in all) if (!_hasCharacter(c)) c]
+        : all;
     if (cards.isEmpty) {
       App.rootContext.showMessage(
-        message: t.characterCardsEmpty,
+        message: all.isEmpty
+            ? t.characterCardsEmpty
+            : t.storyAllCharactersAdded,
         level: LogLevel.warning,
       );
       return null;
@@ -931,10 +956,17 @@ class _StoryEditorState extends State<_StoryEditor> {
     );
   }
 
-  /// 从全局角色卡库选择为 NPC
+  /// 从全局角色卡库选择为 NPC（已添加过的不再显示）
   Future<void> _pickCharacterFromLibrary() async {
-    final picked = await _pickCardFromLibrary();
+    final picked = await _pickCardFromLibrary(excludeAdded: true);
     if (picked == null || !mounted) return;
+    if (_hasCharacter(picked)) {
+      App.rootContext.showMessage(
+        message: t.storyCharacterAlreadyAdded,
+        level: LogLevel.warning,
+      );
+      return;
+    }
     setState(() => _characters.add(picked));
   }
 

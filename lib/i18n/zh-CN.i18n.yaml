@@ -1622,6 +1622,11 @@ storyBaseStorage: 仓储储备
 storyNpcStatus: 角色状态
 storyNpcAffinity: 好感度 ${value}
 storyNpcNoStatus: 暂无角色状态（该角色尚未出现在数值中）
+storyCharacterAlreadyAdded: 该角色卡已添加
+storyAllCharactersAdded: 角色卡都已添加
+deleteLocal: 删除本地
+deleteRemote: 删除云端
+deleteBoth: 本地与云端都删除
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得

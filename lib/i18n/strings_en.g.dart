@@ -4774,6 +4774,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No status for this character yet.'
 	String get storyNpcNoStatus => 'No status for this character yet.';
 
+	/// en: 'This character card is already added'
+	String get storyCharacterAlreadyAdded => 'This character card is already added';
+
+	/// en: 'All character cards are already added'
+	String get storyAllCharactersAdded => 'All character cards are already added';
+
+	/// en: 'Delete local'
+	String get deleteLocal => 'Delete local';
+
+	/// en: 'Delete remote'
+	String get deleteRemote => 'Delete remote';
+
+	/// en: 'Delete local and remote'
+	String get deleteBoth => 'Delete local and remote';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9852,6 +9867,11 @@ extension on Translations {
 			'storyNpcStatus' => 'NPC status',
 			'storyNpcAffinity' => ({required Object value}) => 'Affinity ${value}',
 			'storyNpcNoStatus' => 'No status for this character yet.',
+			'storyCharacterAlreadyAdded' => 'This character card is already added',
+			'storyAllCharactersAdded' => 'All character cards are already added',
+			'deleteLocal' => 'Delete local',
+			'deleteRemote' => 'Delete remote',
+			'deleteBoth' => 'Delete local and remote',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10275,13 +10295,13 @@ extension on Translations {
 			'paletteColors' => 'Palette colors',
 			'paletteColorsHint' => 'Fewer colors = smaller size',
 			'enableDither' => 'Enable Dither',
+			_ => null,
+		} ?? switch (path) {
 			'ditherHint' => 'Better quality, slightly larger size',
 			'webpQuality' => 'WebP Quality',
 			'aspectRatioPresets' => 'Aspect Ratio Presets',
 			'hideCropBox' => 'Hide Crop Box',
 			'showCropBox' => 'Show Crop Box (draggable)',
-			_ => null,
-		} ?? switch (path) {
 			'dragToSelectExportArea' => 'After enabling, drag to select export area',
 			'editCropBox' => 'Edit crop box',
 			'startPointMinus1s' => 'Start −1s',
@@ -10789,13 +10809,13 @@ extension on Translations {
 			'textRuleReplace' => 'Replace (group refs)',
 			'textRuleCaseSensitive' => 'Case sensitive',
 			'textRuleStepAdd' => 'Add step',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleStepN' => ({required Object n}) => 'Step ${n}',
 			'textRuleNone' => 'No rules',
 			'textRuleSelectHint' => 'Select rules to apply to this source',
 			'textRuleApply' => 'Apply rules',
 			'textRuleApplied' => 'Rules applied',
-			_ => null,
-		} ?? switch (path) {
 			'textRuleNotApplied' => 'Rules off',
 			'textRuleDeleteConfirm' => 'Delete this rule?',
 			'textRulePreviewInput' => 'Preview text',

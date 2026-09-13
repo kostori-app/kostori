@@ -1617,6 +1617,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNpcStatus => '角色狀態';
 	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
 	@override String get storyNpcNoStatus => '暫無角色狀態（該角色尚未出現在數值中）';
+	@override String get storyCharacterAlreadyAdded => '該角色卡已新增';
+	@override String get storyAllCharactersAdded => '角色卡都已新增';
+	@override String get deleteLocal => '刪除本地';
+	@override String get deleteRemote => '刪除雲端';
+	@override String get deleteBoth => '本地與雲端都刪除';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4412,6 +4417,11 @@ extension on TranslationsZhTw {
 			'storyNpcStatus' => '角色狀態',
 			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
 			'storyNpcNoStatus' => '暫無角色狀態（該角色尚未出現在數值中）',
+			'storyCharacterAlreadyAdded' => '該角色卡已新增',
+			'storyAllCharactersAdded' => '角色卡都已新增',
+			'deleteLocal' => '刪除本地',
+			'deleteRemote' => '刪除雲端',
+			'deleteBoth' => '本地與雲端都刪除',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4835,13 +4845,13 @@ extension on TranslationsZhTw {
 			'dragToSelectExportArea' => '開啟後可透過拖曳選擇導出區域',
 			'withAudio' => '含音訊',
 			'noAudio' => '無音訊',
+			_ => null,
+		} ?? switch (path) {
 			'ditherOn' => '抖動開',
 			'ditherOff' => '抖動關',
 			'gifFormat' => 'GIF',
 			'apngFormat' => 'APNG',
 			'webpFormat' => 'WebP',
-			_ => null,
-		} ?? switch (path) {
 			'browserCompatible' => '瀏覽器相容性好',
 			'smallestSize' => '體積最小',
 			'videoFormat' => '影片格式',
@@ -5349,13 +5359,13 @@ extension on TranslationsZhTw {
 			'textRuleCaseSensitive' => '區分大小寫',
 			'textRuleStepAdd' => '新增步驟',
 			'textRuleStepN' => ({required Object n}) => '步驟 ${n}',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleNone' => '尚無規則',
 			'textRuleSelectHint' => '選擇套用至此來源的規則',
 			'textRuleApply' => '套用規則',
 			'textRuleApplied' => '已套用規則',
 			'textRuleNotApplied' => '未套用規則',
-			_ => null,
-		} ?? switch (path) {
 			'textRuleDeleteConfirm' => '確定刪除該規則？',
 			'textRulePreviewInput' => '預覽文字',
 			'textRulePreviewResult' => '預覽結果',

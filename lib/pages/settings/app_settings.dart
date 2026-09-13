@@ -1175,6 +1175,108 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     await _load();
   }
 
+  /// 长按条目：选择删除本地 / 云端 / 两者
+  Future<void> _confirmDelete(String kind, String id) async {
+    final hasLocal = _localFile(kind, id).existsSync();
+    final hasRemote =
+        (_remote[kind] ?? const {})['$id${_ext(kind)}'] != null;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: _name(kind, id),
+        icon: Icons.delete_outline,
+        initialSize: 0.34,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            if (hasLocal)
+              ListTile(
+                leading: const Icon(Icons.smartphone_outlined),
+                title: Text(t.deleteLocal),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _delete(kind, id, local: true, remote: false);
+                },
+              ),
+            if (hasRemote)
+              ListTile(
+                leading: const Icon(Icons.cloud_outlined),
+                title: Text(t.deleteRemote),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _delete(kind, id, local: false, remote: true);
+                },
+              ),
+            if (hasLocal && hasRemote)
+              ListTile(
+                leading: Icon(
+                  Icons.delete_forever,
+                  color: Theme.of(ctx).colorScheme.error,
+                ),
+                title: Text(t.deleteBoth),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _delete(kind, id, local: true, remote: true);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 删除本地 / 云端文件
+  Future<void> _delete(
+    String kind,
+    String id, {
+    required bool local,
+    required bool remote,
+  }) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final ext = _ext(kind);
+      if (local) {
+        final f = _localFile(kind, id);
+        if (f.existsSync()) {
+          try {
+            f.deleteSync();
+          } catch (_) {}
+        }
+        if (kind == 'cards') {
+          final png = io.File('${_localDir(kind)}/$id.png');
+          if (png.existsSync()) {
+            try {
+              png.deleteSync();
+            } catch (_) {}
+          }
+        }
+      }
+      if (remote) {
+        final sync = DataSync();
+        await sync.deleteFile(remoteName: '$id$ext', remoteDir: kind);
+        if (kind == 'cards') {
+          await sync.deleteFile(remoteName: '$id.png', remoteDir: kind);
+        }
+      }
+      await CharacterCardStore.instance.reload();
+      await StoryStore.instance.reload();
+      await StorySessionStore.instance.reload();
+      await PromptInjectionStore.instance.reload();
+      await WorldBookStore.instance.reload();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _sel(kind).remove(id);
+        });
+      }
+    }
+    _toast(true);
+    await _load();
+  }
+
   Future<void> _download(String kind, Set<String> ids) async {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
@@ -1314,6 +1416,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
+          onLongPress: () => _confirmDelete(kind, id),
           onTap: () => setState(() {
             if (isSelected) {
               selected.remove(id);

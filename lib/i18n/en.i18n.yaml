@@ -1627,6 +1627,11 @@ storyBaseStorage: Storage
 storyNpcStatus: NPC status
 storyNpcAffinity: Affinity ${value}
 storyNpcNoStatus: No status for this character yet.
+storyCharacterAlreadyAdded: This character card is already added
+storyAllCharactersAdded: All character cards are already added
+deleteLocal: Delete local
+deleteRemote: Delete remote
+deleteBoth: Delete local and remote
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned

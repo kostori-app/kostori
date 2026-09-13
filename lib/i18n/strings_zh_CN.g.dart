@@ -1616,6 +1616,11 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNpcStatus => '角色状态';
 	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
 	@override String get storyNpcNoStatus => '暂无角色状态（该角色尚未出现在数值中）';
+	@override String get storyCharacterAlreadyAdded => '该角色卡已添加';
+	@override String get storyAllCharactersAdded => '角色卡都已添加';
+	@override String get deleteLocal => '删除本地';
+	@override String get deleteRemote => '删除云端';
+	@override String get deleteBoth => '本地与云端都删除';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4412,6 +4417,11 @@ extension on TranslationsZhCn {
 			'storyNpcStatus' => '角色状态',
 			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
 			'storyNpcNoStatus' => '暂无角色状态（该角色尚未出现在数值中）',
+			'storyCharacterAlreadyAdded' => '该角色卡已添加',
+			'storyAllCharactersAdded' => '角色卡都已添加',
+			'deleteLocal' => '删除本地',
+			'deleteRemote' => '删除云端',
+			'deleteBoth' => '本地与云端都删除',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4836,13 +4846,13 @@ extension on TranslationsZhCn {
 			'apngFormat' => 'APNG',
 			'webpFormat' => 'WebP',
 			'browserCompatible' => '浏览器兼容好',
+			_ => null,
+		} ?? switch (path) {
 			'smallestSize' => '体积最小',
 			'videoFormat' => '视频格式',
 			'encoding' => '编码中…',
 			'downloadingVideoSegments' => '下载视频分片…',
 			'editCropBox' => '编辑裁剪框',
-			_ => null,
-		} ?? switch (path) {
 			'loadPageAndLoadNextCantBeNull' => 'loadPage 和 loadNext 不能同时为空',
 			'lanShowQrCode' => '显示二维码',
 			'lanDeviceInfo' => '设备信息',
@@ -5350,13 +5360,13 @@ extension on TranslationsZhCn {
 			'textRuleReplace' => '替换（支持分组引用）',
 			'textRuleCaseSensitive' => '区分大小写',
 			'textRuleStepAdd' => '添加步骤',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleStepN' => ({required Object n}) => '步骤 ${n}',
 			'textRuleNone' => '暂无规则',
 			'textRuleSelectHint' => '选择应用到该源的规则',
 			'textRuleApply' => '套用规则',
 			'textRuleApplied' => '已套用规则',
-			_ => null,
-		} ?? switch (path) {
 			'textRuleNotApplied' => '未套用规则',
 			'textRuleDeleteConfirm' => '确定删除该规则？',
 			'textRulePreviewInput' => '预览文本',

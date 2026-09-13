@@ -443,4 +443,20 @@ class DataSync with ChangeNotifier {
       return Res.error(e.toString());
     }
   }
+
+  /// 删除远端目录下的单个文件
+  Future<Res<bool>> deleteFile({
+    required String remoteName,
+    String remoteDir = '/',
+  }) async {
+    final client = _client();
+    if (client == null) return const Res.error('Invalid WebDAV configuration');
+    try {
+      await client.remove(_join(_normDir(remoteDir), remoteName));
+      return const Res(true);
+    } catch (e, s) {
+      Log.error('Delete File', e, s);
+      return Res.error(e.toString());
+    }
+  }
 }

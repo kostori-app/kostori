@@ -1627,6 +1627,11 @@ storyBaseStorage: 倉儲儲備
 storyNpcStatus: 角色狀態
 storyNpcAffinity: 好感度 ${value}
 storyNpcNoStatus: 暫無角色狀態（該角色尚未出現在數值中）
+storyCharacterAlreadyAdded: 該角色卡已新增
+storyAllCharactersAdded: 角色卡都已新增
+deleteLocal: 刪除本地
+deleteRemote: 刪除雲端
+deleteBoth: 本地與雲端都刪除
 storyOwned: 已擁有
 storyNotOwned: 未擁有
 storyLearned: 已習得
