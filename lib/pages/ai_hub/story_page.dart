@@ -2588,8 +2588,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 t.regenerateReply,
                 () => _regenerate(m),
               ),
-            _msgAction(Icons.edit_outlined, t.edit, () => _editMessage(m)),
-            _msgAction(Icons.delete_outline, t.delete, () => _deleteMessage(m)),
+            if (isUser)
+              _msgAction(Icons.edit_outlined, t.edit, () => _editMessage(m)),
           ],
         ),
       ),
@@ -2650,14 +2650,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 App.rootContext.showMessage(message: t.copied);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: Text(t.edit),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _editMessage(m);
-              },
-            ),
+            if (isUser)
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: Text(t.edit),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _editMessage(m);
+                },
+              ),
             if (!isUser)
               ListTile(
                 leading: const Icon(Icons.refresh),
@@ -2667,14 +2668,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                   _regenerate(m);
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: Text(t.delete),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _deleteMessage(m);
-              },
-            ),
           ],
         ),
       ),
@@ -2735,11 +2728,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
-  }
-
-  Future<void> _deleteMessage(AiTask m) async {
-    await AiConversationService().deleteMessage(m.id);
-    await _applyFoldedVariables();
   }
 
   /// 候选切换（swipe）导航
