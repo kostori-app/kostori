@@ -303,6 +303,48 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     }
   }
 
+  /// 重新生成：保留旧回复作为候选，追加新候选并选中
+  Future<void> _regenerate(AiTask m) async {
+    final sessionId = _sessionId;
+    if (sessionId == null || _isSending) return;
+    setState(() {
+      _isSending = true;
+      _showStreamBubble = true;
+      _lastError = null;
+      _streamText = '';
+      _streamReasoning = '';
+      _streamSteps = const [];
+      _streamModelName = null;
+    });
+    try {
+      final res = await AiConversationService().regenerateMessage(
+        sessionId: sessionId,
+        taskId: m.id,
+        providerOverride: _source,
+      );
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+        _showStreamBubble = false;
+        if (!res.success) _lastError = res.errorMessage;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+          _showStreamBubble = false;
+          _lastError = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _deleteMessage(AiTask m) =>
+      AiConversationService().deleteMessage(m.id);
+
+  Future<void> _selectVariant(AiTask m, List<String> variants, int index) =>
+      AiConversationService().selectVariant(m.id, variants, index);
+
   Future<void> _loadFollowUps() async {
     if (_sessionId == null) return;
     final suggestions = await AiConversationService().suggestFollowUps(
@@ -1129,39 +1171,70 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                                                 !isUser &&
                                                 _lastError != null;
 
-                                            return _ChatBubble(
-                                              content: isUser
-                                                  ? m.inputContent
-                                                  : (m.outputContent ?? '...'),
-                                              isUser: isUser,
-                                              task: m,
-                                              useMarkdown: _useMarkdown,
-                                              defaultExpandedToolLog:
-                                                  !isUser &&
-                                                  isLast &&
-                                                  !_showStreamBubble,
-                                              errorText: showError
-                                                  ? _lastError
-                                                  : null,
-                                              onRetry: showError
-                                                  ? () => _send(
+                                            final variants = isUser
+                                                ? const <String>[]
+                                                : AiConversationService.variantsOf(
+                                                    m,
+                                                  );
+                                            return Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                _ChatBubble(
+                                                  content: isUser
+                                                      ? m.inputContent
+                                                      : (m.outputContent ??
+                                                            '...'),
+                                                  isUser: isUser,
+                                                  task: m,
+                                                  useMarkdown: _useMarkdown,
+                                                  defaultExpandedToolLog:
+                                                      !isUser &&
+                                                      isLast &&
+                                                      !_showStreamBubble,
+                                                  errorText: showError
+                                                      ? _lastError
+                                                      : null,
+                                                  onRetry: showError
+                                                      ? () => _send(
+                                                          overrideMessage:
+                                                              m.inputContent,
+                                                        )
+                                                      : null,
+                                                  onRollback: () {
+                                                    _send(
                                                       overrideMessage:
                                                           m.inputContent,
-                                                    )
-                                                  : null,
-                                              onRollback: () {
-                                                _send(
-                                                  overrideMessage:
-                                                      m.inputContent,
-                                                  rollbackFromId: m.id,
-                                                );
-                                              },
-                                              onEdit: (newText) {
-                                                _send(
-                                                  overrideMessage: newText,
-                                                  rollbackFromId: m.id,
-                                                );
-                                              },
+                                                      rollbackFromId: m.id,
+                                                    );
+                                                  },
+                                                  onRegenerate: isUser
+                                                      ? null
+                                                      : () => _regenerate(m),
+                                                  onEdit: (newText) {
+                                                    _send(
+                                                      overrideMessage: newText,
+                                                      rollbackFromId: m.id,
+                                                    );
+                                                  },
+                                                  onDelete: () =>
+                                                      _deleteMessage(m),
+                                                ),
+                                                if (variants.length > 1)
+                                                  _VariantNav(
+                                                    index: m.variantIndex.clamp(
+                                                      0,
+                                                      variants.length - 1,
+                                                    ),
+                                                    total: variants.length,
+                                                    onSelect: (v) =>
+                                                        _selectVariant(
+                                                          m,
+                                                          variants,
+                                                          v,
+                                                        ),
+                                                  ),
+                                              ],
                                             );
                                           },
                                         ),
@@ -2079,6 +2152,44 @@ class _TranslationResultSheetState extends State<_TranslationResultSheet> {
           ),
         );
       },
+    );
+  }
+}
+
+/// 多候选切换（swipe）导航
+class _VariantNav extends StatelessWidget {
+  const _VariantNav({
+    required this.index,
+    required this.total,
+    required this.onSelect,
+  });
+
+  final int index;
+  final int total;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, size: 18),
+            visualDensity: VisualDensity.compact,
+            tooltip: t.back,
+            onPressed: index <= 0 ? null : () => onSelect(index - 1),
+          ),
+          Text('${index + 1}/$total', style: const TextStyle(fontSize: 11)),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, size: 18),
+            visualDensity: VisualDensity.compact,
+            tooltip: t.next,
+            onPressed: index >= total - 1 ? null : () => onSelect(index + 1),
+          ),
+        ],
+      ),
     );
   }
 }

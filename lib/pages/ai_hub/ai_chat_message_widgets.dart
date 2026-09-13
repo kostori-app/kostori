@@ -736,7 +736,9 @@ class _ChatBubble extends StatelessWidget {
     this.defaultExpandedToolLog = false,
     this.onRetry,
     this.onRollback,
+    this.onRegenerate,
     this.onEdit,
+    this.onDelete,
     this.errorText,
     this.useMarkdown = true,
   });
@@ -747,7 +749,9 @@ class _ChatBubble extends StatelessWidget {
   final bool defaultExpandedToolLog;
   final VoidCallback? onRetry;
   final VoidCallback? onRollback;
+  final VoidCallback? onRegenerate;
   final ValueChanged<String>? onEdit;
+  final VoidCallback? onDelete;
   final String? errorText;
   final bool useMarkdown;
 
@@ -1127,6 +1131,13 @@ class _ChatBubble extends StatelessWidget {
                 t.edit,
                 () => _edit(context),
               ),
+            if (onDelete != null)
+              _actionButton(
+                context,
+                Icons.delete_outline,
+                t.delete,
+                () => onDelete?.call(),
+              ),
           ],
         ),
       ),
@@ -1152,7 +1163,7 @@ class _ChatBubble extends StatelessWidget {
                 context,
                 Icons.replay_outlined,
                 t.regenerateReply,
-                () => onRollback?.call(),
+                () => (onRegenerate ?? onRollback)?.call(),
               ),
               _actionButton(
                 context,
@@ -1160,6 +1171,13 @@ class _ChatBubble extends StatelessWidget {
                 t.translate,
                 () => _translate(context),
               ),
+              if (onDelete != null)
+                _actionButton(
+                  context,
+                  Icons.delete_outline,
+                  t.delete,
+                  () => onDelete?.call(),
+                ),
             ],
           ),
           AiUsageMeta(task: task),
