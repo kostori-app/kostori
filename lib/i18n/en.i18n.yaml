@@ -153,6 +153,11 @@ syncStateDiffers: Out of sync
 syncPromptInjections: Prompt injections
 syncWorldBook: World Info
 syncStoryChars: Story characters
+syncParts: Bundles / databases
+syncPartsHint: 'Split sync: each database is separate; everything else (settings/stories/cards…) is one bundle.'
+aiDatabase: AI chats
+stats: Stats
+cookies: Cookies
 data: Data
 dateDesc: Date Desc
 date: Date

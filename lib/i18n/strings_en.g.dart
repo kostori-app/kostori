@@ -494,6 +494,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Story characters'
 	String get syncStoryChars => 'Story characters';
 
+	/// en: 'Bundles / databases'
+	String get syncParts => 'Bundles / databases';
+
+	/// en: 'Split sync: each database is separate; everything else (settings/stories/cards…) is one bundle.'
+	String get syncPartsHint => 'Split sync: each database is separate; everything else (settings/stories/cards…) is one bundle.';
+
+	/// en: 'AI chats'
+	String get aiDatabase => 'AI chats';
+
+	/// en: 'Stats'
+	String get stats => 'Stats';
+
+	/// en: 'Cookies'
+	String get cookies => 'Cookies';
+
 	/// en: 'Data'
 	String get data => 'Data';
 
@@ -8482,6 +8497,11 @@ extension on Translations {
 			'syncPromptInjections' => 'Prompt injections',
 			'syncWorldBook' => 'World Info',
 			'syncStoryChars' => 'Story characters',
+			'syncParts' => 'Bundles / databases',
+			'syncPartsHint' => 'Split sync: each database is separate; everything else (settings/stories/cards…) is one bundle.',
+			'aiDatabase' => 'AI chats',
+			'stats' => 'Stats',
+			'cookies' => 'Cookies',
 			'data' => 'Data',
 			'dateDesc' => 'Date Desc',
 			'date' => 'Date',
@@ -8838,13 +8858,13 @@ extension on Translations {
 			'saveToAlbum' => 'Save to Album',
 			'stitchLongImage' => 'Stitch Long Image',
 			'stitchHorizontalImage' => 'Stitch Horizontal Image',
+			_ => null,
+		} ?? switch (path) {
 			'stitchSubtitles' => 'Stitch Subtitles',
 			'saveLongImage' => 'Save Long Image',
 			'borderColor' => 'Border Color',
 			'conversationTitle' => 'Conversation Title',
 			'aiConversation' => 'AI Conversation',
-			_ => null,
-		} ?? switch (path) {
 			'topicList' => 'Topic List',
 			'startConversationWithAI' => 'Start a conversation with AI',
 			'newConversation' => 'New Conversation',
@@ -9352,13 +9372,13 @@ extension on Translations {
 			'chineseDub' => 'Chinese Dub',
 			'japaneseDub' => 'Japanese Dub',
 			'englishDub' => 'English Dub',
+			_ => null,
+		} ?? switch (path) {
 			'koreanDub' => 'Korean Dub',
 			'selectedACharacter' => ({required Object a}) => 'Selected ${a} character',
 			'searchOptions' => 'Search Options',
 			'searchSources' => 'Search Sources',
 			'searchGroupAll' => 'All',
-			_ => null,
-		} ?? switch (path) {
 			'searchGroupBangumi' => 'Bangumi',
 			'searchGroupDefault' => 'Default',
 			'chooseSearchSource' => 'Choose Search Source',
@@ -9866,13 +9886,13 @@ extension on Translations {
 			'scanQrCode' => 'Scan QR Code',
 			'scanToJump' => 'Scan to Jump',
 			'qrCode' => 'QR Code',
+			_ => null,
+		} ?? switch (path) {
 			'shareMethodDescription' => 'Share method: In anime/Bangumi page, click share → generate token or QR code',
 			'shareQrCode' => 'Share QR Code',
 			'exporting' => 'Exporting...',
 			'tokenCopiedToClipboard' => 'Token copied to clipboard',
 			'generateQrCodeShare' => 'Generate QR Code to Share',
-			_ => null,
-		} ?? switch (path) {
 			'aiSettings' => 'AI Settings',
 			'aiConfigMissing' => 'AI Config Missing',
 			'generating' => 'Generating...',
@@ -10380,13 +10400,13 @@ extension on Translations {
 			'lanCommandExecuted' => 'Command executed',
 			'lanCommandFailed' => 'Command failed',
 			'lanNoPermission' => 'No permission',
+			_ => null,
+		} ?? switch (path) {
 			'lanOpenAnimeDetail' => 'Open Anime Detail',
 			'lanSyncProgress' => 'Sync Progress',
 			'aggregationEntry' => 'Aggregation Entry',
 			'aiLabel' => 'AI',
 			'lanLabel' => 'LAN',
-			_ => null,
-		} ?? switch (path) {
 			'h264CRF' => 'H.264 · CRF',
 			'ffmpegNotFound' => 'FFmpeg Not Found',
 			'ffmpegNotFoundDesktop' => 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.',
@@ -10894,13 +10914,13 @@ extension on Translations {
 			'builderExploreUrl' => 'List URL template ({page})',
 			'builderCategory' => 'Category',
 			'builderCategoryTitle' => 'Category title',
+			_ => null,
+		} ?? switch (path) {
 			'builderCategoryNames' => 'Category names (one per line, "value-name")',
 			'builderCategoryUrl' => 'Category list URL ({category} {page})',
 			'builderGenerate' => 'Generate & Import',
 			'builderNameRequired' => 'Name is required',
 			'builderKeyRequired' => 'Key is required',
-			_ => null,
-		} ?? switch (path) {
 			'builderKeyInvalid' => 'Key must contain only letters, digits and underscore',
 			'builderImported' => 'Source imported',
 			'builderGenerateFailed' => 'Generate failed',

@@ -182,6 +182,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncPromptInjections => '提示詞注入';
 	@override String get syncWorldBook => '世界書';
 	@override String get syncStoryChars => '故事角色卡';
+	@override String get syncParts => '整包 / 資料庫';
+	@override String get syncPartsHint => '分部分同步：資料庫各自獨立，其餘（設定/故事/角色卡…）整合為一個整包。';
+	@override String get aiDatabase => 'AI 會話';
+	@override String get stats => '統計';
+	@override String get cookies => 'Cookie';
 	@override String get data => '數據';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2964,6 +2969,11 @@ extension on TranslationsZhTw {
 			'syncPromptInjections' => '提示詞注入',
 			'syncWorldBook' => '世界書',
 			'syncStoryChars' => '故事角色卡',
+			'syncParts' => '整包 / 資料庫',
+			'syncPartsHint' => '分部分同步：資料庫各自獨立，其餘（設定/故事/角色卡…）整合為一個整包。',
+			'aiDatabase' => 'AI 會話',
+			'stats' => '統計',
+			'cookies' => 'Cookie',
 			'data' => '數據',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3328,13 +3338,13 @@ extension on TranslationsZhTw {
 			'topicList' => '話題列表',
 			'startConversationWithAI' => '開始與 AI 對話吧',
 			'newConversation' => '新建對話',
+			_ => null,
+		} ?? switch (path) {
 			'inputMessage' => '輸入訊息...',
 			'noTopicsYet' => '暫無話題',
 			'selectAiPersonality' => '選擇 AI 人格',
 			'apply' => '應用',
 			'heightPx' => '高度(px)',
-			_ => null,
-		} ?? switch (path) {
 			'setUniformHeight' => '設定統一高度',
 			'uniformHeight' => '統一高度',
 			'cropImage' => '裁剪圖片',
@@ -3842,13 +3852,13 @@ extension on TranslationsZhTw {
 			'chineseDub' => '中配',
 			'japaneseDub' => '日配',
 			'englishDub' => '英配',
+			_ => null,
+		} ?? switch (path) {
 			'koreanDub' => '韓配',
 			'selectedACharacter' => ({required Object a}) => '已選取 ${a} 個角色',
 			'searchOptions' => '搜尋選項',
 			'searchSources' => '搜尋源',
 			'searchGroupAll' => '全部',
-			_ => null,
-		} ?? switch (path) {
 			'searchGroupBangumi' => '番組',
 			'searchGroupDefault' => '預設',
 			'chooseSearchSource' => '選擇搜尋源',
@@ -4356,13 +4366,13 @@ extension on TranslationsZhTw {
 			'scanQrCode' => '掃碼',
 			'scanToJump' => '掃碼跳轉',
 			'qrCode' => '二維碼',
+			_ => null,
+		} ?? switch (path) {
 			'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
 			'shareQrCode' => '分享二維碼',
 			'exporting' => '匯出中',
 			'tokenCopiedToClipboard' => 'Token已複製到剪貼簿',
 			'generateQrCodeShare' => '產生二維碼分享',
-			_ => null,
-		} ?? switch (path) {
 			'aiSettings' => 'AI 設置',
 			'aiConfigMissing' => 'AI配置缺失',
 			'generating' => '生成中...',
@@ -4870,13 +4880,13 @@ extension on TranslationsZhTw {
 			'lanOpenAnimeDetail' => '打開動漫詳情',
 			'lanSyncProgress' => '同步進度',
 			'aggregationEntry' => '聚合入口',
+			_ => null,
+		} ?? switch (path) {
 			'aiLabel' => 'AI',
 			'lanLabel' => '區域網',
 			'h264CRF' => 'H.264 · CRF',
 			'ffmpegNotFound' => 'FFmpeg 未找到',
 			'ffmpegNotFoundDesktop' => '桌面端導出功能需要 FFmpeg，但未找到 FFmpeg 可執行檔。請在設定中配置 FFmpeg 路徑，或確保 FFmpeg 在系統 PATH 中。',
-			_ => null,
-		} ?? switch (path) {
 			'stillOpenAnyway' => '仍要打開',
 			'preparing' => '準備中…',
 			'downloadingPreviewClip' => '正在下載預覽片段…',
@@ -5384,13 +5394,13 @@ extension on TranslationsZhTw {
 			'builderCategory' => '分類',
 			'builderCategoryTitle' => '分類標題',
 			'builderCategoryNames' => '分類名（每行一個，"值-名稱"）',
+			_ => null,
+		} ?? switch (path) {
 			'builderCategoryUrl' => '分類列表 URL（{category} {page}）',
 			'builderGenerate' => '生成並匯入',
 			'builderNameRequired' => '請填寫名稱',
 			'builderKeyRequired' => '請填寫鍵',
 			'builderKeyInvalid' => '鍵只能包含字母、數字和底線',
-			_ => null,
-		} ?? switch (path) {
 			'builderImported' => '來源已匯入',
 			'builderGenerateFailed' => '生成失敗',
 			'collapseSidebar' => '收起側邊欄',

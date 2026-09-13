@@ -183,6 +183,11 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncPromptInjections => '提示词注入';
 	@override String get syncWorldBook => '世界书';
 	@override String get syncStoryChars => '故事角色卡';
+	@override String get syncParts => '整包 / 数据库';
+	@override String get syncPartsHint => '分部分同步：数据库各自独立，其余（设置/故事/角色卡…）整合为一个整包。';
+	@override String get aiDatabase => 'AI 会话';
+	@override String get stats => '统计';
+	@override String get cookies => 'Cookie';
 	@override String get data => '数据';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2966,6 +2971,11 @@ extension on TranslationsZhCn {
 			'syncPromptInjections' => '提示词注入',
 			'syncWorldBook' => '世界书',
 			'syncStoryChars' => '故事角色卡',
+			'syncParts' => '整包 / 数据库',
+			'syncPartsHint' => '分部分同步：数据库各自独立，其余（设置/故事/角色卡…）整合为一个整包。',
+			'aiDatabase' => 'AI 会话',
+			'stats' => '统计',
+			'cookies' => 'Cookie',
 			'data' => '数据',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3329,13 +3339,13 @@ extension on TranslationsZhCn {
 			'aiConversation' => 'AI 对话',
 			'topicList' => '话题列表',
 			'startConversationWithAI' => '开始与 AI 对话吧',
+			_ => null,
+		} ?? switch (path) {
 			'newConversation' => '新建对话',
 			'inputMessage' => '输入消息...',
 			'noTopicsYet' => '暂无话题',
 			'selectAiPersonality' => '选择 AI 人格',
 			'apply' => '应用',
-			_ => null,
-		} ?? switch (path) {
 			'heightPx' => '高度(px)',
 			'setUniformHeight' => '设置统一高度',
 			'uniformHeight' => '统一高度',
@@ -3843,13 +3853,13 @@ extension on TranslationsZhCn {
 			'japaneseDub' => '日配',
 			'englishDub' => '英配',
 			'koreanDub' => '韩配',
+			_ => null,
+		} ?? switch (path) {
 			'selectedACharacter' => ({required Object a}) => '已选择 ${a} 位角色',
 			'searchOptions' => '搜索选项',
 			'searchSources' => '搜索源',
 			'searchGroupAll' => '全部',
 			'searchGroupBangumi' => '番组',
-			_ => null,
-		} ?? switch (path) {
 			'searchGroupDefault' => '默认',
 			'chooseSearchSource' => '选择搜索源',
 			'singleSourceSearch' => '单源',
@@ -4357,13 +4367,13 @@ extension on TranslationsZhCn {
 			'scanToJump' => '扫码跳转',
 			'qrCode' => '二维码',
 			'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
+			_ => null,
+		} ?? switch (path) {
 			'shareQrCode' => '分享二维码',
 			'exporting' => '导出中',
 			'tokenCopiedToClipboard' => 'Token已复制到剪贴板',
 			'generateQrCodeShare' => '生成二维码分享',
 			'aiSettings' => 'AI 设置',
-			_ => null,
-		} ?? switch (path) {
 			'aiConfigMissing' => 'AI配置缺失',
 			'generating' => '生成中...',
 			'generatedTags' => '已生成 Tags',
@@ -4871,13 +4881,13 @@ extension on TranslationsZhCn {
 			'lanNoPermission' => '无权限',
 			'lanOpenAnimeDetail' => '打开动漫详情',
 			'lanSyncProgress' => '同步进度',
+			_ => null,
+		} ?? switch (path) {
 			'aggregationEntry' => '聚合入口',
 			'aiLabel' => 'AI',
 			'lanLabel' => '局域网',
 			'ffmpegNotFound' => 'FFmpeg 未找到',
 			'ffmpegNotFoundDesktop' => '桌面端导出功能需要 FFmpeg，但未找到 FFmpeg 可执行文件。请在设置中配置 FFmpeg 路径，或确保 FFmpeg 在系统 PATH 中。',
-			_ => null,
-		} ?? switch (path) {
 			'stillOpenAnyway' => '仍要打开',
 			'preparing' => '准备中…',
 			'downloadingPreviewClip' => '正在下载预览片段…',
@@ -5385,13 +5395,13 @@ extension on TranslationsZhCn {
 			'builderExploreUrl' => '列表 URL 模板（{page}）',
 			'builderCategory' => '分类',
 			'builderCategoryTitle' => '分类标题',
+			_ => null,
+		} ?? switch (path) {
 			'builderCategoryNames' => '分类名（每行一个，"值-名称"）',
 			'builderCategoryUrl' => '分类列表 URL（{category} {page}）',
 			'builderGenerate' => '生成并导入',
 			'builderNameRequired' => '请填写名称',
 			'builderKeyRequired' => '请填写键',
-			_ => null,
-		} ?? switch (path) {
 			'builderKeyInvalid' => '键只能包含字母、数字和下划线',
 			'builderImported' => '源已导入',
 			'builderGenerateFailed' => '生成失败',

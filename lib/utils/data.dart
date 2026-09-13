@@ -224,6 +224,146 @@ Future<File> exportAppData() async {
   return cacheFile;
 }
 
+// ─────────────────────────────────────────────
+// 分部分同步：每个部分一个独立 zip，远端独立文件夹
+// ─────────────────────────────────────────────
+
+class SyncPart {
+  final String key;
+  final String dir;
+  final String name;
+  const SyncPart(this.key, this.dir, this.name);
+}
+
+const syncParts = <SyncPart>[
+  SyncPart('ai', 'db', 'ai_database'),
+  SyncPart('history', 'db', 'history'),
+  SyncPart('favorites', 'db', 'favorites'),
+  SyncPart('stats', 'db', 'stats'),
+  SyncPart('bangumi', 'db', 'bangumi'),
+  SyncPart('search', 'db', 'search_history'),
+  SyncPart('cookies', 'db', 'cookies'),
+  SyncPart('data', 'data', 'data'),
+];
+
+/// 生成某部分需要的字段级合并文件
+Future<void> _writeMergeFilesFor(String key) async {
+  Future<void> write(String path, Object data) async {
+    try {
+      await File(path).writeAsString(await Isolate.run(() => jsonEncode(data)));
+    } catch (e) {
+      DebugLog.error('exportPart', '$path 导出失败：$e');
+    }
+  }
+
+  if (key == 'history') {
+    await write(
+      FilePath.join(App.cachePath, 'history_merge.json'),
+      (await HistoryManager().getAll()).map((h) => h.toJson()).toList(),
+    );
+    await write(
+      FilePath.join(App.cachePath, 'plugin_history_merge.json'),
+      (await HistoryManager().getAllPluginEvents()).map((e) => e.toJson()).toList(),
+    );
+    await write(
+      FilePath.join(App.cachePath, 'text_rules_merge.json'),
+      await HistoryManager().getTextRules(),
+    );
+  } else if (key == 'favorites') {
+    await write(
+      FilePath.join(App.cachePath, 'favorites_merge.json'),
+      LocalFavoritesManager().getAllFavoriteMergeMaps(),
+    );
+  } else if (key == 'stats') {
+    await write(
+      FilePath.join(App.cachePath, 'stats_merge.json'),
+      (await StatsManager().getStatsAll()).map((s) => s.toMergeJson()).toList(),
+    );
+  }
+}
+
+/// 导出单个部分为独立 zip
+Future<File> exportPart(String key) async {
+  await _writeMergeFilesFor(key);
+  final dir = Directory(FilePath.join(App.cachePath, 'sync_part'));
+  if (dir.existsSync()) dir.deleteSync(recursive: true);
+  dir.createSync(recursive: true);
+  final zipPath = FilePath.join(dir.path, '$key.kostori');
+  HistoryWriteService.pause();
+  try {
+    await Isolate.run(() {
+      final zip = ZipFile.open(zipPath);
+      final dp = App.dataPath;
+      void add(String name, String path) {
+        if (File(path).existsSync()) zip.addFile(name, path);
+      }
+
+      void addDir(String archiveDir, String localDir) {
+        final d = Directory(localDir);
+        if (!d.existsSync()) return;
+        for (final f in d.listSync()) {
+          if (f is File) {
+            zip.addFile('$archiveDir/${f.uri.pathSegments.last}', f.path);
+          }
+        }
+      }
+
+      if (key == 'ai') {
+        add('ai_database.db', FilePath.join(dp, 'ai_database.db'));
+      } else if (key == 'history') {
+        add('history.db', FilePath.join(dp, 'history.db'));
+        add(
+          'history_merge.json',
+          FilePath.join(App.cachePath, 'history_merge.json'),
+        );
+        add(
+          'plugin_history_merge.json',
+          FilePath.join(App.cachePath, 'plugin_history_merge.json'),
+        );
+        add(
+          'text_rules_merge.json',
+          FilePath.join(App.cachePath, 'text_rules_merge.json'),
+        );
+      } else if (key == 'favorites') {
+        add('local_favorite.db', FilePath.join(dp, 'local_favorite.db'));
+        add(
+          'favorites_merge.json',
+          FilePath.join(App.cachePath, 'favorites_merge.json'),
+        );
+      } else if (key == 'stats') {
+        add('stats.db', FilePath.join(dp, 'stats.db'));
+        add('stats_merge.json', FilePath.join(App.cachePath, 'stats_merge.json'));
+      } else if (key == 'bangumi') {
+        add('bangumi.db', FilePath.join(dp, 'bangumi.db'));
+      } else if (key == 'search') {
+        add('search_history.db', FilePath.join(dp, 'search_history.db'));
+      } else if (key == 'cookies') {
+        add('cookie.db', FilePath.join(dp, 'cookie.db'));
+      } else if (key == 'data') {
+        add('appdata.json', FilePath.join(dp, 'appdata.json'));
+        addDir('anime_source', FilePath.join(dp, 'anime_source'));
+        addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
+        for (final d in const [
+          'character_cards',
+          'stories',
+          'story_sessions',
+          'prompt_injections',
+          'world_book',
+          'setting_library',
+          'story_characters',
+          'ai_skills',
+        ]) {
+          addDir(d, FilePath.join(dp, d));
+        }
+      }
+      zip.close();
+    });
+  } finally {
+    HistoryWriteService.resume();
+  }
+  return File(zipPath);
+}
+
 Future<void> importAppData(File file, [bool checkVersion = false]) async {
   var cacheDirPath = FilePath.join(App.cachePath, 'temp_data');
   var cacheDir = Directory(cacheDirPath);
@@ -236,7 +376,21 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     await Isolate.run(() {
       ZipFile.openAndExtract(file.path, cacheDirPath);
     });
-    var historyFile = cacheDir.joinFile("history.db");
+    await _applyImportedData(cacheDirPath, checkVersion: checkVersion);
+  } catch (e) {
+    DebugLog.error('importAppData', '$e');
+  } finally {
+    cacheDir.deleteIgnoreError(recursive: true);
+  }
+}
+
+/// 从已解压目录应用导入（缺失的部分自动跳过）——整包与分部分导入共用
+Future<void> _applyImportedData(
+  String cacheDirPath, {
+  bool checkVersion = false,
+}) async {
+  final cacheDir = Directory(cacheDirPath);
+  var historyFile = cacheDir.joinFile("history.db");
     var localFavoriteFile = cacheDir.joinFile("local_favorite.db");
     var bangumiFile = cacheDir.joinFile("bangumi.db");
     var statsFile = cacheDir.joinFile("stats.db");
@@ -483,8 +637,19 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     await StorySessionStore.instance.reload();
     await PromptInjectionStore.instance.reload();
     await WorldBookStore.instance.reload();
+}
+
+/// 导入单个部分（分部分同步）
+Future<void> importPart(File file) async {
+  final cacheDirPath = FilePath.join(App.cachePath, 'temp_part');
+  final cacheDir = Directory(cacheDirPath);
+  if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+  cacheDir.createSync(recursive: true);
+  try {
+    await Isolate.run(() => ZipFile.openAndExtract(file.path, cacheDirPath));
+    await _applyImportedData(cacheDirPath);
   } catch (e) {
-    DebugLog.error('importAppData', '$e');
+    DebugLog.error('importPart', '$e');
   } finally {
     cacheDir.deleteIgnoreError(recursive: true);
   }

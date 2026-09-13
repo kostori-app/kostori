@@ -1030,6 +1030,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'library',
     'story_chars',
     'skills',
+    'parts',
   ];
 
   int _tab = 0;
@@ -1037,6 +1038,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   bool _busy = false;
   final Map<String, Map<String, RemoteFileInfo>> _remote = {};
   final Map<String, Set<String>> _selected = {};
+  Map<String, dynamic>? _manifest;
 
   @override
   void initState() {
@@ -1078,13 +1080,89 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
           ? {for (final e in res.data) e.name: e}
           : {};
     }
+    final manifest = await sync.readManifest();
     if (!mounted) return;
     setState(() {
       _remote
         ..clear()
         ..addAll(remote);
+      _manifest = manifest.data;
       _loading = false;
     });
+  }
+
+  /// 整包/数据库：分部分上传下载
+  Widget _buildParts() {
+    final scheme = Theme.of(context).colorScheme;
+    final remoteParts =
+        (_manifest?['parts'] as Map?)?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            t.syncPartsHint,
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+        ),
+        for (final part in syncParts)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _SettingCard(
+              children: [
+                ListTile(
+                  leading: Icon(_partIcon(part.key), size: 20),
+                  title: Text(_partLabel(part.key)),
+                  subtitle: Text(
+                    remoteParts.containsKey(part.key)
+                        ? '${t.syncStateSynced}'
+                              '${_fmtSize((remoteParts[part.key] as Map?)?['size']).isEmpty ? '' : ' · ${_fmtSize((remoteParts[part.key] as Map?)?['size'])}'}'
+                        : t.syncStateLocalOnly,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        tooltip: t.upload,
+                        onPressed: _busy ? null : () => _uploadPart(part),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        tooltip: t.download,
+                        onPressed: _busy ? null : () => _downloadPart(part),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _uploadPart(SyncPart part) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final res = await DataSync().uploadOnePart(part);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(res.success);
+    await _load();
+  }
+
+  Future<void> _downloadPart(SyncPart part) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final res = await DataSync().downloadOnePart(part);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(res.success);
+    await _load();
   }
 
   Set<String> _localIds(String kind) => switch (kind) {
@@ -1127,8 +1205,40 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'library' => t.storySettingLibrary,
     'story_chars' => t.syncStoryChars,
     'skills' => t.skills,
+    'parts' => t.syncParts,
     _ => kind,
   };
+
+  String _partLabel(String key) => switch (key) {
+    'ai' => t.aiDatabase,
+    'history' => t.history,
+    'favorites' => t.favorites,
+    'stats' => t.stats,
+    'bangumi' => t.bangumi,
+    'search' => t.search,
+    'cookies' => t.cookies,
+    'data' => t.syncData,
+    _ => key,
+  };
+
+  IconData _partIcon(String key) => switch (key) {
+    'ai' => Icons.smart_toy_outlined,
+    'history' => Icons.history,
+    'favorites' => Icons.favorite_border,
+    'stats' => Icons.bar_chart_outlined,
+    'bangumi' => Icons.tv_outlined,
+    'search' => Icons.search,
+    'cookies' => Icons.cookie_outlined,
+    _ => Icons.folder_outlined,
+  };
+
+  String _fmtSize(Object? v) {
+    final n = (v as num?)?.toDouble() ?? 0;
+    if (n <= 0) return '';
+    if (n < 1024) return '${n.toInt()} B';
+    if (n < 1024 * 1024) return '${(n / 1024).toStringAsFixed(1)} KB';
+    return '${(n / 1024 / 1024).toStringAsFixed(1)} MB';
+  }
 
   io.File _localFile(String kind, String id) =>
       io.File('${_localDir(kind)}/$id${_ext(kind)}');
@@ -1383,6 +1493,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   }
 
   Widget _buildList(String kind) {
+    if (kind == 'parts') return _buildParts();
     final ids = <String>{
       ..._localIds(kind),
       for (final name in (_remote[kind] ?? const {}).keys)

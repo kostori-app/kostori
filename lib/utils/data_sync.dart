@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
@@ -141,29 +142,6 @@ class DataSync with ChangeNotifier {
     return List.from(config);
   }
 
-  /// 从 .kostori 文件名中解析版本号（格式：$date-$version-$deviceTag.kostori）
-  int _versionOf(String name) {
-    final base = name.endsWith('.kostori')
-        ? name.substring(0, name.length - '.kostori'.length)
-        : name;
-    final parts = base.split('-');
-    // 兼容旧格式 $date-$version.kostori（2 段）与新格式（3 段）
-    if (parts.length >= 2) {
-      final v = int.tryParse(parts[1]);
-      if (v != null) return v;
-    }
-    return 0;
-  }
-
-  int _maxVersionOf(List files) {
-    var max = 0;
-    for (final f in files) {
-      final v = _versionOf(f.name ?? '');
-      if (v > max) max = v;
-    }
-    return max;
-  }
-
   /// 稳定的设备标识（持久化，用于多端同步时区分文件名，避免互相覆盖删除）
   String _deviceTag() {
     final existing = appdata.implicitData['sync_device_tag'];
@@ -172,6 +150,69 @@ class DataSync with ChangeNotifier {
     appdata.implicitData['sync_device_tag'] = tag;
     appdata.writeImplicitData();
     return tag;
+  }
+
+  /// 远端清单文件名（记录各部分的版本/大小/时间）
+  static const _manifestName = 'manifest.json';
+
+  /// 读取远端清单（无则返回 null）
+  Future<Res<Map<String, dynamic>?>> readManifest() async {
+    final client = _client();
+    if (client == null) return const Res(null);
+    try {
+      final bytes = await client.read(_manifestName);
+      if (bytes.isEmpty) return const Res(null);
+      final decoded = jsonDecode(utf8.decode(bytes));
+      return decoded is Map<String, dynamic>
+          ? Res(decoded)
+          : const Res(null);
+    } catch (_) {
+      return const Res(null);
+    }
+  }
+
+  /// 上传单个部分（分部分同步）
+  Future<Res<bool>> uploadOnePart(SyncPart part) async {
+    final client = _client();
+    if (client == null) return const Res.error('Invalid WebDAV configuration');
+    try {
+      final file = await exportPart(part.key);
+      try {
+        final dir = _normDir(part.dir);
+        await client.mkdirAll(dir);
+        await client.write(
+          _join(dir, '${part.name}.kostori'),
+          await file.readAsBytes(),
+        );
+      } finally {
+        file.deleteIgnoreError();
+      }
+      return const Res(true);
+    } catch (e, s) {
+      Log.error('Upload Part', e, s);
+      return Res.error(e.toString());
+    }
+  }
+
+  /// 下载单个部分（分部分同步）
+  Future<Res<bool>> downloadOnePart(SyncPart part) async {
+    final client = _client();
+    if (client == null) return const Res.error('Invalid WebDAV configuration');
+    try {
+      final local = File(
+        FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
+      );
+      await client.read2File(
+        _join(_normDir(part.dir), '${part.name}.kostori'),
+        local.path,
+      );
+      await importPart(local);
+      local.deleteIgnoreError();
+      return const Res(true);
+    } catch (e, s) {
+      Log.error('Download Part', e, s);
+      return Res.error(e.toString());
+    }
   }
 
   Future<Res<bool>> uploadData() async {
@@ -201,62 +242,44 @@ class DataSync with ChangeNotifier {
       );
 
       try {
-        // 读取服务端现有文件，以服务端为准确定新版本号与清理策略，
-        // 避免多端本地各自递增导致版本号冲突 / 互相覆盖删除
-        final allFiles = await client.readDir('/');
-        // 清理上次上传中断残留的临时文件（.part，不算数据文件）
-        for (final f in allFiles) {
-          if ((f.name ?? '').endsWith('.part')) {
-            try {
-              await client.remove(f.name!);
-            } catch (_) {}
-          }
-        }
-        var files = allFiles.where((e) => e.name!.endsWith('.kostori')).toList();
-        files.sort((a, b) => a.name!.compareTo(b.name!));
-
-        // 计算全局最新版本号（取所有文件中版本号最大者）
-        var maxVersion = _maxVersionOf(files);
-        if (maxVersion < (appdata.settings['dataVersion'] as int? ?? 0)) {
-          maxVersion = appdata.settings['dataVersion'] as int? ?? 0;
-        }
-        final newVersion = maxVersion + 1;
+        final newVersion = (appdata.settings['dataVersion'] as int? ?? 0) + 1;
         appdata.settings['dataVersion'] = newVersion;
         await appdata.saveData(false);
-
-        var data = await exportAppData();
-        var date = (DateTime.now().millisecondsSinceEpoch ~/ 86400000)
-            .toString();
-        // 文件名带设备标识，避免多端同一天互相删除
-        final deviceTag = _deviceTag();
-        var filename = '$date-$newVersion-$deviceTag.kostori';
-
-        // 清理旧文件：仅当文件数超过保留上限时删除最旧的（不删当天其他设备的）
-        if (files.length >= 10) {
-          files.sort((a, b) => a.name!.compareTo(b.name!));
-          await client.remove(files.first.name!);
-        }
-        // 原子上传：先写临时名（.part，下载端不会当作数据文件），写完后 rename 到正式名。
-        // 这样中途退出/断网只留下 .part，不会损坏已有的 .kostori 文件。
-        final bytes = await data.readAsBytes();
-        void onProgress(int count, int total) {
-          _progress = total > 0 ? count / total : null;
-          notifyListeners();
-        }
-
-        final tempName = '$filename.part';
-        await client.write(tempName, bytes, onProgress: onProgress);
-        try {
-          await client.rename(tempName, filename, true);
-        } catch (_) {
-          // 服务器不支持 MOVE：退回直接写正式名（尽力而为）
-          await client.write(filename, bytes, onProgress: onProgress);
+        final partsMeta = <String, dynamic>{};
+        for (final part in syncParts) {
+          final file = await exportPart(part.key);
           try {
-            await client.remove(tempName);
-          } catch (_) {}
+            final bytes = await file.readAsBytes();
+            final dir = _normDir(part.dir);
+            await client.mkdirAll(dir);
+            await client.write(
+              _join(dir, '${part.name}.kostori'),
+              bytes,
+              onProgress: (count, total) {
+                _progress = total > 0 ? count / total : null;
+                notifyListeners();
+              },
+            );
+            partsMeta[part.key] = {
+              'version': newVersion,
+              'size': bytes.length,
+              'time': DateTime.now().millisecondsSinceEpoch,
+            };
+          } finally {
+            file.deleteIgnoreError();
+          }
         }
-        data.deleteIgnoreError();
-        Log.info("Upload Data", "Data uploaded successfully ($filename)");
+        final manifest = jsonEncode({
+          'version': newVersion,
+          'device': _deviceTag(),
+          'time': DateTime.now().millisecondsSinceEpoch,
+          'parts': partsMeta,
+        });
+        await client.write(_manifestName, utf8.encode(manifest));
+        Log.info(
+          "Upload Data",
+          "Uploaded ${syncParts.length} parts (v$newVersion)",
+        );
         return const Res(true);
       } catch (e, s) {
         Log.error("Upload Data", e, s);
@@ -297,35 +320,37 @@ class DataSync with ChangeNotifier {
       );
 
       try {
-        var files = await client.readDir('/');
-        files = files.where((e) => e.name!.endsWith('.kostori')).toList();
-        if (files.isEmpty) throw 'No data file found';
-        // 按版本号取最新（而非文件名排序，避免旧格式与新格式混排导致取错）
-        files.sort(
-          (a, b) => _versionOf(b.name!).compareTo(_versionOf(a.name!)),
-        );
-        var file = files.first;
-        var version = _versionOf(file.name!);
-        var currentVersion = appdata.settings['dataVersion'] as int? ?? 0;
+        final manifestRes = await readManifest();
+        final manifest = manifestRes.data;
+        if (manifest == null) throw 'No data file found';
+        final version = (manifest['version'] as num?)?.toInt() ?? 0;
+        final currentVersion = appdata.settings['dataVersion'] as int? ?? 0;
         if (version > 0 && version <= currentVersion) {
           Log.info("Data Sync", 'No new data to download');
           return const Res(true);
         }
-        Log.info("Data Sync", "Downloading data from WebDAV server");
-        var localFile = File(FilePath.join(App.cachePath, file.name!));
-        await client.read2File(
-          file.name!,
-          localFile.path,
-          onProgress: (count, total) {
-            _progress = total > 0 ? count / total : null;
-            notifyListeners();
-          },
-        );
-        await importAppData(localFile, true);
-        // 同步本地版本号为下载到的服务端版本
+        final remoteParts =
+            (manifest['parts'] as Map?)?.keys.whereType<String>().toSet() ??
+            <String>{};
+        Log.info("Data Sync", "Downloading ${remoteParts.length} parts (v$version)");
+        for (final part in syncParts) {
+          if (!remoteParts.contains(part.key)) continue;
+          final localFile = File(
+            FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
+          );
+          await client.read2File(
+            _join(_normDir(part.dir), '${part.name}.kostori'),
+            localFile.path,
+            onProgress: (count, total) {
+              _progress = total > 0 ? count / total : null;
+              notifyListeners();
+            },
+          );
+          await importPart(localFile);
+          localFile.deleteIgnoreError();
+        }
         appdata.settings['dataVersion'] = version;
         await appdata.saveData(false);
-        await localFile.delete();
         Log.info("Data Sync", "Data downloaded successfully");
         return const Res(true);
       } catch (e, s) {

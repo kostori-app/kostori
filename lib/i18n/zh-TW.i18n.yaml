@@ -141,6 +141,11 @@ syncStateDiffers: 有差異
 syncPromptInjections: 提示詞注入
 syncWorldBook: 世界書
 syncStoryChars: 故事角色卡
+syncParts: 整包 / 資料庫
+syncPartsHint: 分部分同步：資料庫各自獨立，其餘（設定/故事/角色卡…）整合為一個整包。
+aiDatabase: AI 會話
+stats: 統計
+cookies: Cookie
 data: 數據
 dateDesc: 按日期降序
 date: 日期
