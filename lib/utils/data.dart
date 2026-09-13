@@ -401,7 +401,7 @@ Future<String> partContentHash(String key) async {
   });
 }
 
-Future<void> importAppData(File file, [bool checkVersion = false]) async {
+Future<void> importAppData(File file) async {
   var cacheDirPath = FilePath.join(App.cachePath, 'temp_data');
   var cacheDir = Directory(cacheDirPath);
   if (cacheDir.existsSync()) {
@@ -413,7 +413,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     await Isolate.run(() {
       ZipFile.openAndExtract(file.path, cacheDirPath);
     });
-    await _applyImportedData(cacheDirPath, checkVersion: checkVersion);
+    await _applyImportedData(cacheDirPath);
   } catch (e) {
     DebugLog.error('importAppData', '$e');
   } finally {
@@ -422,10 +422,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
 }
 
 /// 从已解压目录应用导入（缺失的部分自动跳过）——整包与分部分导入共用
-Future<void> _applyImportedData(
-  String cacheDirPath, {
-  bool checkVersion = false,
-}) async {
+Future<void> _applyImportedData(String cacheDirPath) async {
   final cacheDir = Directory(cacheDirPath);
   var historyFile = cacheDir.joinFile("history.db");
     var localFavoriteFile = cacheDir.joinFile("local_favorite.db");
@@ -434,21 +431,6 @@ Future<void> _applyImportedData(
     var searchHistoryFile = cacheDir.joinFile("search_history.db");
     var appdataFile = cacheDir.joinFile("appdata.json");
     var cookieFile = cacheDir.joinFile("cookie.db");
-    if (checkVersion && appdataFile.existsSync()) {
-      final decoded = jsonDecode(await appdataFile.readAsString());
-      int? version;
-      if (decoded is Map && decoded["settings"] is Map) {
-        final v = (decoded["settings"] as Map)["dataVersion"];
-        if (v is int) version = v;
-      }
-      final local =
-          (appdata.implicitData['syncDataVersion'] as int?) ??
-          (appdata.settings['dataVersion'] as int? ?? 0);
-      if (version != null && version <= local) {
-        return;
-      }
-      DebugLog.info('importAppData', '检查数据版本');
-    }
     // 字段级合并优先：若有 history_merge.json，逐条按 lastWatchTime 合并，
     // 保留两端各自新增/更新的历史，不整库覆盖
     final mergeFile = cacheDir.joinFile("history_merge.json");
