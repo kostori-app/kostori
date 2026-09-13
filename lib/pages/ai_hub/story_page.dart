@@ -4711,9 +4711,27 @@ class _StoryDetailsSheet extends StatefulWidget {
 }
 
 class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
+  final _pageCtrl = PageController();
   int _tab = 0;
 
+  /// 词条按类型筛选（'' = 全部）
+  String _codexKind = '';
+
   GameState get state => widget.state;
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  void _goTab(int i) {
+    _pageCtrl.animateToPage(
+      i,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
 
   /// 在 codex 里按名称/键查找设定（容忍「物品 x2」这类后缀）
   StoryDefinition? _findDef(String name) {
@@ -4897,27 +4915,6 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     }
   }
 
-  /// 词条分组标题（按 kind 归类：物品 / 技能 / 特质 / 天赋 / 种族）
-  Widget _codexGroupTitle(String kind, ColorScheme scheme) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 2),
-      child: Row(
-        children: [
-          Icon(_codexIcon(kind), size: 15, color: scheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            _codexKindLabel(kind),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: scheme.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _codexKindLabel(String kind) => switch (kind) {
     'item' => t.storyCodexItem,
     'skill' => t.skills,
@@ -4990,21 +4987,30 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                 CapsuleOption(
                   text: t.storyState,
                   isSelected: _tab == 0,
-                  onTap: () => setState(() => _tab = 0),
+                  onTap: () => _goTab(0),
                 ),
                 CapsuleOption(
                   text: t.storySituation,
                   isSelected: _tab == 1,
-                  onTap: () => setState(() => _tab = 1),
+                  onTap: () => _goTab(1),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: ListView(
-              controller: sc,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: _tab == 0 ? _buildState(scheme) : _buildSituation(scheme),
+            child: PageView(
+              controller: _pageCtrl,
+              onPageChanged: (i) => setState(() => _tab = i),
+              children: [
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: _buildState(scheme),
+                ),
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: _buildSituation(scheme),
+                ),
+              ],
             ),
           ),
         ],
@@ -5254,18 +5260,42 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
           for (final d in defs) {
             out.add(_codexTile(d, scheme));
           }
-        } else {
-          // 未指定 kind：按类型分组，避免所有词条挤在一起
-          final groups = <String, List<StoryDefinition>>{};
-          for (final d in defs) {
-            groups.putIfAbsent(d.kind, () => []).add(d);
-          }
-          for (final entry in groups.entries) {
-            out.add(_codexGroupTitle(entry.key, scheme));
-            for (final d in entry.value) {
-              out.add(_codexTile(d, scheme));
-            }
-          }
+          return out;
+        }
+        // 未指定 kind：用分段胶囊按类型切换，避免下滑过长
+        final kinds = <String>[];
+        for (final d in defs) {
+          if (!kinds.contains(d.kind)) kinds.add(d.kind);
+        }
+        final selected = (_codexKind.isEmpty || !kinds.contains(_codexKind))
+            ? ''
+            : _codexKind;
+        out.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: CapsuleOptions(
+              scrollable: true,
+              children: [
+                CapsuleOption(
+                  text: t.filterAll,
+                  isSelected: selected.isEmpty,
+                  onTap: () => setState(() => _codexKind = ''),
+                ),
+                for (final k in kinds)
+                  CapsuleOption(
+                    text: _codexKindLabel(k),
+                    isSelected: selected == k,
+                    onTap: () => setState(() => _codexKind = k),
+                  ),
+              ],
+            ),
+          ),
+        );
+        final shown = selected.isEmpty
+            ? defs
+            : defs.where((d) => d.kind == selected).toList();
+        for (final d in shown) {
+          out.add(_codexTile(d, scheme));
         }
         return out;
       case 'titles':
