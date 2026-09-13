@@ -1682,6 +1682,7 @@ characterGroupGreetings: 群聊專用開場白（每行一個）
 characterExportV3: 匯出為 V3
 characterExportV2: 匯出為 V2
 characterSpec: 規範版本
+characterPickAvatar: 選擇圖片
 storyPersona: 玩家角色
 storyPersonaHint: 描述使用者本人，AI 不得扮演。
 storyTextStyle: 文字樣式

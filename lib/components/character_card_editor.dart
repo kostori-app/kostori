@@ -1,13 +1,124 @@
 // 角色卡编辑 / 查看组件（故事与全局角色卡库共用）
 
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
+
+/// 角色头像：有图片（data URL / http）则显示图片，否则显示名字首字
+class CharacterAvatar extends StatelessWidget {
+  const CharacterAvatar({
+    super.key,
+    required this.name,
+    this.avatar = '',
+    this.radius = 16,
+  });
+
+  final String name;
+  final String avatar;
+  final double radius;
+
+  ImageProvider? _image() {
+    final a = avatar.trim();
+    if (a.startsWith('data:image')) {
+      final comma = a.indexOf(',');
+      if (comma > 0) {
+        try {
+          return MemoryImage(base64Decode(a.substring(comma + 1)));
+        } catch (_) {}
+      }
+    } else if (a.startsWith('http')) {
+      return NetworkImage(a);
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final image = _image();
+    if (image != null) {
+      return CircleAvatar(radius: radius, backgroundImage: image);
+    }
+    final n = name.trim();
+    final initial = n.isEmpty ? '' : n.characters.first;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: scheme.primaryContainer,
+      child: initial.isEmpty
+          ? Icon(
+              Icons.person,
+              size: radius * 1.1,
+              color: scheme.onPrimaryContainer,
+            )
+          : Text(
+              initial,
+              style: TextStyle(
+                fontSize: radius * 0.9,
+                fontWeight: FontWeight.w600,
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
+    );
+  }
+}
+
+/// 头像选择器：预览 + 选图 / 清除
+class AvatarPicker extends StatelessWidget {
+  const AvatarPicker({
+    super.key,
+    required this.name,
+    required this.avatar,
+    required this.onChanged,
+  });
+
+  final String name;
+  final String avatar;
+  final ValueChanged<String> onChanged;
+
+  Future<void> _pick() async {
+    final picker = ImagePicker();
+    final x = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+    if (x == null) return;
+    final bytes = await x.readAsBytes();
+    final mime = x.mimeType ?? 'image/png';
+    onChanged('data:$mime;base64,${base64Encode(bytes)}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          CharacterAvatar(name: name, avatar: avatar, radius: 24),
+          const SizedBox(width: 12),
+          TextButton.icon(
+            onPressed: _pick,
+            icon: const Icon(Icons.image_outlined, size: 18),
+            label: Text(t.characterPickAvatar),
+          ),
+          if (avatar.trim().isNotEmpty)
+            TextButton.icon(
+              onPressed: () => onChanged(''),
+              icon: const Icon(Icons.clear, size: 18),
+              label: Text(t.clear),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 /// 打开角色卡编辑器，返回编辑后的卡片（取消时为 null）
 Future<CharacterCard?> showCharacterCardEditor(
@@ -32,6 +143,7 @@ class CharacterCardEditor extends StatefulWidget {
 
 class _CharacterCardEditorState extends State<CharacterCardEditor> {
   final _formKey = GlobalKey<FormState>();
+  late String _avatar = widget.card?.avatar ?? '';
   late final _nameCtrl = TextEditingController(text: widget.card?.name ?? '');
   late final _descCtrl = TextEditingController(
     text: widget.card?.description ?? '',
@@ -105,7 +217,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
     final card = CharacterCard(
       id: widget.card?.id ?? 'card_${DateTime.now().microsecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),
-      avatar: widget.card?.avatar ?? '🧑',
+      avatar: _avatar,
       description: _descCtrl.text.trim(),
       personality: _personalityCtrl.text.trim(),
       scenario: _scenarioCtrl.text.trim(),
@@ -151,6 +263,11 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
           padding: const EdgeInsets.all(16),
           children: [
             _field(t.storyCharacterName, _nameCtrl),
+            AvatarPicker(
+              name: _nameCtrl.text,
+              avatar: _avatar,
+              onChanged: (v) => setState(() => _avatar = v),
+            ),
             _field(t.characterDescription, _descCtrl, multiline: true),
             _field(t.characterPersonality, _personalityCtrl, multiline: true),
             _field(t.characterScenario, _scenarioCtrl, multiline: true),
@@ -239,24 +356,32 @@ class CharacterCardView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text(
-                card.name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+              CharacterAvatar(name: card.name, avatar: card.avatar, radius: 26),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      card.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (card.creator.trim().isNotEmpty)
+                      Text(
+                        card.creator.trim(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              if (card.creator.trim().isNotEmpty)
-                Text(
-                  card.creator.trim(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
             ],
           ),
           if (card.tags.isNotEmpty)
@@ -333,14 +458,22 @@ Future<Uint8List?> renderCharacterCardImage(
     ).createShader(rect);
   canvas.drawRect(rect, paint);
 
-  final avatarTp = TextPainter(
-    text: TextSpan(
-      text: card.avatar.isEmpty ? '🧑' : card.avatar,
-      style: TextStyle(fontSize: size * 0.42),
-    ),
-    textDirection: TextDirection.ltr,
-  )..layout();
-  avatarTp.paint(canvas, Offset((size - avatarTp.width) / 2, size * 0.16));
+  final n = card.name.trim();
+  final initial = n.isEmpty ? '' : n.characters.first;
+  if (initial.isNotEmpty) {
+    final avatarTp = TextPainter(
+      text: TextSpan(
+        text: initial,
+        style: TextStyle(
+          fontSize: size * 0.42,
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    avatarTp.paint(canvas, Offset((size - avatarTp.width) / 2, size * 0.16));
+  }
 
   final nameTp = TextPainter(
     text: TextSpan(

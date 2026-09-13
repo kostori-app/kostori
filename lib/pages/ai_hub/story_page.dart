@@ -447,6 +447,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _choicesCtrl = TextEditingController(
     text: widget.story?.choicesPrompt ?? '',
   );
+  late String _personaAvatar = widget.story?.persona.avatar ?? '';
   late final _personaNameCtrl = TextEditingController(
     text: widget.story?.persona.name ?? '',
   );
@@ -683,7 +684,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       ],
       persona: StoryPersona(
         name: _personaNameCtrl.text.trim(),
-        avatar: widget.story?.persona.avatar ?? '🧑',
+        avatar: _personaAvatar,
         description: _personaDescCtrl.text.trim(),
       ),
       initialState: initialState,
@@ -787,6 +788,11 @@ class _StoryEditorState extends State<_StoryEditor> {
           children: [
             for (final c in cards)
               ListTile(
+                leading: CharacterAvatar(
+                  name: c.name,
+                  avatar: c.avatar,
+                  radius: 16,
+                ),
                 title: Text(c.name),
                 subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
                 onTap: () => Navigator.of(ctx).pop(c),
@@ -927,6 +933,11 @@ class _StoryEditorState extends State<_StoryEditor> {
           ),
         ),
         _field(t.storyCharacterName, _personaNameCtrl, required: false),
+        AvatarPicker(
+          name: _personaNameCtrl.text,
+          avatar: _personaAvatar,
+          onChanged: (v) => setState(() => _personaAvatar = v),
+        ),
         _field(
           t.characterDescription,
           _personaDescCtrl,
@@ -1319,6 +1330,12 @@ class _StoryEditorState extends State<_StoryEditor> {
           card([
             Row(
               children: [
+                CharacterAvatar(
+                  name: _characters[i].name,
+                  avatar: _characters[i].avatar,
+                  radius: 18,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1997,6 +2014,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: CharacterAvatar(
+                name: c.name,
+                avatar: c.avatar,
+                radius: 16,
+              ),
               title: Text(c.name),
               subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
             ),
@@ -2020,6 +2042,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         ),
       ),
     );
+  }
+
+  /// 按角色名取头像（找不到时用默认）
+  String _avatarForName(String name) {
+    for (final c in story.characters) {
+      if (c.name == name) return c.avatar;
+    }
+    return '';
   }
 
   /// 消息时间：yyyy-MM-dd HH:mm:ss
@@ -2342,6 +2372,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                 story.regexes,
                                                 'ai',
                                               ),
+                                              avatar: _avatarForName(seg.name),
                                             )
                                           : _StoryBubble(
                                               content: applyStoryRegex(
@@ -2387,6 +2418,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                             headerTime: _formatTime(
                                               m.createdAt,
                                             ),
+                                            headerAvatar: persona.avatar,
                                           )
                                         : Column(
                                             crossAxisAlignment:
@@ -2402,6 +2434,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                               story.regexes,
                                                               'ai',
                                                             ),
+                                                        avatar: _avatarForName(
+                                                          seg.name,
+                                                        ),
                                                       )
                                                     : _StoryBubble(
                                                         content:
@@ -2471,6 +2506,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               final c = story.characters[i];
                               final present = _state.present.contains(c.name);
                               return ActionChip(
+                                avatar: CharacterAvatar(
+                                  name: c.name,
+                                  avatar: c.avatar,
+                                  radius: 10,
+                                ),
                                 label: Text(c.name),
                                 backgroundColor: present
                                     ? Theme.of(context)
@@ -3596,9 +3636,19 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     if (!persona.isEmpty) {
       blocks.add(_sectionTitle(t.storyPersona));
       blocks.add(
-        Text(
-          persona.name.trim(),
-          style: const TextStyle(fontWeight: FontWeight.w600),
+        Row(
+          children: [
+            CharacterAvatar(
+              name: persona.name,
+              avatar: persona.avatar,
+              radius: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              persona.name.trim(),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
         ),
       );
       if (persona.description.trim().isNotEmpty) {

@@ -1264,12 +1264,14 @@ class _StoryBubble extends StatelessWidget {
     required this.isUser,
     this.headerName,
     this.headerTime,
+    this.headerAvatar,
   });
 
   final String content;
   final bool isUser;
   final String? headerName;
   final String? headerTime;
+  final String? headerAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -1281,28 +1283,42 @@ class _StoryBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (headerName != null)
+            if (headerName != null || headerAvatar != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4, right: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text(
-                      headerName!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurface,
+                    if (headerName != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            headerName!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                          if (headerTime != null)
+                            Text(
+                              headerTime!,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                    if (headerTime != null)
-                      Text(
-                        headerTime!,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: scheme.onSurfaceVariant,
-                        ),
+                    if (headerAvatar != null) ...[
+                      const SizedBox(width: 8),
+                      CharacterAvatar(
+                        name: headerName ?? '',
+                        avatar: headerAvatar!,
+                        radius: 16,
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -1434,38 +1450,52 @@ class _StoryText extends StatelessWidget {
 
 /// NPC 发言容器：头像 + 名字 + 内容，方便与旁白区分
 class _NpcBubble extends StatelessWidget {
-  const _NpcBubble({required this.name, required this.content});
+  const _NpcBubble({
+    required this.name,
+    required this.content,
+    this.avatar = '',
+  });
 
   final String name;
   final String content;
+  final String avatar;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: scheme.outlineVariant, width: 0.6),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: scheme.primary,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CharacterAvatar(name: name, avatar: avatar, radius: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: scheme.outlineVariant, width: 0.6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _StoryText(content),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            _StoryText(content),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

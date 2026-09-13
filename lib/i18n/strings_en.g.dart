@@ -4939,6 +4939,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Spec'
 	String get characterSpec => 'Spec';
 
+	/// en: 'Pick image'
+	String get characterPickAvatar => 'Pick image';
+
 	/// en: 'Player character'
 	String get storyPersona => 'Player character';
 
@@ -9670,6 +9673,7 @@ extension on Translations {
 			'characterExportV3' => 'Export as V3',
 			'characterExportV2' => 'Export as V2',
 			'characterSpec' => 'Spec',
+			'characterPickAvatar' => 'Pick image',
 			'storyPersona' => 'Player character',
 			'storyPersonaHint' => 'Describes who the user is. The AI must not roleplay this.',
 			'storyTextStyle' => 'Text style',
@@ -10042,9 +10046,9 @@ extension on Translations {
 			'statsWeekdayWed' => 'Wed',
 			'statsWeekdayThu' => 'Thu',
 			'statsWeekdayFri' => 'Fri',
-			'statsWeekdaySat' => 'Sat',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdaySat' => 'Sat',
 			'statsWeekdaySun' => 'Sun',
 			'statsYearlyOverview' => 'Yearly overview',
 			'statsRangeOverview' => 'Time range stats',
@@ -10556,9 +10560,9 @@ extension on Translations {
 			'wantToWatch' => 'Want to watch',
 			'watching' => 'Watching',
 			'addToFolder' => ({required Object folder}) => 'Add to ${folder}',
-			'removeFromFolder' => ({required Object folder}) => 'Remove from ${folder}',
 			_ => null,
 		} ?? switch (path) {
+			'removeFromFolder' => ({required Object folder}) => 'Remove from ${folder}',
 			'movedFromTo' => ({required Object from, required Object to}) => 'Move from ${from} to ${to}',
 			'unknownFolder' => 'Unknown folder',
 			'fetchVideoUrlError' => ({required Object detail}) => 'Failed to get video link: ${detail}',

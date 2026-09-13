@@ -1672,6 +1672,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterExportV3 => '匯出為 V3';
 	@override String get characterExportV2 => '匯出為 V2';
 	@override String get characterSpec => '規範版本';
+	@override String get characterPickAvatar => '選擇圖片';
 	@override String get storyPersona => '玩家角色';
 	@override String get storyPersonaHint => '描述使用者本人，AI 不得扮演。';
 	@override String get storyTextStyle => '文字樣式';
@@ -4388,6 +4389,7 @@ extension on TranslationsZhTw {
 			'characterExportV3' => '匯出為 V3',
 			'characterExportV2' => '匯出為 V2',
 			'characterSpec' => '規範版本',
+			'characterPickAvatar' => '選擇圖片',
 			'storyPersona' => '玩家角色',
 			'storyPersonaHint' => '描述使用者本人，AI 不得扮演。',
 			'storyTextStyle' => '文字樣式',
@@ -4760,9 +4762,9 @@ extension on TranslationsZhTw {
 			'statsWeekdayThu' => '四',
 			'statsWeekdayFri' => '五',
 			'statsWeekdaySat' => '六',
-			'statsWeekdaySun' => '日',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdaySun' => '日',
 			'statsYearlyOverview' => '年度總覽',
 			'statsRangeOverview' => '時間範圍統計',
 			'statsWeekly' => '週統計',
@@ -5274,9 +5276,9 @@ extension on TranslationsZhTw {
 			'watching' => '在看',
 			'addToFolder' => ({required Object folder}) => '新增到 ${folder}',
 			'removeFromFolder' => ({required Object folder}) => '從 ${folder} 刪除',
-			'movedFromTo' => ({required Object from, required Object to}) => '從 ${from} 移動到 ${to}',
 			_ => null,
 		} ?? switch (path) {
+			'movedFromTo' => ({required Object from, required Object to}) => '從 ${from} 移動到 ${to}',
 			'unknownFolder' => 'Unknown folder',
 			'fetchVideoUrlError' => ({required Object detail}) => '取得影片連結異常: ${detail}',
 			'missingUrl' => '缺少 url',
