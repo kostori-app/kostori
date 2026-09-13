@@ -441,5 +441,18 @@ void main() {
       expect(back.facilities.single.key, 'forge');
       expect(back.facilities.single.maxLevel, 3);
     });
+
+    test('death resources and mode round trip', () {
+      const story = Story(
+        id: 's',
+        name: 'S',
+        deathResources: ['生命', '精神'],
+        deathMode: 'all',
+      );
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.deathMode, 'all');
+      expect(back.deathResources, ['生命', '精神']);
+    });
   });
 }

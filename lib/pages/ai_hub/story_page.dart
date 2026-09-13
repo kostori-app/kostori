@@ -611,6 +611,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _deathCtrl = TextEditingController(
     text: (widget.story?.deathResources ?? const []).join('、'),
   );
+  late String _deathMode = widget.story?.deathMode ?? 'any';
   late final _openingCtrl = TextEditingController(
     text: widget.story?.opening ?? '',
   );
@@ -812,6 +813,7 @@ class _StoryEditorState extends State<_StoryEditor> {
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty)
           .toList(),
+      deathMode: _deathMode,
       choicesPrompt: _choicesCtrl.text.trim(),
       setup: widget.story?.setup ?? const [],
       actions: [
@@ -1171,6 +1173,35 @@ class _StoryEditorState extends State<_StoryEditor> {
           _descCtrl,
           required: false,
           multiline: true,
+        ),
+        _deathSection(),
+      ],
+    );
+  }
+
+  /// 致命资源：判定方式（任一/全部归零）+ 资源名
+  Widget _deathSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+          child: Row(
+            children: [
+              Text(
+                '${t.storyDeathMode}: ',
+                style: const TextStyle(fontSize: 13),
+              ),
+              Select(
+                current: _deathMode == 'all'
+                    ? t.storyDeathModeAll
+                    : t.storyDeathModeAny,
+                values: [t.storyDeathModeAny, t.storyDeathModeAll],
+                onTap: (i) =>
+                    setState(() => _deathMode = i == 1 ? 'all' : 'any'),
+              ),
+            ],
+          ),
         ),
         _field(t.storyDeathResources, _deathCtrl, required: false),
       ],
@@ -2315,8 +2346,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.write('\n\n【开局场景（请从这里开始叙事）】\n${sub(story.opening.trim())}');
     }
     if (story.deathResources.isNotEmpty) {
+      final rule = story.deathMode == 'all'
+          ? '全部归零才结束'
+          : '任意一个归零即结束';
       buf.write(
-        '\n\n【致命资源（归零即游戏结束，请在归零前给出收尾叙事）】'
+        '\n\n【致命资源（$rule，请在归零前给出收尾叙事）】'
         '${story.deathResources.join('、')}',
       );
     }
@@ -2976,15 +3010,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (next.base.isEmpty && !_state.base.isEmpty) {
       next = next.copyWith(base: _state.base);
     }
-    // 致命资源归零 → 游戏结束
+    // 致命资源归零 → 游戏结束（any=任一归零；all=全部归零）
     if (!next.gameOver && story.deathResources.isNotEmpty) {
-      final death = story.deathResources.toSet();
-      for (final r in next.resources) {
-        if (death.contains(r.name) && r.cur <= 0) {
-          next = next.copyWith(gameOver: true);
-          break;
+      bool isZero(String name) {
+        for (final r in next.resources) {
+          if (r.name == name) return r.cur <= 0;
         }
+        return false;
       }
+
+      final over = story.deathMode == 'all'
+          ? story.deathResources.every(isZero)
+          : story.deathResources.any(isZero);
+      if (over) next = next.copyWith(gameOver: true);
     }
     final unregistered = _unregisteredFrom(next);
     final newlyUnlocked = next.achievements

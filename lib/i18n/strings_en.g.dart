@@ -4813,6 +4813,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Manage library'
 	String get storyLibraryManage => 'Manage library';
 
+	/// en: 'Fatal rule'
+	String get storyDeathMode => 'Fatal rule';
+
+	/// en: 'Any reaches 0'
+	String get storyDeathModeAny => 'Any reaches 0';
+
+	/// en: 'All reach 0'
+	String get storyDeathModeAll => 'All reach 0';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9904,6 +9913,9 @@ extension on Translations {
 			'storyImportPrompt' => 'Import prompt',
 			'storyExportSt' => 'Export as ST card',
 			'storyLibraryManage' => 'Manage library',
+			'storyDeathMode' => 'Fatal rule',
+			'storyDeathModeAny' => 'Any reaches 0',
+			'storyDeathModeAll' => 'All reach 0',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10316,11 +10328,11 @@ extension on Translations {
 			'endPoint' => 'End',
 			'jumpToStart' => 'Jump to start',
 			'setStartPoint' => 'Set Start',
+			_ => null,
+		} ?? switch (path) {
 			'setEndPoint' => 'Set End',
 			'editStartPoint' => 'Edit Start',
 			'editEndPoint' => 'Edit End',
-			_ => null,
-		} ?? switch (path) {
 			'durationFormatHint' => 'Supported formats: 90, 01:30, 1.5...',
 			'secondsAsNumber' => 'Pure numbers are treated as seconds',
 			'exportSettings' => 'Export Settings',
@@ -10830,11 +10842,11 @@ extension on Translations {
 			'downloadWifiOnly' => 'Wi-Fi only',
 			'downloadOther' => 'Other',
 			'downloadRecords' => 'Download records',
+			_ => null,
+		} ?? switch (path) {
 			'openWithOtherPlayer' => 'Open with other player',
 			'downloadTitleFormat' => 'Download title format',
 			'downloadFormatHint' => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}',
-			_ => null,
-		} ?? switch (path) {
 			'rules' => 'Rules',
 			'textRules' => 'Text rules',
 			'textRuleAdd' => 'Add rule',

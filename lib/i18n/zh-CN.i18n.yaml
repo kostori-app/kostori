@@ -1635,6 +1635,9 @@ storyAddEntry: 添加条目
 storyImportPrompt: 导入提示词
 storyExportSt: 导出为 ST 角色卡
 storyLibraryManage: 管理知识库
+storyDeathMode: 致命判定
+storyDeathModeAny: 任一归零
+storyDeathModeAll: 全部归零
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得

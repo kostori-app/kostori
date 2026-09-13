@@ -1640,6 +1640,9 @@ storyAddEntry: Add entry
 storyImportPrompt: Import prompt
 storyExportSt: Export as ST card
 storyLibraryManage: Manage library
+storyDeathMode: Fatal rule
+storyDeathModeAny: Any reaches 0
+storyDeathModeAll: All reach 0
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned

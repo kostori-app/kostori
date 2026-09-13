@@ -1382,6 +1382,10 @@ class Story {
   /// 致命资源：这些资源归零即游戏结束（为空则不判定）
   final List<String> deathResources;
 
+  /// 致命资源判定方式：
+  /// any = 任意一个归零即结束（单个/多个任一）；all = 全部归零才结束
+  final String deathMode;
+
   /// 故事角色（多角色同场，复用角色卡模型）
   final List<CharacterCard> characters;
 
@@ -1442,6 +1446,7 @@ class Story {
     this.injectionIds = const [],
     this.panels = const [],
     this.deathResources = const [],
+    this.deathMode = 'any',
     this.characters = const [],
     this.variables = const [],
     this.regexes = const [],
@@ -1470,6 +1475,7 @@ class Story {
     List<String>? injectionIds,
     List<StoryPanel>? panels,
     List<String>? deathResources,
+    String? deathMode,
     List<CharacterCard>? characters,
     List<StoryVariable>? variables,
     List<StoryRegex>? regexes,
@@ -1496,6 +1502,7 @@ class Story {
     injectionIds: injectionIds ?? this.injectionIds,
     panels: panels ?? this.panels,
     deathResources: deathResources ?? this.deathResources,
+    deathMode: deathMode ?? this.deathMode,
     characters: characters ?? this.characters,
     variables: variables ?? this.variables,
     regexes: regexes ?? this.regexes,
@@ -1544,6 +1551,7 @@ class Story {
     deathResources:
         (json['deathResources'] as List?)?.whereType<String>().toList() ??
         const [],
+    deathMode: json['deathMode']?.toString() ?? 'any',
     characters: json['characters'] is List
         ? [
             for (final e in json['characters'] as List)
@@ -1609,6 +1617,7 @@ class Story {
     'injectionIds': injectionIds,
     'panels': [for (final p in panels) p.toJson()],
     'deathResources': deathResources,
+    'deathMode': deathMode,
     'characters': [for (final c in characters) c.toJson()],
     'variables': [for (final v in variables) v.toJson()],
     'regexes': [for (final r in regexes) r.toJson()],
@@ -1911,6 +1920,27 @@ class StoryStore extends ChangeNotifier {
       return <T>[];
     }
     final panels = mapList('面板', StoryPanel.fromJson);
+    // 致命资源：列表（默认 any）或对象 {mode, resources}
+    var deathRes = (mode: 'any', resources: <String>[]);
+    final deathText = _section(text, '致命资源');
+    if (deathText != null && deathText.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(deathText.trim());
+        if (decoded is List) {
+          deathRes = (
+            mode: 'any',
+            resources: decoded.whereType<String>().toList(),
+          );
+        } else if (decoded is Map) {
+          deathRes = (
+            mode: decoded['mode']?.toString() ?? 'any',
+            resources:
+                (decoded['resources'] as List?)?.whereType<String>().toList() ??
+                const [],
+          );
+        }
+      } catch (_) {}
+    }
     // 称号：{mode, titles:[...]} 或直接是 titles 列表
     var titleMode = 'all';
     var titleDefs = <StoryTitle>[];
@@ -1969,7 +1999,8 @@ class StoryStore extends ChangeNotifier {
       worldBookIds: idList('世界书库'),
       injectionIds: idList('提示词库'),
       panels: panels,
-      deathResources: idList('致命资源'),
+      deathResources: deathRes.resources,
+      deathMode: deathRes.mode,
       characters: mapList('角色', CharacterCard.fromJson),
       variables: mapList('变量', StoryVariable.fromJson),
       regexes: mapList('正则', StoryRegex.fromJson),
@@ -2018,7 +2049,10 @@ class StoryStore extends ChangeNotifier {
       section('面板', jsonEncode([for (final p in s.panels) p.toJson()]));
     }
     if (s.deathResources.isNotEmpty) {
-      section('致命资源', jsonEncode(s.deathResources));
+      section(
+        '致命资源',
+        jsonEncode({'mode': s.deathMode, 'resources': s.deathResources}),
+      );
     }
     if (s.characters.isNotEmpty) {
       section('角色', jsonEncode([for (final c in s.characters) c.toJson()]));

@@ -1630,6 +1630,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyImportPrompt => '匯入提示詞';
 	@override String get storyExportSt => '匯出為 ST 角色卡';
 	@override String get storyLibraryManage => '管理知識庫';
+	@override String get storyDeathMode => '致命判定';
+	@override String get storyDeathModeAny => '任一歸零';
+	@override String get storyDeathModeAll => '全部歸零';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4438,6 +4441,9 @@ extension on TranslationsZhTw {
 			'storyImportPrompt' => '匯入提示詞',
 			'storyExportSt' => '匯出為 ST 角色卡',
 			'storyLibraryManage' => '管理知識庫',
+			'storyDeathMode' => '致命判定',
+			'storyDeathModeAny' => '任一歸零',
+			'storyDeathModeAll' => '全部歸零',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4850,11 +4856,11 @@ extension on TranslationsZhTw {
 			'setEndPoint' => '設定終點',
 			'editStartPoint' => '修改起點',
 			'editEndPoint' => '修改終點',
+			_ => null,
+		} ?? switch (path) {
 			'durationFormatHint' => '支援格式: 90, 01:30, 1.5...',
 			'secondsAsNumber' => '輸入純數字視為秒數',
 			'exportSettings' => '導出設定',
-			_ => null,
-		} ?? switch (path) {
 			'paletteColorsHint' => '越少體積越小',
 			'ditherHint' => '畫質更好，體積稍大',
 			'aspectRatioPresets' => '寬高比快速預設',
@@ -5364,11 +5370,11 @@ extension on TranslationsZhTw {
 			'downloadOther' => '其他',
 			'downloadRecords' => '下載紀錄',
 			'openWithOtherPlayer' => '用其他播放器開啟',
+			_ => null,
+		} ?? switch (path) {
 			'downloadTitleFormat' => '下載標題格式',
 			'downloadFormatHint' => '佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份',
 			'rules' => '規則',
-			_ => null,
-		} ?? switch (path) {
 			'textRules' => '文字規則',
 			'textRuleAdd' => '新增規則',
 			'textRuleName' => '規則名稱',
