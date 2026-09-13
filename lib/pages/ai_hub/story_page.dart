@@ -3641,7 +3641,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     for (final p in body.split(RegExp(r'\n\s*\n'))) {
       final t = p.trim();
       if (t.isEmpty) continue;
-      if (_hasQuotedSpeech(t)) {
+      if (!_looksLikeCallout(t) && _hasQuotedSpeech(t)) {
         npcBuf.add(t);
       } else {
         flush();
@@ -3654,6 +3654,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   static final _speechRe = RegExp(r'[“"「『][^”"」』]*[”"」』]');
 
   static bool _hasQuotedSpeech(String s) => _speechRe.hasMatch(s);
+
+  /// 提示框（`>` 引用块 / 【标签】开头）无论是否含引号都算旁白
+  static bool _looksLikeCallout(String s) {
+    final t = s.trimLeft();
+    if (t.startsWith('>')) return true;
+    if (t.startsWith('【')) {
+      final close = t.indexOf('】');
+      if (close > 1 && close <= 12) return true;
+    }
+    return false;
+  }
 
   /// 文字样式设置：引号高亮 / 阴影 / 字体 / 字号
   Future<void> _showTextStyleSheet() async {
