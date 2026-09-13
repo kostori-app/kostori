@@ -1696,6 +1696,7 @@ storyTextStyle: 文字样式
 storyShadowOn: 阴影已开启
 storyShadowOff: 阴影已关闭
 storySystemFont: 系统字体
+storyItalic: 斜体
 storyFontSize: 字号
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结

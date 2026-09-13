@@ -4996,6 +4996,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'System font'
 	String get storySystemFont => 'System font';
 
+	/// en: 'Italic'
+	String get storyItalic => 'Italic';
+
 	/// en: 'Font size'
 	String get storyFontSize => 'Font size';
 
@@ -9728,6 +9731,7 @@ extension on Translations {
 			'storyShadowOn' => 'Shadow on',
 			'storyShadowOff' => 'Shadow off',
 			'storySystemFont' => 'System font',
+			'storyItalic' => 'Italic',
 			'storyFontSize' => 'Font size',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
@@ -10081,9 +10085,9 @@ extension on Translations {
 			'statsCountTimes' => ({required Object n}) => '${n} times',
 			'statsCountComments' => ({required Object n}) => '${n} comments',
 			'statsCountItems' => ({required Object n}) => '${n} items',
-			'statsDateFull' => ({required Object month, required Object day, required Object year}) => '${month}/${day}/${year}',
 			_ => null,
 		} ?? switch (path) {
+			'statsDateFull' => ({required Object month, required Object day, required Object year}) => '${month}/${day}/${year}',
 			'statsDateRangeWeek' => ({required Object month, required Object day, required Object endMonth, required Object endDay, required Object year}) => '${month}/${day} - ${endMonth}/${endDay}, ${year}',
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}.${month}',
 			'statsYearMonthName' => ({required Object month, required Object year}) => '${month} ${year}',
@@ -10595,9 +10599,9 @@ extension on Translations {
 			'noViewingRecord' => 'No viewing record found for this episode',
 			'viewingRecord' => 'Viewing record',
 			'watchDurationLabel' => ({required Object duration}) => 'Watch duration: ${duration}',
-			'completedStatus' => ({required Object status}) => 'Completed: ${status}',
 			_ => null,
 		} ?? switch (path) {
+			'completedStatus' => ({required Object status}) => 'Completed: ${status}',
 			'yes' => 'Yes',
 			'no' => 'No',
 			'startTimeLabel' => ({required Object time}) => 'Start time: ${time}',

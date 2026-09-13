@@ -1691,6 +1691,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyShadowOn => '陰影已開啟';
 	@override String get storyShadowOff => '陰影已關閉';
 	@override String get storySystemFont => '系統字體';
+	@override String get storyItalic => '斜體';
 	@override String get storyFontSize => '字號';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
@@ -4420,6 +4421,7 @@ extension on TranslationsZhTw {
 			'storyShadowOn' => '陰影已開啟',
 			'storyShadowOff' => '陰影已關閉',
 			'storySystemFont' => '系統字體',
+			'storyItalic' => '斜體',
 			'storyFontSize' => '字號',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
@@ -4773,9 +4775,9 @@ extension on TranslationsZhTw {
 			'statsCountComments' => ({required Object n}) => '${n} 條',
 			'statsCountItems' => ({required Object n}) => '${n} 個',
 			'statsDateFull' => ({required Object year, required Object month, required Object day}) => '${year}年${month}月${day}日',
-			'statsDateRangeWeek' => ({required Object year, required Object month, required Object day, required Object endMonth, required Object endDay}) => '${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日',
 			_ => null,
 		} ?? switch (path) {
+			'statsDateRangeWeek' => ({required Object year, required Object month, required Object day, required Object endMonth, required Object endDay}) => '${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日',
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}年${month}月',
 			'statsYearMonthName' => ({required Object year, required Object month}) => '${year}年${month}',
 			'statsDateRangeHalf' => ({required Object year, required Object startMonth, required Object endMonth}) => '${year}年${startMonth}月 ~ ${endMonth}月',
@@ -5287,9 +5289,9 @@ extension on TranslationsZhTw {
 			'viewingRecord' => '觀看記錄',
 			'watchDurationLabel' => ({required Object duration}) => '觀看時長: ${duration}',
 			'completedStatus' => ({required Object status}) => '是否完成: ${status}',
-			'yes' => '是',
 			_ => null,
 		} ?? switch (path) {
+			'yes' => '是',
 			'no' => '否',
 			'startTimeLabel' => ({required Object time}) => '開始時間: ${time}',
 			'endTimeLabel' => ({required Object time}) => '結束時間: ${time}',

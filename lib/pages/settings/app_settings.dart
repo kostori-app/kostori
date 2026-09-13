@@ -1258,9 +1258,17 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     }.toList()..sort();
     final selected = _sel(kind);
     if (ids.isEmpty) {
+      final empty = switch (kind) {
+        'cards' => t.characterCardsEmpty,
+        'stories' => t.storyNoStories,
+        'sessions' => t.storySessions,
+        'prompts' => t.noPromptInjectionsYet,
+        'worldbook' => t.noWorldBookEntriesYet,
+        _ => '',
+      };
       return Center(
         child: Text(
-          t.characterCardsEmpty,
+          empty,
           style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );

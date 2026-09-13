@@ -715,9 +715,13 @@ class _StoryEditorState extends State<_StoryEditor> {
   Future<void> _importCharacterCard() async {
     final choice = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.importCharacter,
+        icon: Icons.badge_outlined,
+        initialSize: 0.34,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
           children: [
             ListTile(
               leading: const Icon(Icons.file_open_outlined),
@@ -782,9 +786,13 @@ class _StoryEditorState extends State<_StoryEditor> {
     }
     final picked = await showModalBottomSheet<CharacterCard>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.characterImportFromLibrary,
+        icon: Icons.badge_outlined,
+        initialSize: 0.6,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
           children: [
             for (final c in cards)
               ListTile(
@@ -1627,6 +1635,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   /// 新增但未在图鉴登记的物品（故事层校验结果）
   List<String> _unregistered = const [];
+  bool _registering = false;
 
   /// 需要先做开局档案设置（仅新游戏且故事定义了 setup 时）
   bool _needsSetup = false;
@@ -1989,15 +1998,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     }
   }
 
-  /// 找出新增但未在 codex 登记的物品
-  List<String> _unregisteredItems(GameState prev, GameState next) {
-    final prevItems = prev.inventory.toSet();
+  /// 找出背包里未在 codex 登记的道具（按基础名归一）
+  List<String> _unregisteredFrom(GameState state) {
     final registered = <String>{
-      for (final d in next.codex.where((d) => d.kind == 'item')) ...[d.key, d.name],
+      for (final d in state.codex.where((d) => d.kind == 'item')) ...[d.key, d.name],
     };
     final result = <String>[];
-    for (final item in next.inventory) {
-      if (prevItems.contains(item)) continue;
+    for (final item in state.inventory) {
       final base = item.split(' x').first.split('×').first.trim();
       if (registered.contains(item) || registered.contains(base)) continue;
       result.add(item);
@@ -2009,19 +2016,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _characterMenu(CharacterCard c) async {
     await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: c.name,
+        icon: Icons.person_outline,
+        initialSize: 0.36,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
           children: [
-            ListTile(
-              leading: CharacterAvatar(
-                name: c.name,
-                avatar: c.avatar,
-                radius: 16,
-              ),
-              title: Text(c.name),
-              subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
-            ),
             ListTile(
               leading: const Icon(Icons.badge_outlined),
               title: Text(t.characterCards),
@@ -2074,7 +2076,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _applyState(GameState? state) async {
     final sessionId = _sessionId;
     if (state == null || sessionId == null) return;
-    final unregistered = _unregisteredItems(_state, state);
+    final unregistered = _unregisteredFrom(state);
     final newlyUnlocked = state.achievements
         .where((k) => !_state.achievements.contains(k))
         .toList();
@@ -2107,9 +2109,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final isUser = m.role == 'user';
     await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.more,
+        icon: Icons.more_horiz,
+        initialSize: 0.46,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
           children: [
             ListTile(
               leading: const Icon(Icons.copy),
@@ -2158,43 +2164,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 编辑消息：用户消息回滚重发；模型消息就地改输出
   Future<void> _editMessage(AiTask m) async {
     final isUser = m.role == 'user';
-    final ctrl = TextEditingController(
-      text: isUser ? m.inputContent : (m.outputContent ?? ''),
-    );
-    final ok = await showDialog<bool>(
+    await showInputDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t.edit),
-        content: TextField(
-          controller: ctrl,
-          minLines: 3,
-          maxLines: 10,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(t.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(t.confirm),
-          ),
-        ],
-      ),
+      title: t.edit,
+      initialValue: isUser ? m.inputContent : (m.outputContent ?? ''),
+      minLines: 4,
+      maxLines: 12,
+      onConfirm: (value) async {
+        final text = value.toString().trim();
+        if (text.isEmpty) return t.required;
+        if (isUser) {
+          final sessionId = _sessionId;
+          if (sessionId == null) return null;
+          await AiConversationService().rollbackToMessage(sessionId, m.id);
+          await _send(text);
+        } else {
+          await AiConversationService().editMessageInput(m.id, text);
+          await _applyState(_parseReply(text).state);
+        }
+        return null;
+      },
     );
-    final text = ctrl.text.trim();
-    ctrl.dispose();
-    if (ok != true || !mounted || text.isEmpty) return;
-    if (isUser) {
-      final sessionId = _sessionId;
-      if (sessionId == null) return;
-      await AiConversationService().rollbackToMessage(sessionId, m.id);
-      await _send(text);
-    } else {
-      await AiConversationService().editMessageInput(m.id, text);
-      await _applyState(_parseReply(text).state);
-    }
   }
 
   /// 重新生成：保留旧结果作为候选，追加新候选
@@ -2271,12 +2261,95 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     await _applyState(_parseReply(variants[index]).state);
   }
 
-  /// 请 GM 为未登记的道具补充图鉴设定
-  void _registerUnregistered() {
-    if (_unregistered.isEmpty) return;
-    final items = _unregistered.join('、');
-    setState(() => _unregistered = const []);
-    _send('请为以下道具补充图鉴设定（在 codex 中给出 kind=item 的 display 与 mechanics）：$items');
+  /// 后台为未登记的道具补全图鉴设定（不进入当前对话上下文）
+  Future<void> _registerUnregistered() async {
+    if (_unregistered.isEmpty || _registering) return;
+    final items = List<String>.from(_unregistered);
+    setState(() => _registering = true);
+    try {
+      final res = await AiConversationService().runTask(
+        provider: aiHubProvider(),
+        taskType: 'story_codex',
+        sessionTitle: t.storyRegisterItems,
+        systemPrompt: '你是世界观设定补全助手，只输出 JSON，不要输出其它文字。',
+        prompt:
+            '为下列道具补全图鉴设定，严格输出 JSON：\n'
+            '{"codex":[{"kind":"item","key":"道具名","name":"道具名",'
+            '"display":"玩家可见描述","mechanics":"机制/数值"}]}\n'
+            '道具：${items.join('、')}',
+      );
+      if (!mounted) return;
+      if (!res.success) {
+        App.rootContext.showMessage(
+          message: res.errorMessage ?? '',
+          level: LogLevel.error,
+        );
+        return;
+      }
+      final defs = _parseCodexDefs(res.data);
+      if (defs.isEmpty) {
+        App.rootContext.showMessage(
+          message: t.characterImportFailed,
+          level: LogLevel.warning,
+        );
+        return;
+      }
+      final codex = [..._state.codex];
+      for (final d in defs) {
+        final idx = codex.indexWhere(
+          (x) => x.kind == d.kind && x.key == d.key,
+        );
+        if (idx >= 0) {
+          codex[idx] = d;
+        } else {
+          codex.add(d);
+        }
+      }
+      final next = _state.copyWith(codex: codex);
+      setState(() {
+        _state = next;
+        _unregistered = _unregisteredFrom(next);
+      });
+      final sessionId = _sessionId;
+      if (sessionId != null) {
+        await StorySessionStore.instance.put(
+          story.id,
+          StorySession(sessionId: sessionId, state: next),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _registering = false);
+    }
+  }
+
+  /// 从模型输出里解析 codex 定义
+  List<StoryDefinition> _parseCodexDefs(String text) {
+    final matches = RegExp(
+      r'```json\s*([\s\S]*?)```',
+      caseSensitive: false,
+    ).allMatches(text).toList();
+    final candidates = <String>[
+      if (matches.isNotEmpty) matches.last.group(1)!.trim(),
+      text.trim(),
+    ];
+    for (final c in candidates) {
+      try {
+        final decoded = jsonDecode(c);
+        if (decoded is Map && decoded['codex'] is List) {
+          return [
+            for (final e in decoded['codex'] as List)
+              if (e is Map) StoryDefinition.fromJson(e.cast<String, dynamic>()),
+          ];
+        }
+        if (decoded is List) {
+          return [
+            for (final e in decoded)
+              if (e is Map) StoryDefinition.fromJson(e.cast<String, dynamic>()),
+          ];
+        }
+      } catch (_) {}
+    }
+    return const [];
   }
 
   void _sendInput() {
@@ -2543,10 +2616,22 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            TextButton(
-                              onPressed: _registerUnregistered,
-                              child: Text(t.storyRegisterItems),
-                            ),
+                            if (_registering)
+                              const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            else
+                              TextButton(
+                                onPressed: _registerUnregistered,
+                                child: Text(t.storyRegisterItems),
+                              ),
                           ],
                         ),
                       ),
@@ -2917,76 +3002,74 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _showTextStyleSheet() async {
     await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => ListenableBuilder(
-        listenable: StoryTextStyleStore.instance,
-        builder: (ctx, _) {
-          final store = StoryTextStyleStore.instance;
-          final s = store.style;
-          Widget chip(String label, bool selected, VoidCallback onTap) =>
-              FilterChip(
-                label: Text(label),
-                selected: selected,
-                onSelected: (_) => onTap(),
-              );
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t.storyTextStyle,
-                    style: Theme.of(ctx).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      chip(
-                        '“”',
-                        s.highlightQuotes,
-                        () => store.update(
-                          s.copyWith(highlightQuotes: !s.highlightQuotes),
-                        ),
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.storyTextStyle,
+        icon: Icons.text_fields_outlined,
+        initialSize: 0.5,
+        builder: (ctx, sc) => ListenableBuilder(
+          listenable: StoryTextStyleStore.instance,
+          builder: (ctx, _) {
+            final store = StoryTextStyleStore.instance;
+            final s = store.style;
+            Widget chip(String label, bool selected, VoidCallback onTap) =>
+                FilterChip(
+                  label: Text(label),
+                  selected: selected,
+                  onSelected: (_) => onTap(),
+                );
+            return ListView(
+              controller: sc,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    chip(
+                      '“”',
+                      s.highlightQuotes,
+                      () => store.update(
+                        s.copyWith(highlightQuotes: !s.highlightQuotes),
                       ),
-                      chip(
-                        s.shadow ? t.storyShadowOn : t.storyShadowOff,
-                        s.shadow,
-                        () => store.update(s.copyWith(shadow: !s.shadow)),
+                    ),
+                    chip(
+                      t.storyItalic,
+                      s.italic,
+                      () => store.update(s.copyWith(italic: !s.italic)),
+                    ),
+                    chip(
+                      s.shadow ? t.storyShadowOn : t.storyShadowOff,
+                      s.shadow,
+                      () => store.update(s.copyWith(shadow: !s.shadow)),
+                    ),
+                    chip(
+                      t.storySystemFont,
+                      s.systemFont,
+                      () => store.update(s.copyWith(systemFont: !s.systemFont)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(t.storyFontSize),
+                    Expanded(
+                      child: Slider(
+                        value: s.fontScale,
+                        min: 0.8,
+                        max: 1.6,
+                        divisions: 8,
+                        label: '${(s.fontScale * 100).round()}%',
+                        onChanged: (v) => store.update(s.copyWith(fontScale: v)),
                       ),
-                      chip(
-                        t.storySystemFont,
-                        s.systemFont,
-                        () => store.update(
-                          s.copyWith(systemFont: !s.systemFont),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(t.storyFontSize),
-                      Expanded(
-                        child: Slider(
-                          value: s.fontScale,
-                          min: 0.8,
-                          max: 1.6,
-                          divisions: 8,
-                          label: '${(s.fontScale * 100).round()}%',
-                          onChanged: (v) =>
-                              store.update(s.copyWith(fontScale: v)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -3015,23 +3098,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _showMore() async {
     await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.storyMore,
+        icon: Icons.more_horiz,
+        initialSize: 0.5,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 16, 4),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  t.storyMore,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
             ListTile(
               leading: const Icon(Icons.casino_outlined),
               title: Text(t.storyRoll),
@@ -3060,19 +3134,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               ),
             if (story.actions.isEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    t.storyNoActions,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                    ),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Text(
+                  t.storyNoActions,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -3081,21 +3151,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   /// 展示掷骰结果弹窗
   Future<void> _showRollResult(DiceRoll roll, String title) async {
-    await showDialog<void>(
+    await ContentDialog.show<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(
-          roll.detail,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(t.confirm),
-          ),
-        ],
+      title: title,
+      content: Text(
+        roll.detail,
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t.confirm),
+        ),
+      ],
     );
   }
 
@@ -3122,10 +3190,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final dcCtrl = TextEditingController(text: '12');
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: Text(t.storyRoll),
-          content: Column(
+      builder: (ctx) => ContentDialog(
+        title: t.storyRoll,
+        isDismissible: true,
+        content: StatefulBuilder(
+          builder: (ctx, setLocal) => Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -3155,17 +3224,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(t.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(t.storyRoll),
-            ),
-          ],
         ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(t.storyRoll),
+          ),
+        ],
       ),
     );
     final dc = int.tryParse(dcCtrl.text.trim());
@@ -3218,61 +3283,56 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
   Future<void> _inspect(String name, String kind) async {
     final def = _findDef(name);
     final scheme = Theme.of(context).colorScheme;
-    await showDialog<void>(
+    await ContentDialog.show<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(_codexIcon(def?.kind ?? kind), size: 20),
-            const SizedBox(width: 8),
-            Expanded(child: Text(def?.name ?? name)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                def == null
-                    ? t.storyNoSituation
-                    : (def.display.isEmpty ? def.mechanics : def.display),
+      title: def?.name ?? name,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            def == null
+                ? t.storyNoSituation
+                : (def.display.isEmpty ? def.mechanics : def.display),
+          ),
+          if (def != null && def.mechanics.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              t.storyDefinition,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-              if (def != null && def.mechanics.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  t.storyDefinition,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  def.mechanics,
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(t.confirm),
-          ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              def.mechanics,
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+          ],
         ],
       ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t.confirm),
+        ),
+      ],
     );
   }
 
-  /// 物品菜单：检查 / 使用 / 丢弃
+  /// 物品菜单：检查 / 使用 / 装备 / 丢弃
   Future<void> _itemMenu(String item) async {
+    final equipped = state.equipped.contains(item);
     await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: item,
+        icon: Icons.inventory_2_outlined,
+        initialSize: 0.5,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
           children: [
             ListTile(
               leading: const Icon(Icons.search),
@@ -3292,18 +3352,14 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
             ),
             ListTile(
               leading: Icon(
-                state.equipped.contains(item)
+                equipped
                     ? Icons.remove_circle_outline
                     : Icons.shield_outlined,
               ),
-              title: Text(
-                state.equipped.contains(item) ? t.storyUnequip : t.storyEquip,
-              ),
+              title: Text(equipped ? t.storyUnequip : t.storyEquip),
               onTap: () {
                 Navigator.of(ctx).pop();
-                widget.onCommand(
-                  state.equipped.contains(item) ? '卸下 $item' : '装备 $item',
-                );
+                widget.onCommand(equipped ? '卸下 $item' : '装备 $item');
               },
             ),
             ListTile(

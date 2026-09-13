@@ -1701,6 +1701,7 @@ storyTextStyle: Text style
 storyShadowOn: Shadow on
 storyShadowOff: Shadow off
 storySystemFont: System font
+storyItalic: Italic
 storyFontSize: Font size
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary

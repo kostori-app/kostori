@@ -15,6 +15,9 @@ class StoryTextStyle {
   /// 使用系统字体（关闭时用衬线字体）
   final bool systemFont;
 
+  /// 斜体（对白斜体），默认关闭
+  final bool italic;
+
   /// 字号缩放
   final double fontScale;
 
@@ -22,6 +25,7 @@ class StoryTextStyle {
     this.highlightQuotes = true,
     this.shadow = false,
     this.systemFont = true,
+    this.italic = false,
     this.fontScale = 1.0,
   });
 
@@ -29,11 +33,13 @@ class StoryTextStyle {
     bool? highlightQuotes,
     bool? shadow,
     bool? systemFont,
+    bool? italic,
     double? fontScale,
   }) => StoryTextStyle(
     highlightQuotes: highlightQuotes ?? this.highlightQuotes,
     shadow: shadow ?? this.shadow,
     systemFont: systemFont ?? this.systemFont,
+    italic: italic ?? this.italic,
     fontScale: fontScale ?? this.fontScale,
   );
 
@@ -41,6 +47,7 @@ class StoryTextStyle {
     highlightQuotes: json['highlightQuotes'] as bool? ?? true,
     shadow: json['shadow'] as bool? ?? false,
     systemFont: json['systemFont'] as bool? ?? true,
+    italic: json['italic'] as bool? ?? false,
     fontScale: (json['fontScale'] as num?)?.toDouble() ?? 1.0,
   );
 
@@ -48,6 +55,7 @@ class StoryTextStyle {
     'highlightQuotes': highlightQuotes,
     'shadow': shadow,
     'systemFont': systemFont,
+    'italic': italic,
     'fontScale': fontScale,
   };
 }

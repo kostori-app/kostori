@@ -1690,6 +1690,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyShadowOn => '阴影已开启';
 	@override String get storyShadowOff => '阴影已关闭';
 	@override String get storySystemFont => '系统字体';
+	@override String get storyItalic => '斜体';
 	@override String get storyFontSize => '字号';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
@@ -4420,6 +4421,7 @@ extension on TranslationsZhCn {
 			'storyShadowOn' => '阴影已开启',
 			'storyShadowOff' => '阴影已关闭',
 			'storySystemFont' => '系统字体',
+			'storyItalic' => '斜体',
 			'storyFontSize' => '字号',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
@@ -4774,9 +4776,9 @@ extension on TranslationsZhCn {
 			'statsCountTimes' => ({required Object n}) => '${n} 次',
 			'statsCountComments' => ({required Object n}) => '${n} 条',
 			'statsCountItems' => ({required Object n}) => '${n} 个',
-			'statsDateFull' => ({required Object year, required Object month, required Object day}) => '${year}年${month}月${day}日',
 			_ => null,
 		} ?? switch (path) {
+			'statsDateFull' => ({required Object year, required Object month, required Object day}) => '${year}年${month}月${day}日',
 			'statsDateRangeWeek' => ({required Object year, required Object month, required Object day, required Object endMonth, required Object endDay}) => '${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日',
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}年${month}月',
 			'statsYearMonthName' => ({required Object year, required Object month}) => '${year}年${month}',
@@ -5288,9 +5290,9 @@ extension on TranslationsZhCn {
 			'noViewingRecord' => '没有找到该集的观看记录',
 			'viewingRecord' => '观看记录',
 			'watchDurationLabel' => ({required Object duration}) => '观看时长: ${duration}',
-			'completedStatus' => ({required Object status}) => '是否完成: ${status}',
 			_ => null,
 		} ?? switch (path) {
+			'completedStatus' => ({required Object status}) => '是否完成: ${status}',
 			'yes' => '是',
 			'no' => '否',
 			'startTimeLabel' => ({required Object time}) => '开始时间: ${time}',

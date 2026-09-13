@@ -1365,8 +1365,9 @@ class _StoryText extends StatelessWidget {
 
   final String text;
 
+  /// 命中任意 Markdown 结构（标题/列表/引用/表格/代码/链接/删除线）则回退
   static final _blockRe = RegExp(
-    r'^\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>|\||```)',
+    r'```|~~~|^\s*([>#]|[-*+]\s|\d+[.)]\s)|\||`|\[[^\]]*\]\(|~~',
     multiLine: true,
   );
 
@@ -1405,14 +1406,22 @@ class _StoryText extends StatelessWidget {
         final quoteStyle = style.highlightQuotes
             ? base.copyWith(
                 color: scheme.primary,
-                fontStyle: FontStyle.italic,
+                fontStyle: style.italic
+                    ? FontStyle.italic
+                    : FontStyle.normal,
               )
-            : base.copyWith(fontStyle: FontStyle.italic);
+            : base.copyWith(
+                fontStyle: style.italic
+                    ? FontStyle.italic
+                    : FontStyle.normal,
+              );
         final boldStyle = base.copyWith(fontWeight: FontWeight.w700);
-        final italicStyle = base.copyWith(
-          fontStyle: FontStyle.italic,
-          color: scheme.onSurfaceVariant,
-        );
+        final italicStyle = style.italic
+            ? base.copyWith(
+                fontStyle: FontStyle.italic,
+                color: scheme.onSurfaceVariant,
+              )
+            : base.copyWith(color: scheme.onSurfaceVariant);
 
         final pattern = RegExp(
           r'(\*\*[^*]+\*\*)|(\*[^*]+\*)|([“"「『][^”"」』]*[”"」』])',
