@@ -101,9 +101,22 @@ class StoryTextStyle {
     this.fontScale = 1.0,
     this.quoteGlyph = StoryQuoteGlyph.curly,
     this.quote = const StoryRoleStyle(),
-    this.bracket = const StoryRoleStyle(opacity: 0.85),
-    this.italic = const StoryRoleStyle(opacity: 0.7, fontStyle: 'italic'),
-    this.bold = const StoryRoleStyle(fontStyle: 'bold'),
+    this.bracket = const StoryRoleStyle(
+      light: 0xFF00796B,
+      dark: 0xFF4DB6AC,
+      opacity: 0.9,
+    ),
+    this.italic = const StoryRoleStyle(
+      light: 0xFF5E35B1,
+      dark: 0xFFB39DDB,
+      opacity: 0.75,
+      fontStyle: 'italic',
+    ),
+    this.bold = const StoryRoleStyle(
+      light: 0xFF1E88E5,
+      dark: 0xFF90CAF9,
+      fontStyle: 'bold',
+    ),
   });
 
   StoryTextStyle copyWith({
@@ -138,12 +151,31 @@ class StoryTextStyle {
         orElse: () => StoryQuoteGlyph.curly,
       ),
       quote: role(json['quote'], const StoryRoleStyle()),
-      bracket: role(json['bracket'], const StoryRoleStyle(opacity: 0.85)),
+      bracket: role(
+        json['bracket'],
+        const StoryRoleStyle(
+          light: 0xFF00796B,
+          dark: 0xFF4DB6AC,
+          opacity: 0.9,
+        ),
+      ),
       italic: role(
         json['italic'],
-        const StoryRoleStyle(opacity: 0.7, fontStyle: 'italic'),
+        const StoryRoleStyle(
+          light: 0xFF5E35B1,
+          dark: 0xFFB39DDB,
+          opacity: 0.75,
+          fontStyle: 'italic',
+        ),
       ),
-      bold: role(json['bold'], const StoryRoleStyle(fontStyle: 'bold')),
+      bold: role(
+        json['bold'],
+        const StoryRoleStyle(
+          light: 0xFF1E88E5,
+          dark: 0xFF90CAF9,
+          fontStyle: 'bold',
+        ),
+      ),
     );
   }
 

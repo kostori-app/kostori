@@ -1807,17 +1807,18 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   void initState() {
     super.initState();
     StoryTextStyleStore.instance.ensureLoaded();
-    _scrollController.addListener(_onScroll);
     _boot();
   }
 
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final pos = _scrollController.position;
-    final atBottom = (pos.maxScrollExtent - pos.pixels) < 48;
+  /// 仅用户拖动时更新跟随状态（避免内容增高被误判为“离底”）
+  bool _onUserScroll(ScrollNotification n) {
+    if (n is! ScrollUpdateNotification || n.dragDetails == null) return false;
+    if (!_scrollController.hasClients) return false;
+    final atBottom = _scrollController.offset < 48;
     if (atBottom != _isFollowing) {
       setState(() => _isFollowing = atBottom);
     }
+    return false;
   }
 
   @override
@@ -1831,20 +1832,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     super.dispose();
   }
 
-  /// 滚到底部（流式时用 jump，新消息时用动画）；非跟随状态不强制
+  /// 滚到底部（列表 reverse，底部即 offset 0）；非跟随状态不强制
   void _scrollToBottom({bool animate = true, bool force = false}) {
     if (!force && !_isFollowing) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
-      final target = _scrollController.position.maxScrollExtent;
       if (animate) {
         _scrollController.animateTo(
-          target,
+          0,
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOut,
         );
-      } else if ((_scrollController.offset - target).abs() > 1) {
-        _scrollController.jumpTo(target);
+      } else if (_scrollController.offset.abs() > 1) {
+        _scrollController.jumpTo(0);
       }
     });
   }
@@ -2243,18 +2243,26 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
-  /// 找出背包里未在 codex 登记的道具（按基础名归一）
+  /// 找出背包里未在 codex 登记的道具（按基础名归一，宽松包含匹配）
   List<String> _unregisteredFrom(GameState state) {
     final registered = <String>{
       for (final d in state.codex.where((d) => d.kind == 'item')) ...[d.key, d.name],
     };
-    final result = <String>[];
-    for (final item in state.inventory) {
+    bool isRegistered(String item) {
       final base = item.split(' x').first.split('×').first.trim();
-      if (registered.contains(item) || registered.contains(base)) continue;
-      result.add(item);
+      if (base.isEmpty) return true;
+      if (registered.contains(item) || registered.contains(base)) return true;
+      for (final r in registered) {
+        if (r.trim().isEmpty) continue;
+        if (r.contains(base) || base.contains(r)) return true;
+      }
+      return false;
     }
-    return result;
+
+    return [
+      for (final item in state.inventory)
+        if (!isRegistered(item)) item,
+    ];
   }
 
   /// 角色条点击：查看角色卡 / 对TA说话
@@ -2540,6 +2548,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
       final defs = _parseCodexDefs(res.data);
       if (defs.isEmpty) {
+        // 模型没给出设定：仍然清掉本次提示，避免反复弹出
+        setState(() {
+          _unregistered = _unregistered
+              .where((i) => !items.contains(i))
+              .toList();
+        });
         App.rootContext.showMessage(
           message: t.characterImportFailed,
           level: LogLevel.warning,
@@ -2560,7 +2574,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       final next = _state.copyWith(codex: codex);
       setState(() {
         _state = next;
-        _unregistered = _unregisteredFrom(next);
+        // 已成功合并的不再命中；失败的本次也不再提示
+        _unregistered = _unregisteredFrom(next)
+            .where((i) => !items.contains(i))
+            .toList();
       });
       final sessionId = _sessionId;
       if (sessionId != null) {
@@ -2584,6 +2601,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       if (matches.isNotEmpty) matches.last.group(1)!.trim(),
       text.trim(),
     ];
+    // 兜底：截取文本里的第一段 {...} / [...]
+    final objStart = text.indexOf('{');
+    final objEnd = text.lastIndexOf('}');
+    if (objStart >= 0 && objEnd > objStart) {
+      candidates.add(text.substring(objStart, objEnd + 1));
+    }
+    final arrStart = text.indexOf('[');
+    final arrEnd = text.lastIndexOf(']');
+    if (arrStart >= 0 && arrEnd > arrStart) {
+      candidates.add(text.substring(arrStart, arrEnd + 1));
+    }
     for (final c in candidates) {
       try {
         final decoded = jsonDecode(c);
@@ -2656,17 +2684,26 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           constraints: BoxConstraints(
                             maxWidth: _chatContentMaxWidth(context),
                           ),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            itemCount:
-                                messages.length +
-                                (showPendingUser ? 1 : 0) +
-                                (_showStreamBubble ? 1 : 0),
-                            itemBuilder: (context, i) {
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: _onUserScroll,
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              reverse: true,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              itemCount:
+                                  messages.length +
+                                  (showPendingUser ? 1 : 0) +
+                                  (_showStreamBubble ? 1 : 0),
+                              itemBuilder: (context, raw) {
+                              final i =
+                                  messages.length +
+                                  (showPendingUser ? 1 : 0) +
+                                  (_showStreamBubble ? 1 : 0) -
+                                  1 -
+                                  raw;
                               if (showPendingUser && i == messages.length) {
                                 final persona = story.persona;
                                 return _StoryBubble(
@@ -2829,6 +2866,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               );
                             },
                           ),
+                            ),
                         ),
                       ),
                     ),
@@ -3449,17 +3487,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                   allowFontStyle: false,
                 ),
                 const Divider(),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(t.storyShadow),
-                  value: s.shadow,
-                  onChanged: (v) => store.update(s.copyWith(shadow: v)),
+                _toggleRow(
+                  t.storyShadow,
+                  Icons.blur_on_outlined,
+                  s.shadow,
+                  (v) => store.update(s.copyWith(shadow: v)),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(t.storySystemFont),
-                  value: s.systemFont,
-                  onChanged: (v) => store.update(s.copyWith(systemFont: v)),
+                _toggleRow(
+                  t.storySystemFont,
+                  Icons.font_download_outlined,
+                  s.systemFont,
+                  (v) => store.update(s.copyWith(systemFont: v)),
                 ),
                 Row(
                   children: [
@@ -3480,6 +3518,26 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// 项目风格开关行
+  Widget _toggleRow(
+    String label,
+    IconData icon,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label)),
+          CustomSwitch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }
