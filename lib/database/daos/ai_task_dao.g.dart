@@ -3,7 +3,7 @@
 part of 'ai_task_dao.dart';
 
 // ignore_for_file: type=lint
-mixin _$AiTaskDaoMixin on DatabaseAccessor<AiDatabase> {
+mixin _$AiTaskDaoMixin on DatabaseAccessor<AiTaskDatabase> {
   $AiTasksTable get aiTasks => attachedDatabase.aiTasks;
   AiTaskDaoManager get managers => AiTaskDaoManager(this);
 }

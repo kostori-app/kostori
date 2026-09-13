@@ -184,7 +184,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncStoryChars => '故事角色卡';
 	@override String get syncParts => '整包 / 資料庫';
 	@override String get syncPartsHint => '分部分同步：資料庫各自獨立，其餘（設定/故事/角色卡…）整合為一個整包。';
-	@override String get aiDatabase => 'AI 會話';
+	@override String get aiDatabase => 'AI 設定庫';
+	@override String get aiMessages => 'AI 訊息記錄';
 	@override String get stats => '統計';
 	@override String get cookies => 'Cookie';
 	@override String get data => '數據';
@@ -2971,7 +2972,8 @@ extension on TranslationsZhTw {
 			'syncStoryChars' => '故事角色卡',
 			'syncParts' => '整包 / 資料庫',
 			'syncPartsHint' => '分部分同步：資料庫各自獨立，其餘（設定/故事/角色卡…）整合為一個整包。',
-			'aiDatabase' => 'AI 會話',
+			'aiDatabase' => 'AI 設定庫',
+			'aiMessages' => 'AI 訊息記錄',
 			'stats' => '統計',
 			'cookies' => 'Cookie',
 			'data' => '數據',
@@ -3337,9 +3339,9 @@ extension on TranslationsZhTw {
 			'aiConversation' => 'AI 對話',
 			'topicList' => '話題列表',
 			'startConversationWithAI' => '開始與 AI 對話吧',
-			'newConversation' => '新建對話',
 			_ => null,
 		} ?? switch (path) {
+			'newConversation' => '新建對話',
 			'inputMessage' => '輸入訊息...',
 			'noTopicsYet' => '暫無話題',
 			'selectAiPersonality' => '選擇 AI 人格',
@@ -3851,9 +3853,9 @@ extension on TranslationsZhTw {
 			'dub' => '配音',
 			'chineseDub' => '中配',
 			'japaneseDub' => '日配',
-			'englishDub' => '英配',
 			_ => null,
 		} ?? switch (path) {
+			'englishDub' => '英配',
 			'koreanDub' => '韓配',
 			'selectedACharacter' => ({required Object a}) => '已選取 ${a} 個角色',
 			'searchOptions' => '搜尋選項',
@@ -4365,9 +4367,9 @@ extension on TranslationsZhTw {
 			'recognizeFromGallery' => '從相簿識別',
 			'scanQrCode' => '掃碼',
 			'scanToJump' => '掃碼跳轉',
-			'qrCode' => '二維碼',
 			_ => null,
 		} ?? switch (path) {
+			'qrCode' => '二維碼',
 			'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
 			'shareQrCode' => '分享二維碼',
 			'exporting' => '匯出中',
@@ -4879,9 +4881,9 @@ extension on TranslationsZhTw {
 			'lanNoPermission' => '無權限',
 			'lanOpenAnimeDetail' => '打開動漫詳情',
 			'lanSyncProgress' => '同步進度',
-			'aggregationEntry' => '聚合入口',
 			_ => null,
 		} ?? switch (path) {
+			'aggregationEntry' => '聚合入口',
 			'aiLabel' => 'AI',
 			'lanLabel' => '區域網',
 			'h264CRF' => 'H.264 · CRF',
@@ -5393,9 +5395,9 @@ extension on TranslationsZhTw {
 			'builderExploreUrl' => '列表 URL 模板（{page}）',
 			'builderCategory' => '分類',
 			'builderCategoryTitle' => '分類標題',
-			'builderCategoryNames' => '分類名（每行一個，"值-名稱"）',
 			_ => null,
 		} ?? switch (path) {
+			'builderCategoryNames' => '分類名（每行一個，"值-名稱"）',
 			'builderCategoryUrl' => '分類列表 URL（{category} {page}）',
 			'builderGenerate' => '生成並匯入',
 			'builderNameRequired' => '請填寫名稱',

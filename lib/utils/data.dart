@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/database/ai_task_database.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
@@ -160,6 +161,10 @@ Future<File> exportAppData() async {
     zipFile.addFile("appdata.json", appdata);
     zipFile.addFile("cookie.db", cookies);
     zipFile.addFile("ai_database.db", aiDatabase);
+    final aiTasksDb = FilePath.join(dataPath, "ai_tasks.db");
+    if (File(aiTasksDb).existsSync()) {
+      zipFile.addFile("ai_tasks.db", aiTasksDb);
+    }
     final hmf = File(historyMergeFile);
     if (hmf.existsSync()) {
       zipFile.addFile("history_merge.json", historyMergeFile);
@@ -237,6 +242,7 @@ class SyncPart {
 
 const syncParts = <SyncPart>[
   SyncPart('ai', 'db', 'ai_database'),
+  SyncPart('ai_tasks', 'db', 'ai_tasks'),
   SyncPart('history', 'db', 'history'),
   SyncPart('favorites', 'db', 'favorites'),
   SyncPart('stats', 'db', 'stats'),
@@ -302,6 +308,8 @@ List<(String, String)> _partEntries(String key) {
 
   if (key == 'ai') {
     add('ai_database.db', FilePath.join(dp, 'ai_database.db'));
+  } else if (key == 'ai_tasks') {
+    add('ai_tasks.db', FilePath.join(dp, 'ai_tasks.db'));
   } else if (key == 'history') {
     add('history.db', FilePath.join(dp, 'history.db'));
     add(
@@ -601,6 +609,16 @@ Future<void> _applyImportedData(
         FilePath.join(App.dataPath, "ai_database.db"),
       );
       AiDatabase.init();
+    }
+    var aiTasksFile = cacheDir.joinFile("ai_tasks.db");
+    if (await aiTasksFile.exists()) {
+      DebugLog.info('importAppData', '开始导入aiTasksFile');
+      await AiTaskDatabase.instance.close();
+      _atomicReplace(
+        aiTasksFile.path,
+        FilePath.join(App.dataPath, "ai_tasks.db"),
+      );
+      AiTaskDatabase.init();
     }
     var animeSourceDir = FilePath.join(cacheDirPath, "anime_source");
     if (Directory(animeSourceDir).existsSync()) {

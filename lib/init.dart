@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/database/ai_task_database.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
@@ -118,6 +119,9 @@ Future<void> init() async {
   unawaited(() async {
     try {
       await AiDatabase.instance.aiSessionDao.watchAllSessions().first;
+      // 打开独立的消息库，并把旧的 ai_tasks 表迁移过来
+      await AiTaskDatabase.instance.aiTaskDao.watchAll().first;
+      await migrateAiTasksToOwnDb();
     } catch (_) {}
   }());
   // 加载持久化的下载任务

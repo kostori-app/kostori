@@ -1211,6 +1211,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
 
   String _partLabel(String key) => switch (key) {
     'ai' => t.aiDatabase,
+    'ai_tasks' => t.aiMessages,
     'history' => t.history,
     'favorites' => t.favorites,
     'stats' => t.stats,
@@ -1223,6 +1224,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
 
   IconData _partIcon(String key) => switch (key) {
     'ai' => Icons.smart_toy_outlined,
+    'ai_tasks' => Icons.chat_bubble_outline,
     'history' => Icons.history,
     'favorites' => Icons.favorite_border,
     'stats' => Icons.bar_chart_outlined,

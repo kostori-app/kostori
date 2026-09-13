@@ -5,7 +5,7 @@ import 'package:kostori/database/ai_database.dart';
 
 part 'ai_session_dao.g.dart';
 
-@DriftAccessor(tables: [AiSessions, AiTasks])
+@DriftAccessor(tables: [AiSessions])
 class AiSessionDao extends DatabaseAccessor<AiDatabase>
     with _$AiSessionDaoMixin {
   AiSessionDao(super.db);
@@ -82,27 +82,7 @@ class AiSessionDao extends DatabaseAccessor<AiDatabase>
         ),
       );
 
-  Future<int> deleteSession(String sessionId) async {
-    await (delete(aiTasks)..where((t) => t.sessionId.equals(sessionId))).go();
-    return (delete(
-      aiSessions,
-    )..where((t) => t.sessionId.equals(sessionId))).go();
-  }
-
-  // ─── 消息查询 ──────────────────────────────
-
-  Future<List<AiTask>> getMessages(String sessionId) =>
-      (select(aiTasks)
-            ..where((t) => t.sessionId.equals(sessionId))
-            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-          .get();
-
-  Stream<List<AiTask>> watchMessages(String sessionId) =>
-      (select(aiTasks)
-            ..where((t) => t.sessionId.equals(sessionId))
-            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-          .watch();
-
-  Future<int> insertMessage(AiTasksCompanion entry) =>
-      into(aiTasks).insert(entry);
+  /// 仅删除会话本身；消息在 AiTaskDao.deleteBySession 中删除
+  Future<int> deleteSession(String sessionId) =>
+      (delete(aiSessions)..where((t) => t.sessionId.equals(sessionId))).go();
 }

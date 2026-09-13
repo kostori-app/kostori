@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/database/ai_task_database.dart';
 import 'package:kostori/database/daos/ai_api_key_dao.dart';
 import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
@@ -15,7 +16,7 @@ class AiRepository {
 
   AiApiKeyDao get _keyDao => _db.aiApiKeyDao;
 
-  AiTaskDao get _taskDao => _db.aiTaskDao;
+  AiTaskDao get _taskDao => AiTaskDatabase.instance.aiTaskDao;
 
   AiProviderStatsDao get _statsDao => _db.aiProviderStatsDao;
 

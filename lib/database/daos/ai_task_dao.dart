@@ -1,12 +1,13 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/database/ai_task_database.dart';
 
 part 'ai_task_dao.g.dart';
 
 @DriftAccessor(tables: [AiTasks])
-class AiTaskDao extends DatabaseAccessor<AiDatabase> with _$AiTaskDaoMixin {
+class AiTaskDao extends DatabaseAccessor<AiTaskDatabase>
+    with _$AiTaskDaoMixin {
   AiTaskDao(super.db);
 
   Stream<List<AiTask>> watchAll() => (select(
@@ -24,6 +25,15 @@ class AiTaskDao extends DatabaseAccessor<AiDatabase> with _$AiTaskDaoMixin {
             ..where((t) => t.sessionId.equals(sessionId))
             ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
           .get();
+
+  /// 消息查询（与 getBySession 等价，供会话服务使用）
+  Future<List<AiTask>> getMessages(String sessionId) => getBySession(sessionId);
+
+  Stream<List<AiTask>> watchMessages(String sessionId) =>
+      (select(aiTasks)
+            ..where((t) => t.sessionId.equals(sessionId))
+            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+          .watch();
 
   Future<int> insert(AiTasksCompanion entry) => into(aiTasks).insert(entry);
 

@@ -11,6 +11,7 @@ import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
+import 'package:kostori/database/ai_task_database.dart';
 import 'package:kostori/foundation/ai_service/ai_skill_store.dart';
 import 'package:kostori/foundation/ai_service/ai_request_log.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
@@ -164,7 +165,7 @@ class AiConversationService {
 
   AiSessionDao get _sessionDao => AiDatabase.instance.aiSessionDao;
 
-  AiTaskDao get _taskDao => AiDatabase.instance.aiTaskDao;
+  AiTaskDao get _taskDao => AiTaskDatabase.instance.aiTaskDao;
 
 
   // ─── 会话管理 ──────────────────────────────
@@ -196,10 +197,12 @@ class AiConversationService {
       : _sessionDao.watchAllSessions();
 
   Stream<List<AiTask>> watchMessages(String sessionId) =>
-      _sessionDao.watchMessages(sessionId);
+      _taskDao.watchMessages(sessionId);
 
-  Future<void> deleteSession(String sessionId) =>
-      _sessionDao.deleteSession(sessionId);
+  Future<void> deleteSession(String sessionId) async {
+    await _taskDao.deleteBySession(sessionId);
+    await _sessionDao.deleteSession(sessionId);
+  }
 
   Future<void> renameSession(String sessionId, String title) =>
       _sessionDao.renameSession(sessionId, title);
@@ -279,7 +282,7 @@ class AiConversationService {
     if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
 
     // 1. 读取历史消息构建上下文
-    var history = await _sessionDao.getMessages(sessionId);
+    var history = await _taskDao.getMessages(sessionId);
     var contextMessages = history
         .where((m) => m.role == 'user' || m.role == 'model')
         .toList();
@@ -303,7 +306,7 @@ class AiConversationService {
         onAutoCompressed?.call();
         final freshSession = await _sessionDao.getSession(sessionId);
         if (freshSession != null) session = freshSession;
-        history = await _sessionDao.getMessages(sessionId);
+        history = await _taskDao.getMessages(sessionId);
         contextMessages = history
             .where((m) => m.role == 'user' || m.role == 'model')
             .toList();
@@ -473,7 +476,7 @@ class AiConversationService {
     }
 
     // 1. 读取历史消息构建上下文
-    var history = await _sessionDao.getMessages(sessionId);
+    var history = await _taskDao.getMessages(sessionId);
     var contextMessages = history
         .where((m) => m.role == 'user' || m.role == 'model')
         .toList();
@@ -497,7 +500,7 @@ class AiConversationService {
         onAutoCompressed?.call();
         final freshSession = await _sessionDao.getSession(sessionId);
         if (freshSession != null) session = freshSession;
-        history = await _sessionDao.getMessages(sessionId);
+        history = await _taskDao.getMessages(sessionId);
         contextMessages = history
             .where((m) => m.role == 'user' || m.role == 'model')
             .toList();
@@ -904,7 +907,7 @@ class AiConversationService {
     if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
 
     // 该模型消息之前的上下文
-    final history = await _sessionDao.getMessages(sessionId);
+    final history = await _taskDao.getMessages(sessionId);
     final before = history
         .where((m) => (m.role == 'user' || m.role == 'model') && m.id < taskId)
         .toList();
@@ -967,7 +970,7 @@ class AiConversationService {
     final ai = AiFactory.create(provider);
     if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
 
-    final history = await _sessionDao.getMessages(sessionId);
+    final history = await _taskDao.getMessages(sessionId);
     final contextMessages = history
         .where((m) => m.role == 'user' || m.role == 'model')
         .toList();
@@ -1042,7 +1045,7 @@ class AiConversationService {
   }) async {
     final session = await _sessionDao.getSession(sessionId);
     if (session == null) return const [];
-    final history = await _sessionDao.getMessages(sessionId);
+    final history = await _taskDao.getMessages(sessionId);
 
     // 最后一次助手回复若包含工具调用，则不生成追问建议
     AiTask? lastModel;

@@ -10,7 +10,6 @@ import 'package:kostori/database/daos/ai_model_dao.dart';
 import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
 import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_skill_dao.dart';
-import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:path/path.dart' as p;
 
@@ -88,39 +87,6 @@ class AiSessions extends Table {
 
 /// AI 消息记录表：每一轮对话的单条消息
 @TableIndex(name: 'tasks_session_idx', columns: {#sessionId})
-class AiTasks extends Table {
-  IntColumn get id => integer().autoIncrement()();
-
-  TextColumn get sessionId => text()();
-
-  TextColumn get taskType => text().withLength(min: 1, max: 50)();
-
-  TextColumn get role => text().withDefault(const Constant('user'))();
-
-  TextColumn get inputContent => text()();
-
-  /// 用户消息附带的图片（data URL 的 JSON 数组），用于聊天界面展示
-  TextColumn get inputImages => text().nullable()();
-
-  TextColumn get outputContent => text().nullable()();
-
-  /// 多候选回复（JSON 字符串数组），outputContent 为当前选中项
-  TextColumn get outputVariants => text().nullable()();
-
-  /// 当前选中的候选下标
-  IntColumn get variantIndex => integer().withDefault(const Constant(0))();
-
-  TextColumn get thought => text().nullable()();
-
-  TextColumn get provider => text()();
-
-  TextColumn get modelName => text().nullable()();
-
-  IntColumn get tokenConsumed => integer().withDefault(const Constant(0))();
-
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-}
-
 class AiModels extends Table {
   TextColumn get modelId => text()();
 
@@ -271,7 +237,6 @@ class AiMcpServers extends Table {
   tables: [
     AiApiKeys,
     AiSessions,
-    AiTasks,
     AiModels,
     AiProviderStats,
     AiCustomProviders,
@@ -282,7 +247,6 @@ class AiMcpServers extends Table {
   daos: [
     AiApiKeyDao,
     AiSessionDao,
-    AiTaskDao,
     AiModelDao,
     AiProviderStatsDao,
     AiCustomProviderDao,
@@ -309,14 +273,6 @@ class AiDatabase extends _$AiDatabase {
         // 原有逻辑不变
         await _ensureTableExists(m, aiModels);
         await _ensureTableExists(m, aiSessions);
-        await _ensureTableExists(m, aiTasks);
-        try {
-          await m.addColumn(aiTasks, aiTasks.sessionId);
-          await m.addColumn(aiTasks, aiTasks.role);
-          await m.addColumn(aiTasks, aiTasks.thought);
-        } catch (e) {
-          //
-        }
       }
       if (from < 5) {
         await _ensureTableExists(m, aiCustomProviders);
@@ -408,15 +364,7 @@ class AiDatabase extends _$AiDatabase {
         await _addColumnIfMissing(m, aiModels, aiModels.outputModality);
         await _addColumnIfMissing(m, aiModels, aiModels.supportsReasoning);
       }
-      if (from < 11) {
-        // 用户消息附带图片（聊天界面展示）
-        await _addColumnIfMissing(m, aiTasks, aiTasks.inputImages);
-      }
-      if (from < 12) {
-        // 多候选回复（swipe）+ 当前候选下标
-        await _addColumnIfMissing(m, aiTasks, aiTasks.outputVariants);
-        await _addColumnIfMissing(m, aiTasks, aiTasks.variantIndex);
-      }
+      // 注：ai_tasks 已迁移到独立库 ai_tasks.db（见 AiTaskDatabase）
       if (from < 13) {
         // 移除遗留的 ai_configs 表（已被助手档案 / 提示词注入取代）
         try {

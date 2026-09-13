@@ -19,6 +19,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/watermark.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/database/ai_task_database.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';

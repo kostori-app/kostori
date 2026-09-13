@@ -185,7 +185,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncStoryChars => '故事角色卡';
 	@override String get syncParts => '整包 / 数据库';
 	@override String get syncPartsHint => '分部分同步：数据库各自独立，其余（设置/故事/角色卡…）整合为一个整包。';
-	@override String get aiDatabase => 'AI 会话';
+	@override String get aiDatabase => 'AI 设置库';
+	@override String get aiMessages => 'AI 消息记录';
 	@override String get stats => '统计';
 	@override String get cookies => 'Cookie';
 	@override String get data => '数据';
@@ -2973,7 +2974,8 @@ extension on TranslationsZhCn {
 			'syncStoryChars' => '故事角色卡',
 			'syncParts' => '整包 / 数据库',
 			'syncPartsHint' => '分部分同步：数据库各自独立，其余（设置/故事/角色卡…）整合为一个整包。',
-			'aiDatabase' => 'AI 会话',
+			'aiDatabase' => 'AI 设置库',
+			'aiMessages' => 'AI 消息记录',
 			'stats' => '统计',
 			'cookies' => 'Cookie',
 			'data' => '数据',
@@ -3338,9 +3340,9 @@ extension on TranslationsZhCn {
 			'conversationTitle' => '对话标题',
 			'aiConversation' => 'AI 对话',
 			'topicList' => '话题列表',
-			'startConversationWithAI' => '开始与 AI 对话吧',
 			_ => null,
 		} ?? switch (path) {
+			'startConversationWithAI' => '开始与 AI 对话吧',
 			'newConversation' => '新建对话',
 			'inputMessage' => '输入消息...',
 			'noTopicsYet' => '暂无话题',
@@ -3852,9 +3854,9 @@ extension on TranslationsZhCn {
 			'chineseDub' => '中配',
 			'japaneseDub' => '日配',
 			'englishDub' => '英配',
-			'koreanDub' => '韩配',
 			_ => null,
 		} ?? switch (path) {
+			'koreanDub' => '韩配',
 			'selectedACharacter' => ({required Object a}) => '已选择 ${a} 位角色',
 			'searchOptions' => '搜索选项',
 			'searchSources' => '搜索源',
@@ -4366,9 +4368,9 @@ extension on TranslationsZhCn {
 			'scanQrCode' => '扫码',
 			'scanToJump' => '扫码跳转',
 			'qrCode' => '二维码',
-			'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
 			_ => null,
 		} ?? switch (path) {
+			'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
 			'shareQrCode' => '分享二维码',
 			'exporting' => '导出中',
 			'tokenCopiedToClipboard' => 'Token已复制到剪贴板',
@@ -4880,9 +4882,9 @@ extension on TranslationsZhCn {
 			'lanCommandFailed' => '命令执行失败',
 			'lanNoPermission' => '无权限',
 			'lanOpenAnimeDetail' => '打开动漫详情',
-			'lanSyncProgress' => '同步进度',
 			_ => null,
 		} ?? switch (path) {
+			'lanSyncProgress' => '同步进度',
 			'aggregationEntry' => '聚合入口',
 			'aiLabel' => 'AI',
 			'lanLabel' => '局域网',
@@ -5394,9 +5396,9 @@ extension on TranslationsZhCn {
 			'builderExploreTitle' => '页面标题',
 			'builderExploreUrl' => '列表 URL 模板（{page}）',
 			'builderCategory' => '分类',
-			'builderCategoryTitle' => '分类标题',
 			_ => null,
 		} ?? switch (path) {
+			'builderCategoryTitle' => '分类标题',
 			'builderCategoryNames' => '分类名（每行一个，"值-名称"）',
 			'builderCategoryUrl' => '分类列表 URL（{category} {page}）',
 			'builderGenerate' => '生成并导入',
