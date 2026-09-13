@@ -3139,6 +3139,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                       name: c.name,
                                       avatar: c.avatar,
                                       radius: 10,
+                                      enablePreview: false,
                                     ),
                                     label: Text(c.name),
                                     backgroundColor: Theme.of(
@@ -3570,9 +3571,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 容错：结束标记可缺失，角色发言延伸到下一个开头标记或文本结尾；
   /// 也支持模型自创的收尾写法（〖/名字〗）。
   List<StorySegment> _splitSegments(String text) {
-    final openRe = RegExp(r'〖\s*角色\s*[:：]\s*([^〗]+?)\s*〗');
+    final openRe = RegExp(r'[〖【]\s*角色\s*[:：]\s*([^〗】]+?)\s*[〗】]');
     // 先去掉规范的结束标记，避免被当成旁白
-    final clean = text.replaceAll(RegExp(r'〖\s*/\s*角色\s*〗'), '');
+    final clean = text.replaceAll(
+      RegExp(r'[〖【]\s*/\s*角色\s*[〗】]'),
+      '',
+    );
     final segments = <StorySegment>[];
     var index = 0;
     while (index < clean.length) {
@@ -3587,7 +3591,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       final rest = clean.substring(bodyStart);
       // 也把「〖/名字〗」当作结束标记
       final name = open.group(1)!.trim();
-      final selfClose = RegExp('〖\\s*/\\s*${RegExp.escape(name)}\\s*〗');
+      final selfClose = RegExp(
+        '[〖【]\\s*/\\s*${RegExp.escape(name)}\\s*[〗】]',
+      );
       final nextOpen = openRe.firstMatch(rest);
       final nextClose = selfClose.firstMatch(rest);
       var endRel = rest.length;

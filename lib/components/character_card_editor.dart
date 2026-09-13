@@ -5,11 +5,31 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
+
+/// 打开角色头像的图片预览（支持 data URL / http）
+Future<void> showAvatarPreview(
+  BuildContext context, {
+  required String name,
+  required String avatar,
+}) async {
+  final provider = CharacterAvatar.resolveAvatar(avatar);
+  if (provider == null) return;
+  try {
+    await BangumiWidget.showImagePreview(
+      context: context,
+      url: avatar,
+      title: name,
+      heroTag: 'character_avatar_${identityHashCode(avatar)}',
+      imageProvider: provider,
+    );
+  } catch (_) {}
+}
 
 /// 角色头像：有图片（data URL / http）则显示图片，否则显示名字首字
 class CharacterAvatar extends StatefulWidget {
@@ -18,11 +38,19 @@ class CharacterAvatar extends StatefulWidget {
     required this.name,
     this.avatar = '',
     this.radius = 16,
+    this.onTap,
+    this.enablePreview = true,
   });
 
   final String name;
   final String avatar;
   final double radius;
+
+  /// 自定义点击行为；为空且 [enablePreview] 为真时，默认打开图片预览
+  final VoidCallback? onTap;
+
+  /// 有图片时是否允许点击预览
+  final bool enablePreview;
 
   /// 解析头像为图片源（data URL / http）；空或无法解析返回 null
   static ImageProvider? resolveAvatar(String avatar) {
@@ -68,7 +96,21 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
     final scheme = Theme.of(context).colorScheme;
     final image = _image;
     if (image != null) {
-      return CircleAvatar(radius: widget.radius, backgroundImage: image);
+      final circle = CircleAvatar(
+        radius: widget.radius,
+        backgroundImage: image,
+      );
+      final onTap =
+          widget.onTap ??
+          (widget.enablePreview
+              ? () => showAvatarPreview(
+                  context,
+                  name: widget.name,
+                  avatar: widget.avatar,
+                )
+              : null);
+      if (onTap == null) return circle;
+      return GestureDetector(onTap: onTap, child: circle);
     }
     final n = widget.name.trim();
     final initial = n.isEmpty ? '' : n.characters.first;
