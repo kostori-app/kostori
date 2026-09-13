@@ -729,64 +729,102 @@ class _StoryEditorState extends State<_StoryEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 11,
-      child: PopUpWidgetScaffold(
-        title: _isNew ? t.storyNew : t.storyEdit,
-        tailing: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            tooltip: t.apply,
-            onPressed: _save,
+    return PopUpWidgetScaffold(
+      title: _isNew ? t.storyNew : t.storyEdit,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.check),
+          tooltip: t.apply,
+          onPressed: _save,
+        ),
+      ],
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+          children: [
+            _sectionCard(t.basicInfo, Icons.info_outline, _basicTab()),
+            _sectionCard(
+              t.storyOpening,
+              Icons.play_circle_outline,
+              _textTab(_openingCtrl),
+            ),
+            _sectionCard(
+              t.storySystemPrompt,
+              Icons.psychology_outlined,
+              _textTab(_systemCtrl),
+            ),
+            _sectionCard(
+              t.storyWorldBook,
+              Icons.menu_book_outlined,
+              _worldBookTab(),
+            ),
+            _sectionCard(
+              t.storySituation,
+              Icons.public_outlined,
+              _textTab(_situationCtrl),
+            ),
+            _sectionCard(
+              t.storyInitialState,
+              Icons.tune,
+              _textTab(_stateCtrl),
+            ),
+            _sectionCard(
+              t.storyChoicesPrompt,
+              Icons.lightbulb_outline,
+              _textTab(_choicesCtrl),
+            ),
+            _sectionCard(
+              t.storyActions,
+              Icons.bolt_outlined,
+              _actionsTab(),
+            ),
+            _sectionCard(
+              t.storyLibrary,
+              Icons.collections_bookmark_outlined,
+              _libraryTab(),
+            ),
+            _sectionCard(t.storyPanels, Icons.dashboard_outlined, _panelsTab()),
+            _sectionCard(
+              t.storyAdvanced,
+              Icons.extension_outlined,
+              _advancedTab(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 分组卡片：标题 + 图标 + 内容（替代原 11 个页签）
+  Widget _sectionCard(String title, IconData icon, Widget child) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outlineVariant, width: 0.6),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: title == t.basicInfo,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          leading: Icon(icon, size: 20),
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
-        ],
-        body: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TabBar(
-                isScrollable: true,
-                tabs: [
-                  Tab(text: t.basicInfo),
-                  Tab(text: t.storyOpening),
-                  Tab(text: t.storySystemPrompt),
-                  Tab(text: t.storyWorldBook),
-                  Tab(text: t.storySituation),
-                  Tab(text: t.storyInitialState),
-                  Tab(text: t.storyChoicesPrompt),
-                  Tab(text: t.storyActions),
-                  Tab(text: t.storyLibrary),
-                  Tab(text: t.storyPanels),
-                  Tab(text: t.storyAdvanced),
-                ],
-              ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _basicTab(),
-                    _textTab(_openingCtrl),
-                    _textTab(_systemCtrl),
-                    _worldBookTab(),
-                    _textTab(_situationCtrl),
-                    _textTab(_stateCtrl),
-                    _textTab(_choicesCtrl),
-                    _actionsTab(),
-                    _libraryTab(),
-                    _panelsTab(),
-                    _advancedTab(),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+          children: [child],
         ),
       ),
     );
   }
 
   Widget _basicTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _field(t.name, _nameCtrl),
         _field(t.rolePlayAvatar, _iconCtrl, required: false),
@@ -802,12 +840,11 @@ class _StoryEditorState extends State<_StoryEditor> {
 
   Widget _textTab(TextEditingController ctrl) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       child: TextFormField(
         controller: ctrl,
+        minLines: 6,
         maxLines: null,
-        expands: true,
-        textAlignVertical: TextAlignVertical.top,
         decoration: const InputDecoration(border: OutlineInputBorder()),
       ),
     );
@@ -815,8 +852,8 @@ class _StoryEditorState extends State<_StoryEditor> {
 
   Widget _worldBookTab() {
     final scheme = Theme.of(context).colorScheme;
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < _worldBook.length; i++)
           Container(
@@ -873,8 +910,8 @@ class _StoryEditorState extends State<_StoryEditor> {
 
   Widget _actionsTab() {
     final scheme = Theme.of(context).colorScheme;
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < _actions.length; i++)
           Container(
@@ -954,15 +991,13 @@ class _StoryEditorState extends State<_StoryEditor> {
         final worldBook = WorldBookStore.instance.entries;
         final injections = PromptInjectionStore.instance.items;
         if (worldBook.isEmpty && injections.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(t.storyLibraryEmpty, textAlign: TextAlign.center),
-            ),
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(t.storyLibraryEmpty, textAlign: TextAlign.center),
           );
         }
-        return ListView(
-          padding: const EdgeInsets.all(16),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               t.storyLibraryHint,
@@ -1043,8 +1078,8 @@ class _StoryEditorState extends State<_StoryEditor> {
       'achievements' => t.storyAchievements,
       _ => s,
     };
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < _panels.length; i++)
           Container(
@@ -1177,8 +1212,8 @@ class _StoryEditorState extends State<_StoryEditor> {
       padding: const EdgeInsets.only(top: 8, bottom: 6),
       child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
     );
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionTitle(t.storyCharacters),
         for (var i = 0; i < _characters.length; i++)
