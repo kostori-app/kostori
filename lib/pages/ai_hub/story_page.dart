@@ -3890,7 +3890,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       context: App.rootContext,
       builder: (ctx) => ContentDialog(
         title: t.storyRoll,
-        isDismissible: true,
         content: StatefulBuilder(
           builder: (ctx, setLocal) => Column(
             mainAxisSize: MainAxisSize.min,

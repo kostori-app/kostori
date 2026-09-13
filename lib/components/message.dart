@@ -395,7 +395,7 @@ class ContentDialog extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     cancel?.call();
-                    if (!isDismissible) context.pop();
+                    context.pop();
                   },
                   style: TextButton.styleFrom(
                     foregroundColor: cs.onSurface.toOpacity(0.55),
