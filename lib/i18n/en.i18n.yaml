@@ -1682,6 +1682,8 @@ characterGroupGreetings: Group-only greetings (one per line)
 characterExportV3: Export as V3
 characterExportV2: Export as V2
 characterSpec: Spec
+storyPersona: Player character
+storyPersonaHint: Describes who the user is. The AI must not roleplay this.
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

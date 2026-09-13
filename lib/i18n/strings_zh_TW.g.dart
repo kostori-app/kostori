@@ -1672,6 +1672,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterExportV3 => '匯出為 V3';
 	@override String get characterExportV2 => '匯出為 V2';
 	@override String get characterSpec => '規範版本';
+	@override String get storyPersona => '玩家角色';
+	@override String get storyPersonaHint => '描述使用者本人，AI 不得扮演。';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4381,6 +4383,8 @@ extension on TranslationsZhTw {
 			'characterExportV3' => '匯出為 V3',
 			'characterExportV2' => '匯出為 V2',
 			'characterSpec' => '規範版本',
+			'storyPersona' => '玩家角色',
+			'storyPersonaHint' => '描述使用者本人，AI 不得扮演。',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4752,10 +4756,10 @@ extension on TranslationsZhTw {
 			'statsWeekly' => '週統計',
 			'statsMonthly' => '月統計',
 			'statsQuarterly' => '季統計',
-			'statsHalfYearly' => '半年統計',
-			'statsYearly' => '年統計',
 			_ => null,
 		} ?? switch (path) {
+			'statsHalfYearly' => '半年統計',
+			'statsYearly' => '年統計',
 			'statsDaily' => '日統計',
 			'statsSourceList' => '來源清單',
 			'statsSelectDate' => '選擇日期',
@@ -5266,10 +5270,10 @@ extension on TranslationsZhTw {
 			'missingUrl' => '缺少 url',
 			'success' => '成功',
 			'failedWithStatus' => ({required Object status}) => '失敗 (${status})',
-			'checkIn' => '簽到',
-			'button' => '按鈕',
 			_ => null,
 		} ?? switch (path) {
+			'checkIn' => '簽到',
+			'button' => '按鈕',
 			'requestFailedDetail' => ({required Object error}) => '請求失敗: ${error}',
 			'play' => '播放',
 			'nextEpisode' => '下一集',

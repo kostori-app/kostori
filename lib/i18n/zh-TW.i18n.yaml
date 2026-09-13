@@ -1682,6 +1682,8 @@ characterGroupGreetings: 群聊專用開場白（每行一個）
 characterExportV3: 匯出為 V3
 characterExportV2: 匯出為 V2
 characterSpec: 規範版本
+storyPersona: 玩家角色
+storyPersonaHint: 描述使用者本人，AI 不得扮演。
 noActivityInTimeRange: 該時間段內暫無活動記錄
 weeklySummary: 本週總結
 monthlySummary: 本月總結

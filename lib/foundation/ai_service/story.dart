@@ -341,6 +341,34 @@ String applyStoryRegex(String text, List<StoryRegex> rules, String target) {
   return result;
 }
 
+/// 玩家 persona（用户本人）：仅描述"你是谁"，AI 不得扮演
+class StoryPersona {
+  final String name;
+  final String avatar;
+  final String description;
+
+  const StoryPersona({
+    this.name = '',
+    this.avatar = '🧑',
+    this.description = '',
+  });
+
+  bool get isEmpty =>
+      name.trim().isEmpty && description.trim().isEmpty;
+
+  factory StoryPersona.fromJson(Map<String, dynamic> json) => StoryPersona(
+    name: json['name']?.toString() ?? '',
+    avatar: json['avatar']?.toString() ?? '🧑',
+    description: json['description']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'avatar': avatar,
+    'description': description,
+  };
+}
+
 /// 面板分区：由故事自定义（标题 / 数据源 / 图标），空则用默认分区
 class StoryPanel {
   final String title;
@@ -780,6 +808,9 @@ class Story {
   /// 成就定义（AI 解锁）
   final List<StoryAchievement> achievements;
 
+  /// 玩家 persona（用户本人，AI 不扮演）
+  final StoryPersona persona;
+
   /// 默认面板分区（详情面板未自定义时使用）
   static const defaultPanels = <StoryPanel>[
     StoryPanel(source: 'resources'),
@@ -812,6 +843,7 @@ class Story {
     this.variables = const [],
     this.regexes = const [],
     this.achievements = const [],
+    this.persona = const StoryPersona(),
     this.initialState = GameState.empty,
     this.isBuiltin = false,
   });
@@ -834,6 +866,7 @@ class Story {
     List<StoryVariable>? variables,
     List<StoryRegex>? regexes,
     List<StoryAchievement>? achievements,
+    StoryPersona? persona,
     GameState? initialState,
   }) => Story(
     id: id,
@@ -854,6 +887,7 @@ class Story {
     variables: variables ?? this.variables,
     regexes: regexes ?? this.regexes,
     achievements: achievements ?? this.achievements,
+    persona: persona ?? this.persona,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
   );
@@ -914,6 +948,9 @@ class Story {
               if (e is Map) StoryAchievement.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    persona: json['persona'] is Map
+        ? StoryPersona.fromJson((json['persona'] as Map).cast<String, dynamic>())
+        : const StoryPersona(),
     initialState: json['initialState'] is Map
         ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
         : GameState.empty,
@@ -939,6 +976,7 @@ class Story {
     'variables': [for (final v in variables) v.toJson()],
     'regexes': [for (final r in regexes) r.toJson()],
     'achievements': [for (final a in achievements) a.toJson()],
+    'persona': persona.toJson(),
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
   };
@@ -1143,6 +1181,16 @@ class StoryStore extends ChangeNotifier {
       return const [];
     }
     final panels = mapList('面板', StoryPanel.fromJson);
+    var persona = const StoryPersona();
+    final personaText = _section(text, '玩家角色');
+    if (personaText != null) {
+      try {
+        final decoded = jsonDecode(personaText);
+        if (decoded is Map) {
+          persona = StoryPersona.fromJson(decoded.cast<String, dynamic>());
+        }
+      } catch (_) {}
+    }
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -1161,6 +1209,7 @@ class StoryStore extends ChangeNotifier {
       variables: mapList('变量', StoryVariable.fromJson),
       regexes: mapList('正则', StoryRegex.fromJson),
       achievements: mapList('成就', StoryAchievement.fromJson),
+      persona: persona,
       initialState: initialState,
     );
   }
@@ -1210,6 +1259,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.achievements.isNotEmpty) {
       section('成就', jsonEncode([for (final a in s.achievements) a.toJson()]));
+    }
+    if (!s.persona.isEmpty) {
+      section('玩家角色', jsonEncode(s.persona.toJson()));
     }
     section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();

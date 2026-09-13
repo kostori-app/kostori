@@ -4939,6 +4939,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Spec'
 	String get characterSpec => 'Spec';
 
+	/// en: 'Player character'
+	String get storyPersona => 'Player character';
+
+	/// en: 'Describes who the user is. The AI must not roleplay this.'
+	String get storyPersonaHint => 'Describes who the user is. The AI must not roleplay this.';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9649,6 +9655,8 @@ extension on Translations {
 			'characterExportV3' => 'Export as V3',
 			'characterExportV2' => 'Export as V2',
 			'characterSpec' => 'Spec',
+			'storyPersona' => 'Player character',
+			'storyPersonaHint' => 'Describes who the user is. The AI must not roleplay this.',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -10020,10 +10028,10 @@ extension on Translations {
 			'statsRangeOverview' => 'Time range stats',
 			'statsWeekly' => 'Weekly',
 			'statsMonthly' => 'Monthly',
-			'statsQuarterly' => 'Quarterly',
-			'statsHalfYearly' => 'Half-yearly',
 			_ => null,
 		} ?? switch (path) {
+			'statsQuarterly' => 'Quarterly',
+			'statsHalfYearly' => 'Half-yearly',
 			'statsYearly' => 'Yearly',
 			'statsDaily' => 'Daily',
 			'statsSourceList' => 'Source list',
@@ -10534,10 +10542,10 @@ extension on Translations {
 			'fetchVideoUrlError' => ({required Object detail}) => 'Failed to get video link: ${detail}',
 			'missingUrl' => 'Missing url',
 			'success' => 'Success',
-			'failedWithStatus' => ({required Object status}) => 'Failed (${status})',
-			'checkIn' => 'Check in',
 			_ => null,
 		} ?? switch (path) {
+			'failedWithStatus' => ({required Object status}) => 'Failed (${status})',
+			'checkIn' => 'Check in',
 			'button' => 'Button',
 			'requestFailedDetail' => ({required Object error}) => 'Request failed: ${error}',
 			'play' => 'Play',

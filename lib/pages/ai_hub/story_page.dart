@@ -449,6 +449,15 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _choicesCtrl = TextEditingController(
     text: widget.story?.choicesPrompt ?? '',
   );
+  late final _personaNameCtrl = TextEditingController(
+    text: widget.story?.persona.name ?? '',
+  );
+  late final _personaAvatarCtrl = TextEditingController(
+    text: widget.story?.persona.avatar ?? '🧑',
+  );
+  late final _personaDescCtrl = TextEditingController(
+    text: widget.story?.persona.description ?? '',
+  );
   late final _stateCtrl = TextEditingController(
     text: widget.story == null
         ? '{\n  "resources": {},\n  "attributes": {},\n  "skills": [],\n  "inventory": [],\n  "quests": []\n}'
@@ -565,6 +574,9 @@ class _StoryEditorState extends State<_StoryEditor> {
     _openingCtrl.dispose();
     _systemCtrl.dispose();
     _situationCtrl.dispose();
+    _personaNameCtrl.dispose();
+    _personaAvatarCtrl.dispose();
+    _personaDescCtrl.dispose();
     _choicesCtrl.dispose();
     _stateCtrl.dispose();
     for (final e in _worldBook) {
@@ -676,6 +688,13 @@ class _StoryEditorState extends State<_StoryEditor> {
               description: a.description.text.trim(),
             ),
       ],
+      persona: StoryPersona(
+        name: _personaNameCtrl.text.trim(),
+        avatar: _personaAvatarCtrl.text.trim().isEmpty
+            ? '🧑'
+            : _personaAvatarCtrl.text.trim(),
+        description: _personaDescCtrl.text.trim(),
+      ),
       initialState: initialState,
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
@@ -808,6 +827,11 @@ class _StoryEditorState extends State<_StoryEditor> {
           children: [
             _sectionCard(t.basicInfo, Icons.info_outline, _basicTab()),
             _sectionCard(
+              t.storyPersona,
+              Icons.person_outline,
+              _personaTab(),
+            ),
+            _sectionCard(
               t.storyOpening,
               Icons.play_circle_outline,
               _textTab(_openingCtrl),
@@ -894,6 +918,30 @@ class _StoryEditorState extends State<_StoryEditor> {
         _field(
           t.rolePlayDescription,
           _descCtrl,
+          required: false,
+          multiline: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _personaTab() {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+          child: Text(
+            t.storyPersonaHint,
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+        ),
+        _field(t.storyCharacterName, _personaNameCtrl, required: false),
+        _field(t.storyCharacterAvatar, _personaAvatarCtrl, required: false),
+        _field(
+          t.characterDescription,
+          _personaDescCtrl,
           required: false,
           multiline: true,
         ),
@@ -1713,8 +1761,28 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     String scanText = '',
   }) async {
     final vars = state.variables;
-    String sub(String text) => replaceStoryVars(text, vars);
+    final persona = story.persona;
+    String sub(String text) {
+      var out = replaceStoryVars(text, vars);
+      if (!persona.isEmpty) {
+        final name = persona.name.trim().isEmpty ? '玩家' : persona.name.trim();
+        out = out
+            .replaceAll('{{user}}', name)
+            .replaceAll('{{persona}}', persona.description.trim());
+      }
+      return out;
+    }
+
     final buf = StringBuffer(sub(story.buildSystemPrompt()));
+    if (!persona.isEmpty) {
+      buf.write('\n\n【玩家角色（用户本人，禁止扮演；你只需知道他是谁）】');
+      if (persona.name.trim().isNotEmpty) {
+        buf.write('\n名字：${persona.name.trim()}');
+      }
+      if (persona.description.trim().isNotEmpty) {
+        buf.write('\n${persona.description.trim()}');
+      }
+    }
     if (story.opening.trim().isNotEmpty) {
       buf.write('\n\n【开局场景（请从这里开始叙事）】\n${sub(story.opening.trim())}');
     }
@@ -3360,7 +3428,28 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
 
   List<Widget> _buildSituation(ColorScheme scheme) {
     final blocks = <Widget>[];
+    final persona = widget.story.persona;
+    if (!persona.isEmpty) {
+      blocks.add(_sectionTitle(t.storyPersona));
+      blocks.add(
+        Text(
+          '${persona.avatar} '
+          '${persona.name.trim().isEmpty ? '' : persona.name.trim()}',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      );
+      if (persona.description.trim().isNotEmpty) {
+        blocks.add(const SizedBox(height: 4));
+        blocks.add(
+          Text(
+            persona.description.trim(),
+            style: TextStyle(height: 1.5, color: scheme.onSurface),
+          ),
+        );
+      }
+    }
     if (widget.story.situation.trim().isNotEmpty) {
+      if (blocks.isNotEmpty) blocks.add(const SizedBox(height: 16));
       blocks.add(_sectionTitle(t.storyBackground));
       blocks.add(
         Text(

@@ -1671,6 +1671,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterExportV3 => '导出为 V3';
 	@override String get characterExportV2 => '导出为 V2';
 	@override String get characterSpec => '规范版本';
+	@override String get storyPersona => '玩家角色';
+	@override String get storyPersonaHint => '描述用户本人，AI 不得扮演。';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4381,6 +4383,8 @@ extension on TranslationsZhCn {
 			'characterExportV3' => '导出为 V3',
 			'characterExportV2' => '导出为 V2',
 			'characterSpec' => '规范版本',
+			'storyPersona' => '玩家角色',
+			'storyPersonaHint' => '描述用户本人，AI 不得扮演。',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4753,10 +4757,10 @@ extension on TranslationsZhCn {
 			'statsRangeOverview' => '时间范围统计',
 			'statsWeekly' => '周统计',
 			'statsMonthly' => '月统计',
-			'statsQuarterly' => '季统计',
-			'statsHalfYearly' => '半年统计',
 			_ => null,
 		} ?? switch (path) {
+			'statsQuarterly' => '季统计',
+			'statsHalfYearly' => '半年统计',
 			'statsYearly' => '年统计',
 			'statsDaily' => '天统计',
 			'statsSourceList' => '来源清单',
@@ -5267,10 +5271,10 @@ extension on TranslationsZhCn {
 			'fetchVideoUrlError' => ({required Object detail}) => '获取视频链接异常: ${detail}',
 			'missingUrl' => '缺少 url',
 			'success' => '成功',
-			'failedWithStatus' => ({required Object status}) => '失败 (${status})',
-			'checkIn' => '签到',
 			_ => null,
 		} ?? switch (path) {
+			'failedWithStatus' => ({required Object status}) => '失败 (${status})',
+			'checkIn' => '签到',
 			'button' => '按钮',
 			'requestFailedDetail' => ({required Object error}) => '请求失败: ${error}',
 			'play' => '播放',
