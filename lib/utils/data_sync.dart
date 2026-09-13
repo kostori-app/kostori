@@ -182,6 +182,54 @@ class DataSync with ChangeNotifier {
     }
   }
 
+  /// 某部分的远端历史文件名（格式：$name-$version-$date-$deviceTag.kostori）
+  /// 每次上传都写新文件、不覆盖旧文件，从而保留历史备份
+  String _partFileName(SyncPart part, int version) {
+    final date = (DateTime.now().millisecondsSinceEpoch ~/ 86400000).toString();
+    return '${part.name}-$version-$date-${_deviceTag()}.kostori';
+  }
+
+  /// 拉取远端各部分到本地（清单里的历史文件名优先，兼容旧的固定名）
+  Future<int> _pullParts(
+    Client client,
+    Map<String, dynamic> remoteMeta,
+  ) async {
+    final localHashes =
+        (appdata.implicitData['syncPartHashes'] as Map?)
+            ?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
+    final newHashes = <String, dynamic>{...localHashes};
+    var downloaded = 0;
+    for (final part in syncParts) {
+      final meta = remoteMeta[part.key];
+      if (meta is! Map) continue;
+      final remoteHash = meta['hash']?.toString();
+      // 与上次下载的哈希一致 → 该部分未变化，跳过下载
+      if (remoteHash != null && remoteHash == localHashes[part.key]) {
+        continue;
+      }
+      final remoteName = meta['file']?.toString() ?? '${part.name}.kostori';
+      final localFile = File(
+        FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
+      );
+      await client.read2File(
+        _join(_normDir(part.dir), remoteName),
+        localFile.path,
+        onProgress: (count, total) {
+          _progress = total > 0 ? count / total : null;
+          notifyListeners();
+        },
+      );
+      await importPart(localFile);
+      localFile.deleteIgnoreError();
+      if (remoteHash != null) newHashes[part.key] = remoteHash;
+      downloaded++;
+    }
+    appdata.implicitData['syncPartHashes'] = newHashes;
+    appdata.writeImplicitData();
+    return downloaded;
+  }
+
   /// 上传单个部分（分部分同步）
   Future<Res<bool>> uploadOnePart(SyncPart part) async {
     final client = _client();
@@ -191,18 +239,48 @@ class DataSync with ChangeNotifier {
     notifyListeners();
     try {
       await prepareSyncPart(part.key);
+      final hash = await partContentHash(part.key);
+      final prevManifest = (await readManifest()).dataOrNull;
+      final remoteVersion =
+          (prevManifest?['version'] as num?)?.toInt() ?? 0;
+      final version =
+          (remoteVersion > _dataVersion ? remoteVersion : _dataVersion) + 1;
       final file = await exportPart(part.key);
       try {
+        final bytes = await file.readAsBytes();
         final dir = _normDir(part.dir);
         await client.mkdirAll(dir);
+        final remoteName = _partFileName(part, version);
         await client.write(
-          _join(dir, '${part.name}.kostori'),
-          await file.readAsBytes(),
+          _join(dir, remoteName),
+          bytes,
           onProgress: (count, total) {
             _progress = total > 0 ? count / total : null;
             notifyListeners();
           },
         );
+        final parts = <String, dynamic>{
+          ...?(prevManifest?['parts'] as Map?)?.cast<String, dynamic>(),
+        };
+        parts[part.key] = {
+          'version': version,
+          'size': bytes.length,
+          'time': DateTime.now().millisecondsSinceEpoch,
+          'hash': hash,
+          'file': remoteName,
+        };
+        await client.write(
+          _manifestName,
+          utf8.encode(
+            jsonEncode({
+              'version': version,
+              'device': _deviceTag(),
+              'time': DateTime.now().millisecondsSinceEpoch,
+              'parts': parts,
+            }),
+          ),
+        );
+        _setDataVersion(version);
       } finally {
         file.deleteIgnoreError();
       }
@@ -225,11 +303,17 @@ class DataSync with ChangeNotifier {
     _progress = null;
     notifyListeners();
     try {
+      final manifest = (await readManifest()).dataOrNull;
+      final parts = (manifest?['parts'] as Map?)?.cast<String, dynamic>();
+      final meta = parts?[part.key];
+      final remoteName = meta is Map
+          ? (meta['file']?.toString() ?? '${part.name}.kostori')
+          : '${part.name}.kostori';
       final local = File(
         FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
       );
       await client.read2File(
-        _join(_normDir(part.dir), '${part.name}.kostori'),
+        _join(_normDir(part.dir), remoteName),
         local.path,
         onProgress: (count, total) {
           _progress = total > 0 ? count / total : null;
@@ -241,6 +325,38 @@ class DataSync with ChangeNotifier {
       return const Res(true);
     } catch (e, s) {
       Log.error('Download Part', e, s);
+      return Res.error(e.toString());
+    } finally {
+      _isDownloading = false;
+      _progress = null;
+      notifyListeners();
+    }
+  }
+
+  /// 从远端历史备份中恢复某个具体文件（历史列表用）
+  Future<Res<bool>> restorePartFile(SyncPart part, String remoteName) async {
+    final client = _client();
+    if (client == null) return const Res.error('Invalid WebDAV configuration');
+    _isDownloading = true;
+    _progress = null;
+    notifyListeners();
+    try {
+      final local = File(
+        FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
+      );
+      await client.read2File(
+        _join(_normDir(part.dir), remoteName),
+        local.path,
+        onProgress: (count, total) {
+          _progress = total > 0 ? count / total : null;
+          notifyListeners();
+        },
+      );
+      await importPart(local);
+      local.deleteIgnoreError();
+      return const Res(true);
+    } catch (e, s) {
+      Log.error('Restore Part', e, s);
       return Res.error(e.toString());
     } finally {
       _isDownloading = false;
@@ -280,8 +396,20 @@ class DataSync with ChangeNotifier {
         final prevRes = await readManifest();
         final prevManifest = prevRes.dataOrNull;
         final remoteVersion = (prevManifest?['version'] as num?)?.toInt() ?? 0;
-        final newVersion =
-            (remoteVersion > _dataVersion ? remoteVersion : _dataVersion) + 1;
+        final remoteParts =
+            (prevManifest?['parts'] as Map?)?.cast<String, dynamic>() ??
+            const <String, dynamic>{};
+        // 本机数据落后于远端：先拉取（字段级合并）再上传，
+        // 避免用旧数据覆盖远端新数据、把版本号抬得更高导致其他端回退
+        if (remoteVersion > _dataVersion) {
+          final pulled = await _pullParts(client, remoteParts);
+          _setDataVersion(remoteVersion);
+          Log.info(
+            "Upload Data",
+            "Pulled $pulled parts before upload (remote v$remoteVersion)",
+          );
+        }
+        final newVersion = _dataVersion + 1;
         final prevParts =
             (prevManifest?['parts'] as Map?)?.cast<String, dynamic>() ??
             const <String, dynamic>{};
@@ -302,8 +430,9 @@ class DataSync with ChangeNotifier {
             final bytes = await file.readAsBytes();
             final dir = _normDir(part.dir);
             await client.mkdirAll(dir);
+            final remoteName = _partFileName(part, newVersion);
             await client.write(
-              _join(dir, '${part.name}.kostori'),
+              _join(dir, remoteName),
               bytes,
               onProgress: (count, total) {
                 _progress = total > 0 ? count / total : null;
@@ -315,6 +444,7 @@ class DataSync with ChangeNotifier {
               'size': bytes.length,
               'time': DateTime.now().millisecondsSinceEpoch,
               'hash': hash,
+              'file': remoteName,
             };
             uploaded++;
           } finally {
@@ -401,38 +531,7 @@ class DataSync with ChangeNotifier {
         final remoteMeta =
             (manifest['parts'] as Map?)?.cast<String, dynamic>() ??
             const <String, dynamic>{};
-        final localHashes =
-            (appdata.implicitData['syncPartHashes'] as Map?)
-                ?.cast<String, dynamic>() ??
-            const <String, dynamic>{};
-        final newHashes = <String, dynamic>{...localHashes};
-        var downloaded = 0;
-        for (final part in syncParts) {
-          final meta = remoteMeta[part.key];
-          if (meta is! Map) continue;
-          final remoteHash = meta['hash']?.toString();
-          // 与上次下载的哈希一致 → 该部分未变化，跳过下载
-          if (remoteHash != null && remoteHash == localHashes[part.key]) {
-            continue;
-          }
-          final localFile = File(
-            FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
-          );
-          await client.read2File(
-            _join(_normDir(part.dir), '${part.name}.kostori'),
-            localFile.path,
-            onProgress: (count, total) {
-              _progress = total > 0 ? count / total : null;
-              notifyListeners();
-            },
-          );
-          await importPart(localFile);
-          localFile.deleteIgnoreError();
-          if (remoteHash != null) newHashes[part.key] = remoteHash;
-          downloaded++;
-        }
-        appdata.implicitData['syncPartHashes'] = newHashes;
-        appdata.writeImplicitData();
+        final downloaded = await _pullParts(client, remoteMeta);
         Log.info(
           "Data Sync",
           "Downloaded $downloaded/${syncParts.length} parts (v$version)",

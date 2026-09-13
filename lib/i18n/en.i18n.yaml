@@ -155,6 +155,9 @@ syncWorldBook: World Info
 syncStoryChars: Story characters
 syncParts: Bundles / databases
 syncPartsHint: 'Split sync: each database is separate; the data bundle only holds settings, anime sources and plugins; stories/cards/saves use the other categories.'
+syncHistory: History backups
+syncHistoryEmpty: No history backups
+syncRestore: Restore
 aiDatabase: AI settings DB
 aiMessages: AI messages
 stats: Stats

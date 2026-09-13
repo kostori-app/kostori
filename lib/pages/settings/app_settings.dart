@@ -1176,6 +1176,11 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                         tooltip: t.download,
                         onPressed: _busy ? null : () => _downloadPart(part),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.history),
+                        tooltip: t.syncHistory,
+                        onPressed: _busy ? null : () => _showPartHistory(part),
+                      ),
                     ],
                   ),
                 ),
@@ -1184,6 +1189,100 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
           ),
       ],
     );
+  }
+
+  /// 该部分的历史备份文件（按版本号倒序）
+  /// 文件名格式：$name-$version-$date-$deviceTag.kostori
+  int _versionOfName(String name) {
+    final base = name.endsWith('.kostori')
+        ? name.substring(0, name.length - '.kostori'.length)
+        : name;
+    final parts = base.split('-');
+    if (parts.length >= 4) return int.tryParse(parts[1]) ?? 0;
+    if (parts.length >= 2) return int.tryParse(parts[parts.length - 2]) ?? 0;
+    return 0;
+  }
+
+  String _fmtTime(DateTime? t) {
+    if (t == null) return '';
+    return Utils.dateFormat(t.millisecondsSinceEpoch);
+  }
+
+  Future<void> _showPartHistory(SyncPart part) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Sheet(
+        title: '${_partLabel(part.key)} · ${t.syncHistory}',
+        icon: Icons.history,
+        builder: (ctx, sc) => FutureBuilder<Res<List<RemoteFileInfo>>>(
+          future: DataSync().listRemoteEntries(dir: part.dir),
+          builder: (ctx, snap) {
+            if (!snap.hasData) {
+              return const Center(child: PolygonRefreshIndicator());
+            }
+            final files = (snap.data!.dataOrNull ?? const <RemoteFileInfo>[])
+                .where(
+                  (f) =>
+                      f.name.startsWith('${part.name}-') &&
+                      f.name.endsWith('.kostori'),
+                )
+                .toList()
+              ..sort(
+                (a, b) =>
+                    _versionOfName(b.name).compareTo(_versionOfName(a.name)),
+              );
+            if (files.isEmpty) {
+              return Center(
+                child: Text(
+                  t.syncHistoryEmpty,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              );
+            }
+            return ListView.builder(
+              controller: sc,
+              itemCount: files.length,
+              itemBuilder: (ctx, i) {
+                final f = files[i];
+                return ListTile(
+                  leading: const Icon(Icons.history),
+                  title: Text('v${_versionOfName(f.name)}'),
+                  subtitle: Text(
+                    [
+                      if (_fmtSize(f.size).isNotEmpty) _fmtSize(f.size),
+                      if (_fmtTime(f.modified).isNotEmpty) _fmtTime(f.modified),
+                    ].join(' · '),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.restore),
+                    tooltip: t.syncRestore,
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await _restorePart(part, f.name);
+                    },
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _restorePart(SyncPart part, String remoteName) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final res = await DataSync().restorePartFile(part, remoteName);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(res.success);
+    await _load();
   }
 
   Future<void> _uploadPart(SyncPart part) async {

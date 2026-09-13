@@ -144,6 +144,9 @@ syncWorldBook: 世界书
 syncStoryChars: 故事角色卡
 syncParts: 整包 / 数据库
 syncPartsHint: 分部分同步：各数据库各自独立；「数据」整包只含设置、番剧源与插件；故事/角色卡/存档等请用其它分类。
+syncHistory: 历史备份
+syncHistoryEmpty: 暂无历史备份
+syncRestore: 恢复
 aiDatabase: AI 设置库
 aiMessages: AI 消息记录
 stats: 统计

@@ -500,6 +500,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Split sync: each database is separate; the data bundle only holds settings, anime sources and plugins; stories/cards/saves use the other categories.'
 	String get syncPartsHint => 'Split sync: each database is separate; the data bundle only holds settings, anime sources and plugins; stories/cards/saves use the other categories.';
 
+	/// en: 'History backups'
+	String get syncHistory => 'History backups';
+
+	/// en: 'No history backups'
+	String get syncHistoryEmpty => 'No history backups';
+
+	/// en: 'Restore'
+	String get syncRestore => 'Restore';
+
 	/// en: 'AI settings DB'
 	String get aiDatabase => 'AI settings DB';
 
@@ -8502,6 +8511,9 @@ extension on Translations {
 			'syncStoryChars' => 'Story characters',
 			'syncParts' => 'Bundles / databases',
 			'syncPartsHint' => 'Split sync: each database is separate; the data bundle only holds settings, anime sources and plugins; stories/cards/saves use the other categories.',
+			'syncHistory' => 'History backups',
+			'syncHistoryEmpty' => 'No history backups',
+			'syncRestore' => 'Restore',
 			'aiDatabase' => 'AI settings DB',
 			'aiMessages' => 'AI messages',
 			'stats' => 'Stats',
@@ -8858,11 +8870,11 @@ extension on Translations {
 			'saturdaySchedule' => 'Saturday Schedule',
 			'sundaySchedule' => 'Sunday Schedule',
 			'popularityRanking' => 'Popularity Ranking',
+			_ => null,
+		} ?? switch (path) {
 			'imageOperations' => 'Image Operations',
 			'saveToAlbum' => 'Save to Album',
 			'stitchLongImage' => 'Stitch Long Image',
-			_ => null,
-		} ?? switch (path) {
 			'stitchHorizontalImage' => 'Stitch Horizontal Image',
 			'stitchSubtitles' => 'Stitch Subtitles',
 			'saveLongImage' => 'Save Long Image',
@@ -9372,11 +9384,11 @@ extension on Translations {
 			'enableNoProxyOverrides' => 'Enable No Proxy Overrides',
 			'actor' => 'Actor',
 			'cv' => 'CV',
+			_ => null,
+		} ?? switch (path) {
 			'dub' => 'Dub',
 			'chineseDub' => 'Chinese Dub',
 			'japaneseDub' => 'Japanese Dub',
-			_ => null,
-		} ?? switch (path) {
 			'englishDub' => 'English Dub',
 			'koreanDub' => 'Korean Dub',
 			'selectedACharacter' => ({required Object a}) => 'Selected ${a} character',
@@ -9886,11 +9898,11 @@ extension on Translations {
 			'qrAndClipboard' => 'QR & Clipboard',
 			'go' => 'Go',
 			'clipboard' => 'Clipboard',
+			_ => null,
+		} ?? switch (path) {
 			'recognizeFromGallery' => 'Recognize from Gallery',
 			'scanQrCode' => 'Scan QR Code',
 			'scanToJump' => 'Scan to Jump',
-			_ => null,
-		} ?? switch (path) {
 			'qrCode' => 'QR Code',
 			'shareMethodDescription' => 'Share method: In anime/Bangumi page, click share → generate token or QR code',
 			'shareQrCode' => 'Share QR Code',
@@ -10400,11 +10412,11 @@ extension on Translations {
 			'lanKeepBoth' => 'Keep Both',
 			'lanManualResolution' => 'Manual Resolution',
 			'lanConflictField' => 'Conflicting field',
+			_ => null,
+		} ?? switch (path) {
 			'lanErrorOccurred' => 'Error occurred',
 			'lanCommandExecuted' => 'Command executed',
 			'lanCommandFailed' => 'Command failed',
-			_ => null,
-		} ?? switch (path) {
 			'lanNoPermission' => 'No permission',
 			'lanOpenAnimeDetail' => 'Open Anime Detail',
 			'lanSyncProgress' => 'Sync Progress',
@@ -10914,11 +10926,11 @@ extension on Translations {
 			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
 			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			'builderExplore' => 'Explore',
+			_ => null,
+		} ?? switch (path) {
 			'builderExploreTitle' => 'Page title',
 			'builderExploreUrl' => 'List URL template ({page})',
 			'builderCategory' => 'Category',
-			_ => null,
-		} ?? switch (path) {
 			'builderCategoryTitle' => 'Category title',
 			'builderCategoryNames' => 'Category names (one per line, "value-name")',
 			'builderCategoryUrl' => 'Category list URL ({category} {page})',

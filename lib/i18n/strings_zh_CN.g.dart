@@ -185,6 +185,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncStoryChars => '故事角色卡';
 	@override String get syncParts => '整包 / 数据库';
 	@override String get syncPartsHint => '分部分同步：各数据库各自独立；「数据」整包只含设置、番剧源与插件；故事/角色卡/存档等请用其它分类。';
+	@override String get syncHistory => '历史备份';
+	@override String get syncHistoryEmpty => '暂无历史备份';
+	@override String get syncRestore => '恢复';
 	@override String get aiDatabase => 'AI 设置库';
 	@override String get aiMessages => 'AI 消息记录';
 	@override String get stats => '统计';
@@ -2974,6 +2977,9 @@ extension on TranslationsZhCn {
 			'syncStoryChars' => '故事角色卡',
 			'syncParts' => '整包 / 数据库',
 			'syncPartsHint' => '分部分同步：各数据库各自独立；「数据」整包只含设置、番剧源与插件；故事/角色卡/存档等请用其它分类。',
+			'syncHistory' => '历史备份',
+			'syncHistoryEmpty' => '暂无历史备份',
+			'syncRestore' => '恢复',
 			'aiDatabase' => 'AI 设置库',
 			'aiMessages' => 'AI 消息记录',
 			'stats' => '统计',
@@ -3337,11 +3343,11 @@ extension on TranslationsZhCn {
 			'stitchSubtitles' => '拼接字幕',
 			'saveLongImage' => '保存长图',
 			'borderColor' => '边框颜色',
+			_ => null,
+		} ?? switch (path) {
 			'conversationTitle' => '对话标题',
 			'aiConversation' => 'AI 对话',
 			'topicList' => '话题列表',
-			_ => null,
-		} ?? switch (path) {
 			'startConversationWithAI' => '开始与 AI 对话吧',
 			'newConversation' => '新建对话',
 			'inputMessage' => '输入消息...',
@@ -3851,11 +3857,11 @@ extension on TranslationsZhCn {
 			'actor' => '演员',
 			'cv' => 'CV',
 			'dub' => '配音',
+			_ => null,
+		} ?? switch (path) {
 			'chineseDub' => '中配',
 			'japaneseDub' => '日配',
 			'englishDub' => '英配',
-			_ => null,
-		} ?? switch (path) {
 			'koreanDub' => '韩配',
 			'selectedACharacter' => ({required Object a}) => '已选择 ${a} 位角色',
 			'searchOptions' => '搜索选项',
@@ -4365,11 +4371,11 @@ extension on TranslationsZhCn {
 			'go' => '前往',
 			'clipboard' => '剪贴板',
 			'recognizeFromGallery' => '从相册识别',
+			_ => null,
+		} ?? switch (path) {
 			'scanQrCode' => '扫码',
 			'scanToJump' => '扫码跳转',
 			'qrCode' => '二维码',
-			_ => null,
-		} ?? switch (path) {
 			'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
 			'shareQrCode' => '分享二维码',
 			'exporting' => '导出中',
@@ -4879,11 +4885,11 @@ extension on TranslationsZhCn {
 			'lanConflictField' => '冲突字段',
 			'lanErrorOccurred' => '发生错误',
 			'lanCommandExecuted' => '命令已执行',
+			_ => null,
+		} ?? switch (path) {
 			'lanCommandFailed' => '命令执行失败',
 			'lanNoPermission' => '无权限',
 			'lanOpenAnimeDetail' => '打开动漫详情',
-			_ => null,
-		} ?? switch (path) {
 			'lanSyncProgress' => '同步进度',
 			'aggregationEntry' => '聚合入口',
 			'aiLabel' => 'AI',
@@ -5393,11 +5399,11 @@ extension on TranslationsZhCn {
 			'builderPlayDirectDesc' => '剧集链接本身就是播放地址（无需二次请求）',
 			'builderPlayRegexDesc' => '请求播放页并通过正则提取播放地址',
 			'builderExplore' => '探索',
+			_ => null,
+		} ?? switch (path) {
 			'builderExploreTitle' => '页面标题',
 			'builderExploreUrl' => '列表 URL 模板（{page}）',
 			'builderCategory' => '分类',
-			_ => null,
-		} ?? switch (path) {
 			'builderCategoryTitle' => '分类标题',
 			'builderCategoryNames' => '分类名（每行一个，"值-名称"）',
 			'builderCategoryUrl' => '分类列表 URL（{category} {page}）',
