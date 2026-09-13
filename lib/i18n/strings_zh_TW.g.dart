@@ -1599,6 +1599,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRoll => '擲骰';
 	@override String get storyPointsLeft => '剩餘點數';
 	@override String get storyCodex => '詞條';
+	@override String get storyCodexItem => '物品';
+	@override String get storyCodexTrait => '特質';
+	@override String get storyCodexTalent => '天賦';
+	@override String get storyCodexRace => '種族';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4376,6 +4380,10 @@ extension on TranslationsZhTw {
 			'storyRoll' => '擲骰',
 			'storyPointsLeft' => '剩餘點數',
 			'storyCodex' => '詞條',
+			'storyCodexItem' => '物品',
+			'storyCodexTrait' => '特質',
+			'storyCodexTalent' => '天賦',
+			'storyCodexRace' => '種族',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4818,12 +4826,12 @@ extension on TranslationsZhTw {
 			'fixedBitrateOptional' => '固定位元率 (選填，將覆蓋 CRF)',
 			'fixedBitrate' => '固定位元率',
 			'paletteColors' => '調色盤顏色',
+			_ => null,
+		} ?? switch (path) {
 			'enableDither' => '啟用抖動 (Dither)',
 			'webpQuality' => 'WebP 品質',
 			'startPointMinus1s' => '起點 -1s',
 			'endPointMinus1s' => '終點 -1s',
-			_ => null,
-		} ?? switch (path) {
 			'startPointMinus0_1s' => '起點 -0.1s',
 			'endPointMinus0_1s' => '終點 -0.1s',
 			'startPointPlus0_1s' => '起點 +0.1s',
@@ -5332,12 +5340,12 @@ extension on TranslationsZhTw {
 			'downloadSelectedCount' => ({required Object n}) => '下載 ${n} 集',
 			'selectResolution' => '選擇解析度',
 			'defaultResolution' => '預設',
+			_ => null,
+		} ?? switch (path) {
 			'noResolutionAvailable' => '無更多畫質可選',
 			'series' => '系列',
 			'singleEpisode' => '單集 · 共 1 集',
 			'playing' => '正在播放',
-			_ => null,
-		} ?? switch (path) {
 			'selectNone' => '取消全選',
 			'downloadActive' => '正在下載',
 			'redownload' => '重新下載',

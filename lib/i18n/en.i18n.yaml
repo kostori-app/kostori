@@ -1609,6 +1609,10 @@ storyStart: Start game
 storyRoll: Roll
 storyPointsLeft: Points left
 storyCodex: Entries
+storyCodexItem: Items
+storyCodexTrait: Traits
+storyCodexTalent: Talents
+storyCodexRace: Races
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned

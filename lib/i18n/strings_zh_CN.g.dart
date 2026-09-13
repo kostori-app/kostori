@@ -1598,6 +1598,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRoll => '掷骰';
 	@override String get storyPointsLeft => '剩余点数';
 	@override String get storyCodex => '词条';
+	@override String get storyCodexItem => '物品';
+	@override String get storyCodexTrait => '特质';
+	@override String get storyCodexTalent => '天赋';
+	@override String get storyCodexRace => '种族';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4376,6 +4380,10 @@ extension on TranslationsZhCn {
 			'storyRoll' => '掷骰',
 			'storyPointsLeft' => '剩余点数',
 			'storyCodex' => '词条',
+			'storyCodexItem' => '物品',
+			'storyCodexTrait' => '特质',
+			'storyCodexTalent' => '天赋',
+			'storyCodexRace' => '种族',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4819,12 +4827,12 @@ extension on TranslationsZhCn {
 			'ditherHint' => '质量更好，体积略微增大',
 			'webpQuality' => 'WebP 质量',
 			'aspectRatioPresets' => '画面比例预设',
+			_ => null,
+		} ?? switch (path) {
 			'hideCropBox' => '隐藏裁剪框',
 			'showCropBox' => '显示裁剪框 (可拖动)',
 			'dragToSelectExportArea' => '开启后，拖动以选择导出区域',
 			'startPointMinus1s' => '起点 -1s',
-			_ => null,
-		} ?? switch (path) {
 			'endPointMinus1s' => '终点 -1s',
 			'startPointMinus0_1s' => '起点 -0.1s',
 			'endPointMinus0_1s' => '终点 -0.1s',
@@ -5333,12 +5341,12 @@ extension on TranslationsZhCn {
 			'downloadNotYet' => '暂无选集可下载',
 			'downloadSelectedCount' => ({required Object n}) => '下载 ${n} 集',
 			'selectResolution' => '选择分辨率',
+			_ => null,
+		} ?? switch (path) {
 			'defaultResolution' => '默认',
 			'noResolutionAvailable' => '无更多清晰度可选',
 			'series' => '系列',
 			'singleEpisode' => '单集 · 共 1 集',
-			_ => null,
-		} ?? switch (path) {
 			'playing' => '正在播放',
 			'selectNone' => '取消全选',
 			'downloadActive' => '正在下载',

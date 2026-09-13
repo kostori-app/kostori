@@ -4720,6 +4720,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Entries'
 	String get storyCodex => 'Entries';
 
+	/// en: 'Items'
+	String get storyCodexItem => 'Items';
+
+	/// en: 'Traits'
+	String get storyCodexTrait => 'Traits';
+
+	/// en: 'Talents'
+	String get storyCodexTalent => 'Talents';
+
+	/// en: 'Races'
+	String get storyCodexRace => 'Races';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9780,6 +9792,10 @@ extension on Translations {
 			'storyRoll' => 'Roll',
 			'storyPointsLeft' => 'Points left',
 			'storyCodex' => 'Entries',
+			'storyCodexItem' => 'Items',
+			'storyCodexTrait' => 'Traits',
+			'storyCodexTalent' => 'Talents',
+			'storyCodexRace' => 'Races',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10222,12 +10238,12 @@ extension on Translations {
 			'noAudio' => 'No Audio',
 			'ditherOn' => 'Dither On',
 			'ditherOff' => 'Dither Off',
+			_ => null,
+		} ?? switch (path) {
 			'gifFormat' => 'GIF',
 			'apngFormat' => 'APNG',
 			'webpFormat' => 'WebP',
 			'browserCompatible' => 'Browser compatible',
-			_ => null,
-		} ?? switch (path) {
 			'smallestSize' => 'Smallest size',
 			'videoFormat' => 'Video Format',
 			'encoding' => 'Encoding…',
@@ -10736,12 +10752,12 @@ extension on Translations {
 			'downloadNotYet' => 'No episodes available to download',
 			'downloadSelectedCount' => ({required Object n}) => 'Download ${n} episodes',
 			'selectResolution' => 'Select resolution',
+			_ => null,
+		} ?? switch (path) {
 			'defaultResolution' => 'Default',
 			'noResolutionAvailable' => 'No more qualities available',
 			'series' => 'Series',
 			'singleEpisode' => 'Single episode · 1 total',
-			_ => null,
-		} ?? switch (path) {
 			'playing' => 'Playing',
 			'selectNone' => 'Select none',
 			'downloadActive' => 'Downloading',

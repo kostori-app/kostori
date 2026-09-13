@@ -4382,6 +4382,36 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     }
   }
 
+  /// 词条分组标题（按 kind 归类：物品 / 技能 / 特质 / 天赋 / 种族）
+  Widget _codexGroupTitle(String kind, ColorScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 2),
+      child: Row(
+        children: [
+          Icon(_codexIcon(kind), size: 15, color: scheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            _codexKindLabel(kind),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _codexKindLabel(String kind) => switch (kind) {
+    'item' => t.storyCodexItem,
+    'skill' => t.skills,
+    'trait' => t.storyCodexTrait,
+    'talent' => t.storyCodexTalent,
+    'race' => t.storyCodexRace,
+    _ => kind.isEmpty ? t.storyCodex : kind,
+  };
+
   Widget _codexTile(StoryDefinition d, ColorScheme scheme) {
     final status = _codexStatus(d);
     final owned = status?.$2;
@@ -4701,10 +4731,27 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
             ? state.codex
             : state.codex.where((d) => d.kind == panel.kind).toList();
         if (defs.isEmpty) return const [];
-        return [
+        final out = <Widget>[
           _sectionTitle(panel.title.isEmpty ? t.storyCodex : panel.title, icon),
-          for (final d in defs) _codexTile(d, scheme),
         ];
+        if (panel.kind.isNotEmpty) {
+          for (final d in defs) {
+            out.add(_codexTile(d, scheme));
+          }
+        } else {
+          // 未指定 kind：按类型分组，避免所有词条挤在一起
+          final groups = <String, List<StoryDefinition>>{};
+          for (final d in defs) {
+            groups.putIfAbsent(d.kind, () => []).add(d);
+          }
+          for (final entry in groups.entries) {
+            out.add(_codexGroupTitle(entry.key, scheme));
+            for (final d in entry.value) {
+              out.add(_codexTile(d, scheme));
+            }
+          }
+        }
+        return out;
       default:
         return const [];
     }

@@ -1604,6 +1604,10 @@ storyStart: 开始游戏
 storyRoll: 掷骰
 storyPointsLeft: 剩余点数
 storyCodex: 词条
+storyCodexItem: 物品
+storyCodexTrait: 特质
+storyCodexTalent: 天赋
+storyCodexRace: 种族
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得
