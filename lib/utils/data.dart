@@ -241,14 +241,14 @@ class SyncPart {
 }
 
 const syncParts = <SyncPart>[
-  SyncPart('ai', 'db', 'ai_database'),
-  SyncPart('ai_tasks', 'db', 'ai_tasks'),
-  SyncPart('history', 'db', 'history'),
-  SyncPart('favorites', 'db', 'favorites'),
-  SyncPart('stats', 'db', 'stats'),
-  SyncPart('bangumi', 'db', 'bangumi'),
-  SyncPart('search', 'db', 'search_history'),
-  SyncPart('cookies', 'db', 'cookies'),
+  SyncPart('ai', 'db/ai_database', 'ai_database'),
+  SyncPart('ai_tasks', 'db/ai_tasks', 'ai_tasks'),
+  SyncPart('history', 'db/history', 'history'),
+  SyncPart('favorites', 'db/favorites', 'favorites'),
+  SyncPart('stats', 'db/stats', 'stats'),
+  SyncPart('bangumi', 'db/bangumi', 'bangumi'),
+  SyncPart('search', 'db/search_history', 'search_history'),
+  SyncPart('cookies', 'db/cookies', 'cookies'),
   SyncPart('data', 'data', 'data'),
 ];
 

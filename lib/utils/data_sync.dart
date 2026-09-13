@@ -189,6 +189,46 @@ class DataSync with ChangeNotifier {
     return '${part.name}-$version-$date-${_deviceTag()}.kostori';
   }
 
+  /// 每个部分最多保留的历史备份数（超出则删除最旧的）
+  static const _maxHistory = 10;
+
+  /// 兼容旧版扁平目录（如 db/xxx.kostori）
+  String _legacyDir(SyncPart part) =>
+      part.dir.contains('/') ? part.dir.split('/').first : part.dir;
+
+  /// 历史文件的排序键（先日期后版本，均为数字，避免字符串比较出错）
+  String _historyKey(String name) {
+    final base = name.endsWith('.kostori')
+        ? name.substring(0, name.length - '.kostori'.length)
+        : name;
+    final parts = base.split('-');
+    // 格式：$name-$version-$date-$deviceTag
+    final version = parts.length >= 4 ? parts[1] : '0';
+    final date = parts.length >= 4
+        ? parts[2]
+        : (parts.isNotEmpty ? parts.first : '0');
+    return '${date.padLeft(12, '0')}-${version.padLeft(12, '0')}';
+  }
+
+  /// 清理旧备份：仅保留最近 [_maxHistory] 份，删除最旧的
+  Future<void> _trimHistory(Client client, SyncPart part) async {
+    try {
+      final dir = _normDir(part.dir);
+      final files = (await client.readDir(dir))
+          .where((e) => (e.name ?? '').endsWith('.kostori'))
+          .toList();
+      while (files.length >= _maxHistory) {
+        files.sort(
+          (a, b) => _historyKey(a.name!).compareTo(_historyKey(b.name!)),
+        );
+        await client.remove(_join(dir, files.first.name!));
+        files.removeAt(0);
+      }
+    } catch (e, s) {
+      Log.error('Trim History', e, s);
+    }
+  }
+
   /// 拉取远端各部分到本地（清单里的历史文件名优先，兼容旧的固定名）
   Future<int> _pullParts(
     Client client,
@@ -212,14 +252,22 @@ class DataSync with ChangeNotifier {
       final localFile = File(
         FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
       );
-      await client.read2File(
-        _join(_normDir(part.dir), remoteName),
+      Future<void> pull(String remoteDir) => client.read2File(
+        _join(_normDir(remoteDir), remoteName),
         localFile.path,
         onProgress: (count, total) {
           _progress = total > 0 ? count / total : null;
           notifyListeners();
         },
       );
+      try {
+        await pull(part.dir);
+      } catch (_) {
+        // 兼容旧版扁平目录（db/xxx.kostori）
+        final legacy = _legacyDir(part);
+        if (legacy == part.dir) rethrow;
+        await pull(legacy);
+      }
       await importPart(localFile);
       localFile.deleteIgnoreError();
       if (remoteHash != null) newHashes[part.key] = remoteHash;
@@ -250,6 +298,7 @@ class DataSync with ChangeNotifier {
         final bytes = await file.readAsBytes();
         final dir = _normDir(part.dir);
         await client.mkdirAll(dir);
+        await _trimHistory(client, part);
         final remoteName = _partFileName(part, version);
         await client.write(
           _join(dir, remoteName),
@@ -312,14 +361,21 @@ class DataSync with ChangeNotifier {
       final local = File(
         FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
       );
-      await client.read2File(
-        _join(_normDir(part.dir), remoteName),
+      Future<void> pull(String remoteDir) => client.read2File(
+        _join(_normDir(remoteDir), remoteName),
         local.path,
         onProgress: (count, total) {
           _progress = total > 0 ? count / total : null;
           notifyListeners();
         },
       );
+      try {
+        await pull(part.dir);
+      } catch (_) {
+        final legacy = _legacyDir(part);
+        if (legacy == part.dir) rethrow;
+        await pull(legacy);
+      }
       await importPart(local);
       local.deleteIgnoreError();
       return const Res(true);
@@ -430,6 +486,7 @@ class DataSync with ChangeNotifier {
             final bytes = await file.readAsBytes();
             final dir = _normDir(part.dir);
             await client.mkdirAll(dir);
+            await _trimHistory(client, part);
             final remoteName = _partFileName(part, newVersion);
             await client.write(
               _join(dir, remoteName),
