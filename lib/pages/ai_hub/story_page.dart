@@ -3568,59 +3568,92 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 把正文拆成旁白 / 角色片段（〖角色：名字〗...〖/角色〗）。
-  /// 容错：结束标记可缺失，角色发言延伸到下一个开头标记或文本结尾；
-  /// 也支持模型自创的收尾写法（〖/名字〗）。
+  /// 容错：结束标记可缺失（也接受 〖/名字〗 / 【角色：名字】）。
+  /// 有结束标记 → 整段算该角色；无结束标记 → 按段落判断，
+  /// 只把含引号对白的段落算角色发言，纯旁白（含【提示】）拆出来。
   List<StorySegment> _splitSegments(String text) {
     final openRe = RegExp(r'[〖【]\s*角色\s*[:：]\s*([^〗】]+?)\s*[〗】]');
-    // 先去掉规范的结束标记，避免被当成旁白
-    final clean = text.replaceAll(
-      RegExp(r'[〖【]\s*/\s*角色\s*[〗】]'),
-      '',
-    );
     final segments = <StorySegment>[];
     var index = 0;
-    while (index < clean.length) {
-      final open = openRe.firstMatch(clean.substring(index));
+    while (index < text.length) {
+      final open = openRe.firstMatch(text.substring(index));
       if (open == null) break;
       final openStart = index + open.start;
       final bodyStart = index + open.end;
-      final before = clean.substring(index, openStart).trim();
+      final before = text.substring(index, openStart).trim();
       if (before.isNotEmpty) {
         segments.add(StorySegment(type: 'narration', text: before));
       }
-      final rest = clean.substring(bodyStart);
-      // 也把「〖/名字〗」当作结束标记
+      final rest = text.substring(bodyStart);
       final name = open.group(1)!.trim();
-      final selfClose = RegExp(
-        '[〖【]\\s*/\\s*${RegExp.escape(name)}\\s*[〗】]',
+      final closeRe = RegExp(
+        '[〖【]\\s*/\\s*(?:角色|${RegExp.escape(name)})\\s*[〗】]',
       );
       final nextOpen = openRe.firstMatch(rest);
-      final nextClose = selfClose.firstMatch(rest);
+      final nextClose = closeRe.firstMatch(rest);
       var endRel = rest.length;
+      var closed = false;
       if (nextOpen != null) endRel = nextOpen.start;
       if (nextClose != null && nextClose.start < endRel) {
         endRel = nextClose.start;
+        closed = true;
       }
       final body = rest.substring(0, endRel).trim();
       if (body.isNotEmpty) {
-        segments.add(StorySegment(type: 'npc', name: name, text: body));
+        if (closed) {
+          segments.add(StorySegment(type: 'npc', name: name, text: body));
+        } else {
+          _splitUnclosedNpc(segments, name, body);
+        }
       }
       index = bodyStart + endRel;
-      if (nextClose != null && nextClose.start == endRel) {
+      if (closed && nextClose != null) {
         index += nextClose.end - nextClose.start;
       }
     }
-    if (index < clean.length) {
-      final after = clean.substring(index).trim();
+    if (index < text.length) {
+      final after = text.substring(index).trim();
       if (after.isNotEmpty) {
         segments.add(StorySegment(type: 'narration', text: after));
       }
     }
-    if (segments.isEmpty && clean.trim().isNotEmpty) {
-      segments.add(StorySegment(type: 'narration', text: clean.trim()));
+    if (segments.isEmpty && text.trim().isNotEmpty) {
+      segments.add(StorySegment(type: 'narration', text: text.trim()));
     }
     return segments;
   }
+
+  /// 无结束标记的角色块：按空行分段，含引号对白的算角色，其余算旁白
+  void _splitUnclosedNpc(
+    List<StorySegment> segments,
+    String name,
+    String body,
+  ) {
+    final npcBuf = <String>[];
+    void flush() {
+      if (npcBuf.isEmpty) return;
+      segments.add(
+        StorySegment(type: 'npc', name: name, text: npcBuf.join('\n\n')),
+      );
+      npcBuf.clear();
+    }
+
+    for (final p in body.split(RegExp(r'\n\s*\n'))) {
+      final t = p.trim();
+      if (t.isEmpty) continue;
+      if (_hasQuotedSpeech(t)) {
+        npcBuf.add(t);
+      } else {
+        flush();
+        segments.add(StorySegment(type: 'narration', text: t));
+      }
+    }
+    flush();
+  }
+
+  static final _speechRe = RegExp(r'[“"「『][^”"」』]*[”"」』]');
+
+  static bool _hasQuotedSpeech(String s) => _speechRe.hasMatch(s);
 
   /// 文字样式设置：引号高亮 / 阴影 / 字体 / 字号
   Future<void> _showTextStyleSheet() async {
