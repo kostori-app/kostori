@@ -106,6 +106,12 @@ class AiTasks extends Table {
 
   TextColumn get outputContent => text().nullable()();
 
+  /// 多候选回复（JSON 字符串数组），outputContent 为当前选中项
+  TextColumn get outputVariants => text().nullable()();
+
+  /// 当前选中的候选下标
+  IntColumn get variantIndex => integer().withDefault(const Constant(0))();
+
   TextColumn get thought => text().nullable()();
 
   TextColumn get provider => text()();
@@ -311,7 +317,7 @@ class AiDatabase extends _$AiDatabase {
   AiDatabase._() : super(_openConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -428,6 +434,11 @@ class AiDatabase extends _$AiDatabase {
       if (from < 11) {
         // 用户消息附带图片（聊天界面展示）
         await _addColumnIfMissing(m, aiTasks, aiTasks.inputImages);
+      }
+      if (from < 12) {
+        // 多候选回复（swipe）+ 当前候选下标
+        await _addColumnIfMissing(m, aiTasks, aiTasks.outputVariants);
+        await _addColumnIfMissing(m, aiTasks, aiTasks.variantIndex);
       }
     },
     beforeOpen: (details) async {

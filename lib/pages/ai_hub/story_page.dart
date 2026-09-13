@@ -1693,6 +1693,187 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _inputFocus.requestFocus();
   }
 
+  /// 应用解析出的状态并持久化（含未登记道具校验）
+  Future<void> _applyState(GameState? state) async {
+    final sessionId = _sessionId;
+    if (state == null || sessionId == null) return;
+    final unregistered = _unregisteredItems(_state, state);
+    setState(() {
+      _state = state;
+      _unregistered = unregistered;
+    });
+    await StorySessionStore.instance.put(
+      story.id,
+      StorySession(sessionId: sessionId, state: state),
+    );
+  }
+
+  /// 消息长按菜单：复制 / 编辑 / 重生成 / 删除
+  Future<void> _messageMenu(AiTask m) async {
+    final isUser = m.role == 'user';
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: Text(t.copy),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                Clipboard.setData(
+                  ClipboardData(
+                    text: isUser ? m.inputContent : (m.outputContent ?? ''),
+                  ),
+                );
+                App.rootContext.showMessage(message: t.copied);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(t.edit),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _editMessage(m);
+              },
+            ),
+            if (!isUser)
+              ListTile(
+                leading: const Icon(Icons.refresh),
+                title: Text(t.regenerate),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _regenerate(m);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(t.delete),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _deleteMessage(m);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 编辑消息：用户消息回滚重发；模型消息就地改输出
+  Future<void> _editMessage(AiTask m) async {
+    final isUser = m.role == 'user';
+    final ctrl = TextEditingController(
+      text: isUser ? m.inputContent : (m.outputContent ?? ''),
+    );
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.edit),
+        content: TextField(
+          controller: ctrl,
+          minLines: 3,
+          maxLines: 10,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    final text = ctrl.text.trim();
+    ctrl.dispose();
+    if (ok != true || !mounted || text.isEmpty) return;
+    if (isUser) {
+      final sessionId = _sessionId;
+      if (sessionId == null) return;
+      await AiConversationService().rollbackToMessage(sessionId, m.id);
+      await _send(text);
+    } else {
+      await AiConversationService().editMessageInput(m.id, text);
+      await _applyState(_parseReply(text).state);
+    }
+  }
+
+  /// 重新生成：保留旧结果作为候选，追加新候选
+  Future<void> _regenerate(AiTask m) async {
+    final sessionId = _sessionId;
+    if (sessionId == null || _sending) return;
+    setState(() => _sending = true);
+    try {
+      final res = await AiConversationService().regenerateMessage(
+        sessionId: sessionId,
+        taskId: m.id,
+        providerOverride: aiHubProvider(),
+        systemPromptOverride: await _systemPromptFor(_state),
+      );
+      if (!mounted) return;
+      if (!res.success) {
+        App.rootContext.showMessage(
+          message: res.errorMessage ?? '',
+          level: LogLevel.error,
+        );
+        return;
+      }
+      await _applyState(_parseReply(res.data).state);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _deleteMessage(AiTask m) =>
+      AiConversationService().deleteMessage(m.id);
+
+  /// 候选切换（swipe）导航
+  Widget _variantNav(AiTask m, List<String> variants) {
+    final index = m.variantIndex.clamp(0, variants.length - 1);
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, size: 18),
+            visualDensity: VisualDensity.compact,
+            tooltip: t.back,
+            onPressed: index <= 0
+                ? null
+                : () => _selectVariant(m, variants, index - 1),
+          ),
+          Text(
+            '${index + 1}/${variants.length}',
+            style: const TextStyle(fontSize: 11),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, size: 18),
+            visualDensity: VisualDensity.compact,
+            tooltip: t.next,
+            onPressed: index >= variants.length - 1
+                ? null
+                : () => _selectVariant(m, variants, index + 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectVariant(
+    AiTask m,
+    List<String> variants,
+    int index,
+  ) async {
+    await AiConversationService().selectVariant(m.id, variants, index);
+    await _applyState(_parseReply(variants[index]).state);
+  }
+
   /// 请 GM 为未登记的道具补充图鉴设定
   void _registerUnregistered() {
     if (_unregistered.isEmpty) return;
@@ -1780,6 +1961,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   ? null
                                   : _parseReply(m.outputContent ?? '');
                               final check = parsed?.check;
+                              final variants = isUser
+                                  ? const <String>[]
+                                  : AiConversationService.variantsOf(m);
                               final showCheck =
                                   !isUser &&
                                   check != null &&
@@ -1788,18 +1972,23 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _StoryBubble(
-                                    content: isUser
-                                        ? m.inputContent
-                                        : applyStoryRegex(
-                                            parsed?.narrative ?? '',
-                                            story.regexes,
-                                            'ai',
-                                          ),
-                                    isUser: isUser,
-                                    task: m,
-                                    events: parsed?.events ?? const [],
+                                  GestureDetector(
+                                    onLongPress: () => _messageMenu(m),
+                                    child: _StoryBubble(
+                                      content: isUser
+                                          ? m.inputContent
+                                          : applyStoryRegex(
+                                              parsed?.narrative ?? '',
+                                              story.regexes,
+                                              'ai',
+                                            ),
+                                      isUser: isUser,
+                                      task: m,
+                                      events: parsed?.events ?? const [],
+                                    ),
                                   ),
+                                  if (variants.length > 1)
+                                    _variantNav(m, variants),
                                   if (showCheck)
                                     Padding(
                                       padding: const EdgeInsets.only(

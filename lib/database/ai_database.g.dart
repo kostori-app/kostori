@@ -1403,6 +1403,29 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _outputVariantsMeta = const VerificationMeta(
+    'outputVariants',
+  );
+  @override
+  late final GeneratedColumn<String> outputVariants = GeneratedColumn<String>(
+    'output_variants',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _variantIndexMeta = const VerificationMeta(
+    'variantIndex',
+  );
+  @override
+  late final GeneratedColumn<int> variantIndex = GeneratedColumn<int>(
+    'variant_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _thoughtMeta = const VerificationMeta(
     'thought',
   );
@@ -1469,6 +1492,8 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
     inputContent,
     inputImages,
     outputContent,
+    outputVariants,
+    variantIndex,
     thought,
     provider,
     modelName,
@@ -1538,6 +1563,24 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
         outputContent.isAcceptableOrUnknown(
           data['output_content']!,
           _outputContentMeta,
+        ),
+      );
+    }
+    if (data.containsKey('output_variants')) {
+      context.handle(
+        _outputVariantsMeta,
+        outputVariants.isAcceptableOrUnknown(
+          data['output_variants']!,
+          _outputVariantsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('variant_index')) {
+      context.handle(
+        _variantIndexMeta,
+        variantIndex.isAcceptableOrUnknown(
+          data['variant_index']!,
+          _variantIndexMeta,
         ),
       );
     }
@@ -1613,6 +1656,14 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
         DriftSqlType.string,
         data['${effectivePrefix}output_content'],
       ),
+      outputVariants: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}output_variants'],
+      ),
+      variantIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}variant_index'],
+      )!,
       thought: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}thought'],
@@ -1652,6 +1703,12 @@ class AiTask extends DataClass implements Insertable<AiTask> {
   /// 用户消息附带的图片（data URL 的 JSON 数组），用于聊天界面展示
   final String? inputImages;
   final String? outputContent;
+
+  /// 多候选回复（JSON 字符串数组），outputContent 为当前选中项
+  final String? outputVariants;
+
+  /// 当前选中的候选下标
+  final int variantIndex;
   final String? thought;
   final String provider;
   final String? modelName;
@@ -1665,6 +1722,8 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     required this.inputContent,
     this.inputImages,
     this.outputContent,
+    this.outputVariants,
+    required this.variantIndex,
     this.thought,
     required this.provider,
     this.modelName,
@@ -1685,6 +1744,10 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     if (!nullToAbsent || outputContent != null) {
       map['output_content'] = Variable<String>(outputContent);
     }
+    if (!nullToAbsent || outputVariants != null) {
+      map['output_variants'] = Variable<String>(outputVariants);
+    }
+    map['variant_index'] = Variable<int>(variantIndex);
     if (!nullToAbsent || thought != null) {
       map['thought'] = Variable<String>(thought);
     }
@@ -1710,6 +1773,10 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       outputContent: outputContent == null && nullToAbsent
           ? const Value.absent()
           : Value(outputContent),
+      outputVariants: outputVariants == null && nullToAbsent
+          ? const Value.absent()
+          : Value(outputVariants),
+      variantIndex: Value(variantIndex),
       thought: thought == null && nullToAbsent
           ? const Value.absent()
           : Value(thought),
@@ -1735,6 +1802,8 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       inputContent: serializer.fromJson<String>(json['inputContent']),
       inputImages: serializer.fromJson<String?>(json['inputImages']),
       outputContent: serializer.fromJson<String?>(json['outputContent']),
+      outputVariants: serializer.fromJson<String?>(json['outputVariants']),
+      variantIndex: serializer.fromJson<int>(json['variantIndex']),
       thought: serializer.fromJson<String?>(json['thought']),
       provider: serializer.fromJson<String>(json['provider']),
       modelName: serializer.fromJson<String?>(json['modelName']),
@@ -1753,6 +1822,8 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       'inputContent': serializer.toJson<String>(inputContent),
       'inputImages': serializer.toJson<String?>(inputImages),
       'outputContent': serializer.toJson<String?>(outputContent),
+      'outputVariants': serializer.toJson<String?>(outputVariants),
+      'variantIndex': serializer.toJson<int>(variantIndex),
       'thought': serializer.toJson<String?>(thought),
       'provider': serializer.toJson<String>(provider),
       'modelName': serializer.toJson<String?>(modelName),
@@ -1769,6 +1840,8 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     String? inputContent,
     Value<String?> inputImages = const Value.absent(),
     Value<String?> outputContent = const Value.absent(),
+    Value<String?> outputVariants = const Value.absent(),
+    int? variantIndex,
     Value<String?> thought = const Value.absent(),
     String? provider,
     Value<String?> modelName = const Value.absent(),
@@ -1784,6 +1857,10 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     outputContent: outputContent.present
         ? outputContent.value
         : this.outputContent,
+    outputVariants: outputVariants.present
+        ? outputVariants.value
+        : this.outputVariants,
+    variantIndex: variantIndex ?? this.variantIndex,
     thought: thought.present ? thought.value : this.thought,
     provider: provider ?? this.provider,
     modelName: modelName.present ? modelName.value : this.modelName,
@@ -1805,6 +1882,12 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       outputContent: data.outputContent.present
           ? data.outputContent.value
           : this.outputContent,
+      outputVariants: data.outputVariants.present
+          ? data.outputVariants.value
+          : this.outputVariants,
+      variantIndex: data.variantIndex.present
+          ? data.variantIndex.value
+          : this.variantIndex,
       thought: data.thought.present ? data.thought.value : this.thought,
       provider: data.provider.present ? data.provider.value : this.provider,
       modelName: data.modelName.present ? data.modelName.value : this.modelName,
@@ -1825,6 +1908,8 @@ class AiTask extends DataClass implements Insertable<AiTask> {
           ..write('inputContent: $inputContent, ')
           ..write('inputImages: $inputImages, ')
           ..write('outputContent: $outputContent, ')
+          ..write('outputVariants: $outputVariants, ')
+          ..write('variantIndex: $variantIndex, ')
           ..write('thought: $thought, ')
           ..write('provider: $provider, ')
           ..write('modelName: $modelName, ')
@@ -1843,6 +1928,8 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     inputContent,
     inputImages,
     outputContent,
+    outputVariants,
+    variantIndex,
     thought,
     provider,
     modelName,
@@ -1860,6 +1947,8 @@ class AiTask extends DataClass implements Insertable<AiTask> {
           other.inputContent == this.inputContent &&
           other.inputImages == this.inputImages &&
           other.outputContent == this.outputContent &&
+          other.outputVariants == this.outputVariants &&
+          other.variantIndex == this.variantIndex &&
           other.thought == this.thought &&
           other.provider == this.provider &&
           other.modelName == this.modelName &&
@@ -1875,6 +1964,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
   final Value<String> inputContent;
   final Value<String?> inputImages;
   final Value<String?> outputContent;
+  final Value<String?> outputVariants;
+  final Value<int> variantIndex;
   final Value<String?> thought;
   final Value<String> provider;
   final Value<String?> modelName;
@@ -1888,6 +1979,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     this.inputContent = const Value.absent(),
     this.inputImages = const Value.absent(),
     this.outputContent = const Value.absent(),
+    this.outputVariants = const Value.absent(),
+    this.variantIndex = const Value.absent(),
     this.thought = const Value.absent(),
     this.provider = const Value.absent(),
     this.modelName = const Value.absent(),
@@ -1902,6 +1995,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     required String inputContent,
     this.inputImages = const Value.absent(),
     this.outputContent = const Value.absent(),
+    this.outputVariants = const Value.absent(),
+    this.variantIndex = const Value.absent(),
     this.thought = const Value.absent(),
     required String provider,
     this.modelName = const Value.absent(),
@@ -1919,6 +2014,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     Expression<String>? inputContent,
     Expression<String>? inputImages,
     Expression<String>? outputContent,
+    Expression<String>? outputVariants,
+    Expression<int>? variantIndex,
     Expression<String>? thought,
     Expression<String>? provider,
     Expression<String>? modelName,
@@ -1933,6 +2030,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
       if (inputContent != null) 'input_content': inputContent,
       if (inputImages != null) 'input_images': inputImages,
       if (outputContent != null) 'output_content': outputContent,
+      if (outputVariants != null) 'output_variants': outputVariants,
+      if (variantIndex != null) 'variant_index': variantIndex,
       if (thought != null) 'thought': thought,
       if (provider != null) 'provider': provider,
       if (modelName != null) 'model_name': modelName,
@@ -1949,6 +2048,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     Value<String>? inputContent,
     Value<String?>? inputImages,
     Value<String?>? outputContent,
+    Value<String?>? outputVariants,
+    Value<int>? variantIndex,
     Value<String?>? thought,
     Value<String>? provider,
     Value<String?>? modelName,
@@ -1963,6 +2064,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
       inputContent: inputContent ?? this.inputContent,
       inputImages: inputImages ?? this.inputImages,
       outputContent: outputContent ?? this.outputContent,
+      outputVariants: outputVariants ?? this.outputVariants,
+      variantIndex: variantIndex ?? this.variantIndex,
       thought: thought ?? this.thought,
       provider: provider ?? this.provider,
       modelName: modelName ?? this.modelName,
@@ -1995,6 +2098,12 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     if (outputContent.present) {
       map['output_content'] = Variable<String>(outputContent.value);
     }
+    if (outputVariants.present) {
+      map['output_variants'] = Variable<String>(outputVariants.value);
+    }
+    if (variantIndex.present) {
+      map['variant_index'] = Variable<int>(variantIndex.value);
+    }
     if (thought.present) {
       map['thought'] = Variable<String>(thought.value);
     }
@@ -2023,6 +2132,8 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
           ..write('inputContent: $inputContent, ')
           ..write('inputImages: $inputImages, ')
           ..write('outputContent: $outputContent, ')
+          ..write('outputVariants: $outputVariants, ')
+          ..write('variantIndex: $variantIndex, ')
           ..write('thought: $thought, ')
           ..write('provider: $provider, ')
           ..write('modelName: $modelName, ')
@@ -6194,6 +6305,8 @@ typedef $$AiTasksTableCreateCompanionBuilder = AiTasksCompanion Function({
   required String inputContent,
   Value<String?> inputImages,
   Value<String?> outputContent,
+  Value<String?> outputVariants,
+  Value<int> variantIndex,
   Value<String?> thought,
   required String provider,
   Value<String?> modelName,
@@ -6208,6 +6321,8 @@ typedef $$AiTasksTableUpdateCompanionBuilder = AiTasksCompanion Function({
   Value<String> inputContent,
   Value<String?> inputImages,
   Value<String?> outputContent,
+  Value<String?> outputVariants,
+  Value<int> variantIndex,
   Value<String?> thought,
   Value<String> provider,
   Value<String?> modelName,
@@ -6256,6 +6371,16 @@ class $$AiTasksTableFilterComposer
 
   ColumnFilters<String> get outputContent => $composableBuilder(
     column: $table.outputContent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outputVariants => $composableBuilder(
+    column: $table.outputVariants,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get variantIndex => $composableBuilder(
+    column: $table.variantIndex,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6329,6 +6454,16 @@ class $$AiTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get outputVariants => $composableBuilder(
+    column: $table.outputVariants,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get variantIndex => $composableBuilder(
+    column: $table.variantIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get thought => $composableBuilder(
     column: $table.thought,
     builder: (column) => ColumnOrderings(column),
@@ -6391,6 +6526,16 @@ class $$AiTasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get outputVariants => $composableBuilder(
+    column: $table.outputVariants,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get variantIndex => $composableBuilder(
+    column: $table.variantIndex,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get thought =>
       $composableBuilder(column: $table.thought, builder: (column) => column);
 
@@ -6444,6 +6589,8 @@ class $$AiTasksTableTableManager
                 Value<String> inputContent = const Value.absent(),
                 Value<String?> inputImages = const Value.absent(),
                 Value<String?> outputContent = const Value.absent(),
+                Value<String?> outputVariants = const Value.absent(),
+                Value<int> variantIndex = const Value.absent(),
                 Value<String?> thought = const Value.absent(),
                 Value<String> provider = const Value.absent(),
                 Value<String?> modelName = const Value.absent(),
@@ -6457,6 +6604,8 @@ class $$AiTasksTableTableManager
                 inputContent: inputContent,
                 inputImages: inputImages,
                 outputContent: outputContent,
+                outputVariants: outputVariants,
+                variantIndex: variantIndex,
                 thought: thought,
                 provider: provider,
                 modelName: modelName,
@@ -6472,6 +6621,8 @@ class $$AiTasksTableTableManager
                 required String inputContent,
                 Value<String?> inputImages = const Value.absent(),
                 Value<String?> outputContent = const Value.absent(),
+                Value<String?> outputVariants = const Value.absent(),
+                Value<int> variantIndex = const Value.absent(),
                 Value<String?> thought = const Value.absent(),
                 required String provider,
                 Value<String?> modelName = const Value.absent(),
@@ -6485,6 +6636,8 @@ class $$AiTasksTableTableManager
                 inputContent: inputContent,
                 inputImages: inputImages,
                 outputContent: outputContent,
+                outputVariants: outputVariants,
+                variantIndex: variantIndex,
                 thought: thought,
                 provider: provider,
                 modelName: modelName,

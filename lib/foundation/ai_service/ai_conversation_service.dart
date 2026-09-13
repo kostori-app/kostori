@@ -813,6 +813,99 @@ class AiConversationService {
   Future<void> rollbackToMessage(String sessionId, int taskId) =>
       _taskDao.deleteMessagesFrom(sessionId, taskId);
 
+  // ─── 消息操作（编辑 / 重生成 / 多候选 / 删除）──
+
+  /// 删除单条消息
+  Future<void> deleteMessage(int taskId) => _taskDao.deleteById(taskId);
+
+  /// 编辑单条消息正文（用户消息改输入，模型消息改输出）
+  Future<void> editMessageInput(int taskId, String text) =>
+      _taskDao.updateMessageInput(taskId, text);
+
+  /// 解析某条模型消息的多候选列表（无候选时退回 outputContent）
+  static List<String> variantsOf(AiTask task) {
+    final raw = task.outputVariants;
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
+    final single = task.outputContent;
+    return (single == null || single.isEmpty) ? const [] : [single];
+  }
+
+  /// 切换候选（swipe）
+  Future<void> selectVariant(int taskId, List<String> variants, int index) =>
+      _taskDao.setVariants(taskId, variants, index);
+
+  /// 重新生成某条模型消息：保留旧结果作为候选，追加新候选并选中
+  Future<Res<String>> regenerateMessage({
+    required String sessionId,
+    required int taskId,
+    String? providerOverride,
+    String? systemPromptOverride,
+    AiGenerationParams? paramsOverride,
+    int maxContextMessages = 20,
+  }) async {
+    final session = await _sessionDao.getSession(sessionId);
+    if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
+    final target = await _taskDao.getById(taskId);
+    if (target == null) return Res.error(t.sessionNotFound(id: sessionId));
+
+    final provider = providerOverride ?? session.provider;
+    final ai = AiFactory.create(provider);
+    if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
+
+    // 该模型消息之前的上下文
+    final history = await _sessionDao.getMessages(sessionId);
+    final before = history
+        .where((m) => (m.role == 'user' || m.role == 'model') && m.id < taskId)
+        .toList();
+    final trimmed = before.length > maxContextMessages
+        ? before.sublist(before.length - maxContextMessages)
+        : before;
+
+    final profile = await _resolveProfile(session);
+    final systemPrompt =
+        systemPromptOverride ??
+        await _buildSystemPrompt(
+          session,
+          profile: profile,
+          userMessage: target.inputContent,
+        );
+
+    final messages = <AiMessage>[
+      for (final m in trimmed)
+        if (m.role == 'user')
+          AiUserMessage(content: m.inputContent)
+        else
+          AiAssistantMessage(content: m.outputContent ?? ''),
+    ];
+    // 触发该回复的用户消息（通常已在 trimmed 末尾，缺失时补上）
+    if (trimmed.isEmpty ||
+        trimmed.last.role != 'user' ||
+        trimmed.last.inputContent != target.inputContent) {
+      messages.add(AiUserMessage(content: target.inputContent));
+    }
+
+    final result = await _chat(
+      ai,
+      messages,
+      systemPrompt: systemPrompt,
+      session: session,
+      useTools: false,
+      params: paramsOverride ?? _profileParams(profile),
+      configOverride: await _configOverrideFor(ai, provider, profile),
+    );
+    if (!result.success) return result;
+
+    final variants = [...variantsOf(target), result.data];
+    await _taskDao.setVariants(taskId, variants, variants.length - 1);
+    await _sessionDao.touchSession(sessionId);
+    return result;
+  }
+
   // ─── 压缩 ─────────────────────────────────
 
   /// 将较早的历史消息压缩为摘要并写入会话，保留最近 [keepRecent] 条

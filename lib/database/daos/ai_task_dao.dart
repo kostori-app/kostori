@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:kostori/database/ai_database.dart';
 
@@ -24,6 +26,27 @@ class AiTaskDao extends DatabaseAccessor<AiDatabase> with _$AiTaskDaoMixin {
           .get();
 
   Future<int> insert(AiTasksCompanion entry) => into(aiTasks).insert(entry);
+
+  Future<AiTask?> getById(int id) =>
+      (select(aiTasks)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  /// 编辑消息正文（用户消息改输入，模型消息改输出）
+  Future<void> updateMessageInput(int id, String inputContent) =>
+      (update(aiTasks)..where((t) => t.id.equals(id))).write(
+        AiTasksCompanion(inputContent: Value(inputContent)),
+      );
+
+  /// 写入多候选回复并选中指定下标（同时同步 outputContent）
+  Future<void> setVariants(int id, List<String> variants, int index) {
+    final safeIndex = index.clamp(0, variants.isEmpty ? 0 : variants.length - 1);
+    return (update(aiTasks)..where((t) => t.id.equals(id))).write(
+      AiTasksCompanion(
+        outputVariants: Value(jsonEncode(variants)),
+        variantIndex: Value(safeIndex),
+        outputContent: Value(variants.isEmpty ? null : variants[safeIndex]),
+      ),
+    );
+  }
 
   Future<int> deleteById(int id) =>
       (delete(aiTasks)..where((t) => t.id.equals(id))).go();
