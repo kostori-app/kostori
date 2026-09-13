@@ -123,11 +123,37 @@ class _StoryPageState extends ConsumerState<StoryPage> {
       }
     }
     if (existing != null) {
-      await StoryStore.instance.upsert(parsed.copyWith(id: existing.id));
+      // 升级：其余定义用新版，但**保留 App 里加的角色卡**（按 id/名字去重合并）
+      await StoryStore.instance.upsert(
+        parsed.copyWith(
+          id: existing.id,
+          characters: _mergeCharacters(
+            existing.characters,
+            parsed.characters,
+          ),
+        ),
+      );
       return 'updated';
     }
     await StoryStore.instance.upsert(parsed);
     return 'new';
+  }
+
+  /// 合并角色卡：保留已有的，追加新版新增的（按 id 或名字去重）
+  List<CharacterCard> _mergeCharacters(
+    List<CharacterCard> current,
+    List<CharacterCard> incoming,
+  ) {
+    final out = [...current];
+    for (final c in incoming) {
+      final dup = out.any(
+        (x) =>
+            x.id == c.id ||
+            (c.name.trim().isNotEmpty && x.name.trim() == c.name.trim()),
+      );
+      if (!dup) out.add(c);
+    }
+    return out;
   }
 
   Future<void> _import() async {
