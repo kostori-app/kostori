@@ -1366,8 +1366,9 @@ class _StoryText extends StatelessWidget {
   final String text;
 
   /// 命中任意 Markdown 结构（标题/列表/引用/表格/代码/链接/删除线）则回退
+  /// 行首 `#`/`>`/`-`/`*`/`+`/有序列表 即使无空格也回退，避免把 Markdown 当纯文本
   static final _blockRe = RegExp(
-    r'```|~~~|^\s*([>#]|[-*+]\s|\d+[.)]\s)|\||`|\[[^\]]*\]\(|~~',
+    r'```|~~~|^\s*([>#*+\-]|\d+[.)]\s)|\||`|\[[^\]]*\]\(|~~',
     multiLine: true,
   );
 
