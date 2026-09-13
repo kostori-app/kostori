@@ -2571,6 +2571,59 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     }
   }
 
+  /// 消息内联操作行（复制 / 重新生成 / 编辑 / 删除），无需长按
+  Widget _messageFooter(AiTask m) {
+    final isUser = m.role == 'user';
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Align(
+        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _msgAction(Icons.copy_outlined, t.copy, () => _copyMessage(m)),
+            if (!isUser)
+              _msgAction(
+                Icons.replay_outlined,
+                t.regenerateReply,
+                () => _regenerate(m),
+              ),
+            _msgAction(Icons.edit_outlined, t.edit, () => _editMessage(m)),
+            _msgAction(Icons.delete_outline, t.delete, () => _deleteMessage(m)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _msgAction(IconData icon, String label, VoidCallback onTap) {
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: scheme.outline),
+            const SizedBox(width: 3),
+            Text(label, style: TextStyle(fontSize: 11, color: scheme.outline)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _copyMessage(AiTask m) {
+    Clipboard.setData(
+      ClipboardData(
+        text: m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
+      ),
+    );
+    App.rootContext.showMessage(message: t.copied);
+  }
+
   /// 消息长按菜单：复制 / 编辑 / 重生成 / 删除
   Future<void> _messageMenu(AiTask m) async {
     final isUser = m.role == 'user';
@@ -3074,6 +3127,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                             ],
                                           ),
                                   ),
+                                  _messageFooter(m),
                                   if (variants.length > 1)
                                     _variantNav(m, variants),
                                   if (showCheck)
