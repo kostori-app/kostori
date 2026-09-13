@@ -1651,7 +1651,6 @@ storyLoreRecursive: Recursive
 storyNoEntries: No entries yet
 storyAddEntry: Add entry
 storyImportPrompt: Import prompt
-storyExportSt: Export as ST card
 storyLibraryManage: Manage library
 storySettingLibrary: Setting library
 storySettingLibraryHint: Checked entries are merged into this story (codex / titles / class / base).

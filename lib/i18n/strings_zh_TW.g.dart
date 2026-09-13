@@ -1641,7 +1641,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNoEntries => '暫無條目';
 	@override String get storyAddEntry => '新增條目';
 	@override String get storyImportPrompt => '匯入提示詞';
-	@override String get storyExportSt => '匯出為 ST 角色卡';
 	@override String get storyLibraryManage => '管理知識庫';
 	@override String get storySettingLibrary => '設定庫';
 	@override String get storySettingLibraryHint => '勾選的條目會併入本故事（詞條 / 稱號 / 職業 / 據點）。';
@@ -4482,7 +4481,6 @@ extension on TranslationsZhTw {
 			'storyNoEntries' => '暫無條目',
 			'storyAddEntry' => '新增條目',
 			'storyImportPrompt' => '匯入提示詞',
-			'storyExportSt' => '匯出為 ST 角色卡',
 			'storyLibraryManage' => '管理知識庫',
 			'storySettingLibrary' => '設定庫',
 			'storySettingLibraryHint' => '勾選的條目會併入本故事（詞條 / 稱號 / 職業 / 據點）。',
@@ -4886,9 +4884,9 @@ extension on TranslationsZhTw {
 			'lanManualResolution' => '手動解決',
 			'lanConflictField' => '衝突欄位',
 			'lanErrorOccurred' => '發生錯誤',
+			'lanCommandExecuted' => '命令已執行',
 			_ => null,
 		} ?? switch (path) {
-			'lanCommandExecuted' => '命令已執行',
 			'lanCommandFailed' => '命令執行失敗',
 			'lanNoPermission' => '無權限',
 			'lanOpenAnimeDetail' => '打開動漫詳情',
@@ -5400,9 +5398,9 @@ extension on TranslationsZhTw {
 			'builderPlayDirect' => '直接回傳劇集連結',
 			'builderPlayDirectDesc' => '劇集連結本身就是播放位址（無需二次請求）',
 			'builderPlayRegexDesc' => '請求播放頁並透過正則提取播放位址',
+			'builderExplore' => '探索',
 			_ => null,
 		} ?? switch (path) {
-			'builderExplore' => '探索',
 			'builderExploreTitle' => '頁面標題',
 			'builderExploreUrl' => '列表 URL 模板（{page}）',
 			'builderCategory' => '分類',

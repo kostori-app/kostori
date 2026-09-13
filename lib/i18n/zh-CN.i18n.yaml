@@ -1646,7 +1646,6 @@ storyLoreRecursive: 递归
 storyNoEntries: 暂无条目
 storyAddEntry: 添加条目
 storyImportPrompt: 导入提示词
-storyExportSt: 导出为 ST 角色卡
 storyLibraryManage: 管理知识库
 storySettingLibrary: 设定库
 storySettingLibraryHint: 勾选的条目会并入本故事（词条 / 称号 / 职业 / 据点）。

@@ -1640,7 +1640,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNoEntries => '暂无条目';
 	@override String get storyAddEntry => '添加条目';
 	@override String get storyImportPrompt => '导入提示词';
-	@override String get storyExportSt => '导出为 ST 角色卡';
 	@override String get storyLibraryManage => '管理知识库';
 	@override String get storySettingLibrary => '设定库';
 	@override String get storySettingLibraryHint => '勾选的条目会并入本故事（词条 / 称号 / 职业 / 据点）。';
@@ -4482,7 +4481,6 @@ extension on TranslationsZhCn {
 			'storyNoEntries' => '暂无条目',
 			'storyAddEntry' => '添加条目',
 			'storyImportPrompt' => '导入提示词',
-			'storyExportSt' => '导出为 ST 角色卡',
 			'storyLibraryManage' => '管理知识库',
 			'storySettingLibrary' => '设定库',
 			'storySettingLibraryHint' => '勾选的条目会并入本故事（词条 / 称号 / 职业 / 据点）。',
@@ -4887,9 +4885,9 @@ extension on TranslationsZhCn {
 			'lanKeepBoth' => '保留两者',
 			'lanManualResolution' => '手动解决',
 			'lanConflictField' => '冲突字段',
+			'lanErrorOccurred' => '发生错误',
 			_ => null,
 		} ?? switch (path) {
-			'lanErrorOccurred' => '发生错误',
 			'lanCommandExecuted' => '命令已执行',
 			'lanCommandFailed' => '命令执行失败',
 			'lanNoPermission' => '无权限',
@@ -5401,9 +5399,9 @@ extension on TranslationsZhCn {
 			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => '直接返回剧集链接',
 			'builderPlayDirectDesc' => '剧集链接本身就是播放地址（无需二次请求）',
+			'builderPlayRegexDesc' => '请求播放页并通过正则提取播放地址',
 			_ => null,
 		} ?? switch (path) {
-			'builderPlayRegexDesc' => '请求播放页并通过正则提取播放地址',
 			'builderExplore' => '探索',
 			'builderExploreTitle' => '页面标题',
 			'builderExploreUrl' => '列表 URL 模板（{page}）',

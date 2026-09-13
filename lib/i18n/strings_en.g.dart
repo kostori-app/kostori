@@ -4846,9 +4846,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Import prompt'
 	String get storyImportPrompt => 'Import prompt';
 
-	/// en: 'Export as ST card'
-	String get storyExportSt => 'Export as ST card';
-
 	/// en: 'Manage library'
 	String get storyLibraryManage => 'Manage library';
 
@@ -10014,7 +10011,6 @@ extension on Translations {
 			'storyNoEntries' => 'No entries yet',
 			'storyAddEntry' => 'Add entry',
 			'storyImportPrompt' => 'Import prompt',
-			'storyExportSt' => 'Export as ST card',
 			'storyLibraryManage' => 'Manage library',
 			'storySettingLibrary' => 'Setting library',
 			'storySettingLibraryHint' => 'Checked entries are merged into this story (codex / titles / class / base).',
@@ -10418,9 +10414,9 @@ extension on Translations {
 			'lanLocalWins' => 'Keep Local',
 			'lanRemoteWins' => 'Keep Remote',
 			'lanKeepBoth' => 'Keep Both',
+			'lanManualResolution' => 'Manual Resolution',
 			_ => null,
 		} ?? switch (path) {
-			'lanManualResolution' => 'Manual Resolution',
 			'lanConflictField' => 'Conflicting field',
 			'lanErrorOccurred' => 'Error occurred',
 			'lanCommandExecuted' => 'Command executed',
@@ -10932,9 +10928,9 @@ extension on Translations {
 			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => 'Directly return episode link',
 			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
+			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			_ => null,
 		} ?? switch (path) {
-			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			'builderExplore' => 'Explore',
 			'builderExploreTitle' => 'Page title',
 			'builderExploreUrl' => 'List URL template ({page})',

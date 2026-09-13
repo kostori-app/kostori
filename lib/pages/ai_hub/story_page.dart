@@ -37,78 +37,6 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     );
   }
 
-  /// 导出为 SillyTavern 可读的角色卡（V2，含内嵌世界书）
-  Future<void> _exportSt(Story s) async {
-    final data = <String, dynamic>{
-      'name': s.name,
-      'description': s.description,
-      'personality': '',
-      'scenario': s.situation,
-      'first_mes': s.opening,
-      'mes_example': '',
-      'system_prompt': s.systemPrompt,
-      'post_history_instructions': '',
-      'creator_notes': s.description,
-      'tags': <String>[],
-      'creator': '',
-      'character_version': '',
-      'alternate_greetings': <String>[],
-      'extensions': <String, dynamic>{},
-    };
-    final book = _storyLorebookJson(s);
-    if (book != null) data['character_book'] = book;
-    final card = {
-      'spec': 'chara_card_v2',
-      'spec_version': '2.0',
-      'data': data,
-    };
-    await saveFile(
-      data: utf8.encode(const JsonEncoder.withIndent('  ').convert(card)),
-      filename: '${s.name}.st.json',
-    );
-  }
-
-  /// 把故事的 `## 世界书` 文本（按【名称】分段）转成 ST character_book
-  Map<String, dynamic>? _storyLorebookJson(Story s) {
-    final text = s.worldBook.trim();
-    if (text.isEmpty) return null;
-    final entries = <Map<String, dynamic>>[];
-    var order = 0;
-    void add(String name, String content) {
-      if (content.trim().isEmpty) return;
-      entries.add({
-        'keys': <String>[],
-        'content': content.trim(),
-        'enabled': true,
-        'constant': true,
-        'insertion_order': order++,
-        'name': name,
-      });
-    }
-
-    final matches = RegExp(r'【([^】]*)】').allMatches(text).toList();
-    if (matches.isEmpty) {
-      add(s.name, text);
-    } else {
-      for (var i = 0; i < matches.length; i++) {
-        final name = matches[i].group(1) ?? '';
-        final start = matches[i].end;
-        final end = i + 1 < matches.length ? matches[i + 1].start : text.length;
-        add(name, text.substring(start, end));
-      }
-    }
-    if (entries.isEmpty) return null;
-    return {
-      'name': s.name,
-      'description': s.description,
-      'scan_depth': 4,
-      'token_budget': 500,
-      'recursive_scanning': false,
-      'extensions': <String, dynamic>{},
-      'entries': entries,
-    };
-  }
-
   /// 导入一个故事：**同名则原地更新**（保留 id 与存档，方便升级故事版本）。
   /// 返回 'updated' / 'new'。
   Future<String> _importBytes(Uint8List bytes) async {
@@ -285,7 +213,6 @@ class _StoryPageState extends ConsumerState<StoryPage> {
                                   context.to(() => StoryGamePage(story: s)),
                               onEdit: () => _edit(s),
                               onExport: () => _export(s),
-                        onExportSt: () => _exportSt(s),
                               onRestart: () => _restart(s),
                               onDelete: s.isBuiltin ? null : () => _delete(s),
                             ),
@@ -375,7 +302,6 @@ class _StoryCard extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onExport,
-    required this.onExportSt,
     required this.onRestart,
     this.onDelete,
   });
@@ -384,7 +310,6 @@ class _StoryCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onExport;
-  final VoidCallback onExportSt;
   final VoidCallback onRestart;
   final VoidCallback? onDelete;
 
@@ -463,17 +388,12 @@ class _StoryCard extends StatelessWidget {
                 onSelected: (v) {
                   if (v == 'edit') onEdit();
                   if (v == 'export') onExport();
-                  if (v == 'export_st') onExportSt();
                   if (v == 'restart') onRestart();
                   if (v == 'delete') onDelete?.call();
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 'edit', child: Text(t.edit)),
                   PopupMenuItem(value: 'export', child: Text(t.exportEntries)),
-                  PopupMenuItem(
-                    value: 'export_st',
-                    child: Text(t.storyExportSt),
-                  ),
                   PopupMenuItem(value: 'restart', child: Text(t.storyRestart)),
                   if (onDelete != null)
                     PopupMenuItem(value: 'delete', child: Text(t.delete)),
