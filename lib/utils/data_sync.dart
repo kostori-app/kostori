@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kostori/components/window_frame.dart';
@@ -393,8 +394,10 @@ class DataSync with ChangeNotifier {
             ),
       ]);
     } catch (e, s) {
-      Log.error('List Remote', e, s);
-      return Res.error(e.toString());
+      // 目录不存在（404）视为空，不算错误
+      final code = e is DioException ? e.response?.statusCode : null;
+      if (code != 404) Log.error('List Remote', e, s);
+      return const Res([]);
     }
   }
 
