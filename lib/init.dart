@@ -100,6 +100,7 @@ Future<void> init() async {
   await CharacterCardStore.instance.init().wait();
   await StoryStore.instance.init().wait();
   await StorySessionStore.instance.ensureLoaded().wait();
+  await _cleanupStalePrefs();
   unawaited(_logPrefsSizes());
   await OpenAiProviderRegistry.refreshKeyFormats().wait();
   ApiKeyManager().init();
@@ -133,6 +134,27 @@ Future<void> init() async {
     await SMTCManagerWindows.instance.init();
   }
   providerContainer.read(bangumiManagerProvider);
+}
+
+/// 清理历史遗留、当前代码已不再使用的 shared_preferences 键
+Future<void> _cleanupStalePrefs() async {
+  const stale = {
+    'ai_role_play',
+    'implicitData',
+    'search',
+    'firstUse',
+    'blockingKeyword',
+    'favoriteTags',
+  };
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in stale) {
+      if (prefs.containsKey(key)) {
+        await prefs.remove(key);
+        DebugLog.info('Prefs', 'removed stale key: $key');
+      }
+    }
+  } catch (_) {}
 }
 
 /// 记录 shared_preferences 中体积最大的键（诊断用，迁移后确认是否瘦身）
