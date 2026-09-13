@@ -159,7 +159,10 @@ class CharacterCard {
       avatar: (json['avatar'] as String?) ?? '🧑',
       description: (json['description'] as String?) ?? '',
       personality:
-          (json['personality'] ?? json['persona'])?.toString() ?? '',
+          (json['personality'] ??
+                  (json['persona'] is String ? json['persona'] : null))
+              ?.toString() ??
+          '',
       scenario: (json['scenario'] as String?) ?? '',
       firstMessage:
           (json['firstMessage'] ?? json['first_mes'])?.toString() ?? '',
@@ -235,11 +238,27 @@ class CharacterCard {
     'specVersion': specVersion,
   };
 
-  /// 解析酒馆角色卡 JSON（V1 扁平 / V2、V3 data 包裹均支持）
+  /// 解析角色卡 JSON（V1 扁平 / V2、V3 data 包裹 / character、char 等变体均支持）
   factory CharacterCard.fromSillyTavernJson(Map<String, dynamic> json) {
-    final data = json['data'];
-    final inner = data is Map ? data.cast<String, dynamic>() : json;
-    final spec = (json['spec_version'] ?? json['specVersion'] ?? '').toString();
+    final spec = (json['spec_version'] ?? json['specVersion'] ?? json['spec'] ?? '')
+        .toString();
+    Map<String, dynamic>? unwrap(Map<String, dynamic> m) {
+      for (final key in const ['data', 'character', 'char', 'card']) {
+        final v = m[key];
+        if (v is Map) {
+          final vm = v.cast<String, dynamic>();
+          if (vm.containsKey('name') ||
+              vm.containsKey('description') ||
+              vm.containsKey('personality') ||
+              vm.containsKey('first_mes')) {
+            return vm;
+          }
+        }
+      }
+      return null;
+    }
+
+    final inner = unwrap(json) ?? json;
     final card = CharacterCard.fromJson(inner);
     return card.copyWith(specVersion: spec);
   }
@@ -404,7 +423,7 @@ class CharacterCard {
     return null;
   }
 
-  /// 从 PNG 的 tEXt / zTXt 块中读取 chara 字段
+  /// 从 PNG 的 tEXt / zTXt / iTXt 块中读取 chara 字段
   static CharacterCard? fromPngBytes(Uint8List bytes) {
     const signature = [137, 80, 78, 71, 13, 10, 26, 10];
     if (bytes.length < 8) return null;
@@ -420,38 +439,71 @@ class CharacterCard {
       final dataStart = offset + 8;
       final dataEnd = dataStart + length;
       if (length < 0 || dataEnd + 4 > bytes.length) break;
-      if (type == 'tEXt' || type == 'zTXt') {
-        final data = bytes.sublist(dataStart, dataEnd);
-        final sep = data.indexOf(0);
-        if (sep > 0) {
-          final keyword = String.fromCharCodes(data.sublist(0, sep));
-          if (keyword == 'chara' || keyword == 'character') {
-            String text;
-            if (type == 'zTXt') {
-              try {
-                text = utf8.decode(zlib.decode(data.sublist(sep + 2)));
-              } catch (_) {
-                offset = dataEnd + 4;
-                continue;
-              }
-            } else {
-              text = String.fromCharCodes(data.sublist(sep + 1));
-            }
-            final card = _decodeCharaText(text);
-            if (card != null) return card;
-          }
-        }
+      if (type == 'tEXt' || type == 'zTXt' || type == 'iTXt') {
+        final card = _readTextChunk(type, bytes.sublist(dataStart, dataEnd));
+        if (card != null) return card;
       }
       offset = dataEnd + 4; // 跳过 CRC
     }
     return null;
   }
 
+  /// 解析文本块（tEXt 未压缩 / zTXt zlib / iTXt 可选压缩）
+  static CharacterCard? _readTextChunk(String type, List<int> data) {
+    final sep = data.indexOf(0);
+    if (sep <= 0) return null;
+    final keyword = String.fromCharCodes(data.sublist(0, sep));
+    if (keyword != 'chara' && keyword != 'character') return null;
+
+    if (type == 'tEXt') {
+      return _decodeCharaText(String.fromCharCodes(data.sublist(sep + 1)));
+    }
+    if (type == 'zTXt') {
+      try {
+        return _decodeCharaText(
+          utf8.decode(zlib.decode(data.sublist(sep + 2))),
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+    // iTXt: keyword\0 flag method lang\0 translated\0 text
+    var offset = sep + 1;
+    if (offset + 2 > data.length) return null;
+    final compressed = data[offset] == 1;
+    offset += 2;
+    var end = data.indexOf(0, offset);
+    if (end < 0) return null;
+    offset = end + 1;
+    end = data.indexOf(0, offset);
+    if (end < 0) return null;
+    offset = end + 1;
+    var textBytes = data.sublist(offset);
+    if (compressed) {
+      try {
+        textBytes = zlib.decode(textBytes);
+      } catch (_) {
+        return null;
+      }
+    }
+    return _decodeCharaText(utf8.decode(textBytes, allowMalformed: true));
+  }
+
   static CharacterCard? _decodeCharaText(String text) {
+    // 常见：base64 编码的 JSON
     try {
       final normalized = text.replaceAll(RegExp(r'\s'), '');
       final decoded = utf8.decode(base64.decode(normalized));
       final json = jsonDecode(decoded);
+      if (json is Map) {
+        return CharacterCard.fromSillyTavernJson(
+          json.cast<String, dynamic>(),
+        );
+      }
+    } catch (_) {}
+    // 兜底：直接是 JSON 文本
+    try {
+      final json = jsonDecode(text.trim());
       if (json is Map) {
         return CharacterCard.fromSillyTavernJson(
           json.cast<String, dynamic>(),

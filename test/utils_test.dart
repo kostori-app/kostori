@@ -43,6 +43,42 @@ Uint8List _tinyPng() {
   ]);
 }
 
+/// 生成带指定文本块的 PNG（用于 iTXt / tEXt 测试）
+Uint8List _tinyPngWithChunk(String type, List<int> chunkData) {
+  int crc32(List<int> bytes) {
+    var crc = 0xFFFFFFFF;
+    for (final b in bytes) {
+      crc ^= b;
+      for (var i = 0; i < 8; i++) {
+        crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : crc >> 1;
+      }
+    }
+    return (crc ^ 0xFFFFFFFF) & 0xFFFFFFFF;
+  }
+
+  List<int> u32(int v) => [
+    (v >> 24) & 0xFF,
+    (v >> 16) & 0xFF,
+    (v >> 8) & 0xFF,
+    v & 0xFF,
+  ];
+
+  List<int> chunk(String t, List<int> d) {
+    final td = [...ascii.encode(t), ...d];
+    return [...u32(d.length), ...td, ...u32(crc32(td))];
+  }
+
+  final idat = zlib.encode(<int>[0, 255, 255, 255]);
+  final ihdr = <int>[0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0];
+  return Uint8List.fromList([
+    137, 80, 78, 71, 13, 10, 26, 10,
+    ...chunk('IHDR', ihdr),
+    ...chunk(type, chunkData),
+    ...chunk('IDAT', idat),
+    ...chunk('IEND', const []),
+  ]);
+}
+
 void main() {
   group('colorToHex / hexToColor', () {
     test('round trips ARGB', () {
@@ -164,6 +200,36 @@ void main() {
 
     test('returns null for non-card png', () {
       expect(CharacterCard.fromPngBytes(_tinyPng()), isNull);
+    });
+
+    test('reads iTXt chara chunk', () {
+      const card = CharacterCard(id: 'c3', name: 'Rin卡', description: 'iTXt');
+      final data = <int>[
+        ...ascii.encode('chara'),
+        0,
+        0, // compression flag
+        0, // compression method
+        0, // language tag terminator
+        0, // translated keyword terminator
+        ...utf8.encode(card.toCharaText()),
+      ];
+      final png = _tinyPngWithChunk('iTXt', data);
+      final parsed = CharacterCard.fromPngBytes(png);
+      expect(parsed, isNotNull);
+      expect(parsed!.name, 'Rin卡');
+      expect(parsed.description, 'iTXt');
+    });
+
+    test('unwraps character / char wrappers', () {
+      final a = CharacterCard.fromSillyTavernJson({
+        'character': {'name': '包裹', 'description': 'd'},
+      });
+      expect(a.name, '包裹');
+      final b = CharacterCard.fromSillyTavernJson({
+        'char': {'name': '变体', 'first_mes': 'hi'},
+      });
+      expect(b.name, '变体');
+      expect(b.firstMessage, 'hi');
     });
   });
 
