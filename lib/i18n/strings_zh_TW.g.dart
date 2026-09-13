@@ -1674,6 +1674,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterSpec => '規範版本';
 	@override String get storyPersona => '玩家角色';
 	@override String get storyPersonaHint => '描述使用者本人，AI 不得扮演。';
+	@override String get storyTextStyle => '文字樣式';
+	@override String get storyShadowOn => '陰影已開啟';
+	@override String get storyShadowOff => '陰影已關閉';
+	@override String get storySystemFont => '系統字體';
+	@override String get storyFontSize => '字號';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4385,6 +4390,11 @@ extension on TranslationsZhTw {
 			'characterSpec' => '規範版本',
 			'storyPersona' => '玩家角色',
 			'storyPersonaHint' => '描述使用者本人，AI 不得扮演。',
+			'storyTextStyle' => '文字樣式',
+			'storyShadowOn' => '陰影已開啟',
+			'storyShadowOff' => '陰影已關閉',
+			'storySystemFont' => '系統字體',
+			'storyFontSize' => '字號',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4751,13 +4761,13 @@ extension on TranslationsZhTw {
 			'statsWeekdayFri' => '五',
 			'statsWeekdaySat' => '六',
 			'statsWeekdaySun' => '日',
+			_ => null,
+		} ?? switch (path) {
 			'statsYearlyOverview' => '年度總覽',
 			'statsRangeOverview' => '時間範圍統計',
 			'statsWeekly' => '週統計',
 			'statsMonthly' => '月統計',
 			'statsQuarterly' => '季統計',
-			_ => null,
-		} ?? switch (path) {
 			'statsHalfYearly' => '半年統計',
 			'statsYearly' => '年統計',
 			'statsDaily' => '日統計',
@@ -5265,13 +5275,13 @@ extension on TranslationsZhTw {
 			'addToFolder' => ({required Object folder}) => '新增到 ${folder}',
 			'removeFromFolder' => ({required Object folder}) => '從 ${folder} 刪除',
 			'movedFromTo' => ({required Object from, required Object to}) => '從 ${from} 移動到 ${to}',
+			_ => null,
+		} ?? switch (path) {
 			'unknownFolder' => 'Unknown folder',
 			'fetchVideoUrlError' => ({required Object detail}) => '取得影片連結異常: ${detail}',
 			'missingUrl' => '缺少 url',
 			'success' => '成功',
 			'failedWithStatus' => ({required Object status}) => '失敗 (${status})',
-			_ => null,
-		} ?? switch (path) {
 			'checkIn' => '簽到',
 			'button' => '按鈕',
 			'requestFailedDetail' => ({required Object error}) => '請求失敗: ${error}',

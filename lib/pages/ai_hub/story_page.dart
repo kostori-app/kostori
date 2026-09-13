@@ -1640,6 +1640,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   @override
   void initState() {
     super.initState();
+    StoryTextStyleStore.instance.ensureLoaded();
     _boot();
   }
 
@@ -2292,7 +2293,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (_needsSetup) return _buildSetup(context);
     final sessionId = _sessionId;
     return Scaffold(
-      appBar: Appbar(title: Text('${story.icon} ${story.name}')),
+      appBar: Appbar(
+        title: Text('${story.icon} ${story.name}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.text_fields_outlined),
+            tooltip: t.storyTextStyle,
+            onPressed: _showTextStyleSheet,
+          ),
+        ],
+      ),
       body: sessionId == null
           ? const Center(child: PolygonRefreshIndicator())
           : StreamBuilder<List<AiTask>>(
@@ -2899,6 +2909,84 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       segments.add(StorySegment(type: 'narration', text: text.trim()));
     }
     return segments;
+  }
+
+  /// 文字样式设置：引号高亮 / 阴影 / 字体 / 字号
+  Future<void> _showTextStyleSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => ListenableBuilder(
+        listenable: StoryTextStyleStore.instance,
+        builder: (ctx, _) {
+          final store = StoryTextStyleStore.instance;
+          final s = store.style;
+          Widget chip(String label, bool selected, VoidCallback onTap) =>
+              FilterChip(
+                label: Text(label),
+                selected: selected,
+                onSelected: (_) => onTap(),
+              );
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.storyTextStyle,
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      chip(
+                        '“”',
+                        s.highlightQuotes,
+                        () => store.update(
+                          s.copyWith(highlightQuotes: !s.highlightQuotes),
+                        ),
+                      ),
+                      chip(
+                        s.shadow ? t.storyShadowOn : t.storyShadowOff,
+                        s.shadow,
+                        () => store.update(s.copyWith(shadow: !s.shadow)),
+                      ),
+                      chip(
+                        t.storySystemFont,
+                        s.systemFont,
+                        () => store.update(
+                          s.copyWith(systemFont: !s.systemFont),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(t.storyFontSize),
+                      Expanded(
+                        child: Slider(
+                          value: s.fontScale,
+                          min: 0.8,
+                          max: 1.6,
+                          divisions: 8,
+                          label: '${(s.fontScale * 100).round()}%',
+                          onChanged: (v) =>
+                              store.update(s.copyWith(fontScale: v)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   /// 详情面板：状态 / 局势两个页签（用项目胶囊布局）

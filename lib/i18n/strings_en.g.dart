@@ -4945,6 +4945,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Describes who the user is. The AI must not roleplay this.'
 	String get storyPersonaHint => 'Describes who the user is. The AI must not roleplay this.';
 
+	/// en: 'Text style'
+	String get storyTextStyle => 'Text style';
+
+	/// en: 'Shadow on'
+	String get storyShadowOn => 'Shadow on';
+
+	/// en: 'Shadow off'
+	String get storyShadowOff => 'Shadow off';
+
+	/// en: 'System font'
+	String get storySystemFont => 'System font';
+
+	/// en: 'Font size'
+	String get storyFontSize => 'Font size';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9657,6 +9672,11 @@ extension on Translations {
 			'characterSpec' => 'Spec',
 			'storyPersona' => 'Player character',
 			'storyPersonaHint' => 'Describes who the user is. The AI must not roleplay this.',
+			'storyTextStyle' => 'Text style',
+			'storyShadowOn' => 'Shadow on',
+			'storyShadowOff' => 'Shadow off',
+			'storySystemFont' => 'System font',
+			'storyFontSize' => 'Font size',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -10023,13 +10043,13 @@ extension on Translations {
 			'statsWeekdayThu' => 'Thu',
 			'statsWeekdayFri' => 'Fri',
 			'statsWeekdaySat' => 'Sat',
+			_ => null,
+		} ?? switch (path) {
 			'statsWeekdaySun' => 'Sun',
 			'statsYearlyOverview' => 'Yearly overview',
 			'statsRangeOverview' => 'Time range stats',
 			'statsWeekly' => 'Weekly',
 			'statsMonthly' => 'Monthly',
-			_ => null,
-		} ?? switch (path) {
 			'statsQuarterly' => 'Quarterly',
 			'statsHalfYearly' => 'Half-yearly',
 			'statsYearly' => 'Yearly',
@@ -10537,13 +10557,13 @@ extension on Translations {
 			'watching' => 'Watching',
 			'addToFolder' => ({required Object folder}) => 'Add to ${folder}',
 			'removeFromFolder' => ({required Object folder}) => 'Remove from ${folder}',
+			_ => null,
+		} ?? switch (path) {
 			'movedFromTo' => ({required Object from, required Object to}) => 'Move from ${from} to ${to}',
 			'unknownFolder' => 'Unknown folder',
 			'fetchVideoUrlError' => ({required Object detail}) => 'Failed to get video link: ${detail}',
 			'missingUrl' => 'Missing url',
 			'success' => 'Success',
-			_ => null,
-		} ?? switch (path) {
 			'failedWithStatus' => ({required Object status}) => 'Failed (${status})',
 			'checkIn' => 'Check in',
 			'button' => 'Button',

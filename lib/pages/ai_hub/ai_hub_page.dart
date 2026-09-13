@@ -29,6 +29,7 @@ import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
+import 'package:kostori/foundation/ai_service/story_text_style.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -1374,48 +1375,79 @@ class _StoryText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (_blockRe.hasMatch(text)) {
-      return CustomMarkdownWidget(data: text, indentFirstLine: false);
-    }
-    final scheme = Theme.of(context).colorScheme;
-    final base = TextStyle(
-      fontSize: 14,
-      height: 1.6,
-      color: scheme.onSurface,
-    );
-    final quoteStyle = base.copyWith(
-      color: scheme.primary,
-      fontStyle: FontStyle.italic,
-    );
-    final boldStyle = base.copyWith(fontWeight: FontWeight.w700);
-    final italicStyle = base.copyWith(
-      fontStyle: FontStyle.italic,
-      color: scheme.onSurfaceVariant,
-    );
+    return ListenableBuilder(
+      listenable: StoryTextStyleStore.instance,
+      builder: (context, _) {
+        final style = StoryTextStyleStore.instance.style;
+        if (_blockRe.hasMatch(text)) {
+          return CustomMarkdownWidget(
+            data: text,
+            indentFirstLine: false,
+            textScaleFactor: style.fontScale,
+          );
+        }
+        final scheme = Theme.of(context).colorScheme;
+        final shadows = style.shadow
+            ? [
+                Shadow(
+                  color: Colors.black.withValues(
+                    alpha: context.isDarkMode ? 0.6 : 0.25,
+                  ),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null;
+        final base = TextStyle(
+          fontSize: 14 * style.fontScale,
+          height: 1.6,
+          color: scheme.onSurface,
+          fontFamily: style.systemFont ? null : 'serif',
+          shadows: shadows,
+        );
+        final quoteStyle = style.highlightQuotes
+            ? base.copyWith(
+                color: scheme.primary,
+                fontStyle: FontStyle.italic,
+              )
+            : base.copyWith(fontStyle: FontStyle.italic);
+        final boldStyle = base.copyWith(fontWeight: FontWeight.w700);
+        final italicStyle = base.copyWith(
+          fontStyle: FontStyle.italic,
+          color: scheme.onSurfaceVariant,
+        );
 
-    final pattern = RegExp(
-      r'(\*\*[^*]+\*\*)|(\*[^*]+\*)|([“"「『][^”"」』]*[”"」』])',
+        final pattern = RegExp(
+          r'(\*\*[^*]+\*\*)|(\*[^*]+\*)|([“"「『][^”"」』]*[”"」』])',
+        );
+        final spans = <TextSpan>[];
+        var index = 0;
+        for (final m in pattern.allMatches(text)) {
+          if (m.start > index) {
+            spans.add(
+              TextSpan(text: text.substring(index, m.start), style: base),
+            );
+          }
+          final t = m.group(0)!;
+          if (t.startsWith('**')) {
+            spans.add(
+              TextSpan(text: t.substring(2, t.length - 2), style: boldStyle),
+            );
+          } else if (t.startsWith('*')) {
+            spans.add(
+              TextSpan(text: t.substring(1, t.length - 1), style: italicStyle),
+            );
+          } else {
+            spans.add(TextSpan(text: t, style: quoteStyle));
+          }
+          index = m.end;
+        }
+        if (index < text.length) {
+          spans.add(TextSpan(text: text.substring(index), style: base));
+        }
+        return SelectableText.rich(TextSpan(children: spans));
+      },
     );
-    final spans = <TextSpan>[];
-    var index = 0;
-    for (final m in pattern.allMatches(text)) {
-      if (m.start > index) {
-        spans.add(TextSpan(text: text.substring(index, m.start), style: base));
-      }
-      final t = m.group(0)!;
-      if (t.startsWith('**')) {
-        spans.add(TextSpan(text: t.substring(2, t.length - 2), style: boldStyle));
-      } else if (t.startsWith('*')) {
-        spans.add(TextSpan(text: t.substring(1, t.length - 1), style: italicStyle));
-      } else {
-        spans.add(TextSpan(text: t, style: quoteStyle));
-      }
-      index = m.end;
-    }
-    if (index < text.length) {
-      spans.add(TextSpan(text: text.substring(index), style: base));
-    }
-    return SelectableText.rich(TextSpan(children: spans));
   }
 }
 

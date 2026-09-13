@@ -1684,6 +1684,11 @@ characterExportV2: Export as V2
 characterSpec: Spec
 storyPersona: Player character
 storyPersonaHint: Describes who the user is. The AI must not roleplay this.
+storyTextStyle: Text style
+storyShadowOn: Shadow on
+storyShadowOff: Shadow off
+storySystemFont: System font
+storyFontSize: Font size
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

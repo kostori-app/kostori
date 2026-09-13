@@ -1673,6 +1673,11 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterSpec => '规范版本';
 	@override String get storyPersona => '玩家角色';
 	@override String get storyPersonaHint => '描述用户本人，AI 不得扮演。';
+	@override String get storyTextStyle => '文字样式';
+	@override String get storyShadowOn => '阴影已开启';
+	@override String get storyShadowOff => '阴影已关闭';
+	@override String get storySystemFont => '系统字体';
+	@override String get storyFontSize => '字号';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4385,6 +4390,11 @@ extension on TranslationsZhCn {
 			'characterSpec' => '规范版本',
 			'storyPersona' => '玩家角色',
 			'storyPersonaHint' => '描述用户本人，AI 不得扮演。',
+			'storyTextStyle' => '文字样式',
+			'storyShadowOn' => '阴影已开启',
+			'storyShadowOff' => '阴影已关闭',
+			'storySystemFont' => '系统字体',
+			'storyFontSize' => '字号',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4752,13 +4762,13 @@ extension on TranslationsZhCn {
 			'statsWeekdayThu' => '四',
 			'statsWeekdayFri' => '五',
 			'statsWeekdaySat' => '六',
+			_ => null,
+		} ?? switch (path) {
 			'statsWeekdaySun' => '日',
 			'statsYearlyOverview' => '年度总览',
 			'statsRangeOverview' => '时间范围统计',
 			'statsWeekly' => '周统计',
 			'statsMonthly' => '月统计',
-			_ => null,
-		} ?? switch (path) {
 			'statsQuarterly' => '季统计',
 			'statsHalfYearly' => '半年统计',
 			'statsYearly' => '年统计',
@@ -5266,13 +5276,13 @@ extension on TranslationsZhCn {
 			'watching' => '在看',
 			'addToFolder' => ({required Object folder}) => '添加到 ${folder}',
 			'removeFromFolder' => ({required Object folder}) => '从 ${folder} 删除',
+			_ => null,
+		} ?? switch (path) {
 			'movedFromTo' => ({required Object from, required Object to}) => '从 ${from} 移动到 ${to}',
 			'unknownFolder' => 'Unknown folder',
 			'fetchVideoUrlError' => ({required Object detail}) => '获取视频链接异常: ${detail}',
 			'missingUrl' => '缺少 url',
 			'success' => '成功',
-			_ => null,
-		} ?? switch (path) {
 			'failedWithStatus' => ({required Object status}) => '失败 (${status})',
 			'checkIn' => '签到',
 			'button' => '按钮',
