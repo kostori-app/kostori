@@ -378,6 +378,26 @@ class _StoryCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (story.version.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: scheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'v${story.version}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     if (story.description.isNotEmpty) ...[

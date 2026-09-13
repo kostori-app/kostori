@@ -1860,6 +1860,7 @@ newPersona: New Persona
 notConfigured: Not configured
 enabled: Enabled
 required: Required
+characterRequiredFields: Please fill in the required fields
 invalidNumber: Invalid number
 linkFormatErrorCannotParseAnimeInfo: Link format error, cannot parse anime info
 sourceNotFoundPleaseConfirmSourceInstalled: Source not found, please confirm source is installed

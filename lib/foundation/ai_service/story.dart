@@ -1398,6 +1398,9 @@ class Story {
   /// 稳定标识（作者定义，如 `## 标识`）：导入时用它判断是否同一个故事，
   /// 避免不同故事重名被误判为"更新"。
   final String key;
+
+  /// 故事版本（作者定义，如 `## 版本`），仅作展示/标识用
+  final String version;
   final String name;
   final String icon;
   final String description;
@@ -1491,6 +1494,7 @@ class Story {
   const Story({
     required this.id,
     this.key = '',
+    this.version = '',
     required this.name,
     this.icon = '📖',
     this.description = '',
@@ -1527,6 +1531,7 @@ class Story {
   Story copyWith({
     String? id,
     String? key,
+    String? version,
     String? name,
     String? icon,
     String? description,
@@ -1560,6 +1565,7 @@ class Story {
   }) => Story(
     id: id ?? this.id,
     key: key ?? this.key,
+    version: version ?? this.version,
     name: name ?? this.name,
     icon: icon ?? this.icon,
     description: description ?? this.description,
@@ -1596,6 +1602,7 @@ class Story {
   factory Story.fromJson(Map<String, dynamic> json) => Story(
     id: (json['id'] as String?) ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
     key: (json['key'] as String?) ?? '',
+    version: (json['version'] as String?) ?? '',
     name: (json['name'] as String?) ?? '',
     icon: (json['icon'] as String?) ?? '📖',
     description: (json['description'] as String?) ?? '',
@@ -1693,6 +1700,7 @@ class Story {
   Map<String, dynamic> toJson() => {
     'id': id,
     'key': key,
+    'version': version,
     'name': name,
     'icon': icon,
     'description': description,
@@ -2204,6 +2212,7 @@ class StoryStore extends ChangeNotifier {
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       key: _section(text, '标识')?.trim() ?? '',
+      version: _section(text, '版本')?.trim() ?? '',
       name: name,
       description: description,
       opening: _section(text, '开局') ?? '',
@@ -2247,6 +2256,11 @@ class StoryStore extends ChangeNotifier {
     if (s.key.isNotEmpty) {
       buf.writeln('## 标识');
       buf.writeln(s.key.trim());
+      buf.writeln();
+    }
+    if (s.version.isNotEmpty) {
+      buf.writeln('## 版本');
+      buf.writeln(s.version.trim());
       buf.writeln();
     }
     void section(String title, String content) {

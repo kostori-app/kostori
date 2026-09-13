@@ -11,6 +11,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
 
@@ -301,8 +302,36 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
       .where((e) => e.isNotEmpty)
       .toList();
 
+  /// 必填字段：页签下标 + 标签 + 控制器
+  List<(int, String, TextEditingController)> _requiredFields() => [
+    (0, t.storyCharacterName, _nameCtrl),
+    (1, t.characterDescription, _descCtrl),
+    (1, t.characterPersonality, _personalityCtrl),
+    (1, t.characterScenario, _scenarioCtrl),
+    (2, t.characterFirstMessage, _firstCtrl),
+    (2, t.characterExampleDialogue, _exampleCtrl),
+    (3, t.characterSystemPrompt, _systemCtrl),
+    (3, t.characterPostHistory, _postCtrl),
+  ];
+
   void _save() {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // 必填项可能在别的页签：切过去并提示缺了哪些，避免"点了没反应"
+      final missing = [
+        for (final f in _requiredFields())
+          if (f.$3.text.trim().isEmpty) f,
+      ];
+      if (missing.isNotEmpty) {
+        setState(() => _tab = missing.first.$1);
+        App.rootContext.showMessage(
+          message:
+              '${t.characterRequiredFields}: '
+              '${missing.map((e) => e.$2).join('、')}',
+          level: LogLevel.warning,
+        );
+      }
+      return;
+    }
     final card = CharacterCard(
       id: widget.card?.id ?? 'card_${DateTime.now().microsecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),

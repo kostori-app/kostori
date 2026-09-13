@@ -1862,6 +1862,7 @@ newPersona: 新建角色配置
 notConfigured: 未配置
 enabled: 已啟用
 required: 必填
+characterRequiredFields: 請填寫必填內容
 invalidNumber: 無效數字
 linkFormatErrorCannotParseAnimeInfo: Link format error, cannot parse anime info
 sourceNotFoundPleaseConfirmSourceInstalled: Source not found, please confirm source is installed

@@ -1852,6 +1852,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get notConfigured => '未配置';
 	@override String get enabled => '已啟用';
 	@override String get required => '必填';
+	@override String get characterRequiredFields => '請填寫必填內容';
 	@override String get invalidNumber => '無效數字';
 	@override String get linkFormatErrorCannotParseAnimeInfo => 'Link format error, cannot parse anime info';
 	@override String get sourceNotFoundPleaseConfirmSourceInstalled => 'Source not found, please confirm source is installed';
@@ -4692,6 +4693,7 @@ extension on TranslationsZhTw {
 			'notConfigured' => '未配置',
 			'enabled' => '已啟用',
 			'required' => '必填',
+			'characterRequiredFields' => '請填寫必填內容',
 			'invalidNumber' => '無效數字',
 			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
 			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
@@ -4884,9 +4886,9 @@ extension on TranslationsZhTw {
 			'lanManualResolution' => '手動解決',
 			'lanConflictField' => '衝突欄位',
 			'lanErrorOccurred' => '發生錯誤',
-			'lanCommandExecuted' => '命令已執行',
 			_ => null,
 		} ?? switch (path) {
+			'lanCommandExecuted' => '命令已執行',
 			'lanCommandFailed' => '命令執行失敗',
 			'lanNoPermission' => '無權限',
 			'lanOpenAnimeDetail' => '打開動漫詳情',
@@ -5398,9 +5400,9 @@ extension on TranslationsZhTw {
 			'builderPlayDirect' => '直接回傳劇集連結',
 			'builderPlayDirectDesc' => '劇集連結本身就是播放位址（無需二次請求）',
 			'builderPlayRegexDesc' => '請求播放頁並透過正則提取播放位址',
-			'builderExplore' => '探索',
 			_ => null,
 		} ?? switch (path) {
+			'builderExplore' => '探索',
 			'builderExploreTitle' => '頁面標題',
 			'builderExploreUrl' => '列表 URL 模板（{page}）',
 			'builderCategory' => '分類',

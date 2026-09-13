@@ -471,11 +471,17 @@ void main() {
       expect(back.settingIds, ['set_1', 'set_2']);
     });
 
-    test('stable key round trips through markdown', () {
-      const story = Story(id: 's', key: 'wasteland-survival', name: 'S');
+    test('stable key and version round trip through markdown', () {
+      const story = Story(
+        id: 's',
+        key: 'wasteland-survival',
+        version: '1.0.0',
+        name: 'S',
+      );
       final md = StoryStore.storyToMarkdown(story);
       final back = StoryStore.storyFromMarkdown(md, id: 's');
       expect(back.key, 'wasteland-survival');
+      expect(back.version, '1.0.0');
     });
 
     test('edit overlay survives re-importing the base', () {

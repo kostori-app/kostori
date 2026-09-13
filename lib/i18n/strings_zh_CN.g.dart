@@ -1851,6 +1851,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get notConfigured => '未配置';
 	@override String get enabled => '已启用';
 	@override String get required => '必填';
+	@override String get characterRequiredFields => '请填写必填内容';
 	@override String get invalidNumber => '无效数字';
 	@override String get noCategoryPages => '无分类页面';
 	@override String get linkFormatErrorCannotParseAnimeInfo => '链接格式错误，无法解析番剧信息';
@@ -4692,6 +4693,7 @@ extension on TranslationsZhCn {
 			'notConfigured' => '未配置',
 			'enabled' => '已启用',
 			'required' => '必填',
+			'characterRequiredFields' => '请填写必填内容',
 			'invalidNumber' => '无效数字',
 			'noCategoryPages' => '无分类页面',
 			'linkFormatErrorCannotParseAnimeInfo' => '链接格式错误，无法解析番剧信息',
@@ -4885,9 +4887,9 @@ extension on TranslationsZhCn {
 			'lanKeepBoth' => '保留两者',
 			'lanManualResolution' => '手动解决',
 			'lanConflictField' => '冲突字段',
-			'lanErrorOccurred' => '发生错误',
 			_ => null,
 		} ?? switch (path) {
+			'lanErrorOccurred' => '发生错误',
 			'lanCommandExecuted' => '命令已执行',
 			'lanCommandFailed' => '命令执行失败',
 			'lanNoPermission' => '无权限',
@@ -5399,9 +5401,9 @@ extension on TranslationsZhCn {
 			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => '直接返回剧集链接',
 			'builderPlayDirectDesc' => '剧集链接本身就是播放地址（无需二次请求）',
-			'builderPlayRegexDesc' => '请求播放页并通过正则提取播放地址',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlayRegexDesc' => '请求播放页并通过正则提取播放地址',
 			'builderExplore' => '探索',
 			'builderExploreTitle' => '页面标题',
 			'builderExploreUrl' => '列表 URL 模板（{page}）',

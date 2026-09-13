@@ -5473,6 +5473,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Required'
 	String get required => 'Required';
 
+	/// en: 'Please fill in the required fields'
+	String get characterRequiredFields => 'Please fill in the required fields';
+
 	/// en: 'Invalid number'
 	String get invalidNumber => 'Invalid number';
 
@@ -10220,6 +10223,7 @@ extension on Translations {
 			'notConfigured' => 'Not configured',
 			'enabled' => 'Enabled',
 			'required' => 'Required',
+			'characterRequiredFields' => 'Please fill in the required fields',
 			'invalidNumber' => 'Invalid number',
 			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
 			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
@@ -10414,9 +10418,9 @@ extension on Translations {
 			'lanLocalWins' => 'Keep Local',
 			'lanRemoteWins' => 'Keep Remote',
 			'lanKeepBoth' => 'Keep Both',
-			'lanManualResolution' => 'Manual Resolution',
 			_ => null,
 		} ?? switch (path) {
+			'lanManualResolution' => 'Manual Resolution',
 			'lanConflictField' => 'Conflicting field',
 			'lanErrorOccurred' => 'Error occurred',
 			'lanCommandExecuted' => 'Command executed',
@@ -10928,9 +10932,9 @@ extension on Translations {
 			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => 'Directly return episode link',
 			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
-			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			'builderExplore' => 'Explore',
 			'builderExploreTitle' => 'Page title',
 			'builderExploreUrl' => 'List URL template ({page})',

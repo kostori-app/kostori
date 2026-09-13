@@ -1857,6 +1857,7 @@ newPersona: 新建角色配置
 notConfigured: 未配置
 enabled: 已启用
 required: 必填
+characterRequiredFields: 请填写必填内容
 invalidNumber: 无效数字
 noCategoryPages: 无分类页面
 linkFormatErrorCannotParseAnimeInfo: 链接格式错误，无法解析番剧信息
