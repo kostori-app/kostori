@@ -619,7 +619,7 @@ class _ToolEntryGrid extends ConsumerWidget {
                 children: [
                   _iconBlock(
                     context,
-                    Icons.extension,
+                    Icons.auto_awesome,
                     () => context.to(() => const AiHubPage()),
                     t.aiLabel,
                   ),

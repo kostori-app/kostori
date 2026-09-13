@@ -229,13 +229,21 @@ class _AiHubPageState extends State<AiHubPage> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // ── AI 聊天（一级入口，与插件模块区分）──
+          // ── 一级入口：AI 聊天 / AI 扮演 ──
           _HubModuleCard(
             icon: Icons.chat_bubble_outline,
             title: t.aiChat,
             subtitle: t.aiChatDescription,
             color: const Color(0xFF4CAF50),
             onTap: () => context.to(() => const AiChatPage()),
+          ),
+          const SizedBox(height: 8),
+          _HubModuleCard(
+            icon: Icons.theater_comedy_outlined,
+            title: t.rolePlay,
+            subtitle: t.rolePlayDescription,
+            color: const Color(0xFF7E57C2),
+            onTap: () => context.to(() => const StoryPage()),
           ),
           const SizedBox(height: 16),
           // ── 插件模块 ──

@@ -161,14 +161,6 @@ class PluginStore extends ChangeNotifier {
       isBuiltin: true,
     ),
     PluginModule(
-      id: 'role_play',
-      name: t.rolePlay,
-      icon: '🎭',
-      description: t.rolePlayDescription,
-      chatMode: true,
-      isBuiltin: true,
-    ),
-    PluginModule(
       id: 'season_review',
       name: t.seasonReview,
       icon: '🍂',
@@ -194,8 +186,11 @@ class PluginStore extends ChangeNotifier {
         _plugins = [];
       }
     }
+    // AI 扮演已提升为一级模块，移除历史遗留的插件条目
+    final beforeCleanup = _plugins.length;
+    _plugins.removeWhere((p) => p.id == 'role_play');
     // 确保内置插件存在（名称/描述跟随当前语言）
-    var changed = false;
+    var changed = _plugins.length != beforeCleanup;
     for (final b in _builtinPlugins()) {
       final idx = _plugins.indexWhere((p) => p.id == b.id);
       if (idx < 0) {
