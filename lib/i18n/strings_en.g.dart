@@ -4852,6 +4852,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Generation params'
 	String get storyGenParams => 'Generation params';
 
+	/// en: 'Done'
+	String get storyQuestDone => 'Done';
+
+	/// en: 'Failed'
+	String get storyQuestFailed => 'Failed';
+
 	/// en: 'Top P'
 	String get topP => 'Top P';
 
@@ -9962,6 +9968,8 @@ extension on Translations {
 			'storyJobBonus' => 'Bonus',
 			'storyBaseMaxLevel' => 'Max level',
 			'storyGenParams' => 'Generation params',
+			'storyQuestDone' => 'Done',
+			'storyQuestFailed' => 'Failed',
 			'topP' => 'Top P',
 			'maxTokens' => 'Max tokens',
 			'storyOwned' => 'Owned',
@@ -10362,10 +10370,10 @@ extension on Translations {
 			'ffmpegNotFoundDesktop' => 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.',
 			'stillOpenAnyway' => 'Still Open',
 			'preparing' => 'Preparing…',
-			'downloadingPreviewClip' => 'Downloading preview clip…',
-			'loadingPlayer' => 'Loading player…',
 			_ => null,
 		} ?? switch (path) {
+			'downloadingPreviewClip' => 'Downloading preview clip…',
+			'loadingPlayer' => 'Loading player…',
 			'cancelExport' => 'Cancel Export?',
 			'exportInProgress' => 'Export in progress, closing will interrupt export.',
 			'confirmClose' => 'Confirm Close',
@@ -10876,10 +10884,10 @@ extension on Translations {
 			'builderGenerateFailed' => 'Generate failed',
 			'collapseSidebar' => 'Collapse sidebar',
 			'expandSidebar' => 'Expand sidebar',
-			'clearFinishedDownload' => 'Clear finished downloads',
-			'downloadEmpty' => 'No download tasks',
 			_ => null,
 		} ?? switch (path) {
+			'clearFinishedDownload' => 'Clear finished downloads',
+			'downloadEmpty' => 'No download tasks',
 			'downloadQueued' => 'Queued',
 			'downloadCompleted' => 'Completed',
 			'pauseDownload' => 'Pause download',

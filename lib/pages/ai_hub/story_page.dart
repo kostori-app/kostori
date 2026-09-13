@@ -4698,29 +4698,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
       return;
     }
-    // 无结束标记
-    final npcBuf = <String>[];
-    void flush() {
-      if (npcBuf.isEmpty) return;
-      segments.add(
-        StorySegment(type: 'npc', name: name, text: npcBuf.join('\n\n')),
-      );
-      npcBuf.clear();
-    }
-
+    // 无结束标记：从第一个"不以引号开头"的段落起，之后一律算旁白；
+    // 之前的对白段落仍按引号切分，把中间的旁白动作也拆出来
     var ended = false;
     for (final p in body.split(RegExp(r'\n\s*\n'))) {
       final t = p.trim();
       if (t.isEmpty) continue;
       if (!ended && !_looksLikeCallout(t) && _startsWithQuote(t)) {
-        npcBuf.add(t);
+        _splitByQuotes(segments, name, t);
       } else {
         ended = true;
-        flush();
         segments.add(StorySegment(type: 'narration', text: t));
       }
     }
-    flush();
   }
 
   static final _quoteStartRe = RegExp(r'^[“"「『]');
@@ -5648,7 +5638,46 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              title: Text(q.title),
+              leading: switch (q.status) {
+                'done' => const Icon(Icons.check_circle_outline, size: 20),
+                'failed' => Icon(
+                  Icons.cancel_outlined,
+                  size: 20,
+                  color: scheme.error,
+                ),
+                _ => null,
+              },
+              title: Row(
+                children: [
+                  Flexible(child: Text(q.title)),
+                  if (q.chain.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      q.totalStages > 1
+                          ? '${q.chain} ${q.stage}/${q.totalStages}'
+                          : q.chain,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  if (q.status == 'done' || q.status == 'failed') ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      q.status == 'done'
+                          ? t.storyQuestDone
+                          : t.storyQuestFailed,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: q.status == 'done'
+                            ? scheme.primary
+                            : scheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -5658,8 +5687,11 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: (q.progress / 100).clamp(0.0, 1.0),
+                      value: q.status == 'done'
+                          ? 1.0
+                          : (q.progress / 100).clamp(0.0, 1.0),
                       minHeight: 6,
+                      color: q.status == 'failed' ? scheme.error : null,
                     ),
                   ),
                 ],

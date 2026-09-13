@@ -1648,6 +1648,8 @@ storyJobLevel: 等级
 storyJobBonus: 加成
 storyBaseMaxLevel: 最高等级
 storyGenParams: 生成参数
+storyQuestDone: 已完成
+storyQuestFailed: 已失败
 topP: Top P
 maxTokens: 最大输出
 storyOwned: 已拥有

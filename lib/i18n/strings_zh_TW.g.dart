@@ -1643,6 +1643,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyJobBonus => '加成';
 	@override String get storyBaseMaxLevel => '最高等級';
 	@override String get storyGenParams => '生成參數';
+	@override String get storyQuestDone => '已完成';
+	@override String get storyQuestFailed => '已失敗';
 	@override String get topP => 'Top P';
 	@override String get maxTokens => '最大輸出';
 	@override String get storyOwned => '已擁有';
@@ -4466,6 +4468,8 @@ extension on TranslationsZhTw {
 			'storyJobBonus' => '加成',
 			'storyBaseMaxLevel' => '最高等級',
 			'storyGenParams' => '生成參數',
+			'storyQuestDone' => '已完成',
+			'storyQuestFailed' => '已失敗',
 			'topP' => 'Top P',
 			'maxTokens' => '最大輸出',
 			'storyOwned' => '已擁有',
@@ -4866,10 +4870,10 @@ extension on TranslationsZhTw {
 			'downloadingPreviewClip' => '正在下載預覽片段…',
 			'loadingPlayer' => '載入播放器…',
 			'cancelExport' => '取消導出?',
-			'exportInProgress' => '導出正在進行中，關閉將中斷導出。',
-			'confirmClose' => '確認關閉',
 			_ => null,
 		} ?? switch (path) {
+			'exportInProgress' => '導出正在進行中，關閉將中斷導出。',
+			'confirmClose' => '確認關閉',
 			'stopPreview' => '停止預覽',
 			'loadingPreview' => '正在載入預覽…',
 			'previewLoadFailed' => '預覽載入失敗',
@@ -5380,10 +5384,10 @@ extension on TranslationsZhTw {
 			'collapseSidebar' => '收起側邊欄',
 			'expandSidebar' => '展開側邊欄',
 			'clearFinishedDownload' => '清空已完成下載',
-			'downloadEmpty' => '暫無下載任務',
-			'downloadQueued' => '等待中',
 			_ => null,
 		} ?? switch (path) {
+			'downloadEmpty' => '暫無下載任務',
+			'downloadQueued' => '等待中',
 			'downloadCompleted' => '已完成',
 			'pauseDownload' => '暫停下載',
 			'resumeDownload' => '繼續下載',

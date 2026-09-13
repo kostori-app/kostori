@@ -1653,6 +1653,8 @@ storyJobLevel: Level
 storyJobBonus: Bonus
 storyBaseMaxLevel: Max level
 storyGenParams: Generation params
+storyQuestDone: Done
+storyQuestFailed: Failed
 topP: Top P
 maxTokens: Max tokens
 storyOwned: Owned

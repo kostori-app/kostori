@@ -1642,6 +1642,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyJobBonus => '加成';
 	@override String get storyBaseMaxLevel => '最高等级';
 	@override String get storyGenParams => '生成参数';
+	@override String get storyQuestDone => '已完成';
+	@override String get storyQuestFailed => '已失败';
 	@override String get topP => 'Top P';
 	@override String get maxTokens => '最大输出';
 	@override String get storyOwned => '已拥有';
@@ -4466,6 +4468,8 @@ extension on TranslationsZhCn {
 			'storyJobBonus' => '加成',
 			'storyBaseMaxLevel' => '最高等级',
 			'storyGenParams' => '生成参数',
+			'storyQuestDone' => '已完成',
+			'storyQuestFailed' => '已失败',
 			'topP' => 'Top P',
 			'maxTokens' => '最大输出',
 			'storyOwned' => '已拥有',
@@ -4867,10 +4871,10 @@ extension on TranslationsZhCn {
 			'downloadingPreviewClip' => '正在下载预览片段…',
 			'loadingPlayer' => '加载播放器…',
 			'cancelExport' => '取消导出?',
-			'exportInProgress' => '导出正在进行中，关闭将中断导出。',
-			'confirmClose' => '确认关闭',
 			_ => null,
 		} ?? switch (path) {
+			'exportInProgress' => '导出正在进行中，关闭将中断导出。',
+			'confirmClose' => '确认关闭',
 			'stopPreview' => '停止预览',
 			'loadingPreview' => '正在加载预览…',
 			'previewLoadFailed' => '预览加载失败',
@@ -5381,10 +5385,10 @@ extension on TranslationsZhCn {
 			'builderGenerateFailed' => '生成失败',
 			'collapseSidebar' => '收起侧边栏',
 			'expandSidebar' => '展开侧边栏',
-			'clearFinishedDownload' => '清空已完成下载',
-			'downloadEmpty' => '暂无下载任务',
 			_ => null,
 		} ?? switch (path) {
+			'clearFinishedDownload' => '清空已完成下载',
+			'downloadEmpty' => '暂无下载任务',
 			'downloadQueued' => '等待中',
 			'downloadCompleted' => '已完成',
 			'pauseDownload' => '暂停下载',
