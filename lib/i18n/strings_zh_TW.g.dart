@@ -1622,6 +1622,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleteLocal => '刪除本地';
 	@override String get deleteRemote => '刪除雲端';
 	@override String get deleteBoth => '本地與雲端都刪除';
+	@override String get storyLoreConstant => '常駐';
+	@override String get storyLoreKeys => '觸發詞';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4422,6 +4424,8 @@ extension on TranslationsZhTw {
 			'deleteLocal' => '刪除本地',
 			'deleteRemote' => '刪除雲端',
 			'deleteBoth' => '本地與雲端都刪除',
+			'storyLoreConstant' => '常駐',
+			'storyLoreKeys' => '觸發詞',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4843,10 +4847,10 @@ extension on TranslationsZhTw {
 			'hideCropBox' => '隱藏裁剪框',
 			'showCropBox' => '顯示裁剪框（可拖曳）',
 			'dragToSelectExportArea' => '開啟後可透過拖曳選擇導出區域',
-			'withAudio' => '含音訊',
-			'noAudio' => '無音訊',
 			_ => null,
 		} ?? switch (path) {
+			'withAudio' => '含音訊',
+			'noAudio' => '無音訊',
 			'ditherOn' => '抖動開',
 			'ditherOff' => '抖動關',
 			'gifFormat' => 'GIF',
@@ -5357,10 +5361,10 @@ extension on TranslationsZhTw {
 			'textRuleFind' => '尋找（正規表達式）',
 			'textRuleReplace' => '取代（支援分組引用）',
 			'textRuleCaseSensitive' => '區分大小寫',
-			'textRuleStepAdd' => '新增步驟',
-			'textRuleStepN' => ({required Object n}) => '步驟 ${n}',
 			_ => null,
 		} ?? switch (path) {
+			'textRuleStepAdd' => '新增步驟',
+			'textRuleStepN' => ({required Object n}) => '步驟 ${n}',
 			'textRuleNone' => '尚無規則',
 			'textRuleSelectHint' => '選擇套用至此來源的規則',
 			'textRuleApply' => '套用規則',

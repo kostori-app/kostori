@@ -4789,6 +4789,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Delete local and remote'
 	String get deleteBoth => 'Delete local and remote';
 
+	/// en: 'Constant'
+	String get storyLoreConstant => 'Constant';
+
+	/// en: 'Keys'
+	String get storyLoreKeys => 'Keys';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9872,6 +9878,8 @@ extension on Translations {
 			'deleteLocal' => 'Delete local',
 			'deleteRemote' => 'Delete remote',
 			'deleteBoth' => 'Delete local and remote',
+			'storyLoreConstant' => 'Constant',
+			'storyLoreKeys' => 'Keys',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10293,10 +10301,10 @@ extension on Translations {
 			'fixedBitrateOptional' => 'Fixed bitrate (optional, overrides CRF)',
 			'fixedBitrate' => 'Fixed bitrate',
 			'paletteColors' => 'Palette colors',
-			'paletteColorsHint' => 'Fewer colors = smaller size',
-			'enableDither' => 'Enable Dither',
 			_ => null,
 		} ?? switch (path) {
+			'paletteColorsHint' => 'Fewer colors = smaller size',
+			'enableDither' => 'Enable Dither',
 			'ditherHint' => 'Better quality, slightly larger size',
 			'webpQuality' => 'WebP Quality',
 			'aspectRatioPresets' => 'Aspect Ratio Presets',
@@ -10807,10 +10815,10 @@ extension on Translations {
 			'textRuleName' => 'Rule name',
 			'textRuleFind' => 'Find (regex)',
 			'textRuleReplace' => 'Replace (group refs)',
-			'textRuleCaseSensitive' => 'Case sensitive',
-			'textRuleStepAdd' => 'Add step',
 			_ => null,
 		} ?? switch (path) {
+			'textRuleCaseSensitive' => 'Case sensitive',
+			'textRuleStepAdd' => 'Add step',
 			'textRuleStepN' => ({required Object n}) => 'Step ${n}',
 			'textRuleNone' => 'No rules',
 			'textRuleSelectHint' => 'Select rules to apply to this source',

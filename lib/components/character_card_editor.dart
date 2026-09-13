@@ -450,6 +450,77 @@ class _CharacterCardViewState extends State<CharacterCardView>
     );
   }
 
+  /// 世界书单条：名称 / 触发词 / 常驻 / 内容
+  Widget _loreEntry(BuildContext context, CharacterLoreEntry e) {
+    final scheme = Theme.of(context).colorScheme;
+    final title = e.name.trim().isEmpty
+        ? '${t.storyCodex} ${e.index + 1}'
+        : e.name.trim();
+    final marks = <String>[
+      if (e.constant) t.storyLoreConstant,
+      if (!e.enabled) t.disabled,
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                e.constant
+                    ? Icons.push_pin_outlined
+                    : Icons.menu_book_outlined,
+                size: 15,
+                color: scheme.primary,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (marks.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: Text(
+                    marks.join(' · '),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (e.keys.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, left: 21),
+              child: Text(
+                '${t.storyLoreKeys}: ${e.keys.join('、')}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          if (e.content.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 21),
+              child: SelectableText(
+                e.content.trim(),
+                style: const TextStyle(fontSize: 13, height: 1.5),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -551,14 +622,20 @@ class _CharacterCardViewState extends State<CharacterCardView>
       _block(context, t.characterPostHistory, card.postHistoryInstructions),
       _block(context, t.characterCreatorNotes, card.creatorNotes),
       _block(context, t.characterSource, card.source.join('\n')),
-      if (book != null)
+      if (book != null) ...[
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: Text(
             '${t.worldBook} · ${book.entries.length}',
-            style: TextStyle(fontSize: 12, color: scheme.primary),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.primary,
+            ),
           ),
         ),
+        for (final e in book.entries) _loreEntry(context, e),
+      ],
     ];
 
     final tabs = <(String, List<Widget>)>[

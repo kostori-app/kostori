@@ -1632,6 +1632,8 @@ storyAllCharactersAdded: All character cards are already added
 deleteLocal: Delete local
 deleteRemote: Delete remote
 deleteBoth: Delete local and remote
+storyLoreConstant: Constant
+storyLoreKeys: Keys
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned

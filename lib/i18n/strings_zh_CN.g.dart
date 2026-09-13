@@ -1621,6 +1621,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleteLocal => '删除本地';
 	@override String get deleteRemote => '删除云端';
 	@override String get deleteBoth => '本地与云端都删除';
+	@override String get storyLoreConstant => '常驻';
+	@override String get storyLoreKeys => '触发词';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4422,6 +4424,8 @@ extension on TranslationsZhCn {
 			'deleteLocal' => '删除本地',
 			'deleteRemote' => '删除云端',
 			'deleteBoth' => '本地与云端都删除',
+			'storyLoreConstant' => '常驻',
+			'storyLoreKeys' => '触发词',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4844,10 +4848,10 @@ extension on TranslationsZhCn {
 			'ditherOff' => '抖动关',
 			'gifFormat' => 'GIF',
 			'apngFormat' => 'APNG',
-			'webpFormat' => 'WebP',
-			'browserCompatible' => '浏览器兼容好',
 			_ => null,
 		} ?? switch (path) {
+			'webpFormat' => 'WebP',
+			'browserCompatible' => '浏览器兼容好',
 			'smallestSize' => '体积最小',
 			'videoFormat' => '视频格式',
 			'encoding' => '编码中…',
@@ -5358,10 +5362,10 @@ extension on TranslationsZhCn {
 			'textRuleName' => '规则名称',
 			'textRuleFind' => '查找（正则）',
 			'textRuleReplace' => '替换（支持分组引用）',
-			'textRuleCaseSensitive' => '区分大小写',
-			'textRuleStepAdd' => '添加步骤',
 			_ => null,
 		} ?? switch (path) {
+			'textRuleCaseSensitive' => '区分大小写',
+			'textRuleStepAdd' => '添加步骤',
 			'textRuleStepN' => ({required Object n}) => '步骤 ${n}',
 			'textRuleNone' => '暂无规则',
 			'textRuleSelectHint' => '选择应用到该源的规则',
