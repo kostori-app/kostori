@@ -4,11 +4,13 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
 
@@ -384,10 +386,43 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
 }
 
 /// 角色卡查看（只读展示）
-class CharacterCardView extends StatelessWidget {
+class CharacterCardView extends StatefulWidget {
   const CharacterCardView({super.key, required this.card});
 
   final CharacterCard card;
+
+  @override
+  State<CharacterCardView> createState() => _CharacterCardViewState();
+}
+
+class _CharacterCardViewState extends State<CharacterCardView>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
+
+  CharacterCard get card => widget.card;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.removeListener(_onTabChanged);
+    _tabCtrl.dispose();
+    super.dispose();
+  }
+
+  void _copyName() {
+    Clipboard.setData(ClipboardData(text: card.name));
+    App.rootContext.showMessage(message: t.copied);
+  }
 
   Widget _block(BuildContext context, String title, String content) {
     if (content.trim().isEmpty) return const SizedBox.shrink();
@@ -429,11 +464,31 @@ class CharacterCardView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  card.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: _copyName,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            card.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.copy_rounded,
+                          size: 14,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (card.nickname.trim().isNotEmpty)
@@ -513,27 +568,36 @@ class CharacterCardView extends StatelessWidget {
       (t.storySystemPrompt, prompt),
     ];
 
-    return DefaultTabController(
-      length: tabs.length,
-      child: Column(
-        children: [
-          TabBar(
-            isScrollable: true,
-            tabs: [for (final tab in tabs) Tab(text: tab.$1)],
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: CapsuleOptions(
+            alignment: WrapAlignment.center,
+            progress: _tabCtrl.animation,
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                CapsuleOption(
+                  text: tabs[i].$1,
+                  isSelected: _tabCtrl.index == i,
+                  onTap: () => _tabCtrl.animateTo(i),
+                ),
+            ],
           ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                for (final tab in tabs)
-                  ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                    children: tab.$2,
-                  ),
-              ],
-            ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabCtrl,
+            children: [
+              for (final tab in tabs)
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  children: tab.$2,
+                ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
