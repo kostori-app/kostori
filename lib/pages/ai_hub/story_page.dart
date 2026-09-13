@@ -12,6 +12,8 @@ class StoryPage extends ConsumerStatefulWidget {
 }
 
 class _StoryPageState extends ConsumerState<StoryPage> {
+  bool _dragOver = false;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +37,13 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     );
   }
 
+  Future<bool> _importBytes(Uint8List bytes) async {
+    final text = utf8.decode(bytes);
+    final story = StoryStore.storyFromMarkdown(text);
+    await StoryStore.instance.upsert(story);
+    return true;
+  }
+
   Future<void> _import() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
@@ -42,9 +51,7 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     );
     if (result == null || result.files.isEmpty) return;
     try {
-      final text = utf8.decode(await result.files.first.readAsBytes());
-      final story = StoryStore.storyFromMarkdown(text);
-      await StoryStore.instance.upsert(story);
+      await _importBytes(await result.files.first.readAsBytes());
       if (mounted) {
         App.rootContext.showMessage(message: t.storyImported);
         setState(() {});
@@ -52,6 +59,33 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     } catch (e) {
       Log.error('importStory', e.toString());
       App.rootContext.showMessage(message: t.importFailed, level: LogLevel.error);
+    }
+  }
+
+  /// 拖动导入故事（.md / .markdown / .txt）
+  Future<void> _onDrop(DropDoneDetails detail) async {
+    var imported = 0;
+    for (final file in detail.files) {
+      final name = file.name.toLowerCase();
+      if (!name.endsWith('.md') &&
+          !name.endsWith('.markdown') &&
+          !name.endsWith('.txt')) {
+        continue;
+      }
+      try {
+        await _importBytes(await file.readAsBytes());
+        imported++;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() => _dragOver = false);
+    if (imported > 0) {
+      App.rootContext.showMessage(message: t.storyImported);
+    } else if (detail.files.isNotEmpty) {
+      App.rootContext.showMessage(
+        message: t.importFailed,
+        level: LogLevel.error,
+      );
     }
   }
 
@@ -99,45 +133,78 @@ class _StoryPageState extends ConsumerState<StoryPage> {
       listenable: StoryStore.instance,
       builder: (context, _) {
         final stories = StoryStore.instance.stories;
-        return Scaffold(
-          appBar: Appbar(
-            title: Text(t.rolePlay),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.file_open_outlined),
-                tooltip: t.importEntries,
-                onPressed: _import,
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                tooltip: t.storyNew,
-                onPressed: _new,
-              ),
-            ],
-          ),
-          body: stories.isEmpty
-              ? _emptyState(context)
-              : ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: [
-                    for (final s in stories)
-                      _StoryCard(
-                        story: s,
-                        onTap: () => context.to(() => StoryGamePage(story: s)),
-                        onEdit: () => _edit(s),
-                        onExport: () => _export(s),
-                        onRestart: () => _restart(s),
-                        onDelete: s.isBuiltin ? null : () => _delete(s),
-                      ),
+        return DropTarget(
+          onDragDone: _onDrop,
+          onDragEntered: (_) {
+            if (mounted) setState(() => _dragOver = true);
+          },
+          onDragExited: (_) {
+            if (mounted) setState(() => _dragOver = false);
+          },
+          child: Stack(
+            children: [
+              Scaffold(
+                appBar: Appbar(
+                  title: Text(t.rolePlay),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.file_open_outlined),
+                      tooltip: t.importEntries,
+                      onPressed: _import,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: t.storyNew,
+                      onPressed: _new,
+                    ),
                   ],
                 ),
-          floatingActionButton: stories.isEmpty
-              ? null
-              : FloatingActionButton(
-                  onPressed: _new,
-                  tooltip: t.storyNew,
-                  child: const Icon(Icons.add),
+                body: stories.isEmpty
+                    ? _emptyState(context)
+                    : ListView(
+                        padding: const EdgeInsets.all(12),
+                        children: [
+                          for (final s in stories)
+                            _StoryCard(
+                              story: s,
+                              onTap: () =>
+                                  context.to(() => StoryGamePage(story: s)),
+                              onEdit: () => _edit(s),
+                              onExport: () => _export(s),
+                              onRestart: () => _restart(s),
+                              onDelete: s.isBuiltin ? null : () => _delete(s),
+                            ),
+                        ],
+                      ),
+                floatingActionButton: stories.isEmpty
+                    ? null
+                    : FloatingActionButton(
+                        onPressed: _new,
+                        tooltip: t.storyNew,
+                        child: const Icon(Icons.add),
+                      ),
+              ),
+              if (_dragOver)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.scrim.withValues(alpha: 0.45),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.download_outlined, size: 48),
+                          const SizedBox(height: 12),
+                          Text(t.storyDropHint),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
+            ],
+          ),
         );
       },
     );

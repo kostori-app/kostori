@@ -4687,6 +4687,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Story imported'
 	String get storyImported => 'Story imported';
 
+	/// en: 'Drop story files here (.md)'
+	String get storyDropHint => 'Drop story files here (.md)';
+
 	/// en: 'New story'
 	String get storyNew => 'New story';
 
@@ -9697,6 +9700,7 @@ extension on Translations {
 			'storyState' => 'Status',
 			'storyNoStories' => 'No stories yet. Import or create one from the top right.',
 			'storyImported' => 'Story imported',
+			'storyDropHint' => 'Drop story files here (.md)',
 			'storyNew' => 'New story',
 			'storyEdit' => 'Edit story',
 			'storyOpening' => 'Opening',
@@ -10153,9 +10157,9 @@ extension on Translations {
 			'thinking' => 'Thinking',
 			'streamInterrupted' => 'Generation interrupted',
 			'showThinking' => 'Show thinking',
-			'hideThinking' => 'Hide thinking',
 			_ => null,
 		} ?? switch (path) {
+			'hideThinking' => 'Hide thinking',
 			'viewProcess' => 'View process',
 			'stepThinking' => 'Thinking',
 			'stepTool' => 'Tool',
@@ -10667,9 +10671,9 @@ extension on Translations {
 			'monthDayFormat' => 'MMM d',
 			'monthDay' => ({required Object month, required Object day}) => '${month}/${day}',
 			'qrAnimeId' => ({required Object id, required Object source}) => 'Anime ID: ${id}\nSource: ${source}',
-			'qrBangumiId' => ({required Object id}) => 'Bangumi ID: ${id}',
 			_ => null,
 		} ?? switch (path) {
+			'qrBangumiId' => ({required Object id}) => 'Bangumi ID: ${id}',
 			'qrWatchRoom' => ({required Object room, required Object server}) => 'Watch together room: ${room}\nServer: ${server}',
 			'qrDetectedType' => ({required Object type}) => 'Detected ${type} link',
 			'qrPasswordResolved' => '(Password resolved)\n',

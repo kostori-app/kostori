@@ -1593,6 +1593,7 @@ storyInput: 输入你的行动…
 storyState: 状态
 storyNoStories: 还没有故事，点右上角导入或新建
 storyImported: 故事已导入
+storyDropHint: 拖入故事文件（.md）
 storyNew: 新建故事
 storyEdit: 编辑故事
 storyOpening: 开局引导

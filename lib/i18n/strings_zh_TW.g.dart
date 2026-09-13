@@ -1588,6 +1588,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyState => '狀態';
 	@override String get storyNoStories => '還沒有故事，點右上角導入或新建';
 	@override String get storyImported => '故事已導入';
+	@override String get storyDropHint => '拖入故事檔案（.md）';
 	@override String get storyNew => '新建故事';
 	@override String get storyEdit => '編輯故事';
 	@override String get storyOpening => '開局引導';
@@ -4341,6 +4342,7 @@ extension on TranslationsZhTw {
 			'storyState' => '狀態',
 			'storyNoStories' => '還沒有故事，點右上角導入或新建',
 			'storyImported' => '故事已導入',
+			'storyDropHint' => '拖入故事檔案（.md）',
 			'storyNew' => '新建故事',
 			'storyEdit' => '編輯故事',
 			'storyOpening' => '開局引導',
@@ -4797,9 +4799,9 @@ extension on TranslationsZhTw {
 			'streamInterrupted' => '生成已中斷',
 			'showThinking' => '查看思考過程',
 			'hideThinking' => '收起思考過程',
-			'viewProcess' => '查看過程',
 			_ => null,
 		} ?? switch (path) {
+			'viewProcess' => '查看過程',
 			'stepThinking' => '思考',
 			'stepTool' => '工具',
 			'thinkingInProgress' => '正在思考...',
@@ -5311,9 +5313,9 @@ extension on TranslationsZhTw {
 			'monthDay' => ({required Object month, required Object day}) => '${month}月${day}日',
 			'qrAnimeId' => ({required Object id, required Object source}) => '番劇 ID：${id}\n來源：${source}',
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID：${id}',
-			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房間：${room}\n服務端：${server}',
 			_ => null,
 		} ?? switch (path) {
+			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房間：${room}\n服務端：${server}',
 			'qrDetectedType' => ({required Object type}) => '檢測到 ${type} 連結',
 			'qrPasswordResolved' => '（口令已解析）\n',
 			'reviewedAtTime' => ({required Object time}) => '評價時 ${time}',
