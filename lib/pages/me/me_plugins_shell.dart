@@ -479,7 +479,7 @@ class _PluginShellPageState extends State<PluginShellPage>
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.center,
             child: _CapsuleBar(
               keys: _nav
                   .map((n) => n['key']?.toString() ?? '')
