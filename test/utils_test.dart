@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
+import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/utils/utils.dart';
 
 /// 生成一张 1x1 的合法 PNG，用于角色卡块写入测试
@@ -362,6 +363,29 @@ void main() {
       expect(Utils.getDispute(0), '-');
       expect(Utils.getDispute(0.5), '异口同声');
       expect(Utils.getDispute(2), '厨黑大战');
+    });
+  });
+
+  group('story system prompt', () {
+    test('uses the declared resources and attributes in the output example', () {
+      const story = Story(
+        id: 't',
+        name: 't',
+        initialState: GameState(
+          resources: [
+            StatBar(name: '体力', cur: 100, max: 100),
+            StatBar(name: '进食', cur: 80, max: 100),
+          ],
+          attributes: {'耐力': 7},
+        ),
+      );
+      final prompt = story.buildSystemPrompt();
+      expect(prompt.contains('"体力"'), isTrue);
+      expect(prompt.contains('"进食"'), isTrue);
+      expect(prompt.contains('"耐力"'), isTrue);
+      // 不应再写死示例里的名称
+      expect(prompt.contains('"生命"'), isFalse);
+      expect(prompt.contains('"精神"'), isFalse);
     });
   });
 }

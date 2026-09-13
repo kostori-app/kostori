@@ -1158,6 +1158,13 @@ class Story {
       buf.writeln(systemPrompt.trim());
       buf.writeln();
     }
+    // 输出示例按故事实际定义的资源 / 属性生成，避免写死名称误导模型
+    final resExample = initialState.resources.isEmpty
+        ? '{"资源名": {"cur": 100, "max": 100}}'
+        : '{${initialState.resources.map((r) => '"${r.name}": {"cur": ${r.cur}, "max": ${r.max}}').join(', ')}}';
+    final attrExample = initialState.attributes.isEmpty
+        ? '{"属性名": 5}'
+        : '{${initialState.attributes.entries.map((e) => '"${e.key}": ${e.value}').join(', ')}}';
     buf.writeln('''
 【输出格式要求】
 每次回复必须严格分为两部分：
@@ -1171,8 +1178,8 @@ class Story {
 ```json
 {
   "state": {
-    "resources": { "生命": {"cur": 100, "max": 100}, "精神": {"cur": 100, "max": 100} },
-    "attributes": { "力量": 5, "敏捷": 5, "智力": 5 },
+    "resources": $resExample,
+    "attributes": $attrExample,
     "skills": ["技能名"],
     "inventory": ["物品 x1"],
     "quests": [{"title": "任务", "desc": "描述", "progress": 0, "chain": "主线", "stage": 1, "totalStages": 3, "status": "active"}],
