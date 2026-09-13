@@ -337,8 +337,19 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
     Navigator.of(context).pop(card);
   }
 
+  int _tab = 0;
+
+  List<(String, Widget)> _editorTabs() => [
+    (t.basicInfo, _basicSection()),
+    (t.storyCharacterPersona, _personaSection()),
+    (t.characterDialogue, _dialogueSection()),
+    (t.storySystemPrompt, _promptSection()),
+    (t.worldBook, _worldBookSection()),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final tabs = _editorTabs();
     return PopUpWidgetScaffold(
       title: _isNew ? t.storyAddCharacter : t.edit,
       tailing: [
@@ -350,52 +361,35 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
       ],
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+        child: Column(
           children: [
-            _section(t.basicInfo, Icons.info_outline, _basicSection()),
-            _section(
-              t.storyCharacterPersona,
-              Icons.person_outline,
-              _personaSection(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              child: CapsuleOptions(
+                scrollable: true,
+                children: [
+                  for (var i = 0; i < tabs.length; i++)
+                    CapsuleOption(
+                      text: tabs[i].$1,
+                      isSelected: _tab == i,
+                      onTap: () => setState(() => _tab = i),
+                    ),
+                ],
+              ),
             ),
-            _section(
-              t.characterDialogue,
-              Icons.chat_bubble_outline,
-              _dialogueSection(),
+            Expanded(
+              child: IndexedStack(
+                index: _tab.clamp(0, tabs.length - 1),
+                children: [
+                  for (final tab in tabs)
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+                      child: tab.$2,
+                    ),
+                ],
+              ),
             ),
-            _section(
-              t.storySystemPrompt,
-              Icons.psychology_outlined,
-              _promptSection(),
-            ),
-            _section(t.worldBook, Icons.menu_book_outlined, _worldBookSection()),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _section(String title, IconData icon, Widget child) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: scheme.outlineVariant, width: 0.6),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: title == t.basicInfo,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-          leading: Icon(icon, size: 20),
-          title: Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-          children: [child],
         ),
       ),
     );
