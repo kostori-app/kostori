@@ -3901,11 +3901,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
       final body = rest.substring(0, endRel).trim();
       if (body.isNotEmpty) {
-        if (closed) {
-          segments.add(StorySegment(type: 'npc', name: name, text: body));
-        } else {
-          _splitUnclosedNpc(segments, name, body);
-        }
+        _splitNpcBody(segments, name, body);
       }
       index = bodyStart + endRel;
       if (closed && nextClose != null) {
@@ -3924,37 +3920,57 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return segments;
   }
 
-  /// 无结束标记的角色块：按空行分段，含引号对白的算角色，其余算旁白
-  void _splitUnclosedNpc(
-    List<StorySegment> segments,
-    String name,
-    String body,
-  ) {
-    final npcBuf = <String>[];
-    void flush() {
-      if (npcBuf.isEmpty) return;
-      segments.add(
-        StorySegment(type: 'npc', name: name, text: npcBuf.join('\n\n')),
-      );
-      npcBuf.clear();
+  /// 角色块：**气泡里只保留引号内的对白**，引号外的动作/描写拆成旁白。
+  /// 整段没有引号时（对白未加引号）则整段仍算角色，避免误伤。
+  void _splitNpcBody(List<StorySegment> segments, String name, String body) {
+    if (!_speechRe.hasMatch(body)) {
+      segments.add(StorySegment(type: 'npc', name: name, text: body.trim()));
+      return;
     }
-
     for (final p in body.split(RegExp(r'\n\s*\n'))) {
       final t = p.trim();
       if (t.isEmpty) continue;
-      if (!_looksLikeCallout(t) && _hasQuotedSpeech(t)) {
-        npcBuf.add(t);
-      } else {
-        flush();
+      if (_looksLikeCallout(t)) {
         segments.add(StorySegment(type: 'narration', text: t));
+      } else {
+        _splitByQuotes(segments, name, t);
       }
+    }
+  }
+
+  /// 把一段文字按引号切分：引号内 → 角色，引号外 → 旁白
+  void _splitByQuotes(List<StorySegment> segments, String name, String text) {
+    final matches = _speechRe.allMatches(text).toList();
+    if (matches.isEmpty) {
+      segments.add(StorySegment(type: 'narration', text: text.trim()));
+      return;
+    }
+    var index = 0;
+    final npcBuf = <String>[];
+    void flush() {
+      if (npcBuf.isEmpty) return;
+      segments.add(StorySegment(type: 'npc', name: name, text: npcBuf.join(' ')));
+      npcBuf.clear();
+    }
+
+    for (final m in matches) {
+      final before = text.substring(index, m.start).trim();
+      if (before.isNotEmpty) {
+        flush();
+        segments.add(StorySegment(type: 'narration', text: before));
+      }
+      npcBuf.add(m.group(0)!);
+      index = m.end;
+    }
+    final after = text.substring(index).trim();
+    if (after.isNotEmpty) {
+      flush();
+      segments.add(StorySegment(type: 'narration', text: after));
     }
     flush();
   }
 
   static final _speechRe = RegExp(r'[“"「『][^”"」』]*[”"」』]');
-
-  static bool _hasQuotedSpeech(String s) => _speechRe.hasMatch(s);
 
   /// 提示框（`>` 引用块 / 【标签】开头）无论是否含引号都算旁白
   static bool _looksLikeCallout(String s) {
