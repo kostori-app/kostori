@@ -155,6 +155,17 @@ class DataSync with ChangeNotifier {
   /// 远端清单文件名（记录各部分的版本/大小/时间）
   static const _manifestName = 'manifest.json';
 
+  /// 同步数据版本号（存 implicitData，不随 appdata.json 同步，
+  /// 否则版本号本身会让「数据」部分每次都被判定为已变化）
+  int get _dataVersion =>
+      (appdata.implicitData['syncDataVersion'] as int?) ??
+      (appdata.settings['dataVersion'] as int? ?? 0);
+
+  void _setDataVersion(int v) {
+    appdata.implicitData['syncDataVersion'] = v;
+    appdata.writeImplicitData();
+  }
+
   /// 读取远端清单（无则返回 null）
   Future<Res<Map<String, dynamic>?>> readManifest() async {
     final client = _client();
@@ -243,11 +254,12 @@ class DataSync with ChangeNotifier {
       );
 
       try {
-        final newVersion = (appdata.settings['dataVersion'] as int? ?? 0) + 1;
-        appdata.settings['dataVersion'] = newVersion;
-        await appdata.saveData(false);
         // 读取旧清单：内容未变化的部分跳过上传（哈希比对）
         final prevRes = await readManifest();
+        final remoteVersion =
+            (prevRes.data?['version'] as num?)?.toInt() ?? 0;
+        final newVersion =
+            (remoteVersion > _dataVersion ? remoteVersion : _dataVersion) + 1;
         final prevParts =
             (prevRes.data?['parts'] as Map?)?.cast<String, dynamic>() ??
             const <String, dynamic>{};
@@ -287,6 +299,11 @@ class DataSync with ChangeNotifier {
             file.deleteIgnoreError();
           }
         }
+        if (uploaded == 0) {
+          // 没有任何变化：不推进版本、不重写清单（避免其他端无谓下载）
+          Log.info("Upload Data", 'No changes to upload');
+          return const Res(true);
+        }
         final manifest = jsonEncode({
           'version': newVersion,
           'device': _deviceTag(),
@@ -294,6 +311,8 @@ class DataSync with ChangeNotifier {
           'parts': partsMeta,
         });
         await client.write(_manifestName, utf8.encode(manifest));
+        // 仅在全部上传成功后才推进本地版本号（失败不推进，避免漏下载）
+        _setDataVersion(newVersion);
         Log.info(
           "Upload Data",
           "Uploaded $uploaded/${syncParts.length} parts (v$newVersion)",
@@ -342,17 +361,28 @@ class DataSync with ChangeNotifier {
         final manifest = manifestRes.data;
         if (manifest == null) throw 'No data file found';
         final version = (manifest['version'] as num?)?.toInt() ?? 0;
-        final currentVersion = appdata.settings['dataVersion'] as int? ?? 0;
+        final currentVersion = _dataVersion;
         if (version > 0 && version <= currentVersion) {
           Log.info("Data Sync", 'No new data to download');
           return const Res(true);
         }
-        final remoteParts =
-            (manifest['parts'] as Map?)?.keys.whereType<String>().toSet() ??
-            <String>{};
-        Log.info("Data Sync", "Downloading ${remoteParts.length} parts (v$version)");
+        final remoteMeta =
+            (manifest['parts'] as Map?)?.cast<String, dynamic>() ??
+            const <String, dynamic>{};
+        final localHashes =
+            (appdata.implicitData['syncPartHashes'] as Map?)
+                ?.cast<String, dynamic>() ??
+            const <String, dynamic>{};
+        final newHashes = <String, dynamic>{...localHashes};
+        var downloaded = 0;
         for (final part in syncParts) {
-          if (!remoteParts.contains(part.key)) continue;
+          final meta = remoteMeta[part.key];
+          if (meta is! Map) continue;
+          final remoteHash = meta['hash']?.toString();
+          // 与上次下载的哈希一致 → 该部分未变化，跳过下载
+          if (remoteHash != null && remoteHash == localHashes[part.key]) {
+            continue;
+          }
           final localFile = File(
             FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
           );
@@ -366,9 +396,16 @@ class DataSync with ChangeNotifier {
           );
           await importPart(localFile);
           localFile.deleteIgnoreError();
+          if (remoteHash != null) newHashes[part.key] = remoteHash;
+          downloaded++;
         }
-        appdata.settings['dataVersion'] = version;
-        await appdata.saveData(false);
+        appdata.implicitData['syncPartHashes'] = newHashes;
+        appdata.writeImplicitData();
+        Log.info(
+          "Data Sync",
+          "Downloaded $downloaded/${syncParts.length} parts (v$version)",
+        );
+        _setDataVersion(version);
         Log.info("Data Sync", "Data downloaded successfully");
         return const Res(true);
       } catch (e, s) {

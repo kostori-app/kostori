@@ -435,9 +435,16 @@ Future<void> _applyImportedData(
     var appdataFile = cacheDir.joinFile("appdata.json");
     var cookieFile = cacheDir.joinFile("cookie.db");
     if (checkVersion && appdataFile.existsSync()) {
-      var data = jsonDecode(await appdataFile.readAsString());
-      var version = data["settings"]["dataVersion"];
-      if (version is int && version <= appdata.settings["dataVersion"]) {
+      final decoded = jsonDecode(await appdataFile.readAsString());
+      int? version;
+      if (decoded is Map && decoded["settings"] is Map) {
+        final v = (decoded["settings"] as Map)["dataVersion"];
+        if (v is int) version = v;
+      }
+      final local =
+          (appdata.implicitData['syncDataVersion'] as int?) ??
+          (appdata.settings['dataVersion'] as int? ?? 0);
+      if (version != null && version <= local) {
         return;
       }
       DebugLog.info('importAppData', '检查数据版本');
