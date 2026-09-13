@@ -1375,6 +1375,11 @@ class _StoryText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 兜底：即便分段解析漏掉，也不把 〖角色：…〗/〖/角色〗 标记原样显示出来
+    final text = this.text
+        .replaceAll(RegExp(r'[〖【]\s*/\s*角色\s*[〗】]'), '')
+        .replaceAll(RegExp(r'[〖【]\s*角色\s*[:：]\s*[^〗】]+?[〗】]'), '')
+        .trim();
     return ListenableBuilder(
       listenable: StoryTextStyleStore.instance,
       builder: (context, _) {
