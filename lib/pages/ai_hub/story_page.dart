@@ -1322,6 +1322,10 @@ class _StoryEditorState extends State<_StoryEditor> {
       'skills',
       'inventory',
       'quests',
+      'effects',
+      'titles',
+      'job',
+      'base',
       'codex',
       'variables',
       'equipment',
@@ -1334,6 +1338,10 @@ class _StoryEditorState extends State<_StoryEditor> {
       'skills' => t.skills,
       'inventory' => t.storyInventory,
       'quests' => t.storyQuests,
+      'effects' => t.storyEffects,
+      'titles' => t.storyTitles,
+      'job' => t.storyJob,
+      'base' => t.storyBase,
       'codex' => t.storyCodex,
       'variables' => t.storyVariables,
       'equipment' => t.storyEquipment,
@@ -1397,18 +1405,11 @@ class _StoryEditorState extends State<_StoryEditor> {
                       style: const TextStyle(fontSize: 13),
                     ),
                     const SizedBox(width: 8),
-                    DropdownButton<String>(
-                      value: _panels[i].source,
-                      items: [
-                        for (final s in sources)
-                          DropdownMenuItem(
-                            value: s,
-                            child: Text(sourceLabel(s)),
-                          ),
-                      ],
-                      onChanged: (v) => setState(
-                        () => _panels[i].source = v ?? 'attributes',
-                      ),
+                    Select(
+                      current: sourceLabel(_panels[i].source),
+                      values: [for (final s in sources) sourceLabel(s)],
+                      onTap: (idx) =>
+                          setState(() => _panels[i].source = sources[idx]),
                     ),
                   ],
                 ),
@@ -1588,24 +1589,24 @@ class _StoryEditorState extends State<_StoryEditor> {
                   '${t.storyVariableType}: ',
                   style: const TextStyle(fontSize: 13),
                 ),
-                DropdownButton<String>(
-                  value: _variables[i].type,
-                  items: [
-                    DropdownMenuItem(
-                      value: 'text',
-                      child: Text(t.storyVarTypeText),
-                    ),
-                    DropdownMenuItem(
-                      value: 'number',
-                      child: Text(t.storyVarTypeNumber),
-                    ),
-                    DropdownMenuItem(
-                      value: 'enum',
-                      child: Text(t.storyVarTypeEnum),
-                    ),
+                Select(
+                  current: switch (_variables[i].type) {
+                    'number' => t.storyVarTypeNumber,
+                    'enum' => t.storyVarTypeEnum,
+                    _ => t.storyVarTypeText,
+                  },
+                  values: [
+                    t.storyVarTypeText,
+                    t.storyVarTypeNumber,
+                    t.storyVarTypeEnum,
                   ],
-                  onChanged: (v) =>
-                      setState(() => _variables[i].type = v ?? 'text'),
+                  onTap: (idx) => setState(
+                    () => _variables[i].type = const [
+                      'text',
+                      'number',
+                      'enum',
+                    ][idx],
+                  ),
                 ),
                 const Spacer(),
                 if (_variables[i].type == 'number') ...[
@@ -1715,31 +1716,31 @@ class _StoryEditorState extends State<_StoryEditor> {
                   '${t.storyRegexPhase}: ',
                   style: const TextStyle(fontSize: 13),
                 ),
-                DropdownButton<String>(
-                  value: _regexes[i].phase,
-                  items: [
-                    DropdownMenuItem(
-                      value: 'display',
-                      child: Text(t.storyRegexTargetAi),
-                    ),
-                    DropdownMenuItem(
-                      value: 'send',
-                      child: Text(t.storyRegexTargetUser),
-                    ),
-                    DropdownMenuItem(
-                      value: 'both',
-                      child: Text(t.storyRegexTargetBoth),
-                    ),
+                Select(
+                  current: switch (_regexes[i].phase) {
+                    'send' => t.storyRegexTargetUser,
+                    'both' => t.storyRegexTargetBoth,
+                    _ => t.storyRegexTargetAi,
+                  },
+                  values: [
+                    t.storyRegexTargetAi,
+                    t.storyRegexTargetUser,
+                    t.storyRegexTargetBoth,
                   ],
-                  onChanged: (v) =>
-                      setState(() => _regexes[i].phase = v ?? 'display'),
+                  onTap: (idx) => setState(
+                    () => _regexes[i].phase = const [
+                      'display',
+                      'send',
+                      'both',
+                    ][idx],
+                  ),
                 ),
                 const Spacer(),
                 Text(
                   t.storyRegexEnabled,
                   style: const TextStyle(fontSize: 13),
                 ),
-                Switch(
+                CustomSwitch(
                   value: _regexes[i].enabled,
                   onChanged: (v) => setState(() => _regexes[i].enabled = v),
                 ),
@@ -3716,15 +3717,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         runSpacing: 8,
         children: [
           for (final o in part.options)
-            FilterChip(
-              label: Text(o),
-              selected: _multiValues[part.key]?.contains(o) ?? false,
-              onSelected: (v) => setState(() {
+            OptionChip(
+              text: o,
+              isSelected: _multiValues[part.key]?.contains(o) ?? false,
+              onTap: () => setState(() {
                 final set = _multiValues.putIfAbsent(part.key, () => {});
-                if (v) {
-                  set.add(o);
-                } else {
+                if (set.contains(o)) {
                   set.remove(o);
+                } else {
+                  set.add(o);
                 }
               }),
             ),
@@ -3748,12 +3749,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         runSpacing: 8,
         children: [
           for (final o in part.options)
-            ChoiceChip(
-              label: Text(o),
-              selected: _singleValues[part.key] == o,
-              onSelected: (v) {
-                if (v) setState(() => _singleValues[part.key] = o);
-              },
+            OptionChip(
+              text: o,
+              isSelected: _singleValues[part.key] == o,
+              onTap: () => setState(() => _singleValues[part.key] = o),
             ),
         ],
       );
@@ -4035,10 +4034,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           ('italic', t.storyItalic),
                           ('bold', t.storyBold),
                         ])
-                          ChoiceChip(
-                            label: Text(name),
-                            selected: role.fontStyle == value,
-                            onSelected: (_) =>
+                          OptionChip(
+                            text: name,
+                            isSelected: role.fontStyle == value,
+                            onTap: () =>
                                 onChanged(role.copyWith(fontStyle: value)),
                           ),
                       ],
@@ -4059,14 +4058,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const Spacer(),
-                    DropdownButton<StoryQuoteGlyph>(
-                      value: s.quoteGlyph,
-                      items: [
-                        for (final g in StoryQuoteGlyph.values)
-                          DropdownMenuItem(value: g, child: Text(g.label)),
+                    Select(
+                      current: s.quoteGlyph.label,
+                      values: [
+                        for (final g in StoryQuoteGlyph.values) g.label,
                       ],
-                      onChanged: (v) =>
-                          v == null ? null : store.update(s.copyWith(quoteGlyph: v)),
+                      onTap: (idx) => store.update(
+                        s.copyWith(
+                          quoteGlyph: StoryQuoteGlyph.values[idx],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -4336,10 +4337,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 runSpacing: 8,
                 children: [
                   for (var i = 0; i < entries.length; i++)
-                    ChoiceChip(
-                      label: Text('${entries[i].key} ${entries[i].value}'),
-                      selected: index == i,
-                      onSelected: (_) => setLocal(() => index = i),
+                    OptionChip(
+                      text: '${entries[i].key} ${entries[i].value}',
+                      isSelected: index == i,
+                      onTap: () => setLocal(() => index = i),
                     ),
                 ],
               ),
