@@ -455,6 +455,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Synced'
 	String get syncSuccess => 'Synced';
 
+	/// en: 'Saves'
+	String get storySessions => 'Saves';
+
 	/// en: 'Data'
 	String get data => 'Data';
 
@@ -8145,6 +8148,7 @@ extension on Translations {
 			'dataSync' => 'Data Sync',
 			'selectiveSync' => 'Selective sync',
 			'syncSuccess' => 'Synced',
+			'storySessions' => 'Saves',
 			'data' => 'Data',
 			'dateDesc' => 'Date Desc',
 			'date' => 'Date',
@@ -8518,9 +8522,9 @@ extension on Translations {
 			'uniformHeight' => 'Uniform Height',
 			'cropImage' => 'Crop Image',
 			'finishCropping' => 'Finish Cropping',
-			'sortImages' => 'Sort Images',
 			_ => null,
 		} ?? switch (path) {
+			'sortImages' => 'Sort Images',
 			'finishSorting' => 'Finish Sorting',
 			'noImages' => 'No Images',
 			'cropHeightCPx' => ({required Object c}) => 'Crop Height: ${c} px',
@@ -9032,9 +9036,9 @@ extension on Translations {
 			'groupExists' => 'Group name already exists',
 			'groupSources' => 'Sources in group',
 			'assignSources' => 'Assign sources',
-			'deleteGroup' => 'Delete Group',
 			_ => null,
 		} ?? switch (path) {
+			'deleteGroup' => 'Delete Group',
 			'deleteGroupConfirm' => 'Delete this group?',
 			'translation' => 'Translation',
 			'translationService' => 'Translation Service',
@@ -9546,9 +9550,9 @@ extension on Translations {
 			'generateSummary' => 'Generate Summary',
 			'generateTag' => 'Generate Tag',
 			'summaryReport' => 'Summary Report',
-			'aiStatActiveTitles' => 'Active titles',
 			_ => null,
 		} ?? switch (path) {
+			'aiStatActiveTitles' => 'Active titles',
 			'aiSoulStyle' => 'Analysis style',
 			'aiStyleBalanced' => 'Balanced',
 			'aiStyleDetailed' => 'Detailed',
@@ -10060,9 +10064,9 @@ extension on Translations {
 			'statsDateRangeHalf' => ({required Object year, required Object startMonth, required Object endMonth}) => '${year}.${startMonth} - ${endMonth}',
 			'statsDateYear' => ({required Object year}) => '${year}',
 			'statsDateDay' => ({required Object day}) => '${day}',
-			'statsDateMonthOnly' => ({required Object month}) => '${month}',
 			_ => null,
 		} ?? switch (path) {
+			'statsDateMonthOnly' => ({required Object month}) => '${month}',
 			'statsWeekdayMon' => 'Mon',
 			'statsWeekdayTue' => 'Tue',
 			'statsWeekdayWed' => 'Wed',
@@ -10574,9 +10578,9 @@ extension on Translations {
 			'endTimeLabel' => ({required Object time}) => 'End time: ${time}',
 			'appInfo' => 'App info',
 			'partRepoFetchFailed' => ({required Object list}) => 'Some repositories failed to fetch: ${list}',
-			'airTimeLabel' => ({required Object time}) => 'Air time: ${time}',
 			_ => null,
 		} ?? switch (path) {
+			'airTimeLabel' => ({required Object time}) => 'Air time: ${time}',
 			'durationLabel' => ({required Object duration}) => 'Duration: ${duration}',
 			'replyBracket' => '[Reply]',
 			'wantToWatch' => 'Want to watch',

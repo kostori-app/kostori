@@ -1441,6 +1441,9 @@ class StorySessionStore extends ChangeNotifier {
     ).writeAsString(jsonEncode(session.toJson()));
   }
 
+  /// 已存档的 storyId 列表（供选择性同步）
+  List<String> get storyIds => _sessions.keys.toList();
+
   StorySession? get(String storyId) => _sessions[storyId];
 
   Future<void> put(String storyId, StorySession session) async {

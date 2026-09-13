@@ -169,6 +169,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dataSync => '數據同步';
 	@override String get selectiveSync => '選擇性同步';
 	@override String get syncSuccess => '同步成功';
+	@override String get storySessions => '存檔';
 	@override String get data => '數據';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2843,6 +2844,7 @@ extension on TranslationsZhTw {
 			'dataSync' => '數據同步',
 			'selectiveSync' => '選擇性同步',
 			'syncSuccess' => '同步成功',
+			'storySessions' => '存檔',
 			'data' => '數據',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3224,9 +3226,9 @@ extension on TranslationsZhTw {
 			'importedCountI' => ({required Object i}) => '已匯入 ${i} 張圖片',
 			'exportImage' => '複製/分享',
 			'saveAndShare' => '儲存並分享',
-			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
 			_ => null,
 		} ?? switch (path) {
+			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
 			'firstImageFullHeight' => '首張全高顯示',
 			'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
 			'showImageBorders' => '顯示圖片邊框',
@@ -3738,9 +3740,9 @@ extension on TranslationsZhTw {
 			'groupExists' => '分組名稱已存在',
 			'groupSources' => '分組內源',
 			'assignSources' => '分配源',
-			'deleteGroup' => '刪除分組',
 			_ => null,
 		} ?? switch (path) {
+			'deleteGroup' => '刪除分組',
 			'deleteGroupConfirm' => '確定刪除該分組？',
 			'translation' => '翻譯',
 			'translationService' => '翻譯服務',
@@ -4252,9 +4254,9 @@ extension on TranslationsZhTw {
 			'generateSummary' => '生成總結',
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '總結報告',
-			'aiStatActiveTitles' => '活躍條目',
 			_ => null,
 		} ?? switch (path) {
+			'aiStatActiveTitles' => '活躍條目',
 			'aiSoulStyle' => '分析風格',
 			'aiStyleBalanced' => '均衡',
 			'aiStyleDetailed' => '詳細',
@@ -4766,9 +4768,9 @@ extension on TranslationsZhTw {
 			'statsDateYear' => ({required Object year}) => '${year}年',
 			'statsDateDay' => ({required Object day}) => '${day}日',
 			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
-			'statsWeekdayMon' => '一',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayMon' => '一',
 			'statsWeekdayTue' => '二',
 			'statsWeekdayWed' => '三',
 			'statsWeekdayThu' => '四',
@@ -5280,9 +5282,9 @@ extension on TranslationsZhTw {
 			'appInfo' => '應用資訊',
 			'partRepoFetchFailed' => ({required Object list}) => '部分倉庫拉取失敗: ${list}',
 			'airTimeLabel' => ({required Object time}) => '放送時間：${time}',
-			'durationLabel' => ({required Object duration}) => '時長：${duration}',
 			_ => null,
 		} ?? switch (path) {
+			'durationLabel' => ({required Object duration}) => '時長：${duration}',
 			'replyBracket' => '[回覆]',
 			'wantToWatch' => '想看',
 			'watching' => '在看',

@@ -997,15 +997,14 @@ class _SelectiveSyncPage extends StatefulWidget {
 }
 
 class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
-  static const _cardDir = 'cards';
-  static const _storyDir = 'stories';
-
   bool _loading = true;
   bool _busy = false;
   List<String> _remoteCards = const [];
   List<String> _remoteStories = const [];
+  List<String> _remoteSessions = const [];
   final Set<String> _selectedCards = {};
   final Set<String> _selectedStories = {};
+  final Set<String> _selectedSessions = {};
 
   @override
   void initState() {
@@ -1016,13 +1015,16 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   Future<void> _load() async {
     await CharacterCardStore.instance.ensureLoaded();
     await StoryStore.instance.ensureLoaded();
+    await StorySessionStore.instance.ensureLoaded();
     final sync = DataSync();
-    final cards = await sync.listRemoteFiles(dir: _cardDir);
-    final stories = await sync.listRemoteFiles(dir: _storyDir);
+    final cards = await sync.listRemoteFiles(dir: 'cards');
+    final stories = await sync.listRemoteFiles(dir: 'stories');
+    final sessions = await sync.listRemoteFiles(dir: 'sessions');
     if (!mounted) return;
     setState(() {
       _remoteCards = cards.success ? cards.data : const [];
       _remoteStories = stories.success ? stories.data : const [];
+      _remoteSessions = sessions.success ? sessions.data : const [];
       _loading = false;
     });
   }
@@ -1045,10 +1047,20 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     return ids.toList()..sort();
   }
 
+  List<String> get _sessionIds {
+    final ids = <String>{...StorySessionStore.instance.storyIds};
+    for (final f in _remoteSessions) {
+      if (f.endsWith('.json')) ids.add(f.substring(0, f.length - 5));
+    }
+    return ids.toList()..sort();
+  }
+
   String _cardName(String id) =>
       CharacterCardStore.instance.find(id)?.name ?? id;
 
   String _storyName(String id) => StoryStore.instance.find(id)?.name ?? id;
+
+  String _sessionName(String id) => StoryStore.instance.find(id)?.name ?? id;
 
   void _toast(bool ok) {
     App.rootContext.showMessage(
@@ -1057,20 +1069,20 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     );
   }
 
-  Future<void> _upload(Set<String> ids, bool cards) async {
+  Future<void> _upload(Set<String> ids, String kind) async {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
     final sync = DataSync();
     var ok = 0;
     for (final id in ids) {
-      if (cards) {
+      if (kind == 'cards') {
         final dir = CharacterCardStore.instance.dirPath;
         final json = io.File('$dir/$id.json');
         if (json.existsSync()) {
           final r = await sync.uploadFile(
             localPath: json.path,
             remoteName: '$id.json',
-            remoteDir: _cardDir,
+            remoteDir: 'cards',
           );
           if (r.success) ok++;
         }
@@ -1079,16 +1091,26 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
           await sync.uploadFile(
             localPath: png.path,
             remoteName: '$id.png',
-            remoteDir: _cardDir,
+            remoteDir: 'cards',
           );
         }
-      } else {
+      } else if (kind == 'stories') {
         final md = io.File('${StoryStore.instance.dirPath}/$id.md');
         if (md.existsSync()) {
           final r = await sync.uploadFile(
             localPath: md.path,
             remoteName: '$id.md',
-            remoteDir: _storyDir,
+            remoteDir: 'stories',
+          );
+          if (r.success) ok++;
+        }
+      } else {
+        final json = io.File('${StorySessionStore.instance.dirPath}/$id.json');
+        if (json.existsSync()) {
+          final r = await sync.uploadFile(
+            localPath: json.path,
+            remoteName: '$id.json',
+            remoteDir: 'sessions',
           );
           if (r.success) ok++;
         }
@@ -1100,35 +1122,44 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     await _load();
   }
 
-  Future<void> _download(Set<String> ids, bool cards) async {
+  Future<void> _download(Set<String> ids, String kind) async {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
     final sync = DataSync();
     var ok = 0;
     for (final id in ids) {
-      if (cards) {
+      if (kind == 'cards') {
         final dir = CharacterCardStore.instance.dirPath;
         if (_remoteCards.contains('$id.json')) {
           final r = await sync.downloadFile(
             remoteName: '$id.json',
             localPath: '$dir/$id.json',
-            remoteDir: _cardDir,
+            remoteDir: 'cards',
           );
           if (r.success) ok++;
           if (_remoteCards.contains('$id.png')) {
             await sync.downloadFile(
               remoteName: '$id.png',
               localPath: '$dir/$id.png',
-              remoteDir: _cardDir,
+              remoteDir: 'cards',
             );
           }
         }
-      } else {
+      } else if (kind == 'stories') {
         if (_remoteStories.contains('$id.md')) {
           final r = await sync.downloadFile(
             remoteName: '$id.md',
             localPath: '${StoryStore.instance.dirPath}/$id.md',
-            remoteDir: _storyDir,
+            remoteDir: 'stories',
+          );
+          if (r.success) ok++;
+        }
+      } else {
+        if (_remoteSessions.contains('$id.json')) {
+          final r = await sync.downloadFile(
+            remoteName: '$id.json',
+            localPath: '${StorySessionStore.instance.dirPath}/$id.json',
+            remoteDir: 'sessions',
           );
           if (r.success) ok++;
         }
@@ -1136,6 +1167,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     }
     await CharacterCardStore.instance.reload();
     await StoryStore.instance.reload();
+    await StorySessionStore.instance.reload();
     if (!mounted) return;
     setState(() => _busy = false);
     _toast(ok > 0);
@@ -1144,7 +1176,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           Appbar(
@@ -1165,6 +1197,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
               tabs: [
                 Tab(text: t.characterCards),
                 Tab(text: t.rolePlay),
+                Tab(text: t.storySessions),
               ],
             ),
           ),
@@ -1173,8 +1206,9 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                 ? const Center(child: CircularProgressIndicator())
                 : TabBarView(
                     children: [
-                      _buildList(cards: true),
-                      _buildList(cards: false),
+                      _buildList('cards'),
+                      _buildList('stories'),
+                      _buildList('sessions'),
                     ],
                   ),
           ),
@@ -1183,14 +1217,35 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     );
   }
 
-  Widget _buildList({required bool cards}) {
-    final ids = cards ? _cardIds : _storyIds;
-    final selected = cards ? _selectedCards : _selectedStories;
+  Widget _buildList(String kind) {
+    final ids = switch (kind) {
+      'cards' => _cardIds,
+      'stories' => _storyIds,
+      _ => _sessionIds,
+    };
+    final selected = switch (kind) {
+      'cards' => _selectedCards,
+      'stories' => _selectedStories,
+      _ => _selectedSessions,
+    };
     if (ids.isEmpty) {
-      return Center(
-        child: Text(cards ? t.characterCardsEmpty : t.storyNoStories),
-      );
+      final empty = switch (kind) {
+        'cards' => t.characterCardsEmpty,
+        'stories' => t.storyNoStories,
+        _ => t.storySessions,
+      };
+      return Center(child: Text(empty));
     }
+    String title(String id) => switch (kind) {
+      'cards' => _cardName(id),
+      'stories' => _storyName(id),
+      _ => _sessionName(id),
+    };
+    String subtitle(String id) => switch (kind) {
+      'cards' => 'cards/$id.json',
+      'stories' => 'stories/$id.md',
+      _ => 'sessions/$id.json',
+    };
     return Column(
       children: [
         Expanded(
@@ -1200,9 +1255,9 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                 CheckboxListTile(
                   dense: true,
                   value: selected.contains(id),
-                  title: Text(cards ? _cardName(id) : _storyName(id)),
+                  title: Text(title(id)),
                   subtitle: Text(
-                    cards ? '$_cardDir/$id.json' : '$_storyDir/$id.md',
+                    subtitle(id),
                     style: const TextStyle(fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1226,7 +1281,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _busy ? null : () => _upload(selected, cards),
+                    onPressed: _busy ? null : () => _upload(selected, kind),
                     icon: const Icon(Icons.cloud_upload_outlined, size: 18),
                     label: Text('${t.upload} (${selected.length})'),
                   ),
@@ -1234,7 +1289,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.tonalIcon(
-                    onPressed: _busy ? null : () => _download(selected, cards),
+                    onPressed: _busy ? null : () => _download(selected, kind),
                     icon: const Icon(Icons.cloud_download_outlined, size: 18),
                     label: Text('${t.download} (${selected.length})'),
                   ),

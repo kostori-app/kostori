@@ -170,6 +170,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dataSync => '数据同步';
 	@override String get selectiveSync => '选择性同步';
 	@override String get syncSuccess => '同步成功';
+	@override String get storySessions => '存档';
 	@override String get data => '数据';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2845,6 +2846,7 @@ extension on TranslationsZhCn {
 			'dataSync' => '数据同步',
 			'selectiveSync' => '选择性同步',
 			'syncSuccess' => '同步成功',
+			'storySessions' => '存档',
 			'data' => '数据',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3225,9 +3227,9 @@ extension on TranslationsZhCn {
 			'addImages' => '添加图片',
 			'importedCountI' => ({required Object i}) => '已导入 ${i} 张图片',
 			'exportImage' => '复制/分享',
-			'saveAndShare' => '保存并分享',
 			_ => null,
 		} ?? switch (path) {
+			'saveAndShare' => '保存并分享',
 			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
 			'firstImageFullHeight' => '首张全高显示',
 			'enterHexColorCode' => '输入十六进制颜色代码，例如 #FF000000',
@@ -3739,9 +3741,9 @@ extension on TranslationsZhCn {
 			'groupSources' => '分组内源',
 			'assignSources' => '分配源',
 			'deleteGroup' => '删除分组',
-			'deleteGroupConfirm' => '确定删除该分组？',
 			_ => null,
 		} ?? switch (path) {
+			'deleteGroupConfirm' => '确定删除该分组？',
 			'translation' => '翻译',
 			'translationService' => '翻译服务',
 			'apiKeyCannotBeEmpty' => 'API Key 不能为空',
@@ -4253,9 +4255,9 @@ extension on TranslationsZhCn {
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '总结报告',
 			'aiStatActiveTitles' => '活跃条目',
-			'aiSoulStyle' => '分析风格',
 			_ => null,
 		} ?? switch (path) {
+			'aiSoulStyle' => '分析风格',
 			'aiStyleBalanced' => '均衡',
 			'aiStyleDetailed' => '详细',
 			'aiStyleSharp' => '毒舌',
@@ -4767,9 +4769,9 @@ extension on TranslationsZhCn {
 			'statsDateRangeHalf' => ({required Object year, required Object startMonth, required Object endMonth}) => '${year}年${startMonth}月 ~ ${endMonth}月',
 			'statsDateYear' => ({required Object year}) => '${year}年',
 			'statsDateDay' => ({required Object day}) => '${day}日',
-			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
 			_ => null,
 		} ?? switch (path) {
+			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
 			'statsWeekdayMon' => '一',
 			'statsWeekdayTue' => '二',
 			'statsWeekdayWed' => '三',
@@ -5281,9 +5283,9 @@ extension on TranslationsZhCn {
 			'endTimeLabel' => ({required Object time}) => '结束时间: ${time}',
 			'appInfo' => '应用信息',
 			'partRepoFetchFailed' => ({required Object list}) => '部分仓库拉取失败: ${list}',
-			'airTimeLabel' => ({required Object time}) => '放送时间：${time}',
 			_ => null,
 		} ?? switch (path) {
+			'airTimeLabel' => ({required Object time}) => '放送时间：${time}',
 			'durationLabel' => ({required Object duration}) => '时长：${duration}',
 			'replyBracket' => '[回复]',
 			'wantToWatch' => '想看',
