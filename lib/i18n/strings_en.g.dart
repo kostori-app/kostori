@@ -4873,6 +4873,51 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Achievement unlocked'
 	String get storyAchievementUnlocked => 'Achievement unlocked';
 
+	/// en: 'Description'
+	String get characterDescription => 'Description';
+
+	/// en: 'Personality'
+	String get characterPersonality => 'Personality';
+
+	/// en: 'Scenario'
+	String get characterScenario => 'Scenario';
+
+	/// en: 'First message'
+	String get characterFirstMessage => 'First message';
+
+	/// en: 'Example dialogue'
+	String get characterExampleDialogue => 'Example dialogue';
+
+	/// en: 'System prompt'
+	String get characterSystemPrompt => 'System prompt';
+
+	/// en: 'Post-history instructions'
+	String get characterPostHistory => 'Post-history instructions';
+
+	/// en: 'Tags (comma separated)'
+	String get characterTags => 'Tags (comma separated)';
+
+	/// en: 'Creator'
+	String get characterCreator => 'Creator';
+
+	/// en: 'Character cards'
+	String get characterCards => 'Character cards';
+
+	/// en: 'No character cards yet'
+	String get characterCardsEmpty => 'No character cards yet';
+
+	/// en: 'Export character card'
+	String get characterExport => 'Export character card';
+
+	/// en: 'Character card saved'
+	String get characterCardSaved => 'Character card saved';
+
+	/// en: 'Import from library'
+	String get characterImportFromLibrary => 'Import from library';
+
+	/// en: 'Talk to'
+	String get storyTalkTo => 'Talk to';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9561,6 +9606,21 @@ extension on Translations {
 			'storyUnequip' => 'Unequip',
 			'storyNextRound' => 'Next round',
 			'storyAchievementUnlocked' => 'Achievement unlocked',
+			'characterDescription' => 'Description',
+			'characterPersonality' => 'Personality',
+			'characterScenario' => 'Scenario',
+			'characterFirstMessage' => 'First message',
+			'characterExampleDialogue' => 'Example dialogue',
+			'characterSystemPrompt' => 'System prompt',
+			'characterPostHistory' => 'Post-history instructions',
+			'characterTags' => 'Tags (comma separated)',
+			'characterCreator' => 'Creator',
+			'characterCards' => 'Character cards',
+			'characterCardsEmpty' => 'No character cards yet',
+			'characterExport' => 'Export character card',
+			'characterCardSaved' => 'Character card saved',
+			'characterImportFromLibrary' => 'Import from library',
+			'storyTalkTo' => 'Talk to',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9941,6 +10001,8 @@ extension on Translations {
 			'statsTimelineTitle' => 'Entry stats',
 			'statsTimelineWatch' => ({required Object duration}) => 'Watched ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '${value} clicks',
+			_ => null,
+		} ?? switch (path) {
 			'statsTimelineCommentCreated' => 'Comment created',
 			'statsTimelineCommentUpdated' => ({required Object n}) => 'Comment modified (${n})',
 			'statsTimelineRatingCreated' => 'Rating created',
@@ -9956,8 +10018,6 @@ extension on Translations {
 			'dropJsPluginHint' => 'Drop a .js plugin file here to install',
 			'mustBeJs' => 'Only .js files are supported',
 			'pluginSourceList' => 'Plugin source list',
-			_ => null,
-		} ?? switch (path) {
 			'pluginRepoEmpty' => 'No plugin repo configured yet. Tap the top-right to add one.',
 			'onlyEnabled' => 'Show enabled only',
 			'filterLogged' => 'Logged in',
@@ -10455,6 +10515,8 @@ extension on Translations {
 			'trackN' => ({required Object n}) => 'Track ${n}',
 			'deviceInfo' => 'Device info',
 			'conversationInterrupted' => 'Conversation stream interrupted unexpectedly',
+			_ => null,
+		} ?? switch (path) {
 			'toolExecutionFailed' => ({required Object error}) => 'Tool execution failed: ${error}',
 			'apiKeyNotConfigured' => ({required Object source}) => '${source} API Key is not configured or is disabled',
 			'imageInvalid' => 'Invalid image',
@@ -10470,8 +10532,6 @@ extension on Translations {
 			'historyTooShort' => 'Not enough history to compress',
 			'messageTooLarge' => 'Message too large, maximum 64KB',
 			'rateLimit' => 'Too many requests, please try again later',
-			_ => null,
-		} ?? switch (path) {
 			'portBusy' => ({required Object start, required Object end}) => 'Ports ${start} to ${end} are all occupied',
 			'webSocketOnly' => 'Only WebSocket connections are supported',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} has too many tool call rounds',

@@ -19,6 +19,7 @@ import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/ai_model_card.dart';
+import 'package:kostori/components/character_card_editor.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
@@ -28,6 +29,7 @@ import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/balance_helper.dart';
+import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/mcp_client.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
@@ -130,6 +132,7 @@ part 'ai_settings_providers.dart';
 part 'extension_settings.dart';
 
 part 'role_management_settings.dart';
+part 'character_cards_settings.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});

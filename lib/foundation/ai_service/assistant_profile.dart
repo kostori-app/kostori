@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -317,6 +318,9 @@ class AssistantProfile {
   /// 提示词注入库选择：为空表示沿用全局启用项（向后兼容）
   final List<String> injectionIds;
 
+  /// 绑定的角色卡 id（注入到系统提示词）
+  final List<String> characterIds;
+
   /// ③ 扩展管理设定：应用级可选模块
   final List<AssistantExtension> extensions;
 
@@ -358,6 +362,7 @@ class AssistantProfile {
     this.skillIds = const [],
     this.worldBookIds = const [],
     this.injectionIds = const [],
+    this.characterIds = const [],
     this.extensions = const [],
     this.memory = const MemorySettings(),
     this.request = const RequestSettings(),
@@ -384,6 +389,7 @@ class AssistantProfile {
     List<String>? skillIds,
     List<String>? worldBookIds,
     List<String>? injectionIds,
+    List<String>? characterIds,
     List<AssistantExtension>? extensions,
     MemorySettings? memory,
     RequestSettings? request,
@@ -407,6 +413,7 @@ class AssistantProfile {
     skillIds: skillIds ?? this.skillIds,
     worldBookIds: worldBookIds ?? this.worldBookIds,
     injectionIds: injectionIds ?? this.injectionIds,
+    characterIds: characterIds ?? this.characterIds,
     extensions: extensions ?? this.extensions,
     memory: memory ?? this.memory,
     request: request ?? this.request,
@@ -449,6 +456,7 @@ class AssistantProfile {
       skillIds: strList(json['skillIds']),
       worldBookIds: strList(json['worldBookIds']),
       injectionIds: strList(json['injectionIds']),
+      characterIds: strList(json['characterIds']),
       extensions: [
         for (final e in objList(json['extensions']))
           if (e is Map) AssistantExtension.fromJson(e.cast<String, dynamic>()),
@@ -497,6 +505,7 @@ class AssistantProfile {
     'skillIds': skillIds,
     'worldBookIds': worldBookIds,
     'injectionIds': injectionIds,
+    'characterIds': characterIds,
     'extensions': [for (final e in extensions) e.toJson()],
     'memory': memory.toJson(),
     'request': request.toJson(),
@@ -994,6 +1003,7 @@ String buildSystemPrompt({
   List<String>? availableSkills,
   List<PromptInjection>? injections,
   List<WorldBookEntry>? worldBookHits,
+  List<CharacterCard>? characterCards,
   List<String>? memoryEntries,
   DateTime? now,
   String? modelName,
@@ -1015,6 +1025,12 @@ String buildSystemPrompt({
 
   // ② 人格注入
   parts.addAll(_personalityInjection(profile));
+
+  // 角色卡注入
+  final cards = characterCards ?? const <CharacterCard>[];
+  if (cards.isNotEmpty) {
+    parts.add('【角色卡】\n${cards.map((c) => c.toPrompt()).join('\n\n')}');
+  }
 
   // ③ 提示词注入（按 位置→排序号 分组插入）
   parts.addAll(

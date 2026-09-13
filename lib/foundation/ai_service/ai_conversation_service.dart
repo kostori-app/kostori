@@ -15,6 +15,7 @@ import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
+import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -1214,6 +1215,14 @@ class AiConversationService {
       final boundSkillNames = profile.skillIds.isEmpty
           ? const <String>[]
           : await _skillNamesFor(profile.skillIds);
+      List<CharacterCard> characterCards = const [];
+      if (profile.characterIds.isNotEmpty) {
+        await CharacterCardStore.instance.ensureLoaded();
+        characterCards = [
+          for (final id in profile.characterIds)
+            if (CharacterCardStore.instance.find(id) case final c?) c,
+        ];
+      }
       parts.add(
         buildSystemPrompt(
           profile: profile,
@@ -1224,6 +1233,7 @@ class AiConversationService {
           ],
           injections: injections,
           worldBookHits: worldHits,
+          characterCards: characterCards,
           memoryEntries: memoryEntries,
         ),
       );

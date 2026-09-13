@@ -366,30 +366,6 @@ class _StoryPanelDraft {
   }
 }
 
-class _StoryCharacterDraft {
-  final TextEditingController name;
-  final TextEditingController avatar;
-  final TextEditingController persona;
-  final TextEditingController description;
-
-  _StoryCharacterDraft({
-    String nameText = '',
-    String avatarText = '🧑',
-    String personaText = '',
-    String descriptionText = '',
-  }) : name = TextEditingController(text: nameText),
-       avatar = TextEditingController(text: avatarText),
-       persona = TextEditingController(text: personaText),
-       description = TextEditingController(text: descriptionText);
-
-  void dispose() {
-    name.dispose();
-    avatar.dispose();
-    persona.dispose();
-    description.dispose();
-  }
-}
-
 class _StoryVariableDraft {
   final TextEditingController name;
   final TextEditingController value;
@@ -501,14 +477,8 @@ class _StoryEditorState extends State<_StoryEditor> {
         iconText: p.icon,
       ),
   ];
-  late final List<_StoryCharacterDraft> _characters = [
-    for (final c in widget.story?.characters ?? const <StoryCharacter>[])
-      _StoryCharacterDraft(
-        nameText: c.name,
-        avatarText: c.avatar,
-        personaText: c.persona,
-        descriptionText: c.description,
-      ),
+  late final List<CharacterCard> _characters = [
+    ...widget.story?.characters ?? const <CharacterCard>[],
   ];
   late final List<_StoryVariableDraft> _variables = [
     for (final v in widget.story?.variables ?? const <StoryVariable>[])
@@ -606,9 +576,6 @@ class _StoryEditorState extends State<_StoryEditor> {
     for (final p in _panels) {
       p.dispose();
     }
-    for (final c in _characters) {
-      c.dispose();
-    }
     for (final v in _variables) {
       v.dispose();
     }
@@ -676,15 +643,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       ],
       characters: [
         for (final c in _characters)
-          if (c.name.text.trim().isNotEmpty)
-            StoryCharacter(
-              name: c.name.text.trim(),
-              avatar: c.avatar.text.trim().isEmpty
-                  ? '🧑'
-                  : c.avatar.text.trim(),
-              persona: c.persona.text.trim(),
-              description: c.description.text.trim(),
-            ),
+          if (c.name.trim().isNotEmpty) c,
       ],
       variables: [
         for (final v in _variables)
@@ -725,6 +684,110 @@ class _StoryEditorState extends State<_StoryEditor> {
       App.rootContext.showMessage(message: t.saved);
       App.rootContext.pop();
     }
+  }
+
+  /// 编辑/新增角色卡（index 为空表示新增）
+  Future<void> _editCharacter(int? index) async {
+    final existing = index == null ? null : _characters[index];
+    final result = await showCharacterCardEditor(App.rootContext, existing);
+    if (result == null || !mounted) return;
+    setState(() {
+      if (index == null) {
+        _characters.add(result);
+      } else {
+        _characters[index] = result;
+      }
+    });
+  }
+
+  /// 导入角色卡：从文件或从角色卡库
+  Future<void> _importCharacterCard() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.file_open_outlined),
+              title: Text(t.importEntries),
+              onTap: () => Navigator.of(ctx).pop('file'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: Text(t.characterImportFromLibrary),
+              onTap: () => Navigator.of(ctx).pop('library'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (choice == 'file') {
+      await _importCharacterFromFile();
+    } else if (choice == 'library') {
+      await _pickCharacterFromLibrary();
+    }
+  }
+
+  /// 从文件导入角色卡（JSON / PNG）
+  Future<void> _importCharacterFromFile() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json', 'png'],
+    );
+    if (result == null || result.files.isEmpty) return;
+    try {
+      final bytes = await result.files.first.readAsBytes();
+      final card = CharacterCard.fromBytes(bytes);
+      if (card == null) {
+        App.rootContext.showMessage(
+          message: t.characterImportFailed,
+          level: LogLevel.error,
+        );
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _characters.add(card));
+      App.rootContext.showMessage(message: t.storyImported);
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: t.characterImportFailed,
+        level: LogLevel.error,
+      );
+    }
+  }
+
+  /// 从全局角色卡库选择
+  Future<void> _pickCharacterFromLibrary() async {
+    await CharacterCardStore.instance.ensureLoaded();
+    final cards = CharacterCardStore.instance.cards;
+    if (cards.isEmpty) {
+      App.rootContext.showMessage(
+        message: t.characterCardsEmpty,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<CharacterCard>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final c in cards)
+              ListTile(
+                leading: Text(c.avatar, style: const TextStyle(fontSize: 22)),
+                title: Text(c.name),
+                subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
+                onTap: () => Navigator.of(ctx).pop(c),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _characters.add(picked));
   }
 
   @override
@@ -1220,61 +1283,53 @@ class _StoryEditorState extends State<_StoryEditor> {
           card([
             Row(
               children: [
-                SizedBox(
-                  width: 64,
-                  child: TextFormField(
-                    controller: _characters[i].avatar,
-                    decoration: InputDecoration(
-                      labelText: t.storyCharacterAvatar,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
+                Text(
+                  _characters[i].avatar,
+                  style: const TextStyle(fontSize: 24),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: TextFormField(
-                    controller: _characters[i].name,
-                    decoration: InputDecoration(
-                      labelText: t.storyCharacterName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _characters[i].name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      if (_characters[i].tags.isNotEmpty)
+                        Text(
+                          _characters[i].tags.join(' · '),
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                    ],
                   ),
                 ),
                 IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: t.edit,
+                  onPressed: () => _editCharacter(i),
+                ),
+                IconButton(
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: () => setState(() {
-                    _characters[i].dispose();
-                    _characters.removeAt(i);
-                  }),
+                  onPressed: () => setState(() => _characters.removeAt(i)),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _characters[i].persona,
-              decoration: InputDecoration(
-                labelText: t.storyCharacterPersona,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _characters[i].description,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: t.storyCharacterDescription,
-                alignLabelWithHint: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
           ]),
-        TextButton.icon(
-          onPressed: () => setState(() => _characters.add(_StoryCharacterDraft())),
-          icon: const Icon(Icons.add),
-          label: Text(t.storyAddCharacter),
+        Row(
+          children: [
+            TextButton.icon(
+              onPressed: () => _editCharacter(null),
+              icon: const Icon(Icons.add),
+              label: Text(t.storyAddCharacter),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _importCharacterCard,
+              icon: const Icon(Icons.file_open_outlined),
+              label: Text(t.importCharacter),
+            ),
+          ],
         ),
         sectionTitle(t.storyVariables),
         for (var i = 0; i < _variables.length; i++)
@@ -1659,8 +1714,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
       for (final c in story.characters) {
         buf.write('\n- ${c.name}');
-        if (c.persona.trim().isNotEmpty) buf.write('（${c.persona.trim()}）');
-        if (c.description.trim().isNotEmpty) buf.write('：${sub(c.description.trim())}');
+        if (c.personality.trim().isNotEmpty) {
+          buf.write('（${c.personality.trim()}）');
+        }
+        if (c.description.trim().isNotEmpty) {
+          buf.write('：${sub(c.description.trim())}');
+        }
       }
       if (state.present.isNotEmpty) {
         buf.write('\n当前在场：${state.present.join('、')}');
@@ -1826,8 +1885,43 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return result;
   }
 
+  /// 角色条点击：查看角色卡 / 对TA说话
+  Future<void> _characterMenu(CharacterCard c) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Text(c.avatar, style: const TextStyle(fontSize: 22)),
+              title: Text(c.name),
+              subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: Text(t.characterCards),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                showCharacterCardView(context, c);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_bubble_outline),
+              title: Text(t.storyTalkTo),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _addressCharacter(c);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 对某个角色说话：在输入框前缀「对XX：」并聚焦
-  void _addressCharacter(StoryCharacter c) {
+  void _addressCharacter(CharacterCard c) {
     final prefix = '对${c.name}：';
     if (!_input.text.startsWith(prefix)) {
       _input.text = '$prefix${_input.text}';
@@ -2208,7 +2302,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                           .colorScheme
                                           .primaryContainer
                                     : null,
-                                onPressed: () => _addressCharacter(c),
+                                onPressed: () => _characterMenu(c),
                               );
                             },
                           ),
@@ -3320,3 +3414,5 @@ class _ParsedReply {
     this.check,
   });
 }
+
+

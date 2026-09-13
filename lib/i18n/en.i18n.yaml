@@ -1660,6 +1660,21 @@ storyEquip: Equip
 storyUnequip: Unequip
 storyNextRound: Next round
 storyAchievementUnlocked: Achievement unlocked
+characterDescription: Description
+characterPersonality: Personality
+characterScenario: Scenario
+characterFirstMessage: First message
+characterExampleDialogue: Example dialogue
+characterSystemPrompt: System prompt
+characterPostHistory: Post-history instructions
+characterTags: Tags (comma separated)
+characterCreator: Creator
+characterCards: Character cards
+characterCardsEmpty: No character cards yet
+characterExport: Export character card
+characterCardSaved: Character card saved
+characterImportFromLibrary: Import from library
+storyTalkTo: Talk to
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

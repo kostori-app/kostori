@@ -1649,6 +1649,21 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyUnequip => '卸下';
 	@override String get storyNextRound => '下一回合';
 	@override String get storyAchievementUnlocked => '解锁成就';
+	@override String get characterDescription => '描述';
+	@override String get characterPersonality => '性格';
+	@override String get characterScenario => '场景';
+	@override String get characterFirstMessage => '开场白';
+	@override String get characterExampleDialogue => '对话示例';
+	@override String get characterSystemPrompt => '系统提示词';
+	@override String get characterPostHistory => '历史后指令';
+	@override String get characterTags => '标签（逗号分隔）';
+	@override String get characterCreator => '作者';
+	@override String get characterCards => '角色卡';
+	@override String get characterCardsEmpty => '暂无角色卡';
+	@override String get characterExport => '导出角色卡';
+	@override String get characterCardSaved => '角色卡已保存';
+	@override String get characterImportFromLibrary => '从角色卡库导入';
+	@override String get storyTalkTo => '对TA说话';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4337,6 +4352,21 @@ extension on TranslationsZhCn {
 			'storyUnequip' => '卸下',
 			'storyNextRound' => '下一回合',
 			'storyAchievementUnlocked' => '解锁成就',
+			'characterDescription' => '描述',
+			'characterPersonality' => '性格',
+			'characterScenario' => '场景',
+			'characterFirstMessage' => '开场白',
+			'characterExampleDialogue' => '对话示例',
+			'characterSystemPrompt' => '系统提示词',
+			'characterPostHistory' => '历史后指令',
+			'characterTags' => '标签（逗号分隔）',
+			'characterCreator' => '作者',
+			'characterCards' => '角色卡',
+			'characterCardsEmpty' => '暂无角色卡',
+			'characterExport' => '导出角色卡',
+			'characterCardSaved' => '角色卡已保存',
+			'characterImportFromLibrary' => '从角色卡库导入',
+			'storyTalkTo' => '对TA说话',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4718,6 +4748,8 @@ extension on TranslationsZhCn {
 			'statsTimelineTitle' => '条目统计',
 			'statsTimelineWatch' => ({required Object duration}) => '观看了 ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '点击 ${value} 次',
+			_ => null,
+		} ?? switch (path) {
 			'statsTimelineCommentCreated' => '创建了评论',
 			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改评论',
 			'statsTimelineRatingCreated' => '创建了评分',
@@ -4733,8 +4765,6 @@ extension on TranslationsZhCn {
 			'dropJsPluginHint' => '把 .js 插件文件拖到这里即可安装',
 			'mustBeJs' => '仅支持 .js 文件',
 			'pluginSourceList' => '插件源列表',
-			_ => null,
-		} ?? switch (path) {
 			'pluginRepoEmpty' => '还没有配置插件源仓库，点右上角添加',
 			'onlyEnabled' => '只显示已启用',
 			'filterLogged' => '已登录',
@@ -5232,6 +5262,8 @@ extension on TranslationsZhCn {
 			'trackN' => ({required Object n}) => '第 ${n} 轨',
 			'deviceInfo' => '设备信息',
 			'conversationInterrupted' => '对话流意外中断',
+			_ => null,
+		} ?? switch (path) {
 			'toolExecutionFailed' => ({required Object error}) => '工具执行失败: ${error}',
 			'apiKeyNotConfigured' => ({required Object source}) => '${source} API Key 未配置或已禁用',
 			'imageInvalid' => '图片无效',
@@ -5247,8 +5279,6 @@ extension on TranslationsZhCn {
 			'historyTooShort' => '历史消息太少，无需压缩',
 			'messageTooLarge' => '消息过大，最大允许 64KB',
 			'rateLimit' => '请求过于频繁，请稍后再试',
-			_ => null,
-		} ?? switch (path) {
 			'portBusy' => ({required Object start, required Object end}) => '端口 ${start} 到 ${end} 全部被占用',
 			'webSocketOnly' => '仅支持 WebSocket 连接',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具调用轮次过多',

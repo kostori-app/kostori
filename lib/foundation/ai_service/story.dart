@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 单项数值条（如 生命 100/100）
@@ -305,35 +306,6 @@ class StoryRegex {
     'target': target,
     'caseSensitive': caseSensitive,
     'multiLine': multiLine,
-  };
-}
-
-/// 故事角色（多角色同场）：AI 可分别扮演
-class StoryCharacter {
-  final String name;
-  final String avatar;
-  final String persona;
-  final String description;
-
-  const StoryCharacter({
-    required this.name,
-    this.avatar = '🧑',
-    this.persona = '',
-    this.description = '',
-  });
-
-  factory StoryCharacter.fromJson(Map<String, dynamic> json) => StoryCharacter(
-    name: json['name']?.toString() ?? '',
-    avatar: json['avatar']?.toString() ?? '🧑',
-    persona: json['persona']?.toString() ?? '',
-    description: json['description']?.toString() ?? '',
-  );
-
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'avatar': avatar,
-    'persona': persona,
-    'description': description,
   };
 }
 
@@ -796,8 +768,8 @@ class Story {
   /// 自定义面板分区（为空表示使用默认分区）
   final List<StoryPanel> panels;
 
-  /// 故事角色（多角色同场）
-  final List<StoryCharacter> characters;
+  /// 故事角色（多角色同场，复用角色卡模型）
+  final List<CharacterCard> characters;
 
   /// 故事变量声明（初值与说明）
   final List<StoryVariable> variables;
@@ -858,7 +830,7 @@ class Story {
     List<String>? worldBookIds,
     List<String>? injectionIds,
     List<StoryPanel>? panels,
-    List<StoryCharacter>? characters,
+    List<CharacterCard>? characters,
     List<StoryVariable>? variables,
     List<StoryRegex>? regexes,
     List<StoryAchievement>? achievements,
@@ -921,7 +893,7 @@ class Story {
     characters: json['characters'] is List
         ? [
             for (final e in json['characters'] as List)
-              if (e is Map) StoryCharacter.fromJson(e.cast<String, dynamic>()),
+              if (e is Map) CharacterCard.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
     variables: json['variables'] is List
@@ -1185,7 +1157,7 @@ class StoryStore extends ChangeNotifier {
       worldBookIds: idList('世界书库'),
       injectionIds: idList('提示词库'),
       panels: panels,
-      characters: mapList('角色', StoryCharacter.fromJson),
+      characters: mapList('角色', CharacterCard.fromJson),
       variables: mapList('变量', StoryVariable.fromJson),
       regexes: mapList('正则', StoryRegex.fromJson),
       achievements: mapList('成就', StoryAchievement.fromJson),

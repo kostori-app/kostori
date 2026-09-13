@@ -77,6 +77,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
   late List<String> _skillIds;
   late Set<String> _worldBookIds;
   late Set<String> _injectionIds;
+  late Set<String> _characterIds;
   late List<AssistantExtension> _extensions;
   late MemorySettings _memory;
   late List<McpBinding> _mcpServers;
@@ -149,9 +150,11 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     _skillIds = [...?p?.skillIds];
     _worldBookIds = {...?p?.worldBookIds};
     _injectionIds = {...?p?.injectionIds};
+    _characterIds = {...?p?.characterIds};
     _extensions = [...?p?.extensions];
     WorldBookStore.instance.ensureLoaded();
     PromptInjectionStore.instance.ensureLoaded();
+    CharacterCardStore.instance.ensureLoaded();
     _memory = p?.memory ?? const MemorySettings();
     _mcpServers = [...?p?.mcpServers];
     _behaviorPrefs = {
@@ -237,6 +240,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       skillIds: _skillIds,
       worldBookIds: _worldBookIds.toList(),
       injectionIds: _injectionIds.toList(),
+      characterIds: _characterIds.toList(),
       extensions: _extensions,
       memory: MemorySettings(
         enabled: _memory.enabled,
@@ -950,10 +954,12 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       listenable: Listenable.merge([
         WorldBookStore.instance,
         PromptInjectionStore.instance,
+        CharacterCardStore.instance,
       ]),
       builder: (context, _) {
         final worldBook = WorldBookStore.instance.entries;
         final injections = PromptInjectionStore.instance.items;
+        final cards = CharacterCardStore.instance.cards;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1024,6 +1030,39 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                       _injectionIds.add(i.id);
                     } else {
                       _injectionIds.remove(i.id);
+                    }
+                  }),
+                ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(Icons.badge_outlined, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  t.characterCards,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (cards.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(t.characterCardsEmpty, style: ts.s12),
+              )
+            else
+              for (final c in cards)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(c.name),
+                  value: _characterIds.contains(c.id),
+                  onChanged: (v) => setState(() {
+                    if (v == true) {
+                      _characterIds.add(c.id);
+                    } else {
+                      _characterIds.remove(c.id);
                     }
                   }),
                 ),

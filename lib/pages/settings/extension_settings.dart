@@ -41,6 +41,18 @@ class ExtensionSettingsPage extends StatelessWidget {
                   () => const PromptManagementSettingsPage(),
                 ),
               ),
+              ListTile(
+                leading: const Icon(Icons.badge_outlined),
+                title: Text(t.characterCards),
+                subtitle: Text(
+                  t.characterImportFromLibrary,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: const Icon(Icons.arrow_right, size: 20),
+                onTap: () => App.rootContext.to(
+                  () => const CharacterCardsSettingsPage(),
+                ),
+              ),
             ],
           ),
         ),

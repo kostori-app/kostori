@@ -1,0 +1,272 @@
+// 角色卡编辑 / 查看组件（故事与全局角色卡库共用）
+
+import 'package:flutter/material.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/i18n/strings.g.dart';
+
+/// 打开角色卡编辑器，返回编辑后的卡片（取消时为 null）
+Future<CharacterCard?> showCharacterCardEditor(
+  BuildContext context,
+  CharacterCard? card,
+) {
+  return showPopUpWidget<CharacterCard?>(
+    context,
+    CharacterCardEditor(card: card),
+  );
+}
+
+/// 角色卡编辑器（新增 / 编辑）
+class CharacterCardEditor extends StatefulWidget {
+  const CharacterCardEditor({super.key, this.card});
+
+  final CharacterCard? card;
+
+  @override
+  State<CharacterCardEditor> createState() => _CharacterCardEditorState();
+}
+
+class _CharacterCardEditorState extends State<CharacterCardEditor> {
+  final _formKey = GlobalKey<FormState>();
+  late final _nameCtrl = TextEditingController(text: widget.card?.name ?? '');
+  late final _avatarCtrl = TextEditingController(
+    text: widget.card?.avatar ?? '🧑',
+  );
+  late final _descCtrl = TextEditingController(
+    text: widget.card?.description ?? '',
+  );
+  late final _personalityCtrl = TextEditingController(
+    text: widget.card?.personality ?? '',
+  );
+  late final _scenarioCtrl = TextEditingController(
+    text: widget.card?.scenario ?? '',
+  );
+  late final _firstCtrl = TextEditingController(
+    text: widget.card?.firstMessage ?? '',
+  );
+  late final _exampleCtrl = TextEditingController(
+    text: widget.card?.exampleDialogue ?? '',
+  );
+  late final _systemCtrl = TextEditingController(
+    text: widget.card?.systemPrompt ?? '',
+  );
+  late final _postCtrl = TextEditingController(
+    text: widget.card?.postHistoryInstructions ?? '',
+  );
+  late final _tagsCtrl = TextEditingController(
+    text: (widget.card?.tags ?? const []).join(', '),
+  );
+  late final _creatorCtrl = TextEditingController(
+    text: widget.card?.creator ?? '',
+  );
+
+  bool get _isNew => widget.card == null;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _avatarCtrl.dispose();
+    _descCtrl.dispose();
+    _personalityCtrl.dispose();
+    _scenarioCtrl.dispose();
+    _firstCtrl.dispose();
+    _exampleCtrl.dispose();
+    _systemCtrl.dispose();
+    _postCtrl.dispose();
+    _tagsCtrl.dispose();
+    _creatorCtrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+    final card = CharacterCard(
+      id: widget.card?.id ?? 'card_${DateTime.now().microsecondsSinceEpoch}',
+      name: _nameCtrl.text.trim(),
+      avatar: _avatarCtrl.text.trim().isEmpty ? '🧑' : _avatarCtrl.text.trim(),
+      description: _descCtrl.text.trim(),
+      personality: _personalityCtrl.text.trim(),
+      scenario: _scenarioCtrl.text.trim(),
+      firstMessage: _firstCtrl.text.trim(),
+      exampleDialogue: _exampleCtrl.text.trim(),
+      systemPrompt: _systemCtrl.text.trim(),
+      postHistoryInstructions: _postCtrl.text.trim(),
+      tags: _tagsCtrl.text
+          .split(RegExp(r'[,，]'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      creator: _creatorCtrl.text.trim(),
+    );
+    Navigator.of(context).pop(card);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: _isNew ? t.storyAddCharacter : t.edit,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.check),
+          tooltip: t.apply,
+          onPressed: _save,
+        ),
+      ],
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _field(t.storyCharacterName, _nameCtrl),
+            _field(t.storyCharacterAvatar, _avatarCtrl, required: false),
+            _field(t.characterDescription, _descCtrl, multiline: true),
+            _field(t.characterPersonality, _personalityCtrl, multiline: true),
+            _field(t.characterScenario, _scenarioCtrl, multiline: true),
+            _field(t.characterFirstMessage, _firstCtrl, multiline: true),
+            _field(t.characterExampleDialogue, _exampleCtrl, multiline: true),
+            _field(t.characterSystemPrompt, _systemCtrl, multiline: true),
+            _field(t.characterPostHistory, _postCtrl, multiline: true),
+            _field(t.characterTags, _tagsCtrl, required: false),
+            _field(t.characterCreator, _creatorCtrl, required: false),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _field(
+    String label,
+    TextEditingController ctrl, {
+    bool required = true,
+    bool multiline = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: TextFormField(
+        controller: ctrl,
+        minLines: multiline ? 3 : 1,
+        maxLines: multiline ? 8 : 1,
+        decoration: InputDecoration(
+          labelText: label,
+          alignLabelWithHint: true,
+          border: const OutlineInputBorder(),
+        ),
+        validator: required
+            ? (v) => (v == null || v.trim().isEmpty) ? t.required : null
+            : null,
+      ),
+    );
+  }
+}
+
+/// 角色卡查看（只读展示）
+class CharacterCardView extends StatelessWidget {
+  const CharacterCardView({super.key, required this.card});
+
+  final CharacterCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget block(String title, String content) {
+      if (content.trim().isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: scheme.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            SelectableText(
+              content.trim(),
+              style: const TextStyle(fontSize: 13, height: 1.5),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(card.avatar, style: const TextStyle(fontSize: 40)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      card.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (card.creator.trim().isNotEmpty)
+                      Text(
+                        card.creator.trim(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (card.tags.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final tag in card.tags)
+                    Chip(
+                      label: Text(tag, style: const TextStyle(fontSize: 11)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+            ),
+          block(t.characterDescription, card.description),
+          block(t.characterPersonality, card.personality),
+          block(t.characterScenario, card.scenario),
+          block(t.characterFirstMessage, card.firstMessage),
+          block(t.characterExampleDialogue, card.exampleDialogue),
+          block(t.characterSystemPrompt, card.systemPrompt),
+          block(t.characterPostHistory, card.postHistoryInstructions),
+        ],
+      ),
+    );
+  }
+}
+
+/// 以底部弹窗展示角色卡
+Future<void> showCharacterCardView(BuildContext context, CharacterCard card) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => Sheet(
+      title: card.name,
+      icon: Icons.badge_outlined,
+      initialSize: 0.7,
+      builder: (ctx, sc) => ListView(
+        controller: sc,
+        children: [CharacterCardView(card: card)],
+      ),
+    ),
+  );
+}
