@@ -4804,6 +4804,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Add entry'
 	String get storyAddEntry => 'Add entry';
 
+	/// en: 'Import prompt'
+	String get storyImportPrompt => 'Import prompt';
+
+	/// en: 'Export as ST card'
+	String get storyExportSt => 'Export as ST card';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9892,6 +9898,8 @@ extension on Translations {
 			'storyLoreRecursive' => 'Recursive',
 			'storyNoEntries' => 'No entries yet',
 			'storyAddEntry' => 'Add entry',
+			'storyImportPrompt' => 'Import prompt',
+			'storyExportSt' => 'Export as ST card',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10308,10 +10316,10 @@ extension on Translations {
 			'editStartPoint' => 'Edit Start',
 			'editEndPoint' => 'Edit End',
 			'durationFormatHint' => 'Supported formats: 90, 01:30, 1.5...',
-			'secondsAsNumber' => 'Pure numbers are treated as seconds',
-			'exportSettings' => 'Export Settings',
 			_ => null,
 		} ?? switch (path) {
+			'secondsAsNumber' => 'Pure numbers are treated as seconds',
+			'exportSettings' => 'Export Settings',
 			'fixedBitrateOptional' => 'Fixed bitrate (optional, overrides CRF)',
 			'fixedBitrate' => 'Fixed bitrate',
 			'paletteColors' => 'Palette colors',
@@ -10822,10 +10830,10 @@ extension on Translations {
 			'downloadTitleFormat' => 'Download title format',
 			'downloadFormatHint' => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}',
 			'rules' => 'Rules',
-			'textRules' => 'Text rules',
-			'textRuleAdd' => 'Add rule',
 			_ => null,
 		} ?? switch (path) {
+			'textRules' => 'Text rules',
+			'textRuleAdd' => 'Add rule',
 			'textRuleName' => 'Rule name',
 			'textRuleFind' => 'Find (regex)',
 			'textRuleReplace' => 'Replace (group refs)',

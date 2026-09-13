@@ -81,22 +81,40 @@ List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
     return const [];
   }
 
-  void addFromMap(Map<String, dynamic> m, {bool skipDisabled = false}) {
-    if (skipDisabled && m['disable'] == true) return;
+  void addFromMap(Map<String, dynamic> m) {
     final triggers = triggersOf(m['triggers'] ?? m['keys'] ?? m['key']);
+    final secondary = triggersOf(m['secondaryKeys'] ?? m['secondary_keys']);
     final content = (m['content'] ?? '').toString();
-    if (triggers.isEmpty || content.trim().isEmpty) return;
+    final constant = m['constant'] == true;
+    // 常驻条目可以没有触发词
+    if ((triggers.isEmpty && !constant) || content.trim().isEmpty) return;
+    // ST position：0=before_char，其余视为 after
+    final position = switch (m['position']) {
+      final num p => p.toInt() == 0 ? 'before' : 'after',
+      final Object s when s.toString().contains('before') => 'before',
+      _ => 'after',
+    };
     out.add(
       WorldBookEntry(
         id: m['id']?.toString() ?? 'wb_${now}_${seq++}',
         name: (m['name'] ?? m['comment'] ?? 'Entry').toString(),
+        group: (m['group'] as String?) ?? '',
         triggers: triggers,
+        secondaryKeys: secondary,
         content: content,
         priority:
             (m['priority'] as num?)?.toInt() ??
+            (m['insertion_order'] as num?)?.toInt() ??
             (m['order'] as num?)?.toInt() ??
             0,
-        enabled: (m['enabled'] as bool?) ?? true,
+        enabled:
+            (m['enabled'] as bool?) ?? (m['disable'] == true ? false : true),
+        constant: constant,
+        recursive: m['recursive'] == true,
+        position: position,
+        depth: (m['depth'] as num?)?.toInt() ?? 4,
+        sticky: (m['sticky'] as num?)?.toInt() ?? 0,
+        cooldown: (m['cooldown'] as num?)?.toInt() ?? 0,
       ),
     );
   }
@@ -109,7 +127,11 @@ List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
     final entries = decoded['entries'];
     if (entries is Map) {
       for (final v in entries.values) {
-        if (v is Map) addFromMap(v.cast<String, dynamic>(), skipDisabled: true);
+        if (v is Map) addFromMap(v.cast<String, dynamic>());
+      }
+    } else if (entries is List) {
+      for (final v in entries) {
+        if (v is Map) addFromMap(v.cast<String, dynamic>());
       }
     } else {
       addFromMap(decoded.cast<String, dynamic>());

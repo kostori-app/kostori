@@ -1637,6 +1637,8 @@ storyLoreKeys: Keys
 storyLoreRecursive: Recursive
 storyNoEntries: No entries yet
 storyAddEntry: Add entry
+storyImportPrompt: Import prompt
+storyExportSt: Export as ST card
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned

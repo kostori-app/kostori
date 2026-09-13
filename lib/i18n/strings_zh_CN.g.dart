@@ -1626,6 +1626,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyLoreRecursive => '递归';
 	@override String get storyNoEntries => '暂无条目';
 	@override String get storyAddEntry => '添加条目';
+	@override String get storyImportPrompt => '导入提示词';
+	@override String get storyExportSt => '导出为 ST 角色卡';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4432,6 +4434,8 @@ extension on TranslationsZhCn {
 			'storyLoreRecursive' => '递归',
 			'storyNoEntries' => '暂无条目',
 			'storyAddEntry' => '添加条目',
+			'storyImportPrompt' => '导入提示词',
+			'storyExportSt' => '导出为 ST 角色卡',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4849,10 +4853,10 @@ extension on TranslationsZhCn {
 			'exportSettings' => '导出设置',
 			'h264CRF' => 'H.264 · CRF',
 			'withAudio' => '含音频',
-			'noAudio' => '无音频',
-			'ditherOn' => '抖动开',
 			_ => null,
 		} ?? switch (path) {
+			'noAudio' => '无音频',
+			'ditherOn' => '抖动开',
 			'ditherOff' => '抖动关',
 			'gifFormat' => 'GIF',
 			'apngFormat' => 'APNG',
@@ -5363,10 +5367,10 @@ extension on TranslationsZhCn {
 			'downloadTitleFormat' => '下载标题格式',
 			'downloadFormatHint' => '占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份',
 			'rules' => '规则',
-			'textRules' => '文本规则',
-			'textRuleAdd' => '新增规则',
 			_ => null,
 		} ?? switch (path) {
+			'textRules' => '文本规则',
+			'textRuleAdd' => '新增规则',
 			'textRuleName' => '规则名称',
 			'textRuleFind' => '查找（正则）',
 			'textRuleReplace' => '替换（支持分组引用）',

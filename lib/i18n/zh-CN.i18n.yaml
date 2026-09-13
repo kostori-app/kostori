@@ -1632,6 +1632,8 @@ storyLoreKeys: 触发词
 storyLoreRecursive: 递归
 storyNoEntries: 暂无条目
 storyAddEntry: 添加条目
+storyImportPrompt: 导入提示词
+storyExportSt: 导出为 ST 角色卡
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得

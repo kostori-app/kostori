@@ -1627,6 +1627,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyLoreRecursive => '遞迴';
 	@override String get storyNoEntries => '暫無條目';
 	@override String get storyAddEntry => '新增條目';
+	@override String get storyImportPrompt => '匯入提示詞';
+	@override String get storyExportSt => '匯出為 ST 角色卡';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4432,6 +4434,8 @@ extension on TranslationsZhTw {
 			'storyLoreRecursive' => '遞迴',
 			'storyNoEntries' => '暫無條目',
 			'storyAddEntry' => '新增條目',
+			'storyImportPrompt' => '匯入提示詞',
+			'storyExportSt' => '匯出為 ST 角色卡',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4848,10 +4852,10 @@ extension on TranslationsZhTw {
 			'secondsAsNumber' => '輸入純數字視為秒數',
 			'exportSettings' => '導出設定',
 			'paletteColorsHint' => '越少體積越小',
-			'ditherHint' => '畫質更好，體積稍大',
-			'aspectRatioPresets' => '寬高比快速預設',
 			_ => null,
 		} ?? switch (path) {
+			'ditherHint' => '畫質更好，體積稍大',
+			'aspectRatioPresets' => '寬高比快速預設',
 			'hideCropBox' => '隱藏裁剪框',
 			'showCropBox' => '顯示裁剪框（可拖曳）',
 			'dragToSelectExportArea' => '開啟後可透過拖曳選擇導出區域',
@@ -5362,10 +5366,10 @@ extension on TranslationsZhTw {
 			'downloadFormatHint' => '佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份',
 			'rules' => '規則',
 			'textRules' => '文字規則',
-			'textRuleAdd' => '新增規則',
-			'textRuleName' => '規則名稱',
 			_ => null,
 		} ?? switch (path) {
+			'textRuleAdd' => '新增規則',
+			'textRuleName' => '規則名稱',
 			'textRuleFind' => '尋找（正規表達式）',
 			'textRuleReplace' => '取代（支援分組引用）',
 			'textRuleCaseSensitive' => '區分大小寫',

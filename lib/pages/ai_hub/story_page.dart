@@ -37,6 +37,78 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     );
   }
 
+  /// 导出为 SillyTavern 可读的角色卡（V2，含内嵌世界书）
+  Future<void> _exportSt(Story s) async {
+    final data = <String, dynamic>{
+      'name': s.name,
+      'description': s.description,
+      'personality': '',
+      'scenario': s.situation,
+      'first_mes': s.opening,
+      'mes_example': '',
+      'system_prompt': s.systemPrompt,
+      'post_history_instructions': '',
+      'creator_notes': s.description,
+      'tags': <String>[],
+      'creator': '',
+      'character_version': '',
+      'alternate_greetings': <String>[],
+      'extensions': <String, dynamic>{},
+    };
+    final book = _storyLorebookJson(s);
+    if (book != null) data['character_book'] = book;
+    final card = {
+      'spec': 'chara_card_v2',
+      'spec_version': '2.0',
+      'data': data,
+    };
+    await saveFile(
+      data: utf8.encode(const JsonEncoder.withIndent('  ').convert(card)),
+      filename: '${s.name}.st.json',
+    );
+  }
+
+  /// 把故事的 `## 世界书` 文本（按【名称】分段）转成 ST character_book
+  Map<String, dynamic>? _storyLorebookJson(Story s) {
+    final text = s.worldBook.trim();
+    if (text.isEmpty) return null;
+    final entries = <Map<String, dynamic>>[];
+    var order = 0;
+    void add(String name, String content) {
+      if (content.trim().isEmpty) return;
+      entries.add({
+        'keys': <String>[],
+        'content': content.trim(),
+        'enabled': true,
+        'constant': true,
+        'insertion_order': order++,
+        'name': name,
+      });
+    }
+
+    final matches = RegExp(r'【([^】]*)】').allMatches(text).toList();
+    if (matches.isEmpty) {
+      add(s.name, text);
+    } else {
+      for (var i = 0; i < matches.length; i++) {
+        final name = matches[i].group(1) ?? '';
+        final start = matches[i].end;
+        final end = i + 1 < matches.length ? matches[i + 1].start : text.length;
+        add(name, text.substring(start, end));
+      }
+    }
+    if (entries.isEmpty) return null;
+    return {
+      'name': s.name,
+      'description': s.description,
+      'scan_depth': 4,
+      'token_budget': 500,
+      'recursive_scanning': false,
+      'extensions': <String, dynamic>{},
+      'entries': entries,
+    };
+  }
+
   Future<bool> _importBytes(Uint8List bytes) async {
     final text = utf8.decode(bytes);
     final story = StoryStore.storyFromMarkdown(text);
@@ -171,6 +243,7 @@ class _StoryPageState extends ConsumerState<StoryPage> {
                                   context.to(() => StoryGamePage(story: s)),
                               onEdit: () => _edit(s),
                               onExport: () => _export(s),
+                        onExportSt: () => _exportSt(s),
                               onRestart: () => _restart(s),
                               onDelete: s.isBuiltin ? null : () => _delete(s),
                             ),
@@ -260,6 +333,7 @@ class _StoryCard extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onExport,
+    required this.onExportSt,
     required this.onRestart,
     this.onDelete,
   });
@@ -268,6 +342,7 @@ class _StoryCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onExport;
+  final VoidCallback onExportSt;
   final VoidCallback onRestart;
   final VoidCallback? onDelete;
 
@@ -346,12 +421,17 @@ class _StoryCard extends StatelessWidget {
                 onSelected: (v) {
                   if (v == 'edit') onEdit();
                   if (v == 'export') onExport();
+                  if (v == 'export_st') onExportSt();
                   if (v == 'restart') onRestart();
                   if (v == 'delete') onDelete?.call();
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 'edit', child: Text(t.edit)),
                   PopupMenuItem(value: 'export', child: Text(t.exportEntries)),
+                  PopupMenuItem(
+                    value: 'export_st',
+                    child: Text(t.storyExportSt),
+                  ),
                   PopupMenuItem(value: 'restart', child: Text(t.storyRestart)),
                   if (onDelete != null)
                     PopupMenuItem(value: 'delete', child: Text(t.delete)),
@@ -1011,7 +1091,7 @@ class _StoryEditorState extends State<_StoryEditor> {
             _sectionCard(
               t.storySystemPrompt,
               Icons.psychology_outlined,
-              _textTab(_systemCtrl),
+              _systemPromptTab(),
             ),
             _sectionCard(
               t.storyWorldBook,
@@ -1143,6 +1223,99 @@ class _StoryEditorState extends State<_StoryEditor> {
         decoration: const InputDecoration(border: OutlineInputBorder()),
       ),
     );
+  }
+
+  /// 系统提示词：可导入 SillyTavern 预设 / 纯文本提示词
+  Widget _systemPromptTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _importPrompt,
+            icon: const Icon(Icons.file_open_outlined, size: 18),
+            label: Text(t.storyImportPrompt),
+          ),
+        ),
+        _textTab(_systemCtrl),
+      ],
+    );
+  }
+
+  Future<void> _importPrompt() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json', 'txt', 'md'],
+    );
+    if (result == null || result.files.isEmpty) return;
+    try {
+      final text = utf8.decode(await result.files.first.readAsBytes());
+      final prompt = _extractPrompt(text);
+      if (prompt == null || prompt.trim().isEmpty) {
+        App.rootContext.showMessage(
+          message: t.importFailed,
+          level: LogLevel.error,
+        );
+        return;
+      }
+      setState(() {
+        final cur = _systemCtrl.text.trim();
+        _systemCtrl.text = cur.isEmpty ? prompt.trim() : '$cur\n\n${prompt.trim()}';
+      });
+      App.rootContext.showMessage(message: t.storyImported);
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: t.importFailed,
+        level: LogLevel.error,
+      );
+    }
+  }
+
+  /// 从 ST 预设 JSON（prompts/prompt_order）或纯文本中提取提示词
+  String? _extractPrompt(String text) {
+    final trimmed = text.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is Map) {
+          final prompts = decoded['prompts'];
+          if (prompts is List) {
+            final enabled = <String>{};
+            final order = decoded['prompt_order'];
+            if (order is List && order.isNotEmpty) {
+              final first = order.first;
+              final list = first is Map ? first['order'] : first;
+              if (list is List) {
+                for (final o in list) {
+                  if (o is Map &&
+                      o['enabled'] != false &&
+                      o['identifier'] != null) {
+                    enabled.add(o['identifier'].toString());
+                  }
+                }
+              }
+            }
+            final buf = StringBuffer();
+            for (final p in prompts) {
+              if (p is! Map) continue;
+              final id = p['identifier']?.toString() ?? '';
+              if (enabled.isNotEmpty && !enabled.contains(id)) continue;
+              final c = (p['content'] ?? '').toString().trim();
+              if (c.isEmpty) continue;
+              buf.writeln('【${(p['name'] ?? id).toString()}】');
+              buf.writeln(c);
+              buf.writeln();
+            }
+            final out = buf.toString().trim();
+            if (out.isNotEmpty) return out;
+          }
+          final sp = decoded['system_prompt'] ?? decoded['systemPrompt'];
+          if (sp is String && sp.trim().isNotEmpty) return sp.trim();
+        }
+      } catch (_) {}
+    }
+    return trimmed;
   }
 
   Widget _worldBookTab() {
