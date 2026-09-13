@@ -70,6 +70,24 @@ class StoryRoleStyle {
   };
 }
 
+const _defaultQuote = StoryRoleStyle(light: 0xFFE76F51, dark: 0xFFF4A261);
+const _defaultBracket = StoryRoleStyle(
+  light: 0xFF0E9594,
+  dark: 0xFF43AA8B,
+  opacity: 0.9,
+);
+const _defaultItalic = StoryRoleStyle(
+  light: 0xFF277DA1,
+  dark: 0xFF7FB3D5,
+  opacity: 0.75,
+  fontStyle: 'italic',
+);
+const _defaultBold = StoryRoleStyle(
+  light: 0xFFB7791F,
+  dark: 0xFFE9C46A,
+  fontStyle: 'bold',
+);
+
 class StoryTextStyle {
   /// 文字阴影
   final bool shadow;
@@ -100,23 +118,10 @@ class StoryTextStyle {
     this.systemFont = true,
     this.fontScale = 1.0,
     this.quoteGlyph = StoryQuoteGlyph.curly,
-    this.quote = const StoryRoleStyle(),
-    this.bracket = const StoryRoleStyle(
-      light: 0xFF00796B,
-      dark: 0xFF4DB6AC,
-      opacity: 0.9,
-    ),
-    this.italic = const StoryRoleStyle(
-      light: 0xFF5E35B1,
-      dark: 0xFFB39DDB,
-      opacity: 0.75,
-      fontStyle: 'italic',
-    ),
-    this.bold = const StoryRoleStyle(
-      light: 0xFF1E88E5,
-      dark: 0xFF90CAF9,
-      fontStyle: 'bold',
-    ),
+    this.quote = _defaultQuote,
+    this.bracket = _defaultBracket,
+    this.italic = _defaultItalic,
+    this.bold = _defaultBold,
   });
 
   StoryTextStyle copyWith({
@@ -140,8 +145,18 @@ class StoryTextStyle {
   );
 
   factory StoryTextStyle.fromJson(Map<String, dynamic> json) {
-    StoryRoleStyle role(Object? v, StoryRoleStyle fallback) =>
-        v is Map ? StoryRoleStyle.fromJson(v.cast<String, dynamic>()) : fallback;
+    // 缺颜色时用默认色补上（兼容旧数据）
+    StoryRoleStyle role(Object? v, StoryRoleStyle fallback) {
+      if (v is! Map) return fallback;
+      final p = StoryRoleStyle.fromJson(v.cast<String, dynamic>());
+      return StoryRoleStyle(
+        light: p.light ?? fallback.light,
+        dark: p.dark ?? fallback.dark,
+        opacity: p.opacity,
+        fontStyle: p.fontStyle,
+      );
+    }
+
     return StoryTextStyle(
       shadow: json['shadow'] as bool? ?? false,
       systemFont: json['systemFont'] as bool? ?? true,
@@ -150,32 +165,10 @@ class StoryTextStyle {
         (g) => g.name == json['quoteGlyph'],
         orElse: () => StoryQuoteGlyph.curly,
       ),
-      quote: role(json['quote'], const StoryRoleStyle()),
-      bracket: role(
-        json['bracket'],
-        const StoryRoleStyle(
-          light: 0xFF00796B,
-          dark: 0xFF4DB6AC,
-          opacity: 0.9,
-        ),
-      ),
-      italic: role(
-        json['italic'],
-        const StoryRoleStyle(
-          light: 0xFF5E35B1,
-          dark: 0xFFB39DDB,
-          opacity: 0.75,
-          fontStyle: 'italic',
-        ),
-      ),
-      bold: role(
-        json['bold'],
-        const StoryRoleStyle(
-          light: 0xFF1E88E5,
-          dark: 0xFF90CAF9,
-          fontStyle: 'bold',
-        ),
-      ),
+      quote: role(json['quote'], _defaultQuote),
+      bracket: role(json['bracket'], _defaultBracket),
+      italic: role(json['italic'], _defaultItalic),
+      bold: role(json['bold'], _defaultBold),
     );
   }
 
