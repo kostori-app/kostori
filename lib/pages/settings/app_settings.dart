@@ -1216,6 +1216,27 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     return Utils.dateFormat(t.millisecondsSinceEpoch);
   }
 
+  /// 该部分的历史备份：新版目录 + 旧版扁平目录（迁移前上传的备份在旧目录）
+  Future<List<RemoteFileInfo>> _partHistoryFiles(SyncPart part) async {
+    final sync = DataSync();
+    final legacyDir = part.dir.contains('/')
+        ? part.dir.split('/').first
+        : part.dir;
+    final out = <RemoteFileInfo>[];
+    for (final dir in {part.dir, legacyDir}) {
+      final res = await sync.listRemoteEntries(dir: dir);
+      out.addAll(res.dataOrNull ?? const <RemoteFileInfo>[]);
+    }
+    return out
+        .where(
+          (f) => f.name.startsWith(part.name) && f.name.endsWith('.kostori'),
+        )
+        .toList()
+      ..sort(
+        (a, b) => _versionOfName(b.name).compareTo(_versionOfName(a.name)),
+      );
+  }
+
   Future<void> _showPartHistory(SyncPart part) async {
     await showModalBottomSheet(
       context: context,
@@ -1224,23 +1245,13 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       builder: (_) => Sheet(
         title: '${_partLabel(part.key)} · ${t.syncHistory}',
         icon: Icons.history,
-        builder: (ctx, sc) => FutureBuilder<Res<List<RemoteFileInfo>>>(
-          future: DataSync().listRemoteEntries(dir: part.dir),
+        builder: (ctx, sc) => FutureBuilder<List<RemoteFileInfo>>(
+          future: _partHistoryFiles(part),
           builder: (ctx, snap) {
             if (!snap.hasData) {
               return const Center(child: PolygonRefreshIndicator());
             }
-            final files = (snap.data!.dataOrNull ?? const <RemoteFileInfo>[])
-                .where(
-                  (f) =>
-                      f.name.startsWith('${part.name}-') &&
-                      f.name.endsWith('.kostori'),
-                )
-                .toList()
-              ..sort(
-                (a, b) =>
-                    _versionOfName(b.name).compareTo(_versionOfName(a.name)),
-              );
+            final files = snap.data!;
             if (files.isEmpty) {
               return Center(
                 child: Text(

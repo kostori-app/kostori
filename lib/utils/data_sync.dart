@@ -403,14 +403,21 @@ class DataSync with ChangeNotifier {
       final local = File(
         FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
       );
-      await client.read2File(
-        _join(_normDir(part.dir), remoteName),
+      Future<void> pull(String remoteDir) => client.read2File(
+        _join(_normDir(remoteDir), remoteName),
         local.path,
         onProgress: (count, total) {
           _progress = total > 0 ? count / total : null;
           notifyListeners();
         },
       );
+      try {
+        await pull(part.dir);
+      } catch (_) {
+        final legacy = _legacyDir(part);
+        if (legacy == part.dir) rethrow;
+        await pull(legacy);
+      }
       await importPart(local);
       local.deleteIgnoreError();
       return const Res(true);
