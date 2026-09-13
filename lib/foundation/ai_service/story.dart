@@ -73,10 +73,43 @@ class QuestItem {
         chain: v['chain']?.toString() ?? '',
         stage: (v['stage'] as num?)?.toInt() ?? 0,
         totalStages: (v['totalStages'] as num?)?.toInt() ?? 0,
-        status: v['status']?.toString() ?? 'active',
+        status: normalizeStatus(v['status']),
       );
     }
     return QuestItem(title: v.toString());
+  }
+
+  /// 归一化模型输出的状态写法（done/completed/已完成… → done）
+  static String normalizeStatus(Object? v) {
+    final s = v?.toString().trim().toLowerCase() ?? '';
+    const done = {
+      'done',
+      'completed',
+      'complete',
+      'finished',
+      'success',
+      '已完成',
+      '完成',
+      '已结束',
+      '成功',
+    };
+    const failed = {
+      'failed',
+      'fail',
+      'failure',
+      '已失败',
+      '失败',
+    };
+    if (done.contains(s)) return 'done';
+    if (failed.contains(s)) return 'failed';
+    return 'active';
+  }
+
+  /// 进度条占比：已完成 → 满；分阶段 → stage/totalStages；否则 progress/100
+  double get progressFraction {
+    if (status == 'done') return 1;
+    if (totalStages > 0) return (stage / totalStages).clamp(0.0, 1.0);
+    return (progress / 100).clamp(0.0, 1.0);
   }
 
   Map<String, dynamic> toJson() => {
@@ -1190,8 +1223,19 @@ class GameState {
         if (e.value is num) attributes[e.key.toString()] = (e.value as num).toInt();
       }
     }
-    List<String> strs(dynamic v) =>
-        v is List ? v.map((e) => e.toString()).toList() : const [];
+    // 过滤模型偶尔塞进清单的“整句”（如「修lepink取得…。」），只保留条目名
+    List<String> strs(dynamic v) {
+      if (v is! List) return const [];
+      final out = <String>[];
+      for (final e in v) {
+        final s = e.toString().trim();
+        if (s.isEmpty || s.length > 30) continue;
+        if (RegExp(r'[。！？；，：]').hasMatch(s)) continue;
+        out.add(s);
+      }
+      return out;
+    }
+
     return GameState(
       resources: resources,
       attributes: attributes,
@@ -1245,8 +1289,7 @@ class GameState {
       base: json['base'] is Map
           ? BaseState.fromJson((json['base'] as Map).cast<String, dynamic>())
           : const BaseState(),
-      equipped: (json['equipped'] as List?)?.whereType<String>().toList() ??
-          const [],
+      equipped: strs(json['equipped']),
       combat: json['combat'] is Map
           ? CombatState.fromJson((json['combat'] as Map).cast<String, dynamic>())
           : CombatState.idle,
@@ -1777,6 +1820,7 @@ class Story {
 - events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
 - choices 提供 3-5 个可供玩家选择的行动：每条不超过 15 个字，动词开头，只写行动本身，不要解释、后果或括号补充。
 - **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent/body），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
+- **inventory/equipped/skills 只写名称**：这些数组里每一项都必须是简短的条目名（可带「x数量」，如「瓶盖 x23」），**不要写动作、句子或叙述**（例如「穿上雨披」「取得号码牌，与钥匙吻合。」都是错误写法）；物品的说明写进对应 codex 的 display/mechanics。
 - **身体/状态词条**：损伤、体温、感染、疲劳等生理状态用 codex 的 kind=body 登记，会归入「身体」栏。
 - **称号**：获得称号时把其 key 加入 titles（可带 stacks 层数、equipped 是否佩戴）；只能使用故事预定义的称号 key。
 - **状态效果**：用 effects 记录当前 buff/debuff（name、kind=buff|debuff、stacks 层数、remaining 剩余回合、description）；remaining 减到 0 即移除。
@@ -1787,7 +1831,7 @@ class Story {
 - **角色状态**：npcs 给出在场角色的运行状态：resources（生命等数值条）、attributes（属性）、skills（技能）、inventory（携带）、affinity（对玩家的好感度）、status（姿态/状态描述）。角色并非无敌，受伤、消耗、好感变化都要反映在 npcs 里；不在场可省略。
 - **装备**：equipped 列出当前已装备的物品（必须在 inventory 中）；装备的 codex 机制生效，未装备则不生效。
 - **战斗**：进入战斗时给出 combat（active=true、round、敌人血量），战斗结束设 active=false；回合推进由玩家发起。
-- **任务链**：同一 chain 的任务构成任务链，用 stage/totalStages 标记阶段，完成/失败改 status。
+- **任务链**：同一 chain 的任务构成任务链，用 stage/totalStages 标记阶段。status 只能取 active / done / failed 三者之一（不要写 completed 等其它写法）；标记为 done 时必须同时把 stage 设为 totalStages、progress 设为 100，避免出现「1/2 却已完成」这种矛盾。
 - **成就**：解锁成就时把其 key 加入 achievements；只能使用故事预定义的成就 key，不要自创。
 - **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。''');
     if (choicesPrompt.trim().isNotEmpty) {

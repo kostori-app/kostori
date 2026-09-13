@@ -512,7 +512,7 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
         );
       },
     );
-    return Container(
+    final track = Container(
       padding: widget.padding,
       decoration: widget.trackDecoration,
       child: widget.scrollable
@@ -523,6 +523,17 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
             )
           : content,
     );
+    // 非滚动时轨道按内容宽度收缩（不占满整行），并按 alignment 对齐/居中
+    if (widget.scrollable) return track;
+    final alignment = switch (widget.alignment) {
+      WrapAlignment.center ||
+      WrapAlignment.spaceBetween ||
+      WrapAlignment.spaceAround ||
+      WrapAlignment.spaceEvenly => Alignment.center,
+      WrapAlignment.end => Alignment.centerRight,
+      _ => Alignment.centerLeft,
+    };
+    return Align(alignment: alignment, child: track);
   }
 }
 

@@ -5648,6 +5648,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: CapsuleOptions(
+              alignment: WrapAlignment.center,
               children: [
                 CapsuleOption(
                   text: t.storyState,
@@ -5806,7 +5807,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                   if (q.chain.isNotEmpty) ...[
                     const SizedBox(width: 6),
                     Text(
-                      q.totalStages > 1
+                      (q.status == 'active' && q.totalStages > 1)
                           ? '${q.chain} ${q.stage}/${q.totalStages}'
                           : q.chain,
                       style: TextStyle(
@@ -5840,9 +5841,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: q.status == 'done'
-                          ? 1.0
-                          : (q.progress / 100).clamp(0.0, 1.0),
+                      value: q.progressFraction,
                       minHeight: 6,
                       color: q.status == 'failed' ? scheme.error : null,
                     ),
@@ -5981,7 +5980,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: CapsuleOptions(
-              scrollable: true,
+              alignment: WrapAlignment.center,
               children: [
                 CapsuleOption(
                   text: t.filterAll,
