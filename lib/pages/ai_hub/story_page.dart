@@ -612,6 +612,7 @@ class _StoryEditorState extends State<_StoryEditor> {
     text: (widget.story?.deathResources ?? const []).join('、'),
   );
   late String _deathMode = widget.story?.deathMode ?? 'any';
+  int _tab = 0;
   late final _openingCtrl = TextEditingController(
     text: widget.story?.opening ?? '',
   );
@@ -1065,6 +1066,7 @@ class _StoryEditorState extends State<_StoryEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final tabs = _editorTabs();
     return PopUpWidgetScaffold(
       title: _isNew ? t.storyNew : t.storyEdit,
       tailing: [
@@ -1076,60 +1078,33 @@ class _StoryEditorState extends State<_StoryEditor> {
       ],
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+        child: Column(
           children: [
-            _sectionCard(t.basicInfo, Icons.info_outline, _basicTab()),
-            _sectionCard(
-              t.storyPersona,
-              Icons.person_outline,
-              _personaTab(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              child: CapsuleOptions(
+                scrollable: true,
+                children: [
+                  for (var i = 0; i < tabs.length; i++)
+                    CapsuleOption(
+                      text: tabs[i].$1,
+                      isSelected: _tab == i,
+                      onTap: () => setState(() => _tab = i),
+                    ),
+                ],
+              ),
             ),
-            _sectionCard(
-              t.storyOpening,
-              Icons.play_circle_outline,
-              _textTab(_openingCtrl),
-            ),
-            _sectionCard(
-              t.storySystemPrompt,
-              Icons.psychology_outlined,
-              _systemPromptTab(),
-            ),
-            _sectionCard(
-              t.storyWorldBook,
-              Icons.menu_book_outlined,
-              _worldBookTab(),
-            ),
-            _sectionCard(
-              t.storySituation,
-              Icons.public_outlined,
-              _textTab(_situationCtrl),
-            ),
-            _sectionCard(
-              t.storyInitialState,
-              Icons.tune,
-              _textTab(_stateCtrl),
-            ),
-            _sectionCard(
-              t.storyChoicesPrompt,
-              Icons.lightbulb_outline,
-              _textTab(_choicesCtrl),
-            ),
-            _sectionCard(
-              t.storyActions,
-              Icons.bolt_outlined,
-              _actionsTab(),
-            ),
-            _sectionCard(
-              t.storyLibrary,
-              Icons.collections_bookmark_outlined,
-              _libraryTab(),
-            ),
-            _sectionCard(t.storyPanels, Icons.dashboard_outlined, _panelsTab()),
-            _sectionCard(
-              t.storyAdvanced,
-              Icons.extension_outlined,
-              _advancedTab(),
+            Expanded(
+              child: IndexedStack(
+                index: _tab.clamp(0, tabs.length - 1),
+                children: [
+                  for (final tab in tabs)
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+                      child: tab.$2,
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1137,31 +1112,21 @@ class _StoryEditorState extends State<_StoryEditor> {
     );
   }
 
-  /// 分组卡片：标题 + 图标 + 内容（替代原 11 个页签）
-  Widget _sectionCard(String title, IconData icon, Widget child) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: scheme.outlineVariant, width: 0.6),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: title == t.basicInfo,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-          leading: Icon(icon, size: 20),
-          title: Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-          children: [child],
-        ),
-      ),
-    );
-  }
+  /// 编辑器分区（分段胶囊 tab）
+  List<(String, Widget)> _editorTabs() => [
+    (t.basicInfo, _basicTab()),
+    (t.storyPersona, _personaTab()),
+    (t.storyOpening, _textTab(_openingCtrl)),
+    (t.storySystemPrompt, _systemPromptTab()),
+    (t.storyWorldBook, _worldBookTab()),
+    (t.storySituation, _textTab(_situationCtrl)),
+    (t.storyInitialState, _textTab(_stateCtrl)),
+    (t.storyChoicesPrompt, _textTab(_choicesCtrl)),
+    (t.storyActions, _actionsTab()),
+    (t.storyLibrary, _libraryTab()),
+    (t.storyPanels, _panelsTab()),
+    (t.storyAdvanced, _advancedTab()),
+  ];
 
   Widget _basicTab() {
     return Column(
