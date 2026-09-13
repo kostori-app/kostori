@@ -33,9 +33,6 @@ class CharacterCardEditor extends StatefulWidget {
 class _CharacterCardEditorState extends State<CharacterCardEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.card?.name ?? '');
-  late final _avatarCtrl = TextEditingController(
-    text: widget.card?.avatar ?? '🧑',
-  );
   late final _descCtrl = TextEditingController(
     text: widget.card?.description ?? '',
   );
@@ -81,7 +78,6 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _avatarCtrl.dispose();
     _descCtrl.dispose();
     _personalityCtrl.dispose();
     _scenarioCtrl.dispose();
@@ -109,7 +105,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
     final card = CharacterCard(
       id: widget.card?.id ?? 'card_${DateTime.now().microsecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),
-      avatar: _avatarCtrl.text.trim().isEmpty ? '🧑' : _avatarCtrl.text.trim(),
+      avatar: widget.card?.avatar ?? '🧑',
       description: _descCtrl.text.trim(),
       personality: _personalityCtrl.text.trim(),
       scenario: _scenarioCtrl.text.trim(),
@@ -155,7 +151,6 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
           padding: const EdgeInsets.all(16),
           children: [
             _field(t.storyCharacterName, _nameCtrl),
-            _field(t.storyCharacterAvatar, _avatarCtrl, required: false),
             _field(t.characterDescription, _descCtrl, multiline: true),
             _field(t.characterPersonality, _personalityCtrl, multiline: true),
             _field(t.characterScenario, _scenarioCtrl, multiline: true),
@@ -244,32 +239,24 @@ class CharacterCardView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(card.avatar, style: const TextStyle(fontSize: 40)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (card.creator.trim().isNotEmpty)
-                      Text(
-                        card.creator.trim(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
+              Text(
+                card.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+              if (card.creator.trim().isNotEmpty)
+                Text(
+                  card.creator.trim(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
             ],
           ),
           if (card.tags.isNotEmpty)

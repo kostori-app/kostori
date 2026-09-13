@@ -220,8 +220,6 @@ class _StoryCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              Text(story.icon, style: const TextStyle(fontSize: 28)),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,7 +431,7 @@ class _StoryAchievementDraft {
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
-  late final _iconCtrl = TextEditingController(text: widget.story?.icon ?? '📖');
+
   late final _descCtrl = TextEditingController(
     text: widget.story?.description ?? '',
   );
@@ -451,9 +449,6 @@ class _StoryEditorState extends State<_StoryEditor> {
   );
   late final _personaNameCtrl = TextEditingController(
     text: widget.story?.persona.name ?? '',
-  );
-  late final _personaAvatarCtrl = TextEditingController(
-    text: widget.story?.persona.avatar ?? '🧑',
   );
   late final _personaDescCtrl = TextEditingController(
     text: widget.story?.persona.description ?? '',
@@ -569,13 +564,11 @@ class _StoryEditorState extends State<_StoryEditor> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _iconCtrl.dispose();
     _descCtrl.dispose();
     _openingCtrl.dispose();
     _systemCtrl.dispose();
     _situationCtrl.dispose();
     _personaNameCtrl.dispose();
-    _personaAvatarCtrl.dispose();
     _personaDescCtrl.dispose();
     _choicesCtrl.dispose();
     _stateCtrl.dispose();
@@ -623,7 +616,7 @@ class _StoryEditorState extends State<_StoryEditor> {
     final story = Story(
       id: widget.story?.id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),
-      icon: _iconCtrl.text.trim().isEmpty ? '📖' : _iconCtrl.text.trim(),
+      icon: widget.story?.icon ?? '📖',
       description: _descCtrl.text.trim(),
       opening: _openingCtrl.text.trim(),
       systemPrompt: _systemCtrl.text.trim(),
@@ -690,9 +683,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       ],
       persona: StoryPersona(
         name: _personaNameCtrl.text.trim(),
-        avatar: _personaAvatarCtrl.text.trim().isEmpty
-            ? '🧑'
-            : _personaAvatarCtrl.text.trim(),
+        avatar: widget.story?.persona.avatar ?? '🧑',
         description: _personaDescCtrl.text.trim(),
       ),
       initialState: initialState,
@@ -796,7 +787,6 @@ class _StoryEditorState extends State<_StoryEditor> {
           children: [
             for (final c in cards)
               ListTile(
-                leading: Text(c.avatar, style: const TextStyle(fontSize: 22)),
                 title: Text(c.name),
                 subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
                 onTap: () => Navigator.of(ctx).pop(c),
@@ -914,7 +904,6 @@ class _StoryEditorState extends State<_StoryEditor> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _field(t.name, _nameCtrl),
-        _field(t.rolePlayAvatar, _iconCtrl, required: false),
         _field(
           t.rolePlayDescription,
           _descCtrl,
@@ -938,7 +927,6 @@ class _StoryEditorState extends State<_StoryEditor> {
           ),
         ),
         _field(t.storyCharacterName, _personaNameCtrl, required: false),
-        _field(t.storyCharacterAvatar, _personaAvatarCtrl, required: false),
         _field(
           t.characterDescription,
           _personaDescCtrl,
@@ -1331,11 +1319,6 @@ class _StoryEditorState extends State<_StoryEditor> {
           card([
             Row(
               children: [
-                Text(
-                  _characters[i].avatar,
-                  style: const TextStyle(fontSize: 24),
-                ),
-                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2014,7 +1997,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Text(c.avatar, style: const TextStyle(fontSize: 22)),
               title: Text(c.name),
               subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
             ),
@@ -2038,14 +2020,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         ),
       ),
     );
-  }
-
-  /// 按角色名取头像（找不到时用默认）
-  String _avatarForName(String name) {
-    for (final c in story.characters) {
-      if (c.name == name) return c.avatar;
-    }
-    return '🧑';
   }
 
   /// 消息时间：yyyy-MM-dd HH:mm:ss
@@ -2294,7 +2268,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final sessionId = _sessionId;
     return Scaffold(
       appBar: Appbar(
-        title: Text('${story.icon} ${story.name}'),
+        title: Text(story.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.text_fields_outlined),
@@ -2368,7 +2342,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                 story.regexes,
                                                 'ai',
                                               ),
-                                              avatar: _avatarForName(seg.name),
                                             )
                                           : _StoryBubble(
                                               content: applyStoryRegex(
@@ -2414,10 +2387,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                             headerTime: _formatTime(
                                               m.createdAt,
                                             ),
-                                            headerAvatar:
-                                                persona.avatar.trim().isEmpty
-                                                ? '🧑'
-                                                : persona.avatar.trim(),
                                           )
                                         : Column(
                                             crossAxisAlignment:
@@ -2433,9 +2402,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                               story.regexes,
                                                               'ai',
                                                             ),
-                                                        avatar: _avatarForName(
-                                                          seg.name,
-                                                        ),
                                                       )
                                                     : _StoryBubble(
                                                         content:
@@ -2505,10 +2471,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               final c = story.characters[i];
                               final present = _state.present.contains(c.name);
                               return ActionChip(
-                                avatar: Text(
-                                  c.avatar,
-                                  style: const TextStyle(fontSize: 14),
-                                ),
                                 label: Text(c.name),
                                 backgroundColor: present
                                     ? Theme.of(context)
@@ -2663,7 +2625,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       groups.putIfAbsent(p.group, () => []).add(p);
     }
     return Scaffold(
-      appBar: Appbar(title: Text('${story.icon} ${story.name}')),
+      appBar: Appbar(title: Text(story.name)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -3635,8 +3597,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
       blocks.add(_sectionTitle(t.storyPersona));
       blocks.add(
         Text(
-          '${persona.avatar} '
-          '${persona.name.trim().isEmpty ? '' : persona.name.trim()}',
+          persona.name.trim(),
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       );

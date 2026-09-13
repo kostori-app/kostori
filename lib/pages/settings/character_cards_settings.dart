@@ -105,10 +105,6 @@ class _CharacterCardsSettingsPageState
                       padding: EdgeInsets.zero,
                       children: [
                         ListTile(
-                          leading: Text(
-                            c.avatar,
-                            style: const TextStyle(fontSize: 26),
-                          ),
                           title: Text(c.name),
                           subtitle: c.tags.isNotEmpty
                               ? Text(
