@@ -1394,6 +1394,10 @@ class StorySetupPart {
 /// 故事：整合好的世界书 + 设定 + 提示词 + 开局 + 后续建议提示词
 class Story {
   final String id;
+
+  /// 稳定标识（作者定义，如 `## 标识`）：导入时用它判断是否同一个故事，
+  /// 避免不同故事重名被误判为"更新"。
+  final String key;
   final String name;
   final String icon;
   final String description;
@@ -1486,6 +1490,7 @@ class Story {
 
   const Story({
     required this.id,
+    this.key = '',
     required this.name,
     this.icon = '📖',
     this.description = '',
@@ -1521,6 +1526,7 @@ class Story {
 
   Story copyWith({
     String? id,
+    String? key,
     String? name,
     String? icon,
     String? description,
@@ -1553,6 +1559,7 @@ class Story {
     GameState? initialState,
   }) => Story(
     id: id ?? this.id,
+    key: key ?? this.key,
     name: name ?? this.name,
     icon: icon ?? this.icon,
     description: description ?? this.description,
@@ -1588,6 +1595,7 @@ class Story {
 
   factory Story.fromJson(Map<String, dynamic> json) => Story(
     id: (json['id'] as String?) ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
+    key: (json['key'] as String?) ?? '',
     name: (json['name'] as String?) ?? '',
     icon: (json['icon'] as String?) ?? '📖',
     description: (json['description'] as String?) ?? '',
@@ -1684,6 +1692,7 @@ class Story {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'key': key,
     'name': name,
     'icon': icon,
     'description': description,
@@ -1856,6 +1865,13 @@ class StoryStore extends ChangeNotifier {
   List<Story> _stories = [];
   bool _loaded = false;
 
+  /// 每个故事的"基底"（最近一次导入 / 新建的内容）。
+  /// 应用内的编辑以覆盖层形式叠加在基底之上：重新导入同 key / 同名故事时
+  /// 只替换基底，覆盖层（用户的改动）保留并优先。
+  final Map<String, Story> _bases = {};
+
+  String _basePath(String id) => '$dirPath/$id.base.json';
+
   List<Story> get stories => List.unmodifiable(_stories);
 
   /// 故事目录（供 WebDAV 同步）
@@ -1863,6 +1879,7 @@ class StoryStore extends ChangeNotifier {
 
   Future<void> init() async {
     _stories = [];
+    _bases.clear();
     try {
       final dir = Directory(dirPath);
       await dir.create(recursive: true);
@@ -1875,6 +1892,16 @@ class StoryStore extends ChangeNotifier {
               ? name.substring(0, name.length - 3)
               : name;
           _stories.add(storyFromMarkdown(text, id: id));
+        } catch (_) {}
+      }
+      for (final s in _stories) {
+        final f = File(_basePath(s.id));
+        if (!f.existsSync()) continue;
+        try {
+          final decoded = jsonDecode(await f.readAsString());
+          if (decoded is Map) {
+            _bases[s.id] = Story.fromJson(decoded.cast<String, dynamic>());
+          }
         } catch (_) {}
       }
     } catch (_) {}
@@ -1909,6 +1936,41 @@ class StoryStore extends ChangeNotifier {
     await File('$dirPath/${story.id}.md').writeAsString(storyToMarkdown(story));
   }
 
+  Future<void> _writeBase(Story story) async {
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await File(_basePath(story.id)).writeAsString(jsonEncode(story.toJson()));
+  }
+
+  /// 全字段 JSON（toJson 会省略 null 字段，这里补齐便于做差集）
+  static Map<String, dynamic> storyJsonFull(Story s) {
+    final j = s.toJson();
+    j['job'] = s.job?.toJson();
+    j['temperature'] = s.temperature;
+    j['topP'] = s.topP;
+    j['maxTokens'] = s.maxTokens;
+    return j;
+  }
+
+  /// 覆盖层 = 编辑后相对基底的差异字段
+  static Map<String, dynamic> storyDiff(Story base, Story effective) {
+    final b = storyJsonFull(base);
+    final e = storyJsonFull(effective);
+    final out = <String, dynamic>{};
+    for (final k in e.keys) {
+      if (jsonEncode(e[k]) != jsonEncode(b[k])) out[k] = e[k];
+    }
+    return out;
+  }
+
+  /// 把覆盖层叠加到基底上（覆盖层优先）
+  static Story storyMerge(Story base, Map<String, dynamic> overlay) {
+    if (overlay.isEmpty) return base;
+    final json = {...storyJsonFull(base), ...overlay};
+    json['id'] = base.id;
+    return Story.fromJson(json);
+  }
+
   Future<void> ensureLoaded() async {
     if (!_loaded) await init();
   }
@@ -1920,14 +1982,36 @@ class StoryStore extends ChangeNotifier {
     return null;
   }
 
-  Future<void> upsert(Story story) async {
+  /// 保存故事。
+  /// [asBase] = true：导入/新建的基底，整体替换基底，但保留已有覆盖层；
+  /// 否则：编辑器里的编辑，只更新覆盖层（基底不变）。
+  Future<void> upsert(Story story, {bool asBase = false}) async {
     await ensureLoaded();
-    await _writeStory(story);
-    final idx = _stories.indexWhere((s) => s.id == story.id);
-    if (idx >= 0) {
-      _stories[idx] = story;
+    final id = story.id;
+    Story effective;
+    if (asBase) {
+      final oldBase = _bases[id];
+      final oldEffective = find(id);
+      final overlay = (oldBase != null && oldEffective != null)
+          ? storyDiff(oldBase, oldEffective)
+          : const <String, dynamic>{};
+      effective = storyMerge(story, overlay);
+      _bases[id] = story;
+      await _writeBase(story);
     } else {
-      _stories.add(story);
+      // 首次保存（尚无基底）时把当前内容作为基底，之后编辑才产生覆盖层
+      if (_bases[id] == null) {
+        _bases[id] = story;
+        await _writeBase(story);
+      }
+      effective = story;
+    }
+    await _writeStory(effective);
+    final idx = _stories.indexWhere((s) => s.id == id);
+    if (idx >= 0) {
+      _stories[idx] = effective;
+    } else {
+      _stories.add(effective);
     }
     notifyListeners();
   }
@@ -1936,12 +2020,15 @@ class StoryStore extends ChangeNotifier {
     await ensureLoaded();
     final s = find(id);
     if (s != null && s.isBuiltin) return false;
-    final f = File('$dirPath/$id.md');
-    if (f.existsSync()) {
-      try {
-        f.deleteSync();
-      } catch (_) {}
+    for (final path in ['$dirPath/$id.md', _basePath(id)]) {
+      final f = File(path);
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
     }
+    _bases.remove(id);
     _stories.removeWhere((s) => s.id == id);
     notifyListeners();
     return true;
@@ -2098,6 +2185,7 @@ class StoryStore extends ChangeNotifier {
     }
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
+      key: _section(text, '标识')?.trim() ?? '',
       name: name,
       description: description,
       opening: _section(text, '开局') ?? '',
@@ -2136,6 +2224,11 @@ class StoryStore extends ChangeNotifier {
     buf.writeln();
     if (s.description.isNotEmpty) {
       buf.writeln('> ${s.description}');
+      buf.writeln();
+    }
+    if (s.key.isNotEmpty) {
+      buf.writeln('## 标识');
+      buf.writeln(s.key.trim());
       buf.writeln();
     }
     void section(String title, String content) {

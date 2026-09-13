@@ -471,6 +471,35 @@ void main() {
       expect(back.settingIds, ['set_1', 'set_2']);
     });
 
+    test('stable key round trips through markdown', () {
+      const story = Story(id: 's', key: 'wasteland-survival', name: 'S');
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.key, 'wasteland-survival');
+    });
+
+    test('edit overlay survives re-importing the base', () {
+      const base = Story(id: 's', key: 'k', name: '旧名', opening: '原开局');
+      final edited = base.copyWith(name: '我的名字', systemPrompt: '我的提示词');
+      final overlay = StoryStore.storyDiff(base, edited);
+      expect(overlay.containsKey('name'), isTrue);
+      expect(overlay.containsKey('systemPrompt'), isTrue);
+      expect(overlay.containsKey('opening'), isFalse);
+
+      const newBase = Story(
+        id: 's',
+        key: 'k',
+        name: '旧名',
+        opening: '新开局',
+        worldBook: '新世界书',
+      );
+      final merged = StoryStore.storyMerge(newBase, overlay);
+      expect(merged.name, '我的名字'); // 覆盖层优先
+      expect(merged.systemPrompt, '我的提示词'); // 覆盖层保留
+      expect(merged.opening, '新开局'); // 基底的新内容
+      expect(merged.worldBook, '新世界书');
+    });
+
     test('mergeSettingLibrary merges codex/title/job/facility', () {
       const story = Story(id: 's', name: 'S');
       final merged = mergeSettingLibrary(story, const [

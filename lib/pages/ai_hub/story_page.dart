@@ -42,12 +42,24 @@ class _StoryPageState extends ConsumerState<StoryPage> {
   Future<String> _importBytes(Uint8List bytes) async {
     final text = utf8.decode(bytes);
     final parsed = StoryStore.storyFromMarkdown(text);
+    final key = parsed.key.trim();
     final name = parsed.name.trim();
     Story? existing;
-    for (final s in StoryStore.instance.stories) {
-      if (!s.isBuiltin && s.name.trim() == name) {
-        existing = s;
-        break;
+    // 优先按稳定 key 匹配（名称可能撞车）；没有 key 的老故事回退按名称
+    if (key.isNotEmpty) {
+      for (final s in StoryStore.instance.stories) {
+        if (!s.isBuiltin && s.key.trim() == key) {
+          existing = s;
+          break;
+        }
+      }
+    }
+    if (existing == null) {
+      for (final s in StoryStore.instance.stories) {
+        if (!s.isBuiltin && s.name.trim() == name) {
+          existing = s;
+          break;
+        }
       }
     }
     final id = existing?.id ?? parsed.id;
@@ -55,6 +67,7 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     final inline = parsed.characters;
     await StoryStore.instance.upsert(
       parsed.copyWith(id: id, characters: const []),
+      asBase: true,
     );
     if (inline.isNotEmpty) {
       final current = StoryCharacterStore.instance.get(id);
