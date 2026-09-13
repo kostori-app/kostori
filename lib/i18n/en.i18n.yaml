@@ -1675,6 +1675,13 @@ characterExport: Export character card
 characterCardSaved: Character card saved
 characterImportFromLibrary: Import from library
 storyTalkTo: Talk to
+characterNickname: Nickname
+characterCreatorNotes: Creator notes
+characterSource: Source links (one per line)
+characterGroupGreetings: Group-only greetings (one per line)
+characterExportV3: Export as V3
+characterExportV2: Export as V2
+characterSpec: Spec
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

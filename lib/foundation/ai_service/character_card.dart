@@ -5,9 +5,10 @@ import 'dart:convert';
 import 'dart:io' show zlib;
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 角色卡数据（兼容 SillyTavern V2 / V1 字段）
+/// 角色卡数据（兼容 SillyTavern V1 / V2 / V3 字段）
 class CharacterCard {
   final String id;
   final String name;
@@ -27,6 +28,35 @@ class CharacterCard {
   final String creator;
   final String version;
 
+  // ── V3 扩展字段 ──
+  /// 昵称（V3）
+  final String nickname;
+
+  /// 多语言创作者备注（V3）
+  final Map<String, String> creatorNotesMultilingual;
+
+  /// 来源链接（V3）
+  final List<String> source;
+
+  /// 仅群聊使用的开场白（V3）
+  final List<String> groupOnlyGreetings;
+
+  /// 创建 / 修改时间（V3，Unix 秒）
+  final int? creationDate;
+  final int? modificationDate;
+
+  /// 资源列表（V3，原样保留）
+  final List<Map<String, dynamic>> assets;
+
+  /// 扩展数据（原样保留，避免导入导出丢失）
+  final Map<String, dynamic> extensions;
+
+  /// 随卡世界书（character_book，V2/V3）
+  final Map<String, dynamic>? characterBook;
+
+  /// 来源规范版本（'' | '1.0' | '2.0' | '3.0'）
+  final String specVersion;
+
   const CharacterCard({
     required this.id,
     required this.name,
@@ -43,6 +73,16 @@ class CharacterCard {
     this.tags = const [],
     this.creator = '',
     this.version = '',
+    this.nickname = '',
+    this.creatorNotesMultilingual = const {},
+    this.source = const [],
+    this.groupOnlyGreetings = const [],
+    this.creationDate,
+    this.modificationDate,
+    this.assets = const [],
+    this.extensions = const {},
+    this.characterBook,
+    this.specVersion = '',
   });
 
   CharacterCard copyWith({
@@ -60,6 +100,16 @@ class CharacterCard {
     List<String>? tags,
     String? creator,
     String? version,
+    String? nickname,
+    Map<String, String>? creatorNotesMultilingual,
+    List<String>? source,
+    List<String>? groupOnlyGreetings,
+    int? creationDate,
+    int? modificationDate,
+    List<Map<String, dynamic>>? assets,
+    Map<String, dynamic>? extensions,
+    Map<String, dynamic>? characterBook,
+    String? specVersion,
   }) => CharacterCard(
     id: id,
     name: name ?? this.name,
@@ -77,11 +127,32 @@ class CharacterCard {
     tags: tags ?? this.tags,
     creator: creator ?? this.creator,
     version: version ?? this.version,
+    nickname: nickname ?? this.nickname,
+    creatorNotesMultilingual:
+        creatorNotesMultilingual ?? this.creatorNotesMultilingual,
+    source: source ?? this.source,
+    groupOnlyGreetings: groupOnlyGreetings ?? this.groupOnlyGreetings,
+    creationDate: creationDate ?? this.creationDate,
+    modificationDate: modificationDate ?? this.modificationDate,
+    assets: assets ?? this.assets,
+    extensions: extensions ?? this.extensions,
+    characterBook: characterBook ?? this.characterBook,
+    specVersion: specVersion ?? this.specVersion,
   );
 
   factory CharacterCard.fromJson(Map<String, dynamic> json) {
     List<String> strList(Object? v) =>
         v is List ? v.whereType<String>().toList() : const <String>[];
+    Map<String, dynamic> mapOf(Object? v) =>
+        v is Map ? v.cast<String, dynamic>() : const <String, dynamic>{};
+    final multilingual = <String, String>{};
+    final rawMulti = json['creatorNotesMultilingual'] ??
+        json['creator_notes_multilingual'];
+    if (rawMulti is Map) {
+      for (final e in rawMulti.entries) {
+        multilingual[e.key.toString()] = e.value?.toString() ?? '';
+      }
+    }
     return CharacterCard(
       id: (json['id'] as String?) ??
           'card_${DateTime.now().microsecondsSinceEpoch}',
@@ -112,6 +183,28 @@ class CharacterCard {
       creator: (json['creator'] as String?) ?? '',
       version:
           (json['version'] ?? json['character_version'])?.toString() ?? '',
+      nickname: (json['nickname'] as String?) ?? '',
+      creatorNotesMultilingual: multilingual,
+      source: strList(json['source']),
+      groupOnlyGreetings: strList(
+        json['groupOnlyGreetings'] ?? json['group_only_greetings'],
+      ),
+      creationDate: (json['creationDate'] ?? json['creation_date'] as num?)
+          ?.toInt(),
+      modificationDate:
+          (json['modificationDate'] ?? json['modification_date'] as num?)
+              ?.toInt(),
+      assets: [
+        for (final a in (json['assets'] as List? ?? const []))
+          if (a is Map) a.cast<String, dynamic>(),
+      ],
+      extensions: mapOf(json['extensions']),
+      characterBook: json['characterBook'] is Map
+          ? mapOf(json['characterBook'])
+          : (json['character_book'] is Map
+                ? mapOf(json['character_book'])
+                : null),
+      specVersion: (json['specVersion'] as String?) ?? '',
     );
   }
 
@@ -131,20 +224,31 @@ class CharacterCard {
     'tags': tags,
     'creator': creator,
     'version': version,
+    'nickname': nickname,
+    'creatorNotesMultilingual': creatorNotesMultilingual,
+    'source': source,
+    'groupOnlyGreetings': groupOnlyGreetings,
+    if (creationDate != null) 'creationDate': creationDate,
+    if (modificationDate != null) 'modificationDate': modificationDate,
+    'assets': assets,
+    'extensions': extensions,
+    if (characterBook != null) 'characterBook': characterBook,
+    'specVersion': specVersion,
   };
 
-  /// 解析酒馆角色卡 JSON（自动识别 V2 data 包裹 / V1 扁平结构）
+  /// 解析酒馆角色卡 JSON（V1 扁平 / V2、V3 data 包裹均支持）
   factory CharacterCard.fromSillyTavernJson(Map<String, dynamic> json) {
     final data = json['data'];
-    final source = data is Map ? data.cast<String, dynamic>() : json;
-    return CharacterCard.fromJson(source);
+    final inner = data is Map ? data.cast<String, dynamic>() : json;
+    final spec = (json['spec_version'] ?? json['specVersion'] ?? '').toString();
+    final card = CharacterCard.fromJson(inner);
+    return card.copyWith(specVersion: spec);
   }
 
-  /// 导出为酒馆 V2 格式
-  Map<String, dynamic> toSillyTavernJson() => {
-    'spec': 'chara_card_v2',
-    'spec_version': '2.0',
-    'data': {
+  /// 导出为酒馆格式（[spec] 为 2 或 3，默认 V3）
+  Map<String, dynamic> toSillyTavernJson({int spec = 3}) {
+    final isV3 = spec >= 3;
+    final data = <String, dynamic>{
       'name': name,
       'description': description,
       'personality': personality,
@@ -158,12 +262,29 @@ class CharacterCard {
       'tags': tags,
       'creator': creator,
       'character_version': version,
-    },
-  };
+      if (characterBook != null) 'character_book': characterBook,
+      if (extensions.isNotEmpty) 'extensions': extensions,
+      if (isV3) ...{
+        'nickname': nickname,
+        'creator_notes_multilingual': creatorNotesMultilingual,
+        'source': source,
+        'group_only_greetings': groupOnlyGreetings,
+        'creation_date': creationDate ?? 0,
+        'modification_date': modificationDate ?? 0,
+        'assets': assets,
+      },
+    };
+    return {
+      'spec': isV3 ? 'chara_card_v3' : 'chara_card_v2',
+      'spec_version': isV3 ? '3.0' : '2.0',
+      'data': data,
+    };
+  }
 
-  /// 酒馆角色卡文本：V2 JSON 的 base64
-  String toCharaText() =>
-      base64.encode(utf8.encode(jsonEncode(toSillyTavernJson())));
+  /// 酒馆角色卡文本：默认 V3 JSON 的 base64
+  String toCharaText({int spec = 3}) => base64.encode(
+    utf8.encode(jsonEncode(toSillyTavernJson(spec: spec))),
+  );
 
   /// 头像若为图片 data URL 则解码出原始字节
   Uint8List? decodeAvatarImage() {
@@ -244,6 +365,41 @@ class CharacterCard {
       }
     }
     return (crc ^ 0xFFFFFFFF) & 0xFFFFFFFF;
+  }
+
+  /// 随卡世界书转为世界书条目（供导入到世界书库）
+  List<WorldBookEntry> toWorldBookEntries() {
+    final book = characterBook;
+    if (book == null) return const [];
+    final entries = book['entries'];
+    if (entries is! List) return const [];
+    return [
+      for (final e in entries)
+        if (e is Map) _bookEntryToWorldBook(e.cast<String, dynamic>()),
+    ];
+  }
+
+  static WorldBookEntry _bookEntryToWorldBook(Map<String, dynamic> e) {
+    List<String> strList(Object? v) =>
+        v is List ? v.whereType<String>().toList() : const <String>[];
+    final position = e['position']?.toString() ?? '';
+    return WorldBookEntry(
+      id:
+          'wb_card_${e['id'] ?? e.hashCode}_'
+          '${DateTime.now().microsecondsSinceEpoch}',
+      name: (e['name'] ?? e['comment'] ?? '').toString(),
+      triggers: strList(e['keys'] ?? e['key']),
+      secondaryKeys: strList(e['secondary_keys'] ?? e['secondaryKeys']),
+      content: (e['content'] ?? '').toString(),
+      priority:
+          (e['priority'] as num?)?.toInt() ??
+          (e['insertion_order'] as num?)?.toInt() ??
+          0,
+      enabled: e['enabled'] as bool? ?? true,
+      constant: e['constant'] as bool? ?? false,
+      recursive: e['recursive'] as bool? ?? false,
+      position: position.contains('before') ? 'before' : 'after',
+    );
   }
 
   /// 供系统提示词注入的文本

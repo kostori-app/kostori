@@ -1670,6 +1670,13 @@ characterExport: 导出角色卡
 characterCardSaved: 角色卡已保存
 characterImportFromLibrary: 从角色卡库导入
 storyTalkTo: 对TA说话
+characterNickname: 昵称
+characterCreatorNotes: 创作者备注
+characterSource: 来源链接（每行一个）
+characterGroupGreetings: 群聊专用开场白（每行一个）
+characterExportV3: 导出为 V3
+characterExportV2: 导出为 V2
+characterSpec: 规范版本
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结

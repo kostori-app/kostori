@@ -166,6 +166,53 @@ void main() {
     });
   });
 
+  group('character card spec versions', () {
+    const card = CharacterCard(
+      id: 'c2',
+      name: 'V3角色',
+      nickname: '小V',
+      description: 'desc',
+      source: ['https://example.com'],
+      groupOnlyGreetings: ['群聊开场'],
+      tags: ['a'],
+      extensions: {'foo': 'bar'},
+    );
+
+    test('exports V3 by default and round-trips', () {
+      final json = card.toSillyTavernJson();
+      expect(json['spec'], 'chara_card_v3');
+      expect(json['spec_version'], '3.0');
+      final parsed = CharacterCard.fromSillyTavernJson(
+        json.cast<String, dynamic>(),
+      );
+      expect(parsed.name, 'V3角色');
+      expect(parsed.nickname, '小V');
+      expect(parsed.source, ['https://example.com']);
+      expect(parsed.groupOnlyGreetings, ['群聊开场']);
+      expect(parsed.specVersion, '3.0');
+      expect(parsed.extensions['foo'], 'bar');
+    });
+
+    test('exports V2 without V3-only fields', () {
+      final json = card.toSillyTavernJson(spec: 2);
+      expect(json['spec'], 'chara_card_v2');
+      final data = json['data'] as Map<String, dynamic>;
+      expect(data.containsKey('nickname'), isFalse);
+      expect(data.containsKey('source'), isFalse);
+      expect(data['name'], 'V3角色');
+    });
+
+    test('reads V1 flat cards', () {
+      final parsed = CharacterCard.fromSillyTavernJson({
+        'name': 'V1角色',
+        'description': 'flat',
+        'first_mes': 'hi',
+      });
+      expect(parsed.name, 'V1角色');
+      expect(parsed.firstMessage, 'hi');
+    });
+  });
+
   group('deviation helpers', () {
     test('calculateSD skips zero buckets', () {
       expect(Utils.calculateSD(List.filled(10, 0), 5, 1), 0);

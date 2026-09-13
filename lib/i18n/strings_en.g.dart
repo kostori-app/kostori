@@ -4918,6 +4918,27 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Talk to'
 	String get storyTalkTo => 'Talk to';
 
+	/// en: 'Nickname'
+	String get characterNickname => 'Nickname';
+
+	/// en: 'Creator notes'
+	String get characterCreatorNotes => 'Creator notes';
+
+	/// en: 'Source links (one per line)'
+	String get characterSource => 'Source links (one per line)';
+
+	/// en: 'Group-only greetings (one per line)'
+	String get characterGroupGreetings => 'Group-only greetings (one per line)';
+
+	/// en: 'Export as V3'
+	String get characterExportV3 => 'Export as V3';
+
+	/// en: 'Export as V2'
+	String get characterExportV2 => 'Export as V2';
+
+	/// en: 'Spec'
+	String get characterSpec => 'Spec';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9621,6 +9642,13 @@ extension on Translations {
 			'characterCardSaved' => 'Character card saved',
 			'characterImportFromLibrary' => 'Import from library',
 			'storyTalkTo' => 'Talk to',
+			'characterNickname' => 'Nickname',
+			'characterCreatorNotes' => 'Creator notes',
+			'characterSource' => 'Source links (one per line)',
+			'characterGroupGreetings' => 'Group-only greetings (one per line)',
+			'characterExportV3' => 'Export as V3',
+			'characterExportV2' => 'Export as V2',
+			'characterSpec' => 'Spec',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9994,6 +10022,8 @@ extension on Translations {
 			'statsMonthly' => 'Monthly',
 			'statsQuarterly' => 'Quarterly',
 			'statsHalfYearly' => 'Half-yearly',
+			_ => null,
+		} ?? switch (path) {
 			'statsYearly' => 'Yearly',
 			'statsDaily' => 'Daily',
 			'statsSourceList' => 'Source list',
@@ -10001,8 +10031,6 @@ extension on Translations {
 			'statsTimelineTitle' => 'Entry stats',
 			'statsTimelineWatch' => ({required Object duration}) => 'Watched ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '${value} clicks',
-			_ => null,
-		} ?? switch (path) {
 			'statsTimelineCommentCreated' => 'Comment created',
 			'statsTimelineCommentUpdated' => ({required Object n}) => 'Comment modified (${n})',
 			'statsTimelineRatingCreated' => 'Rating created',
@@ -10508,6 +10536,8 @@ extension on Translations {
 			'success' => 'Success',
 			'failedWithStatus' => ({required Object status}) => 'Failed (${status})',
 			'checkIn' => 'Check in',
+			_ => null,
+		} ?? switch (path) {
 			'button' => 'Button',
 			'requestFailedDetail' => ({required Object error}) => 'Request failed: ${error}',
 			'play' => 'Play',
@@ -10515,8 +10545,6 @@ extension on Translations {
 			'trackN' => ({required Object n}) => 'Track ${n}',
 			'deviceInfo' => 'Device info',
 			'conversationInterrupted' => 'Conversation stream interrupted unexpectedly',
-			_ => null,
-		} ?? switch (path) {
 			'toolExecutionFailed' => ({required Object error}) => 'Tool execution failed: ${error}',
 			'apiKeyNotConfigured' => ({required Object source}) => '${source} API Key is not configured or is disabled',
 			'imageInvalid' => 'Invalid image',

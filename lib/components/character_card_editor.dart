@@ -62,6 +62,18 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
   late final _creatorCtrl = TextEditingController(
     text: widget.card?.creator ?? '',
   );
+  late final _nicknameCtrl = TextEditingController(
+    text: widget.card?.nickname ?? '',
+  );
+  late final _creatorNotesCtrl = TextEditingController(
+    text: widget.card?.creatorNotes ?? '',
+  );
+  late final _sourceCtrl = TextEditingController(
+    text: (widget.card?.source ?? const []).join('\n'),
+  );
+  late final _groupGreetingsCtrl = TextEditingController(
+    text: (widget.card?.groupOnlyGreetings ?? const []).join('\n'),
+  );
 
   bool get _isNew => widget.card == null;
 
@@ -78,8 +90,18 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
     _postCtrl.dispose();
     _tagsCtrl.dispose();
     _creatorCtrl.dispose();
+    _nicknameCtrl.dispose();
+    _creatorNotesCtrl.dispose();
+    _sourceCtrl.dispose();
+    _groupGreetingsCtrl.dispose();
     super.dispose();
   }
+
+  List<String> _lines(TextEditingController ctrl) => ctrl.text
+      .split('\n')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
@@ -100,6 +122,17 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
           .where((e) => e.isNotEmpty)
           .toList(),
       creator: _creatorCtrl.text.trim(),
+      nickname: _nicknameCtrl.text.trim(),
+      creatorNotes: _creatorNotesCtrl.text.trim(),
+      source: _lines(_sourceCtrl),
+      groupOnlyGreetings: _lines(_groupGreetingsCtrl),
+      creationDate: widget.card?.creationDate,
+      modificationDate: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      creatorNotesMultilingual: widget.card?.creatorNotesMultilingual ?? const {},
+      assets: widget.card?.assets ?? const [],
+      extensions: widget.card?.extensions ?? const {},
+      characterBook: widget.card?.characterBook,
+      specVersion: widget.card?.specVersion ?? '3.0',
     );
     Navigator.of(context).pop(card);
   }
@@ -129,6 +162,15 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
             _field(t.characterExampleDialogue, _exampleCtrl, multiline: true),
             _field(t.characterSystemPrompt, _systemCtrl, multiline: true),
             _field(t.characterPostHistory, _postCtrl, multiline: true),
+            _field(t.characterNickname, _nicknameCtrl, required: false),
+            _field(t.characterCreatorNotes, _creatorNotesCtrl, multiline: true, required: false),
+            _field(t.characterSource, _sourceCtrl, multiline: true, required: false),
+            _field(
+              t.characterGroupGreetings,
+              _groupGreetingsCtrl,
+              multiline: true,
+              required: false,
+            ),
             _field(t.characterTags, _tagsCtrl, required: false),
             _field(t.characterCreator, _creatorCtrl, required: false),
           ],
@@ -244,6 +286,17 @@ class CharacterCardView extends StatelessWidget {
                 ],
               ),
             ),
+          if (card.nickname.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                card.nickname.trim(),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           block(t.characterDescription, card.description),
           block(t.characterPersonality, card.personality),
           block(t.characterScenario, card.scenario),
@@ -251,6 +304,17 @@ class CharacterCardView extends StatelessWidget {
           block(t.characterExampleDialogue, card.exampleDialogue),
           block(t.characterSystemPrompt, card.systemPrompt),
           block(t.characterPostHistory, card.postHistoryInstructions),
+          block(t.characterCreatorNotes, card.creatorNotes),
+          block(t.characterSource, card.source.join('\n')),
+          if (card.characterBook != null &&
+              card.toWorldBookEntries().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                '${t.worldBook} · ${card.toWorldBookEntries().length}',
+                style: TextStyle(fontSize: 12, color: scheme.primary),
+              ),
+            ),
         ],
       ),
     );
@@ -314,11 +378,17 @@ Future<Uint8List?> renderCharacterCardImage(
 }
 
 /// 导出角色卡为 PNG（内嵌 chara 块），酒馆可直接导入
-Future<void> exportCharacterCardPng(CharacterCard card) async {
+Future<void> exportCharacterCardPng(
+  CharacterCard card, {
+  int spec = 3,
+}) async {
   final base =
       card.decodeAvatarImage() ?? await renderCharacterCardImage(card);
   if (base == null) return;
-  final png = CharacterCard.embedCharaChunk(base, card.toCharaText());
+  final png = CharacterCard.embedCharaChunk(
+    base,
+    card.toCharaText(spec: spec),
+  );
   await saveFile(data: png, filename: '${card.name}.png');
 }
 

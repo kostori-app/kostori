@@ -1664,6 +1664,13 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterCardSaved => '角色卡已保存';
 	@override String get characterImportFromLibrary => '从角色卡库导入';
 	@override String get storyTalkTo => '对TA说话';
+	@override String get characterNickname => '昵称';
+	@override String get characterCreatorNotes => '创作者备注';
+	@override String get characterSource => '来源链接（每行一个）';
+	@override String get characterGroupGreetings => '群聊专用开场白（每行一个）';
+	@override String get characterExportV3 => '导出为 V3';
+	@override String get characterExportV2 => '导出为 V2';
+	@override String get characterSpec => '规范版本';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4367,6 +4374,13 @@ extension on TranslationsZhCn {
 			'characterCardSaved' => '角色卡已保存',
 			'characterImportFromLibrary' => '从角色卡库导入',
 			'storyTalkTo' => '对TA说话',
+			'characterNickname' => '昵称',
+			'characterCreatorNotes' => '创作者备注',
+			'characterSource' => '来源链接（每行一个）',
+			'characterGroupGreetings' => '群聊专用开场白（每行一个）',
+			'characterExportV3' => '导出为 V3',
+			'characterExportV2' => '导出为 V2',
+			'characterSpec' => '规范版本',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4741,6 +4755,8 @@ extension on TranslationsZhCn {
 			'statsMonthly' => '月统计',
 			'statsQuarterly' => '季统计',
 			'statsHalfYearly' => '半年统计',
+			_ => null,
+		} ?? switch (path) {
 			'statsYearly' => '年统计',
 			'statsDaily' => '天统计',
 			'statsSourceList' => '来源清单',
@@ -4748,8 +4764,6 @@ extension on TranslationsZhCn {
 			'statsTimelineTitle' => '条目统计',
 			'statsTimelineWatch' => ({required Object duration}) => '观看了 ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '点击 ${value} 次',
-			_ => null,
-		} ?? switch (path) {
 			'statsTimelineCommentCreated' => '创建了评论',
 			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改评论',
 			'statsTimelineRatingCreated' => '创建了评分',
@@ -5255,6 +5269,8 @@ extension on TranslationsZhCn {
 			'success' => '成功',
 			'failedWithStatus' => ({required Object status}) => '失败 (${status})',
 			'checkIn' => '签到',
+			_ => null,
+		} ?? switch (path) {
 			'button' => '按钮',
 			'requestFailedDetail' => ({required Object error}) => '请求失败: ${error}',
 			'play' => '播放',
@@ -5262,8 +5278,6 @@ extension on TranslationsZhCn {
 			'trackN' => ({required Object n}) => '第 ${n} 轨',
 			'deviceInfo' => '设备信息',
 			'conversationInterrupted' => '对话流意外中断',
-			_ => null,
-		} ?? switch (path) {
 			'toolExecutionFailed' => ({required Object error}) => '工具执行失败: ${error}',
 			'apiKeyNotConfigured' => ({required Object source}) => '${source} API Key 未配置或已禁用',
 			'imageInvalid' => '图片无效',

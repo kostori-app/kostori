@@ -1665,6 +1665,13 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterCardSaved => '角色卡已儲存';
 	@override String get characterImportFromLibrary => '從角色卡庫匯入';
 	@override String get storyTalkTo => '對TA說話';
+	@override String get characterNickname => '暱稱';
+	@override String get characterCreatorNotes => '創作者備註';
+	@override String get characterSource => '來源連結（每行一個）';
+	@override String get characterGroupGreetings => '群聊專用開場白（每行一個）';
+	@override String get characterExportV3 => '匯出為 V3';
+	@override String get characterExportV2 => '匯出為 V2';
+	@override String get characterSpec => '規範版本';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4367,6 +4374,13 @@ extension on TranslationsZhTw {
 			'characterCardSaved' => '角色卡已儲存',
 			'characterImportFromLibrary' => '從角色卡庫匯入',
 			'storyTalkTo' => '對TA說話',
+			'characterNickname' => '暱稱',
+			'characterCreatorNotes' => '創作者備註',
+			'characterSource' => '來源連結（每行一個）',
+			'characterGroupGreetings' => '群聊專用開場白（每行一個）',
+			'characterExportV3' => '匯出為 V3',
+			'characterExportV2' => '匯出為 V2',
+			'characterSpec' => '規範版本',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4740,6 +4754,8 @@ extension on TranslationsZhTw {
 			'statsQuarterly' => '季統計',
 			'statsHalfYearly' => '半年統計',
 			'statsYearly' => '年統計',
+			_ => null,
+		} ?? switch (path) {
 			'statsDaily' => '日統計',
 			'statsSourceList' => '來源清單',
 			'statsSelectDate' => '選擇日期',
@@ -4747,8 +4763,6 @@ extension on TranslationsZhTw {
 			'statsTimelineWatch' => ({required Object duration}) => '觀看了 ${duration}',
 			'statsTimelineClick' => ({required Object value}) => '點擊 ${value} 次',
 			'statsTimelineCommentCreated' => '建立了評論',
-			_ => null,
-		} ?? switch (path) {
 			'statsTimelineCommentUpdated' => ({required Object n}) => '第 ${n} 次修改評論',
 			'statsTimelineRatingCreated' => '建立了評分',
 			'statsTimelineRatingUpdated' => ({required Object n}) => '第 ${n} 次修改評分',
@@ -5254,6 +5268,8 @@ extension on TranslationsZhTw {
 			'failedWithStatus' => ({required Object status}) => '失敗 (${status})',
 			'checkIn' => '簽到',
 			'button' => '按鈕',
+			_ => null,
+		} ?? switch (path) {
 			'requestFailedDetail' => ({required Object error}) => '請求失敗: ${error}',
 			'play' => '播放',
 			'nextEpisode' => '下一集',
@@ -5261,8 +5277,6 @@ extension on TranslationsZhTw {
 			'deviceInfo' => '設備資訊',
 			'conversationInterrupted' => '對話流意外中斷',
 			'toolExecutionFailed' => ({required Object error}) => '工具執行失敗: ${error}',
-			_ => null,
-		} ?? switch (path) {
 			'apiKeyNotConfigured' => ({required Object source}) => '${source} API Key 未配置或已停用',
 			'imageInvalid' => '圖片無效',
 			'recognizeBusy' => '識別服務繁忙，請稍後再試',

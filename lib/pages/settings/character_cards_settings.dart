@@ -53,8 +53,8 @@ class _CharacterCardsSettingsPageState
     if (mounted) setState(() {});
   }
 
-  Future<void> _export(CharacterCard card) async {
-    await exportCharacterCardPng(card);
+  Future<void> _export(CharacterCard card, int spec) async {
+    await exportCharacterCardPng(card, spec: spec);
   }
 
   @override
@@ -128,14 +128,19 @@ class _CharacterCardsSettingsPageState
                             icon: const Icon(Icons.more_vert, size: 20),
                             onSelected: (v) {
                               if (v == 'edit') _edit(c);
-                              if (v == 'export') _export(c);
+                              if (v == 'export_v3') _export(c, 3);
+                              if (v == 'export_v2') _export(c, 2);
                               if (v == 'delete') store.remove(c.id);
                             },
                             itemBuilder: (_) => [
                               PopupMenuItem(value: 'edit', child: Text(t.edit)),
                               PopupMenuItem(
-                                value: 'export',
-                                child: Text(t.characterExport),
+                                value: 'export_v3',
+                                child: Text(t.characterExportV3),
+                              ),
+                              PopupMenuItem(
+                                value: 'export_v2',
+                                child: Text(t.characterExportV2),
                               ),
                               PopupMenuItem(
                                 value: 'delete',
