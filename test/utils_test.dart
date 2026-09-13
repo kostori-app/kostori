@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/utils/utils.dart';
 
 /// 生成一张 1x1 的合法 PNG，用于角色卡块写入测试
@@ -210,6 +211,79 @@ void main() {
       });
       expect(parsed.name, 'V1角色');
       expect(parsed.firstMessage, 'hi');
+    });
+  });
+
+  group('character lorebook', () {
+    CharacterLoreBook book() => CharacterLoreBook.fromMap({
+      'scan_depth': 4,
+      'token_budget': 500,
+      'recursive_scanning': false,
+      'entries': [
+        {
+          'keys': ['龙'],
+          'content': '龙是古代生物。',
+          'enabled': true,
+          'insertion_order': 10,
+        },
+        {
+          'keys': ['剑'],
+          'secondary_keys': ['银'],
+          'selective': true,
+          'selective_logic': 3, // AND_ALL
+          'content': '银剑克制龙。',
+          'enabled': true,
+          'insertion_order': 20,
+        },
+        {
+          'keys': ['隐藏'],
+          'secondary_keys': ['银'],
+          'selective': true,
+          'selective_logic': 2, // NOT_ANY
+          'content': '未持银器。',
+          'enabled': true,
+          'insertion_order': 30,
+        },
+        {
+          'keys': <String>[],
+          'constant': true,
+          'content': '常驻设定。',
+          'enabled': true,
+          'insertion_order': 0,
+        },
+      ],
+    })!;
+
+    List<String> contents(String text, {int turn = 1}) => CharacterLorebookResolver
+        .instance
+        .resolve(book(), [text], cardId: 'x', turn: turn)
+        .map((e) => e.content)
+        .toList();
+
+    test('constant entry always activates', () {
+      expect(contents('无关'), contains('常驻设定。'));
+    });
+
+    test('primary key hit', () {
+      expect(contents('一条龙出现'), contains('龙是古代生物。'));
+    });
+
+    test('selective AND_ALL requires all secondary keys', () {
+      expect(contents('剑'), isNot(contains('银剑克制龙。')));
+      expect(contents('剑 银'), contains('银剑克制龙。'));
+    });
+
+    test('selective NOT_ANY requires no secondary key', () {
+      expect(contents('隐藏'), contains('未持银器。'));
+      expect(contents('隐藏 银'), isNot(contains('未持银器。')));
+    });
+
+    test('orders by insertion_order', () {
+      final list = contents('龙 剑 银');
+      expect(
+        list.indexOf('常驻设定。'),
+        lessThan(list.indexOf('龙是古代生物。')),
+      );
     });
   });
 

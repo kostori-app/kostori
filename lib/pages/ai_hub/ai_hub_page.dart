@@ -25,6 +25,7 @@ import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/ai_service/ai_image_service.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
 import 'package:kostori/foundation/ai_service/story.dart';

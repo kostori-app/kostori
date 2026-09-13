@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
 
@@ -306,12 +307,13 @@ class CharacterCardView extends StatelessWidget {
           block(t.characterPostHistory, card.postHistoryInstructions),
           block(t.characterCreatorNotes, card.creatorNotes),
           block(t.characterSource, card.source.join('\n')),
-          if (card.characterBook != null &&
-              card.toWorldBookEntries().isNotEmpty)
+          if (CharacterLoreBook.fromMap(card.characterBook)?.entries.isNotEmpty ??
+              false)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                '${t.worldBook} · ${card.toWorldBookEntries().length}',
+                '${t.worldBook} · '
+                '${CharacterLoreBook.fromMap(card.characterBook)!.entries.length}',
                 style: TextStyle(fontSize: 12, color: scheme.primary),
               ),
             ),

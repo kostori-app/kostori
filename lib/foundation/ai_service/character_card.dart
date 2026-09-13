@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'dart:io' show zlib;
 
 import 'package:flutter/foundation.dart';
-import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 角色卡数据（兼容 SillyTavern V1 / V2 / V3 字段）
@@ -365,41 +364,6 @@ class CharacterCard {
       }
     }
     return (crc ^ 0xFFFFFFFF) & 0xFFFFFFFF;
-  }
-
-  /// 随卡世界书转为世界书条目（供导入到世界书库）
-  List<WorldBookEntry> toWorldBookEntries() {
-    final book = characterBook;
-    if (book == null) return const [];
-    final entries = book['entries'];
-    if (entries is! List) return const [];
-    return [
-      for (final e in entries)
-        if (e is Map) _bookEntryToWorldBook(e.cast<String, dynamic>()),
-    ];
-  }
-
-  static WorldBookEntry _bookEntryToWorldBook(Map<String, dynamic> e) {
-    List<String> strList(Object? v) =>
-        v is List ? v.whereType<String>().toList() : const <String>[];
-    final position = e['position']?.toString() ?? '';
-    return WorldBookEntry(
-      id:
-          'wb_card_${e['id'] ?? e.hashCode}_'
-          '${DateTime.now().microsecondsSinceEpoch}',
-      name: (e['name'] ?? e['comment'] ?? '').toString(),
-      triggers: strList(e['keys'] ?? e['key']),
-      secondaryKeys: strList(e['secondary_keys'] ?? e['secondaryKeys']),
-      content: (e['content'] ?? '').toString(),
-      priority:
-          (e['priority'] as num?)?.toInt() ??
-          (e['insertion_order'] as num?)?.toInt() ??
-          0,
-      enabled: e['enabled'] as bool? ?? true,
-      constant: e['constant'] as bool? ?? false,
-      recursive: e['recursive'] as bool? ?? false,
-      position: position.contains('before') ? 'before' : 'after',
-    );
   }
 
   /// 供系统提示词注入的文本

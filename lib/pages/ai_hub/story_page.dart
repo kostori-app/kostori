@@ -1708,7 +1708,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 系统提示词：故事定义 + 开局场景 + 已积累的设定图鉴（供 AI 严格遵守）
-  Future<String> _systemPromptFor(GameState state) async {
+  Future<String> _systemPromptFor(
+    GameState state, {
+    String scanText = '',
+  }) async {
     final vars = state.variables;
     String sub(String text) => replaceStoryVars(text, vars);
     final buf = StringBuffer(sub(story.buildSystemPrompt()));
@@ -1793,6 +1796,46 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         buf.write('\n$seq. ${e.content.trim()}');
       }
     }
+    // 角色世界书：仅对在场（或未标记在场时全部）角色按 ST 语义扫描
+    final activeCards = state.present.isEmpty
+        ? story.characters
+        : [
+            for (final c in story.characters)
+              if (state.present.contains(c.name)) c,
+          ];
+    if (activeCards.isNotEmpty) {
+      final scanMessages = <String>[];
+      final sessionId = _sessionId;
+      if (sessionId != null) {
+        final msgs = await AiConversationService()
+            .watchMessages(sessionId)
+            .first;
+        for (final m in msgs) {
+          scanMessages.add(
+            m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
+          );
+        }
+      }
+      if (scanText.isNotEmpty) scanMessages.add(scanText);
+      for (final c in activeCards) {
+        final book = CharacterLoreBook.fromMap(c.characterBook);
+        if (book == null) continue;
+        final hits = CharacterLorebookResolver.instance.resolve(
+          book,
+          scanMessages,
+          cardId: c.id,
+          turn: _lastMessageCount ~/ 2,
+        );
+        if (hits.isEmpty) continue;
+        buf.write('\n\n【角色世界书 · ${c.name}】');
+        var seq = 0;
+        for (final e in hits) {
+          if (e.content.trim().isEmpty) continue;
+          seq++;
+          buf.write('\n$seq. ${e.content.trim()}');
+        }
+      }
+    }
     return buf.toString();
   }
 
@@ -1813,7 +1856,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         userMessage: outgoing,
         taskType: 'story',
         providerOverride: aiHubProvider(),
-        systemPromptOverride: await _systemPromptFor(_state),
+        systemPromptOverride: await _systemPromptFor(
+          _state,
+          scanText: outgoing,
+        ),
         cancelToken: cancelToken,
       )) {
         if (!mounted) return;
@@ -2072,7 +2118,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         sessionId: sessionId,
         taskId: m.id,
         providerOverride: aiHubProvider(),
-        systemPromptOverride: await _systemPromptFor(_state),
+        systemPromptOverride: await _systemPromptFor(
+          _state,
+          scanText: m.inputContent,
+        ),
       );
       if (!mounted) return;
       if (!res.success) {

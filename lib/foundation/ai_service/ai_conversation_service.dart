@@ -16,6 +16,7 @@ import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -315,6 +316,10 @@ class AiConversationService {
           session,
           profile: profile,
           userMessage: userMessage,
+          scanMessages: [
+            for (final m in contextMessages)
+              m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
+          ],
           turn: contextMessages.length,
         );
 
@@ -487,6 +492,11 @@ class AiConversationService {
           session,
           profile: profile,
           userMessage: userMessage,
+          scanMessages: [
+            for (final m in contextMessages)
+              m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
+          ],
+          turn: contextMessages.length,
         );
 
     // 3. 取最近 N 条（保证不超过上下文窗口）
@@ -1193,6 +1203,7 @@ class AiConversationService {
     AiSession session, {
     AssistantProfile? profile,
     String? userMessage,
+    List<String>? scanMessages,
     int turn = 0,
   }) async {
     // 档案可自定义选择库中条目；未选择时沿用全局启用项
@@ -1237,6 +1248,26 @@ class AiConversationService {
           memoryEntries: memoryEntries,
         ),
       );
+      // 角色世界书：按 ST 语义单独扫描（不并入全局世界书）
+      for (final card in characterCards) {
+        final book = CharacterLoreBook.fromMap(card.characterBook);
+        if (book == null) continue;
+        final hits = CharacterLorebookResolver.instance.resolve(
+          book,
+          scanMessages ?? [if (userMessage != null) userMessage],
+          cardId: card.id,
+          turn: turn,
+        );
+        if (hits.isEmpty) continue;
+        final buf = StringBuffer('【角色世界书 · ${card.name}】');
+        var n = 0;
+        for (final e in hits) {
+          if (e.content.trim().isEmpty) continue;
+          n++;
+          buf.write('\n$n. ${e.content.trim()}');
+        }
+        if (n > 0) parts.add(buf.toString());
+      }
     } else {
       if (session.configKey != null) {
         final cfg = await _configDao.getByKey(session.configKey!);
