@@ -1598,7 +1598,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyStart => '開始遊戲';
 	@override String get storyRoll => '擲骰';
 	@override String get storyPointsLeft => '剩餘點數';
-	@override String get storyCodex => '圖鑑';
+	@override String get storyCodex => '詞條';
+	@override String get storyOwned => '已擁有';
+	@override String get storyNotOwned => '未擁有';
+	@override String get storyLearned => '已習得';
+	@override String get storyNotLearned => '未習得';
+	@override String get storyEquipped => '已裝備';
 	@override String get rolePlayAvatar => '頭像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任務';
@@ -4352,7 +4357,12 @@ extension on TranslationsZhTw {
 			'storyStart' => '開始遊戲',
 			'storyRoll' => '擲骰',
 			'storyPointsLeft' => '剩餘點數',
-			'storyCodex' => '圖鑑',
+			'storyCodex' => '詞條',
+			'storyOwned' => '已擁有',
+			'storyNotOwned' => '未擁有',
+			'storyLearned' => '已習得',
+			'storyNotLearned' => '未習得',
+			'storyEquipped' => '已裝備',
 			'rolePlayAvatar' => '頭像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任務',
@@ -4794,13 +4804,13 @@ extension on TranslationsZhTw {
 			'toolCallingTool' => ({required Object tool}) => '呼叫 ${tool}...',
 			'toolCallLog' => ({required Object count}) => '工具呼叫: ${count}',
 			'generatingReply' => '生成回覆中...',
+			_ => null,
+		} ?? switch (path) {
 			'stopGenerating' => '停止生成',
 			'thinking' => '思考中',
 			'streamInterrupted' => '生成已中斷',
 			'showThinking' => '查看思考過程',
 			'hideThinking' => '收起思考過程',
-			_ => null,
-		} ?? switch (path) {
 			'viewProcess' => '查看過程',
 			'stepThinking' => '思考',
 			'stepTool' => '工具',
@@ -5308,13 +5318,13 @@ extension on TranslationsZhTw {
 			'subtitleOff' => '關閉字幕',
 			'quality' => '清晰度',
 			'copiedField' => ({required Object x}) => '已複製: ${x}',
+			_ => null,
+		} ?? switch (path) {
 			'selectAliasCount' => ({required Object count}) => '選擇別名 (${count})',
 			'monthDayFormat' => 'M月d日',
 			'monthDay' => ({required Object month, required Object day}) => '${month}月${day}日',
 			'qrAnimeId' => ({required Object id, required Object source}) => '番劇 ID：${id}\n來源：${source}',
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID：${id}',
-			_ => null,
-		} ?? switch (path) {
 			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房間：${room}\n服務端：${server}',
 			'qrDetectedType' => ({required Object type}) => '檢測到 ${type} 連結',
 			'qrPasswordResolved' => '（口令已解析）\n',

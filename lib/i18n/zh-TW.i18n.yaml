@@ -1608,7 +1608,12 @@ storyChoicesPrompt: 後續建議提示詞
 storyStart: 開始遊戲
 storyRoll: 擲骰
 storyPointsLeft: 剩餘點數
-storyCodex: 圖鑑
+storyCodex: 詞條
+storyOwned: 已擁有
+storyNotOwned: 未擁有
+storyLearned: 已習得
+storyNotLearned: 未習得
+storyEquipped: 已裝備
 rolePlayAvatar: 頭像（Emoji）
 storyInventory: 物品
 storyQuests: 任務

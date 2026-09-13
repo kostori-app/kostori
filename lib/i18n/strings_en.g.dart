@@ -4717,8 +4717,23 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Points left'
 	String get storyPointsLeft => 'Points left';
 
-	/// en: 'Codex'
-	String get storyCodex => 'Codex';
+	/// en: 'Entries'
+	String get storyCodex => 'Entries';
+
+	/// en: 'Owned'
+	String get storyOwned => 'Owned';
+
+	/// en: 'Not owned'
+	String get storyNotOwned => 'Not owned';
+
+	/// en: 'Learned'
+	String get storyLearned => 'Learned';
+
+	/// en: 'Not learned'
+	String get storyNotLearned => 'Not learned';
+
+	/// en: 'Equipped'
+	String get storyEquipped => 'Equipped';
 
 	/// en: 'Avatar (emoji)'
 	String get rolePlayAvatar => 'Avatar (emoji)';
@@ -9710,7 +9725,12 @@ extension on Translations {
 			'storyStart' => 'Start game',
 			'storyRoll' => 'Roll',
 			'storyPointsLeft' => 'Points left',
-			'storyCodex' => 'Codex',
+			'storyCodex' => 'Entries',
+			'storyOwned' => 'Owned',
+			'storyNotOwned' => 'Not owned',
+			'storyLearned' => 'Learned',
+			'storyNotLearned' => 'Not learned',
+			'storyEquipped' => 'Equipped',
 			'rolePlayAvatar' => 'Avatar (emoji)',
 			'storyInventory' => 'Inventory',
 			'storyQuests' => 'Quests',
@@ -10152,13 +10172,13 @@ extension on Translations {
 			'usingTools' => 'Calling tools...',
 			'toolCallingTool' => ({required Object tool}) => 'Calling ${tool}...',
 			'toolCallLog' => ({required Object count}) => 'Tool calls: ${count}',
+			_ => null,
+		} ?? switch (path) {
 			'generatingReply' => 'Generating reply...',
 			'stopGenerating' => 'Stop generating',
 			'thinking' => 'Thinking',
 			'streamInterrupted' => 'Generation interrupted',
 			'showThinking' => 'Show thinking',
-			_ => null,
-		} ?? switch (path) {
 			'hideThinking' => 'Hide thinking',
 			'viewProcess' => 'View process',
 			'stepThinking' => 'Thinking',
@@ -10666,13 +10686,13 @@ extension on Translations {
 			'subtitle' => 'Subtitles',
 			'subtitleOff' => 'Off',
 			'quality' => 'Quality',
+			_ => null,
+		} ?? switch (path) {
 			'copiedField' => ({required Object x}) => 'Copied: ${x}',
 			'selectAliasCount' => ({required Object count}) => 'Select alias (${count})',
 			'monthDayFormat' => 'MMM d',
 			'monthDay' => ({required Object month, required Object day}) => '${month}/${day}',
 			'qrAnimeId' => ({required Object id, required Object source}) => 'Anime ID: ${id}\nSource: ${source}',
-			_ => null,
-		} ?? switch (path) {
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID: ${id}',
 			'qrWatchRoom' => ({required Object room, required Object server}) => 'Watch together room: ${room}\nServer: ${server}',
 			'qrDetectedType' => ({required Object type}) => 'Detected ${type} link',

@@ -1597,7 +1597,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyStart => '开始游戏';
 	@override String get storyRoll => '掷骰';
 	@override String get storyPointsLeft => '剩余点数';
-	@override String get storyCodex => '图鉴';
+	@override String get storyCodex => '词条';
+	@override String get storyOwned => '已拥有';
+	@override String get storyNotOwned => '未拥有';
+	@override String get storyLearned => '已习得';
+	@override String get storyNotLearned => '未习得';
+	@override String get storyEquipped => '已装备';
 	@override String get rolePlayAvatar => '头像（Emoji）';
 	@override String get storyInventory => '物品';
 	@override String get storyQuests => '任务';
@@ -4352,7 +4357,12 @@ extension on TranslationsZhCn {
 			'storyStart' => '开始游戏',
 			'storyRoll' => '掷骰',
 			'storyPointsLeft' => '剩余点数',
-			'storyCodex' => '图鉴',
+			'storyCodex' => '词条',
+			'storyOwned' => '已拥有',
+			'storyNotOwned' => '未拥有',
+			'storyLearned' => '已习得',
+			'storyNotLearned' => '未习得',
+			'storyEquipped' => '已装备',
 			'rolePlayAvatar' => '头像（Emoji）',
 			'storyInventory' => '物品',
 			'storyQuests' => '任务',
@@ -4795,13 +4805,13 @@ extension on TranslationsZhCn {
 			'usingTools' => '调用工具中...',
 			'toolCallingTool' => ({required Object tool}) => '调用 ${tool}...',
 			'toolCallLog' => ({required Object count}) => '工具调用: ${count}',
+			_ => null,
+		} ?? switch (path) {
 			'generatingReply' => '生成回复中...',
 			'stopGenerating' => '停止生成',
 			'thinking' => '思考中',
 			'streamInterrupted' => '生成已中断',
 			'showThinking' => '查看思考过程',
-			_ => null,
-		} ?? switch (path) {
 			'hideThinking' => '收起思考过程',
 			'viewProcess' => '查看过程',
 			'stepThinking' => '思考',
@@ -5309,13 +5319,13 @@ extension on TranslationsZhCn {
 			'subtitle' => '字幕',
 			'subtitleOff' => '关闭字幕',
 			'quality' => '清晰度',
+			_ => null,
+		} ?? switch (path) {
 			'copiedField' => ({required Object x}) => '已复制: ${x}',
 			'selectAliasCount' => ({required Object count}) => '选择别名 (${count})',
 			'monthDayFormat' => 'M月d日',
 			'monthDay' => ({required Object month, required Object day}) => '${month}月${day}日',
 			'qrAnimeId' => ({required Object id, required Object source}) => '番剧 ID：${id}\n来源：${source}',
-			_ => null,
-		} ?? switch (path) {
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID：${id}',
 			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房间：${room}\n服务端：${server}',
 			'qrDetectedType' => ({required Object type}) => '检测到 ${type} 链接',

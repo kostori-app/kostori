@@ -1608,7 +1608,12 @@ storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
 storyRoll: Roll
 storyPointsLeft: Points left
-storyCodex: Codex
+storyCodex: Entries
+storyOwned: Owned
+storyNotOwned: Not owned
+storyLearned: Learned
+storyNotLearned: Not learned
+storyEquipped: Equipped
 rolePlayAvatar: Avatar (emoji)
 storyInventory: Inventory
 storyQuests: Quests

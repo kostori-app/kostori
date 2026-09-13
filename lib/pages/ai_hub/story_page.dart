@@ -4057,17 +4057,108 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
   Widget _entry({
     required String label,
     required String kind,
+    bool equipped = false,
     VoidCallback? onLongPress,
     VoidCallback? onSecondaryTap,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onLongPress: onLongPress,
       onSecondaryTapDown: onSecondaryTap == null ? null : (_) => onSecondaryTap(),
       child: ActionChip(
         avatar: Icon(_iconFor(label, kind), size: 16),
-        label: Text(label),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            if (equipped) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.check_circle, size: 14, color: scheme.primary),
+            ],
+          ],
+        ),
+        backgroundColor: equipped ? scheme.primaryContainer : null,
         onPressed: () => _inspect(label, kind),
       ),
+    );
+  }
+
+  /// 去掉物品数量后缀（「匕首 x2」→「匕首」）
+  String _baseName(String s) =>
+      s.replaceFirst(RegExp(r'\s*[x×]\s*\d+\s*$'), '').trim();
+
+  bool _nameMatch(String a, String b) {
+    if (a.isEmpty || b.isEmpty) return false;
+    return a == b || a.contains(b) || b.contains(a);
+  }
+
+  bool _ownsItem(String name) =>
+      state.inventory.any((s) => _nameMatch(_baseName(s), name));
+
+  bool _isEquipped(String name) =>
+      state.equipped.any((s) => _nameMatch(_baseName(s), name));
+
+  bool _hasSkill(String name) =>
+      state.skills.any((s) => _nameMatch(_baseName(s), name));
+
+  /// 词条状态：物品（已装备 / 已拥有 / 未拥有）、技能（已习得 / 未习得）
+  (String, bool)? _codexStatus(StoryDefinition d) {
+    switch (d.kind) {
+      case 'item':
+        if (_isEquipped(d.name)) return (t.storyEquipped, true);
+        if (_ownsItem(d.name)) return (t.storyOwned, true);
+        return (t.storyNotOwned, false);
+      case 'skill':
+        if (_hasSkill(d.name)) return (t.storyLearned, true);
+        return (t.storyNotLearned, false);
+      default:
+        return null;
+    }
+  }
+
+  Widget _codexTile(StoryDefinition d, ColorScheme scheme) {
+    final status = _codexStatus(d);
+    final owned = status?.$2;
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(_codexIcon(d.kind), size: 20),
+      title: Row(
+        children: [
+          Flexible(child: Text(d.name)),
+          if (status != null) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: owned == true
+                    ? scheme.primaryContainer
+                    : scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                status.$1,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: owned == true
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+      subtitle: Text(
+        d.display.isEmpty ? d.mechanics : d.display,
+        style: TextStyle(
+          fontSize: 12,
+          color: owned == false
+              ? scheme.onSurfaceVariant.withValues(alpha: 0.7)
+              : null,
+        ),
+      ),
+      onTap: () => _inspect(d.name, d.kind),
     );
   }
 
@@ -4202,6 +4293,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                 _entry(
                   label: s,
                   kind: 'item',
+                  equipped: _isEquipped(s),
                   onLongPress: () => _itemMenu(s),
                   onSecondaryTap: () => _itemMenu(s),
                 ),
@@ -4345,18 +4437,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
         if (defs.isEmpty) return const [];
         return [
           _sectionTitle(panel.title.isEmpty ? t.storyCodex : panel.title, icon),
-          for (final d in defs)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(_codexIcon(d.kind), size: 20),
-              title: Text(d.name),
-              subtitle: Text(
-                d.display.isEmpty ? d.mechanics : d.display,
-                style: const TextStyle(fontSize: 12),
-              ),
-              onTap: () => _inspect(d.name, d.kind),
-            ),
+          for (final d in defs) _codexTile(d, scheme),
         ];
       default:
         return const [];

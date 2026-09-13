@@ -1603,7 +1603,12 @@ storyChoicesPrompt: 后续建议提示词
 storyStart: 开始游戏
 storyRoll: 掷骰
 storyPointsLeft: 剩余点数
-storyCodex: 图鉴
+storyCodex: 词条
+storyOwned: 已拥有
+storyNotOwned: 未拥有
+storyLearned: 已习得
+storyNotLearned: 未习得
+storyEquipped: 已装备
 rolePlayAvatar: 头像（Emoji）
 storyInventory: 物品
 storyQuests: 任务
