@@ -82,60 +82,72 @@ LazyDatabase _openConnection() => LazyDatabase(() async {
 });
 
 /// 把旧 ai_database.db 里的 ai_tasks 迁到独立库（一次性），并删除旧表。
+///
+/// 旧表由 drift 建表，列名是 snake_case（session_id / input_content ...），
+/// 必须按 snake_case 取值；用驼峰键会全部落成默认值（数据看起来就"没了"）。
 Future<void> migrateAiTasksToOwnDb() async {
-  final dst = AiTaskDatabase.instance;
-  try {
-    final count = await dst
-        .customSelect('SELECT COUNT(*) AS c FROM ai_tasks')
-        .getSingle();
-    if (((count.data['c'] as num?)?.toInt() ?? 0) > 0) return;
-  } catch (_) {
-    return;
-  }
-
   final src = AiDatabase.instance;
+  final dst = AiTaskDatabase.instance;
   List<QueryRow> rows;
   try {
     rows = await src.customSelect('SELECT * FROM ai_tasks').get();
   } catch (_) {
-    return; // 旧表不存在
+    return; // 旧库没有 ai_tasks 表（已迁移或从未使用）
   }
-  if (rows.isNotEmpty) {
+
+  final dstCount =
+      ((await dst
+                  .customSelect('SELECT COUNT(*) AS c FROM ai_tasks')
+                  .getSingle())
+              .data['c']
+          as num?)
+          ?.toInt() ??
+      0;
+
+  if (rows.isNotEmpty && dstCount == 0) {
     await dst.batch((b) {
       for (final r in rows) {
-        final d = r.data;
-        b.insert(
-          dst.aiTasks,
-          AiTasksCompanion.insert(
-            sessionId: d['sessionId']?.toString() ?? '',
-            taskType: d['taskType']?.toString() ?? 'chat',
-            role: Value(d['role']?.toString() ?? 'user'),
-            inputContent: d['inputContent']?.toString() ?? '',
-            inputImages: Value(d['inputImages']?.toString()),
-            outputContent: Value(d['outputContent']?.toString()),
-            outputVariants: Value(d['outputVariants']?.toString()),
-            variantIndex: Value((d['variantIndex'] as num?)?.toInt() ?? 0),
-            thought: Value(d['thought']?.toString()),
-            provider: d['provider']?.toString() ?? '',
-            modelName: Value(d['modelName']?.toString()),
-            tokenConsumed: Value((d['tokenConsumed'] as num?)?.toInt() ?? 0),
-            createdAt: d['createdAt'] == null
-                ? const Value.absent()
-                : Value(
-                    DateTime.fromMillisecondsSinceEpoch(
-                      (d['createdAt'] as num).toInt(),
-                    ),
-                  ),
-          ),
-        );
+        b.insert(dst.aiTasks, _legacyTask(r.data));
       }
     });
   }
-  // 删除旧表，避免 ai_database.db 继续膨胀
-  try {
-    await src.customStatement('DROP TABLE IF EXISTS ai_tasks');
-  } catch (_) {}
-  await compactAiDatabaseIfNeeded();
+
+  // 仅在数据确实已迁移后才删旧表，避免拷贝异常把旧数据删掉
+  if (dstCount == 0 || dstCount >= rows.length) {
+    try {
+      await src.customStatement('DROP TABLE IF EXISTS ai_tasks');
+    } catch (_) {}
+    await compactAiDatabaseIfNeeded();
+  } else {
+    DebugLog.error(
+      'migrateAiTasks',
+      '目标库行数($dstCount)少于旧表(${rows.length})，保留旧表不删除',
+    );
+  }
+}
+
+/// 旧库一行 → 新库 companion（注意旧表列名是 snake_case）
+AiTasksCompanion _legacyTask(Map<String, dynamic> d) {
+  int? asInt(Object? v) => (v as num?)?.toInt();
+  final createdAt = asInt(d['created_at']);
+  return AiTasksCompanion.insert(
+    sessionId: d['session_id']?.toString() ?? '',
+    taskType: d['task_type']?.toString() ?? 'chat',
+    role: Value(d['role']?.toString() ?? 'user'),
+    inputContent: d['input_content']?.toString() ?? '',
+    inputImages: Value(d['input_images']?.toString()),
+    outputContent: Value(d['output_content']?.toString()),
+    outputVariants: Value(d['output_variants']?.toString()),
+    variantIndex: Value(asInt(d['variant_index']) ?? 0),
+    thought: Value(d['thought']?.toString()),
+    provider: d['provider']?.toString() ?? '',
+    modelName: Value(d['model_name']?.toString()),
+    tokenConsumed: Value(asInt(d['token_consumed']) ?? 0),
+    // drift 的 dateTime() 以「秒」存储
+    createdAt: createdAt == null
+        ? const Value.absent()
+        : Value(DateTime.fromMillisecondsSinceEpoch(createdAt * 1000)),
+  );
 }
 
 /// 回收 ai_database.db 的空闲页：SQLite 删除表/行后不会自动缩小文件，
