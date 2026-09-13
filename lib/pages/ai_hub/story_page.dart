@@ -2931,18 +2931,21 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 return Column(
                   children: [
                     Expanded(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: _chatContentMaxWidth(context),
-                          ),
-                          child: NotificationListener<ScrollNotification>(
-                            onNotification: _onUserScroll,
-                            child: ListView.builder(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: _onUserScroll,
+                        // 列表铺满整宽，内容用左右留白居中：
+                        // 这样鼠标滚轮/拖动在两侧空白处也能滚动
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final maxW = _chatContentMaxWidth(context);
+                            final side = constraints.maxWidth > maxW
+                                ? (constraints.maxWidth - maxW) / 2
+                                : 12.0;
+                            return ListView.builder(
                               controller: _scrollController,
                               reverse: true,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: side,
                                 vertical: 12,
                               ),
                               itemCount:
@@ -3132,10 +3135,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                 ],
                               );
                             },
-                          ),
+                          );
+                          },
                             ),
-                        ),
-                      ),
+                          ),
                     ),
                     if (choices.isNotEmpty)
                       ConstrainedBox(
