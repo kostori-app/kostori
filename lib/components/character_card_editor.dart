@@ -363,7 +363,9 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
           : {...?widget.card?.characterBook, 'entries': _bookEntries},
       specVersion: widget.card?.specVersion ?? '3.0',
     );
-    Navigator.of(context).pop(card);
+    // 编辑器在 PopUpWidget 的嵌套 Navigator 里，必须 pop 根 Navigator，
+    // 否则只会弹掉内层路由（弹窗留成黑屏）且卡片无法返回
+    Navigator.of(context, rootNavigator: true).pop(card);
   }
 
   int _tab = 0;
