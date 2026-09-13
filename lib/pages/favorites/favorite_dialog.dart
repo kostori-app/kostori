@@ -112,8 +112,8 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
           ],
         ),
       ),
-      isDismissible: true,
-      cancel: () => Navigator.of(context).pop(false),
+      // 取消：执行清空选择的回调，弹窗由 ContentDialog 内置取消按钮负责关闭
+      cancel: widget.cancel,
       actions: [
         FilledButton(
           onPressed: selectedLocalFolders.isEmpty

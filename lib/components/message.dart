@@ -551,6 +551,8 @@ Future<void> showInputDialog({
                   if (futureOr is Future) {
                     setState(() => isLoading = true);
                     result = await futureOr;
+                    // 等待期间对话框可能已被关闭，避免对已销毁的 State 调用 setState
+                    if (!context.mounted) return;
                     setState(() => isLoading = false);
                   } else {
                     result = futureOr;

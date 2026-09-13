@@ -221,7 +221,10 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
           content: SizedBox(),
           actions: [
             TextButton(
-              onPressed: () => ImageSaver.saveImageToGallery(imageUrl),
+              onPressed: () {
+                ImageSaver.saveImageToGallery(imageUrl);
+                Navigator.of(context).pop();
+              },
               child: Text(t.saveToAlbum),
             ),
           ],
