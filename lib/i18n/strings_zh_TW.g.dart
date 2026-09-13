@@ -188,6 +188,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncHistoryEmpty => '暫無歷史備份';
 	@override String get syncRestore => '還原';
 	@override String get syncManualOnly => '僅手動';
+	@override String get syncFailed => '同步失敗';
 	@override String get aiDatabase => 'AI 設定庫';
 	@override String get aiMessages => 'AI 訊息記錄';
 	@override String get stats => '統計';
@@ -2980,6 +2981,7 @@ extension on TranslationsZhTw {
 			'syncHistoryEmpty' => '暫無歷史備份',
 			'syncRestore' => '還原',
 			'syncManualOnly' => '僅手動',
+			'syncFailed' => '同步失敗',
 			'aiDatabase' => 'AI 設定庫',
 			'aiMessages' => 'AI 訊息記錄',
 			'stats' => '統計',
@@ -3342,9 +3344,9 @@ extension on TranslationsZhTw {
 			'stitchHorizontalImage' => '橫向拼圖',
 			'stitchSubtitles' => '台詞拼接',
 			'saveLongImage' => '儲存長圖',
-			'borderColor' => '邊框顏色',
 			_ => null,
 		} ?? switch (path) {
+			'borderColor' => '邊框顏色',
 			'conversationTitle' => '對話標題',
 			'aiConversation' => 'AI 對話',
 			'topicList' => '話題列表',
@@ -3856,9 +3858,9 @@ extension on TranslationsZhTw {
 			'videoRenderer' => '影片渲染器',
 			'videoSynchronizationMode' => '影片同步模式',
 			'enableNoProxyOverrides' => '啟用無代理覆寫',
-			'actor' => '角色',
 			_ => null,
 		} ?? switch (path) {
+			'actor' => '角色',
 			'cv' => 'CV',
 			'dub' => '配音',
 			'chineseDub' => '中配',
@@ -4370,9 +4372,9 @@ extension on TranslationsZhTw {
 			'person' => '人物',
 			'manualSelect' => '手動選擇',
 			'qrAndClipboard' => '二維碼與剪貼簿',
-			'go' => '前往',
 			_ => null,
 		} ?? switch (path) {
+			'go' => '前往',
 			'clipboard' => '剪貼簿',
 			'recognizeFromGallery' => '從相簿識別',
 			'scanQrCode' => '掃碼',
@@ -4884,9 +4886,9 @@ extension on TranslationsZhTw {
 			'lanManualResolution' => '手動解決',
 			'lanConflictField' => '衝突欄位',
 			'lanErrorOccurred' => '發生錯誤',
-			'lanCommandExecuted' => '命令已執行',
 			_ => null,
 		} ?? switch (path) {
+			'lanCommandExecuted' => '命令已執行',
 			'lanCommandFailed' => '命令執行失敗',
 			'lanNoPermission' => '無權限',
 			'lanOpenAnimeDetail' => '打開動漫詳情',
@@ -5398,9 +5400,9 @@ extension on TranslationsZhTw {
 			'builderPlayDirect' => '直接回傳劇集連結',
 			'builderPlayDirectDesc' => '劇集連結本身就是播放位址（無需二次請求）',
 			'builderPlayRegexDesc' => '請求播放頁並透過正則提取播放位址',
-			'builderExplore' => '探索',
 			_ => null,
 		} ?? switch (path) {
+			'builderExplore' => '探索',
 			'builderExploreTitle' => '頁面標題',
 			'builderExploreUrl' => '列表 URL 模板（{page}）',
 			'builderCategory' => '分類',

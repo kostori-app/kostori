@@ -147,6 +147,7 @@ syncHistory: 歷史備份
 syncHistoryEmpty: 暫無歷史備份
 syncRestore: 還原
 syncManualOnly: 僅手動
+syncFailed: 同步失敗
 aiDatabase: AI 設定庫
 aiMessages: AI 訊息記錄
 stats: 統計

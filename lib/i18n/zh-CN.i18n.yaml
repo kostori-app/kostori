@@ -148,6 +148,7 @@ syncHistory: 历史备份
 syncHistoryEmpty: 暂无历史备份
 syncRestore: 恢复
 syncManualOnly: 仅手动
+syncFailed: 同步失败
 aiDatabase: AI 设置库
 aiMessages: AI 消息记录
 stats: 统计

@@ -159,6 +159,7 @@ syncHistory: History backups
 syncHistoryEmpty: No history backups
 syncRestore: Restore
 syncManualOnly: Manual only
+syncFailed: Sync failed
 aiDatabase: AI settings DB
 aiMessages: AI messages
 stats: Stats

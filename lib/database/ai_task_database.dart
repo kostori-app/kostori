@@ -146,12 +146,16 @@ Future<void> compactAiDatabaseIfNeeded() async {
     final row = await db.customSelect('PRAGMA freelist_count').getSingle();
     final values = row.data.values;
     final free = values.isEmpty ? 0 : (values.first as num?)?.toInt() ?? 0;
-    if (free < 64) return;
-    DebugLog.info(
-      'compactAiDatabase',
-      'VACUUM ai_database.db (free pages: $free)',
-    );
-    await db.customStatement('VACUUM');
+    if (free >= 64) {
+      DebugLog.info(
+        'compactAiDatabase',
+        'VACUUM ai_database.db (free pages: $free)',
+      );
+      await db.customStatement('VACUUM');
+    }
+    // WAL 模式下 VACUUM 的结果留在 WAL 里，必须 checkpoint 才会把主文件
+    // 截断到实际大小（否则删表后文件依然很大）
+    await db.customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
   } catch (e, s) {
     DebugLog.error('compactAiDatabase', e, s);
   }

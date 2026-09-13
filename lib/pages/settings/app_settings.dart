@@ -1169,23 +1169,25 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                     ].join(' · '),
                     style: const TextStyle(fontSize: 12),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.cloud_upload_outlined),
-                        tooltip: t.upload,
-                        onPressed: _busy ? null : () => _uploadPart(part),
+                  trailing: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 20),
+                    enabled: !_busy,
+                    onSelected: (v) => switch (v) {
+                      'upload' => _uploadPart(part),
+                      'download' => _downloadPart(part),
+                      'history' => _showPartHistory(part),
+                      _ => null,
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: 'upload', child: Text(t.upload)),
+                      PopupMenuItem(
+                        value: 'download',
+                        enabled: remoteParts.containsKey(part.key),
+                        child: Text(t.download),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.cloud_download_outlined),
-                        tooltip: t.download,
-                        onPressed: _busy ? null : () => _downloadPart(part),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.history),
-                        tooltip: t.syncHistory,
-                        onPressed: _busy ? null : () => _showPartHistory(part),
+                      PopupMenuItem(
+                        value: 'history',
+                        child: Text(t.syncHistory),
                       ),
                     ],
                   ),
@@ -1409,7 +1411,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
 
   void _toast(bool ok) {
     App.rootContext.showMessage(
-      message: ok ? t.syncSuccess : t.characterImportFailed,
+      message: ok ? t.syncSuccess : t.syncFailed,
       level: ok ? LogLevel.info : LogLevel.error,
     );
   }
@@ -1766,6 +1768,9 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   }
 
   Widget _buildActions(String kind, Set<String> selected) {
+    final remote = _remote[kind] ?? const <String, RemoteFileInfo>{};
+    final ext = _ext(kind);
+    final canDownload = selected.any((id) => remote.containsKey('$id$ext'));
     return SafeArea(
       top: false,
       child: Padding(
@@ -1784,7 +1789,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
             const SizedBox(width: 12),
             Expanded(
               child: FilledButton.tonalIcon(
-                onPressed: (_busy || selected.isEmpty)
+                onPressed: (_busy || selected.isEmpty || !canDownload)
                     ? null
                     : () => _download(kind, selected),
                 icon: const Icon(Icons.cloud_download_outlined, size: 18),

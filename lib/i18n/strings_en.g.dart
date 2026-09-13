@@ -512,6 +512,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Manual only'
 	String get syncManualOnly => 'Manual only';
 
+	/// en: 'Sync failed'
+	String get syncFailed => 'Sync failed';
+
 	/// en: 'AI settings DB'
 	String get aiDatabase => 'AI settings DB';
 
@@ -8518,6 +8521,7 @@ extension on Translations {
 			'syncHistoryEmpty' => 'No history backups',
 			'syncRestore' => 'Restore',
 			'syncManualOnly' => 'Manual only',
+			'syncFailed' => 'Sync failed',
 			'aiDatabase' => 'AI settings DB',
 			'aiMessages' => 'AI messages',
 			'stats' => 'Stats',
@@ -8872,9 +8876,9 @@ extension on Translations {
 			'thursdaySchedule' => 'Thursday Schedule',
 			'fridaySchedule' => 'Friday Schedule',
 			'saturdaySchedule' => 'Saturday Schedule',
-			'sundaySchedule' => 'Sunday Schedule',
 			_ => null,
 		} ?? switch (path) {
+			'sundaySchedule' => 'Sunday Schedule',
 			'popularityRanking' => 'Popularity Ranking',
 			'imageOperations' => 'Image Operations',
 			'saveToAlbum' => 'Save to Album',
@@ -9386,9 +9390,9 @@ extension on Translations {
 			'videoRenderer' => 'Video renderer',
 			'videoSynchronizationMode' => 'Video synchronization mode',
 			'enableNoProxyOverrides' => 'Enable No Proxy Overrides',
-			'actor' => 'Actor',
 			_ => null,
 		} ?? switch (path) {
+			'actor' => 'Actor',
 			'cv' => 'CV',
 			'dub' => 'Dub',
 			'chineseDub' => 'Chinese Dub',
@@ -9900,9 +9904,9 @@ extension on Translations {
 			'person' => 'Person',
 			'manualSelect' => 'Manual Select',
 			'qrAndClipboard' => 'QR & Clipboard',
-			'go' => 'Go',
 			_ => null,
 		} ?? switch (path) {
+			'go' => 'Go',
 			'clipboard' => 'Clipboard',
 			'recognizeFromGallery' => 'Recognize from Gallery',
 			'scanQrCode' => 'Scan QR Code',
@@ -10414,9 +10418,9 @@ extension on Translations {
 			'lanLocalWins' => 'Keep Local',
 			'lanRemoteWins' => 'Keep Remote',
 			'lanKeepBoth' => 'Keep Both',
-			'lanManualResolution' => 'Manual Resolution',
 			_ => null,
 		} ?? switch (path) {
+			'lanManualResolution' => 'Manual Resolution',
 			'lanConflictField' => 'Conflicting field',
 			'lanErrorOccurred' => 'Error occurred',
 			'lanCommandExecuted' => 'Command executed',
@@ -10928,9 +10932,9 @@ extension on Translations {
 			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => 'Directly return episode link',
 			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
-			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			'builderExplore' => 'Explore',
 			'builderExploreTitle' => 'Page title',
 			'builderExploreUrl' => 'List URL template ({page})',
