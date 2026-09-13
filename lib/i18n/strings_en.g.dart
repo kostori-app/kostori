@@ -4876,6 +4876,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Enabled'
 	String get storyRegexEnabled => 'Enabled';
 
+	/// en: 'Phase'
+	String get storyRegexPhase => 'Phase';
+
+	/// en: 'Min depth'
+	String get storyRegexMinDepth => 'Min depth';
+
+	/// en: 'Max depth'
+	String get storyRegexMaxDepth => 'Max depth';
+
 	/// en: 'Equipment'
 	String get storyEquipment => 'Equipment';
 
@@ -9712,6 +9721,9 @@ extension on Translations {
 			'storyRegexTargetBoth' => 'Both',
 			'storyAddRegex' => 'Add rule',
 			'storyRegexEnabled' => 'Enabled',
+			'storyRegexPhase' => 'Phase',
+			'storyRegexMinDepth' => 'Min depth',
+			'storyRegexMaxDepth' => 'Max depth',
 			'storyEquipment' => 'Equipment',
 			'storyCombat' => 'Combat',
 			'storyRound' => 'Round',
@@ -10103,11 +10115,11 @@ extension on Translations {
 			'statsComments' => 'Comments',
 			'statsFavorites' => 'Favorites',
 			'statsActiveItems' => 'Active items',
+			_ => null,
+		} ?? switch (path) {
 			'statsActiveHeatmap' => 'Activity heatmap',
 			'statsWatchTrend' => 'Watch trend',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => 'Active items (top ${shown}/${total})',
-			_ => null,
-		} ?? switch (path) {
 			'statsWatchDistribution' => 'Watch duration distribution',
 			'statsFrequentTags' => 'Frequent tags',
 			'statsTagCloud' => 'Tag cloud',
@@ -10617,11 +10629,11 @@ extension on Translations {
 			'expandCount' => ({required Object total}) => 'Expand (${total})',
 			'deletedReply' => 'Reply deleted',
 			'author' => 'Author',
+			_ => null,
+		} ?? switch (path) {
 			'episodeTitleLabel' => 'Episode title',
 			'manualSwitch' => 'Manual switch',
 			'inputEpisodeNumber' => 'Enter episode number',
-			_ => null,
-		} ?? switch (path) {
 			'episodeNumberHint' => 'Enter a number between 1 and 999',
 			'enterEpisodeNumber' => 'Please enter an episode number',
 			'invalidEpisodeNumber' => 'Please enter a valid number between 1 and 999',

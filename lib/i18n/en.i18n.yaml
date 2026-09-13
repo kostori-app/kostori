@@ -1661,6 +1661,9 @@ storyRegexTargetUser: User input
 storyRegexTargetBoth: Both
 storyAddRegex: Add rule
 storyRegexEnabled: Enabled
+storyRegexPhase: Phase
+storyRegexMinDepth: Min depth
+storyRegexMaxDepth: Max depth
 storyEquipment: Equipment
 storyCombat: Combat
 storyRound: Round

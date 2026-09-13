@@ -1651,6 +1651,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRegexTargetBoth => '兩者';
 	@override String get storyAddRegex => '新增正則';
 	@override String get storyRegexEnabled => '啟用';
+	@override String get storyRegexPhase => '階段';
+	@override String get storyRegexMinDepth => '最小深度';
+	@override String get storyRegexMaxDepth => '最大深度';
 	@override String get storyEquipment => '裝備';
 	@override String get storyCombat => '戰鬥';
 	@override String get storyRound => '回合';
@@ -4388,6 +4391,9 @@ extension on TranslationsZhTw {
 			'storyRegexTargetBoth' => '兩者',
 			'storyAddRegex' => '新增正則',
 			'storyRegexEnabled' => '啟用',
+			'storyRegexPhase' => '階段',
+			'storyRegexMinDepth' => '最小深度',
+			'storyRegexMaxDepth' => '最大深度',
 			'storyEquipment' => '裝備',
 			'storyCombat' => '戰鬥',
 			'storyRound' => '回合',
@@ -4779,11 +4785,11 @@ extension on TranslationsZhTw {
 			'statsFavorites' => '收藏',
 			'statsActiveItems' => '活躍條目',
 			'statsActiveHeatmap' => '活躍熱力圖',
+			_ => null,
+		} ?? switch (path) {
 			'statsWatchTrend' => '觀看趨勢',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => '活躍條目 (前 ${shown}/${total}個)',
 			'statsWatchDistribution' => '觀看時長分佈',
-			_ => null,
-		} ?? switch (path) {
 			'statsFrequentTags' => '常看標籤',
 			'statsTagCloud' => '標籤詞雲',
 			'statsUnknown' => '未知',
@@ -5293,11 +5299,11 @@ extension on TranslationsZhTw {
 			'deletedReply' => '刪除了回覆',
 			'author' => '作者',
 			'episodeTitleLabel' => '本集標題',
+			_ => null,
+		} ?? switch (path) {
 			'manualSwitch' => '手動切換',
 			'inputEpisodeNumber' => '輸入集數',
 			'episodeNumberHint' => '請輸入1-999之間的集數',
-			_ => null,
-		} ?? switch (path) {
 			'enterEpisodeNumber' => '請輸入集數',
 			'invalidEpisodeNumber' => '請輸入1-999之間的有效集數',
 			'episodeN' => ({required Object n}) => '第 ${n} 集',

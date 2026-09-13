@@ -388,23 +388,31 @@ class _StoryRegexDraft {
   final TextEditingController name;
   final TextEditingController pattern;
   final TextEditingController replacement;
-  String target;
+  final TextEditingController minDepth;
+  final TextEditingController maxDepth;
+  String phase;
   bool enabled;
 
   _StoryRegexDraft({
     String nameText = '',
     String patternText = '',
     String replacementText = '',
-    this.target = 'ai',
+    String minDepthText = '',
+    String maxDepthText = '',
+    this.phase = 'display',
     this.enabled = true,
   }) : name = TextEditingController(text: nameText),
        pattern = TextEditingController(text: patternText),
-       replacement = TextEditingController(text: replacementText);
+       replacement = TextEditingController(text: replacementText),
+       minDepth = TextEditingController(text: minDepthText),
+       maxDepth = TextEditingController(text: maxDepthText);
 
   void dispose() {
     name.dispose();
     pattern.dispose();
     replacement.dispose();
+    minDepth.dispose();
+    maxDepth.dispose();
   }
 }
 
@@ -499,7 +507,9 @@ class _StoryEditorState extends State<_StoryEditor> {
         nameText: r.name,
         patternText: r.pattern,
         replacementText: r.replacement,
-        target: r.target,
+        minDepthText: r.minDepth > 0 ? '${r.minDepth}' : '',
+        maxDepthText: r.maxDepth > 0 ? '${r.maxDepth}' : '',
+        phase: r.phase,
         enabled: r.enabled,
       ),
   ];
@@ -668,7 +678,9 @@ class _StoryEditorState extends State<_StoryEditor> {
               pattern: r.pattern.text.trim(),
               replacement: r.replacement.text,
               enabled: r.enabled,
-              target: r.target,
+              phase: r.phase,
+              minDepth: int.tryParse(r.minDepth.text.trim()) ?? 0,
+              maxDepth: int.tryParse(r.maxDepth.text.trim()) ?? 0,
             ),
       ],
       achievements: [
@@ -1488,18 +1500,18 @@ class _StoryEditorState extends State<_StoryEditor> {
             Row(
               children: [
                 Text(
-                  '${t.storyRegexTarget}: ',
+                  '${t.storyRegexPhase}: ',
                   style: const TextStyle(fontSize: 13),
                 ),
                 DropdownButton<String>(
-                  value: _regexes[i].target,
+                  value: _regexes[i].phase,
                   items: [
                     DropdownMenuItem(
-                      value: 'ai',
+                      value: 'display',
                       child: Text(t.storyRegexTargetAi),
                     ),
                     DropdownMenuItem(
-                      value: 'user',
+                      value: 'send',
                       child: Text(t.storyRegexTargetUser),
                     ),
                     DropdownMenuItem(
@@ -1508,7 +1520,7 @@ class _StoryEditorState extends State<_StoryEditor> {
                     ),
                   ],
                   onChanged: (v) =>
-                      setState(() => _regexes[i].target = v ?? 'ai'),
+                      setState(() => _regexes[i].phase = v ?? 'display'),
                 ),
                 const Spacer(),
                 Text(
@@ -1518,6 +1530,34 @@ class _StoryEditorState extends State<_StoryEditor> {
                 Switch(
                   value: _regexes[i].enabled,
                   onChanged: (v) => setState(() => _regexes[i].enabled = v),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _regexes[i].minDepth,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: t.storyRegexMinDepth,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _regexes[i].maxDepth,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: t.storyRegexMaxDepth,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1937,7 +1977,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _send(String text) async {
     final sessionId = _sessionId;
     if (sessionId == null || _sending) return;
-    final outgoing = applyStoryRegex(text, story.regexes, 'user');
+    final outgoing = applyStoryRegex(text, story.regexes, 'send');
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
     setState(() {
@@ -2458,7 +2498,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                 final streamNarrative = applyStoryRegex(
                                   _parseReply(_streamText).narrative,
                                   story.regexes,
-                                  'ai',
+                                  'display',
                                 );
                                 if (streamNarrative.trim().isEmpty) {
                                   return const Padding(
@@ -2489,7 +2529,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                               content: applyStoryRegex(
                                                 seg.text,
                                                 story.regexes,
-                                                'ai',
+                                                'display',
+                                                depth: 0,
                                               ),
                                               avatar: _avatarForName(seg.name),
                                             )
@@ -2497,7 +2538,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                               content: applyStoryRegex(
                                                 seg.text,
                                                 story.regexes,
-                                                'ai',
+                                                'display',
+                                                depth: 0,
                                               ),
                                               isUser: false,
                                             ),
@@ -2551,7 +2593,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                             applyStoryRegex(
                                                               seg.text,
                                                               story.regexes,
-                                                              'ai',
+                                                              'display',
+                                                              depth:
+                                                                  messages
+                                                                      .length -
+                                                                  1 -
+                                                                  i,
                                                             ),
                                                         avatar: _avatarForName(
                                                           seg.name,
@@ -2562,7 +2609,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                             applyStoryRegex(
                                                               seg.text,
                                                               story.regexes,
-                                                              'ai',
+                                                              'display',
+                                                              depth:
+                                                                  messages
+                                                                      .length -
+                                                                  1 -
+                                                                  i,
                                                             ),
                                                         isUser: false,
                                                       ),

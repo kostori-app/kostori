@@ -1661,6 +1661,9 @@ storyRegexTargetUser: 使用者輸入
 storyRegexTargetBoth: 兩者
 storyAddRegex: 新增正則
 storyRegexEnabled: 啟用
+storyRegexPhase: 階段
+storyRegexMinDepth: 最小深度
+storyRegexMaxDepth: 最大深度
 storyEquipment: 裝備
 storyCombat: 戰鬥
 storyRound: 回合

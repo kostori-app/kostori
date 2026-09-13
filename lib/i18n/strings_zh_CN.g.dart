@@ -1650,6 +1650,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRegexTargetBoth => '两者';
 	@override String get storyAddRegex => '添加正则';
 	@override String get storyRegexEnabled => '启用';
+	@override String get storyRegexPhase => '阶段';
+	@override String get storyRegexMinDepth => '最小深度';
+	@override String get storyRegexMaxDepth => '最大深度';
 	@override String get storyEquipment => '装备';
 	@override String get storyCombat => '战斗';
 	@override String get storyRound => '回合';
@@ -4388,6 +4391,9 @@ extension on TranslationsZhCn {
 			'storyRegexTargetBoth' => '两者',
 			'storyAddRegex' => '添加正则',
 			'storyRegexEnabled' => '启用',
+			'storyRegexPhase' => '阶段',
+			'storyRegexMinDepth' => '最小深度',
+			'storyRegexMaxDepth' => '最大深度',
 			'storyEquipment' => '装备',
 			'storyCombat' => '战斗',
 			'storyRound' => '回合',
@@ -4780,11 +4786,11 @@ extension on TranslationsZhCn {
 			'statsComments' => '评论',
 			'statsFavorites' => '收藏',
 			'statsActiveItems' => '活跃条目',
+			_ => null,
+		} ?? switch (path) {
 			'statsActiveHeatmap' => '活跃热力图',
 			'statsWatchTrend' => '观看趋势',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => '活跃条目 (前 ${shown}/${total}个)',
-			_ => null,
-		} ?? switch (path) {
 			'statsWatchDistribution' => '观看时长分布',
 			'statsFrequentTags' => '常看标签',
 			'statsTagCloud' => '标签词云',
@@ -5294,11 +5300,11 @@ extension on TranslationsZhCn {
 			'expandCount' => ({required Object total}) => '展开 (${total})',
 			'deletedReply' => '删除了回复',
 			'author' => '作者',
+			_ => null,
+		} ?? switch (path) {
 			'episodeTitleLabel' => '本集标题',
 			'manualSwitch' => '手动切换',
 			'inputEpisodeNumber' => '输入集数',
-			_ => null,
-		} ?? switch (path) {
 			'episodeNumberHint' => '请输入1-999之间的集数',
 			'enterEpisodeNumber' => '请输入集数',
 			'invalidEpisodeNumber' => '请输入1-999之间的有效集数',

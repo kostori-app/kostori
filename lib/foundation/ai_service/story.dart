@@ -268,36 +268,54 @@ class StoryVariable {
   };
 }
 
-/// 正则替换规则（酒馆式）：对 AI 输出 / 用户输入做后处理
+/// 正则替换规则：按阶段生效 + 可限定消息深度窗口
 class StoryRegex {
   final String name;
   final String pattern;
   final String replacement;
   final bool enabled;
 
-  /// ai | user | both
-  final String target;
+  /// 生效阶段：display（AI 输出显示）| send（用户输入发送前）| both
+  final String phase;
   final bool caseSensitive;
   final bool multiLine;
+
+  /// 深度窗口（相对最新消息的距离，0 表示不限）
+  final int minDepth;
+  final int maxDepth;
 
   const StoryRegex({
     required this.name,
     required this.pattern,
     this.replacement = '',
     this.enabled = true,
-    this.target = 'ai',
+    this.phase = 'display',
     this.caseSensitive = true,
     this.multiLine = false,
+    this.minDepth = 0,
+    this.maxDepth = 0,
   });
+
+  static String _phaseOf(Object? phase, Object? legacyTarget) {
+    final p = phase?.toString();
+    if (p == 'display' || p == 'send' || p == 'both') return p!;
+    return switch (legacyTarget?.toString()) {
+      'user' => 'send',
+      'both' => 'both',
+      _ => 'display',
+    };
+  }
 
   factory StoryRegex.fromJson(Map<String, dynamic> json) => StoryRegex(
     name: json['name']?.toString() ?? '',
     pattern: json['pattern']?.toString() ?? '',
     replacement: json['replacement']?.toString() ?? '',
     enabled: json['enabled'] as bool? ?? true,
-    target: json['target']?.toString() ?? 'ai',
+    phase: _phaseOf(json['phase'], json['target']),
     caseSensitive: json['caseSensitive'] as bool? ?? true,
     multiLine: json['multiLine'] as bool? ?? false,
+    minDepth: (json['minDepth'] as num?)?.toInt() ?? 0,
+    maxDepth: (json['maxDepth'] as num?)?.toInt() ?? 0,
   );
 
   Map<String, dynamic> toJson() => {
@@ -305,9 +323,11 @@ class StoryRegex {
     'pattern': pattern,
     'replacement': replacement,
     'enabled': enabled,
-    'target': target,
+    'phase': phase,
     'caseSensitive': caseSensitive,
     'multiLine': multiLine,
+    'minDepth': minDepth,
+    'maxDepth': maxDepth,
   };
 }
 
@@ -323,12 +343,21 @@ String replaceStoryVars(String text, Map<String, String> vars) {
   );
 }
 
-/// 按规则对文本做正则替换（target: ai | user）
-String applyStoryRegex(String text, List<StoryRegex> rules, String target) {
+/// 按阶段对文本做正则替换；[depth] 为相对最新消息的距离（-1 表示未知，跳过深度过滤）
+String applyStoryRegex(
+  String text,
+  List<StoryRegex> rules,
+  String phase, {
+  int depth = -1,
+}) {
   var result = text;
   for (final r in rules) {
     if (!r.enabled || r.pattern.isEmpty) continue;
-    if (r.target != 'both' && r.target != target) continue;
+    if (r.phase != 'both' && r.phase != phase) continue;
+    if (depth >= 0) {
+      if (r.minDepth > 0 && depth < r.minDepth) continue;
+      if (r.maxDepth > 0 && depth > r.maxDepth) continue;
+    }
     try {
       final re = RegExp(
         r.pattern,
