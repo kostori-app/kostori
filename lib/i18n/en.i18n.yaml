@@ -1655,6 +1655,14 @@ storyVariableName: Variable name
 storyVariableValue: Initial value
 storyVariableDescription: Description
 storyAddVariable: Add variable
+storyVariableType: Type
+storyVarTypeText: Text
+storyVarTypeNumber: Number
+storyVarTypeEnum: Enum
+storyVariableMin: Min
+storyVariableMax: Max
+storyVariableUnit: Unit
+storyVariableOptions: Options (comma separated)
 storyRegexName: Rule name
 storyRegexPattern: Pattern (regex)
 storyRegexReplacement: Replacement

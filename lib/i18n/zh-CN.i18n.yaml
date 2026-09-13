@@ -1650,6 +1650,14 @@ storyVariableName: 变量名
 storyVariableValue: 初始值
 storyVariableDescription: 说明
 storyAddVariable: 添加变量
+storyVariableType: 类型
+storyVarTypeText: 文本
+storyVarTypeNumber: 数值
+storyVarTypeEnum: 枚举
+storyVariableMin: 最小
+storyVariableMax: 最大
+storyVariableUnit: 单位
+storyVariableOptions: 可选值（逗号分隔）
 storyRegexName: 规则名
 storyRegexPattern: 匹配（正则）
 storyRegexReplacement: 替换为

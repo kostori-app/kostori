@@ -368,19 +368,37 @@ class _StoryVariableDraft {
   final TextEditingController name;
   final TextEditingController value;
   final TextEditingController description;
+  final TextEditingController min;
+  final TextEditingController max;
+  final TextEditingController unit;
+  final TextEditingController options;
+  String type;
 
   _StoryVariableDraft({
     String nameText = '',
     String valueText = '',
     String descriptionText = '',
+    String minText = '',
+    String maxText = '',
+    String unitText = '',
+    String optionsText = '',
+    this.type = 'text',
   }) : name = TextEditingController(text: nameText),
        value = TextEditingController(text: valueText),
-       description = TextEditingController(text: descriptionText);
+       description = TextEditingController(text: descriptionText),
+       min = TextEditingController(text: minText),
+       max = TextEditingController(text: maxText),
+       unit = TextEditingController(text: unitText),
+       options = TextEditingController(text: optionsText);
 
   void dispose() {
     name.dispose();
     value.dispose();
     description.dispose();
+    min.dispose();
+    max.dispose();
+    unit.dispose();
+    options.dispose();
   }
 }
 
@@ -499,6 +517,11 @@ class _StoryEditorState extends State<_StoryEditor> {
         nameText: v.name,
         valueText: v.value,
         descriptionText: v.description,
+        minText: v.min?.toString() ?? '',
+        maxText: v.max?.toString() ?? '',
+        unitText: v.unit,
+        optionsText: v.options.join('、'),
+        type: v.type,
       ),
   ];
   late final List<_StoryRegexDraft> _regexes = [
@@ -668,6 +691,15 @@ class _StoryEditorState extends State<_StoryEditor> {
               name: v.name.text.trim(),
               value: v.value.text.trim(),
               description: v.description.text.trim(),
+              type: v.type,
+              min: int.tryParse(v.min.text.trim()),
+              max: int.tryParse(v.max.text.trim()),
+              unit: v.unit.text.trim(),
+              options: v.options.text
+                  .split(RegExp(r'[、,，/]'))
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList(),
             ),
       ],
       regexes: [
@@ -1448,6 +1480,85 @@ class _StoryEditorState extends State<_StoryEditor> {
                 border: const OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  '${t.storyVariableType}: ',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                DropdownButton<String>(
+                  value: _variables[i].type,
+                  items: [
+                    DropdownMenuItem(
+                      value: 'text',
+                      child: Text(t.storyVarTypeText),
+                    ),
+                    DropdownMenuItem(
+                      value: 'number',
+                      child: Text(t.storyVarTypeNumber),
+                    ),
+                    DropdownMenuItem(
+                      value: 'enum',
+                      child: Text(t.storyVarTypeEnum),
+                    ),
+                  ],
+                  onChanged: (v) =>
+                      setState(() => _variables[i].type = v ?? 'text'),
+                ),
+                const Spacer(),
+                if (_variables[i].type == 'number') ...[
+                  SizedBox(
+                    width: 68,
+                    child: TextFormField(
+                      controller: _variables[i].min,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: t.storyVariableMin,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 68,
+                    child: TextFormField(
+                      controller: _variables[i].max,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: t.storyVariableMax,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 68,
+                    child: TextFormField(
+                      controller: _variables[i].unit,
+                      decoration: InputDecoration(
+                        labelText: t.storyVariableUnit,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (_variables[i].type == 'enum') ...[
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _variables[i].options,
+                decoration: InputDecoration(
+                  labelText: t.storyVariableOptions,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
           ]),
         TextButton.icon(
           onPressed: () => setState(() => _variables.add(_StoryVariableDraft())),
@@ -1887,14 +1998,29 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
     }
     if (vars.isNotEmpty) {
-      buf.write('\n\n【变量（每回合回传最新值）】');
-      final desc = {
-        for (final v in story.variables)
-          if (v.description.trim().isNotEmpty) v.name: v.description.trim(),
-      };
+      buf.write('\n\n【变量（每回合回传最新值，需遵守类型约束）】');
+      final declared = {for (final v in story.variables) v.name: v};
       for (final e in vars.entries) {
-        final d = desc[e.key];
-        buf.write('\n- ${e.key} = ${e.value}${d == null ? '' : '（$d）'}');
+        final d = declared[e.key];
+        final meta = <String>[];
+        if (d != null) {
+          if (d.type == 'number') {
+            final range = [
+              if (d.min != null) '${d.min}',
+              if (d.max != null) '${d.max}',
+            ].join('~');
+            meta.add(
+              '数值${range.isEmpty ? '' : ' $range'}'
+              '${d.unit.isEmpty ? '' : d.unit}',
+            );
+          } else if (d.type == 'enum' && d.options.isNotEmpty) {
+            meta.add('取值：${d.options.join('/')}');
+          }
+          if (d.description.trim().isNotEmpty) meta.add(d.description.trim());
+        }
+        buf.write(
+          '\n- ${e.key} = ${e.value}${meta.isEmpty ? '' : '（${meta.join('；')}）'}',
+        );
       }
     }
     if (state.codex.isNotEmpty) {
@@ -2142,12 +2268,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _applyState(GameState? state) async {
     final sessionId = _sessionId;
     if (state == null || sessionId == null) return;
-    final unregistered = _unregisteredFrom(state);
-    final newlyUnlocked = state.achievements
+    final next = state.copyWith(
+      variables: normalizeVariables(state.variables, story.variables),
+    );
+    final unregistered = _unregisteredFrom(next);
+    final newlyUnlocked = next.achievements
         .where((k) => !_state.achievements.contains(k))
         .toList();
     setState(() {
-      _state = state;
+      _state = next;
       _unregistered = unregistered;
     });
     if (newlyUnlocked.isNotEmpty) {
@@ -2166,7 +2295,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     }
     await StorySessionStore.instance.put(
       story.id,
-      StorySession(sessionId: sessionId, state: state),
+      StorySession(sessionId: sessionId, state: next),
     );
   }
 

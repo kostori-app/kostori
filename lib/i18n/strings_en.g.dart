@@ -4858,6 +4858,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Add variable'
 	String get storyAddVariable => 'Add variable';
 
+	/// en: 'Type'
+	String get storyVariableType => 'Type';
+
+	/// en: 'Text'
+	String get storyVarTypeText => 'Text';
+
+	/// en: 'Number'
+	String get storyVarTypeNumber => 'Number';
+
+	/// en: 'Enum'
+	String get storyVarTypeEnum => 'Enum';
+
+	/// en: 'Min'
+	String get storyVariableMin => 'Min';
+
+	/// en: 'Max'
+	String get storyVariableMax => 'Max';
+
+	/// en: 'Unit'
+	String get storyVariableUnit => 'Unit';
+
+	/// en: 'Options (comma separated)'
+	String get storyVariableOptions => 'Options (comma separated)';
+
 	/// en: 'Rule name'
 	String get storyRegexName => 'Rule name';
 
@@ -9724,6 +9748,14 @@ extension on Translations {
 			'storyVariableValue' => 'Initial value',
 			'storyVariableDescription' => 'Description',
 			'storyAddVariable' => 'Add variable',
+			'storyVariableType' => 'Type',
+			'storyVarTypeText' => 'Text',
+			'storyVarTypeNumber' => 'Number',
+			'storyVarTypeEnum' => 'Enum',
+			'storyVariableMin' => 'Min',
+			'storyVariableMax' => 'Max',
+			'storyVariableUnit' => 'Unit',
+			'storyVariableOptions' => 'Options (comma separated)',
 			'storyRegexName' => 'Rule name',
 			'storyRegexPattern' => 'Pattern (regex)',
 			'storyRegexReplacement' => 'Replacement',
@@ -10116,6 +10148,8 @@ extension on Translations {
 			'hideThinking' => 'Hide thinking',
 			'viewProcess' => 'View process',
 			'stepThinking' => 'Thinking',
+			_ => null,
+		} ?? switch (path) {
 			'stepTool' => 'Tool',
 			'thinkingInProgress' => 'Thinking...',
 			'statsCached' => 'cached',
@@ -10124,8 +10158,6 @@ extension on Translations {
 			'statsWatchDuration' => 'Watch duration',
 			'statsClicks' => 'Clicks',
 			'statsRatings' => 'Ratings',
-			_ => null,
-		} ?? switch (path) {
 			'statsComments' => 'Comments',
 			'statsFavorites' => 'Favorites',
 			'statsActiveItems' => 'Active items',
@@ -10630,6 +10662,8 @@ extension on Translations {
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID: ${id}',
 			'qrWatchRoom' => ({required Object room, required Object server}) => 'Watch together room: ${room}\nServer: ${server}',
 			'qrDetectedType' => ({required Object type}) => 'Detected ${type} link',
+			_ => null,
+		} ?? switch (path) {
 			'qrPasswordResolved' => '(Password resolved)\n',
 			'reviewedAtTime' => ({required Object time}) => 'Reviewed at ${time}',
 			'qrCopiedToClipboard' => 'QR code copied to clipboard',
@@ -10638,8 +10672,6 @@ extension on Translations {
 			'floorOwner' => 'OP',
 			'postOwner' => 'OP',
 			'collapse' => 'Collapse',
-			_ => null,
-		} ?? switch (path) {
 			'expandCount' => ({required Object total}) => 'Expand (${total})',
 			'deletedReply' => 'Reply deleted',
 			'author' => 'Author',

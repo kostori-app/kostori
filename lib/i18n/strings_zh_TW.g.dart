@@ -1645,6 +1645,14 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyVariableValue => '初始值';
 	@override String get storyVariableDescription => '說明';
 	@override String get storyAddVariable => '新增變數';
+	@override String get storyVariableType => '類型';
+	@override String get storyVarTypeText => '文本';
+	@override String get storyVarTypeNumber => '數值';
+	@override String get storyVarTypeEnum => '枚舉';
+	@override String get storyVariableMin => '最小';
+	@override String get storyVariableMax => '最大';
+	@override String get storyVariableUnit => '單位';
+	@override String get storyVariableOptions => '可選值（逗號分隔）';
 	@override String get storyRegexName => '規則名';
 	@override String get storyRegexPattern => '匹配（正則）';
 	@override String get storyRegexReplacement => '替換為';
@@ -4388,6 +4396,14 @@ extension on TranslationsZhTw {
 			'storyVariableValue' => '初始值',
 			'storyVariableDescription' => '說明',
 			'storyAddVariable' => '新增變數',
+			'storyVariableType' => '類型',
+			'storyVarTypeText' => '文本',
+			'storyVarTypeNumber' => '數值',
+			'storyVarTypeEnum' => '枚舉',
+			'storyVariableMin' => '最小',
+			'storyVariableMax' => '最大',
+			'storyVariableUnit' => '單位',
+			'storyVariableOptions' => '可選值（逗號分隔）',
 			'storyRegexName' => '規則名',
 			'storyRegexPattern' => '匹配（正則）',
 			'storyRegexReplacement' => '替換為',
@@ -4780,6 +4796,8 @@ extension on TranslationsZhTw {
 			'viewProcess' => '查看過程',
 			'stepThinking' => '思考',
 			'stepTool' => '工具',
+			_ => null,
+		} ?? switch (path) {
 			'thinkingInProgress' => '正在思考...',
 			'statsCached' => '快取',
 			'statsNoRecords' => '尚無活動記錄',
@@ -4788,8 +4806,6 @@ extension on TranslationsZhTw {
 			'statsClicks' => '點擊次數',
 			'statsRatings' => '評級',
 			'statsComments' => '評論',
-			_ => null,
-		} ?? switch (path) {
 			'statsFavorites' => '收藏',
 			'statsActiveItems' => '活躍條目',
 			'statsActiveHeatmap' => '活躍熱力圖',
@@ -5294,6 +5310,8 @@ extension on TranslationsZhTw {
 			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房間：${room}\n服務端：${server}',
 			'qrDetectedType' => ({required Object type}) => '檢測到 ${type} 連結',
 			'qrPasswordResolved' => '（口令已解析）\n',
+			_ => null,
+		} ?? switch (path) {
 			'reviewedAtTime' => ({required Object time}) => '評價時 ${time}',
 			'qrCopiedToClipboard' => '二維碼已複製到剪貼簿',
 			'qrSavedToGallery' => '二維碼已儲存',
@@ -5302,8 +5320,6 @@ extension on TranslationsZhTw {
 			'postOwner' => '貼主',
 			'collapse' => '收起',
 			'expandCount' => ({required Object total}) => '展開 (${total})',
-			_ => null,
-		} ?? switch (path) {
 			'deletedReply' => '刪除了回覆',
 			'author' => '作者',
 			'episodeTitleLabel' => '本集標題',

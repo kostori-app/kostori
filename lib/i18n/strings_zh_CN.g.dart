@@ -1644,6 +1644,14 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyVariableValue => '初始值';
 	@override String get storyVariableDescription => '说明';
 	@override String get storyAddVariable => '添加变量';
+	@override String get storyVariableType => '类型';
+	@override String get storyVarTypeText => '文本';
+	@override String get storyVarTypeNumber => '数值';
+	@override String get storyVarTypeEnum => '枚举';
+	@override String get storyVariableMin => '最小';
+	@override String get storyVariableMax => '最大';
+	@override String get storyVariableUnit => '单位';
+	@override String get storyVariableOptions => '可选值（逗号分隔）';
 	@override String get storyRegexName => '规则名';
 	@override String get storyRegexPattern => '匹配（正则）';
 	@override String get storyRegexReplacement => '替换为';
@@ -4388,6 +4396,14 @@ extension on TranslationsZhCn {
 			'storyVariableValue' => '初始值',
 			'storyVariableDescription' => '说明',
 			'storyAddVariable' => '添加变量',
+			'storyVariableType' => '类型',
+			'storyVarTypeText' => '文本',
+			'storyVarTypeNumber' => '数值',
+			'storyVarTypeEnum' => '枚举',
+			'storyVariableMin' => '最小',
+			'storyVariableMax' => '最大',
+			'storyVariableUnit' => '单位',
+			'storyVariableOptions' => '可选值（逗号分隔）',
 			'storyRegexName' => '规则名',
 			'storyRegexPattern' => '匹配（正则）',
 			'storyRegexReplacement' => '替换为',
@@ -4781,6 +4797,8 @@ extension on TranslationsZhCn {
 			'hideThinking' => '收起思考过程',
 			'viewProcess' => '查看过程',
 			'stepThinking' => '思考',
+			_ => null,
+		} ?? switch (path) {
 			'stepTool' => '工具',
 			'thinkingInProgress' => '正在思考...',
 			'statsCached' => '缓存',
@@ -4789,8 +4807,6 @@ extension on TranslationsZhCn {
 			'statsWatchDuration' => '观看时长',
 			'statsClicks' => '点击次数',
 			'statsRatings' => '评级',
-			_ => null,
-		} ?? switch (path) {
 			'statsComments' => '评论',
 			'statsFavorites' => '收藏',
 			'statsActiveItems' => '活跃条目',
@@ -5295,6 +5311,8 @@ extension on TranslationsZhCn {
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID：${id}',
 			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房间：${room}\n服务端：${server}',
 			'qrDetectedType' => ({required Object type}) => '检测到 ${type} 链接',
+			_ => null,
+		} ?? switch (path) {
 			'qrPasswordResolved' => '（口令已解析）\n',
 			'reviewedAtTime' => ({required Object time}) => '评价时 ${time}',
 			'qrCopiedToClipboard' => '二维码已复制到剪贴板',
@@ -5303,8 +5321,6 @@ extension on TranslationsZhCn {
 			'floorOwner' => '层主',
 			'postOwner' => '贴主',
 			'collapse' => '收起',
-			_ => null,
-		} ?? switch (path) {
 			'expandCount' => ({required Object total}) => '展开 (${total})',
 			'deletedReply' => '删除了回复',
 			'author' => '作者',

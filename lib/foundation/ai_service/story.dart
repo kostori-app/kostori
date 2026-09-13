@@ -249,22 +249,84 @@ class StoryVariable {
   final String value;
   final String description;
 
+  /// number | text | enum
+  final String type;
+
+  /// 数值范围（type=number）
+  final int? min;
+  final int? max;
+  final String unit;
+
+  /// 枚举可选值（type=enum）
+  final List<String> options;
+
   const StoryVariable({
     required this.name,
     this.value = '',
     this.description = '',
+    this.type = 'text',
+    this.min,
+    this.max,
+    this.unit = '',
+    this.options = const [],
   });
 
   factory StoryVariable.fromJson(Map<String, dynamic> json) => StoryVariable(
     name: json['name']?.toString() ?? '',
     value: json['value']?.toString() ?? '',
     description: json['description']?.toString() ?? '',
+    type: json['type']?.toString() ?? 'text',
+    min: (json['min'] as num?)?.toInt(),
+    max: (json['max'] as num?)?.toInt(),
+    unit: json['unit']?.toString() ?? '',
+    options: (json['options'] as List?)?.map((e) => e.toString()).toList() ??
+        const [],
   );
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'value': value,
     'description': description,
+    'type': type,
+    if (min != null) 'min': min,
+    if (max != null) 'max': max,
+    if (unit.isNotEmpty) 'unit': unit,
+    if (options.isNotEmpty) 'options': options,
+  };
+
+  /// 按声明约束归一化单个值
+  String normalize(String raw) {
+    switch (type) {
+      case 'number':
+        final n = int.tryParse(raw.replaceAll(RegExp(r'[^0-9\-]'), ''));
+        if (n == null) return value;
+        var v = n;
+        if (min != null && v < min!) v = min!;
+        if (max != null && v > max!) v = max!;
+        return '$v';
+      case 'enum':
+        if (options.isEmpty) return raw;
+        if (options.contains(raw)) return raw;
+        for (final o in options) {
+          if (raw.contains(o)) return o;
+        }
+        return options.first;
+      default:
+        return raw;
+    }
+  }
+}
+
+/// 按变量声明约束归一化整份变量表
+Map<String, String> normalizeVariables(
+  Map<String, String> values,
+  List<StoryVariable> declared,
+) {
+  if (declared.isEmpty) return values;
+  final byName = {for (final v in declared) v.name: v};
+  return {
+    for (final e in values.entries)
+      e.key: byName[e.key]?.normalize(e.value) ?? e.value,
   };
 }
 
