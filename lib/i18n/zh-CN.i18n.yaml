@@ -127,6 +127,9 @@ currentlySeenEp: 目前看到第 ${ep} 话
 dnsOverrides: DNS 覆写
 dark: 深色
 dataSync: 数据同步
+aiRequestLog: AI 请求日志
+aiLogRequest: 请求
+aiLogResponse: 响应
 selectiveSync: 选择性同步
 syncSuccess: 同步成功
 storySessions: 存档

@@ -11,6 +11,7 @@ import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
+import 'package:kostori/foundation/ai_service/ai_request_log.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
@@ -381,6 +382,7 @@ class AiConversationService {
     } else {
       SkillRegistry.instance.setContextImage(null);
     }
+    final sw = Stopwatch()..start();
     final result = await _chat(
       ai,
       messages,
@@ -391,7 +393,24 @@ class AiConversationService {
       params: paramsOverride ?? _profileParams(profile),
       configOverride: await _configOverrideFor(ai, provider, profile),
     );
+    sw.stop();
     SkillRegistry.instance.setContextImage(null);
+    final loggedUsage = result.subData is AiUsage ? result.subData as AiUsage : null;
+    unawaited(
+      AiRequestLogService.instance.add(
+        AiRequestLogEntry(
+          time: DateTime.now(),
+          provider: provider,
+          model: loggedUsage?.modelName,
+          taskType: taskType,
+          request: userMessage,
+          response: result.success ? result.data : '',
+          error: result.errorMessage,
+          durationMs: sw.elapsedMilliseconds,
+          tokens: loggedUsage?.total,
+        ),
+      ),
+    );
 
     // 6. 记录 AI 回复
     if (result.success) {
@@ -801,6 +820,20 @@ class AiConversationService {
       unawaited(_autoTitle(sessionId, provider, userMessage));
     }
     SkillRegistry.instance.setContextImage(null);
+    unawaited(
+      AiRequestLogService.instance.add(
+        AiRequestLogEntry(
+          time: DateTime.now(),
+          provider: provider,
+          model: modelName,
+          taskType: taskType,
+          request: userMessage,
+          response: allText.toString(),
+          durationMs: durationMs,
+          tokens: usage?.total,
+        ),
+      ),
+    );
 
     yield AiChatUpdate(
       text: allText.toString(),

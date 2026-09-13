@@ -449,6 +449,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Data Sync'
 	String get dataSync => 'Data Sync';
 
+	/// en: 'AI request log'
+	String get aiRequestLog => 'AI request log';
+
+	/// en: 'Request'
+	String get aiLogRequest => 'Request';
+
+	/// en: 'Response'
+	String get aiLogResponse => 'Response';
+
 	/// en: 'Selective sync'
 	String get selectiveSync => 'Selective sync';
 
@@ -8197,6 +8206,9 @@ extension on Translations {
 			'dnsOverrides' => 'DNS Overrides',
 			'dark' => 'Dark',
 			'dataSync' => 'Data Sync',
+			'aiRequestLog' => 'AI request log',
+			'aiLogRequest' => 'Request',
+			'aiLogResponse' => 'Response',
 			'selectiveSync' => 'Selective sync',
 			'syncSuccess' => 'Synced',
 			'storySessions' => 'Saves',
@@ -8570,11 +8582,11 @@ extension on Translations {
 			'topicList' => 'Topic List',
 			'startConversationWithAI' => 'Start a conversation with AI',
 			'newConversation' => 'New Conversation',
+			_ => null,
+		} ?? switch (path) {
 			'inputMessage' => 'Input message...',
 			'noTopicsYet' => 'No topics yet',
 			'selectAiPersonality' => 'Select AI Personality',
-			_ => null,
-		} ?? switch (path) {
 			'apply' => 'Apply',
 			'heightPx' => 'Height(px)',
 			'setUniformHeight' => 'Set Uniform Height',
@@ -9084,11 +9096,11 @@ extension on Translations {
 			'searchGroupBangumi' => 'Bangumi',
 			'searchGroupDefault' => 'Default',
 			'chooseSearchSource' => 'Choose Search Source',
+			_ => null,
+		} ?? switch (path) {
 			'singleSourceSearch' => 'Single Source',
 			'searchGroupBuiltIn' => 'Built-in groups',
 			'searchGroupCustom' => 'My groups',
-			_ => null,
-		} ?? switch (path) {
 			'manageGroups' => 'Manage Groups',
 			'newGroup' => 'New Group',
 			'groupName' => 'Group Name',
@@ -9598,11 +9610,11 @@ extension on Translations {
 			'aiSettings' => 'AI Settings',
 			'aiConfigMissing' => 'AI Config Missing',
 			'generating' => 'Generating...',
+			_ => null,
+		} ?? switch (path) {
 			'generatedTags' => 'Generated Tags',
 			'exportScreenshot' => 'Export Screenshot',
 			'copyAll' => 'Copy all',
-			_ => null,
-		} ?? switch (path) {
 			'timeRange' => 'Time Range',
 			'thisWeek' => 'This Week',
 			'thisMonth' => 'This Month',
@@ -10112,11 +10124,11 @@ extension on Translations {
 			'statsWatchDuration' => 'Watch duration',
 			'statsClicks' => 'Clicks',
 			'statsRatings' => 'Ratings',
+			_ => null,
+		} ?? switch (path) {
 			'statsComments' => 'Comments',
 			'statsFavorites' => 'Favorites',
 			'statsActiveItems' => 'Active items',
-			_ => null,
-		} ?? switch (path) {
 			'statsActiveHeatmap' => 'Activity heatmap',
 			'statsWatchTrend' => 'Watch trend',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => 'Active items (top ${shown}/${total})',
@@ -10626,11 +10638,11 @@ extension on Translations {
 			'floorOwner' => 'OP',
 			'postOwner' => 'OP',
 			'collapse' => 'Collapse',
+			_ => null,
+		} ?? switch (path) {
 			'expandCount' => ({required Object total}) => 'Expand (${total})',
 			'deletedReply' => 'Reply deleted',
 			'author' => 'Author',
-			_ => null,
-		} ?? switch (path) {
 			'episodeTitleLabel' => 'Episode title',
 			'manualSwitch' => 'Manual switch',
 			'inputEpisodeNumber' => 'Enter episode number',

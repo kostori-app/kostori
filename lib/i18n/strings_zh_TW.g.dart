@@ -167,6 +167,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dnsOverrides => 'DNS 覆寫';
 	@override String get dark => '深色';
 	@override String get dataSync => '數據同步';
+	@override String get aiRequestLog => 'AI 請求日誌';
+	@override String get aiLogRequest => '請求';
+	@override String get aiLogResponse => '回應';
 	@override String get selectiveSync => '選擇性同步';
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存檔';
@@ -2859,6 +2862,9 @@ extension on TranslationsZhTw {
 			'dnsOverrides' => 'DNS 覆寫',
 			'dark' => '深色',
 			'dataSync' => '數據同步',
+			'aiRequestLog' => 'AI 請求日誌',
+			'aiLogRequest' => '請求',
+			'aiLogResponse' => '回應',
 			'selectiveSync' => '選擇性同步',
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存檔',
@@ -3240,11 +3246,11 @@ extension on TranslationsZhTw {
 			'setUniformHeight' => '設定統一高度',
 			'uniformHeight' => '統一高度',
 			'cropImage' => '裁剪圖片',
+			_ => null,
+		} ?? switch (path) {
 			'finishCropping' => '完成裁剪',
 			'sortImages' => '圖片排序',
 			'finishSorting' => '完成排序',
-			_ => null,
-		} ?? switch (path) {
 			'noImages' => '暫無圖片',
 			'selectImages' => '選擇圖片',
 			'addImages' => '新增圖片',
@@ -3754,11 +3760,11 @@ extension on TranslationsZhTw {
 			'searchGroupBangumi' => '番組',
 			'searchGroupDefault' => '預設',
 			'chooseSearchSource' => '選擇搜尋源',
+			_ => null,
+		} ?? switch (path) {
 			'singleSourceSearch' => '單源',
 			'searchGroupBuiltIn' => '內建分組',
 			'searchGroupCustom' => '我的分組',
-			_ => null,
-		} ?? switch (path) {
 			'manageGroups' => '管理分組',
 			'newGroup' => '新增分組',
 			'groupName' => '分組名稱',
@@ -4268,11 +4274,11 @@ extension on TranslationsZhTw {
 			'aiSettings' => 'AI 設置',
 			'aiConfigMissing' => 'AI配置缺失',
 			'generating' => '生成中...',
+			_ => null,
+		} ?? switch (path) {
 			'generatedTags' => '已生成 Tags',
 			'exportScreenshot' => '導出截圖',
 			'copyAll' => '複製全部',
-			_ => null,
-		} ?? switch (path) {
 			'timeRange' => '時間範圍',
 			'thisWeek' => '本週',
 			'thisMonth' => '本月',
@@ -4782,11 +4788,11 @@ extension on TranslationsZhTw {
 			'statsClicks' => '點擊次數',
 			'statsRatings' => '評級',
 			'statsComments' => '評論',
+			_ => null,
+		} ?? switch (path) {
 			'statsFavorites' => '收藏',
 			'statsActiveItems' => '活躍條目',
 			'statsActiveHeatmap' => '活躍熱力圖',
-			_ => null,
-		} ?? switch (path) {
 			'statsWatchTrend' => '觀看趨勢',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => '活躍條目 (前 ${shown}/${total}個)',
 			'statsWatchDistribution' => '觀看時長分佈',
@@ -5296,11 +5302,11 @@ extension on TranslationsZhTw {
 			'postOwner' => '貼主',
 			'collapse' => '收起',
 			'expandCount' => ({required Object total}) => '展開 (${total})',
+			_ => null,
+		} ?? switch (path) {
 			'deletedReply' => '刪除了回覆',
 			'author' => '作者',
 			'episodeTitleLabel' => '本集標題',
-			_ => null,
-		} ?? switch (path) {
 			'manualSwitch' => '手動切換',
 			'inputEpisodeNumber' => '輸入集數',
 			'episodeNumberHint' => '請輸入1-999之間的集數',

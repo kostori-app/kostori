@@ -115,6 +115,13 @@ class _AppSettingsState extends State<AppSettings> {
                     showPopUpWidget(context, const _WebdavSetting());
                   },
                 ),
+                _CallbackSetting(
+                  title: t.aiRequestLog,
+                  actionTitle: t.manage,
+                  callback: () async {
+                    showPopUpWidget(context, const AiRequestLogPage());
+                  },
+                ),
               ],
             ),
           ),

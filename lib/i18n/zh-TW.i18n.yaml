@@ -126,6 +126,9 @@ currentlySeenEp: 目前看到 ${ep}
 dnsOverrides: DNS 覆寫
 dark: 深色
 dataSync: 數據同步
+aiRequestLog: AI 請求日誌
+aiLogRequest: 請求
+aiLogResponse: 回應
 selectiveSync: 選擇性同步
 syncSuccess: 同步成功
 storySessions: 存檔

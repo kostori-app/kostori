@@ -138,6 +138,9 @@ currentlySeenEp: Currently seen ${ep}
 dnsOverrides: DNS Overrides
 dark: Dark
 dataSync: Data Sync
+aiRequestLog: AI request log
+aiLogRequest: Request
+aiLogResponse: Response
 selectiveSync: Selective sync
 syncSuccess: Synced
 storySessions: Saves

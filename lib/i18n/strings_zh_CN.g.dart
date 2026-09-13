@@ -168,6 +168,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dnsOverrides => 'DNS 覆写';
 	@override String get dark => '深色';
 	@override String get dataSync => '数据同步';
+	@override String get aiRequestLog => 'AI 请求日志';
+	@override String get aiLogRequest => '请求';
+	@override String get aiLogResponse => '响应';
 	@override String get selectiveSync => '选择性同步';
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存档';
@@ -2861,6 +2864,9 @@ extension on TranslationsZhCn {
 			'dnsOverrides' => 'DNS 覆写',
 			'dark' => '深色',
 			'dataSync' => '数据同步',
+			'aiRequestLog' => 'AI 请求日志',
+			'aiLogRequest' => '请求',
+			'aiLogResponse' => '响应',
 			'selectiveSync' => '选择性同步',
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存档',
@@ -3241,11 +3247,11 @@ extension on TranslationsZhCn {
 			'heightPx' => '高度(px)',
 			'setUniformHeight' => '设置统一高度',
 			'uniformHeight' => '统一高度',
+			_ => null,
+		} ?? switch (path) {
 			'cropImage' => '裁剪图片',
 			'finishCropping' => '完成裁剪',
 			'sortImages' => '图片排序',
-			_ => null,
-		} ?? switch (path) {
 			'finishSorting' => '完成排序',
 			'noImages' => '无图片',
 			'selectImages' => '选择图片',
@@ -3755,11 +3761,11 @@ extension on TranslationsZhCn {
 			'searchGroupDefault' => '默认',
 			'chooseSearchSource' => '选择搜索源',
 			'singleSourceSearch' => '单源',
+			_ => null,
+		} ?? switch (path) {
 			'searchGroupBuiltIn' => '内置分组',
 			'searchGroupCustom' => '我的分组',
 			'manageGroups' => '管理分组',
-			_ => null,
-		} ?? switch (path) {
 			'newGroup' => '新建分组',
 			'groupName' => '分组名称',
 			'groupExists' => '分组名称已存在',
@@ -4269,11 +4275,11 @@ extension on TranslationsZhCn {
 			'aiConfigMissing' => 'AI配置缺失',
 			'generating' => '生成中...',
 			'generatedTags' => '已生成 Tags',
+			_ => null,
+		} ?? switch (path) {
 			'exportScreenshot' => '导出截图',
 			'copyAll' => '复制全部',
 			'timeRange' => '时间范围',
-			_ => null,
-		} ?? switch (path) {
 			'thisWeek' => '本周',
 			'thisMonth' => '本月',
 			'generateSummary' => '生成总结',
@@ -4783,11 +4789,11 @@ extension on TranslationsZhCn {
 			'statsWatchDuration' => '观看时长',
 			'statsClicks' => '点击次数',
 			'statsRatings' => '评级',
+			_ => null,
+		} ?? switch (path) {
 			'statsComments' => '评论',
 			'statsFavorites' => '收藏',
 			'statsActiveItems' => '活跃条目',
-			_ => null,
-		} ?? switch (path) {
 			'statsActiveHeatmap' => '活跃热力图',
 			'statsWatchTrend' => '观看趋势',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => '活跃条目 (前 ${shown}/${total}个)',
@@ -5297,11 +5303,11 @@ extension on TranslationsZhCn {
 			'floorOwner' => '层主',
 			'postOwner' => '贴主',
 			'collapse' => '收起',
+			_ => null,
+		} ?? switch (path) {
 			'expandCount' => ({required Object total}) => '展开 (${total})',
 			'deletedReply' => '删除了回复',
 			'author' => '作者',
-			_ => null,
-		} ?? switch (path) {
 			'episodeTitleLabel' => '本集标题',
 			'manualSwitch' => '手动切换',
 			'inputEpisodeNumber' => '输入集数',
