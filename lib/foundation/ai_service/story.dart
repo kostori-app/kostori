@@ -1172,7 +1172,7 @@ class Story {
    角色（NPC）的发言与动作请用标记包裹：〖角色：角色名〗该角色的对白与动作〖/角色〗；
    标记之外的正文为旁白，旁白不要加任何标记。多个角色依次用标记分段。
    提示 / 须知 / 系统提醒一类的内容，必须用 Markdown 引用块单独成段（该行以 `> ` 开头），例如：
-   > 求生须知：屋顶这条退路现在更贵了……
+   > 提示：此处可放系统提示 / 须知 / 环境警告等。
    不要用加粗或普通段落代替引用块；普通旁白不要加 `>`。
 2. 正文结束后，另起一行输出一个 JSON 代码块，且只输出这一个代码块，不要添加其它说明：
 ```json
@@ -1190,12 +1190,12 @@ class Story {
     "location": "地点",
     "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}],
     "situation": "当前局势/所在环境的简述（可选，展示在局势页签）",
-    "varOps": [{"name": "好感度", "delta": 5}, {"name": "线索", "set": "已找到"}],
+    "varOps": [{"name": "变量名", "delta": 5}, {"name": "变量名2", "set": "取值"}],
     "present": ["在场角色名"]
   },
   "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
   "choices": ["选项A", "选项B", "选项C"],
-  "check": {"label":"力量检定","dice":"1d20","modifier":3,"dc":12,"reason":"撬开铁门"}
+  "check": {"label":"检定名","dice":"1d20","modifier":0,"dc":12,"reason":"原因"}
 }
 ```
 规则：
