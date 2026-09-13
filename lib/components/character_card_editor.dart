@@ -12,7 +12,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
 
 /// 角色头像：有图片（data URL / http）则显示图片，否则显示名字首字
-class CharacterAvatar extends StatelessWidget {
+class CharacterAvatar extends StatefulWidget {
   const CharacterAvatar({
     super.key,
     required this.name,
@@ -24,7 +24,8 @@ class CharacterAvatar extends StatelessWidget {
   final String avatar;
   final double radius;
 
-  ImageProvider? _image() {
+  /// 解析头像为图片源（data URL / http）；空或无法解析返回 null
+  static ImageProvider? resolveAvatar(String avatar) {
     final a = avatar.trim();
     if (a.startsWith('data:image')) {
       final comma = a.indexOf(',');
@@ -40,27 +41,50 @@ class CharacterAvatar extends StatelessWidget {
   }
 
   @override
+  State<CharacterAvatar> createState() => _CharacterAvatarState();
+}
+
+class _CharacterAvatarState extends State<CharacterAvatar> {
+  ImageProvider? _image;
+
+  @override
+  void initState() {
+    super.initState();
+    _image = CharacterAvatar.resolveAvatar(widget.avatar);
+  }
+
+  @override
+  void didUpdateWidget(covariant CharacterAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 同一字符串对象时 == 为 O(1)，避免大 data URL 每次 build 重复解码
+    if (!identical(oldWidget.avatar, widget.avatar) &&
+        oldWidget.avatar != widget.avatar) {
+      _image = CharacterAvatar.resolveAvatar(widget.avatar);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final image = _image();
+    final image = _image;
     if (image != null) {
-      return CircleAvatar(radius: radius, backgroundImage: image);
+      return CircleAvatar(radius: widget.radius, backgroundImage: image);
     }
-    final n = name.trim();
+    final n = widget.name.trim();
     final initial = n.isEmpty ? '' : n.characters.first;
     return CircleAvatar(
-      radius: radius,
+      radius: widget.radius,
       backgroundColor: scheme.primaryContainer,
       child: initial.isEmpty
           ? Icon(
               Icons.person,
-              size: radius * 1.1,
+              size: widget.radius * 1.1,
               color: scheme.onPrimaryContainer,
             )
           : Text(
               initial,
               style: TextStyle(
-                fontSize: radius * 0.9,
+                fontSize: widget.radius * 0.9,
                 fontWeight: FontWeight.w600,
                 color: scheme.onPrimaryContainer,
               ),
