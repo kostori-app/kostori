@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_api_key_dao.dart';
-import 'package:kostori/database/daos/ai_config_dao.dart';
 import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
@@ -17,8 +16,6 @@ class AiRepository {
   AiApiKeyDao get _keyDao => _db.aiApiKeyDao;
 
   AiTaskDao get _taskDao => _db.aiTaskDao;
-
-  AiConfigDao get _configDao => _db.aiConfigDao;
 
   AiProviderStatsDao get _statsDao => _db.aiProviderStatsDao;
 
@@ -147,34 +144,6 @@ class AiRepository {
     prompt: prompt,
     configKey: configKey,
   );
-
-  // ─── AiConfigs ─────────────────────────────
-
-  Future<void> saveConfig({
-    required String configKey,
-    required String systemPrompt,
-    double temperature = 0.7,
-    String? memo,
-  }) => _configDao.upsert(
-    AiConfigsCompanion.insert(
-      configKey: configKey,
-      systemPrompt: systemPrompt,
-      temperature: Value(temperature),
-      memo: Value(memo),
-    ),
-  );
-
-  Future<AiConfig?> getConfig(String configKey) =>
-      _configDao.getByKey(configKey);
-
-  Stream<List<AiConfig>> watchAllConfigs() => _configDao.watchAll();
-
-  Future<void> updateSystemPrompt(String key, String prompt) =>
-      _configDao.upsert(
-        AiConfigsCompanion(configKey: Value(key), systemPrompt: Value(prompt)),
-      );
-
-  Future<void> deleteConfig(String key) => _configDao.deleteByKey(key);
 
   // ─── AiTasks ───────────────────────────────
 

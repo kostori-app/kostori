@@ -7,7 +7,6 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
@@ -585,7 +584,6 @@ class AssistantProfileStore extends ChangeNotifier {
 
   static const _kProfilesKey = 'assistant_profiles';
   static const _kActiveKey = 'assistant_active_profile';
-  static const _kLegacyMigratedKey = 'assistant_profiles_legacy_migrated_v7';
 
   /// 四个情景型提示词（非助手）对应的旧 AiConfig key；
   /// 这类条目应从助手档案中清除，仅以提示词注入形式存在。
@@ -644,15 +642,6 @@ class AssistantProfileStore extends ChangeNotifier {
         _activeId = _profiles.first.id;
       }
     }
-    // 兼容迁移：旧"人格/角色管理"（AiConfig）数据导入为助手档案（仅执行一次）
-    if (prefs.getBool(_kLegacyMigratedKey) != true) {
-      try {
-        await _importLegacyPersonas();
-      } catch (_) {
-        // 迁移失败不阻塞启动
-      }
-      await prefs.setBool(_kLegacyMigratedKey, true);
-    }
     // 清除已误入助手档案的情景型提示词（含历史迁移产生的 legacy_* 条目）
     var before = _profiles.length;
     _profiles.removeWhere(
@@ -674,35 +663,7 @@ class AssistantProfileStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 把旧版"人格管理"（AiConfig：configKey/systemPrompt/memo）导入为助手档案。
-  /// 系统内置的情景型提示词（翻译/侧写/tag/总结）不属于助手，跳过不导入。
-  /// 旧会话仍保留 configKey 引用，服务层的兼容回退路径不受影响。
-  Future<void> _importLegacyPersonas() async {
-    final configs = await AiDatabase.instance.aiConfigDao.getAll();
-    if (configs.isEmpty) return;
-    final existingIds = _profiles.map((p) => p.id).toSet();
-    var changed = false;
-    for (final c in configs) {
-      if (c.isSystem == true) continue;
-      final prompt = c.systemPrompt.trim();
-      if (prompt.isEmpty) continue;
-      final id = 'legacy_${c.configKey}';
-      if (existingIds.contains(id)) continue;
-      final memo = c.memo?.trim() ?? '';
-      _profiles.add(
-        AssistantProfile(
-          id: id,
-          name: memo.isEmpty ? c.configKey : memo,
-          icon: '🎭',
-          systemPrompt: prompt,
-          isBuiltin: c.isSystem == true,
-        ),
-      );
-      existingIds.add(id);
-      changed = true;
-    }
-    if (changed) await _save();
-  }
+
 
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();

@@ -4,7 +4,6 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:kostori/database/daos/ai_api_key_dao.dart';
 import 'package:kostori/database/daos/ai_aux_settings_dao.dart';
-import 'package:kostori/database/daos/ai_config_dao.dart';
 import 'package:kostori/database/daos/ai_custom_provider_dao.dart';
 import 'package:kostori/database/daos/ai_mcp_server_dao.dart';
 import 'package:kostori/database/daos/ai_model_dao.dart';
@@ -120,20 +119,6 @@ class AiTasks extends Table {
   IntColumn get tokenConsumed => integer().withDefault(const Constant(0))();
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-}
-
-class AiConfigs extends Table {
-  IntColumn get id => integer().autoIncrement()();
-
-  TextColumn get configKey => text().unique()();
-
-  TextColumn get systemPrompt => text()();
-
-  RealColumn get temperature => real().withDefault(const Constant(0.7))();
-
-  TextColumn get memo => text().nullable()();
-
-  BoolColumn get isSystem => boolean().withDefault(const Constant(false))();
 }
 
 class AiModels extends Table {
@@ -287,7 +272,6 @@ class AiMcpServers extends Table {
     AiApiKeys,
     AiSessions,
     AiTasks,
-    AiConfigs,
     AiModels,
     AiProviderStats,
     AiCustomProviders,
@@ -299,7 +283,6 @@ class AiMcpServers extends Table {
     AiApiKeyDao,
     AiSessionDao,
     AiTaskDao,
-    AiConfigDao,
     AiModelDao,
     AiProviderStatsDao,
     AiCustomProviderDao,
@@ -316,7 +299,7 @@ class AiDatabase extends _$AiDatabase {
   AiDatabase._() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -324,8 +307,6 @@ class AiDatabase extends _$AiDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 3) {
         // 原有逻辑不变
-        await m.deleteTable(aiConfigs.actualTableName);
-        await m.createTable(aiConfigs);
         await _ensureTableExists(m, aiModels);
         await _ensureTableExists(m, aiSessions);
         await _ensureTableExists(m, aiTasks);
@@ -336,9 +317,6 @@ class AiDatabase extends _$AiDatabase {
         } catch (e) {
           //
         }
-      }
-      if (from < 4) {
-        await m.addColumn(aiConfigs, aiConfigs.isSystem);
       }
       if (from < 5) {
         await _ensureTableExists(m, aiCustomProviders);
@@ -439,22 +417,12 @@ class AiDatabase extends _$AiDatabase {
         await _addColumnIfMissing(m, aiTasks, aiTasks.outputVariants);
         await _addColumnIfMissing(m, aiTasks, aiTasks.variantIndex);
       }
-    },
-    beforeOpen: (details) async {
-      // 清理旧版内置情景配置：内容已由代码常量 / 提示词注入提供，不再需要入库
-      await batch((batch) {
-        batch.deleteWhere(
-          aiConfigs,
-          (t) =>
-              t.isSystem.equals(true) &
-              t.configKey.isIn(const [
-                'ai_translator_v1',
-                'soul_profiler_v1',
-                'image_tag_v1',
-                'summary_v1',
-              ]),
-        );
-      });
+      if (from < 13) {
+        // 移除遗留的 ai_configs 表（已被助手档案 / 提示词注入取代）
+        try {
+          await m.deleteTable('ai_configs');
+        } catch (_) {}
+      }
     },
   );
 

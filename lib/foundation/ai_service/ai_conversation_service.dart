@@ -8,7 +8,6 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:kostori/database/ai_database.dart';
-import 'package:kostori/database/daos/ai_config_dao.dart';
 import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
@@ -165,7 +164,6 @@ class AiConversationService {
 
   AiTaskDao get _taskDao => AiDatabase.instance.aiTaskDao;
 
-  AiConfigDao get _configDao => AiDatabase.instance.aiConfigDao;
 
   // ─── 会话管理 ──────────────────────────────
 
@@ -1269,12 +1267,6 @@ class AiConversationService {
         if (n > 0) parts.add(buf.toString());
       }
     } else {
-      if (session.configKey != null) {
-        final cfg = await _configDao.getByKey(session.configKey!);
-        if (cfg != null && cfg.systemPrompt.isNotEmpty) {
-          parts.add(cfg.systemPrompt);
-        }
-      }
       final skillKeys = parseSkillKeys(session.skillKeys);
       if (skillKeys.isNotEmpty) {
         final skills = await AiDatabase.instance.aiSkillDao.getEnabled();
