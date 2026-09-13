@@ -341,6 +341,20 @@ String applyStoryRegex(String text, List<StoryRegex> rules, String target) {
   return result;
 }
 
+/// 叙事片段：旁白 / 角色（用于消息分区渲染）
+class StorySegment {
+  /// narration | npc
+  final String type;
+  final String name;
+  final String text;
+
+  const StorySegment({
+    required this.type,
+    this.name = '',
+    required this.text,
+  });
+}
+
 /// 玩家 persona（用户本人）：仅描述"你是谁"，AI 不得扮演
 class StoryPersona {
   final String name;
@@ -997,6 +1011,8 @@ class Story {
 【输出格式要求】
 每次回复必须严格分为两部分：
 1. 先以第二人称描写场景、行动结果与对话（叙事正文，可用 Markdown）。
+   角色（NPC）的发言与动作请用标记包裹：〖角色：角色名〗该角色的对白与动作〖/角色〗；
+   标记之外的正文为旁白，旁白不要加任何标记。多个角色依次用标记分段。
 2. 正文结束后，另起一行输出一个 JSON 代码块，且只输出这一个代码块，不要添加其它说明：
 ```json
 {

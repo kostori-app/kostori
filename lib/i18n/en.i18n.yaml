@@ -33,7 +33,7 @@ soulProfile: Soul Profile
 soulProfilerDescription: Based on your watch history, analyze your anime personality
 imageTag: AI Image Tag
 imageTagDescription: Generate AI painting style tags based on your preferences
-aiChat: AI Chat
+aiChat: Chat
 aiChatDescription: Multi-round conversation with AI with context memory
 summary: Summary
 summaryDescription: Auto-generate your anime watch weekly/monthly report
@@ -1569,7 +1569,7 @@ aiImageGenerate: Generate image
 aiImageGenerating: Generating
 aiImageNeedTags: Generate tags first
 aiTagHistory: History tags
-rolePlay: AI Roleplay
+rolePlay: Tavern
 rolePlayDescription: Story-driven text adventure with status panels and choices
 importCharacter: Import character card
 characterImportFailed: Failed to import character card

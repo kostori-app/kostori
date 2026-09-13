@@ -146,8 +146,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Generate AI painting style tags based on your preferences'
 	String get imageTagDescription => 'Generate AI painting style tags based on your preferences';
 
-	/// en: 'AI Chat'
-	String get aiChat => 'AI Chat';
+	/// en: 'Chat'
+	String get aiChat => 'Chat';
 
 	/// en: 'Multi-round conversation with AI with context memory'
 	String get aiChatDescription => 'Multi-round conversation with AI with context memory';
@@ -4600,8 +4600,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'History tags'
 	String get aiTagHistory => 'History tags';
 
-	/// en: 'AI Roleplay'
-	String get rolePlay => 'AI Roleplay';
+	/// en: 'Tavern'
+	String get rolePlay => 'Tavern';
 
 	/// en: 'Story-driven text adventure with status panels and choices'
 	String get rolePlayDescription => 'Story-driven text adventure with status panels and choices';
@@ -8009,7 +8009,7 @@ extension on Translations {
 			'soulProfilerDescription' => 'Based on your watch history, analyze your anime personality',
 			'imageTag' => 'AI Image Tag',
 			'imageTagDescription' => 'Generate AI painting style tags based on your preferences',
-			'aiChat' => 'AI Chat',
+			'aiChat' => 'Chat',
 			'aiChatDescription' => 'Multi-round conversation with AI with context memory',
 			'summary' => 'Summary',
 			'summaryDescription' => 'Auto-generate your anime watch weekly/monthly report',
@@ -9542,7 +9542,7 @@ extension on Translations {
 			'aiImageGenerating' => 'Generating',
 			'aiImageNeedTags' => 'Generate tags first',
 			'aiTagHistory' => 'History tags',
-			'rolePlay' => 'AI Roleplay',
+			'rolePlay' => 'Tavern',
 			'rolePlayDescription' => 'Story-driven text adventure with status panels and choices',
 			'importCharacter' => 'Import character card',
 			'characterImportFailed' => 'Failed to import character card',

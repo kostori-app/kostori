@@ -73,7 +73,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get soulProfilerDescription => '根據你的觀看歷史，分析你的動漫人格';
 	@override String get imageTag => 'AI 圖片標籤';
 	@override String get imageTagDescription => '根據你的偏好生成 AI 繪畫風格標籤';
-	@override String get aiChat => 'AI 聊天';
+	@override String get aiChat => '聊天';
 	@override String get aiChatDescription => '多輪對話，AI 具有上下文記憶';
 	@override String get summary => '總結';
 	@override String get summaryDescription => '自動生成你的動漫觀看週報/月報';
@@ -1559,7 +1559,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageGenerating => '生成中';
 	@override String get aiImageNeedTags => '請先生成 Tag';
 	@override String get aiTagHistory => '歷史 Tag';
-	@override String get rolePlay => 'AI 扮演';
+	@override String get rolePlay => '酒館';
 	@override String get rolePlayDescription => '故事驅動的文字冒險，帶狀態面板與選項';
 	@override String get importCharacter => '導入角色卡';
 	@override String get characterImportFailed => '角色卡導入失敗';
@@ -2736,7 +2736,7 @@ extension on TranslationsZhTw {
 			'soulProfilerDescription' => '根據你的觀看歷史，分析你的動漫人格',
 			'imageTag' => 'AI 圖片標籤',
 			'imageTagDescription' => '根據你的偏好生成 AI 繪畫風格標籤',
-			'aiChat' => 'AI 聊天',
+			'aiChat' => '聊天',
 			'aiChatDescription' => '多輪對話，AI 具有上下文記憶',
 			'summary' => '總結',
 			'summaryDescription' => '自動生成你的動漫觀看週報/月報',
@@ -4270,7 +4270,7 @@ extension on TranslationsZhTw {
 			'aiImageGenerating' => '生成中',
 			'aiImageNeedTags' => '請先生成 Tag',
 			'aiTagHistory' => '歷史 Tag',
-			'rolePlay' => 'AI 扮演',
+			'rolePlay' => '酒館',
 			'rolePlayDescription' => '故事驅動的文字冒險，帶狀態面板與選項',
 			'importCharacter' => '導入角色卡',
 			'characterImportFailed' => '角色卡導入失敗',

@@ -74,7 +74,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get soulProfilerDescription => '根据你的观看历史，分析你的动漫人格';
 	@override String get imageTag => 'AI 图片标签';
 	@override String get imageTagDescription => '根据你的偏好生成 AI 绘画风格标签';
-	@override String get aiChat => 'AI 聊天';
+	@override String get aiChat => '聊天';
 	@override String get aiChatDescription => '多轮对话，AI 具有上下文记忆';
 	@override String get summary => '总结';
 	@override String get summaryDescription => '自动生成你的动漫观看周报/月报';
@@ -1558,7 +1558,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageGenerating => '生成中';
 	@override String get aiImageNeedTags => '请先生成 Tag';
 	@override String get aiTagHistory => '历史 Tag';
-	@override String get rolePlay => 'AI 扮演';
+	@override String get rolePlay => '酒馆';
 	@override String get rolePlayDescription => '故事驱动的文字冒险，带状态面板与选项';
 	@override String get importCharacter => '导入角色卡';
 	@override String get characterImportFailed => '角色卡导入失败';
@@ -2738,7 +2738,7 @@ extension on TranslationsZhCn {
 			'soulProfilerDescription' => '根据你的观看历史，分析你的动漫人格',
 			'imageTag' => 'AI 图片标签',
 			'imageTagDescription' => '根据你的偏好生成 AI 绘画风格标签',
-			'aiChat' => 'AI 聊天',
+			'aiChat' => '聊天',
 			'aiChatDescription' => '多轮对话，AI 具有上下文记忆',
 			'summary' => '总结',
 			'summaryDescription' => '自动生成你的动漫观看周报/月报',
@@ -4270,7 +4270,7 @@ extension on TranslationsZhCn {
 			'aiImageGenerating' => '生成中',
 			'aiImageNeedTags' => '请先生成 Tag',
 			'aiTagHistory' => '历史 Tag',
-			'rolePlay' => 'AI 扮演',
+			'rolePlay' => '酒馆',
 			'rolePlayDescription' => '故事驱动的文字冒险，带状态面板与选项',
 			'importCharacter' => '导入角色卡',
 			'characterImportFailed' => '角色卡导入失败',

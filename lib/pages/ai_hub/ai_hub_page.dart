@@ -1261,14 +1261,16 @@ class _StoryBubble extends StatelessWidget {
   const _StoryBubble({
     required this.content,
     required this.isUser,
-    this.task,
-    this.events = const [],
+    this.headerName,
+    this.headerTime,
+    this.headerAvatar,
   });
 
   final String content;
   final bool isUser;
-  final AiTask? task;
-  final List<StoryEvent> events;
+  final String? headerName;
+  final String? headerTime;
+  final String? headerAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -1277,40 +1279,197 @@ class _StoryBubble extends StatelessWidget {
     if (isUser) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: _chatContentMaxWidth(context),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: scheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (headerName != null || headerAvatar != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4, right: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (headerName != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            headerName!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                          if (headerTime != null)
+                            Text(
+                              headerTime!,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    if (headerAvatar != null) ...[
+                      const SizedBox(width: 8),
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: scheme.primaryContainer,
+                        child: Text(
+                          headerAvatar!,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              child: SelectableText(
-                content,
-                style: TextStyle(
-                  color: scheme.onSecondaryContainer,
-                  fontSize: 14,
-                  height: 1.5,
+            Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: _chatContentMaxWidth(context),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: SelectableText(
+                    content,
+                    style: TextStyle(
+                      color: scheme.onSecondaryContainer,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       );
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
+      child: _StoryText(content),
+    );
+  }
+}
+
+/// 冒险正文渲染：引号对白 / 强调做沉浸式着色；含块级 Markdown 时回退
+class _StoryText extends StatelessWidget {
+  const _StoryText(this.text);
+
+  final String text;
+
+  static final _blockRe = RegExp(
+    r'^\s*(#{1,6}\s|[-*+]\s|\d+\.\s|>|\||```)',
+    multiLine: true,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (_blockRe.hasMatch(text)) {
+      return CustomMarkdownWidget(data: text, indentFirstLine: false);
+    }
+    final scheme = Theme.of(context).colorScheme;
+    final base = TextStyle(
+      fontSize: 14,
+      height: 1.6,
+      color: scheme.onSurface,
+    );
+    final quoteStyle = base.copyWith(
+      color: scheme.primary,
+      fontStyle: FontStyle.italic,
+    );
+    final boldStyle = base.copyWith(fontWeight: FontWeight.w700);
+    final italicStyle = base.copyWith(
+      fontStyle: FontStyle.italic,
+      color: scheme.onSurfaceVariant,
+    );
+
+    final pattern = RegExp(
+      r'(\*\*[^*]+\*\*)|(\*[^*]+\*)|([“"「『][^”"」』]*[”"」』])',
+    );
+    final spans = <TextSpan>[];
+    var index = 0;
+    for (final m in pattern.allMatches(text)) {
+      if (m.start > index) {
+        spans.add(TextSpan(text: text.substring(index, m.start), style: base));
+      }
+      final t = m.group(0)!;
+      if (t.startsWith('**')) {
+        spans.add(TextSpan(text: t.substring(2, t.length - 2), style: boldStyle));
+      } else if (t.startsWith('*')) {
+        spans.add(TextSpan(text: t.substring(1, t.length - 1), style: italicStyle));
+      } else {
+        spans.add(TextSpan(text: t, style: quoteStyle));
+      }
+      index = m.end;
+    }
+    if (index < text.length) {
+      spans.add(TextSpan(text: text.substring(index), style: base));
+    }
+    return SelectableText.rich(TextSpan(children: spans));
+  }
+}
+
+/// NPC 发言容器：头像 + 名字 + 内容，方便与旁白区分
+class _NpcBubble extends StatelessWidget {
+  const _NpcBubble({
+    required this.name,
+    required this.content,
+    this.avatar = '🧑',
+  });
+
+  final String name;
+  final String content;
+  final String avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CustomMarkdownWidget(data: content, indentFirstLine: false),
-          if (!isUser)
-            for (final e in events) _StoryEventCard(event: e),
-          if (!isUser && task != null) AiUsageMeta(task: task!),
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: scheme.surfaceContainerHighest,
+            child: Text(avatar, style: const TextStyle(fontSize: 14)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: scheme.outlineVariant, width: 0.6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _StoryText(content),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

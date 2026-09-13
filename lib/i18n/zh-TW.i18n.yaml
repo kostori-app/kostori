@@ -32,7 +32,7 @@ soulProfile: 靈魂画像
 soulProfilerDescription: 根據你的觀看歷史，分析你的動漫人格
 imageTag: AI 圖片標籤
 imageTagDescription: 根據你的偏好生成 AI 繪畫風格標籤
-aiChat: AI 聊天
+aiChat: 聊天
 aiChatDescription: 多輪對話，AI 具有上下文記憶
 summary: 總結
 summaryDescription: 自動生成你的動漫觀看週報/月報
@@ -1569,7 +1569,7 @@ aiImageGenerate: 生成圖片
 aiImageGenerating: 生成中
 aiImageNeedTags: 請先生成 Tag
 aiTagHistory: 歷史 Tag
-rolePlay: AI 扮演
+rolePlay: 酒館
 rolePlayDescription: 故事驅動的文字冒險，帶狀態面板與選項
 importCharacter: 導入角色卡
 characterImportFailed: 角色卡導入失敗

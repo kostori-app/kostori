@@ -2039,6 +2039,22 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
+  /// 按角色名取头像（找不到时用默认）
+  String _avatarForName(String name) {
+    for (final c in story.characters) {
+      if (c.name == name) return c.avatar;
+    }
+    return '🧑';
+  }
+
+  /// 消息时间：yyyy-MM-dd HH:mm:ss
+  String _formatTime(DateTime t) =>
+      '${t.year}-${t.month.toString().padLeft(2, '0')}-'
+      '${t.day.toString().padLeft(2, '0')} '
+      '${t.hour.toString().padLeft(2, '0')}:'
+      '${t.minute.toString().padLeft(2, '0')}:'
+      '${t.second.toString().padLeft(2, '0')}';
+
   /// 对某个角色说话：在输入框前缀「对XX：」并聚焦
   void _addressCharacter(CharacterCard c) {
     final prefix = '对${c.name}：';
@@ -2326,9 +2342,33 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                     ),
                                   );
                                 }
-                                return _StoryBubble(
-                                  content: streamNarrative,
-                                  isUser: false,
+                                final streamSegments = _splitSegments(
+                                  streamNarrative,
+                                );
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    for (final seg in streamSegments)
+                                      seg.type == 'npc'
+                                          ? _NpcBubble(
+                                              name: seg.name,
+                                              content: applyStoryRegex(
+                                                seg.text,
+                                                story.regexes,
+                                                'ai',
+                                              ),
+                                              avatar: _avatarForName(seg.name),
+                                            )
+                                          : _StoryBubble(
+                                              content: applyStoryRegex(
+                                                seg.text,
+                                                story.regexes,
+                                                'ai',
+                                              ),
+                                              isUser: false,
+                                            ),
+                                  ],
                                 );
                               }
                               final m = messages[i];
@@ -2345,23 +2385,64 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   check != null &&
                                   i == messages.length - 1 &&
                                   !_sending;
+                              final persona = story.persona;
+                              final segments =
+                                  parsed?.segments ?? const <StorySegment>[];
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   GestureDetector(
                                     onLongPress: () => _messageMenu(m),
-                                    child: _StoryBubble(
-                                      content: isUser
-                                          ? m.inputContent
-                                          : applyStoryRegex(
-                                              parsed?.narrative ?? '',
-                                              story.regexes,
-                                              'ai',
+                                    child: isUser
+                                        ? _StoryBubble(
+                                            content: m.inputContent,
+                                            isUser: true,
+                                            headerName:
+                                                persona.name.trim().isEmpty
+                                                ? t.storyPersona
+                                                : persona.name.trim(),
+                                            headerTime: _formatTime(
+                                              m.createdAt,
                                             ),
-                                      isUser: isUser,
-                                      task: m,
-                                      events: parsed?.events ?? const [],
-                                    ),
+                                            headerAvatar:
+                                                persona.avatar.trim().isEmpty
+                                                ? '🧑'
+                                                : persona.avatar.trim(),
+                                          )
+                                        : Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              for (final seg in segments)
+                                                seg.type == 'npc'
+                                                    ? _NpcBubble(
+                                                        name: seg.name,
+                                                        content:
+                                                            applyStoryRegex(
+                                                              seg.text,
+                                                              story.regexes,
+                                                              'ai',
+                                                            ),
+                                                        avatar: _avatarForName(
+                                                          seg.name,
+                                                        ),
+                                                      )
+                                                    : _StoryBubble(
+                                                        content:
+                                                            applyStoryRegex(
+                                                              seg.text,
+                                                              story.regexes,
+                                                              'ai',
+                                                            ),
+                                                        isUser: false,
+                                                      ),
+                                              for (final e
+                                                  in parsed?.events ??
+                                                      const <StoryEvent>[])
+                                                _StoryEventCard(event: e),
+                                              AiUsageMeta(task: m),
+                                            ],
+                                          ),
                                   ),
                                   if (variants.length > 1)
                                     _variantNav(m, variants),
@@ -2784,7 +2865,40 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       choices: choices,
       events: events,
       check: check,
+      segments: _splitSegments(narrative),
     );
+  }
+
+  /// 把正文拆成旁白 / 角色片段（〖角色：名字〗...〖/角色〗）
+  List<StorySegment> _splitSegments(String text) {
+    final re = RegExp(r'〖角色[:：]\s*(.+?)〗([\s\S]*?)〖/角色〗');
+    final segments = <StorySegment>[];
+    var index = 0;
+    for (final m in re.allMatches(text)) {
+      if (m.start > index) {
+        final before = text.substring(index, m.start).trim();
+        if (before.isNotEmpty) {
+          segments.add(StorySegment(type: 'narration', text: before));
+        }
+      }
+      final body = m.group(2)!.trim();
+      if (body.isNotEmpty) {
+        segments.add(
+          StorySegment(type: 'npc', name: m.group(1)!.trim(), text: body),
+        );
+      }
+      index = m.end;
+    }
+    if (index < text.length) {
+      final after = text.substring(index).trim();
+      if (after.isNotEmpty) {
+        segments.add(StorySegment(type: 'narration', text: after));
+      }
+    }
+    if (segments.isEmpty && text.trim().isNotEmpty) {
+      segments.add(StorySegment(type: 'narration', text: text.trim()));
+    }
+    return segments;
   }
 
   /// 详情面板：状态 / 局势两个页签（用项目胶囊布局）
@@ -3548,6 +3662,7 @@ class _ParsedReply {
   final List<String> choices;
   final List<StoryEvent> events;
   final StoryCheck? check;
+  final List<StorySegment> segments;
 
   const _ParsedReply({
     required this.narrative,
@@ -3555,6 +3670,7 @@ class _ParsedReply {
     this.choices = const [],
     this.events = const [],
     this.check,
+    this.segments = const [],
   });
 }
 
