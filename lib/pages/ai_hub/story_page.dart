@@ -2350,15 +2350,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       _unregistered = unregistered;
     });
     if (newlyUnlocked.isNotEmpty) {
-      final names = [
-        for (final k in newlyUnlocked)
-          story.achievements
-              .firstWhere(
-                (a) => a.key == k,
-                orElse: () => StoryAchievement(key: k, name: k),
-              )
-              .name,
-      ];
+      final names = <String>[];
+      for (final k in newlyUnlocked) {
+        var name = k;
+        for (final a in story.achievements) {
+          if (a.key == k) {
+            name = a.name;
+            break;
+          }
+        }
+        names.add(name);
+      }
       App.rootContext.showMessage(
         message: '${t.storyAchievementUnlocked}: ${names.join('、')}',
       );

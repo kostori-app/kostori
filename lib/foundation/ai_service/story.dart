@@ -1355,7 +1355,7 @@ class StoryStore extends ChangeNotifier {
     }
     List<T> mapList<T>(String section, T Function(Map<String, dynamic>) f) {
       final raw = _section(text, section);
-      if (raw == null) return const [];
+      if (raw == null) return <T>[];
       try {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
@@ -1365,7 +1365,7 @@ class StoryStore extends ChangeNotifier {
           ];
         }
       } catch (_) {}
-      return const [];
+      return <T>[];
     }
     final panels = mapList('面板', StoryPanel.fromJson);
     var persona = const StoryPersona();
