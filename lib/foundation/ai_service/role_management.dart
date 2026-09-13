@@ -110,21 +110,13 @@ class PromptInjectionStore extends ChangeNotifier {
 
   List<PromptInjection> get items => List.unmodifiable(_items);
 
-  /// 情景型提示词注入的内置定义（仅首次启动时灌入一次，之后可自由编辑/删除）
-  static const _scenarioInjections = [
-    (id: kInjectionTranslator, name: '专业母语译者', prompt: aiTranslatePrompt),
-    (
-      id: kInjectionSoulProfiler,
-      name: '动漫灵魂侧写师',
-      prompt: soulProfilerSystemPrompt,
-    ),
-    (
-      id: kInjectionImageTag,
-      name: 'AI 绘画 Tag 生成',
-      prompt: imageTagSystemPrompt,
-    ),
-    (id: kInjectionSummary, name: '周月总结', prompt: summarySystemPrompt),
-  ];
+  /// 情景模块的提示词以代码常量为准；这些 id 的历史副本若未被修改则清理掉。
+  static const _scenarioDefaults = <String, String>{
+    kInjectionTranslator: aiTranslatePrompt,
+    kInjectionSoulProfiler: soulProfilerSystemPrompt,
+    kInjectionImageTag: imageTagSystemPrompt,
+    kInjectionSummary: summarySystemPrompt,
+  };
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -144,25 +136,16 @@ class PromptInjectionStore extends ChangeNotifier {
         _items = [];
       }
     }
+    // 清理未修改的内置情景注入副本（内容与代码常量一致才删，改过的保留）
+    final before = _items.length;
+    _items.removeWhere((i) {
+      final def = _scenarioDefaults[i.id];
+      return def != null && i.content.trim() == def.trim();
+    });
+    if (_items.length != before) await _save();
+    // 移除旧的播种标记
+    await prefs.remove(_kSeededKey);
     _loaded = true;
-    if (prefs.getBool(_kSeededKey) != true) {
-      var changed = false;
-      for (final s in _scenarioInjections) {
-        if (_items.any((i) => i.id == s.id)) continue;
-        _items.add(
-          PromptInjection(
-            id: s.id,
-            name: s.name,
-            content: s.prompt,
-            position: PromptInjectionPosition.afterSystemPrompt,
-            enabled: false,
-          ),
-        );
-        changed = true;
-      }
-      if (changed) await _save();
-      await prefs.setBool(_kSeededKey, true);
-    }
     notifyListeners();
   }
 
