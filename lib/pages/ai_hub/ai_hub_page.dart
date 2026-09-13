@@ -1355,23 +1355,7 @@ class _StoryBubble extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Container(
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLow.withValues(alpha: 0.5),
-          border: Border(
-            left: BorderSide(
-              color: scheme.primary.withValues(alpha: 0.6),
-              width: 3,
-            ),
-          ),
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(8),
-            bottomRight: Radius.circular(8),
-          ),
-        ),
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-        child: _StoryText(content),
-      ),
+      child: _StoryText(content),
     );
   }
 }
