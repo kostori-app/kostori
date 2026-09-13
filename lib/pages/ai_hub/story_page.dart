@@ -4092,7 +4092,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
       final body = rest.substring(0, endRel).trim();
       if (body.isNotEmpty) {
-        _splitNpcBody(segments, name, body);
+        _splitNpcBody(segments, name, body, closed: closed);
       }
       index = bodyStart + endRel;
       if (closed && nextClose != null) {
@@ -4111,23 +4111,62 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return segments;
   }
 
-  /// 角色块：**气泡里只保留引号内的对白**，引号外的动作/描写拆成旁白。
-  /// 整段没有引号时（对白未加引号）则整段仍算角色，避免误伤。
-  void _splitNpcBody(List<StorySegment> segments, String name, String body) {
+  /// 角色块拆段。
+  /// - 有结束标记：气泡里**只保留引号内的对白**，引号外的动作/描写算旁白；
+  /// - 无结束标记：从第一个"不以引号开头"的段落起，之后一律算旁白
+  ///   （避免把随后的旁白、拟声词如 "啪嗒啪嗒" 误当成角色发言）；
+  /// - 整段没有引号时（对白未加引号）整段仍算角色。
+  void _splitNpcBody(
+    List<StorySegment> segments,
+    String name,
+    String body, {
+    required bool closed,
+  }) {
     if (!_speechRe.hasMatch(body)) {
       segments.add(StorySegment(type: 'npc', name: name, text: body.trim()));
       return;
     }
+    if (closed) {
+      for (final p in body.split(RegExp(r'\n\s*\n'))) {
+        final t = p.trim();
+        if (t.isEmpty) continue;
+        if (_looksLikeCallout(t)) {
+          segments.add(StorySegment(type: 'narration', text: t));
+        } else {
+          _splitByQuotes(segments, name, t);
+        }
+      }
+      return;
+    }
+    // 无结束标记
+    final npcBuf = <String>[];
+    void flush() {
+      if (npcBuf.isEmpty) return;
+      segments.add(
+        StorySegment(type: 'npc', name: name, text: npcBuf.join('\n\n')),
+      );
+      npcBuf.clear();
+    }
+
+    var ended = false;
     for (final p in body.split(RegExp(r'\n\s*\n'))) {
       final t = p.trim();
       if (t.isEmpty) continue;
-      if (_looksLikeCallout(t)) {
-        segments.add(StorySegment(type: 'narration', text: t));
+      if (!ended && !_looksLikeCallout(t) && _startsWithQuote(t)) {
+        npcBuf.add(t);
       } else {
-        _splitByQuotes(segments, name, t);
+        ended = true;
+        flush();
+        segments.add(StorySegment(type: 'narration', text: t));
       }
     }
+    flush();
   }
+
+  static final _quoteStartRe = RegExp(r'^[“"「『]');
+
+  static bool _startsWithQuote(String s) =>
+      _quoteStartRe.hasMatch(s.trimLeft());
 
   /// 把一段文字按引号切分：引号内 → 角色，引号外 → 旁白
   void _splitByQuotes(List<StorySegment> segments, String name, String text) {
