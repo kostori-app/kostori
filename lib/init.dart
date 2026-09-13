@@ -7,9 +7,11 @@ import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
+import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
+import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -38,6 +40,7 @@ import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final providerContainer = ProviderContainer();
 
@@ -93,6 +96,11 @@ Future<void> init() async {
   await PromptInjectionStore.instance.init().wait();
   await WorldBookStore.instance.init().wait();
   await PluginStore.instance.init().wait();
+  // 角色卡 / 故事观 / 会话：文件化存储（同时完成旧 prefs 数据的迁移清理）
+  await CharacterCardStore.instance.init().wait();
+  await StoryStore.instance.init().wait();
+  await StorySessionStore.instance.ensureLoaded().wait();
+  unawaited(_logPrefsSizes());
   await OpenAiProviderRegistry.refreshKeyFormats().wait();
   ApiKeyManager().init();
   CacheManager().setLimitSize(appdata.settings['cacheSize']);
@@ -125,6 +133,24 @@ Future<void> init() async {
     await SMTCManagerWindows.instance.init();
   }
   providerContainer.read(bangumiManagerProvider);
+}
+
+/// 记录 shared_preferences 中体积最大的键（诊断用，迁移后确认是否瘦身）
+Future<void> _logPrefsSizes() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final entries = <(String, int)>[];
+    for (final k in prefs.getKeys()) {
+      final v = prefs.get(k);
+      entries.add((k, v is String ? v.length : v.toString().length));
+    }
+    entries.sort((a, b) => b.$2.compareTo(a.$2));
+    final top = entries
+        .take(10)
+        .map((e) => '${e.$1}=${(e.$2 / 1024).toStringAsFixed(0)}KB')
+        .join(', ');
+    DebugLog.info('Prefs', 'largest keys: $top');
+  } catch (_) {}
 }
 
 void _checkOldConfigs() {

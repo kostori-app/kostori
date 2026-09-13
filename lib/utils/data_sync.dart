@@ -345,12 +345,25 @@ class DataSync with ChangeNotifier {
     );
   }
 
-  /// 远端根目录文件名列表
-  Future<Res<List<String>>> listRemoteFiles() async {
+  static String _normDir(String dir) {
+    var d = dir.trim();
+    if (d.isEmpty) return '/';
+    if (!d.startsWith('/')) d = '/$d';
+    while (d.length > 1 && d.endsWith('/')) {
+      d = d.substring(0, d.length - 1);
+    }
+    return d;
+  }
+
+  static String _join(String dir, String name) =>
+      dir == '/' ? '/$name' : '$dir/$name';
+
+  /// 远端目录下的文件名列表（目录不存在时返回空）
+  Future<Res<List<String>>> listRemoteFiles({String dir = '/'}) async {
     final client = _client();
     if (client == null) return const Res([]);
     try {
-      final files = await client.readDir('/');
+      final files = await client.readDir(_normDir(dir));
       return Res([
         for (final f in files)
           if (f.name != null && !f.name!.endsWith('.part')) f.name!,
@@ -361,17 +374,24 @@ class DataSync with ChangeNotifier {
     }
   }
 
-  /// 上传单个文件
+  /// 上传单个文件到远端目录（自动建目录）
   Future<Res<bool>> uploadFile({
     required String localPath,
     required String remoteName,
+    String remoteDir = '/',
   }) async {
     final client = _client();
     if (client == null) return const Res.error('Invalid WebDAV configuration');
     try {
       final file = File(localPath);
       if (!file.existsSync()) return const Res.error('Local file missing');
-      await client.write(remoteName, await file.readAsBytes());
+      final dir = _normDir(remoteDir);
+      if (dir != '/') {
+        try {
+          await client.mkdirAll(dir);
+        } catch (_) {}
+      }
+      await client.write(_join(dir, remoteName), await file.readAsBytes());
       return const Res(true);
     } catch (e, s) {
       Log.error('Upload File', e, s);
@@ -379,17 +399,18 @@ class DataSync with ChangeNotifier {
     }
   }
 
-  /// 下载单个文件
+  /// 从远端目录下载单个文件
   Future<Res<bool>> downloadFile({
     required String remoteName,
     required String localPath,
+    String remoteDir = '/',
   }) async {
     final client = _client();
     if (client == null) return const Res.error('Invalid WebDAV configuration');
     try {
       final parent = File(localPath).parent;
       if (!parent.existsSync()) parent.createSync(recursive: true);
-      await client.read2File(remoteName, localPath);
+      await client.read2File(_join(_normDir(remoteDir), remoteName), localPath);
       return const Res(true);
     } catch (e, s) {
       Log.error('Download File', e, s);

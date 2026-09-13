@@ -997,12 +997,13 @@ class _SelectiveSyncPage extends StatefulWidget {
 }
 
 class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
-  static const _cardPrefix = 'kostori-card-';
-  static const _storyPrefix = 'kostori-story-';
+  static const _cardDir = 'cards';
+  static const _storyDir = 'stories';
 
   bool _loading = true;
   bool _busy = false;
-  List<String> _remote = const [];
+  List<String> _remoteCards = const [];
+  List<String> _remoteStories = const [];
   final Set<String> _selectedCards = {};
   final Set<String> _selectedStories = {};
 
@@ -1015,34 +1016,31 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   Future<void> _load() async {
     await CharacterCardStore.instance.ensureLoaded();
     await StoryStore.instance.ensureLoaded();
-    final res = await DataSync().listRemoteFiles();
+    final sync = DataSync();
+    final cards = await sync.listRemoteFiles(dir: _cardDir);
+    final stories = await sync.listRemoteFiles(dir: _storyDir);
     if (!mounted) return;
     setState(() {
-      _remote = res.success ? res.data : const [];
+      _remoteCards = cards.success ? cards.data : const [];
+      _remoteStories = stories.success ? stories.data : const [];
       _loading = false;
     });
   }
-
-  bool _remoteHas(String name) => _remote.contains(name);
 
   List<String> get _cardIds {
     final ids = <String>{
       for (final c in CharacterCardStore.instance.cards) c.id,
     };
-    for (final f in _remote) {
-      if (f.startsWith(_cardPrefix) && f.endsWith('.json')) {
-        ids.add(f.substring(_cardPrefix.length, f.length - 5));
-      }
+    for (final f in _remoteCards) {
+      if (f.endsWith('.json')) ids.add(f.substring(0, f.length - 5));
     }
     return ids.toList()..sort();
   }
 
   List<String> get _storyIds {
     final ids = <String>{for (final s in StoryStore.instance.stories) s.id};
-    for (final f in _remote) {
-      if (f.startsWith(_storyPrefix) && f.endsWith('.md')) {
-        ids.add(f.substring(_storyPrefix.length, f.length - 3));
-      }
+    for (final f in _remoteStories) {
+      if (f.endsWith('.md')) ids.add(f.substring(0, f.length - 3));
     }
     return ids.toList()..sort();
   }
@@ -1071,7 +1069,8 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
         if (json.existsSync()) {
           final r = await sync.uploadFile(
             localPath: json.path,
-            remoteName: '$_cardPrefix$id.json',
+            remoteName: '$id.json',
+            remoteDir: _cardDir,
           );
           if (r.success) ok++;
         }
@@ -1079,7 +1078,8 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
         if (png.existsSync()) {
           await sync.uploadFile(
             localPath: png.path,
-            remoteName: '$_cardPrefix$id.png',
+            remoteName: '$id.png',
+            remoteDir: _cardDir,
           );
         }
       } else {
@@ -1087,7 +1087,8 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
         if (md.existsSync()) {
           final r = await sync.uploadFile(
             localPath: md.path,
-            remoteName: '$_storyPrefix$id.md',
+            remoteName: '$id.md',
+            remoteDir: _storyDir,
           );
           if (r.success) ok++;
         }
@@ -1107,27 +1108,27 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     for (final id in ids) {
       if (cards) {
         final dir = CharacterCardStore.instance.dirPath;
-        final remoteJson = '$_cardPrefix$id.json';
-        if (_remoteHas(remoteJson)) {
+        if (_remoteCards.contains('$id.json')) {
           final r = await sync.downloadFile(
-            remoteName: remoteJson,
+            remoteName: '$id.json',
             localPath: '$dir/$id.json',
+            remoteDir: _cardDir,
           );
           if (r.success) ok++;
-          final remotePng = '$_cardPrefix$id.png';
-          if (_remoteHas(remotePng)) {
+          if (_remoteCards.contains('$id.png')) {
             await sync.downloadFile(
-              remoteName: remotePng,
+              remoteName: '$id.png',
               localPath: '$dir/$id.png',
+              remoteDir: _cardDir,
             );
           }
         }
       } else {
-        final remoteMd = '$_storyPrefix$id.md';
-        if (_remoteHas(remoteMd)) {
+        if (_remoteStories.contains('$id.md')) {
           final r = await sync.downloadFile(
-            remoteName: remoteMd,
+            remoteName: '$id.md',
             localPath: '${StoryStore.instance.dirPath}/$id.md',
+            remoteDir: _storyDir,
           );
           if (r.success) ok++;
         }
@@ -1201,7 +1202,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                   value: selected.contains(id),
                   title: Text(cards ? _cardName(id) : _storyName(id)),
                   subtitle: Text(
-                    '${cards ? _cardPrefix : _storyPrefix}$id',
+                    cards ? '$_cardDir/$id.json' : '$_storyDir/$id.md',
                     style: const TextStyle(fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

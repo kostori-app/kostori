@@ -1374,38 +1374,71 @@ class StorySession {
   };
 }
 
-/// 会话存储：storyId -> StorySession，shared_preferences 持久化
+/// 会话存储：storyId -> StorySession，存放于 `dataPath/story_sessions/` 的独立文件
 class StorySessionStore extends ChangeNotifier {
   static final StorySessionStore instance = StorySessionStore._();
 
   StorySessionStore._();
 
-  static const _kKey = 'ai_story_sessions';
+  /// 旧版 shared_preferences key（用于一次性迁移）
+  static const _legacyKey = 'ai_story_sessions';
+  static const _dirName = 'story_sessions';
 
   Map<String, StorySession> _sessions = {};
   bool _loaded = false;
 
+  String get dirPath => '${App.dataPath}/$_dirName';
+
   Future<void> ensureLoaded() async {
     if (_loaded) return;
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kKey);
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is Map) {
-          _sessions = {
-            for (final e in decoded.entries)
-              if (e.value is Map)
-                e.key.toString(): StorySession.fromJson(
-                  (e.value as Map).cast<String, dynamic>(),
-                ),
-          };
-        }
-      } catch (_) {
-        _sessions = {};
+    _sessions = {};
+    try {
+      final dir = Directory(dirPath);
+      await dir.create(recursive: true);
+      for (final entity in dir.listSync()) {
+        if (entity is! File || !entity.path.endsWith('.json')) continue;
+        try {
+          final json = jsonDecode(await entity.readAsString());
+          if (json is! Map) continue;
+          final name = entity.uri.pathSegments.last;
+          final id = name.substring(0, name.length - 5);
+          _sessions[id] = StorySession.fromJson(json.cast<String, dynamic>());
+        } catch (_) {}
       }
-    }
+    } catch (_) {}
+    await _migrateLegacy();
     _loaded = true;
+  }
+
+  /// 旧版 prefs 数据迁移到文件
+  Future<void> _migrateLegacy() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_legacyKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        for (final e in decoded.entries) {
+          if (e.value is! Map) continue;
+          final id = e.key.toString();
+          if (_sessions.containsKey(id)) continue;
+          final session = StorySession.fromJson(
+            (e.value as Map).cast<String, dynamic>(),
+          );
+          _sessions[id] = session;
+          await _writeSession(id, session);
+        }
+      }
+    } catch (_) {}
+    await prefs.remove(_legacyKey);
+  }
+
+  Future<void> _writeSession(String storyId, StorySession session) async {
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await File(
+      '$dirPath/$storyId.json',
+    ).writeAsString(jsonEncode(session.toJson()));
   }
 
   StorySession? get(String storyId) => _sessions[storyId];
@@ -1413,24 +1446,25 @@ class StorySessionStore extends ChangeNotifier {
   Future<void> put(String storyId, StorySession session) async {
     await ensureLoaded();
     _sessions[storyId] = session;
-    await _save();
+    await _writeSession(storyId, session);
     notifyListeners();
   }
 
   Future<void> clear(String storyId) async {
     await ensureLoaded();
     _sessions.remove(storyId);
-    await _save();
+    final f = File('$dirPath/$storyId.json');
+    if (f.existsSync()) {
+      try {
+        f.deleteSync();
+      } catch (_) {}
+    }
     notifyListeners();
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kKey,
-      jsonEncode({
-        for (final e in _sessions.entries) e.key: e.value.toJson(),
-      }),
-    );
+  /// WebDAV 下载后重新加载
+  Future<void> reload() async {
+    _loaded = false;
+    await ensureLoaded();
   }
 }
