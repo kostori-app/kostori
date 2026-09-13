@@ -304,10 +304,16 @@ class _WebdavSettingState extends State<_WebdavSetting> {
     userCtrl = TextEditingController(text: us);
     passCtrl = TextEditingController(text: p);
     autoSync = appdata.implicitData['webdavAutoSync'] ?? true;
+    DataSync().addListener(_onSyncChanged);
+  }
+
+  void _onSyncChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    DataSync().removeListener(_onSyncChanged);
     urlCtrl.dispose();
     userCtrl.dispose();
     passCtrl.dispose();
@@ -435,6 +441,41 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                 ),
               ],
             ),
+            if (DataSync().isUploading || DataSync().isDownloading) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      DataSync().isUploading ? t.uploading : t.downloading,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  if (DataSync().progress != null)
+                    Text(
+                      '${(DataSync().progress! * 100).toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        color: cs.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: DataSync().progress,
+                  minHeight: 6,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation(cs.primary),
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             _infoRow(
               context,

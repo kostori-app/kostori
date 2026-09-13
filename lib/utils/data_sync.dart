@@ -186,6 +186,9 @@ class DataSync with ChangeNotifier {
   Future<Res<bool>> uploadOnePart(SyncPart part) async {
     final client = _client();
     if (client == null) return const Res.error('Invalid WebDAV configuration');
+    _isUploading = true;
+    _progress = null;
+    notifyListeners();
     try {
       await prepareSyncPart(part.key);
       final file = await exportPart(part.key);
@@ -195,6 +198,10 @@ class DataSync with ChangeNotifier {
         await client.write(
           _join(dir, '${part.name}.kostori'),
           await file.readAsBytes(),
+          onProgress: (count, total) {
+            _progress = total > 0 ? count / total : null;
+            notifyListeners();
+          },
         );
       } finally {
         file.deleteIgnoreError();
@@ -203,6 +210,10 @@ class DataSync with ChangeNotifier {
     } catch (e, s) {
       Log.error('Upload Part', e, s);
       return Res.error(e.toString());
+    } finally {
+      _isUploading = false;
+      _progress = null;
+      notifyListeners();
     }
   }
 
@@ -210,6 +221,9 @@ class DataSync with ChangeNotifier {
   Future<Res<bool>> downloadOnePart(SyncPart part) async {
     final client = _client();
     if (client == null) return const Res.error('Invalid WebDAV configuration');
+    _isDownloading = true;
+    _progress = null;
+    notifyListeners();
     try {
       final local = File(
         FilePath.join(App.cachePath, 'sync_${part.key}.kostori'),
@@ -217,6 +231,10 @@ class DataSync with ChangeNotifier {
       await client.read2File(
         _join(_normDir(part.dir), '${part.name}.kostori'),
         local.path,
+        onProgress: (count, total) {
+          _progress = total > 0 ? count / total : null;
+          notifyListeners();
+        },
       );
       await importPart(local);
       local.deleteIgnoreError();
@@ -224,6 +242,10 @@ class DataSync with ChangeNotifier {
     } catch (e, s) {
       Log.error('Download Part', e, s);
       return Res.error(e.toString());
+    } finally {
+      _isDownloading = false;
+      _progress = null;
+      notifyListeners();
     }
   }
 
