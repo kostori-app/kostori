@@ -1693,11 +1693,18 @@ characterAlternateGreetings: 备用开场白
 storyPersona: 玩家角色
 storyPersonaHint: 描述用户本人，AI 不得扮演。
 storyTextStyle: 文字样式
+storyShadow: 阴影
 storyShadowOn: 阴影已开启
 storyShadowOff: 阴影已关闭
 storySystemFont: 系统字体
 storyItalic: 斜体
 storyFontSize: 字号
+storyQuoteGlyph: 引号字形
+storyQuote: 引号
+storyBracket: 括号
+storyOpacity: 透明度
+storyNormal: 常规
+storyBold: 加粗
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结

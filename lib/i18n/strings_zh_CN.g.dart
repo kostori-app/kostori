@@ -1687,11 +1687,18 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyPersona => '玩家角色';
 	@override String get storyPersonaHint => '描述用户本人，AI 不得扮演。';
 	@override String get storyTextStyle => '文字样式';
+	@override String get storyShadow => '阴影';
 	@override String get storyShadowOn => '阴影已开启';
 	@override String get storyShadowOff => '阴影已关闭';
 	@override String get storySystemFont => '系统字体';
 	@override String get storyItalic => '斜体';
 	@override String get storyFontSize => '字号';
+	@override String get storyQuoteGlyph => '引号字形';
+	@override String get storyQuote => '引号';
+	@override String get storyBracket => '括号';
+	@override String get storyOpacity => '透明度';
+	@override String get storyNormal => '常规';
+	@override String get storyBold => '加粗';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4418,11 +4425,18 @@ extension on TranslationsZhCn {
 			'storyPersona' => '玩家角色',
 			'storyPersonaHint' => '描述用户本人，AI 不得扮演。',
 			'storyTextStyle' => '文字样式',
+			'storyShadow' => '阴影',
 			'storyShadowOn' => '阴影已开启',
 			'storyShadowOff' => '阴影已关闭',
 			'storySystemFont' => '系统字体',
 			'storyItalic' => '斜体',
 			'storyFontSize' => '字号',
+			'storyQuoteGlyph' => '引号字形',
+			'storyQuote' => '引号',
+			'storyBracket' => '括号',
+			'storyOpacity' => '透明度',
+			'storyNormal' => '常规',
+			'storyBold' => '加粗',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4769,6 +4783,8 @@ extension on TranslationsZhCn {
 			'statsActiveHeatmap' => '活跃热力图',
 			'statsWatchTrend' => '观看趋势',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => '活跃条目 (前 ${shown}/${total}个)',
+			_ => null,
+		} ?? switch (path) {
 			'statsWatchDistribution' => '观看时长分布',
 			'statsFrequentTags' => '常看标签',
 			'statsTagCloud' => '标签词云',
@@ -4776,8 +4792,6 @@ extension on TranslationsZhCn {
 			'statsCountTimes' => ({required Object n}) => '${n} 次',
 			'statsCountComments' => ({required Object n}) => '${n} 条',
 			'statsCountItems' => ({required Object n}) => '${n} 个',
-			_ => null,
-		} ?? switch (path) {
 			'statsDateFull' => ({required Object year, required Object month, required Object day}) => '${year}年${month}月${day}日',
 			'statsDateRangeWeek' => ({required Object year, required Object month, required Object day, required Object endMonth, required Object endDay}) => '${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日',
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}年${month}月',
@@ -5283,6 +5297,8 @@ extension on TranslationsZhCn {
 			'episodeTitleLabel' => '本集标题',
 			'manualSwitch' => '手动切换',
 			'inputEpisodeNumber' => '输入集数',
+			_ => null,
+		} ?? switch (path) {
 			'episodeNumberHint' => '请输入1-999之间的集数',
 			'enterEpisodeNumber' => '请输入集数',
 			'invalidEpisodeNumber' => '请输入1-999之间的有效集数',
@@ -5290,8 +5306,6 @@ extension on TranslationsZhCn {
 			'noViewingRecord' => '没有找到该集的观看记录',
 			'viewingRecord' => '观看记录',
 			'watchDurationLabel' => ({required Object duration}) => '观看时长: ${duration}',
-			_ => null,
-		} ?? switch (path) {
 			'completedStatus' => ({required Object status}) => '是否完成: ${status}',
 			'yes' => '是',
 			'no' => '否',

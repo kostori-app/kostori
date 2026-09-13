@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' hide Column;
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/ai_model_card.dart';
 import 'package:kostori/components/character_card_editor.dart';
+import 'package:kostori/components/color_pick_page.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/translation_widget.dart';

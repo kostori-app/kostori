@@ -1698,11 +1698,18 @@ characterAlternateGreetings: Alternate greetings
 storyPersona: Player character
 storyPersonaHint: Describes who the user is. The AI must not roleplay this.
 storyTextStyle: Text style
+storyShadow: Shadow
 storyShadowOn: Shadow on
 storyShadowOff: Shadow off
 storySystemFont: System font
 storyItalic: Italic
 storyFontSize: Font size
+storyQuoteGlyph: Quote style
+storyQuote: Quotes
+storyBracket: Brackets
+storyOpacity: Opacity
+storyNormal: Normal
+storyBold: Bold
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

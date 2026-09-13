@@ -3053,51 +3053,172 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       builder: (ctx) => Sheet(
         title: t.storyTextStyle,
         icon: Icons.text_fields_outlined,
-        initialSize: 0.5,
+        initialSize: 0.78,
         builder: (ctx, sc) => ListenableBuilder(
           listenable: StoryTextStyleStore.instance,
           builder: (ctx, _) {
             final store = StoryTextStyleStore.instance;
             final s = store.style;
-            Widget chip(String label, bool selected, VoidCallback onTap) =>
-                FilterChip(
-                  label: Text(label),
-                  selected: selected,
-                  onSelected: (_) => onTap(),
-                );
+            final scheme = Theme.of(ctx).colorScheme;
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+            Color preview(StoryRoleStyle r, Color fallback) {
+              final v = isDark ? r.dark : r.light;
+              return v == null ? fallback : Color(v);
+            }
+
+            StoryRoleStyle withColor(StoryRoleStyle r, Color c) => isDark
+                ? r.copyWith(dark: c.toARGB32())
+                : r.copyWith(light: c.toARGB32());
+
+            Widget roleTile(
+              String label,
+              StoryRoleStyle role,
+              Color fallback,
+              ValueChanged<StoryRoleStyle> onChanged, {
+              bool allowFontStyle = true,
+            }) {
+              final color = preview(role, fallback);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () async {
+                          final c = await showDialog<Color>(
+                            context: ctx,
+                            builder: (_) => ColorPickPage(initialColor: color),
+                          );
+                          if (c != null) onChanged(withColor(role, c));
+                        },
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: scheme.outlineVariant),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.restart_alt, size: 18),
+                        tooltip: t.reset,
+                        onPressed: () =>
+                            onChanged(role.copyWith(clearColor: true)),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        t.storyOpacity,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: role.opacity,
+                          min: 0.1,
+                          max: 1.0,
+                          divisions: 9,
+                          label: '${(role.opacity * 100).round()}%',
+                          onChanged: (v) =>
+                              onChanged(role.copyWith(opacity: v)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (allowFontStyle)
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final (value, name) in [
+                          ('normal', t.storyNormal),
+                          ('italic', t.storyItalic),
+                          ('bold', t.storyBold),
+                        ])
+                          ChoiceChip(
+                            label: Text(name),
+                            selected: role.fontStyle == value,
+                            onSelected: (_) =>
+                                onChanged(role.copyWith(fontStyle: value)),
+                          ),
+                      ],
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            }
+
             return ListView(
               controller: sc,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                Row(
                   children: [
-                    chip(
-                      '“”',
-                      s.highlightQuotes,
-                      () => store.update(
-                        s.copyWith(highlightQuotes: !s.highlightQuotes),
-                      ),
+                    Text(
+                      t.storyQuoteGlyph,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    chip(
-                      t.storyItalic,
-                      s.italic,
-                      () => store.update(s.copyWith(italic: !s.italic)),
-                    ),
-                    chip(
-                      s.shadow ? t.storyShadowOn : t.storyShadowOff,
-                      s.shadow,
-                      () => store.update(s.copyWith(shadow: !s.shadow)),
-                    ),
-                    chip(
-                      t.storySystemFont,
-                      s.systemFont,
-                      () => store.update(s.copyWith(systemFont: !s.systemFont)),
+                    const Spacer(),
+                    DropdownButton<StoryQuoteGlyph>(
+                      value: s.quoteGlyph,
+                      items: [
+                        for (final g in StoryQuoteGlyph.values)
+                          DropdownMenuItem(value: g, child: Text(g.label)),
+                      ],
+                      onChanged: (v) =>
+                          v == null ? null : store.update(s.copyWith(quoteGlyph: v)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const Divider(),
+                roleTile(
+                  t.storyQuote,
+                  s.quote,
+                  scheme.primary,
+                  (r) => store.update(s.copyWith(quote: r)),
+                ),
+                roleTile(
+                  t.storyBracket,
+                  s.bracket,
+                  scheme.onSurfaceVariant,
+                  (r) => store.update(s.copyWith(bracket: r)),
+                ),
+                roleTile(
+                  t.storyItalic,
+                  s.italic,
+                  scheme.onSurfaceVariant,
+                  (r) => store.update(s.copyWith(italic: r)),
+                  allowFontStyle: false,
+                ),
+                roleTile(
+                  t.storyBold,
+                  s.bold,
+                  scheme.onSurface,
+                  (r) => store.update(s.copyWith(bold: r)),
+                  allowFontStyle: false,
+                ),
+                const Divider(),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(t.storyShadow),
+                  value: s.shadow,
+                  onChanged: (v) => store.update(s.copyWith(shadow: v)),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(t.storySystemFont),
+                  value: s.systemFont,
+                  onChanged: (v) => store.update(s.copyWith(systemFont: v)),
+                ),
                 Row(
                   children: [
                     Text(t.storyFontSize),

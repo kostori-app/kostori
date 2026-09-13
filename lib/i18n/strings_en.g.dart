@@ -4987,6 +4987,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Text style'
 	String get storyTextStyle => 'Text style';
 
+	/// en: 'Shadow'
+	String get storyShadow => 'Shadow';
+
 	/// en: 'Shadow on'
 	String get storyShadowOn => 'Shadow on';
 
@@ -5001,6 +5004,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Font size'
 	String get storyFontSize => 'Font size';
+
+	/// en: 'Quote style'
+	String get storyQuoteGlyph => 'Quote style';
+
+	/// en: 'Quotes'
+	String get storyQuote => 'Quotes';
+
+	/// en: 'Brackets'
+	String get storyBracket => 'Brackets';
+
+	/// en: 'Opacity'
+	String get storyOpacity => 'Opacity';
+
+	/// en: 'Normal'
+	String get storyNormal => 'Normal';
+
+	/// en: 'Bold'
+	String get storyBold => 'Bold';
 
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
@@ -9728,11 +9749,18 @@ extension on Translations {
 			'storyPersona' => 'Player character',
 			'storyPersonaHint' => 'Describes who the user is. The AI must not roleplay this.',
 			'storyTextStyle' => 'Text style',
+			'storyShadow' => 'Shadow',
 			'storyShadowOn' => 'Shadow on',
 			'storyShadowOff' => 'Shadow off',
 			'storySystemFont' => 'System font',
 			'storyItalic' => 'Italic',
 			'storyFontSize' => 'Font size',
+			'storyQuoteGlyph' => 'Quote style',
+			'storyQuote' => 'Quotes',
+			'storyBracket' => 'Brackets',
+			'storyOpacity' => 'Opacity',
+			'storyNormal' => 'Normal',
+			'storyBold' => 'Bold',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -10078,6 +10106,8 @@ extension on Translations {
 			'statsActiveHeatmap' => 'Activity heatmap',
 			'statsWatchTrend' => 'Watch trend',
 			'statsActiveItemsTop' => ({required Object shown, required Object total}) => 'Active items (top ${shown}/${total})',
+			_ => null,
+		} ?? switch (path) {
 			'statsWatchDistribution' => 'Watch duration distribution',
 			'statsFrequentTags' => 'Frequent tags',
 			'statsTagCloud' => 'Tag cloud',
@@ -10085,8 +10115,6 @@ extension on Translations {
 			'statsCountTimes' => ({required Object n}) => '${n} times',
 			'statsCountComments' => ({required Object n}) => '${n} comments',
 			'statsCountItems' => ({required Object n}) => '${n} items',
-			_ => null,
-		} ?? switch (path) {
 			'statsDateFull' => ({required Object month, required Object day, required Object year}) => '${month}/${day}/${year}',
 			'statsDateRangeWeek' => ({required Object month, required Object day, required Object endMonth, required Object endDay, required Object year}) => '${month}/${day} - ${endMonth}/${endDay}, ${year}',
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}.${month}',
@@ -10592,6 +10620,8 @@ extension on Translations {
 			'episodeTitleLabel' => 'Episode title',
 			'manualSwitch' => 'Manual switch',
 			'inputEpisodeNumber' => 'Enter episode number',
+			_ => null,
+		} ?? switch (path) {
 			'episodeNumberHint' => 'Enter a number between 1 and 999',
 			'enterEpisodeNumber' => 'Please enter an episode number',
 			'invalidEpisodeNumber' => 'Please enter a valid number between 1 and 999',
@@ -10599,8 +10629,6 @@ extension on Translations {
 			'noViewingRecord' => 'No viewing record found for this episode',
 			'viewingRecord' => 'Viewing record',
 			'watchDurationLabel' => ({required Object duration}) => 'Watch duration: ${duration}',
-			_ => null,
-		} ?? switch (path) {
 			'completedStatus' => ({required Object status}) => 'Completed: ${status}',
 			'yes' => 'Yes',
 			'no' => 'No',

@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/ai_model_card.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/character_card_editor.dart';
+import 'package:kostori/components/color_pick_page.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/watermark.dart';
@@ -1386,6 +1387,7 @@ class _StoryText extends StatelessWidget {
           );
         }
         final scheme = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final shadows = style.shadow
             ? [
                 Shadow(
@@ -1404,28 +1406,32 @@ class _StoryText extends StatelessWidget {
           fontFamily: style.systemFont ? null : 'serif',
           shadows: shadows,
         );
-        final quoteStyle = style.highlightQuotes
-            ? base.copyWith(
-                color: scheme.primary,
-                fontStyle: style.italic
-                    ? FontStyle.italic
-                    : FontStyle.normal,
-              )
-            : base.copyWith(
-                fontStyle: style.italic
-                    ? FontStyle.italic
-                    : FontStyle.normal,
-              );
-        final boldStyle = base.copyWith(fontWeight: FontWeight.w700);
-        final italicStyle = style.italic
-            ? base.copyWith(
-                fontStyle: FontStyle.italic,
-                color: scheme.onSurfaceVariant,
-              )
-            : base.copyWith(color: scheme.onSurfaceVariant);
+
+        Color roleColor(StoryRoleStyle r, Color fallback) {
+          final v = isDark ? r.dark : r.light;
+          final c = v == null ? fallback : Color(v);
+          return c.withValues(alpha: c.a * r.opacity);
+        }
+
+        TextStyle roleStyle(StoryRoleStyle r, Color fallback) => base.copyWith(
+          color: roleColor(r, fallback),
+          fontStyle: r.fontStyle == 'italic'
+              ? FontStyle.italic
+              : FontStyle.normal,
+          fontWeight: r.fontStyle == 'bold' ? FontWeight.w700 : null,
+        );
+
+        final quoteStyle = roleStyle(style.quote, scheme.primary);
+        final bracketStyle = roleStyle(style.bracket, scheme.onSurfaceVariant);
+        final italicStyle = roleStyle(style.italic, scheme.onSurfaceVariant);
+        final boldStyle = roleStyle(style.bold, scheme.onSurface);
+        final (qOpen, qClose) = style.quoteGlyph.pair;
 
         final pattern = RegExp(
-          r'(\*\*[^*]+\*\*)|(\*[^*]+\*)|([“"「『][^”"」』]*[”"」』])',
+          r'(\*\*[^*]+\*\*)'
+          r'|(\*[^*]+\*)'
+          r'|([“"「『][^”"」』]*[”"」』])'
+          r'|([（(【\[][^）)】\]]*[）)】\]])',
         );
         final spans = <TextSpan>[];
         var index = 0;
@@ -1436,16 +1442,22 @@ class _StoryText extends StatelessWidget {
             );
           }
           final t = m.group(0)!;
-          if (t.startsWith('**')) {
+          if (m.group(1) != null) {
             spans.add(
               TextSpan(text: t.substring(2, t.length - 2), style: boldStyle),
             );
-          } else if (t.startsWith('*')) {
+          } else if (m.group(2) != null) {
             spans.add(
               TextSpan(text: t.substring(1, t.length - 1), style: italicStyle),
             );
+          } else if (m.group(3) != null) {
+            // 引号：统一替换为所选字形
+            final inner = t.substring(1, t.length - 1);
+            spans.add(TextSpan(text: '$qOpen$inner$qClose', style: quoteStyle));
           } else {
-            spans.add(TextSpan(text: t, style: quoteStyle));
+            // 括号（动作/描述）：去掉括号只留内容
+            final inner = t.substring(1, t.length - 1);
+            spans.add(TextSpan(text: inner, style: bracketStyle));
           }
           index = m.end;
         }
