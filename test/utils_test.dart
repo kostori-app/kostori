@@ -387,5 +387,59 @@ void main() {
       expect(prompt.contains('"生命"'), isFalse);
       expect(prompt.contains('"精神"'), isFalse);
     });
+
+    test('includes story-defined titles / job / facilities', () {
+      const story = Story(
+        id: 't',
+        name: 't',
+        titleMode: 'equipped',
+        titles: [
+          StoryTitle(key: 'brave', name: '勇者', effects: '力量+2', stackable: true),
+        ],
+        job: StoryJob(
+          name: '游侠',
+          levels: [StoryJobLevel(level: 1, name: '见习', bonus: '敏捷+1')],
+        ),
+        facilities: [StoryFacility(key: 'forge', name: '锻造台', maxLevel: 3)],
+      );
+      final prompt = story.buildSystemPrompt();
+      expect(prompt.contains('勇者'), isTrue);
+      expect(prompt.contains('游侠'), isTrue);
+      expect(prompt.contains('锻造台'), isTrue);
+      expect(prompt.contains('仅已佩戴'), isTrue);
+    });
+  });
+
+  group('story markdown round trip', () {
+    test('titles / job / facilities survive export and import', () {
+      const story = Story(
+        id: 's',
+        name: 'S',
+        titleMode: 'equipped',
+        titles: [
+          StoryTitle(
+            key: 'brave',
+            name: '勇者',
+            effects: '力量+2',
+            stackable: true,
+          ),
+        ],
+        job: StoryJob(
+          name: '游侠',
+          levels: [StoryJobLevel(level: 1, name: '见习', bonus: '敏捷+1')],
+        ),
+        facilities: [StoryFacility(key: 'forge', name: '锻造台', maxLevel: 3)],
+      );
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.titleMode, 'equipped');
+      expect(back.titles.single.key, 'brave');
+      expect(back.titles.single.effects, '力量+2');
+      expect(back.titles.single.stackable, isTrue);
+      expect(back.job?.name, '游侠');
+      expect(back.job?.levels.single.bonus, '敏捷+1');
+      expect(back.facilities.single.key, 'forge');
+      expect(back.facilities.single.maxLevel, 3);
+    });
   });
 }

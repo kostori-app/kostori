@@ -776,6 +776,287 @@ class NpcState {
   };
 }
 
+/// 称号定义（故事设定）：可叠加，带 buff/debuff 效果
+class StoryTitle {
+  final String key;
+  final String name;
+  final String description;
+
+  /// 效果文本（如「力量 +2；命中 +10%」），GM 判定时参考
+  final String effects;
+
+  /// 是否可叠加（同称号可叠层，效果按层数放大）
+  final bool stackable;
+
+  const StoryTitle({
+    required this.key,
+    required this.name,
+    this.description = '',
+    this.effects = '',
+    this.stackable = false,
+  });
+
+  factory StoryTitle.fromJson(Map<String, dynamic> json) => StoryTitle(
+    key: json['key']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    effects: json['effects']?.toString() ?? '',
+    stackable: json['stackable'] as bool? ?? false,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'name': name,
+    'description': description,
+    'effects': effects,
+    'stackable': stackable,
+  };
+}
+
+/// 职业等级定义
+class StoryJobLevel {
+  final int level;
+  final String name;
+  final String bonus;
+
+  const StoryJobLevel({required this.level, this.name = '', this.bonus = ''});
+
+  factory StoryJobLevel.fromJson(Map<String, dynamic> json) => StoryJobLevel(
+    level: (json['level'] as num?)?.toInt() ?? 0,
+    name: json['name']?.toString() ?? '',
+    bonus: json['bonus']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'level': level,
+    'name': name,
+    'bonus': bonus,
+  };
+}
+
+/// 职业定义（故事设定，可选）
+class StoryJob {
+  final String name;
+  final String description;
+  final List<StoryJobLevel> levels;
+
+  const StoryJob({
+    this.name = '',
+    this.description = '',
+    this.levels = const [],
+  });
+
+  bool get isEmpty => name.trim().isEmpty && levels.isEmpty;
+
+  factory StoryJob.fromJson(Map<String, dynamic> json) => StoryJob(
+    name: json['name']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    levels: (json['levels'] is List)
+        ? [
+            for (final e in json['levels'] as List)
+              if (e is Map) StoryJobLevel.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'description': description,
+    'levels': [for (final l in levels) l.toJson()],
+  };
+}
+
+/// 据点设施定义（故事设定，可选）
+class StoryFacility {
+  final String key;
+  final String name;
+  final String description;
+  final int maxLevel;
+
+  const StoryFacility({
+    required this.key,
+    required this.name,
+    this.description = '',
+    this.maxLevel = 1,
+  });
+
+  factory StoryFacility.fromJson(Map<String, dynamic> json) => StoryFacility(
+    key: json['key']?.toString() ?? json['name']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+    maxLevel:
+        (json['maxLevel'] as num?)?.toInt() ??
+        (json['max_level'] as num?)?.toInt() ??
+        1,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'name': name,
+    'description': description,
+    'maxLevel': maxLevel,
+  };
+}
+
+/// 已获得称号（运行状态）
+class TitleState {
+  final String key;
+  final int stacks;
+  final bool equipped;
+
+  const TitleState({
+    required this.key,
+    this.stacks = 1,
+    this.equipped = false,
+  });
+
+  TitleState copyWith({int? stacks, bool? equipped}) => TitleState(
+    key: key,
+    stacks: stacks ?? this.stacks,
+    equipped: equipped ?? this.equipped,
+  );
+
+  factory TitleState.fromJson(Map<String, dynamic> json) => TitleState(
+    key: json['key']?.toString() ?? json['name']?.toString() ?? '',
+    stacks: (json['stacks'] as num?)?.toInt() ?? 1,
+    equipped: json['equipped'] as bool? ?? false,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'stacks': stacks,
+    if (equipped) 'equipped': true,
+  };
+}
+
+/// 状态效果 / 加成（运行状态）：buff / debuff，可叠层、有时限
+class EffectState {
+  final String name;
+
+  /// buff | debuff
+  final String kind;
+  final int stacks;
+
+  /// 剩余回合（0 = 永久 / 直到移除）
+  final int remaining;
+  final String description;
+
+  const EffectState({
+    required this.name,
+    this.kind = 'buff',
+    this.stacks = 1,
+    this.remaining = 0,
+    this.description = '',
+  });
+
+  factory EffectState.fromJson(Map<String, dynamic> json) => EffectState(
+    name: json['name']?.toString() ?? '',
+    kind: json['kind']?.toString() ?? 'buff',
+    stacks: (json['stacks'] as num?)?.toInt() ?? 1,
+    remaining: (json['remaining'] as num?)?.toInt() ?? 0,
+    description: json['description']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'kind': kind,
+    'stacks': stacks,
+    'remaining': remaining,
+    if (description.isNotEmpty) 'description': description,
+  };
+}
+
+/// 职业 / 等级（运行状态）
+class JobState {
+  final String name;
+  final int level;
+  final int exp;
+
+  const JobState({this.name = '', this.level = 1, this.exp = 0});
+
+  bool get isEmpty => name.trim().isEmpty;
+
+  factory JobState.fromJson(Map<String, dynamic> json) => JobState(
+    name: json['name']?.toString() ?? '',
+    level: (json['level'] as num?)?.toInt() ?? 1,
+    exp: (json['exp'] as num?)?.toInt() ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'level': level,
+    'exp': exp,
+  };
+}
+
+/// 据点设施（运行状态）
+class FacilityState {
+  final String key;
+  final int level;
+  final String status;
+
+  const FacilityState({required this.key, this.level = 0, this.status = ''});
+
+  factory FacilityState.fromJson(Map<String, dynamic> json) => FacilityState(
+    key: json['key']?.toString() ?? json['name']?.toString() ?? '',
+    level: (json['level'] as num?)?.toInt() ?? 0,
+    status: json['status']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'level': level,
+    if (status.isNotEmpty) 'status': status,
+  };
+}
+
+/// 据点（运行状态）：设施 + 物质 + 仓储储备
+class BaseState {
+  final List<FacilityState> facilities;
+  final Map<String, int> materials;
+  final Map<String, int> storage;
+
+  const BaseState({
+    this.facilities = const [],
+    this.materials = const {},
+    this.storage = const {},
+  });
+
+  bool get isEmpty =>
+      facilities.isEmpty && materials.isEmpty && storage.isEmpty;
+
+  static Map<String, int> _intMap(dynamic v) {
+    final out = <String, int>{};
+    if (v is Map) {
+      for (final e in v.entries) {
+        final value = e.value;
+        out[e.key.toString()] = value is num
+            ? value.toInt()
+            : (int.tryParse(value?.toString() ?? '') ?? 0);
+      }
+    }
+    return out;
+  }
+
+  factory BaseState.fromJson(Map<String, dynamic> json) => BaseState(
+    facilities: (json['facilities'] is List)
+        ? [
+            for (final e in json['facilities'] as List)
+              if (e is Map) FacilityState.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
+    materials: _intMap(json['materials']),
+    storage: _intMap(json['storage']),
+  );
+
+  Map<String, dynamic> toJson() => {
+    if (facilities.isNotEmpty)
+      'facilities': [for (final f in facilities) f.toJson()],
+    if (materials.isNotEmpty) 'materials': materials,
+    if (storage.isNotEmpty) 'storage': storage,
+  };
+}
+
 /// 游戏状态：AI 每回合输出的结构化数值
 class GameState {
   final List<StatBar> resources;
@@ -804,6 +1085,18 @@ class GameState {
   /// 在场角色的运行状态（血量 / 好感度等）
   final List<NpcState> npcs;
 
+  /// 已获得称号（含叠加层数）
+  final List<TitleState> titles;
+
+  /// 当前状态效果 / 加成（buff / debuff）
+  final List<EffectState> effects;
+
+  /// 职业 / 等级
+  final JobState job;
+
+  /// 据点（设施 / 物质 / 仓储）
+  final BaseState base;
+
   /// 已装备的物品名（其 codex 机制生效）
   final List<String> equipped;
 
@@ -827,6 +1120,10 @@ class GameState {
     this.variables = const {},
     this.present = const [],
     this.npcs = const [],
+    this.titles = const [],
+    this.effects = const [],
+    this.job = const JobState(),
+    this.base = const BaseState(),
     this.equipped = const [],
     this.combat = CombatState.idle,
     this.achievements = const [],
@@ -848,6 +1145,10 @@ class GameState {
     Map<String, String>? variables,
     List<String>? present,
     List<NpcState>? npcs,
+    List<TitleState>? titles,
+    List<EffectState>? effects,
+    JobState? job,
+    BaseState? base,
     List<String>? equipped,
     CombatState? combat,
     List<String>? achievements,
@@ -865,6 +1166,10 @@ class GameState {
     variables: variables ?? this.variables,
     present: present ?? this.present,
     npcs: npcs ?? this.npcs,
+    titles: titles ?? this.titles,
+    effects: effects ?? this.effects,
+    job: job ?? this.job,
+    base: base ?? this.base,
     equipped: equipped ?? this.equipped,
     combat: combat ?? this.combat,
     achievements: achievements ?? this.achievements,
@@ -922,6 +1227,24 @@ class GameState {
                   NpcState.fromJson(e.cast<String, dynamic>()),
             ]
           : const [],
+      titles: (json['titles'] is List)
+          ? [
+              for (final e in json['titles'] as List)
+                if (e is Map) TitleState.fromJson(e.cast<String, dynamic>()),
+            ]
+          : const [],
+      effects: (json['effects'] is List)
+          ? [
+              for (final e in json['effects'] as List)
+                if (e is Map) EffectState.fromJson(e.cast<String, dynamic>()),
+            ]
+          : const [],
+      job: json['job'] is Map
+          ? JobState.fromJson((json['job'] as Map).cast<String, dynamic>())
+          : const JobState(),
+      base: json['base'] is Map
+          ? BaseState.fromJson((json['base'] as Map).cast<String, dynamic>())
+          : const BaseState(),
       equipped: (json['equipped'] as List?)?.whereType<String>().toList() ??
           const [],
       combat: json['combat'] is Map
@@ -947,6 +1270,10 @@ class GameState {
     'variables': variables,
     'present': present,
     if (npcs.isNotEmpty) 'npcs': [for (final n in npcs) n.toJson()],
+    if (titles.isNotEmpty) 'titles': [for (final x in titles) x.toJson()],
+    if (effects.isNotEmpty) 'effects': [for (final x in effects) x.toJson()],
+    if (!job.isEmpty) 'job': job.toJson(),
+    if (!base.isEmpty) 'base': base.toJson(),
     'equipped': equipped,
     'combat': combat.toJson(),
     'achievements': achievements,
@@ -1067,6 +1394,18 @@ class Story {
   /// 成就定义（AI 解锁）
   final List<StoryAchievement> achievements;
 
+  /// 称号定义（AI 授予）
+  final List<StoryTitle> titles;
+
+  /// 称号生效方式：all（全部生效） | equipped（仅佩戴的生效）
+  final String titleMode;
+
+  /// 职业 / 等级定义（可选）
+  final StoryJob? job;
+
+  /// 据点设施定义（可选）
+  final List<StoryFacility> facilities;
+
   /// 玩家 persona（用户本人，AI 不扮演）
   final StoryPersona persona;
 
@@ -1077,6 +1416,10 @@ class Story {
     StoryPanel(source: 'skills'),
     StoryPanel(source: 'inventory'),
     StoryPanel(source: 'quests'),
+    StoryPanel(source: 'effects'),
+    StoryPanel(source: 'titles'),
+    StoryPanel(source: 'job'),
+    StoryPanel(source: 'base'),
     StoryPanel(source: 'codex'),
   ];
 
@@ -1103,6 +1446,10 @@ class Story {
     this.variables = const [],
     this.regexes = const [],
     this.achievements = const [],
+    this.titles = const [],
+    this.titleMode = 'all',
+    this.job,
+    this.facilities = const [],
     this.persona = const StoryPersona(),
     this.initialState = GameState.empty,
     this.isBuiltin = false,
@@ -1127,6 +1474,10 @@ class Story {
     List<StoryVariable>? variables,
     List<StoryRegex>? regexes,
     List<StoryAchievement>? achievements,
+    List<StoryTitle>? titles,
+    String? titleMode,
+    StoryJob? job,
+    List<StoryFacility>? facilities,
     StoryPersona? persona,
     GameState? initialState,
   }) => Story(
@@ -1149,6 +1500,10 @@ class Story {
     variables: variables ?? this.variables,
     regexes: regexes ?? this.regexes,
     achievements: achievements ?? this.achievements,
+    titles: titles ?? this.titles,
+    titleMode: titleMode ?? this.titleMode,
+    job: job ?? this.job,
+    facilities: facilities ?? this.facilities,
     persona: persona ?? this.persona,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
@@ -1213,6 +1568,22 @@ class Story {
               if (e is Map) StoryAchievement.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    titles: json['titles'] is List
+        ? [
+            for (final e in json['titles'] as List)
+              if (e is Map) StoryTitle.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
+    titleMode: json['titleMode']?.toString() ?? 'all',
+    job: json['job'] is Map
+        ? StoryJob.fromJson((json['job'] as Map).cast<String, dynamic>())
+        : null,
+    facilities: json['facilities'] is List
+        ? [
+            for (final e in json['facilities'] as List)
+              if (e is Map) StoryFacility.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     persona: json['persona'] is Map
         ? StoryPersona.fromJson((json['persona'] as Map).cast<String, dynamic>())
         : const StoryPersona(),
@@ -1242,6 +1613,10 @@ class Story {
     'variables': [for (final v in variables) v.toJson()],
     'regexes': [for (final r in regexes) r.toJson()],
     'achievements': [for (final a in achievements) a.toJson()],
+    'titles': [for (final x in titles) x.toJson()],
+    'titleMode': titleMode,
+    if (job != null) 'job': job!.toJson(),
+    'facilities': [for (final f in facilities) f.toJson()],
     'persona': persona.toJson(),
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
@@ -1257,6 +1632,37 @@ class Story {
     }
     if (systemPrompt.trim().isNotEmpty) {
       buf.writeln(systemPrompt.trim());
+      buf.writeln();
+    }
+    if (titles.isNotEmpty) {
+      buf.writeln('【称号（只能授予下列 key，获得时把 key 加入 state.titles）】');
+      for (final x in titles) {
+        buf.write('- ${x.key}：${x.name}');
+        if (x.effects.trim().isNotEmpty) buf.write('（效果：${x.effects.trim()}）');
+        if (x.stackable) buf.write('（可叠加）');
+        buf.writeln();
+      }
+      buf.writeln(
+        '称号生效方式：${titleMode == 'equipped' ? '仅已佩戴(equipped)的称号生效' : '全部已获得称号叠加生效'}',
+      );
+      buf.writeln();
+    }
+    final jb = job;
+    if (jb != null && !jb.isEmpty) {
+      buf.writeln('【职业：${jb.name}】${jb.description}');
+      for (final l in jb.levels) {
+        buf.writeln('- Lv.${l.level} ${l.name}：${l.bonus}');
+      }
+      buf.writeln();
+    }
+    if (facilities.isNotEmpty) {
+      buf.writeln('【据点设施（只能使用下列 key）】');
+      for (final f in facilities) {
+        buf.writeln(
+          '- ${f.key}：${f.name}（最高 ${f.maxLevel} 级）'
+          '${f.description.trim().isEmpty ? '' : ' ${f.description.trim()}'}',
+        );
+      }
       buf.writeln();
     }
     // 输出示例按故事实际定义的资源 / 属性生成，避免写死名称误导模型
@@ -1293,7 +1699,11 @@ class Story {
     "situation": "当前局势/所在环境的简述（可选，展示在局势页签）",
     "varOps": [{"name": "变量名", "delta": 5}, {"name": "变量名2", "set": "取值"}],
     "present": ["在场角色名"],
-    "npcs": [{"name":"角色名","resources":{"资源名":{"cur":100,"max":100}},"attributes":{"属性名":5},"skills":["技能"],"inventory":["物品 x1"],"affinity":0,"status":"姿态/状态"}]
+    "npcs": [{"name":"角色名","resources":{"资源名":{"cur":100,"max":100}},"attributes":{"属性名":5},"skills":["技能"],"inventory":["物品 x1"],"affinity":0,"status":"姿态/状态"}],
+    "titles": [{"key":"称号key","stacks":1,"equipped":true}],
+    "effects": [{"name":"状态名","kind":"buff|debuff","stacks":1,"remaining":3,"description":"效果"}],
+    "job": {"name":"职业名","level":1,"exp":0},
+    "base": {"facilities":[{"key":"设施key","level":1,"status":""}],"materials":{"物质名":10},"storage":{"储备名":5}}
   },
   "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
   "choices": ["选项A", "选项B", "选项C"],
@@ -1304,7 +1714,12 @@ class Story {
 - state 需给出当前完整状态；codex 记录出现或已有的道具/种族/特质/天赋等设定，display 面向玩家，mechanics 供你后续严格遵守，避免自相矛盾。
 - events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
 - choices 提供 3-5 个可供玩家选择的行动：每条不超过 15 个字，动词开头，只写行动本身，不要解释、后果或括号补充。
-- **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
+- **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent/body），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
+- **身体/状态词条**：损伤、体温、感染、疲劳等生理状态用 codex 的 kind=body 登记，会归入「身体」栏。
+- **称号**：获得称号时把其 key 加入 titles（可带 stacks 层数、equipped 是否佩戴）；只能使用故事预定义的称号 key。
+- **状态效果**：用 effects 记录当前 buff/debuff（name、kind=buff|debuff、stacks 层数、remaining 剩余回合、description）；remaining 减到 0 即移除。
+- **职业/等级**：用 job 记录职业 name、等级 level、经验 exp；升级规则按故事设定。
+- **据点**：用 base 记录设施 facilities（key/level/status）、物质 materials、仓储 storage（均为键值对）。
 - **变量**：用 varOps 记录本回合变量的变化（只写变化的项）：数值增减用 delta，其它用 set 赋值；键名须与已声明变量一致，并遵守其类型/范围/取值。没有变化时给空数组。
 - **在场角色**：present 必须每回合给出当前场景中实际出场的角色名（对应角色设定），无人在场时给空数组；角色随剧情逐个进出，不要一次性让所有角色登场。
 - **角色状态**：npcs 给出在场角色的运行状态：resources（生命等数值条）、attributes（属性）、skills（技能）、inventory（携带）、affinity（对玩家的好感度）、status（姿态/状态描述）。角色并非无敌，受伤、消耗、好感变化都要反映在 npcs 里；不在场可省略。
@@ -1496,6 +1911,40 @@ class StoryStore extends ChangeNotifier {
       return <T>[];
     }
     final panels = mapList('面板', StoryPanel.fromJson);
+    // 称号：{mode, titles:[...]} 或直接是 titles 列表
+    var titleMode = 'all';
+    var titleDefs = <StoryTitle>[];
+    final titleText = _section(text, '称号');
+    if (titleText != null && titleText.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(titleText.trim());
+        if (decoded is List) {
+          titleDefs = [
+            for (final e in decoded)
+              if (e is Map) StoryTitle.fromJson(e.cast<String, dynamic>()),
+          ];
+        } else if (decoded is Map) {
+          titleMode = decoded['mode']?.toString() ?? 'all';
+          final list = decoded['titles'];
+          if (list is List) {
+            titleDefs = [
+              for (final e in list)
+                if (e is Map) StoryTitle.fromJson(e.cast<String, dynamic>()),
+            ];
+          }
+        }
+      } catch (_) {}
+    }
+    StoryJob? jobDef;
+    final jobText = _section(text, '职业');
+    if (jobText != null && jobText.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(jobText.trim());
+        if (decoded is Map) {
+          jobDef = StoryJob.fromJson(decoded.cast<String, dynamic>());
+        }
+      } catch (_) {}
+    }
     var persona = const StoryPersona();
     final personaText = _section(text, '玩家角色');
     if (personaText != null) {
@@ -1525,6 +1974,10 @@ class StoryStore extends ChangeNotifier {
       variables: mapList('变量', StoryVariable.fromJson),
       regexes: mapList('正则', StoryRegex.fromJson),
       achievements: mapList('成就', StoryAchievement.fromJson),
+      titles: titleDefs,
+      titleMode: titleMode,
+      job: jobDef,
+      facilities: mapList('据点', StoryFacility.fromJson),
       persona: persona,
       initialState: initialState,
     );
@@ -1578,6 +2031,21 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.achievements.isNotEmpty) {
       section('成就', jsonEncode([for (final a in s.achievements) a.toJson()]));
+    }
+    if (s.titles.isNotEmpty) {
+      section(
+        '称号',
+        jsonEncode({
+          'mode': s.titleMode,
+          'titles': [for (final x in s.titles) x.toJson()],
+        }),
+      );
+    }
+    if (s.job != null && !s.job!.isEmpty) {
+      section('职业', jsonEncode(s.job!.toJson()));
+    }
+    if (s.facilities.isNotEmpty) {
+      section('据点', jsonEncode([for (final f in s.facilities) f.toJson()]));
     }
     if (!s.persona.isEmpty) {
       section('玩家角色', jsonEncode(s.persona.toJson()));

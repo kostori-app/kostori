@@ -1602,6 +1602,17 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexTrait => '特质';
 	@override String get storyCodexTalent => '天赋';
 	@override String get storyCodexRace => '种族';
+	@override String get storyCodexBody => '身体';
+	@override String get storyTitles => '称号';
+	@override String get storyTitleEquipped => '已佩戴';
+	@override String get storyTitleModeEquipped => '仅已佩戴的称号生效';
+	@override String get storyEffects => '状态效果';
+	@override String get storyEffectRemaining => '剩余回合';
+	@override String get storyJob => '职业';
+	@override String get storyJobExp => '经验';
+	@override String get storyBase => '据点';
+	@override String get storyBaseMaterials => '据点物质';
+	@override String get storyBaseStorage => '仓储储备';
 	@override String get storyNpcStatus => '角色状态';
 	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
 	@override String get storyNpcNoStatus => '暂无角色状态（该角色尚未出现在数值中）';
@@ -4387,6 +4398,17 @@ extension on TranslationsZhCn {
 			'storyCodexTrait' => '特质',
 			'storyCodexTalent' => '天赋',
 			'storyCodexRace' => '种族',
+			'storyCodexBody' => '身体',
+			'storyTitles' => '称号',
+			'storyTitleEquipped' => '已佩戴',
+			'storyTitleModeEquipped' => '仅已佩戴的称号生效',
+			'storyEffects' => '状态效果',
+			'storyEffectRemaining' => '剩余回合',
+			'storyJob' => '职业',
+			'storyJobExp' => '经验',
+			'storyBase' => '据点',
+			'storyBaseMaterials' => '据点物质',
+			'storyBaseStorage' => '仓储储备',
 			'storyNpcStatus' => '角色状态',
 			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
 			'storyNpcNoStatus' => '暂无角色状态（该角色尚未出现在数值中）',
@@ -4819,6 +4841,8 @@ extension on TranslationsZhCn {
 			'encoding' => '编码中…',
 			'downloadingVideoSegments' => '下载视频分片…',
 			'editCropBox' => '编辑裁剪框',
+			_ => null,
+		} ?? switch (path) {
 			'loadPageAndLoadNextCantBeNull' => 'loadPage 和 loadNext 不能同时为空',
 			'lanShowQrCode' => '显示二维码',
 			'lanDeviceInfo' => '设备信息',
@@ -4830,8 +4854,6 @@ extension on TranslationsZhCn {
 			'paletteColors' => '调色板颜色',
 			'paletteColorsHint' => '颜色越少 = 体积越小',
 			'enableDither' => '启用抖动 (Dither)',
-			_ => null,
-		} ?? switch (path) {
 			'ditherHint' => '质量更好，体积略微增大',
 			'webpQuality' => 'WebP 质量',
 			'aspectRatioPresets' => '画面比例预设',
@@ -5333,6 +5355,8 @@ extension on TranslationsZhCn {
 			'textRuleSelectHint' => '选择应用到该源的规则',
 			'textRuleApply' => '套用规则',
 			'textRuleApplied' => '已套用规则',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleNotApplied' => '未套用规则',
 			'textRuleDeleteConfirm' => '确定删除该规则？',
 			'textRulePreviewInput' => '预览文本',
@@ -5344,8 +5368,6 @@ extension on TranslationsZhCn {
 			'loadingStepLoad' => '加载媒体数据',
 			'loadingStepBuffer' => '缓冲播放',
 			'downloadEpisode' => '选择要下载的剧集',
-			_ => null,
-		} ?? switch (path) {
 			'downloadNotYet' => '暂无选集可下载',
 			'downloadSelectedCount' => ({required Object n}) => '下载 ${n} 集',
 			'selectResolution' => '选择分辨率',

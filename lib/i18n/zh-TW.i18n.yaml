@@ -1613,6 +1613,17 @@ storyCodexItem: 物品
 storyCodexTrait: 特質
 storyCodexTalent: 天賦
 storyCodexRace: 種族
+storyCodexBody: 身體
+storyTitles: 稱號
+storyTitleEquipped: 已佩戴
+storyTitleModeEquipped: 僅已佩戴的稱號生效
+storyEffects: 狀態效果
+storyEffectRemaining: 剩餘回合
+storyJob: 職業
+storyJobExp: 經驗
+storyBase: 據點
+storyBaseMaterials: 據點物質
+storyBaseStorage: 倉儲儲備
 storyNpcStatus: 角色狀態
 storyNpcAffinity: 好感度 ${value}
 storyNpcNoStatus: 暫無角色狀態（該角色尚未出現在數值中）

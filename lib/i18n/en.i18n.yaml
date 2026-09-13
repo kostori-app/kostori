@@ -1613,6 +1613,17 @@ storyCodexItem: Items
 storyCodexTrait: Traits
 storyCodexTalent: Talents
 storyCodexRace: Races
+storyCodexBody: Body
+storyTitles: Titles
+storyTitleEquipped: Equipped
+storyTitleModeEquipped: Only equipped titles take effect
+storyEffects: Effects
+storyEffectRemaining: Remaining
+storyJob: Class
+storyJobExp: EXP
+storyBase: Base
+storyBaseMaterials: Materials
+storyBaseStorage: Storage
 storyNpcStatus: NPC status
 storyNpcAffinity: Affinity ${value}
 storyNpcNoStatus: No status for this character yet.

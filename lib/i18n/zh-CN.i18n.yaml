@@ -1608,6 +1608,17 @@ storyCodexItem: 物品
 storyCodexTrait: 特质
 storyCodexTalent: 天赋
 storyCodexRace: 种族
+storyCodexBody: 身体
+storyTitles: 称号
+storyTitleEquipped: 已佩戴
+storyTitleModeEquipped: 仅已佩戴的称号生效
+storyEffects: 状态效果
+storyEffectRemaining: 剩余回合
+storyJob: 职业
+storyJobExp: 经验
+storyBase: 据点
+storyBaseMaterials: 据点物质
+storyBaseStorage: 仓储储备
 storyNpcStatus: 角色状态
 storyNpcAffinity: 好感度 ${value}
 storyNpcNoStatus: 暂无角色状态（该角色尚未出现在数值中）

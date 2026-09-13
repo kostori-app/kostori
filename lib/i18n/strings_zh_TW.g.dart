@@ -1603,6 +1603,17 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexTrait => '特質';
 	@override String get storyCodexTalent => '天賦';
 	@override String get storyCodexRace => '種族';
+	@override String get storyCodexBody => '身體';
+	@override String get storyTitles => '稱號';
+	@override String get storyTitleEquipped => '已佩戴';
+	@override String get storyTitleModeEquipped => '僅已佩戴的稱號生效';
+	@override String get storyEffects => '狀態效果';
+	@override String get storyEffectRemaining => '剩餘回合';
+	@override String get storyJob => '職業';
+	@override String get storyJobExp => '經驗';
+	@override String get storyBase => '據點';
+	@override String get storyBaseMaterials => '據點物質';
+	@override String get storyBaseStorage => '倉儲儲備';
 	@override String get storyNpcStatus => '角色狀態';
 	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
 	@override String get storyNpcNoStatus => '暫無角色狀態（該角色尚未出現在數值中）';
@@ -4387,6 +4398,17 @@ extension on TranslationsZhTw {
 			'storyCodexTrait' => '特質',
 			'storyCodexTalent' => '天賦',
 			'storyCodexRace' => '種族',
+			'storyCodexBody' => '身體',
+			'storyTitles' => '稱號',
+			'storyTitleEquipped' => '已佩戴',
+			'storyTitleModeEquipped' => '僅已佩戴的稱號生效',
+			'storyEffects' => '狀態效果',
+			'storyEffectRemaining' => '剩餘回合',
+			'storyJob' => '職業',
+			'storyJobExp' => '經驗',
+			'storyBase' => '據點',
+			'storyBaseMaterials' => '據點物質',
+			'storyBaseStorage' => '倉儲儲備',
 			'storyNpcStatus' => '角色狀態',
 			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
 			'storyNpcNoStatus' => '暫無角色狀態（該角色尚未出現在數值中）',
@@ -4818,6 +4840,8 @@ extension on TranslationsZhTw {
 			'gifFormat' => 'GIF',
 			'apngFormat' => 'APNG',
 			'webpFormat' => 'WebP',
+			_ => null,
+		} ?? switch (path) {
 			'browserCompatible' => '瀏覽器相容性好',
 			'smallestSize' => '體積最小',
 			'videoFormat' => '影片格式',
@@ -4829,8 +4853,6 @@ extension on TranslationsZhTw {
 			'lanDeviceInfo' => '裝置資訊',
 			'lanDeviceDoesNotSupportQrPairing' => '裝置不支援 QR Code 配對',
 			'lanQrCodeFor' => 'QR Code 用於',
-			_ => null,
-		} ?? switch (path) {
 			'fixedBitrateOptional' => '固定位元率 (選填，將覆蓋 CRF)',
 			'fixedBitrate' => '固定位元率',
 			'paletteColors' => '調色盤顏色',
@@ -5332,6 +5354,8 @@ extension on TranslationsZhTw {
 			'textRuleApply' => '套用規則',
 			'textRuleApplied' => '已套用規則',
 			'textRuleNotApplied' => '未套用規則',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleDeleteConfirm' => '確定刪除該規則？',
 			'textRulePreviewInput' => '預覽文字',
 			'textRulePreviewResult' => '預覽結果',
@@ -5343,8 +5367,6 @@ extension on TranslationsZhTw {
 			'loadingStepBuffer' => '緩衝播放',
 			'downloadEpisode' => '選擇要下載的集數',
 			'downloadNotYet' => '暫無集數可下載',
-			_ => null,
-		} ?? switch (path) {
 			'downloadSelectedCount' => ({required Object n}) => '下載 ${n} 集',
 			'selectResolution' => '選擇解析度',
 			'defaultResolution' => '預設',

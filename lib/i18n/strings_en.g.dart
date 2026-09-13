@@ -4732,6 +4732,39 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Races'
 	String get storyCodexRace => 'Races';
 
+	/// en: 'Body'
+	String get storyCodexBody => 'Body';
+
+	/// en: 'Titles'
+	String get storyTitles => 'Titles';
+
+	/// en: 'Equipped'
+	String get storyTitleEquipped => 'Equipped';
+
+	/// en: 'Only equipped titles take effect'
+	String get storyTitleModeEquipped => 'Only equipped titles take effect';
+
+	/// en: 'Effects'
+	String get storyEffects => 'Effects';
+
+	/// en: 'Remaining'
+	String get storyEffectRemaining => 'Remaining';
+
+	/// en: 'Class'
+	String get storyJob => 'Class';
+
+	/// en: 'EXP'
+	String get storyJobExp => 'EXP';
+
+	/// en: 'Base'
+	String get storyBase => 'Base';
+
+	/// en: 'Materials'
+	String get storyBaseMaterials => 'Materials';
+
+	/// en: 'Storage'
+	String get storyBaseStorage => 'Storage';
+
 	/// en: 'NPC status'
 	String get storyNpcStatus => 'NPC status';
 
@@ -9805,6 +9838,17 @@ extension on Translations {
 			'storyCodexTrait' => 'Traits',
 			'storyCodexTalent' => 'Talents',
 			'storyCodexRace' => 'Races',
+			'storyCodexBody' => 'Body',
+			'storyTitles' => 'Titles',
+			'storyTitleEquipped' => 'Equipped',
+			'storyTitleModeEquipped' => 'Only equipped titles take effect',
+			'storyEffects' => 'Effects',
+			'storyEffectRemaining' => 'Remaining',
+			'storyJob' => 'Class',
+			'storyJobExp' => 'EXP',
+			'storyBase' => 'Base',
+			'storyBaseMaterials' => 'Materials',
+			'storyBaseStorage' => 'Storage',
 			'storyNpcStatus' => 'NPC status',
 			'storyNpcAffinity' => ({required Object value}) => 'Affinity ${value}',
 			'storyNpcNoStatus' => 'No status for this character yet.',
@@ -10236,6 +10280,8 @@ extension on Translations {
 			'aspectRatioPresets' => 'Aspect Ratio Presets',
 			'hideCropBox' => 'Hide Crop Box',
 			'showCropBox' => 'Show Crop Box (draggable)',
+			_ => null,
+		} ?? switch (path) {
 			'dragToSelectExportArea' => 'After enabling, drag to select export area',
 			'editCropBox' => 'Edit crop box',
 			'startPointMinus1s' => 'Start −1s',
@@ -10247,8 +10293,6 @@ extension on Translations {
 			'startPointPlus1s' => 'Start +1s',
 			'endPointPlus1s' => 'End +1s',
 			'withAudio' => 'With Audio',
-			_ => null,
-		} ?? switch (path) {
 			'noAudio' => 'No Audio',
 			'ditherOn' => 'Dither On',
 			'ditherOff' => 'Dither Off',
@@ -10750,6 +10794,8 @@ extension on Translations {
 			'textRuleSelectHint' => 'Select rules to apply to this source',
 			'textRuleApply' => 'Apply rules',
 			'textRuleApplied' => 'Rules applied',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleNotApplied' => 'Rules off',
 			'textRuleDeleteConfirm' => 'Delete this rule?',
 			'textRulePreviewInput' => 'Preview text',
@@ -10761,8 +10807,6 @@ extension on Translations {
 			'loadingStepLoad' => 'Loading media',
 			'loadingStepBuffer' => 'Buffering',
 			'downloadEpisode' => 'Select episode to download',
-			_ => null,
-		} ?? switch (path) {
 			'downloadNotYet' => 'No episodes available to download',
 			'downloadSelectedCount' => ({required Object n}) => 'Download ${n} episodes',
 			'selectResolution' => 'Select resolution',

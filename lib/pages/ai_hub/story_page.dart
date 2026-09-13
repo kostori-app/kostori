@@ -2699,6 +2699,28 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return state.copyWith(npcs: merged);
   }
 
+  /// 合并称号：模型给出的优先，之前已有的保留
+  GameState _mergeTitles(GameState state) {
+    if (state.titles.isEmpty && _state.titles.isEmpty) return state;
+    final merged = <TitleState>[...state.titles];
+    final seen = {for (final x in merged) x.key};
+    for (final x in _state.titles) {
+      if (seen.add(x.key)) merged.add(x);
+    }
+    return state.copyWith(titles: merged);
+  }
+
+  /// 合并状态效果：模型给出的优先，之前已有的保留
+  GameState _mergeEffects(GameState state) {
+    if (state.effects.isEmpty && _state.effects.isEmpty) return state;
+    final merged = <EffectState>[...state.effects];
+    final seen = {for (final x in merged) x.name};
+    for (final x in _state.effects) {
+      if (seen.add(x.name)) merged.add(x);
+    }
+    return state.copyWith(effects: merged);
+  }
+
   /// 应用解析出的状态并持久化（含未登记道具校验 / 成就解锁提示）
   Future<void> _applyState(GameState? state) async {
     final sessionId = _sessionId;
@@ -2721,6 +2743,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     next = _mergeResources(next, extra: _state.resources);
     // 角色状态合并：模型漏报时保留上一回合的值
     next = _mergeNpcs(next);
+    // 称号 / 状态效果合并；职业 / 据点漏报时保留
+    next = _mergeTitles(next);
+    next = _mergeEffects(next);
+    if (next.job.isEmpty && !_state.job.isEmpty) {
+      next = next.copyWith(job: _state.job);
+    }
+    if (next.base.isEmpty && !_state.base.isEmpty) {
+      next = next.copyWith(base: _state.base);
+    }
     // 致命资源归零 → 游戏结束
     if (!next.gameOver && story.deathResources.isNotEmpty) {
       final death = story.deathResources.toSet();
@@ -4576,6 +4607,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     'trait' => t.storyCodexTrait,
     'talent' => t.storyCodexTalent,
     'race' => t.storyCodexRace,
+    'body' => t.storyCodexBody,
     _ => kind.isEmpty ? t.storyCodex : kind,
   };
 
@@ -4919,9 +4951,196 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
           }
         }
         return out;
+      case 'titles':
+        if (state.titles.isEmpty) return const [];
+        return [
+          _sectionTitle(
+            panel.title.isEmpty ? t.storyTitles : panel.title,
+            icon,
+          ),
+          if (widget.story.titleMode == 'equipped')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                t.storyTitleModeEquipped,
+                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+              ),
+            ),
+          for (final ts in state.titles) _titleTile(ts, scheme),
+        ];
+      case 'effects':
+        if (state.effects.isEmpty) return const [];
+        return [
+          _sectionTitle(
+            panel.title.isEmpty ? t.storyEffects : panel.title,
+            icon,
+          ),
+          for (final e in state.effects)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                e.kind == 'debuff'
+                    ? Icons.trending_down
+                    : Icons.trending_up,
+                size: 20,
+                color: e.kind == 'debuff' ? Colors.redAccent : Colors.teal,
+              ),
+              title: Row(
+                children: [
+                  Flexible(child: Text(e.name)),
+                  if (e.stacks > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        '×${e.stacks}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                ],
+              ),
+              subtitle: Text(
+                [
+                  if (e.remaining > 0)
+                    '${t.storyEffectRemaining}: ${e.remaining}',
+                  if (e.description.isNotEmpty) e.description,
+                ].join(' · '),
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+        ];
+      case 'job':
+        final jb = widget.story.job;
+        final hasJob = !state.job.isEmpty || (jb != null && !jb.isEmpty);
+        if (!hasJob) return const [];
+        return [
+          _sectionTitle(panel.title.isEmpty ? t.storyJob : panel.title, icon),
+          if (!state.job.isEmpty)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.badge_outlined, size: 20),
+              title: Text('${state.job.name} · Lv.${state.job.level}'),
+              subtitle: Text(
+                '${t.storyJobExp}: ${state.job.exp}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+          if (jb != null)
+            for (final l in jb.levels)
+              Padding(
+                padding: const EdgeInsets.only(left: 8, top: 2),
+                child: Text(
+                  'Lv.${l.level} ${l.name}'
+                  '${l.bonus.trim().isEmpty ? '' : '：${l.bonus.trim()}'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+        ];
+      case 'base':
+        if (state.base.isEmpty && widget.story.facilities.isEmpty) {
+          return const [];
+        }
+        return [
+          _sectionTitle(panel.title.isEmpty ? t.storyBase : panel.title, icon),
+          for (final f in state.base.facilities)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.home_work_outlined, size: 20),
+              title: Text(_facilityName(f.key)),
+              subtitle: f.status.isEmpty
+                  ? null
+                  : Text(f.status, style: const TextStyle(fontSize: 12)),
+              trailing: Text(
+                'Lv.${f.level}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          if (state.base.materials.isNotEmpty) ...[
+            _subTitle(t.storyBaseMaterials, scheme),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final e in state.base.materials.entries)
+                  Chip(label: Text('${e.key} ${e.value}')),
+              ],
+            ),
+          ],
+          if (state.base.storage.isNotEmpty) ...[
+            _subTitle(t.storyBaseStorage, scheme),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final e in state.base.storage.entries)
+                  Chip(label: Text('${e.key} ${e.value}')),
+              ],
+            ),
+          ],
+        ];
       default:
         return const [];
     }
+  }
+
+  /// 称号条目：显示层数 / 是否佩戴 / 效果
+  Widget _titleTile(TitleState ts, ColorScheme scheme) {
+    StoryTitle? def;
+    for (final d in widget.story.titles) {
+      if (d.key == ts.key) {
+        def = d;
+        break;
+      }
+    }
+    final name = (def != null && def.name.trim().isNotEmpty)
+        ? def.name
+        : ts.key;
+    final desc = def == null
+        ? ''
+        : (def.effects.trim().isNotEmpty ? def.effects : def.description);
+    final marks = <String>[
+      if (ts.stacks > 1) '×${ts.stacks}',
+      if (ts.equipped) t.storyTitleEquipped,
+    ];
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.military_tech_outlined, size: 20),
+      title: Text(name),
+      subtitle: desc.trim().isEmpty
+          ? null
+          : Text(desc, style: const TextStyle(fontSize: 12)),
+      trailing: marks.isEmpty
+          ? null
+          : Text(
+              marks.join(' · '),
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+            ),
+    );
+  }
+
+  Widget _subTitle(String text, ColorScheme scheme) => Padding(
+    padding: const EdgeInsets.only(top: 6, bottom: 2),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: scheme.primary,
+      ),
+    ),
+  );
+
+  String _facilityName(String key) {
+    for (final f in widget.story.facilities) {
+      if (f.key == key) return f.name.trim().isEmpty ? key : f.name;
+    }
+    return key;
   }
 
   List<Widget> _buildSituation(ColorScheme scheme) {
@@ -5011,6 +5230,7 @@ IconData _codexIcon(String kind) => switch (kind) {
   'trait' => Icons.psychology_alt_outlined,
   'talent' => Icons.auto_awesome_outlined,
   'skill' => Icons.sports_martial_arts_outlined,
+  'body' => Icons.monitor_heart_outlined,
   _ => Icons.menu_book_outlined,
 };
 
