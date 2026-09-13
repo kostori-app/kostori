@@ -1980,22 +1980,28 @@ class StoryStore extends ChangeNotifier {
     return j;
   }
 
-  /// 覆盖层 = 编辑后相对基底的差异字段
+  /// 标识字段：始终以基底为准，不写进覆盖层（否则基底更新后仍显示旧值）
+  static const _identityKeys = {'id', 'key', 'version', 'isBuiltin'};
+
+  /// 覆盖层 = 编辑后相对基底的差异字段（仅用户可编辑内容）
   static Map<String, dynamic> storyDiff(Story base, Story effective) {
     final b = storyJsonFull(base);
     final e = storyJsonFull(effective);
     final out = <String, dynamic>{};
     for (final k in e.keys) {
+      if (_identityKeys.contains(k)) continue;
       if (jsonEncode(e[k]) != jsonEncode(b[k])) out[k] = e[k];
     }
     return out;
   }
 
-  /// 把覆盖层叠加到基底上（覆盖层优先）
+  /// 把覆盖层叠加到基底上（覆盖层优先，标识字段除外）
   static Story storyMerge(Story base, Map<String, dynamic> overlay) {
-    if (overlay.isEmpty) return base;
     final json = {...storyJsonFull(base), ...overlay};
     json['id'] = base.id;
+    json['key'] = base.key;
+    json['version'] = base.version;
+    json['isBuiltin'] = base.isBuiltin;
     return Story.fromJson(json);
   }
 

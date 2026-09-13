@@ -1427,44 +1427,32 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     );
   }
 
+  /// 某个条目对应的全部本地文件（主文件 + 附属：角色卡 png、故事覆盖层）
+  List<io.File> _entryFiles(String kind, String id) {
+    final dir = _localDir(kind);
+    final out = <io.File>[io.File('$dir/$id${_ext(kind)}')];
+    if (kind == 'cards') out.add(io.File('$dir/$id.png'));
+    if (kind == 'stories') out.add(io.File('$dir/$id.overlay.json'));
+    return out;
+  }
+
   Future<void> _upload(String kind, Set<String> ids) async {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
     final sync = DataSync();
-    final dir = _localDir(kind);
-    final ext = _ext(kind);
     var ok = 0;
     for (final id in ids) {
-      final file = io.File('$dir/$id$ext');
-      if (file.existsSync()) {
+      var any = false;
+      for (final f in _entryFiles(kind, id)) {
+        if (!f.existsSync()) continue;
         final r = await sync.uploadFile(
-          localPath: file.path,
-          remoteName: '$id$ext',
+          localPath: f.path,
+          remoteName: f.uri.pathSegments.last,
           remoteDir: kind,
         );
-        if (r.success) ok++;
+        if (r.success) any = true;
       }
-      if (kind == 'cards') {
-        final png = io.File('$dir/$id.png');
-        if (png.existsSync()) {
-          await sync.uploadFile(
-            localPath: png.path,
-            remoteName: '$id.png',
-            remoteDir: kind,
-          );
-        }
-      }
-      if (kind == 'stories') {
-        // 故事的编辑以覆盖层单独存放，需一并同步
-        final overlay = io.File('$dir/$id.overlay.json');
-        if (overlay.existsSync()) {
-          await sync.uploadFile(
-            localPath: overlay.path,
-            remoteName: '$id.overlay.json',
-            remoteDir: kind,
-          );
-        }
-      }
+      if (any) ok++;
     }
     if (!mounted) return;
     setState(() {
@@ -1536,40 +1524,19 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final ext = _ext(kind);
       if (local) {
-        final f = _localFile(kind, id);
-        if (f.existsSync()) {
+        for (final f in _entryFiles(kind, id)) {
+          if (!f.existsSync()) continue;
           try {
             f.deleteSync();
           } catch (_) {}
         }
-        if (kind == 'cards') {
-          final png = io.File('${_localDir(kind)}/$id.png');
-          if (png.existsSync()) {
-            try {
-              png.deleteSync();
-            } catch (_) {}
-          }
-        }
-        if (kind == 'stories') {
-          final overlay = io.File('${_localDir(kind)}/$id.overlay.json');
-          if (overlay.existsSync()) {
-            try {
-              overlay.deleteSync();
-            } catch (_) {}
-          }
-        }
       }
       if (remote) {
         final sync = DataSync();
-        await sync.deleteFile(remoteName: '$id$ext', remoteDir: kind);
-        if (kind == 'cards') {
-          await sync.deleteFile(remoteName: '$id.png', remoteDir: kind);
-        }
-        if (kind == 'stories') {
+        for (final f in _entryFiles(kind, id)) {
           await sync.deleteFile(
-            remoteName: '$id.overlay.json',
+            remoteName: f.uri.pathSegments.last,
             remoteDir: kind,
           );
         }
@@ -1603,29 +1570,22 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     final remote = _remote[kind] ?? const <String, RemoteFileInfo>{};
     var ok = 0;
     for (final id in ids) {
-      if (remote.containsKey('$id$ext')) {
+      if (!remote.containsKey('$id$ext')) continue;
+      var any = false;
+      for (final name in [
+        '$id$ext',
+        if (kind == 'cards') '$id.png',
+        if (kind == 'stories') '$id.overlay.json',
+      ]) {
+        if (!remote.containsKey(name)) continue;
         final r = await sync.downloadFile(
-          remoteName: '$id$ext',
-          localPath: '$dir/$id$ext',
+          remoteName: name,
+          localPath: '$dir/$name',
           remoteDir: kind,
         );
-        if (r.success) ok++;
-        if (kind == 'cards' && remote.containsKey('$id.png')) {
-          await sync.downloadFile(
-            remoteName: '$id.png',
-            localPath: '$dir/$id.png',
-            remoteDir: kind,
-          );
-        }
-        if (kind == 'stories') {
-          // 覆盖层可能不存在（没编辑过），失败忽略
-          await sync.downloadFile(
-            remoteName: '$id.overlay.json',
-            localPath: '$dir/$id.overlay.json',
-            remoteDir: kind,
-          );
-        }
+        if (r.success) any = true;
       }
+      if (any) ok++;
     }
     await CharacterCardStore.instance.reload();
     await StoryStore.instance.reload();
@@ -1777,7 +1737,11 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$kind/$id${_ext(kind)}',
+                        // 列出该条目实际涉及的文件（含附属文件，如角色卡 png、故事覆盖层）
+                        '$kind/${[
+                          for (final f in _entryFiles(kind, id))
+                            if (f.existsSync()) f.uri.pathSegments.last,
+                        ].join(' + ')}',
                         style: TextStyle(
                           fontSize: 11,
                           color: scheme.onSurfaceVariant,

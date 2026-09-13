@@ -506,6 +506,30 @@ void main() {
       expect(merged.worldBook, '新世界书');
     });
 
+    test('key/version always come from the base, never the overlay', () {
+      const base = Story(id: 's', key: 'k', version: '1.0.0', name: 'S');
+      final edited = Story(
+        id: 's',
+        key: '',
+        version: '',
+        name: 'S',
+        opening: 'x',
+      );
+      final overlay = StoryStore.storyDiff(base, edited);
+      expect(overlay.containsKey('key'), isFalse);
+      expect(overlay.containsKey('version'), isFalse);
+
+      // 即便旧覆盖层里残留了 key/version，也以基底为准
+      final merged = StoryStore.storyMerge(base, {
+        'opening': 'y',
+        'key': '',
+        'version': '',
+      });
+      expect(merged.key, 'k');
+      expect(merged.version, '1.0.0');
+      expect(merged.opening, 'y');
+    });
+
     test('mergeSettingLibrary merges codex/title/job/facility', () {
       const story = Story(id: 's', name: 'S');
       final merged = mergeSettingLibrary(story, const [
