@@ -4783,6 +4783,72 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Register'
 	String get storyRegisterItems => 'Register';
 
+	/// en: 'Variables'
+	String get storyVariables => 'Variables';
+
+	/// en: 'Characters'
+	String get storyCharacters => 'Characters';
+
+	/// en: 'Regex'
+	String get storyRegex => 'Regex';
+
+	/// en: 'Advanced'
+	String get storyAdvanced => 'Advanced';
+
+	/// en: 'Name'
+	String get storyCharacterName => 'Name';
+
+	/// en: 'Avatar (emoji)'
+	String get storyCharacterAvatar => 'Avatar (emoji)';
+
+	/// en: 'Persona'
+	String get storyCharacterPersona => 'Persona';
+
+	/// en: 'Description'
+	String get storyCharacterDescription => 'Description';
+
+	/// en: 'Add character'
+	String get storyAddCharacter => 'Add character';
+
+	/// en: 'Variable name'
+	String get storyVariableName => 'Variable name';
+
+	/// en: 'Initial value'
+	String get storyVariableValue => 'Initial value';
+
+	/// en: 'Description'
+	String get storyVariableDescription => 'Description';
+
+	/// en: 'Add variable'
+	String get storyAddVariable => 'Add variable';
+
+	/// en: 'Rule name'
+	String get storyRegexName => 'Rule name';
+
+	/// en: 'Pattern (regex)'
+	String get storyRegexPattern => 'Pattern (regex)';
+
+	/// en: 'Replacement'
+	String get storyRegexReplacement => 'Replacement';
+
+	/// en: 'Applies to'
+	String get storyRegexTarget => 'Applies to';
+
+	/// en: 'AI output'
+	String get storyRegexTargetAi => 'AI output';
+
+	/// en: 'User input'
+	String get storyRegexTargetUser => 'User input';
+
+	/// en: 'Both'
+	String get storyRegexTargetBoth => 'Both';
+
+	/// en: 'Add rule'
+	String get storyAddRegex => 'Add rule';
+
+	/// en: 'Enabled'
+	String get storyRegexEnabled => 'Enabled';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9411,6 +9477,28 @@ extension on Translations {
 			'storyResetPanels' => 'Reset to default',
 			'storyUnregisteredItems' => 'Unregistered items',
 			'storyRegisterItems' => 'Register',
+			'storyVariables' => 'Variables',
+			'storyCharacters' => 'Characters',
+			'storyRegex' => 'Regex',
+			'storyAdvanced' => 'Advanced',
+			'storyCharacterName' => 'Name',
+			'storyCharacterAvatar' => 'Avatar (emoji)',
+			'storyCharacterPersona' => 'Persona',
+			'storyCharacterDescription' => 'Description',
+			'storyAddCharacter' => 'Add character',
+			'storyVariableName' => 'Variable name',
+			'storyVariableValue' => 'Initial value',
+			'storyVariableDescription' => 'Description',
+			'storyAddVariable' => 'Add variable',
+			'storyRegexName' => 'Rule name',
+			'storyRegexPattern' => 'Pattern (regex)',
+			'storyRegexReplacement' => 'Replacement',
+			'storyRegexTarget' => 'Applies to',
+			'storyRegexTargetAi' => 'AI output',
+			'storyRegexTargetUser' => 'User input',
+			'storyRegexTargetBoth' => 'Both',
+			'storyAddRegex' => 'Add rule',
+			'storyRegexEnabled' => 'Enabled',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9814,6 +9902,8 @@ extension on Translations {
 			'loggedIn' => 'Logged in',
 			'oneKeySign' => 'Sign in all',
 			'signAllSuccess' => ({required Object success}) => 'Signed ${success}',
+			_ => null,
+		} ?? switch (path) {
 			'signAllPartial' => ({required Object success, required Object fail}) => '${success} done, ${fail} failed',
 			'noPluginToSign' => 'Nothing to sign today',
 			'signInManager' => 'Sign-in manager',
@@ -9836,8 +9926,6 @@ extension on Translations {
 			'statsMonth3' => 'March',
 			'statsMonth4' => 'April',
 			'statsMonth5' => 'May',
-			_ => null,
-		} ?? switch (path) {
 			'statsMonth6' => 'June',
 			'statsMonth7' => 'July',
 			'statsMonth8' => 'August',
@@ -10328,6 +10416,8 @@ extension on Translations {
 			'errorsLabel' => ({required Object n}) => 'Errors: ${n}',
 			'inputPinTitle' => 'Enter connection PIN',
 			'inputPinHint' => 'Enter PIN code',
+			_ => null,
+		} ?? switch (path) {
 			'topicsPoster' => 'Post author',
 			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable} (${count})',
 			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}: ${count}',
@@ -10350,8 +10440,6 @@ extension on Translations {
 			'logFileSizeMb' => 'Log file size limit (MB)',
 			'monthNames.jan' => 'January',
 			'monthNames.feb' => 'February',
-			_ => null,
-		} ?? switch (path) {
 			'monthNames.mar' => 'March',
 			'monthNames.apr' => 'April',
 			'monthNames.may' => 'May',

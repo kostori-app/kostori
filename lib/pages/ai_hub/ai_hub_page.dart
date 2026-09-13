@@ -1154,6 +1154,7 @@ class _AiComposerBar extends StatelessWidget {
     this.hintText,
     this.bottomLeading,
     this.bottomTrailing,
+    this.focusNode,
   });
 
   final TextEditingController controller;
@@ -1161,6 +1162,7 @@ class _AiComposerBar extends StatelessWidget {
   final bool sending;
   final VoidCallback? onStop;
   final String? hintText;
+  final FocusNode? focusNode;
 
   /// 底部工具行左侧内容（如模型选择器），与 AI 聊天输入栏一致
   final Widget? bottomLeading;
@@ -1189,6 +1191,7 @@ class _AiComposerBar extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: controller,
+                    focusNode: focusNode,
                     minLines: 1,
                     maxLines: 4,
                     textInputAction: TextInputAction.send,

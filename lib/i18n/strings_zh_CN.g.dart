@@ -1619,6 +1619,28 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyResetPanels => '重置为默认';
 	@override String get storyUnregisteredItems => '未登记道具';
 	@override String get storyRegisterItems => '补全设定';
+	@override String get storyVariables => '变量';
+	@override String get storyCharacters => '角色';
+	@override String get storyRegex => '正则';
+	@override String get storyAdvanced => '高级';
+	@override String get storyCharacterName => '角色名';
+	@override String get storyCharacterAvatar => '头像（emoji）';
+	@override String get storyCharacterPersona => '人设';
+	@override String get storyCharacterDescription => '描述';
+	@override String get storyAddCharacter => '添加角色';
+	@override String get storyVariableName => '变量名';
+	@override String get storyVariableValue => '初始值';
+	@override String get storyVariableDescription => '说明';
+	@override String get storyAddVariable => '添加变量';
+	@override String get storyRegexName => '规则名';
+	@override String get storyRegexPattern => '匹配（正则）';
+	@override String get storyRegexReplacement => '替换为';
+	@override String get storyRegexTarget => '作用对象';
+	@override String get storyRegexTargetAi => 'AI 输出';
+	@override String get storyRegexTargetUser => '用户输入';
+	@override String get storyRegexTargetBoth => '两者';
+	@override String get storyAddRegex => '添加正则';
+	@override String get storyRegexEnabled => '启用';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4267,6 +4289,28 @@ extension on TranslationsZhCn {
 			'storyResetPanels' => '重置为默认',
 			'storyUnregisteredItems' => '未登记道具',
 			'storyRegisterItems' => '补全设定',
+			'storyVariables' => '变量',
+			'storyCharacters' => '角色',
+			'storyRegex' => '正则',
+			'storyAdvanced' => '高级',
+			'storyCharacterName' => '角色名',
+			'storyCharacterAvatar' => '头像（emoji）',
+			'storyCharacterPersona' => '人设',
+			'storyCharacterDescription' => '描述',
+			'storyAddCharacter' => '添加角色',
+			'storyVariableName' => '变量名',
+			'storyVariableValue' => '初始值',
+			'storyVariableDescription' => '说明',
+			'storyAddVariable' => '添加变量',
+			'storyRegexName' => '规则名',
+			'storyRegexPattern' => '匹配（正则）',
+			'storyRegexReplacement' => '替换为',
+			'storyRegexTarget' => '作用对象',
+			'storyRegexTargetAi' => 'AI 输出',
+			'storyRegexTargetUser' => '用户输入',
+			'storyRegexTargetBoth' => '两者',
+			'storyAddRegex' => '添加正则',
+			'storyRegexEnabled' => '启用',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4671,6 +4715,8 @@ extension on TranslationsZhCn {
 			'loggedIn' => '已登录',
 			'oneKeySign' => '一键签到',
 			'signAllSuccess' => ({required Object success}) => '已签到 ${success} 个',
+			_ => null,
+		} ?? switch (path) {
 			'signAllPartial' => ({required Object success, required Object fail}) => '完成 ${success} 个，失败 ${fail} 个',
 			'noPluginToSign' => '今日无需签到',
 			'signInManager' => '签到管理',
@@ -4693,8 +4739,6 @@ extension on TranslationsZhCn {
 			'statsMonth3' => '三月',
 			'statsMonth4' => '四月',
 			'statsMonth5' => '五月',
-			_ => null,
-		} ?? switch (path) {
 			'statsMonth6' => '六月',
 			'statsMonth7' => '七月',
 			'statsMonth8' => '八月',
@@ -5185,6 +5229,8 @@ extension on TranslationsZhCn {
 			'errorsLabel' => ({required Object n}) => '错误：${n}',
 			'inputPinTitle' => '输入连接 PIN 码',
 			'inputPinHint' => '请输入 PIN 码',
+			_ => null,
+		} ?? switch (path) {
 			'topicsPoster' => '贴主',
 			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable}（${count}）',
 			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}',
@@ -5207,8 +5253,6 @@ extension on TranslationsZhCn {
 			'logFileSizeMb' => '日志文件大小上限(MB)',
 			'monthNames.jan' => '一月',
 			'monthNames.feb' => '二月',
-			_ => null,
-		} ?? switch (path) {
 			'monthNames.mar' => '三月',
 			'monthNames.apr' => '四月',
 			'monthNames.may' => '五月',

@@ -1620,6 +1620,28 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyResetPanels => '重設為預設';
 	@override String get storyUnregisteredItems => '未登記道具';
 	@override String get storyRegisterItems => '補全設定';
+	@override String get storyVariables => '變數';
+	@override String get storyCharacters => '角色';
+	@override String get storyRegex => '正則';
+	@override String get storyAdvanced => '進階';
+	@override String get storyCharacterName => '角色名';
+	@override String get storyCharacterAvatar => '頭像（emoji）';
+	@override String get storyCharacterPersona => '人設';
+	@override String get storyCharacterDescription => '描述';
+	@override String get storyAddCharacter => '新增角色';
+	@override String get storyVariableName => '變數名';
+	@override String get storyVariableValue => '初始值';
+	@override String get storyVariableDescription => '說明';
+	@override String get storyAddVariable => '新增變數';
+	@override String get storyRegexName => '規則名';
+	@override String get storyRegexPattern => '匹配（正則）';
+	@override String get storyRegexReplacement => '替換為';
+	@override String get storyRegexTarget => '作用對象';
+	@override String get storyRegexTargetAi => 'AI 輸出';
+	@override String get storyRegexTargetUser => '使用者輸入';
+	@override String get storyRegexTargetBoth => '兩者';
+	@override String get storyAddRegex => '新增正則';
+	@override String get storyRegexEnabled => '啟用';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4267,6 +4289,28 @@ extension on TranslationsZhTw {
 			'storyResetPanels' => '重設為預設',
 			'storyUnregisteredItems' => '未登記道具',
 			'storyRegisterItems' => '補全設定',
+			'storyVariables' => '變數',
+			'storyCharacters' => '角色',
+			'storyRegex' => '正則',
+			'storyAdvanced' => '進階',
+			'storyCharacterName' => '角色名',
+			'storyCharacterAvatar' => '頭像（emoji）',
+			'storyCharacterPersona' => '人設',
+			'storyCharacterDescription' => '描述',
+			'storyAddCharacter' => '新增角色',
+			'storyVariableName' => '變數名',
+			'storyVariableValue' => '初始值',
+			'storyVariableDescription' => '說明',
+			'storyAddVariable' => '新增變數',
+			'storyRegexName' => '規則名',
+			'storyRegexPattern' => '匹配（正則）',
+			'storyRegexReplacement' => '替換為',
+			'storyRegexTarget' => '作用對象',
+			'storyRegexTargetAi' => 'AI 輸出',
+			'storyRegexTargetUser' => '使用者輸入',
+			'storyRegexTargetBoth' => '兩者',
+			'storyAddRegex' => '新增正則',
+			'storyRegexEnabled' => '啟用',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4670,6 +4714,8 @@ extension on TranslationsZhTw {
 			'oneKeySign' => '一鍵簽到',
 			'signAllSuccess' => ({required Object success}) => '已簽到 ${success} 個',
 			'signAllPartial' => ({required Object success, required Object fail}) => '完成 ${success} 個，失敗 ${fail} 個',
+			_ => null,
+		} ?? switch (path) {
 			'noPluginToSign' => '今日無需簽到',
 			'signInManager' => '簽到管理',
 			'signAll' => '全部簽到',
@@ -4692,8 +4738,6 @@ extension on TranslationsZhTw {
 			'statsMonth4' => '四月',
 			'statsMonth5' => '五月',
 			'statsMonth6' => '六月',
-			_ => null,
-		} ?? switch (path) {
 			'statsMonth7' => '七月',
 			'statsMonth8' => '八月',
 			'statsMonth9' => '九月',
@@ -5184,6 +5228,8 @@ extension on TranslationsZhTw {
 			'inputPinTitle' => '輸入連接 PIN 碼',
 			'inputPinHint' => '請輸入 PIN 碼',
 			'topicsPoster' => '貼主',
+			_ => null,
+		} ?? switch (path) {
 			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable}（${count}）',
 			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}',
 			'connectToDevice' => ({required Object device}) => '連線到 ${device}',
@@ -5206,8 +5252,6 @@ extension on TranslationsZhTw {
 			'monthNames.jan' => '一月',
 			'monthNames.feb' => '二月',
 			'monthNames.mar' => '三月',
-			_ => null,
-		} ?? switch (path) {
 			'monthNames.apr' => '四月',
 			'monthNames.may' => '五月',
 			'monthNames.jun' => '六月',

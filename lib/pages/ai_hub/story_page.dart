@@ -366,6 +366,74 @@ class _StoryPanelDraft {
   }
 }
 
+class _StoryCharacterDraft {
+  final TextEditingController name;
+  final TextEditingController avatar;
+  final TextEditingController persona;
+  final TextEditingController description;
+
+  _StoryCharacterDraft({
+    String nameText = '',
+    String avatarText = '🧑',
+    String personaText = '',
+    String descriptionText = '',
+  }) : name = TextEditingController(text: nameText),
+       avatar = TextEditingController(text: avatarText),
+       persona = TextEditingController(text: personaText),
+       description = TextEditingController(text: descriptionText);
+
+  void dispose() {
+    name.dispose();
+    avatar.dispose();
+    persona.dispose();
+    description.dispose();
+  }
+}
+
+class _StoryVariableDraft {
+  final TextEditingController name;
+  final TextEditingController value;
+  final TextEditingController description;
+
+  _StoryVariableDraft({
+    String nameText = '',
+    String valueText = '',
+    String descriptionText = '',
+  }) : name = TextEditingController(text: nameText),
+       value = TextEditingController(text: valueText),
+       description = TextEditingController(text: descriptionText);
+
+  void dispose() {
+    name.dispose();
+    value.dispose();
+    description.dispose();
+  }
+}
+
+class _StoryRegexDraft {
+  final TextEditingController name;
+  final TextEditingController pattern;
+  final TextEditingController replacement;
+  String target;
+  bool enabled;
+
+  _StoryRegexDraft({
+    String nameText = '',
+    String patternText = '',
+    String replacementText = '',
+    this.target = 'ai',
+    this.enabled = true,
+  }) : name = TextEditingController(text: nameText),
+       pattern = TextEditingController(text: patternText),
+       replacement = TextEditingController(text: replacementText);
+
+  void dispose() {
+    name.dispose();
+    pattern.dispose();
+    replacement.dispose();
+  }
+}
+
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
@@ -411,6 +479,33 @@ class _StoryEditorState extends State<_StoryEditor> {
         source: p.source,
         kindText: p.kind,
         iconText: p.icon,
+      ),
+  ];
+  late final List<_StoryCharacterDraft> _characters = [
+    for (final c in widget.story?.characters ?? const <StoryCharacter>[])
+      _StoryCharacterDraft(
+        nameText: c.name,
+        avatarText: c.avatar,
+        personaText: c.persona,
+        descriptionText: c.description,
+      ),
+  ];
+  late final List<_StoryVariableDraft> _variables = [
+    for (final v in widget.story?.variables ?? const <StoryVariable>[])
+      _StoryVariableDraft(
+        nameText: v.name,
+        valueText: v.value,
+        descriptionText: v.description,
+      ),
+  ];
+  late final List<_StoryRegexDraft> _regexes = [
+    for (final r in widget.story?.regexes ?? const <StoryRegex>[])
+      _StoryRegexDraft(
+        nameText: r.name,
+        patternText: r.pattern,
+        replacementText: r.replacement,
+        target: r.target,
+        enabled: r.enabled,
       ),
   ];
   late final Set<String> _worldBookIds = {
@@ -483,6 +578,15 @@ class _StoryEditorState extends State<_StoryEditor> {
     for (final p in _panels) {
       p.dispose();
     }
+    for (final c in _characters) {
+      c.dispose();
+    }
+    for (final v in _variables) {
+      v.dispose();
+    }
+    for (final r in _regexes) {
+      r.dispose();
+    }
     super.dispose();
   }
 
@@ -539,6 +643,38 @@ class _StoryEditorState extends State<_StoryEditor> {
             icon: p.icon.text.trim(),
           ),
       ],
+      characters: [
+        for (final c in _characters)
+          if (c.name.text.trim().isNotEmpty)
+            StoryCharacter(
+              name: c.name.text.trim(),
+              avatar: c.avatar.text.trim().isEmpty
+                  ? '🧑'
+                  : c.avatar.text.trim(),
+              persona: c.persona.text.trim(),
+              description: c.description.text.trim(),
+            ),
+      ],
+      variables: [
+        for (final v in _variables)
+          if (v.name.text.trim().isNotEmpty)
+            StoryVariable(
+              name: v.name.text.trim(),
+              value: v.value.text.trim(),
+              description: v.description.text.trim(),
+            ),
+      ],
+      regexes: [
+        for (final r in _regexes)
+          if (r.pattern.text.trim().isNotEmpty)
+            StoryRegex(
+              name: r.name.text.trim(),
+              pattern: r.pattern.text.trim(),
+              replacement: r.replacement.text,
+              enabled: r.enabled,
+              target: r.target,
+            ),
+      ],
       initialState: initialState,
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
@@ -552,7 +688,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 10,
+      length: 11,
       child: PopUpWidgetScaffold(
         title: _isNew ? t.storyNew : t.storyEdit,
         tailing: [
@@ -579,6 +715,7 @@ class _StoryEditorState extends State<_StoryEditor> {
                   Tab(text: t.storyActions),
                   Tab(text: t.storyLibrary),
                   Tab(text: t.storyPanels),
+                  Tab(text: t.storyAdvanced),
                 ],
               ),
               Expanded(
@@ -594,6 +731,7 @@ class _StoryEditorState extends State<_StoryEditor> {
                     _actionsTab(),
                     _libraryTab(),
                     _panelsTab(),
+                    _advancedTab(),
                   ],
                 ),
               ),
@@ -845,6 +983,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       'inventory',
       'quests',
       'codex',
+      'variables',
     ];
     String sourceLabel(String s) => switch (s) {
       'resources' => t.storyResources,
@@ -853,6 +992,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       'inventory' => t.storyInventory,
       'quests' => t.storyQuests,
       'codex' => t.storyCodex,
+      'variables' => t.storyVariables,
       _ => s,
     };
     return ListView(
@@ -974,6 +1114,224 @@ class _StoryEditorState extends State<_StoryEditor> {
     );
   }
 
+  Widget _advancedTab() {
+    final scheme = Theme.of(context).colorScheme;
+    Widget card(List<Widget> children) => Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outlineVariant, width: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(children: children),
+    );
+    Widget sectionTitle(String text) => Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+    );
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        sectionTitle(t.storyCharacters),
+        for (var i = 0; i < _characters.length; i++)
+          card([
+            Row(
+              children: [
+                SizedBox(
+                  width: 64,
+                  child: TextFormField(
+                    controller: _characters[i].avatar,
+                    decoration: InputDecoration(
+                      labelText: t.storyCharacterAvatar,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _characters[i].name,
+                    decoration: InputDecoration(
+                      labelText: t.storyCharacterName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => setState(() {
+                    _characters[i].dispose();
+                    _characters.removeAt(i);
+                  }),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _characters[i].persona,
+              decoration: InputDecoration(
+                labelText: t.storyCharacterPersona,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _characters[i].description,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: t.storyCharacterDescription,
+                alignLabelWithHint: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ]),
+        TextButton.icon(
+          onPressed: () => setState(() => _characters.add(_StoryCharacterDraft())),
+          icon: const Icon(Icons.add),
+          label: Text(t.storyAddCharacter),
+        ),
+        sectionTitle(t.storyVariables),
+        for (var i = 0; i < _variables.length; i++)
+          card([
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _variables[i].name,
+                    decoration: InputDecoration(
+                      labelText: t.storyVariableName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _variables[i].value,
+                    decoration: InputDecoration(
+                      labelText: t.storyVariableValue,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => setState(() {
+                    _variables[i].dispose();
+                    _variables.removeAt(i);
+                  }),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _variables[i].description,
+              decoration: InputDecoration(
+                labelText: t.storyVariableDescription,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ]),
+        TextButton.icon(
+          onPressed: () => setState(() => _variables.add(_StoryVariableDraft())),
+          icon: const Icon(Icons.add),
+          label: Text(t.storyAddVariable),
+        ),
+        sectionTitle(t.storyRegex),
+        for (var i = 0; i < _regexes.length; i++)
+          card([
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _regexes[i].name,
+                    decoration: InputDecoration(
+                      labelText: t.storyRegexName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => setState(() {
+                    _regexes[i].dispose();
+                    _regexes.removeAt(i);
+                  }),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _regexes[i].pattern,
+              decoration: InputDecoration(
+                labelText: t.storyRegexPattern,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _regexes[i].replacement,
+              decoration: InputDecoration(
+                labelText: t.storyRegexReplacement,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  '${t.storyRegexTarget}: ',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                DropdownButton<String>(
+                  value: _regexes[i].target,
+                  items: [
+                    DropdownMenuItem(
+                      value: 'ai',
+                      child: Text(t.storyRegexTargetAi),
+                    ),
+                    DropdownMenuItem(
+                      value: 'user',
+                      child: Text(t.storyRegexTargetUser),
+                    ),
+                    DropdownMenuItem(
+                      value: 'both',
+                      child: Text(t.storyRegexTargetBoth),
+                    ),
+                  ],
+                  onChanged: (v) =>
+                      setState(() => _regexes[i].target = v ?? 'ai'),
+                ),
+                const Spacer(),
+                Text(
+                  t.storyRegexEnabled,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                Switch(
+                  value: _regexes[i].enabled,
+                  onChanged: (v) => setState(() => _regexes[i].enabled = v),
+                ),
+              ],
+            ),
+          ]),
+        TextButton.icon(
+          onPressed: () => setState(() => _regexes.add(_StoryRegexDraft())),
+          icon: const Icon(Icons.add),
+          label: Text(t.storyAddRegex),
+        ),
+      ],
+    );
+  }
+
   Widget _field(
     String label,
     TextEditingController ctrl, {
@@ -1014,6 +1372,7 @@ class StoryGamePage extends ConsumerStatefulWidget {
 
 class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   final _input = TextEditingController();
+  final _inputFocus = FocusNode();
   final _scrollController = ScrollController();
   String? _sessionId;
   GameState _state = GameState.empty;
@@ -1045,6 +1404,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   @override
   void dispose() {
     _input.dispose();
+    _inputFocus.dispose();
     _scrollController.dispose();
     for (final c in _textValues.values) {
       c.dispose();
@@ -1094,7 +1454,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   Future<void> _newSession({GameState? initialState}) async {
-    final initial = initialState ?? story.initialState;
+    var initial = initialState ?? story.initialState;
+    // 把故事声明的变量初值并入初始状态
+    if (story.variables.isNotEmpty) {
+      final vars = Map<String, String>.from(initial.variables);
+      for (final v in story.variables) {
+        if (v.name.trim().isEmpty) continue;
+        vars.putIfAbsent(v.name.trim(), () => v.value);
+      }
+      initial = initial.copyWith(variables: vars);
+    }
     final old = _sessionId;
     if (old != null) {
       await AiConversationService().deleteSession(old);
@@ -1146,9 +1515,33 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   /// 系统提示词：故事定义 + 开局场景 + 已积累的设定图鉴（供 AI 严格遵守）
   Future<String> _systemPromptFor(GameState state) async {
-    final buf = StringBuffer(story.buildSystemPrompt());
+    final vars = state.variables;
+    String sub(String text) => replaceStoryVars(text, vars);
+    final buf = StringBuffer(sub(story.buildSystemPrompt()));
     if (story.opening.trim().isNotEmpty) {
-      buf.write('\n\n【开局场景（请从这里开始叙事）】\n${story.opening.trim()}');
+      buf.write('\n\n【开局场景（请从这里开始叙事）】\n${sub(story.opening.trim())}');
+    }
+    if (story.characters.isNotEmpty) {
+      buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
+      for (final c in story.characters) {
+        buf.write('\n- ${c.name}');
+        if (c.persona.trim().isNotEmpty) buf.write('（${c.persona.trim()}）');
+        if (c.description.trim().isNotEmpty) buf.write('：${sub(c.description.trim())}');
+      }
+      if (state.present.isNotEmpty) {
+        buf.write('\n当前在场：${state.present.join('、')}');
+      }
+    }
+    if (vars.isNotEmpty) {
+      buf.write('\n\n【变量（每回合回传最新值）】');
+      final desc = {
+        for (final v in story.variables)
+          if (v.description.trim().isNotEmpty) v.name: v.description.trim(),
+      };
+      for (final e in vars.entries) {
+        final d = desc[e.key];
+        buf.write('\n- ${e.key} = ${e.value}${d == null ? '' : '（$d）'}');
+      }
     }
     if (state.codex.isNotEmpty) {
       buf.write('\n\n【已知设定（必须严格遵守，不得矛盾）】');
@@ -1190,6 +1583,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _send(String text) async {
     final sessionId = _sessionId;
     if (sessionId == null || _sending) return;
+    final outgoing = applyStoryRegex(text, story.regexes, 'user');
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
     setState(() {
@@ -1200,7 +1594,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     try {
       await for (final u in AiConversationService().sendMessageStream(
         sessionId: sessionId,
-        userMessage: text,
+        userMessage: outgoing,
         taskType: 'story',
         providerOverride: aiHubProvider(),
         systemPromptOverride: await _systemPromptFor(_state),
@@ -1289,6 +1683,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return result;
   }
 
+  /// 对某个角色说话：在输入框前缀「对XX：」并聚焦
+  void _addressCharacter(StoryCharacter c) {
+    final prefix = '对${c.name}：';
+    if (!_input.text.startsWith(prefix)) {
+      _input.text = '$prefix${_input.text}';
+    }
+    _input.selection = TextSelection.collapsed(offset: _input.text.length);
+    _inputFocus.requestFocus();
+  }
+
   /// 请 GM 为未登记的道具补充图鉴设定
   void _registerUnregistered() {
     if (_unregistered.isEmpty) return;
@@ -1345,9 +1749,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                 messages.length + (_showStreamBubble ? 1 : 0),
                             itemBuilder: (context, i) {
                               if (i == messages.length) {
-                                final streamNarrative = _parseReply(
-                                  _streamText,
-                                ).narrative;
+                                final streamNarrative = applyStoryRegex(
+                                  _parseReply(_streamText).narrative,
+                                  story.regexes,
+                                  'ai',
+                                );
                                 if (streamNarrative.trim().isEmpty) {
                                   return const Padding(
                                     padding: EdgeInsets.symmetric(
@@ -1385,7 +1791,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   _StoryBubble(
                                     content: isUser
                                         ? m.inputContent
-                                        : (parsed?.narrative ?? ''),
+                                        : applyStoryRegex(
+                                            parsed?.narrative ?? '',
+                                            story.regexes,
+                                            'ai',
+                                          ),
                                     isUser: isUser,
                                     task: m,
                                     events: parsed?.events ?? const [],
@@ -1425,6 +1835,36 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           ),
                         ),
                       ),
+                    if (story.characters.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                        child: SizedBox(
+                          height: 34,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: story.characters.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (_, i) {
+                              final c = story.characters[i];
+                              final present = _state.present.contains(c.name);
+                              return ActionChip(
+                                avatar: Text(
+                                  c.avatar,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                label: Text(c.name),
+                                backgroundColor: present
+                                    ? Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer
+                                    : null,
+                                onPressed: () => _addressCharacter(c),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     if (_unregistered.isNotEmpty && !_sending)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
@@ -1454,6 +1894,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       ),
                     _AiComposerBar(
                       controller: _input,
+                      focusNode: _inputFocus,
                       onSend: _sendInput,
                       sending: _sending,
                       onStop: () => _cancelToken?.cancel(),
@@ -2263,6 +2704,24 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                     ),
                   ),
                 ],
+              ),
+            ),
+        ];
+      case 'variables':
+        if (state.variables.isEmpty) return const [];
+        return [
+          _sectionTitle(
+            panel.title.isEmpty ? t.storyVariables : panel.title,
+            icon,
+          ),
+          for (final e in state.variables.entries)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(e.key),
+              trailing: Text(
+                e.value,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
         ];

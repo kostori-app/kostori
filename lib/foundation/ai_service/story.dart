@@ -120,6 +120,135 @@ class StoryAction {
   };
 }
 
+/// 故事变量：AI 可读写，并可在提示词里用 {{var:名称}} 引用
+class StoryVariable {
+  final String name;
+  final String value;
+  final String description;
+
+  const StoryVariable({
+    required this.name,
+    this.value = '',
+    this.description = '',
+  });
+
+  factory StoryVariable.fromJson(Map<String, dynamic> json) => StoryVariable(
+    name: json['name']?.toString() ?? '',
+    value: json['value']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'value': value,
+    'description': description,
+  };
+}
+
+/// 正则替换规则（酒馆式）：对 AI 输出 / 用户输入做后处理
+class StoryRegex {
+  final String name;
+  final String pattern;
+  final String replacement;
+  final bool enabled;
+
+  /// ai | user | both
+  final String target;
+  final bool caseSensitive;
+  final bool multiLine;
+
+  const StoryRegex({
+    required this.name,
+    required this.pattern,
+    this.replacement = '',
+    this.enabled = true,
+    this.target = 'ai',
+    this.caseSensitive = true,
+    this.multiLine = false,
+  });
+
+  factory StoryRegex.fromJson(Map<String, dynamic> json) => StoryRegex(
+    name: json['name']?.toString() ?? '',
+    pattern: json['pattern']?.toString() ?? '',
+    replacement: json['replacement']?.toString() ?? '',
+    enabled: json['enabled'] as bool? ?? true,
+    target: json['target']?.toString() ?? 'ai',
+    caseSensitive: json['caseSensitive'] as bool? ?? true,
+    multiLine: json['multiLine'] as bool? ?? false,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'pattern': pattern,
+    'replacement': replacement,
+    'enabled': enabled,
+    'target': target,
+    'caseSensitive': caseSensitive,
+    'multiLine': multiLine,
+  };
+}
+
+/// 故事角色（多角色同场）：AI 可分别扮演
+class StoryCharacter {
+  final String name;
+  final String avatar;
+  final String persona;
+  final String description;
+
+  const StoryCharacter({
+    required this.name,
+    this.avatar = '🧑',
+    this.persona = '',
+    this.description = '',
+  });
+
+  factory StoryCharacter.fromJson(Map<String, dynamic> json) => StoryCharacter(
+    name: json['name']?.toString() ?? '',
+    avatar: json['avatar']?.toString() ?? '🧑',
+    persona: json['persona']?.toString() ?? '',
+    description: json['description']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'avatar': avatar,
+    'persona': persona,
+    'description': description,
+  };
+}
+
+/// 用变量值替换 {{var:名称}}（未定义时原样保留）
+String replaceStoryVars(String text, Map<String, String> vars) {
+  if (vars.isEmpty || !text.contains('{{')) return text;
+  return text.replaceAllMapped(
+    RegExp(r'\{\{\s*var:\s*([^}]+?)\s*\}\}'),
+    (m) {
+      final key = m.group(1)!.trim();
+      return vars.containsKey(key) ? vars[key]! : m.group(0)!;
+    },
+  );
+}
+
+/// 按规则对文本做正则替换（target: ai | user）
+String applyStoryRegex(String text, List<StoryRegex> rules, String target) {
+  var result = text;
+  for (final r in rules) {
+    if (!r.enabled || r.pattern.isEmpty) continue;
+    if (r.target != 'both' && r.target != target) continue;
+    try {
+      final re = RegExp(
+        r.pattern,
+        caseSensitive: r.caseSensitive,
+        multiLine: r.multiLine,
+      );
+      result = result.replaceAll(re, r.replacement);
+    } catch (_) {
+      // 非法正则忽略
+    }
+  }
+  return result;
+}
+
 /// 面板分区：由故事自定义（标题 / 数据源 / 图标），空则用默认分区
 class StoryPanel {
   final String title;
@@ -309,6 +438,12 @@ class GameState {
   /// 动态局势（由 AI 每回合可选输出，展示在「局势」页签）
   final String situation;
 
+  /// 故事变量（AI 可读写，提示词里可用 {{var:名称}} 引用）
+  final Map<String, String> variables;
+
+  /// 当前在场的角色名（多角色同场）
+  final List<String> present;
+
   const GameState({
     this.resources = const [],
     this.attributes = const {},
@@ -319,6 +454,8 @@ class GameState {
     this.location = '',
     this.codex = const [],
     this.situation = '',
+    this.variables = const {},
+    this.present = const [],
   });
 
   static const empty = GameState();
@@ -333,6 +470,8 @@ class GameState {
     String? location,
     List<StoryDefinition>? codex,
     String? situation,
+    Map<String, String>? variables,
+    List<String>? present,
   }) => GameState(
     resources: resources ?? this.resources,
     attributes: attributes ?? this.attributes,
@@ -343,6 +482,8 @@ class GameState {
     location: location ?? this.location,
     codex: codex ?? this.codex,
     situation: situation ?? this.situation,
+    variables: variables ?? this.variables,
+    present: present ?? this.present,
   );
 
   factory GameState.fromJson(Map<String, dynamic> json) {
@@ -382,6 +523,13 @@ class GameState {
             ]
           : const [],
       situation: json['situation']?.toString() ?? '',
+      variables: json['variables'] is Map
+          ? {
+              for (final e in (json['variables'] as Map).entries)
+                e.key.toString(): e.value?.toString() ?? '',
+            }
+          : const {},
+      present: (json['present'] as List?)?.whereType<String>().toList() ?? const [],
     );
   }
 
@@ -395,6 +543,8 @@ class GameState {
     'location': location,
     'codex': [for (final d in codex) d.toJson()],
     'situation': situation,
+    'variables': variables,
+    'present': present,
   };
 }
 
@@ -497,6 +647,15 @@ class Story {
   /// 自定义面板分区（为空表示使用默认分区）
   final List<StoryPanel> panels;
 
+  /// 故事角色（多角色同场）
+  final List<StoryCharacter> characters;
+
+  /// 故事变量声明（初值与说明）
+  final List<StoryVariable> variables;
+
+  /// 正则替换规则（对 AI 输出 / 用户输入后处理）
+  final List<StoryRegex> regexes;
+
   /// 默认面板分区（详情面板未自定义时使用）
   static const defaultPanels = <StoryPanel>[
     StoryPanel(source: 'resources'),
@@ -525,6 +684,9 @@ class Story {
     this.worldBookIds = const [],
     this.injectionIds = const [],
     this.panels = const [],
+    this.characters = const [],
+    this.variables = const [],
+    this.regexes = const [],
     this.initialState = GameState.empty,
     this.isBuiltin = false,
   });
@@ -543,6 +705,9 @@ class Story {
     List<String>? worldBookIds,
     List<String>? injectionIds,
     List<StoryPanel>? panels,
+    List<StoryCharacter>? characters,
+    List<StoryVariable>? variables,
+    List<StoryRegex>? regexes,
     GameState? initialState,
   }) => Story(
     id: id,
@@ -559,6 +724,9 @@ class Story {
     worldBookIds: worldBookIds ?? this.worldBookIds,
     injectionIds: injectionIds ?? this.injectionIds,
     panels: panels ?? this.panels,
+    characters: characters ?? this.characters,
+    variables: variables ?? this.variables,
+    regexes: regexes ?? this.regexes,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
   );
@@ -595,6 +763,24 @@ class Story {
               if (e is Map) StoryPanel.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    characters: json['characters'] is List
+        ? [
+            for (final e in json['characters'] as List)
+              if (e is Map) StoryCharacter.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
+    variables: json['variables'] is List
+        ? [
+            for (final e in json['variables'] as List)
+              if (e is Map) StoryVariable.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
+    regexes: json['regexes'] is List
+        ? [
+            for (final e in json['regexes'] as List)
+              if (e is Map) StoryRegex.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     initialState: json['initialState'] is Map
         ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
         : GameState.empty,
@@ -616,6 +802,9 @@ class Story {
     'worldBookIds': worldBookIds,
     'injectionIds': injectionIds,
     'panels': [for (final p in panels) p.toJson()],
+    'characters': [for (final c in characters) c.toJson()],
+    'variables': [for (final v in variables) v.toJson()],
+    'regexes': [for (final r in regexes) r.toJson()],
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
   };
@@ -648,7 +837,9 @@ class Story {
     "time": "第1天 08:00",
     "location": "地点",
     "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}],
-    "situation": "当前局势/所在环境的简述（可选，展示在局势页签）"
+    "situation": "当前局势/所在环境的简述（可选，展示在局势页签）",
+    "variables": {"好感度": "10"},
+    "present": ["在场角色名"]
   },
   "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
   "choices": ["选项A", "选项B", "选项C"],
@@ -660,6 +851,8 @@ class Story {
 - events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
 - choices 提供 3-5 个可供玩家选择的行动。
 - **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
+- **变量**：variables 用于记录剧情状态（好感度、线索、进度等），键值均为字符串，每回合给出当前完整值；有变化时才需要改动。
+- **在场角色**：present 列出当前场景中出场的角色名（对应角色设定），随剧情进出更新。
 - **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
@@ -794,19 +987,21 @@ class StoryStore extends ChangeNotifier {
       } catch (_) {}
       return const [];
     }
-    var panels = <StoryPanel>[];
-    final panelsText = _section(text, '面板');
-    if (panelsText != null) {
+    List<T> mapList<T>(String section, T Function(Map<String, dynamic>) f) {
+      final raw = _section(text, section);
+      if (raw == null) return const [];
       try {
-        final decoded = jsonDecode(panelsText);
+        final decoded = jsonDecode(raw);
         if (decoded is List) {
-          panels = [
+          return [
             for (final e in decoded)
-              if (e is Map) StoryPanel.fromJson(e.cast<String, dynamic>()),
+              if (e is Map) f(e.cast<String, dynamic>()),
           ];
         }
       } catch (_) {}
+      return const [];
     }
+    final panels = mapList('面板', StoryPanel.fromJson);
     return Story(
       id: id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -821,6 +1016,9 @@ class StoryStore extends ChangeNotifier {
       worldBookIds: idList('世界书库'),
       injectionIds: idList('提示词库'),
       panels: panels,
+      characters: mapList('角色', StoryCharacter.fromJson),
+      variables: mapList('变量', StoryVariable.fromJson),
+      regexes: mapList('正则', StoryRegex.fromJson),
       initialState: initialState,
     );
   }
@@ -858,6 +1056,15 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.panels.isNotEmpty) {
       section('面板', jsonEncode([for (final p in s.panels) p.toJson()]));
+    }
+    if (s.characters.isNotEmpty) {
+      section('角色', jsonEncode([for (final c in s.characters) c.toJson()]));
+    }
+    if (s.variables.isNotEmpty) {
+      section('变量', jsonEncode([for (final v in s.variables) v.toJson()]));
+    }
+    if (s.regexes.isNotEmpty) {
+      section('正则', jsonEncode([for (final r in s.regexes) r.toJson()]));
     }
     section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();

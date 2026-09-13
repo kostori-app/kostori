@@ -1630,6 +1630,28 @@ storyAddPanel: Add section
 storyResetPanels: Reset to default
 storyUnregisteredItems: Unregistered items
 storyRegisterItems: Register
+storyVariables: Variables
+storyCharacters: Characters
+storyRegex: Regex
+storyAdvanced: Advanced
+storyCharacterName: Name
+storyCharacterAvatar: Avatar (emoji)
+storyCharacterPersona: Persona
+storyCharacterDescription: Description
+storyAddCharacter: Add character
+storyVariableName: Variable name
+storyVariableValue: Initial value
+storyVariableDescription: Description
+storyAddVariable: Add variable
+storyRegexName: Rule name
+storyRegexPattern: Pattern (regex)
+storyRegexReplacement: Replacement
+storyRegexTarget: Applies to
+storyRegexTargetAi: AI output
+storyRegexTargetUser: User input
+storyRegexTargetBoth: Both
+storyAddRegex: Add rule
+storyRegexEnabled: Enabled
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary
