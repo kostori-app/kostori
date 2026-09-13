@@ -1169,25 +1169,25 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                     ].join(' · '),
                     style: const TextStyle(fontSize: 12),
                   ),
-                  trailing: PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, size: 20),
-                    enabled: !_busy,
-                    onSelected: (v) => switch (v) {
-                      'upload' => _uploadPart(part),
-                      'download' => _downloadPart(part),
-                      'history' => _showPartHistory(part),
-                      _ => null,
-                    },
-                    itemBuilder: (_) => [
-                      PopupMenuItem(value: 'upload', child: Text(t.upload)),
-                      PopupMenuItem(
-                        value: 'download',
-                        enabled: remoteParts.containsKey(part.key),
-                        child: Text(t.download),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        tooltip: t.upload,
+                        onPressed: _busy ? null : () => _uploadPart(part),
                       ),
-                      PopupMenuItem(
-                        value: 'history',
-                        child: Text(t.syncHistory),
+                      IconButton(
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        tooltip: t.download,
+                        onPressed: (_busy || !remoteParts.containsKey(part.key))
+                            ? null
+                            : () => _downloadPart(part),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.history),
+                        tooltip: t.syncHistory,
+                        onPressed: _busy ? null : () => _showPartHistory(part),
                       ),
                     ],
                   ),
@@ -1770,30 +1770,41 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   Widget _buildActions(String kind, Set<String> selected) {
     final remote = _remote[kind] ?? const <String, RemoteFileInfo>{};
     final ext = _ext(kind);
-    final canDownload = selected.any((id) => remote.containsKey('$id$ext'));
+    final canUpload = !_busy && selected.isNotEmpty;
+    final canDownload =
+        !_busy && selected.any((id) => remote.containsKey('$id$ext'));
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: (_busy || selected.isEmpty)
-                    ? null
-                    : () => _upload(kind, selected),
-                icon: const Icon(Icons.cloud_upload_outlined, size: 18),
-                label: Text('${t.upload} (${selected.length})'),
+            Opacity(
+              opacity: canUpload ? 1 : 0.4,
+              child: Button.outlined(
+                onPressed: () {
+                  if (canUpload) _upload(kind, selected);
+                },
+                child: _actionLabel(
+                  Icons.cloud_upload_outlined,
+                  t.upload,
+                  selected.length,
+                ),
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton.tonalIcon(
-                onPressed: (_busy || selected.isEmpty || !canDownload)
-                    ? null
-                    : () => _download(kind, selected),
-                icon: const Icon(Icons.cloud_download_outlined, size: 18),
-                label: Text('${t.download} (${selected.length})'),
+            Opacity(
+              opacity: canDownload ? 1 : 0.4,
+              child: Button.filled(
+                onPressed: () {
+                  if (canDownload) _download(kind, selected);
+                },
+                child: _actionLabel(
+                  Icons.cloud_download_outlined,
+                  t.download,
+                  selected.length,
+                ),
               ),
             ),
           ],
@@ -1801,4 +1812,13 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       ),
     );
   }
+
+  Widget _actionLabel(IconData icon, String label, int count) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 18),
+      const SizedBox(width: 6),
+      Text('$label ($count)'),
+    ],
+  );
 }
