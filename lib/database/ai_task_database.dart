@@ -8,6 +8,7 @@ import 'package:drift/native.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:path/path.dart' as p;
 
 part 'ai_task_database.g.dart';
@@ -134,4 +135,24 @@ Future<void> migrateAiTasksToOwnDb() async {
   try {
     await src.customStatement('DROP TABLE IF EXISTS ai_tasks');
   } catch (_) {}
+  await compactAiDatabaseIfNeeded();
+}
+
+/// 回收 ai_database.db 的空闲页：SQLite 删除表/行后不会自动缩小文件，
+/// 需要 VACUUM 才会真正释放磁盘空间（消息库迁出后尤其明显）。
+Future<void> compactAiDatabaseIfNeeded() async {
+  try {
+    final db = AiDatabase.instance;
+    final row = await db.customSelect('PRAGMA freelist_count').getSingle();
+    final values = row.data.values;
+    final free = values.isEmpty ? 0 : (values.first as num?)?.toInt() ?? 0;
+    if (free < 64) return;
+    DebugLog.info(
+      'compactAiDatabase',
+      'VACUUM ai_database.db (free pages: $free)',
+    );
+    await db.customStatement('VACUUM');
+  } catch (e, s) {
+    DebugLog.error('compactAiDatabase', e, s);
+  }
 }

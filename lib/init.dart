@@ -122,6 +122,8 @@ Future<void> init() async {
       // 打开独立的消息库，并把旧的 ai_tasks 表迁移过来
       await AiTaskDatabase.instance.aiTaskDao.watchAll().first;
       await migrateAiTasksToOwnDb();
+      // 已迁移过的旧库也压缩一次（迁移会提前返回，不会走到 VACUUM）
+      await compactAiDatabaseIfNeeded();
     } catch (_) {}
   }());
   // 加载持久化的下载任务
