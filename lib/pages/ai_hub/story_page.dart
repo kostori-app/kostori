@@ -826,8 +826,8 @@ class _StoryEditorState extends State<_StoryEditor> {
     }
   }
 
-  /// 从全局角色卡库选择
-  Future<void> _pickCharacterFromLibrary() async {
+  /// 弹出全局角色卡库选择器
+  Future<CharacterCard?> _pickCardFromLibrary() async {
     await CharacterCardStore.instance.ensureLoaded();
     final cards = CharacterCardStore.instance.cards;
     if (cards.isEmpty) {
@@ -835,9 +835,9 @@ class _StoryEditorState extends State<_StoryEditor> {
         message: t.characterCardsEmpty,
         level: LogLevel.warning,
       );
-      return;
+      return null;
     }
-    final picked = await showModalBottomSheet<CharacterCard>(
+    return showModalBottomSheet<CharacterCard>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Sheet(
@@ -862,8 +862,24 @@ class _StoryEditorState extends State<_StoryEditor> {
         ),
       ),
     );
+  }
+
+  /// 从全局角色卡库选择为 NPC
+  Future<void> _pickCharacterFromLibrary() async {
+    final picked = await _pickCardFromLibrary();
     if (picked == null || !mounted) return;
     setState(() => _characters.add(picked));
+  }
+
+  /// 从全局角色卡库选择，填入玩家角色
+  Future<void> _pickPersonaFromLibrary() async {
+    final picked = await _pickCardFromLibrary();
+    if (picked == null || !mounted) return;
+    setState(() {
+      _personaNameCtrl.text = picked.name;
+      _personaAvatar = picked.avatar;
+      _personaDescCtrl.text = picked.description;
+    });
   }
 
   @override
@@ -995,6 +1011,14 @@ class _StoryEditorState extends State<_StoryEditor> {
           ),
         ),
         _field(t.storyCharacterName, _personaNameCtrl, required: false),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            icon: const Icon(Icons.badge_outlined, size: 18),
+            label: Text(t.characterImportFromLibrary),
+            onPressed: _pickPersonaFromLibrary,
+          ),
+        ),
         AvatarPicker(
           name: _personaNameCtrl.text,
           avatar: _personaAvatar,
