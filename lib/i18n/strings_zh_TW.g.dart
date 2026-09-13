@@ -1674,6 +1674,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterSpec => '規範版本';
 	@override String get characterPickAvatar => '選擇圖片';
 	@override String get characterDropHint => '拖入角色卡（PNG / JSON）';
+	@override String get characterDialogue => '對話';
+	@override String get characterAlternateGreetings => '備用開場白';
 	@override String get storyPersona => '玩家角色';
 	@override String get storyPersonaHint => '描述使用者本人，AI 不得扮演。';
 	@override String get storyTextStyle => '文字樣式';
@@ -4392,6 +4394,8 @@ extension on TranslationsZhTw {
 			'characterSpec' => '規範版本',
 			'characterPickAvatar' => '選擇圖片',
 			'characterDropHint' => '拖入角色卡（PNG / JSON）',
+			'characterDialogue' => '對話',
+			'characterAlternateGreetings' => '備用開場白',
 			'storyPersona' => '玩家角色',
 			'storyPersonaHint' => '描述使用者本人，AI 不得扮演。',
 			'storyTextStyle' => '文字樣式',
@@ -4761,10 +4765,10 @@ extension on TranslationsZhTw {
 			'statsWeekdayMon' => '一',
 			'statsWeekdayTue' => '二',
 			'statsWeekdayWed' => '三',
-			'statsWeekdayThu' => '四',
-			'statsWeekdayFri' => '五',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayThu' => '四',
+			'statsWeekdayFri' => '五',
 			'statsWeekdaySat' => '六',
 			'statsWeekdaySun' => '日',
 			'statsYearlyOverview' => '年度總覽',
@@ -5275,10 +5279,10 @@ extension on TranslationsZhTw {
 			'durationLabel' => ({required Object duration}) => '時長：${duration}',
 			'replyBracket' => '[回覆]',
 			'wantToWatch' => '想看',
-			'watching' => '在看',
-			'addToFolder' => ({required Object folder}) => '新增到 ${folder}',
 			_ => null,
 		} ?? switch (path) {
+			'watching' => '在看',
+			'addToFolder' => ({required Object folder}) => '新增到 ${folder}',
 			'removeFromFolder' => ({required Object folder}) => '從 ${folder} 刪除',
 			'movedFromTo' => ({required Object from, required Object to}) => '從 ${from} 移動到 ${to}',
 			'unknownFolder' => 'Unknown folder',

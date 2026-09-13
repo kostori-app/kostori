@@ -4945,6 +4945,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Drop character cards here (PNG / JSON)'
 	String get characterDropHint => 'Drop character cards here (PNG / JSON)';
 
+	/// en: 'Dialogue'
+	String get characterDialogue => 'Dialogue';
+
+	/// en: 'Alternate greetings'
+	String get characterAlternateGreetings => 'Alternate greetings';
+
 	/// en: 'Player character'
 	String get storyPersona => 'Player character';
 
@@ -9678,6 +9684,8 @@ extension on Translations {
 			'characterSpec' => 'Spec',
 			'characterPickAvatar' => 'Pick image',
 			'characterDropHint' => 'Drop character cards here (PNG / JSON)',
+			'characterDialogue' => 'Dialogue',
+			'characterAlternateGreetings' => 'Alternate greetings',
 			'storyPersona' => 'Player character',
 			'storyPersonaHint' => 'Describes who the user is. The AI must not roleplay this.',
 			'storyTextStyle' => 'Text style',
@@ -10047,10 +10055,10 @@ extension on Translations {
 			'statsDateMonthOnly' => ({required Object month}) => '${month}',
 			'statsWeekdayMon' => 'Mon',
 			'statsWeekdayTue' => 'Tue',
-			'statsWeekdayWed' => 'Wed',
-			'statsWeekdayThu' => 'Thu',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayWed' => 'Wed',
+			'statsWeekdayThu' => 'Thu',
 			'statsWeekdayFri' => 'Fri',
 			'statsWeekdaySat' => 'Sat',
 			'statsWeekdaySun' => 'Sun',
@@ -10561,10 +10569,10 @@ extension on Translations {
 			'airTimeLabel' => ({required Object time}) => 'Air time: ${time}',
 			'durationLabel' => ({required Object duration}) => 'Duration: ${duration}',
 			'replyBracket' => '[Reply]',
-			'wantToWatch' => 'Want to watch',
-			'watching' => 'Watching',
 			_ => null,
 		} ?? switch (path) {
+			'wantToWatch' => 'Want to watch',
+			'watching' => 'Watching',
 			'addToFolder' => ({required Object folder}) => 'Add to ${folder}',
 			'removeFromFolder' => ({required Object folder}) => 'Remove from ${folder}',
 			'movedFromTo' => ({required Object from, required Object to}) => 'Move from ${from} to ${to}',

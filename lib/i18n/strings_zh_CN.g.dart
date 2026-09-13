@@ -1673,6 +1673,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterSpec => '规范版本';
 	@override String get characterPickAvatar => '选择图片';
 	@override String get characterDropHint => '拖入角色卡（PNG / JSON）';
+	@override String get characterDialogue => '对话';
+	@override String get characterAlternateGreetings => '备用开场白';
 	@override String get storyPersona => '玩家角色';
 	@override String get storyPersonaHint => '描述用户本人，AI 不得扮演。';
 	@override String get storyTextStyle => '文字样式';
@@ -4392,6 +4394,8 @@ extension on TranslationsZhCn {
 			'characterSpec' => '规范版本',
 			'characterPickAvatar' => '选择图片',
 			'characterDropHint' => '拖入角色卡（PNG / JSON）',
+			'characterDialogue' => '对话',
+			'characterAlternateGreetings' => '备用开场白',
 			'storyPersona' => '玩家角色',
 			'storyPersonaHint' => '描述用户本人，AI 不得扮演。',
 			'storyTextStyle' => '文字样式',
@@ -4762,10 +4766,10 @@ extension on TranslationsZhCn {
 			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
 			'statsWeekdayMon' => '一',
 			'statsWeekdayTue' => '二',
-			'statsWeekdayWed' => '三',
-			'statsWeekdayThu' => '四',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayWed' => '三',
+			'statsWeekdayThu' => '四',
 			'statsWeekdayFri' => '五',
 			'statsWeekdaySat' => '六',
 			'statsWeekdaySun' => '日',
@@ -5276,10 +5280,10 @@ extension on TranslationsZhCn {
 			'airTimeLabel' => ({required Object time}) => '放送时间：${time}',
 			'durationLabel' => ({required Object duration}) => '时长：${duration}',
 			'replyBracket' => '[回复]',
-			'wantToWatch' => '想看',
-			'watching' => '在看',
 			_ => null,
 		} ?? switch (path) {
+			'wantToWatch' => '想看',
+			'watching' => '在看',
 			'addToFolder' => ({required Object folder}) => '添加到 ${folder}',
 			'removeFromFolder' => ({required Object folder}) => '从 ${folder} 删除',
 			'movedFromTo' => ({required Object from, required Object to}) => '从 ${from} 移动到 ${to}',

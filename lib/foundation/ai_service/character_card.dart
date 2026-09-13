@@ -384,7 +384,15 @@ class CharacterCard {
   /// 从文件字节解析（PNG 角色卡或 JSON）
   static CharacterCard? fromBytes(Uint8List bytes) {
     final png = fromPngBytes(bytes);
-    if (png != null) return png;
+    if (png != null) {
+      // 酒馆 PNG 卡：头像就是整张图片，存为 data URL
+      if (!png.avatar.trim().startsWith('data:image')) {
+        return png.copyWith(
+          avatar: 'data:image/png;base64,${base64.encode(bytes)}',
+        );
+      }
+      return png;
+    }
     try {
       final decoded = jsonDecode(utf8.decode(bytes));
       if (decoded is Map) {

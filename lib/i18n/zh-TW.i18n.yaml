@@ -1684,6 +1684,8 @@ characterExportV2: 匯出為 V2
 characterSpec: 規範版本
 characterPickAvatar: 選擇圖片
 characterDropHint: 拖入角色卡（PNG / JSON）
+characterDialogue: 對話
+characterAlternateGreetings: 備用開場白
 storyPersona: 玩家角色
 storyPersonaHint: 描述使用者本人，AI 不得扮演。
 storyTextStyle: 文字樣式

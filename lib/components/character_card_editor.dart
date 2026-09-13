@@ -323,112 +323,149 @@ class CharacterCardView extends StatelessWidget {
 
   final CharacterCard card;
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _block(BuildContext context, String title, String content) {
+    if (content.trim().isEmpty) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
-    Widget block(String title, String content) {
-      if (content.trim().isEmpty) return const SizedBox.shrink();
-      return Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: scheme.primary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            SelectableText(
-              content.trim(),
-              style: const TextStyle(fontSize: 13, height: 1.5),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CharacterAvatar(name: card.name, avatar: card.avatar, radius: 26),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (card.creator.trim().isNotEmpty)
-                      Text(
-                        card.creator.trim(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.primary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SelectableText(
+            content.trim(),
+            style: const TextStyle(fontSize: 13, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final book = CharacterLoreBook.fromMap(card.characterBook);
+
+    final basic = <Widget>[
+      Row(
+        children: [
+          CharacterAvatar(name: card.name, avatar: card.avatar, radius: 26),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  card.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
+                if (card.nickname.trim().isNotEmpty)
+                  Text(
+                    card.nickname.trim(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                if (card.creator.trim().isNotEmpty)
+                  Text(
+                    card.creator.trim(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      if (card.tags.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final tag in card.tags)
+                Chip(
+                  label: Text(tag, style: const TextStyle(fontSize: 11)),
+                  visualDensity: VisualDensity.compact,
+                ),
             ],
           ),
-          if (card.tags.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final tag in card.tags)
-                    Chip(
-                      label: Text(tag, style: const TextStyle(fontSize: 11)),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                ],
-              ),
+        ),
+      _block(context, t.characterDescription, card.description),
+    ];
+
+    final persona = <Widget>[
+      _block(context, t.characterPersonality, card.personality),
+      _block(context, t.characterScenario, card.scenario),
+    ];
+
+    final dialogue = <Widget>[
+      _block(context, t.characterFirstMessage, card.firstMessage),
+      if (card.alternateGreetings.isNotEmpty)
+        _block(
+          context,
+          t.characterAlternateGreetings,
+          card.alternateGreetings.join('\n\n---\n\n'),
+        ),
+      _block(context, t.characterExampleDialogue, card.exampleDialogue),
+    ];
+
+    final prompt = <Widget>[
+      _block(context, t.characterSystemPrompt, card.systemPrompt),
+      _block(context, t.characterPostHistory, card.postHistoryInstructions),
+      _block(context, t.characterCreatorNotes, card.creatorNotes),
+      _block(context, t.characterSource, card.source.join('\n')),
+      if (book != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Text(
+            '${t.worldBook} · ${book.entries.length}',
+            style: TextStyle(fontSize: 12, color: scheme.primary),
+          ),
+        ),
+    ];
+
+    final tabs = <(String, List<Widget>)>[
+      (t.basicInfo, basic),
+      (t.storyCharacterPersona, persona),
+      (t.characterDialogue, dialogue),
+      (t.storySystemPrompt, prompt),
+    ];
+
+    return DefaultTabController(
+      length: tabs.length,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabs: [for (final tab in tabs) Tab(text: tab.$1)],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                for (final tab in tabs)
+                  ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    children: tab.$2,
+                  ),
+              ],
             ),
-          if (card.nickname.trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                card.nickname.trim(),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          block(t.characterDescription, card.description),
-          block(t.characterPersonality, card.personality),
-          block(t.characterScenario, card.scenario),
-          block(t.characterFirstMessage, card.firstMessage),
-          block(t.characterExampleDialogue, card.exampleDialogue),
-          block(t.characterSystemPrompt, card.systemPrompt),
-          block(t.characterPostHistory, card.postHistoryInstructions),
-          block(t.characterCreatorNotes, card.creatorNotes),
-          block(t.characterSource, card.source.join('\n')),
-          if (CharacterLoreBook.fromMap(card.characterBook)?.entries.isNotEmpty ??
-              false)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                '${t.worldBook} · '
-                '${CharacterLoreBook.fromMap(card.characterBook)!.entries.length}',
-                style: TextStyle(fontSize: 12, color: scheme.primary),
-              ),
-            ),
+          ),
         ],
       ),
     );
@@ -523,10 +560,7 @@ Future<void> showCharacterCardView(BuildContext context, CharacterCard card) {
       title: card.name,
       icon: Icons.badge_outlined,
       initialSize: 0.7,
-      builder: (ctx, sc) => ListView(
-        controller: sc,
-        children: [CharacterCardView(card: card)],
-      ),
+      builder: (ctx, sc) => CharacterCardView(card: card),
     ),
   );
 }
