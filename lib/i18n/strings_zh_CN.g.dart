@@ -1587,6 +1587,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyState => '状态';
 	@override String get storyNoStories => '还没有故事，点右上角导入或新建';
 	@override String get storyImported => '故事已导入';
+	@override String get storyUpdated => '已更新同名故事';
 	@override String get storyDropHint => '拖入故事文件（.md）';
 	@override String get storyNew => '新建故事';
 	@override String get storyEdit => '编辑故事';
@@ -4416,6 +4417,7 @@ extension on TranslationsZhCn {
 			'storyState' => '状态',
 			'storyNoStories' => '还没有故事，点右上角导入或新建',
 			'storyImported' => '故事已导入',
+			'storyUpdated' => '已更新同名故事',
 			'storyDropHint' => '拖入故事文件（.md）',
 			'storyNew' => '新建故事',
 			'storyEdit' => '编辑故事',
@@ -4873,9 +4875,9 @@ extension on TranslationsZhCn {
 			'ffmpegNotFound' => 'FFmpeg 未找到',
 			'ffmpegNotFoundDesktop' => '桌面端导出功能需要 FFmpeg，但未找到 FFmpeg 可执行文件。请在设置中配置 FFmpeg 路径，或确保 FFmpeg 在系统 PATH 中。',
 			'stillOpenAnyway' => '仍要打开',
-			'preparing' => '准备中…',
 			_ => null,
 		} ?? switch (path) {
+			'preparing' => '准备中…',
 			'downloadingPreviewClip' => '正在下载预览片段…',
 			'loadingPlayer' => '加载播放器…',
 			'cancelExport' => '取消导出?',
@@ -5387,9 +5389,9 @@ extension on TranslationsZhCn {
 			'builderNameRequired' => '请填写名称',
 			'builderKeyRequired' => '请填写键',
 			'builderKeyInvalid' => '键只能包含字母、数字和下划线',
-			'builderImported' => '源已导入',
 			_ => null,
 		} ?? switch (path) {
+			'builderImported' => '源已导入',
 			'builderGenerateFailed' => '生成失败',
 			'collapseSidebar' => '收起侧边栏',
 			'expandSidebar' => '展开侧边栏',

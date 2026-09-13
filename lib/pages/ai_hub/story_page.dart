@@ -109,11 +109,25 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     };
   }
 
-  Future<bool> _importBytes(Uint8List bytes) async {
+  /// 导入一个故事：**同名则原地更新**（保留 id 与存档，方便升级故事版本）。
+  /// 返回 'updated' / 'new'。
+  Future<String> _importBytes(Uint8List bytes) async {
     final text = utf8.decode(bytes);
-    final story = StoryStore.storyFromMarkdown(text);
-    await StoryStore.instance.upsert(story);
-    return true;
+    final parsed = StoryStore.storyFromMarkdown(text);
+    final name = parsed.name.trim();
+    Story? existing;
+    for (final s in StoryStore.instance.stories) {
+      if (!s.isBuiltin && s.name.trim() == name) {
+        existing = s;
+        break;
+      }
+    }
+    if (existing != null) {
+      await StoryStore.instance.upsert(parsed.copyWith(id: existing.id));
+      return 'updated';
+    }
+    await StoryStore.instance.upsert(parsed);
+    return 'new';
   }
 
   Future<void> _import() async {
@@ -123,9 +137,11 @@ class _StoryPageState extends ConsumerState<StoryPage> {
     );
     if (result == null || result.files.isEmpty) return;
     try {
-      await _importBytes(await result.files.first.readAsBytes());
+      final mode = await _importBytes(await result.files.first.readAsBytes());
       if (mounted) {
-        App.rootContext.showMessage(message: t.storyImported);
+        App.rootContext.showMessage(
+          message: mode == 'updated' ? t.storyUpdated : t.storyImported,
+        );
         setState(() {});
       }
     } catch (e) {
@@ -148,6 +164,7 @@ class _StoryPageState extends ConsumerState<StoryPage> {
         await _importBytes(await file.readAsBytes());
         imported++;
       } catch (_) {}
+      // 同名会被原地更新（见 _importBytes）
     }
     if (!mounted) return;
     setState(() => _dragOver = false);

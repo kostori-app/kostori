@@ -1598,6 +1598,7 @@ storyInput: Type your action...
 storyState: Status
 storyNoStories: No stories yet. Import or create one from the top right.
 storyImported: Story imported
+storyUpdated: Updated the existing story
 storyDropHint: Drop story files here (.md)
 storyNew: New story
 storyEdit: Edit story

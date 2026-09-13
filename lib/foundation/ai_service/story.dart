@@ -1477,6 +1477,7 @@ class Story {
   });
 
   Story copyWith({
+    String? id,
     String? name,
     String? icon,
     String? description,
@@ -1508,7 +1509,7 @@ class Story {
     StoryPersona? persona,
     GameState? initialState,
   }) => Story(
-    id: id,
+    id: id ?? this.id,
     name: name ?? this.name,
     icon: icon ?? this.icon,
     description: description ?? this.description,

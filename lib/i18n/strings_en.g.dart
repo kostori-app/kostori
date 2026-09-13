@@ -4687,6 +4687,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Story imported'
 	String get storyImported => 'Story imported';
 
+	/// en: 'Updated the existing story'
+	String get storyUpdated => 'Updated the existing story';
+
 	/// en: 'Drop story files here (.md)'
 	String get storyDropHint => 'Drop story files here (.md)';
 
@@ -9922,6 +9925,7 @@ extension on Translations {
 			'storyState' => 'Status',
 			'storyNoStories' => 'No stories yet. Import or create one from the top right.',
 			'storyImported' => 'Story imported',
+			'storyUpdated' => 'Updated the existing story',
 			'storyDropHint' => 'Drop story files here (.md)',
 			'storyNew' => 'New story',
 			'storyEdit' => 'Edit story',
@@ -10378,9 +10382,9 @@ extension on Translations {
 			'aiLabel' => 'AI',
 			'lanLabel' => 'LAN',
 			'h264CRF' => 'H.264 · CRF',
-			'ffmpegNotFound' => 'FFmpeg Not Found',
 			_ => null,
 		} ?? switch (path) {
+			'ffmpegNotFound' => 'FFmpeg Not Found',
 			'ffmpegNotFoundDesktop' => 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.',
 			'stillOpenAnyway' => 'Still Open',
 			'preparing' => 'Preparing…',
@@ -10892,9 +10896,9 @@ extension on Translations {
 			'builderNameRequired' => 'Name is required',
 			'builderKeyRequired' => 'Key is required',
 			'builderKeyInvalid' => 'Key must contain only letters, digits and underscore',
-			'builderImported' => 'Source imported',
 			_ => null,
 		} ?? switch (path) {
+			'builderImported' => 'Source imported',
 			'builderGenerateFailed' => 'Generate failed',
 			'collapseSidebar' => 'Collapse sidebar',
 			'expandSidebar' => 'Expand sidebar',

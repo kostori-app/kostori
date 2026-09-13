@@ -1598,6 +1598,7 @@ storyInput: 輸入你的行動…
 storyState: 狀態
 storyNoStories: 還沒有故事，點右上角導入或新建
 storyImported: 故事已導入
+storyUpdated: 已更新同名故事
 storyDropHint: 拖入故事檔案（.md）
 storyNew: 新建故事
 storyEdit: 編輯故事

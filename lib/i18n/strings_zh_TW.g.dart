@@ -1588,6 +1588,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyState => '狀態';
 	@override String get storyNoStories => '還沒有故事，點右上角導入或新建';
 	@override String get storyImported => '故事已導入';
+	@override String get storyUpdated => '已更新同名故事';
 	@override String get storyDropHint => '拖入故事檔案（.md）';
 	@override String get storyNew => '新建故事';
 	@override String get storyEdit => '編輯故事';
@@ -4416,6 +4417,7 @@ extension on TranslationsZhTw {
 			'storyState' => '狀態',
 			'storyNoStories' => '還沒有故事，點右上角導入或新建',
 			'storyImported' => '故事已導入',
+			'storyUpdated' => '已更新同名故事',
 			'storyDropHint' => '拖入故事檔案（.md）',
 			'storyNew' => '新建故事',
 			'storyEdit' => '編輯故事',
@@ -4872,9 +4874,9 @@ extension on TranslationsZhTw {
 			'ffmpegNotFound' => 'FFmpeg 未找到',
 			'ffmpegNotFoundDesktop' => '桌面端導出功能需要 FFmpeg，但未找到 FFmpeg 可執行檔。請在設定中配置 FFmpeg 路徑，或確保 FFmpeg 在系統 PATH 中。',
 			'stillOpenAnyway' => '仍要打開',
-			'preparing' => '準備中…',
 			_ => null,
 		} ?? switch (path) {
+			'preparing' => '準備中…',
 			'downloadingPreviewClip' => '正在下載預覽片段…',
 			'loadingPlayer' => '載入播放器…',
 			'cancelExport' => '取消導出?',
@@ -5386,9 +5388,9 @@ extension on TranslationsZhTw {
 			'builderKeyRequired' => '請填寫鍵',
 			'builderKeyInvalid' => '鍵只能包含字母、數字和底線',
 			'builderImported' => '來源已匯入',
-			'builderGenerateFailed' => '生成失敗',
 			_ => null,
 		} ?? switch (path) {
+			'builderGenerateFailed' => '生成失敗',
 			'collapseSidebar' => '收起側邊欄',
 			'expandSidebar' => '展開側邊欄',
 			'clearFinishedDownload' => '清空已完成下載',
