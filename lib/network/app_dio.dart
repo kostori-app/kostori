@@ -346,6 +346,22 @@ class RHttpAdapter implements HttpClientAdapter {
   }
 }
 
+/// WebDAV 专用适配器：在 [RHttpAdapter] 基础上强制 HTTP/1.1 且声明不接受压缩响应，
+/// 规避部分 WebDAV 服务器 / 反代返回无法解码的响应体
+/// （reqwest 报 "error decoding response body"）。
+class WebdavRHttpAdapter extends RHttpAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    options.headers['Accept-Encoding'] = 'identity';
+    options.extra['httpVersion11'] = true;
+    return super.fetch(options, requestStream, cancelFuture);
+  }
+}
+
 class RetryInterceptor extends Interceptor {
   final Dio dio;
   final int maxRetries;

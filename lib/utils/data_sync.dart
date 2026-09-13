@@ -197,7 +197,7 @@ class DataSync with ChangeNotifier {
         config[0],
         user: config[1],
         password: config[2],
-        adapter: RHttpAdapter(),
+        adapter: WebdavRHttpAdapter(),
       );
 
       try {
@@ -293,7 +293,7 @@ class DataSync with ChangeNotifier {
         config[0],
         user: config[1],
         password: config[2],
-        adapter: RHttpAdapter(),
+        adapter: WebdavRHttpAdapter(),
       );
 
       try {
@@ -350,7 +350,7 @@ class DataSync with ChangeNotifier {
       config[0],
       user: config[1],
       password: config[2],
-      adapter: RHttpAdapter(),
+      adapter: WebdavRHttpAdapter(),
     );
   }
 
