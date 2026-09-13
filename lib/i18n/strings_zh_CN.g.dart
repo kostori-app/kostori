@@ -182,6 +182,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncStateDiffers => '有差异';
 	@override String get syncPromptInjections => '提示词注入';
 	@override String get syncWorldBook => '世界书';
+	@override String get syncStoryChars => '故事角色卡';
 	@override String get data => '数据';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2964,6 +2965,7 @@ extension on TranslationsZhCn {
 			'syncStateDiffers' => '有差异',
 			'syncPromptInjections' => '提示词注入',
 			'syncWorldBook' => '世界书',
+			'syncStoryChars' => '故事角色卡',
 			'data' => '数据',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3332,9 +3334,9 @@ extension on TranslationsZhCn {
 			'noTopicsYet' => '暂无话题',
 			'selectAiPersonality' => '选择 AI 人格',
 			'apply' => '应用',
-			'heightPx' => '高度(px)',
 			_ => null,
 		} ?? switch (path) {
+			'heightPx' => '高度(px)',
 			'setUniformHeight' => '设置统一高度',
 			'uniformHeight' => '统一高度',
 			'cropImage' => '裁剪图片',
@@ -3846,9 +3848,9 @@ extension on TranslationsZhCn {
 			'searchSources' => '搜索源',
 			'searchGroupAll' => '全部',
 			'searchGroupBangumi' => '番组',
-			'searchGroupDefault' => '默认',
 			_ => null,
 		} ?? switch (path) {
+			'searchGroupDefault' => '默认',
 			'chooseSearchSource' => '选择搜索源',
 			'singleSourceSearch' => '单源',
 			'searchGroupBuiltIn' => '内置分组',
@@ -4360,9 +4362,9 @@ extension on TranslationsZhCn {
 			'tokenCopiedToClipboard' => 'Token已复制到剪贴板',
 			'generateQrCodeShare' => '生成二维码分享',
 			'aiSettings' => 'AI 设置',
-			'aiConfigMissing' => 'AI配置缺失',
 			_ => null,
 		} ?? switch (path) {
+			'aiConfigMissing' => 'AI配置缺失',
 			'generating' => '生成中...',
 			'generatedTags' => '已生成 Tags',
 			'exportScreenshot' => '导出截图',
@@ -4874,9 +4876,9 @@ extension on TranslationsZhCn {
 			'lanLabel' => '局域网',
 			'ffmpegNotFound' => 'FFmpeg 未找到',
 			'ffmpegNotFoundDesktop' => '桌面端导出功能需要 FFmpeg，但未找到 FFmpeg 可执行文件。请在设置中配置 FFmpeg 路径，或确保 FFmpeg 在系统 PATH 中。',
-			'stillOpenAnyway' => '仍要打开',
 			_ => null,
 		} ?? switch (path) {
+			'stillOpenAnyway' => '仍要打开',
 			'preparing' => '准备中…',
 			'downloadingPreviewClip' => '正在下载预览片段…',
 			'loadingPlayer' => '加载播放器…',
@@ -5388,9 +5390,9 @@ extension on TranslationsZhCn {
 			'builderGenerate' => '生成并导入',
 			'builderNameRequired' => '请填写名称',
 			'builderKeyRequired' => '请填写键',
-			'builderKeyInvalid' => '键只能包含字母、数字和下划线',
 			_ => null,
 		} ?? switch (path) {
+			'builderKeyInvalid' => '键只能包含字母、数字和下划线',
 			'builderImported' => '源已导入',
 			'builderGenerateFailed' => '生成失败',
 			'collapseSidebar' => '收起侧边栏',

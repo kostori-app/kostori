@@ -152,6 +152,7 @@ syncStateRemoteOnly: Not downloaded
 syncStateDiffers: Out of sync
 syncPromptInjections: Prompt injections
 syncWorldBook: World Info
+syncStoryChars: Story characters
 data: Data
 dateDesc: Date Desc
 date: Date

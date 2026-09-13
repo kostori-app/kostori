@@ -122,21 +122,20 @@ class _StoryPageState extends ConsumerState<StoryPage> {
         break;
       }
     }
-    if (existing != null) {
-      // 升级：其余定义用新版，但**保留 App 里加的角色卡**（按 id/名字去重合并）
-      await StoryStore.instance.upsert(
-        parsed.copyWith(
-          id: existing.id,
-          characters: _mergeCharacters(
-            existing.characters,
-            parsed.characters,
-          ),
-        ),
+    final id = existing?.id ?? parsed.id;
+    // 角色卡不写进故事文件；若 .md 内联了角色卡则并入独立存储
+    final inline = parsed.characters;
+    await StoryStore.instance.upsert(
+      parsed.copyWith(id: id, characters: const []),
+    );
+    if (inline.isNotEmpty) {
+      final current = StoryCharacterStore.instance.get(id);
+      await StoryCharacterStore.instance.put(
+        id,
+        _mergeCharacters(current, inline),
       );
-      return 'updated';
     }
-    await StoryStore.instance.upsert(parsed);
-    return 'new';
+    return existing != null ? 'updated' : 'new';
   }
 
   /// 合并角色卡：保留已有的，追加新版新增的（按 id 或名字去重）
@@ -810,8 +809,9 @@ class _StoryEditorState extends State<_StoryEditor> {
         iconText: p.icon,
       ),
   ];
+  // 角色卡来自独立存储（不再写进故事文件）
   late final List<CharacterCard> _characters = [
-    ...widget.story?.characters ?? const <CharacterCard>[],
+    ...StoryCharacterStore.instance.get(widget.story?.id ?? ''),
   ];
   late final List<_StoryVariableDraft> _variables = [
     for (final v in widget.story?.variables ?? const <StoryVariable>[])
@@ -904,6 +904,8 @@ class _StoryEditorState extends State<_StoryEditor> {
     super.initState();
     WorldBookStore.instance.ensureLoaded();
     PromptInjectionStore.instance.ensureLoaded();
+    StoryCharacterStore.instance.ensureLoaded();
+    SettingLibraryStore.instance.ensureLoaded();
   }
 
   static const _codexKinds = [
@@ -1032,8 +1034,10 @@ class _StoryEditorState extends State<_StoryEditor> {
       );
       return;
     }
+    final id =
+        widget.story?.id ?? 'story_${DateTime.now().millisecondsSinceEpoch}';
     final story = Story(
-      id: widget.story?.id ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
+      id: id,
       name: _nameCtrl.text.trim(),
       icon: widget.story?.icon ?? '📖',
       description: _descCtrl.text.trim(),
@@ -1075,10 +1079,8 @@ class _StoryEditorState extends State<_StoryEditor> {
             icon: p.icon.text.trim(),
           ),
       ],
-      characters: [
-        for (final c in _characters)
-          if (c.name.trim().isNotEmpty) c,
-      ],
+      // 角色卡不写进故事文件（见下方 StoryCharacterStore.put）
+      characters: const [],
       codex: [
         for (final d in _codexDefs)
           if (d.name.text.trim().isNotEmpty)
@@ -1184,6 +1186,10 @@ class _StoryEditorState extends State<_StoryEditor> {
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
     await StoryStore.instance.upsert(story);
+    await StoryCharacterStore.instance.put(id, [
+      for (final c in _characters)
+        if (c.name.trim().isNotEmpty) c,
+    ]);
     if (mounted) {
       App.rootContext.showMessage(message: t.saved);
       App.rootContext.pop();
@@ -2783,8 +2789,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   final Map<String, TextEditingController> _textValues = {};
   final Map<String, int> _numberValues = {};
 
-  /// 运行时故事：并入从设定库选择的条目（词条/称号/职业/据点）
-  late final Story _effective = _mergeSettings(widget.story);
+  /// 运行时故事：角色卡来自独立存储，再并入从设定库选择的条目
+  late Story _effective = widget.story;
+
+  Story _computeEffective() {
+    var s = widget.story;
+    final cards = StoryCharacterStore.instance.get(s.id);
+    if (cards.isNotEmpty) s = s.copyWith(characters: cards);
+    return _mergeSettings(s);
+  }
 
   Story _mergeSettings(Story s) {
     if (s.settingIds.isEmpty) return s;
@@ -2861,6 +2874,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   Future<void> _boot() async {
     await StorySessionStore.instance.ensureLoaded();
+    await StoryCharacterStore.instance.ensureLoaded();
+    _effective = _computeEffective();
     final saved = StorySessionStore.instance.get(story.id);
     if (saved != null && saved.sessionId.isNotEmpty) {
       if (!mounted) return;

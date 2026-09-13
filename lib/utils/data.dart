@@ -195,13 +195,15 @@ Future<File> exportAppData() async {
         }
       }
     }
-    // 角色卡 / 故事观 / 存档 / 提示词注入 / 世界书：独立目录（也随整包备份）
+    // 角色卡 / 故事观 / 存档 / 提示词注入 / 世界书 / 设定库 / 故事角色卡
     for (final dirName in const [
       'character_cards',
       'stories',
       'story_sessions',
       'prompt_injections',
       'world_book',
+      'setting_library',
+      'story_characters',
     ]) {
       final dir = FilePath.join(dataPath, dirName);
       if (Directory(dir).existsSync()) {
@@ -454,13 +456,15 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       }
       await MePagePluginManager().reload();
     }
-    // 角色卡 / 故事观 / 存档 / 提示词注入 / 世界书：合并导入（保留本地独有文件）
+    // 角色卡 / 故事观 / 存档 / 提示词注入 / 世界书 / 设定库 / 故事角色卡
     for (final dirName in const [
       'character_cards',
       'stories',
       'story_sessions',
       'prompt_injections',
       'world_book',
+      'setting_library',
+      'story_characters',
     ]) {
       final src = FilePath.join(cacheDirPath, dirName);
       if (!Directory(src).existsSync()) continue;

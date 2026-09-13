@@ -2129,9 +2129,7 @@ class StoryStore extends ChangeNotifier {
         jsonEncode({'mode': s.deathMode, 'resources': s.deathResources}),
       );
     }
-    if (s.characters.isNotEmpty) {
-      section('角色', jsonEncode([for (final c in s.characters) c.toJson()]));
-    }
+    // 角色卡不写入故事文件（存于 story_characters/<id>.json，见 StoryCharacterStore）
     if (s.variables.isNotEmpty) {
       section('变量', jsonEncode([for (final v in s.variables) v.toJson()]));
     }
@@ -2325,5 +2323,96 @@ class StorySessionStore extends ChangeNotifier {
   Future<void> reload() async {
     _loaded = false;
     await ensureLoaded();
+  }
+}
+
+/// 故事角色卡存储：`story_characters/<storyId>.json`
+/// 与故事 `.md` 分离——App 内添加的角色卡不再写进故事文件，
+/// 避免撑大文件、影响故事版本升级与后续改动。
+class StoryCharacterStore extends ChangeNotifier {
+  static final StoryCharacterStore instance = StoryCharacterStore._();
+
+  StoryCharacterStore._();
+
+  static const _dirName = 'story_characters';
+
+  final Map<String, List<CharacterCard>> _cards = {};
+  bool _loaded = false;
+
+  String get dirPath => '${App.dataPath}/$_dirName';
+
+  Future<void> ensureLoaded() async {
+    if (_loaded) return;
+    _cards.clear();
+    try {
+      final dir = Directory(dirPath);
+      await dir.create(recursive: true);
+      for (final entity in dir.listSync()) {
+        if (entity is! File || !entity.path.endsWith('.json')) continue;
+        try {
+          final json = jsonDecode(await entity.readAsString());
+          if (json is! List) continue;
+          final name = entity.uri.pathSegments.last;
+          final id = name.substring(0, name.length - 5);
+          _cards[id] = [
+            for (final e in json)
+              if (e is Map) CharacterCard.fromJson(e.cast<String, dynamic>()),
+          ];
+        } catch (_) {}
+      }
+    } catch (_) {}
+    _loaded = true;
+    notifyListeners();
+  }
+
+  /// 已存角色卡的故事 id（供选择性同步）
+  List<String> get storyIds => _cards.keys.toList();
+
+  List<CharacterCard> get(String storyId) =>
+      List.unmodifiable(_cards[storyId] ?? const <CharacterCard>[]);
+
+  Future<void> put(String storyId, List<CharacterCard> cards) async {
+    await ensureLoaded();
+    if (cards.isEmpty) {
+      await clear(storyId);
+      return;
+    }
+    _cards[storyId] = List.of(cards);
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await File('$dirPath/$storyId.json').writeAsString(
+      jsonEncode([for (final c in cards) c.toJson()]),
+    );
+    notifyListeners();
+  }
+
+  Future<void> clear(String storyId) async {
+    await ensureLoaded();
+    _cards.remove(storyId);
+    final f = File('$dirPath/$storyId.json');
+    if (f.existsSync()) {
+      try {
+        f.deleteSync();
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
+
+  Future<void> reload() async {
+    _loaded = false;
+    await ensureLoaded();
+  }
+
+  /// 把故事 `.md` 里内联的角色卡迁移到独立文件（一次性）
+  Future<void> migrateFromStories() async {
+    await ensureLoaded();
+    for (final story in StoryStore.instance.stories) {
+      if (story.characters.isEmpty) continue;
+      if ((_cards[story.id] ?? const []).isNotEmpty) continue;
+      await put(story.id, story.characters);
+      await StoryStore.instance.upsert(
+        story.copyWith(characters: const []),
+      );
+    }
   }
 }

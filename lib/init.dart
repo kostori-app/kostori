@@ -102,6 +102,9 @@ Future<void> init() async {
   await CharacterCardStore.instance.init().wait();
   await StoryStore.instance.init().wait();
   await StorySessionStore.instance.ensureLoaded().wait();
+  await StoryCharacterStore.instance.ensureLoaded().wait();
+  // 把旧版故事文件里内联的角色卡迁移到独立文件
+  await StoryCharacterStore.instance.migrateFromStories().wait();
   await _cleanupStalePrefs();
   unawaited(_logPrefsSizes());
   await OpenAiProviderRegistry.refreshKeyFormats().wait();

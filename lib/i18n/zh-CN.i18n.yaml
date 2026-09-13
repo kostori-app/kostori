@@ -141,6 +141,7 @@ syncStateRemoteOnly: 未下载
 syncStateDiffers: 有差异
 syncPromptInjections: 提示词注入
 syncWorldBook: 世界书
+syncStoryChars: 故事角色卡
 data: 数据
 dateDesc: 按日期降序
 date: 日期

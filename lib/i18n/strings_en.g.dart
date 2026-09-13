@@ -491,6 +491,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'World Info'
 	String get syncWorldBook => 'World Info';
 
+	/// en: 'Story characters'
+	String get syncStoryChars => 'Story characters';
+
 	/// en: 'Data'
 	String get data => 'Data';
 
@@ -8478,6 +8481,7 @@ extension on Translations {
 			'syncStateDiffers' => 'Out of sync',
 			'syncPromptInjections' => 'Prompt injections',
 			'syncWorldBook' => 'World Info',
+			'syncStoryChars' => 'Story characters',
 			'data' => 'Data',
 			'dateDesc' => 'Date Desc',
 			'date' => 'Date',
@@ -8839,9 +8843,9 @@ extension on Translations {
 			'borderColor' => 'Border Color',
 			'conversationTitle' => 'Conversation Title',
 			'aiConversation' => 'AI Conversation',
-			'topicList' => 'Topic List',
 			_ => null,
 		} ?? switch (path) {
+			'topicList' => 'Topic List',
 			'startConversationWithAI' => 'Start a conversation with AI',
 			'newConversation' => 'New Conversation',
 			'inputMessage' => 'Input message...',
@@ -9353,9 +9357,9 @@ extension on Translations {
 			'searchOptions' => 'Search Options',
 			'searchSources' => 'Search Sources',
 			'searchGroupAll' => 'All',
-			'searchGroupBangumi' => 'Bangumi',
 			_ => null,
 		} ?? switch (path) {
+			'searchGroupBangumi' => 'Bangumi',
 			'searchGroupDefault' => 'Default',
 			'chooseSearchSource' => 'Choose Search Source',
 			'singleSourceSearch' => 'Single Source',
@@ -9867,9 +9871,9 @@ extension on Translations {
 			'exporting' => 'Exporting...',
 			'tokenCopiedToClipboard' => 'Token copied to clipboard',
 			'generateQrCodeShare' => 'Generate QR Code to Share',
-			'aiSettings' => 'AI Settings',
 			_ => null,
 		} ?? switch (path) {
+			'aiSettings' => 'AI Settings',
 			'aiConfigMissing' => 'AI Config Missing',
 			'generating' => 'Generating...',
 			'generatedTags' => 'Generated Tags',
@@ -10381,9 +10385,9 @@ extension on Translations {
 			'aggregationEntry' => 'Aggregation Entry',
 			'aiLabel' => 'AI',
 			'lanLabel' => 'LAN',
-			'h264CRF' => 'H.264 · CRF',
 			_ => null,
 		} ?? switch (path) {
+			'h264CRF' => 'H.264 · CRF',
 			'ffmpegNotFound' => 'FFmpeg Not Found',
 			'ffmpegNotFoundDesktop' => 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.',
 			'stillOpenAnyway' => 'Still Open',
@@ -10895,9 +10899,9 @@ extension on Translations {
 			'builderGenerate' => 'Generate & Import',
 			'builderNameRequired' => 'Name is required',
 			'builderKeyRequired' => 'Key is required',
-			'builderKeyInvalid' => 'Key must contain only letters, digits and underscore',
 			_ => null,
 		} ?? switch (path) {
+			'builderKeyInvalid' => 'Key must contain only letters, digits and underscore',
 			'builderImported' => 'Source imported',
 			'builderGenerateFailed' => 'Generate failed',
 			'collapseSidebar' => 'Collapse sidebar',
