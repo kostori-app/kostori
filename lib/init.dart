@@ -11,6 +11,7 @@ import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
+import 'package:kostori/foundation/ai_service/setting_library.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -95,6 +96,7 @@ Future<void> init() async {
   await AssistantProfileStore.instance.init().wait();
   await PromptInjectionStore.instance.init().wait();
   await WorldBookStore.instance.init().wait();
+  await SettingLibraryStore.instance.init().wait();
   await PluginStore.instance.init().wait();
   // 角色卡 / 故事观 / 会话：文件化存储（同时完成旧 prefs 数据的迁移清理）
   await CharacterCardStore.instance.init().wait();

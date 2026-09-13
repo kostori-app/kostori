@@ -10,7 +10,7 @@ class PromptManagementSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           Appbar(
@@ -24,18 +24,426 @@ class PromptManagementSettingsPage extends StatelessWidget {
               tabs: [
                 Tab(text: t.promptInjection),
                 Tab(text: t.worldBook),
+                Tab(text: t.storySettingLibrary),
               ],
             ),
           ),
-          Expanded(
+          const Expanded(
             child: TabBarView(
-              children: const [_PromptInjectionPanel(), _WorldBookPanel()],
+              children: [
+                _PromptInjectionPanel(),
+                _WorldBookPanel(),
+                _SettingLibraryPanel(),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// 设定库管理：词条 / 称号 / 职业 / 据点
+class _SettingLibraryPanel extends StatefulWidget {
+  const _SettingLibraryPanel();
+
+  @override
+  State<_SettingLibraryPanel> createState() => _SettingLibraryPanelState();
+}
+
+class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
+  @override
+  void initState() {
+    super.initState();
+    SettingLibraryStore.instance.init();
+  }
+
+  String _typeLabel(String type) => switch (type) {
+    SettingTypes.codex => t.storyCodex,
+    SettingTypes.title => t.storyTitles,
+    SettingTypes.job => t.storyJob,
+    SettingTypes.facility => t.storyBase,
+    _ => type,
+  };
+
+  IconData _typeIcon(String type) => switch (type) {
+    SettingTypes.codex => Icons.menu_book_outlined,
+    SettingTypes.title => Icons.military_tech_outlined,
+    SettingTypes.job => Icons.badge_outlined,
+    SettingTypes.facility => Icons.home_work_outlined,
+    _ => Icons.category_outlined,
+  };
+
+  Future<void> _add() async {
+    final type = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.storyAddEntry,
+        icon: Icons.add,
+        initialSize: 0.42,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            for (final type in SettingTypes.all)
+              ListTile(
+                leading: Icon(_typeIcon(type)),
+                title: Text(_typeLabel(type)),
+                onTap: () => Navigator.of(ctx).pop(type),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (type == null || !mounted) return;
+    await _edit(
+      SettingEntry(
+        id: 'set_${DateTime.now().microsecondsSinceEpoch}',
+        type: type,
+        name: '',
+      ),
+    );
+  }
+
+  Future<void> _edit(SettingEntry entry) async {
+    final result = await showSettingEntryEditor(entry);
+    if (result == null) return;
+    await SettingLibraryStore.instance.upsert(result);
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final store = SettingLibraryStore.instance;
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final items = store.items;
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: FloatingActionButton(
+            onPressed: _add,
+            tooltip: t.storyAddEntry,
+            child: const Icon(Icons.add),
+          ),
+          body: items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      t.storySettingLibraryEmpty,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                  children: [
+                    for (final type in SettingTypes.all)
+                      if (store.byType(type).isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _typeIcon(type),
+                                size: 16,
+                                color: scheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _typeLabel(type),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        for (final e in store.byType(type))
+                          _SettingCard(
+                            children: [
+                              ListTile(
+                                dense: true,
+                                leading: Icon(_typeIcon(type), size: 20),
+                                title: Text(
+                                  e.name.isEmpty ? e.id : e.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  _entrySummary(e),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      iconSize: 18,
+                                      tooltip: t.edit,
+                                      icon: const Icon(Icons.edit_note, size: 18),
+                                      onPressed: () => _edit(e),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      iconSize: 18,
+                                      tooltip: t.delete,
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        size: 18,
+                                        color: scheme.error,
+                                      ),
+                                      onPressed: () async {
+                                        await SettingLibraryStore.instance
+                                            .remove(e.id);
+                                        if (mounted) setState(() {});
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  String _entrySummary(SettingEntry e) => switch (e.type) {
+    SettingTypes.codex =>
+      (e.payload['mechanics'] ?? e.payload['display'] ?? '').toString(),
+    SettingTypes.title => (e.payload['effects'] ?? '').toString(),
+    SettingTypes.job =>
+      (e.payload['levels'] is List)
+          ? '${(e.payload['levels'] as List).length} ${t.storyJobLevel}'
+          : (e.payload['description'] ?? '').toString(),
+    SettingTypes.facility =>
+      '${t.storyBaseMaxLevel}: ${e.payload['maxLevel'] ?? 1}',
+    _ => '',
+  };
+}
+
+/// 编辑设定库条目（按类型显示不同字段）
+Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
+  final nameCtrl = TextEditingController(text: entry.name);
+  var codexKind = entry.payload['kind']?.toString() ?? 'item';
+  final displayCtrl = TextEditingController(
+    text: entry.payload['display']?.toString() ?? '',
+  );
+  final mechanicsCtrl = TextEditingController(
+    text: entry.payload['mechanics']?.toString() ?? '',
+  );
+  final effectsCtrl = TextEditingController(
+    text: entry.payload['effects']?.toString() ?? '',
+  );
+  var stackable = entry.payload['stackable'] == true;
+  final descCtrl = TextEditingController(
+    text: entry.payload['description']?.toString() ?? '',
+  );
+  final maxLevelCtrl = TextEditingController(
+    text: entry.payload['maxLevel']?.toString() ?? '1',
+  );
+  final levelsCtrl = TextEditingController(
+    text: [
+      for (final l in (entry.payload['levels'] as List? ?? const []))
+        if (l is Map)
+          '${l['level'] ?? ''}|${l['name'] ?? ''}|${l['bonus'] ?? ''}',
+    ].join('\n'),
+  );
+
+  const codexKinds = ['item', 'trait', 'race', 'skill', 'talent', 'body'];
+  String kindLabel(String k) => switch (k) {
+    'item' => t.storyCodexItem,
+    'trait' => t.storyCodexTrait,
+    'race' => t.storyCodexRace,
+    'skill' => t.skills,
+    'talent' => t.storyCodexTalent,
+    'body' => t.storyCodexBody,
+    _ => k,
+  };
+
+  final ok = await showDialog<bool>(
+    context: App.rootContext,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setLocal) => ContentDialog(
+        title: entry.name.isEmpty ? t.storyAddEntry : t.edit,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: t.storyCharacterName,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (entry.type == SettingTypes.codex) ...[
+                Row(
+                  children: [
+                    Text('${t.storyCodex}: '),
+                    Select(
+                      current: kindLabel(codexKind),
+                      values: [for (final k in codexKinds) kindLabel(k)],
+                      onTap: (i) => setLocal(() => codexKind = codexKinds[i]),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: displayCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.storyCodexDisplay,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: mechanicsCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.storyCodexMechanics,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ] else if (entry.type == SettingTypes.title) ...[
+                TextField(
+                  controller: effectsCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.storyCodexMechanics,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(t.storyTitleStackable),
+                    const Spacer(),
+                    CustomSwitch(
+                      value: stackable,
+                      onChanged: (v) => setLocal(() => stackable = v),
+                    ),
+                  ],
+                ),
+              ] else if (entry.type == SettingTypes.job) ...[
+                TextField(
+                  controller: descCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.storyCodexDisplay,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: levelsCtrl,
+                  minLines: 2,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    labelText: '${t.storyJobLevel}｜${t.storyCharacterName}｜${t.storyJobBonus}',
+                    alignLabelWithHint: true,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ] else ...[
+                TextField(
+                  controller: descCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.storyCodexDisplay,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: maxLevelCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: t.storyBaseMaxLevel,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  final name = nameCtrl.text.trim();
+  final payload = <String, dynamic>{};
+  switch (entry.type) {
+    case SettingTypes.codex:
+      payload.addAll({
+        'kind': codexKind,
+        'key': name,
+        'name': name,
+        'display': displayCtrl.text.trim(),
+        'mechanics': mechanicsCtrl.text.trim(),
+      });
+    case SettingTypes.title:
+      payload.addAll({
+        'key': name,
+        'name': name,
+        'effects': effectsCtrl.text.trim(),
+        'stackable': stackable,
+      });
+    case SettingTypes.job:
+      payload.addAll({
+        'name': name,
+        'description': descCtrl.text.trim(),
+        'levels': [
+          for (final line in levelsCtrl.text.split('\n'))
+            if (line.trim().isNotEmpty)
+              () {
+                final parts = line.split('|');
+                return {
+                  'level': int.tryParse(parts.isNotEmpty ? parts[0].trim() : '') ?? 0,
+                  'name': parts.length > 1 ? parts[1].trim() : '',
+                  'bonus': parts.length > 2 ? parts[2].trim() : '',
+                };
+              }(),
+        ],
+      });
+    case SettingTypes.facility:
+      payload.addAll({
+        'key': name,
+        'name': name,
+        'description': descCtrl.text.trim(),
+        'maxLevel': int.tryParse(maxLevelCtrl.text.trim()) ?? 1,
+      });
+  }
+  nameCtrl.dispose();
+  displayCtrl.dispose();
+  mechanicsCtrl.dispose();
+  effectsCtrl.dispose();
+  descCtrl.dispose();
+  maxLevelCtrl.dispose();
+  levelsCtrl.dispose();
+  if (ok != true) return null;
+  return entry.copyWith(name: name, payload: payload);
 }
 
 String _injectionPositionLabel(PromptInjectionPosition position) =>

@@ -1027,6 +1027,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'sessions',
     'prompts',
     'worldbook',
+    'library',
   ];
 
   int _tab = 0;
@@ -1049,6 +1050,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'sessions' => StorySessionStore.instance.dirPath,
     'prompts' => PromptInjectionStore.instance.dirPath,
     'worldbook' => WorldBookStore.instance.dirPath,
+    'library' => SettingLibraryStore.instance.dirPath,
     _ => '',
   };
 
@@ -1061,6 +1063,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     await StorySessionStore.instance.ensureLoaded();
     await PromptInjectionStore.instance.ensureLoaded();
     await WorldBookStore.instance.ensureLoaded();
+    await SettingLibraryStore.instance.ensureLoaded();
     final sync = DataSync();
     final remote = <String, Map<String, RemoteFileInfo>>{};
     for (final kind in _kinds) {
@@ -1084,6 +1087,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'sessions' => {...StorySessionStore.instance.storyIds},
     'prompts' => {for (final i in PromptInjectionStore.instance.items) i.id},
     'worldbook' => {for (final e in WorldBookStore.instance.entries) e.id},
+    'library' => {for (final e in SettingLibraryStore.instance.items) e.id},
     _ => <String>{},
   };
 
@@ -1093,6 +1097,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'sessions' => StoryStore.instance.find(id)?.name ?? id,
     'prompts' => PromptInjectionStore.instance.findById(id)?.name ?? id,
     'worldbook' => _worldBookName(id),
+    'library' => SettingLibraryStore.instance.find(id)?.name ?? id,
     _ => id,
   };
 
@@ -1109,6 +1114,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'sessions' => t.storySessions,
     'prompts' => t.syncPromptInjections,
     'worldbook' => t.syncWorldBook,
+    'library' => t.storySettingLibrary,
     _ => kind,
   };
 
@@ -1265,6 +1271,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       await StorySessionStore.instance.reload();
       await PromptInjectionStore.instance.reload();
       await WorldBookStore.instance.reload();
+    await SettingLibraryStore.instance.reload();
     } finally {
       if (mounted) {
         setState(() {
@@ -1307,6 +1314,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     await StorySessionStore.instance.reload();
     await PromptInjectionStore.instance.reload();
     await WorldBookStore.instance.reload();
+    await SettingLibraryStore.instance.reload();
     if (!mounted) return;
     setState(() {
       _busy = false;

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
+import 'package:kostori/foundation/ai_service/setting_library.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/utils/utils.dart';
 
@@ -461,6 +462,47 @@ void main() {
       expect(back.codex.single.kind, 'item');
       expect(back.codex.single.name, '长剑');
       expect(back.codex.single.mechanics, '攻击+3');
+    });
+
+    test('setting library ids round trip', () {
+      const story = Story(id: 's', name: 'S', settingIds: ['set_1', 'set_2']);
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.settingIds, ['set_1', 'set_2']);
+    });
+
+    test('mergeSettingLibrary merges codex/title/job/facility', () {
+      const story = Story(id: 's', name: 'S');
+      final merged = mergeSettingLibrary(story, const [
+        SettingEntry(
+          id: '1',
+          type: SettingTypes.codex,
+          name: '剑',
+          payload: {'kind': 'item', 'key': 'sword', 'name': '剑', 'mechanics': '攻击+3'},
+        ),
+        SettingEntry(
+          id: '2',
+          type: SettingTypes.title,
+          name: '勇者',
+          payload: {'key': 'hero', 'name': '勇者', 'effects': '力量+2'},
+        ),
+        SettingEntry(
+          id: '3',
+          type: SettingTypes.job,
+          name: '游侠',
+          payload: {'name': '游侠', 'levels': []},
+        ),
+        SettingEntry(
+          id: '4',
+          type: SettingTypes.facility,
+          name: '锻造台',
+          payload: {'key': 'forge', 'name': '锻造台', 'maxLevel': 3},
+        ),
+      ]);
+      expect(merged.codex.single.name, '剑');
+      expect(merged.titles.single.name, '勇者');
+      expect(merged.job?.name, '游侠');
+      expect(merged.facilities.single.name, '锻造台');
     });
 
     test('generation params round trip', () {

@@ -4813,6 +4813,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Manage library'
 	String get storyLibraryManage => 'Manage library';
 
+	/// en: 'Setting library'
+	String get storySettingLibrary => 'Setting library';
+
+	/// en: 'Checked entries are merged into this story (codex / titles / class / base).'
+	String get storySettingLibraryHint => 'Checked entries are merged into this story (codex / titles / class / base).';
+
+	/// en: 'The setting library is empty. Add entries in prompt management first.'
+	String get storySettingLibraryEmpty => 'The setting library is empty. Add entries in prompt management first.';
+
 	/// en: 'Fatal rule'
 	String get storyDeathMode => 'Fatal rule';
 
@@ -9955,6 +9964,9 @@ extension on Translations {
 			'storyImportPrompt' => 'Import prompt',
 			'storyExportSt' => 'Export as ST card',
 			'storyLibraryManage' => 'Manage library',
+			'storySettingLibrary' => 'Setting library',
+			'storySettingLibraryHint' => 'Checked entries are merged into this story (codex / titles / class / base).',
+			'storySettingLibraryEmpty' => 'The setting library is empty. Add entries in prompt management first.',
 			'storyDeathMode' => 'Fatal rule',
 			'storyDeathModeAny' => 'Any reaches 0',
 			'storyDeathModeAll' => 'All reach 0',
@@ -10367,11 +10379,11 @@ extension on Translations {
 			'lanLabel' => 'LAN',
 			'h264CRF' => 'H.264 · CRF',
 			'ffmpegNotFound' => 'FFmpeg Not Found',
+			_ => null,
+		} ?? switch (path) {
 			'ffmpegNotFoundDesktop' => 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.',
 			'stillOpenAnyway' => 'Still Open',
 			'preparing' => 'Preparing…',
-			_ => null,
-		} ?? switch (path) {
 			'downloadingPreviewClip' => 'Downloading preview clip…',
 			'loadingPlayer' => 'Loading player…',
 			'cancelExport' => 'Cancel Export?',
@@ -10881,11 +10893,11 @@ extension on Translations {
 			'builderKeyRequired' => 'Key is required',
 			'builderKeyInvalid' => 'Key must contain only letters, digits and underscore',
 			'builderImported' => 'Source imported',
+			_ => null,
+		} ?? switch (path) {
 			'builderGenerateFailed' => 'Generate failed',
 			'collapseSidebar' => 'Collapse sidebar',
 			'expandSidebar' => 'Expand sidebar',
-			_ => null,
-		} ?? switch (path) {
 			'clearFinishedDownload' => 'Clear finished downloads',
 			'downloadEmpty' => 'No download tasks',
 			'downloadQueued' => 'Queued',

@@ -29,6 +29,7 @@ import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
+import 'package:kostori/foundation/ai_service/setting_library.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/ai_service/story_text_style.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';

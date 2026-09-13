@@ -852,6 +852,9 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final Set<String> _injectionIds = {
     ...widget.story?.injectionIds ?? const <String>[],
   };
+  late final Set<String> _settingIds = {
+    ...widget.story?.settingIds ?? const <String>[],
+  };
 
   @override
   void initState() {
@@ -1019,6 +1022,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       ],
       worldBookIds: _worldBookIds.toList(),
       injectionIds: _injectionIds.toList(),
+      settingIds: _settingIds.toList(),
       panels: [
         for (final p in _panels)
           StoryPanel(
@@ -1367,6 +1371,7 @@ class _StoryEditorState extends State<_StoryEditor> {
     (t.storyChoicesPrompt, _textTab(_choicesCtrl)),
     (t.storyActions, _actionsTab()),
     (t.storyLibrary, _libraryTab()),
+    (t.storySettingLibrary, _settingLibraryTab()),
     (t.storyPanels, _panelsTab()),
     (t.storyAdvanced, _advancedTab()),
   ];
@@ -1801,6 +1806,83 @@ class _StoryEditorState extends State<_StoryEditor> {
       },
     );
   }
+
+  /// 设定库：勾选要并入本故事的词条 / 称号 / 职业 / 据点
+  Widget _settingLibraryTab() {
+    final scheme = Theme.of(context).colorScheme;
+    return ListenableBuilder(
+      listenable: SettingLibraryStore.instance,
+      builder: (context, _) {
+        final store = SettingLibraryStore.instance;
+        final manage = Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => App.rootContext.to(
+              () => const PromptManagementSettingsPage(),
+            ),
+            icon: const Icon(Icons.settings_outlined, size: 18),
+            label: Text(t.storyLibraryManage),
+          ),
+        );
+        if (store.items.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  t.storySettingLibraryEmpty,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                manage,
+              ],
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            manage,
+            Text(
+              t.storySettingLibraryHint,
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+            for (final type in SettingTypes.all)
+              if (store.byType(type).isNotEmpty) ...[
+                Text(
+                  _settingTypeLabel(type),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                for (final e in store.byType(type))
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(e.name.isEmpty ? e.id : e.name),
+                    value: _settingIds.contains(e.id),
+                    onChanged: (v) => setState(() {
+                      if (v == true) {
+                        _settingIds.add(e.id);
+                      } else {
+                        _settingIds.remove(e.id);
+                      }
+                    }),
+                  ),
+              ],
+          ],
+        );
+      },
+    );
+  }
+
+  String _settingTypeLabel(String type) => switch (type) {
+    SettingTypes.codex => t.storyCodex,
+    SettingTypes.title => t.storyTitles,
+    SettingTypes.job => t.storyJob,
+    SettingTypes.facility => t.storyBase,
+    _ => type,
+  };
 
   Widget _panelsTab() {
     final scheme = Theme.of(context).colorScheme;
@@ -2658,7 +2740,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   final Map<String, TextEditingController> _textValues = {};
   final Map<String, int> _numberValues = {};
 
-  Story get story => widget.story;
+  /// 运行时故事：并入从设定库选择的条目（词条/称号/职业/据点）
+  late final Story _effective = _mergeSettings(widget.story);
+
+  Story _mergeSettings(Story s) {
+    if (s.settingIds.isEmpty) return s;
+    final entries = <SettingEntry>[];
+    for (final id in s.settingIds) {
+      final e = SettingLibraryStore.instance.find(id);
+      if (e != null) entries.add(e);
+    }
+    return mergeSettingLibrary(s, entries);
+  }
+
+  Story get story => _effective;
 
   @override
   void initState() {

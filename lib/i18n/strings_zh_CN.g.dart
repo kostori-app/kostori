@@ -1629,6 +1629,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyImportPrompt => '导入提示词';
 	@override String get storyExportSt => '导出为 ST 角色卡';
 	@override String get storyLibraryManage => '管理知识库';
+	@override String get storySettingLibrary => '设定库';
+	@override String get storySettingLibraryHint => '勾选的条目会并入本故事（词条 / 称号 / 职业 / 据点）。';
+	@override String get storySettingLibraryEmpty => '设定库还是空的，请先在提示词管理里添加。';
 	@override String get storyDeathMode => '致命判定';
 	@override String get storyDeathModeAny => '任一归零';
 	@override String get storyDeathModeAll => '全部归零';
@@ -4455,6 +4458,9 @@ extension on TranslationsZhCn {
 			'storyImportPrompt' => '导入提示词',
 			'storyExportSt' => '导出为 ST 角色卡',
 			'storyLibraryManage' => '管理知识库',
+			'storySettingLibrary' => '设定库',
+			'storySettingLibraryHint' => '勾选的条目会并入本故事（词条 / 称号 / 职业 / 据点）。',
+			'storySettingLibraryEmpty' => '设定库还是空的，请先在提示词管理里添加。',
 			'storyDeathMode' => '致命判定',
 			'storyDeathModeAny' => '任一归零',
 			'storyDeathModeAll' => '全部归零',
@@ -4868,11 +4874,11 @@ extension on TranslationsZhCn {
 			'ffmpegNotFoundDesktop' => '桌面端导出功能需要 FFmpeg，但未找到 FFmpeg 可执行文件。请在设置中配置 FFmpeg 路径，或确保 FFmpeg 在系统 PATH 中。',
 			'stillOpenAnyway' => '仍要打开',
 			'preparing' => '准备中…',
+			_ => null,
+		} ?? switch (path) {
 			'downloadingPreviewClip' => '正在下载预览片段…',
 			'loadingPlayer' => '加载播放器…',
 			'cancelExport' => '取消导出?',
-			_ => null,
-		} ?? switch (path) {
 			'exportInProgress' => '导出正在进行中，关闭将中断导出。',
 			'confirmClose' => '确认关闭',
 			'stopPreview' => '停止预览',
@@ -5382,11 +5388,11 @@ extension on TranslationsZhCn {
 			'builderKeyRequired' => '请填写键',
 			'builderKeyInvalid' => '键只能包含字母、数字和下划线',
 			'builderImported' => '源已导入',
+			_ => null,
+		} ?? switch (path) {
 			'builderGenerateFailed' => '生成失败',
 			'collapseSidebar' => '收起侧边栏',
 			'expandSidebar' => '展开侧边栏',
-			_ => null,
-		} ?? switch (path) {
 			'clearFinishedDownload' => '清空已完成下载',
 			'downloadEmpty' => '暂无下载任务',
 			'downloadQueued' => '等待中',

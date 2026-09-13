@@ -1635,6 +1635,9 @@ storyAddEntry: 添加条目
 storyImportPrompt: 导入提示词
 storyExportSt: 导出为 ST 角色卡
 storyLibraryManage: 管理知识库
+storySettingLibrary: 设定库
+storySettingLibraryHint: 勾选的条目会并入本故事（词条 / 称号 / 职业 / 据点）。
+storySettingLibraryEmpty: 设定库还是空的，请先在提示词管理里添加。
 storyDeathMode: 致命判定
 storyDeathModeAny: 任一归零
 storyDeathModeAll: 全部归零

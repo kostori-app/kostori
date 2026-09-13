@@ -1376,6 +1376,9 @@ class Story {
   /// 从提示词注入库中选择的条目（为空表示不注入库条目）
   final List<String> injectionIds;
 
+  /// 从设定库（词条/称号/职业/据点）中选择的条目 id
+  final List<String> settingIds;
+
   /// 自定义面板分区（为空表示使用默认分区）
   final List<StoryPanel> panels;
 
@@ -1452,6 +1455,7 @@ class Story {
     this.actions = const [],
     this.worldBookIds = const [],
     this.injectionIds = const [],
+    this.settingIds = const [],
     this.panels = const [],
     this.deathResources = const [],
     this.deathMode = 'any',
@@ -1485,6 +1489,7 @@ class Story {
     List<StoryAction>? actions,
     List<String>? worldBookIds,
     List<String>? injectionIds,
+    List<String>? settingIds,
     List<StoryPanel>? panels,
     List<String>? deathResources,
     String? deathMode,
@@ -1516,6 +1521,7 @@ class Story {
     actions: actions ?? this.actions,
     worldBookIds: worldBookIds ?? this.worldBookIds,
     injectionIds: injectionIds ?? this.injectionIds,
+    settingIds: settingIds ?? this.settingIds,
     panels: panels ?? this.panels,
     deathResources: deathResources ?? this.deathResources,
     deathMode: deathMode ?? this.deathMode,
@@ -1561,6 +1567,8 @@ class Story {
     worldBookIds: (json['worldBookIds'] as List?)?.whereType<String>().toList() ??
         const [],
     injectionIds: (json['injectionIds'] as List?)?.whereType<String>().toList() ??
+        const [],
+    settingIds: (json['settingIds'] as List?)?.whereType<String>().toList() ??
         const [],
     panels: json['panels'] is List
         ? [
@@ -1644,6 +1652,7 @@ class Story {
     'actions': [for (final a in actions) a.toJson()],
     'worldBookIds': worldBookIds,
     'injectionIds': injectionIds,
+    'settingIds': settingIds,
     'panels': [for (final p in panels) p.toJson()],
     'deathResources': deathResources,
     'deathMode': deathMode,
@@ -2055,6 +2064,7 @@ class StoryStore extends ChangeNotifier {
       actions: actions,
       worldBookIds: idList('世界书库'),
       injectionIds: idList('提示词库'),
+      settingIds: idList('设定库'),
       panels: panels,
       deathResources: deathRes.resources,
       deathMode: deathRes.mode,
@@ -2105,6 +2115,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.injectionIds.isNotEmpty) {
       section('提示词库', jsonEncode(s.injectionIds));
+    }
+    if (s.settingIds.isNotEmpty) {
+      section('设定库', jsonEncode(s.settingIds));
     }
     if (s.panels.isNotEmpty) {
       section('面板', jsonEncode([for (final p in s.panels) p.toJson()]));

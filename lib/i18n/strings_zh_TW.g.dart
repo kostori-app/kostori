@@ -1630,6 +1630,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyImportPrompt => '匯入提示詞';
 	@override String get storyExportSt => '匯出為 ST 角色卡';
 	@override String get storyLibraryManage => '管理知識庫';
+	@override String get storySettingLibrary => '設定庫';
+	@override String get storySettingLibraryHint => '勾選的條目會併入本故事（詞條 / 稱號 / 職業 / 據點）。';
+	@override String get storySettingLibraryEmpty => '設定庫還是空的，請先在提示詞管理裡新增。';
 	@override String get storyDeathMode => '致命判定';
 	@override String get storyDeathModeAny => '任一歸零';
 	@override String get storyDeathModeAll => '全部歸零';
@@ -4455,6 +4458,9 @@ extension on TranslationsZhTw {
 			'storyImportPrompt' => '匯入提示詞',
 			'storyExportSt' => '匯出為 ST 角色卡',
 			'storyLibraryManage' => '管理知識庫',
+			'storySettingLibrary' => '設定庫',
+			'storySettingLibraryHint' => '勾選的條目會併入本故事（詞條 / 稱號 / 職業 / 據點）。',
+			'storySettingLibraryEmpty' => '設定庫還是空的，請先在提示詞管理裡新增。',
 			'storyDeathMode' => '致命判定',
 			'storyDeathModeAny' => '任一歸零',
 			'storyDeathModeAll' => '全部歸零',
@@ -4867,11 +4873,11 @@ extension on TranslationsZhTw {
 			'ffmpegNotFoundDesktop' => '桌面端導出功能需要 FFmpeg，但未找到 FFmpeg 可執行檔。請在設定中配置 FFmpeg 路徑，或確保 FFmpeg 在系統 PATH 中。',
 			'stillOpenAnyway' => '仍要打開',
 			'preparing' => '準備中…',
+			_ => null,
+		} ?? switch (path) {
 			'downloadingPreviewClip' => '正在下載預覽片段…',
 			'loadingPlayer' => '載入播放器…',
 			'cancelExport' => '取消導出?',
-			_ => null,
-		} ?? switch (path) {
 			'exportInProgress' => '導出正在進行中，關閉將中斷導出。',
 			'confirmClose' => '確認關閉',
 			'stopPreview' => '停止預覽',
@@ -5381,11 +5387,11 @@ extension on TranslationsZhTw {
 			'builderKeyInvalid' => '鍵只能包含字母、數字和底線',
 			'builderImported' => '來源已匯入',
 			'builderGenerateFailed' => '生成失敗',
+			_ => null,
+		} ?? switch (path) {
 			'collapseSidebar' => '收起側邊欄',
 			'expandSidebar' => '展開側邊欄',
 			'clearFinishedDownload' => '清空已完成下載',
-			_ => null,
-		} ?? switch (path) {
 			'downloadEmpty' => '暫無下載任務',
 			'downloadQueued' => '等待中',
 			'downloadCompleted' => '已完成',
