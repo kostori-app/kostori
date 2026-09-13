@@ -710,6 +710,15 @@ class _StoryEditorState extends State<_StoryEditor> {
     text: (widget.story?.deathResources ?? const []).join('、'),
   );
   late String _deathMode = widget.story?.deathMode ?? 'any';
+  late final _tempCtrl = TextEditingController(
+    text: widget.story?.temperature?.toString() ?? '',
+  );
+  late final _topPCtrl = TextEditingController(
+    text: widget.story?.topP?.toString() ?? '',
+  );
+  late final _maxTokensCtrl = TextEditingController(
+    text: widget.story?.maxTokens?.toString() ?? '',
+  );
   int _tab = 0;
   late final _openingCtrl = TextEditingController(
     text: widget.story?.opening ?? '',
@@ -951,6 +960,9 @@ class _StoryEditorState extends State<_StoryEditor> {
     for (final f in _facilities) {
       f.dispose();
     }
+    _tempCtrl.dispose();
+    _topPCtrl.dispose();
+    _maxTokensCtrl.dispose();
     super.dispose();
   }
 
@@ -989,6 +1001,9 @@ class _StoryEditorState extends State<_StoryEditor> {
           .where((e) => e.isNotEmpty)
           .toList(),
       deathMode: _deathMode,
+      temperature: double.tryParse(_tempCtrl.text.trim()),
+      topP: double.tryParse(_topPCtrl.text.trim()),
+      maxTokens: int.tryParse(_maxTokensCtrl.text.trim()),
       choicesPrompt: _choicesCtrl.text.trim(),
       setup: widget.story?.setup ?? const [],
       actions: [
@@ -1368,6 +1383,32 @@ class _StoryEditorState extends State<_StoryEditor> {
           multiline: true,
         ),
         _deathSection(),
+        _genParamsSection(),
+      ],
+    );
+  }
+
+  /// 生成参数（temperature / top_p / max tokens，留空跟随默认）
+  Widget _genParamsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+          child: Text(
+            t.storyGenParams,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(child: _field(t.temperature, _tempCtrl, required: false)),
+            Expanded(child: _field(t.topP, _topPCtrl, required: false)),
+            Expanded(
+              child: _field(t.maxTokens, _maxTokensCtrl, required: false),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -2991,6 +3032,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           _state,
           scanText: outgoing,
         ),
+        paramsOverride: _storyParams(),
         cancelToken: cancelToken,
       )) {
         if (!mounted) return;
@@ -3389,6 +3431,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _inputFocus.requestFocus();
   }
 
+  /// 故事的生成参数（为空则跟随服务商默认值）
+  AiGenerationParams? _storyParams() {
+    if (story.temperature == null &&
+        story.topP == null &&
+        story.maxTokens == null) {
+      return null;
+    }
+    return AiGenerationParams(
+      temperature: story.temperature,
+      topP: story.topP,
+      maxTokens: story.maxTokens,
+    );
+  }
+
   /// 按初始状态顺序补齐模型漏报的数值条；模型有更新则用模型的值。
   /// [extra] 用于并入后续新增/当前已有的资源。
   GameState _mergeResources(GameState state, {List<StatBar> extra = const []}) {
@@ -3666,6 +3722,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           _state,
           scanText: m.inputContent,
         ),
+        paramsOverride: _storyParams(),
       );
       if (!mounted) return;
       if (!res.success) {

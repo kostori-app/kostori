@@ -151,7 +151,7 @@ syncStateLocalOnly: Not uploaded
 syncStateRemoteOnly: Not downloaded
 syncStateDiffers: Out of sync
 syncPromptInjections: Prompt injections
-syncWorldBook: World book
+syncWorldBook: World Info
 data: Data
 dateDesc: Date Desc
 date: Date
@@ -1603,7 +1603,7 @@ storyNew: New story
 storyEdit: Edit story
 storyOpening: Opening
 storySystemPrompt: System prompt
-storyWorldBook: World book
+storyWorldBook: World Info
 storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
 storyRoll: Roll
@@ -1652,6 +1652,9 @@ storyTitleStackable: Stackable
 storyJobLevel: Level
 storyJobBonus: Bonus
 storyBaseMaxLevel: Max level
+storyGenParams: Generation params
+topP: Top P
+maxTokens: Max tokens
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned
@@ -2469,8 +2472,8 @@ roleManagement: Role Management
 promptManagement: Prompt
 promptInjection: Prompt Injection
 promptInjectionHint: Injection position decides where each fragment is inserted in the system prompt
-worldBook: World Book
-worldBookEntries: World Book entries
+worldBook: World Info
+worldBookEntries: World Info entries
 newPromptInjection: New Injection
 editPromptInjection: Edit Injection
 injectionName: Name
@@ -2505,7 +2508,7 @@ worldBookHitTestHint: Type a sentence to see which entries will be triggered
 worldBookHitTestPlaceholder: Type a sentence...
 worldBookHitsResult: Matching entries
 worldBookNoHits: No entries matched
-noWorldBookEntriesYet: No world book entries yet
+noWorldBookEntriesYet: No world info entries yet
 noPromptInjectionsYet: No prompt injections yet
 auxTemperature: Temperature
 selectAssistantProfile: Select an assistant

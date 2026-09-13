@@ -1413,6 +1413,11 @@ class Story {
   /// 据点设施定义（可选）
   final List<StoryFacility> facilities;
 
+  /// 生成参数（可空表示跟随服务商默认值）
+  final double? temperature;
+  final double? topP;
+  final int? maxTokens;
+
   /// 玩家 persona（用户本人，AI 不扮演）
   final StoryPersona persona;
 
@@ -1459,6 +1464,9 @@ class Story {
     this.titleMode = 'all',
     this.job,
     this.facilities = const [],
+    this.temperature,
+    this.topP,
+    this.maxTokens,
     this.persona = const StoryPersona(),
     this.initialState = GameState.empty,
     this.isBuiltin = false,
@@ -1489,6 +1497,9 @@ class Story {
     String? titleMode,
     StoryJob? job,
     List<StoryFacility>? facilities,
+    double? temperature,
+    double? topP,
+    int? maxTokens,
     StoryPersona? persona,
     GameState? initialState,
   }) => Story(
@@ -1517,6 +1528,9 @@ class Story {
     titleMode: titleMode ?? this.titleMode,
     job: job ?? this.job,
     facilities: facilities ?? this.facilities,
+    temperature: temperature ?? this.temperature,
+    topP: topP ?? this.topP,
+    maxTokens: maxTokens ?? this.maxTokens,
     persona: persona ?? this.persona,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
@@ -1604,6 +1618,9 @@ class Story {
               if (e is Map) StoryFacility.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    temperature: (json['temperature'] as num?)?.toDouble(),
+    topP: (json['topP'] as num?)?.toDouble(),
+    maxTokens: (json['maxTokens'] as num?)?.toInt(),
     persona: json['persona'] is Map
         ? StoryPersona.fromJson((json['persona'] as Map).cast<String, dynamic>())
         : const StoryPersona(),
@@ -1639,6 +1656,9 @@ class Story {
     'titleMode': titleMode,
     if (job != null) 'job': job!.toJson(),
     'facilities': [for (final f in facilities) f.toJson()],
+    if (temperature != null) 'temperature': temperature,
+    if (topP != null) 'topP': topP,
+    if (maxTokens != null) 'maxTokens': maxTokens,
     'persona': persona.toJson(),
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
@@ -1988,6 +2008,20 @@ class StoryStore extends ChangeNotifier {
         }
       } catch (_) {}
     }
+    double? genTemp;
+    double? genTopP;
+    int? genMaxTokens;
+    final genText = _section(text, '生成参数');
+    if (genText != null && genText.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(genText.trim());
+        if (decoded is Map) {
+          genTemp = (decoded['temperature'] as num?)?.toDouble();
+          genTopP = (decoded['topP'] as num?)?.toDouble();
+          genMaxTokens = (decoded['maxTokens'] as num?)?.toInt();
+        }
+      } catch (_) {}
+    }
     StoryJob? jobDef;
     final jobText = _section(text, '职业');
     if (jobText != null && jobText.trim().isNotEmpty) {
@@ -2033,6 +2067,9 @@ class StoryStore extends ChangeNotifier {
       titleMode: titleMode,
       job: jobDef,
       facilities: mapList('据点', StoryFacility.fromJson),
+      temperature: genTemp,
+      topP: genTopP,
+      maxTokens: genMaxTokens,
       persona: persona,
       initialState: initialState,
     );
@@ -2107,6 +2144,16 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.facilities.isNotEmpty) {
       section('据点', jsonEncode([for (final f in s.facilities) f.toJson()]));
+    }
+    if (s.temperature != null || s.topP != null || s.maxTokens != null) {
+      section(
+        '生成参数',
+        jsonEncode({
+          if (s.temperature != null) 'temperature': s.temperature,
+          if (s.topP != null) 'topP': s.topP,
+          if (s.maxTokens != null) 'maxTokens': s.maxTokens,
+        }),
+      );
     }
     if (!s.persona.isEmpty) {
       section('玩家角色', jsonEncode(s.persona.toJson()));

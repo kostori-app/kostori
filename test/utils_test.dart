@@ -463,6 +463,21 @@ void main() {
       expect(back.codex.single.mechanics, '攻击+3');
     });
 
+    test('generation params round trip', () {
+      const story = Story(
+        id: 's',
+        name: 'S',
+        temperature: 0.8,
+        topP: 0.9,
+        maxTokens: 2048,
+      );
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.temperature, 0.8);
+      expect(back.topP, 0.9);
+      expect(back.maxTokens, 2048);
+    });
+
     test('death resources and mode round trip', () {
       const story = Story(
         id: 's',

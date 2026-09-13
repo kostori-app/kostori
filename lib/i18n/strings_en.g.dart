@@ -488,8 +488,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Prompt injections'
 	String get syncPromptInjections => 'Prompt injections';
 
-	/// en: 'World book'
-	String get syncWorldBook => 'World book';
+	/// en: 'World Info'
+	String get syncWorldBook => 'World Info';
 
 	/// en: 'Data'
 	String get data => 'Data';
@@ -4702,8 +4702,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'System prompt'
 	String get storySystemPrompt => 'System prompt';
 
-	/// en: 'World book'
-	String get storyWorldBook => 'World book';
+	/// en: 'World Info'
+	String get storyWorldBook => 'World Info';
 
 	/// en: 'Follow-up prompt'
 	String get storyChoicesPrompt => 'Follow-up prompt';
@@ -4848,6 +4848,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Max level'
 	String get storyBaseMaxLevel => 'Max level';
+
+	/// en: 'Generation params'
+	String get storyGenParams => 'Generation params';
+
+	/// en: 'Top P'
+	String get topP => 'Top P';
+
+	/// en: 'Max tokens'
+	String get maxTokens => 'Max tokens';
 
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
@@ -7258,11 +7267,11 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Injection position decides where each fragment is inserted in the system prompt'
 	String get promptInjectionHint => 'Injection position decides where each fragment is inserted in the system prompt';
 
-	/// en: 'World Book'
-	String get worldBook => 'World Book';
+	/// en: 'World Info'
+	String get worldBook => 'World Info';
 
-	/// en: 'World Book entries'
-	String get worldBookEntries => 'World Book entries';
+	/// en: 'World Info entries'
+	String get worldBookEntries => 'World Info entries';
 
 	/// en: 'New Injection'
 	String get newPromptInjection => 'New Injection';
@@ -7366,8 +7375,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No entries matched'
 	String get worldBookNoHits => 'No entries matched';
 
-	/// en: 'No world book entries yet'
-	String get noWorldBookEntriesYet => 'No world book entries yet';
+	/// en: 'No world info entries yet'
+	String get noWorldBookEntriesYet => 'No world info entries yet';
 
 	/// en: 'No prompt injections yet'
 	String get noPromptInjectionsYet => 'No prompt injections yet';
@@ -8450,7 +8459,7 @@ extension on Translations {
 			'syncStateRemoteOnly' => 'Not downloaded',
 			'syncStateDiffers' => 'Out of sync',
 			'syncPromptInjections' => 'Prompt injections',
-			'syncWorldBook' => 'World book',
+			'syncWorldBook' => 'World Info',
 			'data' => 'Data',
 			'dateDesc' => 'Date Desc',
 			'date' => 'Date',
@@ -9903,7 +9912,7 @@ extension on Translations {
 			'storyEdit' => 'Edit story',
 			'storyOpening' => 'Opening',
 			'storySystemPrompt' => 'System prompt',
-			'storyWorldBook' => 'World book',
+			'storyWorldBook' => 'World Info',
 			'storyChoicesPrompt' => 'Follow-up prompt',
 			'storyStart' => 'Start game',
 			'storyRoll' => 'Roll',
@@ -9952,6 +9961,9 @@ extension on Translations {
 			'storyJobLevel' => 'Level',
 			'storyJobBonus' => 'Bonus',
 			'storyBaseMaxLevel' => 'Max level',
+			'storyGenParams' => 'Generation params',
+			'topP' => 'Top P',
+			'maxTokens' => 'Max tokens',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10352,11 +10364,11 @@ extension on Translations {
 			'preparing' => 'Preparing…',
 			'downloadingPreviewClip' => 'Downloading preview clip…',
 			'loadingPlayer' => 'Loading player…',
+			_ => null,
+		} ?? switch (path) {
 			'cancelExport' => 'Cancel Export?',
 			'exportInProgress' => 'Export in progress, closing will interrupt export.',
 			'confirmClose' => 'Confirm Close',
-			_ => null,
-		} ?? switch (path) {
 			'stopPreview' => 'Stop Preview',
 			'loadingPreview' => 'Loading preview…',
 			'previewLoadFailed' => 'Preview load failed',
@@ -10757,8 +10769,8 @@ extension on Translations {
 			'promptManagement' => 'Prompt',
 			'promptInjection' => 'Prompt Injection',
 			'promptInjectionHint' => 'Injection position decides where each fragment is inserted in the system prompt',
-			'worldBook' => 'World Book',
-			'worldBookEntries' => 'World Book entries',
+			'worldBook' => 'World Info',
+			'worldBookEntries' => 'World Info entries',
 			'newPromptInjection' => 'New Injection',
 			'editPromptInjection' => 'Edit Injection',
 			'injectionName' => 'Name',
@@ -10793,7 +10805,7 @@ extension on Translations {
 			'worldBookHitTestPlaceholder' => 'Type a sentence...',
 			'worldBookHitsResult' => 'Matching entries',
 			'worldBookNoHits' => 'No entries matched',
-			'noWorldBookEntriesYet' => 'No world book entries yet',
+			'noWorldBookEntriesYet' => 'No world info entries yet',
 			'noPromptInjectionsYet' => 'No prompt injections yet',
 			'auxTemperature' => 'Temperature',
 			'selectAssistantProfile' => 'Select an assistant',
@@ -10866,11 +10878,11 @@ extension on Translations {
 			'expandSidebar' => 'Expand sidebar',
 			'clearFinishedDownload' => 'Clear finished downloads',
 			'downloadEmpty' => 'No download tasks',
+			_ => null,
+		} ?? switch (path) {
 			'downloadQueued' => 'Queued',
 			'downloadCompleted' => 'Completed',
 			'pauseDownload' => 'Pause download',
-			_ => null,
-		} ?? switch (path) {
 			'resumeDownload' => 'Resume download',
 			'retryDownload' => 'Retry download',
 			'pausedDownload' => 'Paused',
