@@ -1637,6 +1637,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   List<String> _unregistered = const [];
   bool _registering = false;
 
+  /// 是否跟随到底部（用户上滑后暂停，发送时恢复）
+  bool _isFollowing = true;
+
+  /// 发送后、真正落库前先乐观显示的用户消息
+  String? _pendingUserText;
+
   /// 需要先做开局档案设置（仅新游戏且故事定义了 setup 时）
   bool _needsSetup = false;
   final Map<String, String> _singleValues = {};
@@ -1650,7 +1656,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   void initState() {
     super.initState();
     StoryTextStyleStore.instance.ensureLoaded();
+    _scrollController.addListener(_onScroll);
     _boot();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final atBottom = (pos.maxScrollExtent - pos.pixels) < 48;
+    if (atBottom != _isFollowing) {
+      setState(() => _isFollowing = atBottom);
+    }
   }
 
   @override
@@ -1664,8 +1680,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     super.dispose();
   }
 
-  /// 滚到底部（流式时用 jump，新消息时用动画），与 AI 聊天的焦点逻辑对齐
-  void _scrollToBottom({bool animate = true}) {
+  /// 滚到底部（流式时用 jump，新消息时用动画）；非跟随状态不强制
+  void _scrollToBottom({bool animate = true, bool force = false}) {
+    if (!force && !_isFollowing) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       final target = _scrollController.position.maxScrollExtent;
@@ -1927,7 +1944,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       _sending = true;
       _showStreamBubble = true;
       _streamText = '';
+      _pendingUserText = outgoing;
+      _isFollowing = true;
     });
+    _scrollToBottom(force: true);
     try {
       await for (final u in AiConversationService().sendMessageStream(
         sessionId: sessionId,
@@ -1946,6 +1966,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             _sending = false;
             _showStreamBubble = false;
             _streamText = '';
+            _pendingUserText = null;
           });
           App.rootContext.showMessage(
             message: u.errorMessage!,
@@ -1953,7 +1974,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           );
           return;
         }
-        setState(() => _streamText = u.text);
+        setState(() {
+          _pendingUserText = null;
+          _streamText = u.text;
+        });
         _scrollToBottom(animate: false);
         if (u.done) break;
       }
@@ -1964,6 +1988,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         _sending = false;
         _showStreamBubble = false;
         _streamText = '';
+        _pendingUserText = null;
       });
       _scrollToBottom();
       // 取消时服务端不落库，忽略本次结果
@@ -1990,6 +2015,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           _sending = false;
           _showStreamBubble = false;
           _streamText = '';
+          _pendingUserText = null;
         });
         App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
       }
@@ -2387,6 +2413,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               builder: (context, snap) {
                 final messages = snap.data ?? [];
                 final choices = _lastAiReply(messages)?.choices ?? const <String>[];
+                final showPendingUser =
+                    _pendingUserText != null &&
+                    (messages.isEmpty ||
+                        messages.last.role != 'user' ||
+                        messages.last.inputContent != _pendingUserText);
                 if (messages.length != _lastMessageCount) {
                   _lastMessageCount = messages.length;
                   _scrollToBottom();
@@ -2406,9 +2437,24 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               vertical: 12,
                             ),
                             itemCount:
-                                messages.length + (_showStreamBubble ? 1 : 0),
+                                messages.length +
+                                (showPendingUser ? 1 : 0) +
+                                (_showStreamBubble ? 1 : 0),
                             itemBuilder: (context, i) {
-                              if (i == messages.length) {
+                              if (showPendingUser && i == messages.length) {
+                                final persona = story.persona;
+                                return _StoryBubble(
+                                  content: _pendingUserText!,
+                                  isUser: true,
+                                  headerName: persona.name.trim().isEmpty
+                                      ? t.storyPersona
+                                      : persona.name.trim(),
+                                  headerTime: _formatTime(DateTime.now()),
+                                  headerAvatar: persona.avatar,
+                                );
+                              }
+                              if (i ==
+                                  messages.length + (showPendingUser ? 1 : 0)) {
                                 final streamNarrative = applyStoryRegex(
                                   _parseReply(_streamText).narrative,
                                   story.regexes,
@@ -2549,19 +2595,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       ),
                     ),
                     if (choices.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-                        child: SizedBox(
-                          height: 32,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: choices.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(width: 8),
-                            itemBuilder: (_, i) => _FollowUpChip(
-                              text: choices[i],
-                              onTap: _sending ? () {} : () => _send(choices[i]),
-                            ),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 132),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              for (final c in choices)
+                                _FollowUpChip(
+                                  text: c,
+                                  onTap: _sending ? () {} : () => _send(c),
+                                ),
+                            ],
                           ),
                         ),
                       ),
