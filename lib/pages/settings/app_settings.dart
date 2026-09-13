@@ -1454,6 +1454,17 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
           );
         }
       }
+      if (kind == 'stories') {
+        // 故事的编辑以覆盖层单独存放，需一并同步
+        final overlay = io.File('$dir/$id.overlay.json');
+        if (overlay.existsSync()) {
+          await sync.uploadFile(
+            localPath: overlay.path,
+            remoteName: '$id.overlay.json',
+            remoteDir: kind,
+          );
+        }
+      }
     }
     if (!mounted) return;
     setState(() {
@@ -1541,12 +1552,26 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
             } catch (_) {}
           }
         }
+        if (kind == 'stories') {
+          final overlay = io.File('${_localDir(kind)}/$id.overlay.json');
+          if (overlay.existsSync()) {
+            try {
+              overlay.deleteSync();
+            } catch (_) {}
+          }
+        }
       }
       if (remote) {
         final sync = DataSync();
         await sync.deleteFile(remoteName: '$id$ext', remoteDir: kind);
         if (kind == 'cards') {
           await sync.deleteFile(remoteName: '$id.png', remoteDir: kind);
+        }
+        if (kind == 'stories') {
+          await sync.deleteFile(
+            remoteName: '$id.overlay.json',
+            remoteDir: kind,
+          );
         }
       }
       await CharacterCardStore.instance.reload();
@@ -1589,6 +1614,14 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
           await sync.downloadFile(
             remoteName: '$id.png',
             localPath: '$dir/$id.png',
+            remoteDir: kind,
+          );
+        }
+        if (kind == 'stories') {
+          // 覆盖层可能不存在（没编辑过），失败忽略
+          await sync.downloadFile(
+            remoteName: '$id.overlay.json',
+            localPath: '$dir/$id.overlay.json',
             remoteDir: kind,
           );
         }

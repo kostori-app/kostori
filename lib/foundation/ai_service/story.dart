@@ -1865,12 +1865,14 @@ class StoryStore extends ChangeNotifier {
   List<Story> _stories = [];
   bool _loaded = false;
 
-  /// 每个故事的"基底"（最近一次导入 / 新建的内容）。
-  /// 应用内的编辑以覆盖层形式叠加在基底之上：重新导入同 key / 同名故事时
-  /// 只替换基底，覆盖层（用户的改动）保留并优先。
+  /// 基底：`stories/<id>.md`，即导入 / 新建的原文。
   final Map<String, Story> _bases = {};
 
-  String _basePath(String id) => '$dirPath/$id.base.json';
+  /// 覆盖层：`stories/<id>.overlay.json`，只保存被编辑过的字段（可能不完整）。
+  final Map<String, Map<String, dynamic>> _overlays = {};
+
+  String _basePath(String id) => '$dirPath/$id.md';
+  String _overlayPath(String id) => '$dirPath/$id.overlay.json';
 
   List<Story> get stories => List.unmodifiable(_stories);
 
@@ -1880,6 +1882,7 @@ class StoryStore extends ChangeNotifier {
   Future<void> init() async {
     _stories = [];
     _bases.clear();
+    _overlays.clear();
     try {
       final dir = Directory(dirPath);
       await dir.create(recursive: true);
@@ -1891,17 +1894,12 @@ class StoryStore extends ChangeNotifier {
           final id = name.endsWith('.md')
               ? name.substring(0, name.length - 3)
               : name;
-          _stories.add(storyFromMarkdown(text, id: id));
-        } catch (_) {}
-      }
-      for (final s in _stories) {
-        final f = File(_basePath(s.id));
-        if (!f.existsSync()) continue;
-        try {
-          final decoded = jsonDecode(await f.readAsString());
-          if (decoded is Map) {
-            _bases[s.id] = Story.fromJson(decoded.cast<String, dynamic>());
-          }
+          final base = storyFromMarkdown(text, id: id);
+          final overlay = await _readOverlay(id);
+          _bases[id] = base;
+          if (overlay.isNotEmpty) _overlays[id] = overlay;
+          // 读取时：先基底，再叠加覆盖层（覆盖层优先）
+          _stories.add(storyMerge(base, overlay));
         } catch (_) {}
       }
     } catch (_) {}
@@ -1922,7 +1920,8 @@ class StoryStore extends ChangeNotifier {
           if (e is! Map) continue;
           final story = Story.fromJson(e.cast<String, dynamic>());
           if (_stories.any((s) => s.id == story.id)) continue;
-          await _writeStory(story);
+          await _writeBase(story);
+          _bases[story.id] = story;
           _stories.add(story);
         }
       }
@@ -1930,16 +1929,37 @@ class StoryStore extends ChangeNotifier {
     await prefs.remove(_legacyKey);
   }
 
-  Future<void> _writeStory(Story story) async {
-    final dir = Directory(dirPath);
-    await dir.create(recursive: true);
-    await File('$dirPath/${story.id}.md').writeAsString(storyToMarkdown(story));
-  }
-
+  /// 写入基底（故事原文，`stories/<id>.md`）
   Future<void> _writeBase(Story story) async {
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File(_basePath(story.id)).writeAsString(jsonEncode(story.toJson()));
+    await File(_basePath(story.id)).writeAsString(storyToMarkdown(story));
+  }
+
+  Future<Map<String, dynamic>> _readOverlay(String id) async {
+    final f = File(_overlayPath(id));
+    if (!f.existsSync()) return const {};
+    try {
+      final decoded = jsonDecode(await f.readAsString());
+      return decoded is Map ? decoded.cast<String, dynamic>() : const {};
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<void> _writeOverlay(String id, Map<String, dynamic> overlay) async {
+    final f = File(_overlayPath(id));
+    if (overlay.isEmpty) {
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
+      return;
+    }
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await f.writeAsString(jsonEncode(overlay));
   }
 
   /// 全字段 JSON（toJson 会省略 null 字段，这里补齐便于做差集）
@@ -1983,44 +2003,41 @@ class StoryStore extends ChangeNotifier {
   }
 
   /// 保存故事。
-  /// [asBase] = true：导入/新建的基底，整体替换基底，但保留已有覆盖层；
+  /// [asBase] = true：导入的原文，写入基底（`<id>.md`），保留已有覆盖层；
   /// 否则：编辑器里的编辑，只更新覆盖层（基底不变）。
   Future<void> upsert(Story story, {bool asBase = false}) async {
     await ensureLoaded();
     final id = story.id;
-    Story effective;
-    if (asBase) {
-      final oldBase = _bases[id];
-      final oldEffective = find(id);
-      final overlay = (oldBase != null && oldEffective != null)
-          ? storyDiff(oldBase, oldEffective)
-          : const <String, dynamic>{};
-      effective = storyMerge(story, overlay);
+    if (asBase || _bases[id] == null) {
+      // 导入 / 首次保存：作为基底
       _bases[id] = story;
       await _writeBase(story);
+      final overlay = _overlays[id] ?? const <String, dynamic>{};
+      _setEffective(id, storyMerge(story, overlay));
     } else {
-      // 首次保存（尚无基底）时把当前内容作为基底，之后编辑才产生覆盖层
-      if (_bases[id] == null) {
-        _bases[id] = story;
-        await _writeBase(story);
-      }
-      effective = story;
-    }
-    await _writeStory(effective);
-    final idx = _stories.indexWhere((s) => s.id == id);
-    if (idx >= 0) {
-      _stories[idx] = effective;
-    } else {
-      _stories.add(effective);
+      // 编辑：基底不变，只写覆盖层
+      final overlay = storyDiff(_bases[id]!, story);
+      _overlays[id] = overlay;
+      await _writeOverlay(id, overlay);
+      _setEffective(id, story);
     }
     notifyListeners();
+  }
+
+  void _setEffective(String id, Story story) {
+    final idx = _stories.indexWhere((s) => s.id == id);
+    if (idx >= 0) {
+      _stories[idx] = story;
+    } else {
+      _stories.add(story);
+    }
   }
 
   Future<bool> remove(String id) async {
     await ensureLoaded();
     final s = find(id);
     if (s != null && s.isBuiltin) return false;
-    for (final path in ['$dirPath/$id.md', _basePath(id)]) {
+    for (final path in [_basePath(id), _overlayPath(id)]) {
       final f = File(path);
       if (f.existsSync()) {
         try {
@@ -2029,6 +2046,7 @@ class StoryStore extends ChangeNotifier {
       }
     }
     _bases.remove(id);
+    _overlays.remove(id);
     _stories.removeWhere((s) => s.id == id);
     notifyListeners();
     return true;
