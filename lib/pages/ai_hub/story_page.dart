@@ -727,12 +727,15 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _choicesCtrl = TextEditingController(
     text: widget.story?.choicesPrompt ?? '',
   );
-  late String _personaAvatar = widget.story?.persona.avatar ?? '';
-  late final _personaNameCtrl = TextEditingController(
-    text: widget.story?.persona.name ?? '',
-  );
+  // 玩家角色卡来自独立存储（与角色卡同文件），故事文件里不存
+  late final StoryPersona _personaInit = widget.story == null
+      ? const StoryPersona()
+      : (StoryCharacterStore.instance.persona(widget.story!.id) ??
+            widget.story!.persona);
+  late String _personaAvatar = _personaInit.avatar;
+  late final _personaNameCtrl = TextEditingController(text: _personaInit.name);
   late final _personaDescCtrl = TextEditingController(
-    text: widget.story?.persona.description ?? '',
+    text: _personaInit.description,
   );
   late final _stateCtrl = TextEditingController(
     text: widget.story == null
@@ -991,6 +994,8 @@ class _StoryEditorState extends State<_StoryEditor> {
         widget.story?.id ?? 'story_${DateTime.now().millisecondsSinceEpoch}';
     final story = Story(
       id: id,
+      key: widget.story?.key ?? '',
+      version: widget.story?.version ?? '',
       name: _nameCtrl.text.trim(),
       icon: widget.story?.icon ?? '📖',
       description: _descCtrl.text.trim(),
@@ -1130,11 +1135,7 @@ class _StoryEditorState extends State<_StoryEditor> {
               description: a.description.text.trim(),
             ),
       ],
-      persona: StoryPersona(
-        name: _personaNameCtrl.text.trim(),
-        avatar: _personaAvatar,
-        description: _personaDescCtrl.text.trim(),
-      ),
+      persona: const StoryPersona(),
       initialState: initialState,
       isBuiltin: widget.story?.isBuiltin ?? false,
     );
@@ -1143,6 +1144,14 @@ class _StoryEditorState extends State<_StoryEditor> {
       for (final c in _characters)
         if (c.name.trim().isNotEmpty) c,
     ]);
+    await StoryCharacterStore.instance.putPersona(
+      id,
+      StoryPersona(
+        name: _personaNameCtrl.text.trim(),
+        avatar: _personaAvatar,
+        description: _personaDescCtrl.text.trim(),
+      ),
+    );
     if (mounted) {
       App.rootContext.showMessage(message: t.saved);
       App.rootContext.pop();
@@ -2751,7 +2760,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Story _computeEffective() {
     var s = widget.story;
     final cards = StoryCharacterStore.instance.get(s.id);
-    if (cards.isNotEmpty) s = s.copyWith(characters: cards);
+    final persona = StoryCharacterStore.instance.persona(s.id);
+    if (cards.isNotEmpty || persona != null) {
+      s = s.copyWith(
+        characters: cards.isEmpty ? s.characters : cards,
+        persona: persona ?? s.persona,
+      );
+    }
     return _mergeSettings(s);
   }
 

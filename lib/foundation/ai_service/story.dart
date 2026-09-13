@@ -2066,6 +2066,36 @@ class StoryStore extends ChangeNotifier {
     await init();
   }
 
+  /// 把 characters / persona 从基底与覆盖层里移除（迁到独立存储后调用）
+  Future<void> clearStoryPersonaAndCharacters(String id) async {
+    await ensureLoaded();
+    final base = _bases[id];
+    if (base != null) {
+      final cleared = base.copyWith(
+        characters: const [],
+        persona: const StoryPersona(),
+      );
+      _bases[id] = cleared;
+      await _writeBase(cleared);
+    }
+    final overlay = _overlays[id];
+    if (overlay != null) {
+      overlay.remove('characters');
+      overlay.remove('persona');
+      if (overlay.isEmpty) {
+        _overlays.remove(id);
+        await _writeOverlay(id, const {});
+      } else {
+        await _writeOverlay(id, overlay);
+      }
+    }
+    final b = _bases[id];
+    if (b != null) {
+      _setEffective(id, storyMerge(b, _overlays[id] ?? const {}));
+    }
+    notifyListeners();
+  }
+
   /// 从 .md 文本解析故事
   static Story storyFromMarkdown(String text, {String? id}) {
     final name = _firstHeading(text) ?? t.unnamedStory;
@@ -2506,6 +2536,9 @@ class StoryCharacterStore extends ChangeNotifier {
   static const _dirName = 'story_characters';
 
   final Map<String, List<CharacterCard>> _cards = {};
+
+  /// 玩家角色卡（persona）也存这里：避免把头像（base64）塞进故事/覆盖层
+  final Map<String, StoryPersona> _personas = {};
   bool _loaded = false;
 
   String get dirPath => '${App.dataPath}/$_dirName';
@@ -2513,6 +2546,7 @@ class StoryCharacterStore extends ChangeNotifier {
   Future<void> ensureLoaded() async {
     if (_loaded) return;
     _cards.clear();
+    _personas.clear();
     try {
       final dir = Directory(dirPath);
       await dir.create(recursive: true);
@@ -2520,13 +2554,28 @@ class StoryCharacterStore extends ChangeNotifier {
         if (entity is! File || !entity.path.endsWith('.json')) continue;
         try {
           final json = jsonDecode(await entity.readAsString());
-          if (json is! List) continue;
           final name = entity.uri.pathSegments.last;
           final id = name.substring(0, name.length - 5);
-          _cards[id] = [
-            for (final e in json)
-              if (e is Map) CharacterCard.fromJson(e.cast<String, dynamic>()),
-          ];
+          if (json is List) {
+            // 旧格式：仅角色卡列表
+            _cards[id] = [
+              for (final e in json)
+                if (e is Map) CharacterCard.fromJson(e.cast<String, dynamic>()),
+            ];
+          } else if (json is Map) {
+            final chars = json['characters'];
+            if (chars is List) {
+              _cards[id] = [
+                for (final e in chars)
+                  if (e is Map)
+                    CharacterCard.fromJson(e.cast<String, dynamic>()),
+              ];
+            }
+            final p = json['persona'];
+            if (p is Map) {
+              _personas[id] = StoryPersona.fromJson(p.cast<String, dynamic>());
+            }
+          }
         } catch (_) {}
       }
     } catch (_) {}
@@ -2534,30 +2583,62 @@ class StoryCharacterStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 已存角色卡的故事 id（供选择性同步）
-  List<String> get storyIds => _cards.keys.toList();
+  /// 已存角色卡 / 玩家卡的故事 id（供选择性同步）
+  List<String> get storyIds => {..._cards.keys, ..._personas.keys}.toList();
 
   List<CharacterCard> get(String storyId) =>
       List.unmodifiable(_cards[storyId] ?? const <CharacterCard>[]);
 
+  StoryPersona? persona(String storyId) => _personas[storyId];
+
   Future<void> put(String storyId, List<CharacterCard> cards) async {
     await ensureLoaded();
     if (cards.isEmpty) {
-      await clear(storyId);
+      _cards.remove(storyId);
+    } else {
+      _cards[storyId] = List.of(cards);
+    }
+    await _write(storyId);
+    notifyListeners();
+  }
+
+  Future<void> putPersona(String storyId, StoryPersona persona) async {
+    await ensureLoaded();
+    if (persona.isEmpty) {
+      _personas.remove(storyId);
+    } else {
+      _personas[storyId] = persona;
+    }
+    await _write(storyId);
+    notifyListeners();
+  }
+
+  Future<void> _write(String storyId) async {
+    final cards = _cards[storyId] ?? const <CharacterCard>[];
+    final p = _personas[storyId];
+    final f = File('$dirPath/$storyId.json');
+    if (cards.isEmpty && p == null) {
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
       return;
     }
-    _cards[storyId] = List.of(cards);
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File('$dirPath/$storyId.json').writeAsString(
-      jsonEncode([for (final c in cards) c.toJson()]),
+    await f.writeAsString(
+      jsonEncode({
+        'characters': [for (final c in cards) c.toJson()],
+        if (p != null) 'persona': p.toJson(),
+      }),
     );
-    notifyListeners();
   }
 
   Future<void> clear(String storyId) async {
     await ensureLoaded();
     _cards.remove(storyId);
+    _personas.remove(storyId);
     final f = File('$dirPath/$storyId.json');
     if (f.existsSync()) {
       try {
@@ -2572,16 +2653,23 @@ class StoryCharacterStore extends ChangeNotifier {
     await ensureLoaded();
   }
 
-  /// 把故事 `.md` 里内联的角色卡迁移到独立文件（一次性）
+  /// 把故事里内联的角色卡 / 玩家卡迁移到独立文件（一次性）
   Future<void> migrateFromStories() async {
     await ensureLoaded();
     for (final story in StoryStore.instance.stories) {
-      if (story.characters.isEmpty) continue;
-      if ((_cards[story.id] ?? const []).isNotEmpty) continue;
-      await put(story.id, story.characters);
-      await StoryStore.instance.upsert(
-        story.copyWith(characters: const []),
-      );
+      var changed = false;
+      if (story.characters.isNotEmpty &&
+          (_cards[story.id] ?? const []).isEmpty) {
+        _cards[story.id] = List.of(story.characters);
+        changed = true;
+      }
+      if (!story.persona.isEmpty && _personas[story.id] == null) {
+        _personas[story.id] = story.persona;
+        changed = true;
+      }
+      if (!changed) continue;
+      await _write(story.id);
+      await StoryStore.instance.clearStoryPersonaAndCharacters(story.id);
     }
   }
 }
