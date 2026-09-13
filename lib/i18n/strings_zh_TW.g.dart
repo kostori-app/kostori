@@ -1611,6 +1611,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storySituation => '局勢';
 	@override String get storyBackground => '背景';
 	@override String get storyNoSituation => '暫無局勢資訊';
+	@override String get storyNoEntry => '暫無設定';
 	@override String get storyMore => '更多';
 	@override String get storyNoActions => '該故事未定義操作';
 	@override String get storyInspect => '檢查';
@@ -4370,6 +4371,7 @@ extension on TranslationsZhTw {
 			'storySituation' => '局勢',
 			'storyBackground' => '背景',
 			'storyNoSituation' => '暫無局勢資訊',
+			'storyNoEntry' => '暫無設定',
 			'storyMore' => '更多',
 			'storyNoActions' => '該故事未定義操作',
 			'storyInspect' => '檢查',
@@ -4803,9 +4805,9 @@ extension on TranslationsZhTw {
 			'usingTools' => '呼叫工具中...',
 			'toolCallingTool' => ({required Object tool}) => '呼叫 ${tool}...',
 			'toolCallLog' => ({required Object count}) => '工具呼叫: ${count}',
-			'generatingReply' => '生成回覆中...',
 			_ => null,
 		} ?? switch (path) {
+			'generatingReply' => '生成回覆中...',
 			'stopGenerating' => '停止生成',
 			'thinking' => '思考中',
 			'streamInterrupted' => '生成已中斷',
@@ -5317,9 +5319,9 @@ extension on TranslationsZhTw {
 			'subtitle' => '字幕',
 			'subtitleOff' => '關閉字幕',
 			'quality' => '清晰度',
-			'copiedField' => ({required Object x}) => '已複製: ${x}',
 			_ => null,
 		} ?? switch (path) {
+			'copiedField' => ({required Object x}) => '已複製: ${x}',
 			'selectAliasCount' => ({required Object count}) => '選擇別名 (${count})',
 			'monthDayFormat' => 'M月d日',
 			'monthDay' => ({required Object month, required Object day}) => '${month}月${day}日',

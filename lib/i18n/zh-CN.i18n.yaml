@@ -1616,6 +1616,7 @@ storyDetails: 详情
 storySituation: 局势
 storyBackground: 背景
 storyNoSituation: 暂无局势信息
+storyNoEntry: 暂无设定
 storyMore: 更多
 storyNoActions: 该故事未定义操作
 storyInspect: 检查

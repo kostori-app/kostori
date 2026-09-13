@@ -1621,6 +1621,7 @@ storyDetails: 詳情
 storySituation: 局勢
 storyBackground: 背景
 storyNoSituation: 暫無局勢資訊
+storyNoEntry: 暫無設定
 storyMore: 更多
 storyNoActions: 該故事未定義操作
 storyInspect: 檢查

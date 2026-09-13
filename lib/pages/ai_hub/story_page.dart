@@ -2463,6 +2463,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     var next = state.copyWith(
       variables: normalizeVariables(state.variables, story.variables),
     );
+    // 词条一旦登记就保留（模型偶尔会漏报），合并而非覆盖
+    final mergedCodex = [...next.codex];
+    final seenDefs = {
+      for (final d in mergedCodex) '${d.kind}\u0000${d.key}': true,
+    };
+    for (final d in _state.codex) {
+      if (seenDefs['${d.kind}\u0000${d.key}'] == true) continue;
+      mergedCodex.add(d);
+      seenDefs['${d.kind}\u0000${d.key}'] = true;
+    }
+    next = next.copyWith(codex: mergedCodex);
     // 致命资源归零 → 游戏结束
     if (!next.gameOver && story.deathResources.isNotEmpty) {
       final death = story.deathResources.toSet();
@@ -3968,11 +3979,15 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
 
   /// 在 codex 里按名称/键查找设定（容忍「物品 x2」这类后缀）
   StoryDefinition? _findDef(String name) {
-    final key = name.split(' x').first.split('×').first.trim();
+    final key = _baseName(name);
     for (final d in state.codex) {
       if (d.key == name || d.name == name || d.key == key || d.name == key) {
         return d;
       }
+    }
+    // 宽松匹配：数量后缀 / 名称写法不完全一致（如「工程铅笔（半支）x1」）
+    for (final d in state.codex) {
+      if (_nameMatch(d.key, key) || _nameMatch(d.name, key)) return d;
     }
     return null;
   }
@@ -3993,7 +4008,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
         children: [
           Text(
             def == null
-                ? t.storyNoSituation
+                ? t.storyNoEntry
                 : (def.display.isEmpty ? def.mechanics : def.display),
           ),
           if (def != null && def.mechanics.isNotEmpty) ...[
@@ -4024,7 +4039,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
 
   /// 物品菜单：检查 / 使用 / 装备 / 丢弃
   Future<void> _itemMenu(String item) async {
-    final equipped = state.equipped.contains(item);
+    final equipped = _isEquipped(item);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

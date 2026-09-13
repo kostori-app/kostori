@@ -1621,6 +1621,7 @@ storyDetails: Details
 storySituation: Situation
 storyBackground: Background
 storyNoSituation: No situation info yet
+storyNoEntry: No entry yet
 storyMore: More
 storyNoActions: This story has no actions defined
 storyInspect: Inspect

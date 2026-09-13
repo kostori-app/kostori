@@ -4756,6 +4756,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No situation info yet'
 	String get storyNoSituation => 'No situation info yet';
 
+	/// en: 'No entry yet'
+	String get storyNoEntry => 'No entry yet';
+
 	/// en: 'More'
 	String get storyMore => 'More';
 
@@ -9738,6 +9741,7 @@ extension on Translations {
 			'storySituation' => 'Situation',
 			'storyBackground' => 'Background',
 			'storyNoSituation' => 'No situation info yet',
+			'storyNoEntry' => 'No entry yet',
 			'storyMore' => 'More',
 			'storyNoActions' => 'This story has no actions defined',
 			'storyInspect' => 'Inspect',
@@ -10171,9 +10175,9 @@ extension on Translations {
 			'noSkillsAvailable' => 'No skills available',
 			'usingTools' => 'Calling tools...',
 			'toolCallingTool' => ({required Object tool}) => 'Calling ${tool}...',
-			'toolCallLog' => ({required Object count}) => 'Tool calls: ${count}',
 			_ => null,
 		} ?? switch (path) {
+			'toolCallLog' => ({required Object count}) => 'Tool calls: ${count}',
 			'generatingReply' => 'Generating reply...',
 			'stopGenerating' => 'Stop generating',
 			'thinking' => 'Thinking',
@@ -10685,9 +10689,9 @@ extension on Translations {
 			'audioTrack' => 'Audio track',
 			'subtitle' => 'Subtitles',
 			'subtitleOff' => 'Off',
-			'quality' => 'Quality',
 			_ => null,
 		} ?? switch (path) {
+			'quality' => 'Quality',
 			'copiedField' => ({required Object x}) => 'Copied: ${x}',
 			'selectAliasCount' => ({required Object count}) => 'Select alias (${count})',
 			'monthDayFormat' => 'MMM d',
