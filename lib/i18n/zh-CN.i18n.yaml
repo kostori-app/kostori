@@ -1629,6 +1629,9 @@ deleteRemote: 删除云端
 deleteBoth: 本地与云端都删除
 storyLoreConstant: 常驻
 storyLoreKeys: 触发词
+storyLoreRecursive: 递归
+storyNoEntries: 暂无条目
+storyAddEntry: 添加条目
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得

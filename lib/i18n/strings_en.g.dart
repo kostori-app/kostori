@@ -4795,6 +4795,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Keys'
 	String get storyLoreKeys => 'Keys';
 
+	/// en: 'Recursive'
+	String get storyLoreRecursive => 'Recursive';
+
+	/// en: 'No entries yet'
+	String get storyNoEntries => 'No entries yet';
+
+	/// en: 'Add entry'
+	String get storyAddEntry => 'Add entry';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9880,6 +9889,9 @@ extension on Translations {
 			'deleteBoth' => 'Delete local and remote',
 			'storyLoreConstant' => 'Constant',
 			'storyLoreKeys' => 'Keys',
+			'storyLoreRecursive' => 'Recursive',
+			'storyNoEntries' => 'No entries yet',
+			'storyAddEntry' => 'Add entry',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10298,11 +10310,11 @@ extension on Translations {
 			'durationFormatHint' => 'Supported formats: 90, 01:30, 1.5...',
 			'secondsAsNumber' => 'Pure numbers are treated as seconds',
 			'exportSettings' => 'Export Settings',
+			_ => null,
+		} ?? switch (path) {
 			'fixedBitrateOptional' => 'Fixed bitrate (optional, overrides CRF)',
 			'fixedBitrate' => 'Fixed bitrate',
 			'paletteColors' => 'Palette colors',
-			_ => null,
-		} ?? switch (path) {
 			'paletteColorsHint' => 'Fewer colors = smaller size',
 			'enableDither' => 'Enable Dither',
 			'ditherHint' => 'Better quality, slightly larger size',
@@ -10812,11 +10824,11 @@ extension on Translations {
 			'rules' => 'Rules',
 			'textRules' => 'Text rules',
 			'textRuleAdd' => 'Add rule',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleName' => 'Rule name',
 			'textRuleFind' => 'Find (regex)',
 			'textRuleReplace' => 'Replace (group refs)',
-			_ => null,
-		} ?? switch (path) {
 			'textRuleCaseSensitive' => 'Case sensitive',
 			'textRuleStepAdd' => 'Add step',
 			'textRuleStepN' => ({required Object n}) => 'Step ${n}',

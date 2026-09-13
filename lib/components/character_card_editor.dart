@@ -255,6 +255,27 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
 
   bool get _isNew => widget.card == null;
 
+  /// 世界书条目（可编辑副本）
+  late List<Map<String, dynamic>> _bookEntries;
+
+  @override
+  void initState() {
+    super.initState();
+    final book = CharacterLoreBook.fromMap(widget.card?.characterBook);
+    _bookEntries = [
+      for (final e in book?.entries ?? const <CharacterLoreEntry>[])
+        {
+          'name': e.name,
+          'keys': e.keys,
+          if (e.secondaryKeys.isNotEmpty) 'secondary_keys': e.secondaryKeys,
+          'content': e.content,
+          'constant': e.constant,
+          'recursive': false,
+          'enabled': e.enabled,
+        },
+    ];
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -308,7 +329,9 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
       creatorNotesMultilingual: widget.card?.creatorNotesMultilingual ?? const {},
       assets: widget.card?.assets ?? const [],
       extensions: widget.card?.extensions ?? const {},
-      characterBook: widget.card?.characterBook,
+      characterBook: _bookEntries.isEmpty
+          ? null
+          : {...?widget.card?.characterBook, 'entries': _bookEntries},
       specVersion: widget.card?.specVersion ?? '3.0',
     );
     Navigator.of(context).pop(card);
@@ -328,34 +351,306 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
           children: [
-            _field(t.storyCharacterName, _nameCtrl),
-            AvatarPicker(
-              name: _nameCtrl.text,
-              avatar: _avatar,
-              onChanged: (v) => setState(() => _avatar = v),
+            _section(t.basicInfo, Icons.info_outline, _basicSection()),
+            _section(
+              t.storyCharacterPersona,
+              Icons.person_outline,
+              _personaSection(),
             ),
-            _field(t.characterDescription, _descCtrl, multiline: true),
-            _field(t.characterPersonality, _personalityCtrl, multiline: true),
-            _field(t.characterScenario, _scenarioCtrl, multiline: true),
-            _field(t.characterFirstMessage, _firstCtrl, multiline: true),
-            _field(t.characterExampleDialogue, _exampleCtrl, multiline: true),
-            _field(t.characterSystemPrompt, _systemCtrl, multiline: true),
-            _field(t.characterPostHistory, _postCtrl, multiline: true),
-            _field(t.characterNickname, _nicknameCtrl, required: false),
-            _field(t.characterCreatorNotes, _creatorNotesCtrl, multiline: true, required: false),
-            _field(t.characterSource, _sourceCtrl, multiline: true, required: false),
-            _field(
-              t.characterGroupGreetings,
-              _groupGreetingsCtrl,
-              multiline: true,
-              required: false,
+            _section(
+              t.characterDialogue,
+              Icons.chat_bubble_outline,
+              _dialogueSection(),
             ),
-            _field(t.characterTags, _tagsCtrl, required: false),
-            _field(t.characterCreator, _creatorCtrl, required: false),
+            _section(
+              t.storySystemPrompt,
+              Icons.psychology_outlined,
+              _promptSection(),
+            ),
+            _section(t.worldBook, Icons.menu_book_outlined, _worldBookSection()),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _section(String title, IconData icon, Widget child) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outlineVariant, width: 0.6),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: title == t.basicInfo,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          leading: Icon(icon, size: 20),
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+          children: [child],
+        ),
+      ),
+    );
+  }
+
+  Widget _basicSection() => Column(
+    children: [
+      _field(t.storyCharacterName, _nameCtrl),
+      AvatarPicker(
+        name: _nameCtrl.text,
+        avatar: _avatar,
+        onChanged: (v) => setState(() => _avatar = v),
+      ),
+      _field(t.characterNickname, _nicknameCtrl, required: false),
+      _field(t.characterTags, _tagsCtrl, required: false),
+      _field(t.characterCreator, _creatorCtrl, required: false),
+    ],
+  );
+
+  Widget _personaSection() => Column(
+    children: [
+      _field(t.characterDescription, _descCtrl, multiline: true),
+      _field(t.characterPersonality, _personalityCtrl, multiline: true),
+      _field(t.characterScenario, _scenarioCtrl, multiline: true),
+    ],
+  );
+
+  Widget _dialogueSection() => Column(
+    children: [
+      _field(t.characterFirstMessage, _firstCtrl, multiline: true),
+      _field(t.characterExampleDialogue, _exampleCtrl, multiline: true),
+      _field(
+        t.characterGroupGreetings,
+        _groupGreetingsCtrl,
+        multiline: true,
+        required: false,
+      ),
+    ],
+  );
+
+  Widget _promptSection() => Column(
+    children: [
+      _field(t.characterSystemPrompt, _systemCtrl, multiline: true),
+      _field(t.characterPostHistory, _postCtrl, multiline: true),
+      _field(
+        t.characterCreatorNotes,
+        _creatorNotesCtrl,
+        multiline: true,
+        required: false,
+      ),
+      _field(t.characterSource, _sourceCtrl, multiline: true, required: false),
+    ],
+  );
+
+  Widget _worldBookSection() {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_bookEntries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              t.storyNoEntries,
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+            ),
+          ),
+        for (var i = 0; i < _bookEntries.length; i++)
+          _bookEntryTile(i, scheme),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => _editBookEntry(null),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(t.storyAddEntry),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bookEntryTile(int i, ColorScheme scheme) {
+    final e = _bookEntries[i];
+    final name = e['name']?.toString().trim() ?? '';
+    final keys = (e['keys'] as List?)?.whereType<String>().toList() ?? const [];
+    final enabled = e['enabled'] != false;
+    final constant = e['constant'] == true;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outlineVariant, width: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        dense: true,
+        leading: Icon(
+          constant ? Icons.push_pin_outlined : Icons.menu_book_outlined,
+          size: 18,
+          color: enabled ? scheme.primary : scheme.outline,
+        ),
+        title: Text(
+          name.isEmpty ? '${t.storyCodex} ${i + 1}' : name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: enabled ? null : scheme.outline,
+          ),
+        ),
+        subtitle: keys.isEmpty
+            ? null
+            : Text(
+                keys.join('、'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11),
+              ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 18,
+              tooltip: t.edit,
+              icon: const Icon(Icons.edit_note, size: 18),
+              onPressed: () => _editBookEntry(i),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 18,
+              tooltip: t.delete,
+              icon: Icon(Icons.delete_outline, size: 18, color: scheme.error),
+              onPressed: () => setState(() => _bookEntries.removeAt(i)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editBookEntry(int? index) async {
+    final existing = index == null ? null : _bookEntries[index];
+    final nameCtrl = TextEditingController(
+      text: existing?['name']?.toString() ?? '',
+    );
+    final keysCtrl = TextEditingController(
+      text: ((existing?['keys'] as List?) ?? const []).join('、'),
+    );
+    final contentCtrl = TextEditingController(
+      text: existing?['content']?.toString() ?? '',
+    );
+    var constant = existing?['constant'] == true;
+    var recursive = existing?['recursive'] == true;
+    var enabled = existing?['enabled'] != false;
+
+    final ok = await showDialog<bool>(
+      context: App.rootContext,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => ContentDialog(
+          title: index == null ? t.storyAddEntry : t.edit,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.storyCharacterName,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: keysCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.storyLoreKeys,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: contentCtrl,
+                  minLines: 3,
+                  maxLines: 8,
+                  decoration: InputDecoration(
+                    labelText: t.characterDescription,
+                    alignLabelWithHint: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _switchRow(t.storyLoreConstant, constant, (v) {
+                  setLocal(() => constant = v);
+                }),
+                _switchRow(t.storyLoreRecursive, recursive, (v) {
+                  setLocal(() => recursive = v);
+                }),
+                _switchRow(t.enabled, enabled, (v) {
+                  setLocal(() => enabled = v);
+                }),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(t.confirm),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) {
+      nameCtrl.dispose();
+      keysCtrl.dispose();
+      contentCtrl.dispose();
+      return;
+    }
+    final entry = <String, dynamic>{
+      'name': nameCtrl.text.trim(),
+      'keys': keysCtrl.text
+          .split(RegExp(r'[,，、]'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      'content': contentCtrl.text.trim(),
+      'constant': constant,
+      'recursive': recursive,
+      'enabled': enabled,
+    };
+    nameCtrl.dispose();
+    keysCtrl.dispose();
+    contentCtrl.dispose();
+    setState(() {
+      if (index == null) {
+        _bookEntries.add(entry);
+      } else {
+        _bookEntries[index] = entry;
+      }
+    });
+  }
+
+  Widget _switchRow(String label, bool value, ValueChanged<bool> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(label),
+          const Spacer(),
+          CustomSwitch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }

@@ -1634,6 +1634,9 @@ deleteRemote: Delete remote
 deleteBoth: Delete local and remote
 storyLoreConstant: Constant
 storyLoreKeys: Keys
+storyLoreRecursive: Recursive
+storyNoEntries: No entries yet
+storyAddEntry: Add entry
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned

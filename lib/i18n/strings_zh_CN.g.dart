@@ -1623,6 +1623,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleteBoth => '本地与云端都删除';
 	@override String get storyLoreConstant => '常驻';
 	@override String get storyLoreKeys => '触发词';
+	@override String get storyLoreRecursive => '递归';
+	@override String get storyNoEntries => '暂无条目';
+	@override String get storyAddEntry => '添加条目';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4426,6 +4429,9 @@ extension on TranslationsZhCn {
 			'deleteBoth' => '本地与云端都删除',
 			'storyLoreConstant' => '常驻',
 			'storyLoreKeys' => '触发词',
+			'storyLoreRecursive' => '递归',
+			'storyNoEntries' => '暂无条目',
+			'storyAddEntry' => '添加条目',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4845,11 +4851,11 @@ extension on TranslationsZhCn {
 			'withAudio' => '含音频',
 			'noAudio' => '无音频',
 			'ditherOn' => '抖动开',
+			_ => null,
+		} ?? switch (path) {
 			'ditherOff' => '抖动关',
 			'gifFormat' => 'GIF',
 			'apngFormat' => 'APNG',
-			_ => null,
-		} ?? switch (path) {
 			'webpFormat' => 'WebP',
 			'browserCompatible' => '浏览器兼容好',
 			'smallestSize' => '体积最小',
@@ -5359,11 +5365,11 @@ extension on TranslationsZhCn {
 			'rules' => '规则',
 			'textRules' => '文本规则',
 			'textRuleAdd' => '新增规则',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleName' => '规则名称',
 			'textRuleFind' => '查找（正则）',
 			'textRuleReplace' => '替换（支持分组引用）',
-			_ => null,
-		} ?? switch (path) {
 			'textRuleCaseSensitive' => '区分大小写',
 			'textRuleStepAdd' => '添加步骤',
 			'textRuleStepN' => ({required Object n}) => '步骤 ${n}',

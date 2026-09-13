@@ -1624,6 +1624,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleteBoth => '本地與雲端都刪除';
 	@override String get storyLoreConstant => '常駐';
 	@override String get storyLoreKeys => '觸發詞';
+	@override String get storyLoreRecursive => '遞迴';
+	@override String get storyNoEntries => '暫無條目';
+	@override String get storyAddEntry => '新增條目';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4426,6 +4429,9 @@ extension on TranslationsZhTw {
 			'deleteBoth' => '本地與雲端都刪除',
 			'storyLoreConstant' => '常駐',
 			'storyLoreKeys' => '觸發詞',
+			'storyLoreRecursive' => '遞迴',
+			'storyNoEntries' => '暫無條目',
+			'storyAddEntry' => '新增條目',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4844,11 +4850,11 @@ extension on TranslationsZhTw {
 			'paletteColorsHint' => '越少體積越小',
 			'ditherHint' => '畫質更好，體積稍大',
 			'aspectRatioPresets' => '寬高比快速預設',
+			_ => null,
+		} ?? switch (path) {
 			'hideCropBox' => '隱藏裁剪框',
 			'showCropBox' => '顯示裁剪框（可拖曳）',
 			'dragToSelectExportArea' => '開啟後可透過拖曳選擇導出區域',
-			_ => null,
-		} ?? switch (path) {
 			'withAudio' => '含音訊',
 			'noAudio' => '無音訊',
 			'ditherOn' => '抖動開',
@@ -5358,11 +5364,11 @@ extension on TranslationsZhTw {
 			'textRules' => '文字規則',
 			'textRuleAdd' => '新增規則',
 			'textRuleName' => '規則名稱',
+			_ => null,
+		} ?? switch (path) {
 			'textRuleFind' => '尋找（正規表達式）',
 			'textRuleReplace' => '取代（支援分組引用）',
 			'textRuleCaseSensitive' => '區分大小寫',
-			_ => null,
-		} ?? switch (path) {
 			'textRuleStepAdd' => '新增步驟',
 			'textRuleStepN' => ({required Object n}) => '步驟 ${n}',
 			'textRuleNone' => '尚無規則',
