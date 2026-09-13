@@ -265,7 +265,6 @@ class _WebdavSettingState extends State<_WebdavSetting> {
   bool isTesting = false;
   bool upload = true;
   bool obscurePassword = true;
-  String? _syncing;
 
   @override
   void initState() {
@@ -580,60 +579,8 @@ class _WebdavSettingState extends State<_WebdavSetting> {
     );
   }
 
-  /// 选择性同步：角色卡 / 故事观（独立目录）
+  /// 选择性同步入口（按条目选择角色卡 / 故事观）
   Widget _buildSelectiveSyncCard(BuildContext context, ColorScheme cs) {
-    Widget row({
-      required String key,
-      required IconData icon,
-      required String label,
-      required String localDir,
-      required String remoteFile,
-      Future<void> Function()? onDownloaded,
-    }) {
-      final syncing = _syncing == key;
-      return ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(icon, size: 20),
-        title: Text(label),
-        trailing: syncing
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: t.upload,
-                    icon: const Icon(Icons.cloud_upload_outlined, size: 20),
-                    onPressed: _configured
-                        ? () => _syncFolder(
-                            key: key,
-                            localDir: localDir,
-                            remoteFile: remoteFile,
-                            upload: true,
-                          )
-                        : null,
-                  ),
-                  IconButton(
-                    tooltip: t.download,
-                    icon: const Icon(Icons.cloud_download_outlined, size: 20),
-                    onPressed: _configured
-                        ? () => _syncFolder(
-                            key: key,
-                            localDir: localDir,
-                            remoteFile: remoteFile,
-                            upload: false,
-                            onDownloaded: onDownloaded,
-                          )
-                        : null,
-                  ),
-                ],
-              ),
-      );
-    }
-
     return Material(
       color: cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(
@@ -641,65 +588,20 @@ class _WebdavSettingState extends State<_WebdavSetting> {
         side: BorderSide(color: cs.outlineVariant, width: 0.6),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                t.selectiveSync,
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-            ),
-            row(
-              key: 'cards',
-              icon: Icons.badge_outlined,
-              label: t.characterCards,
-              localDir: CharacterCardStore.instance.dirPath,
-              remoteFile: 'character_cards.zip',
-              onDownloaded: CharacterCardStore.instance.reload,
-            ),
-            const Divider(height: 1),
-            row(
-              key: 'stories',
-              icon: Icons.auto_stories_outlined,
-              label: t.rolePlay,
-              localDir: StoryStore.instance.dirPath,
-              remoteFile: 'stories.zip',
-              onDownloaded: StoryStore.instance.reload,
-            ),
-          ],
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        leading: const Icon(Icons.checklist_outlined, size: 20),
+        title: Text(t.selectiveSync),
+        subtitle: Text(
+          '${t.characterCards} / ${t.rolePlay}',
+          style: const TextStyle(fontSize: 12),
         ),
+        trailing: const Icon(Icons.arrow_right, size: 20),
+        onTap: _configured
+            ? () => App.rootContext.to(() => const _SelectiveSyncPage())
+            : null,
       ),
     );
-  }
-
-  Future<void> _syncFolder({
-    required String key,
-    required String localDir,
-    required String remoteFile,
-    required bool upload,
-    Future<void> Function()? onDownloaded,
-  }) async {
-    if (_syncing != null) return;
-    setState(() => _syncing = key);
-    final sync = DataSync();
-    final res = upload
-        ? await sync.uploadFolder(localDir: localDir, remoteFile: remoteFile)
-        : await sync.downloadFolder(localDir: localDir, remoteFile: remoteFile);
-    if (!mounted) return;
-    setState(() => _syncing = null);
-    if (res.success) {
-      if (!upload && onDownloaded != null) await onDownloaded();
-      App.rootContext.showMessage(message: t.syncSuccess);
-    } else {
-      App.rootContext.showMessage(
-        message: res.errorMessage ?? '',
-        level: LogLevel.error,
-      );
-    }
   }
 
   InputDecoration _fieldDecoration({
@@ -1079,6 +981,268 @@ class _HubStickersPageState extends State<_HubStickersPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// 选择性同步：按条目选择角色卡 / 故事观
+// ─────────────────────────────────────────────
+
+class _SelectiveSyncPage extends StatefulWidget {
+  const _SelectiveSyncPage();
+
+  @override
+  State<_SelectiveSyncPage> createState() => _SelectiveSyncPageState();
+}
+
+class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
+  static const _cardPrefix = 'kostori-card-';
+  static const _storyPrefix = 'kostori-story-';
+
+  bool _loading = true;
+  bool _busy = false;
+  List<String> _remote = const [];
+  final Set<String> _selectedCards = {};
+  final Set<String> _selectedStories = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    await CharacterCardStore.instance.ensureLoaded();
+    await StoryStore.instance.ensureLoaded();
+    final res = await DataSync().listRemoteFiles();
+    if (!mounted) return;
+    setState(() {
+      _remote = res.success ? res.data : const [];
+      _loading = false;
+    });
+  }
+
+  bool _remoteHas(String name) => _remote.contains(name);
+
+  List<String> get _cardIds {
+    final ids = <String>{
+      for (final c in CharacterCardStore.instance.cards) c.id,
+    };
+    for (final f in _remote) {
+      if (f.startsWith(_cardPrefix) && f.endsWith('.json')) {
+        ids.add(f.substring(_cardPrefix.length, f.length - 5));
+      }
+    }
+    return ids.toList()..sort();
+  }
+
+  List<String> get _storyIds {
+    final ids = <String>{for (final s in StoryStore.instance.stories) s.id};
+    for (final f in _remote) {
+      if (f.startsWith(_storyPrefix) && f.endsWith('.md')) {
+        ids.add(f.substring(_storyPrefix.length, f.length - 3));
+      }
+    }
+    return ids.toList()..sort();
+  }
+
+  String _cardName(String id) =>
+      CharacterCardStore.instance.find(id)?.name ?? id;
+
+  String _storyName(String id) => StoryStore.instance.find(id)?.name ?? id;
+
+  void _toast(bool ok) {
+    App.rootContext.showMessage(
+      message: ok ? t.syncSuccess : t.characterImportFailed,
+      level: ok ? LogLevel.info : LogLevel.error,
+    );
+  }
+
+  Future<void> _upload(Set<String> ids, bool cards) async {
+    if (ids.isEmpty || _busy) return;
+    setState(() => _busy = true);
+    final sync = DataSync();
+    var ok = 0;
+    for (final id in ids) {
+      if (cards) {
+        final dir = CharacterCardStore.instance.dirPath;
+        final json = io.File('$dir/$id.json');
+        if (json.existsSync()) {
+          final r = await sync.uploadFile(
+            localPath: json.path,
+            remoteName: '$_cardPrefix$id.json',
+          );
+          if (r.success) ok++;
+        }
+        final png = io.File('$dir/$id.png');
+        if (png.existsSync()) {
+          await sync.uploadFile(
+            localPath: png.path,
+            remoteName: '$_cardPrefix$id.png',
+          );
+        }
+      } else {
+        final md = io.File('${StoryStore.instance.dirPath}/$id.md');
+        if (md.existsSync()) {
+          final r = await sync.uploadFile(
+            localPath: md.path,
+            remoteName: '$_storyPrefix$id.md',
+          );
+          if (r.success) ok++;
+        }
+      }
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(ok > 0);
+    await _load();
+  }
+
+  Future<void> _download(Set<String> ids, bool cards) async {
+    if (ids.isEmpty || _busy) return;
+    setState(() => _busy = true);
+    final sync = DataSync();
+    var ok = 0;
+    for (final id in ids) {
+      if (cards) {
+        final dir = CharacterCardStore.instance.dirPath;
+        final remoteJson = '$_cardPrefix$id.json';
+        if (_remoteHas(remoteJson)) {
+          final r = await sync.downloadFile(
+            remoteName: remoteJson,
+            localPath: '$dir/$id.json',
+          );
+          if (r.success) ok++;
+          final remotePng = '$_cardPrefix$id.png';
+          if (_remoteHas(remotePng)) {
+            await sync.downloadFile(
+              remoteName: remotePng,
+              localPath: '$dir/$id.png',
+            );
+          }
+        }
+      } else {
+        final remoteMd = '$_storyPrefix$id.md';
+        if (_remoteHas(remoteMd)) {
+          final r = await sync.downloadFile(
+            remoteName: remoteMd,
+            localPath: '${StoryStore.instance.dirPath}/$id.md',
+          );
+          if (r.success) ok++;
+        }
+      }
+    }
+    await CharacterCardStore.instance.reload();
+    await StoryStore.instance.reload();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _toast(ok > 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Appbar(
+            title: Text(t.selectiveSync),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new),
+              tooltip: t.back,
+              onPressed: () => context.canPop() ? context.pop() : App.pop(),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: t.refresh,
+                onPressed: _load,
+              ),
+            ],
+            bottom: TabBar(
+              tabs: [
+                Tab(text: t.characterCards),
+                Tab(text: t.rolePlay),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    children: [
+                      _buildList(cards: true),
+                      _buildList(cards: false),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList({required bool cards}) {
+    final ids = cards ? _cardIds : _storyIds;
+    final selected = cards ? _selectedCards : _selectedStories;
+    if (ids.isEmpty) {
+      return Center(
+        child: Text(cards ? t.characterCardsEmpty : t.storyNoStories),
+      );
+    }
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            children: [
+              for (final id in ids)
+                CheckboxListTile(
+                  dense: true,
+                  value: selected.contains(id),
+                  title: Text(cards ? _cardName(id) : _storyName(id)),
+                  subtitle: Text(
+                    '${cards ? _cardPrefix : _storyPrefix}$id',
+                    style: const TextStyle(fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onChanged: (v) => setState(() {
+                    if (v == true) {
+                      selected.add(id);
+                    } else {
+                      selected.remove(id);
+                    }
+                  }),
+                ),
+            ],
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _busy ? null : () => _upload(selected, cards),
+                    icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                    label: Text('${t.upload} (${selected.length})'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: _busy ? null : () => _download(selected, cards),
+                    icon: const Icon(Icons.cloud_download_outlined, size: 18),
+                    label: Text('${t.download} (${selected.length})'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
