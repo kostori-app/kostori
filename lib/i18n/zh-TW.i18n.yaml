@@ -126,6 +126,8 @@ currentlySeenEp: 目前看到 ${ep}
 dnsOverrides: DNS 覆寫
 dark: 深色
 dataSync: 數據同步
+selectiveSync: 選擇性同步
+syncSuccess: 同步成功
 data: 數據
 dateDesc: 按日期降序
 date: 日期

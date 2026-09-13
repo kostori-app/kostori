@@ -4,10 +4,12 @@
 // 支持 .md 导入/导出。
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 单项数值条（如 生命 100/100）
@@ -1064,32 +1066,64 @@ class StoryStore extends ChangeNotifier {
 
   StoryStore._();
 
-  static const _kKey = 'ai_stories';
+  /// 旧版 shared_preferences key（用于一次性迁移）
+  static const _legacyKey = 'ai_stories';
+  static const _dirName = 'stories';
 
   List<Story> _stories = [];
   bool _loaded = false;
 
   List<Story> get stories => List.unmodifiable(_stories);
 
+  /// 故事目录（供 WebDAV 同步）
+  String get dirPath => '${App.dataPath}/$_dirName';
+
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kKey);
     _stories = [];
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          _stories = [
-            for (final e in decoded)
-              if (e is Map) Story.fromJson(e.cast<String, dynamic>()),
-          ];
-        }
-      } catch (_) {
-        _stories = [];
+    try {
+      final dir = Directory(dirPath);
+      await dir.create(recursive: true);
+      for (final entity in dir.listSync()) {
+        if (entity is! File || !entity.path.endsWith('.md')) continue;
+        try {
+          final text = await entity.readAsString();
+          final name = entity.uri.pathSegments.last;
+          final id = name.endsWith('.md')
+              ? name.substring(0, name.length - 3)
+              : name;
+          _stories.add(storyFromMarkdown(text, id: id));
+        } catch (_) {}
       }
-    }
+    } catch (_) {}
+    await _migrateLegacy();
     _loaded = true;
     notifyListeners();
+  }
+
+  /// 旧版 prefs 数据迁移到 .md 文件
+  Future<void> _migrateLegacy() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_legacyKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        for (final e in decoded) {
+          if (e is! Map) continue;
+          final story = Story.fromJson(e.cast<String, dynamic>());
+          if (_stories.any((s) => s.id == story.id)) continue;
+          await _writeStory(story);
+          _stories.add(story);
+        }
+      }
+    } catch (_) {}
+    await prefs.remove(_legacyKey);
+  }
+
+  Future<void> _writeStory(Story story) async {
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await File('$dirPath/${story.id}.md').writeAsString(storyToMarkdown(story));
   }
 
   Future<void> ensureLoaded() async {
@@ -1103,23 +1137,15 @@ class StoryStore extends ChangeNotifier {
     return null;
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kKey,
-      jsonEncode([for (final s in _stories) s.toJson()]),
-    );
-  }
-
   Future<void> upsert(Story story) async {
     await ensureLoaded();
+    await _writeStory(story);
     final idx = _stories.indexWhere((s) => s.id == story.id);
     if (idx >= 0) {
       _stories[idx] = story;
     } else {
       _stories.add(story);
     }
-    await _save();
     notifyListeners();
   }
 
@@ -1127,10 +1153,21 @@ class StoryStore extends ChangeNotifier {
     await ensureLoaded();
     final s = find(id);
     if (s != null && s.isBuiltin) return false;
+    final f = File('$dirPath/$id.md');
+    if (f.existsSync()) {
+      try {
+        f.deleteSync();
+      } catch (_) {}
+    }
     _stories.removeWhere((s) => s.id == id);
-    await _save();
     notifyListeners();
     return true;
+  }
+
+  /// WebDAV 下载后重新加载
+  Future<void> reload() async {
+    _loaded = false;
+    await init();
   }
 
   /// 从 .md 文本解析故事

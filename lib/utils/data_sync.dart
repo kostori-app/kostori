@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
@@ -15,6 +16,7 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
+import 'package:zip_flutter/zip_flutter.dart';
 
 class DataSync with ChangeNotifier {
   DataSync._() {
@@ -329,6 +331,105 @@ class DataSync with ChangeNotifier {
       _progress = null;
       if (_lastError == null) _recordSyncSuccess();
       notifyListeners();
+    }
+  }
+
+  // ─── 选择性同步（角色卡 / 故事观 等独立目录）──────────────
+
+  /// 上传本地目录为远端 zip（覆盖远端文件）
+  Future<Res<bool>> uploadFolder({
+    required String localDir,
+    required String remoteFile,
+  }) async {
+    final config = _validateConfig();
+    if (config == null) return const Res.error('Invalid WebDAV configuration');
+    if (config.isEmpty) return const Res(true);
+    if (!Directory(localDir).existsSync()) return const Res(true);
+    try {
+      final zipPath = FilePath.join(
+        App.cachePath,
+        'sync_${DateTime.now().millisecondsSinceEpoch}.zip',
+      );
+      await Isolate.run(() {
+        final d = Directory(localDir);
+        final zipFile = ZipFile.open(zipPath);
+        for (final e in d.listSync()) {
+          if (e is File) zipFile.addFile(e.uri.pathSegments.last, e.path);
+        }
+        zipFile.close();
+      });
+      final bytes = await File(zipPath).readAsBytes();
+      File(zipPath).deleteIgnoreError();
+
+      final client = newClient(
+        config[0],
+        user: config[1],
+        password: config[2],
+        adapter: RHttpAdapter(),
+      );
+      await client.write(remoteFile, bytes);
+      Log.info('Sync Folder', 'Uploaded $remoteFile');
+      return const Res(true);
+    } catch (e, s) {
+      Log.error('Sync Folder', e, s);
+      return Res.error(e.toString());
+    }
+  }
+
+  /// 下载远端 zip 并合并到本地目录（新增/更新，保留本地独有文件）
+  Future<Res<bool>> downloadFolder({
+    required String remoteFile,
+    required String localDir,
+  }) async {
+    final config = _validateConfig();
+    if (config == null) return const Res.error('Invalid WebDAV configuration');
+    if (config.isEmpty) return const Res(true);
+    try {
+      final zipPath = FilePath.join(
+        App.cachePath,
+        'sync_dl_${DateTime.now().millisecondsSinceEpoch}.zip',
+      );
+      final client = newClient(
+        config[0],
+        user: config[1],
+        password: config[2],
+        adapter: RHttpAdapter(),
+      );
+      final files = await client.readDir('/');
+      if (!files.any((f) => f.name == remoteFile)) {
+        return const Res.error('No remote file');
+      }
+      await client.read2File(remoteFile, zipPath);
+
+      final tempPath = FilePath.join(App.cachePath, 'sync_temp');
+      final tempDir = Directory(tempPath);
+      if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+      tempDir.createSync();
+      await Isolate.run(() => ZipFile.openAndExtract(zipPath, tempPath));
+
+      final target = Directory(localDir);
+      await target.create(recursive: true);
+      for (final e in tempDir.listSync()) {
+        if (e is! File) continue;
+        final name = e.uri.pathSegments.last;
+        final dest = File('$localDir/$name');
+        var write = !dest.existsSync();
+        if (!write) {
+          try {
+            write = e.statSync().modified.isAfter(dest.statSync().modified);
+          } catch (_) {
+            write = true;
+          }
+        }
+        if (write) await e.copy(dest.path);
+      }
+      tempDir.deleteSync(recursive: true);
+      File(zipPath).deleteIgnoreError();
+      Log.info('Sync Folder', 'Downloaded $remoteFile');
+      return const Res(true);
+    } catch (e, s) {
+      Log.error('Sync Folder', e, s);
+      return Res.error(e.toString());
     }
   }
 }

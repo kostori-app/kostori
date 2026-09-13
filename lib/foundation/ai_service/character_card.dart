@@ -2,9 +2,10 @@
 // 故事内角色与全局角色卡库共用本模型。
 
 import 'dart:convert';
-import 'dart:io' show zlib;
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 角色卡数据（兼容 SillyTavern V1 / V2 / V3 字段）
@@ -520,39 +521,112 @@ class CharacterCard {
       bytes[offset + 3];
 }
 
-/// 全局角色卡库：shared_preferences 持久化
+/// 全局角色卡库：存放在 `dataPath/character_cards/` 的独立文件
+/// （`<id>.json` + `<id>.png` 头像），便于单独 WebDAV 同步。
 class CharacterCardStore extends ChangeNotifier {
   static final CharacterCardStore instance = CharacterCardStore._();
 
   CharacterCardStore._();
 
-  static const _kKey = 'character_cards';
+  /// 旧版 shared_preferences key（用于一次性迁移）
+  static const _legacyKey = 'character_cards';
+  static const _dirName = 'character_cards';
 
   List<CharacterCard> _cards = [];
   bool _loaded = false;
 
   List<CharacterCard> get cards => List.unmodifiable(_cards);
 
+  /// 卡片目录（供 WebDAV 同步）
+  String get dirPath => '${App.dataPath}/$_dirName';
+
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kKey);
-    if (raw == null || raw.isEmpty) {
-      _cards = [];
-    } else {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          _cards = [
-            for (final e in decoded)
-              if (e is Map) CharacterCard.fromJson(e.cast<String, dynamic>()),
-          ];
-        }
-      } catch (_) {
-        _cards = [];
+    _cards = [];
+    try {
+      final dir = Directory(dirPath);
+      await dir.create(recursive: true);
+      for (final entity in dir.listSync()) {
+        if (entity is! File || !entity.path.endsWith('.json')) continue;
+        try {
+          final json = jsonDecode(await entity.readAsString());
+          if (json is! Map) continue;
+          _cards.add(
+            _hydrate(CharacterCard.fromJson(json.cast<String, dynamic>())),
+          );
+        } catch (_) {}
       }
-    }
+    } catch (_) {}
+    await _migrateLegacy();
     _loaded = true;
     notifyListeners();
+  }
+
+  /// 头像文件 → data URL（内存统一用 data URL 渲染）
+  CharacterCard _hydrate(CharacterCard card) {
+    final avatar = card.avatar.trim();
+    if (avatar.isEmpty ||
+        avatar.startsWith('data:') ||
+        avatar.startsWith('http')) {
+      return card;
+    }
+    final file = File('$dirPath/$avatar');
+    if (!file.existsSync()) return card.copyWith(avatar: '');
+    try {
+      final bytes = file.readAsBytesSync();
+      final ext = avatar.split('.').last.toLowerCase();
+      final mime = (ext == 'jpg' || ext == 'jpeg') ? 'image/jpeg' : 'image/png';
+      return card.copyWith(avatar: 'data:$mime;base64,${base64.encode(bytes)}');
+    } catch (_) {
+      return card.copyWith(avatar: '');
+    }
+  }
+
+  /// 写入卡片文件（JSON + 头像）；内存保留 data URL
+  Future<void> _writeCard(CharacterCard card) async {
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    final avatar = card.avatar.trim();
+    final json = card.toJson();
+    final imageFile = File('$dirPath/${card.id}.png');
+    if (avatar.startsWith('data:image')) {
+      try {
+        final comma = avatar.indexOf(',');
+        await imageFile.writeAsBytes(
+          base64.decode(avatar.substring(comma + 1)),
+        );
+        json['avatar'] = '${card.id}.png';
+      } catch (_) {
+        json['avatar'] = '';
+      }
+    } else {
+      if (imageFile.existsSync()) {
+        try {
+          imageFile.deleteSync();
+        } catch (_) {}
+      }
+      json['avatar'] = avatar.startsWith('http') ? avatar : '';
+    }
+    await File('$dirPath/${card.id}.json').writeAsString(jsonEncode(json));
+  }
+
+  /// 旧版 prefs 数据迁移到文件
+  Future<void> _migrateLegacy() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_legacyKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        for (final e in decoded) {
+          if (e is! Map) continue;
+          final card = CharacterCard.fromJson(e.cast<String, dynamic>());
+          if (_cards.any((c) => c.id == card.id)) continue;
+          await _writeCard(card);
+          _cards.add(card);
+        }
+      }
+    } catch (_) {}
+    await prefs.remove(_legacyKey);
   }
 
   Future<void> ensureLoaded() async {
@@ -566,30 +640,35 @@ class CharacterCardStore extends ChangeNotifier {
     return null;
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kKey,
-      jsonEncode([for (final c in _cards) c.toJson()]),
-    );
-  }
-
   Future<void> upsert(CharacterCard card) async {
     await ensureLoaded();
+    await _writeCard(card);
     final idx = _cards.indexWhere((c) => c.id == card.id);
     if (idx >= 0) {
       _cards[idx] = card;
     } else {
       _cards.add(card);
     }
-    await _save();
     notifyListeners();
   }
 
   Future<void> remove(String id) async {
     await ensureLoaded();
+    for (final ext in const ['json', 'png']) {
+      final f = File('$dirPath/$id.$ext');
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
+    }
     _cards.removeWhere((c) => c.id == id);
-    await _save();
     notifyListeners();
+  }
+
+  /// WebDAV 下载后重新加载
+  Future<void> reload() async {
+    _loaded = false;
+    await init();
   }
 }

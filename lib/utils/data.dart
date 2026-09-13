@@ -8,6 +8,8 @@ import 'package:kostori/database/history.dart';
 import 'package:kostori/database/history_write_service.dart';
 import 'package:kostori/database/search_history.dart';
 import 'package:kostori/database/stats.dart';
+import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -189,6 +191,17 @@ Future<File> exportAppData() async {
       for (var file in Directory(pluginsDir).listSync()) {
         if (file is File) {
           zipFile.addFile("$mePluginsDirName/${file.name}", file.path);
+        }
+      }
+    }
+    // 角色卡 / 故事观：独立目录（也随整包备份）
+    for (final dirName in const ['character_cards', 'stories']) {
+      final dir = FilePath.join(dataPath, dirName);
+      if (Directory(dir).existsSync()) {
+        for (var file in Directory(dir).listSync()) {
+          if (file is File) {
+            zipFile.addFile('$dirName/${file.name}', file.path);
+          }
         }
       }
     }
@@ -434,6 +447,20 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       }
       await MePagePluginManager().reload();
     }
+    // 角色卡 / 故事观：合并导入（保留本地独有文件）
+    for (final dirName in const ['character_cards', 'stories']) {
+      final src = FilePath.join(cacheDirPath, dirName);
+      if (!Directory(src).existsSync()) continue;
+      final dest = FilePath.join(App.dataPath, dirName);
+      Directory(dest).createSync(recursive: true);
+      for (var file in Directory(src).listSync()) {
+        if (file is File) {
+          await file.copy(FilePath.join(dest, file.name));
+        }
+      }
+    }
+    await CharacterCardStore.instance.reload();
+    await StoryStore.instance.reload();
   } catch (e) {
     DebugLog.error('importAppData', '$e');
   } finally {

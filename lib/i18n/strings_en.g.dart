@@ -449,6 +449,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Data Sync'
 	String get dataSync => 'Data Sync';
 
+	/// en: 'Selective sync'
+	String get selectiveSync => 'Selective sync';
+
+	/// en: 'Synced'
+	String get syncSuccess => 'Synced';
+
 	/// en: 'Data'
 	String get data => 'Data';
 
@@ -8137,6 +8143,8 @@ extension on Translations {
 			'dnsOverrides' => 'DNS Overrides',
 			'dark' => 'Dark',
 			'dataSync' => 'Data Sync',
+			'selectiveSync' => 'Selective sync',
+			'syncSuccess' => 'Synced',
 			'data' => 'Data',
 			'dateDesc' => 'Date Desc',
 			'date' => 'Date',
@@ -8511,10 +8519,10 @@ extension on Translations {
 			'cropImage' => 'Crop Image',
 			'finishCropping' => 'Finish Cropping',
 			'sortImages' => 'Sort Images',
-			'finishSorting' => 'Finish Sorting',
-			'noImages' => 'No Images',
 			_ => null,
 		} ?? switch (path) {
+			'finishSorting' => 'Finish Sorting',
+			'noImages' => 'No Images',
 			'cropHeightCPx' => ({required Object c}) => 'Crop Height: ${c} px',
 			'firstImageFullHeight' => 'First image shown at full height',
 			'enterHexColorCode' => 'Enter hex color code, e.g. #FF000000',
@@ -9025,10 +9033,10 @@ extension on Translations {
 			'groupSources' => 'Sources in group',
 			'assignSources' => 'Assign sources',
 			'deleteGroup' => 'Delete Group',
-			'deleteGroupConfirm' => 'Delete this group?',
-			'translation' => 'Translation',
 			_ => null,
 		} ?? switch (path) {
+			'deleteGroupConfirm' => 'Delete this group?',
+			'translation' => 'Translation',
 			'translationService' => 'Translation Service',
 			'apiKeyCannotBeEmpty' => 'API key cannot be empty',
 			'pleaseConfigureApiKeyInAiSettingsFirst' => 'Please configure API key in AI settings first',
@@ -9539,10 +9547,10 @@ extension on Translations {
 			'generateTag' => 'Generate Tag',
 			'summaryReport' => 'Summary Report',
 			'aiStatActiveTitles' => 'Active titles',
-			'aiSoulStyle' => 'Analysis style',
-			'aiStyleBalanced' => 'Balanced',
 			_ => null,
 		} ?? switch (path) {
+			'aiSoulStyle' => 'Analysis style',
+			'aiStyleBalanced' => 'Balanced',
 			'aiStyleDetailed' => 'Detailed',
 			'aiStyleSharp' => 'Sharp',
 			'aiStylePoetic' => 'Poetic',
@@ -10053,10 +10061,10 @@ extension on Translations {
 			'statsDateYear' => ({required Object year}) => '${year}',
 			'statsDateDay' => ({required Object day}) => '${day}',
 			'statsDateMonthOnly' => ({required Object month}) => '${month}',
-			'statsWeekdayMon' => 'Mon',
-			'statsWeekdayTue' => 'Tue',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayMon' => 'Mon',
+			'statsWeekdayTue' => 'Tue',
 			'statsWeekdayWed' => 'Wed',
 			'statsWeekdayThu' => 'Thu',
 			'statsWeekdayFri' => 'Fri',
@@ -10567,10 +10575,10 @@ extension on Translations {
 			'appInfo' => 'App info',
 			'partRepoFetchFailed' => ({required Object list}) => 'Some repositories failed to fetch: ${list}',
 			'airTimeLabel' => ({required Object time}) => 'Air time: ${time}',
-			'durationLabel' => ({required Object duration}) => 'Duration: ${duration}',
-			'replyBracket' => '[Reply]',
 			_ => null,
 		} ?? switch (path) {
+			'durationLabel' => ({required Object duration}) => 'Duration: ${duration}',
+			'replyBracket' => '[Reply]',
 			'wantToWatch' => 'Want to watch',
 			'watching' => 'Watching',
 			'addToFolder' => ({required Object folder}) => 'Add to ${folder}',

@@ -168,6 +168,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dnsOverrides => 'DNS 覆写';
 	@override String get dark => '深色';
 	@override String get dataSync => '数据同步';
+	@override String get selectiveSync => '选择性同步';
+	@override String get syncSuccess => '同步成功';
 	@override String get data => '数据';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2841,6 +2843,8 @@ extension on TranslationsZhCn {
 			'dnsOverrides' => 'DNS 覆写',
 			'dark' => '深色',
 			'dataSync' => '数据同步',
+			'selectiveSync' => '选择性同步',
+			'syncSuccess' => '同步成功',
 			'data' => '数据',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3222,10 +3226,10 @@ extension on TranslationsZhCn {
 			'importedCountI' => ({required Object i}) => '已导入 ${i} 张图片',
 			'exportImage' => '复制/分享',
 			'saveAndShare' => '保存并分享',
-			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
-			'firstImageFullHeight' => '首张全高显示',
 			_ => null,
 		} ?? switch (path) {
+			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
+			'firstImageFullHeight' => '首张全高显示',
 			'enterHexColorCode' => '输入十六进制颜色代码，例如 #FF000000',
 			'showImageBorders' => '显示图片边框',
 			'outerBorderRadius' => '外边框圆角',
@@ -3736,10 +3740,10 @@ extension on TranslationsZhCn {
 			'assignSources' => '分配源',
 			'deleteGroup' => '删除分组',
 			'deleteGroupConfirm' => '确定删除该分组？',
-			'translation' => '翻译',
-			'translationService' => '翻译服务',
 			_ => null,
 		} ?? switch (path) {
+			'translation' => '翻译',
+			'translationService' => '翻译服务',
 			'apiKeyCannotBeEmpty' => 'API Key 不能为空',
 			'pleaseConfigureApiKeyInAiSettingsFirst' => '请先在AI设置中配置API密钥',
 			'usage' => '使用情况',
@@ -4250,10 +4254,10 @@ extension on TranslationsZhCn {
 			'summaryReport' => '总结报告',
 			'aiStatActiveTitles' => '活跃条目',
 			'aiSoulStyle' => '分析风格',
-			'aiStyleBalanced' => '均衡',
-			'aiStyleDetailed' => '详细',
 			_ => null,
 		} ?? switch (path) {
+			'aiStyleBalanced' => '均衡',
+			'aiStyleDetailed' => '详细',
 			'aiStyleSharp' => '毒舌',
 			'aiStylePoetic' => '文艺',
 			'aiTagStyle' => 'Tag 风格',
@@ -4764,10 +4768,10 @@ extension on TranslationsZhCn {
 			'statsDateYear' => ({required Object year}) => '${year}年',
 			'statsDateDay' => ({required Object day}) => '${day}日',
 			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
-			'statsWeekdayMon' => '一',
-			'statsWeekdayTue' => '二',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayMon' => '一',
+			'statsWeekdayTue' => '二',
 			'statsWeekdayWed' => '三',
 			'statsWeekdayThu' => '四',
 			'statsWeekdayFri' => '五',
@@ -5278,10 +5282,10 @@ extension on TranslationsZhCn {
 			'appInfo' => '应用信息',
 			'partRepoFetchFailed' => ({required Object list}) => '部分仓库拉取失败: ${list}',
 			'airTimeLabel' => ({required Object time}) => '放送时间：${time}',
-			'durationLabel' => ({required Object duration}) => '时长：${duration}',
-			'replyBracket' => '[回复]',
 			_ => null,
 		} ?? switch (path) {
+			'durationLabel' => ({required Object duration}) => '时长：${duration}',
+			'replyBracket' => '[回复]',
 			'wantToWatch' => '想看',
 			'watching' => '在看',
 			'addToFolder' => ({required Object folder}) => '添加到 ${folder}',

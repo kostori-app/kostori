@@ -138,6 +138,8 @@ currentlySeenEp: Currently seen ${ep}
 dnsOverrides: DNS Overrides
 dark: Dark
 dataSync: Data Sync
+selectiveSync: Selective sync
+syncSuccess: Synced
 data: Data
 dateDesc: Date Desc
 date: Date

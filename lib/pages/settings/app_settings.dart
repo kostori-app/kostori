@@ -265,6 +265,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
   bool isTesting = false;
   bool upload = true;
   bool obscurePassword = true;
+  String? _syncing;
 
   @override
   void initState() {
@@ -321,6 +322,8 @@ class _WebdavSettingState extends State<_WebdavSetting> {
             _buildConfigCard(context, cs),
             const SizedBox(height: 16),
             _buildSyncOptionsCard(context, cs),
+            const SizedBox(height: 16),
+            _buildSelectiveSyncCard(context, cs),
             const SizedBox(height: 24),
             SizedBox(
               height: 48,
@@ -575,6 +578,128 @@ class _WebdavSettingState extends State<_WebdavSetting> {
         ),
       ),
     );
+  }
+
+  /// 选择性同步：角色卡 / 故事观（独立目录）
+  Widget _buildSelectiveSyncCard(BuildContext context, ColorScheme cs) {
+    Widget row({
+      required String key,
+      required IconData icon,
+      required String label,
+      required String localDir,
+      required String remoteFile,
+      Future<void> Function()? onDownloaded,
+    }) {
+      final syncing = _syncing == key;
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, size: 20),
+        title: Text(label),
+        trailing: syncing
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: t.upload,
+                    icon: const Icon(Icons.cloud_upload_outlined, size: 20),
+                    onPressed: _configured
+                        ? () => _syncFolder(
+                            key: key,
+                            localDir: localDir,
+                            remoteFile: remoteFile,
+                            upload: true,
+                          )
+                        : null,
+                  ),
+                  IconButton(
+                    tooltip: t.download,
+                    icon: const Icon(Icons.cloud_download_outlined, size: 20),
+                    onPressed: _configured
+                        ? () => _syncFolder(
+                            key: key,
+                            localDir: localDir,
+                            remoteFile: remoteFile,
+                            upload: false,
+                            onDownloaded: onDownloaded,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+      );
+    }
+
+    return Material(
+      color: cs.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant, width: 0.6),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                t.selectiveSync,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+            row(
+              key: 'cards',
+              icon: Icons.badge_outlined,
+              label: t.characterCards,
+              localDir: CharacterCardStore.instance.dirPath,
+              remoteFile: 'character_cards.zip',
+              onDownloaded: CharacterCardStore.instance.reload,
+            ),
+            const Divider(height: 1),
+            row(
+              key: 'stories',
+              icon: Icons.auto_stories_outlined,
+              label: t.rolePlay,
+              localDir: StoryStore.instance.dirPath,
+              remoteFile: 'stories.zip',
+              onDownloaded: StoryStore.instance.reload,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _syncFolder({
+    required String key,
+    required String localDir,
+    required String remoteFile,
+    required bool upload,
+    Future<void> Function()? onDownloaded,
+  }) async {
+    if (_syncing != null) return;
+    setState(() => _syncing = key);
+    final sync = DataSync();
+    final res = upload
+        ? await sync.uploadFolder(localDir: localDir, remoteFile: remoteFile)
+        : await sync.downloadFolder(localDir: localDir, remoteFile: remoteFile);
+    if (!mounted) return;
+    setState(() => _syncing = null);
+    if (res.success) {
+      if (!upload && onDownloaded != null) await onDownloaded();
+      App.rootContext.showMessage(message: t.syncSuccess);
+    } else {
+      App.rootContext.showMessage(
+        message: res.errorMessage ?? '',
+        level: LogLevel.error,
+      );
+    }
   }
 
   InputDecoration _fieldDecoration({

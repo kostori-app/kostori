@@ -167,6 +167,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dnsOverrides => 'DNS 覆寫';
 	@override String get dark => '深色';
 	@override String get dataSync => '數據同步';
+	@override String get selectiveSync => '選擇性同步';
+	@override String get syncSuccess => '同步成功';
 	@override String get data => '數據';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2839,6 +2841,8 @@ extension on TranslationsZhTw {
 			'dnsOverrides' => 'DNS 覆寫',
 			'dark' => '深色',
 			'dataSync' => '數據同步',
+			'selectiveSync' => '選擇性同步',
+			'syncSuccess' => '同步成功',
 			'data' => '數據',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3221,10 +3225,10 @@ extension on TranslationsZhTw {
 			'exportImage' => '複製/分享',
 			'saveAndShare' => '儲存並分享',
 			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
-			'firstImageFullHeight' => '首張全高顯示',
-			'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
 			_ => null,
 		} ?? switch (path) {
+			'firstImageFullHeight' => '首張全高顯示',
+			'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
 			'showImageBorders' => '顯示圖片邊框',
 			'outerBorderRadius' => '外邊框圓角',
 			'outerBorderWidth' => '外邊框寬度',
@@ -3735,10 +3739,10 @@ extension on TranslationsZhTw {
 			'groupSources' => '分組內源',
 			'assignSources' => '分配源',
 			'deleteGroup' => '刪除分組',
-			'deleteGroupConfirm' => '確定刪除該分組？',
-			'translation' => '翻譯',
 			_ => null,
 		} ?? switch (path) {
+			'deleteGroupConfirm' => '確定刪除該分組？',
+			'translation' => '翻譯',
 			'translationService' => '翻譯服務',
 			'apiKeyCannotBeEmpty' => 'API Key 不能為空',
 			'pleaseConfigureApiKeyInAiSettingsFirst' => '請先在AI設定中設定API金鑰',
@@ -4249,10 +4253,10 @@ extension on TranslationsZhTw {
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '總結報告',
 			'aiStatActiveTitles' => '活躍條目',
-			'aiSoulStyle' => '分析風格',
-			'aiStyleBalanced' => '均衡',
 			_ => null,
 		} ?? switch (path) {
+			'aiSoulStyle' => '分析風格',
+			'aiStyleBalanced' => '均衡',
 			'aiStyleDetailed' => '詳細',
 			'aiStyleSharp' => '毒舌',
 			'aiStylePoetic' => '文藝',
@@ -4763,10 +4767,10 @@ extension on TranslationsZhTw {
 			'statsDateDay' => ({required Object day}) => '${day}日',
 			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
 			'statsWeekdayMon' => '一',
-			'statsWeekdayTue' => '二',
-			'statsWeekdayWed' => '三',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayTue' => '二',
+			'statsWeekdayWed' => '三',
 			'statsWeekdayThu' => '四',
 			'statsWeekdayFri' => '五',
 			'statsWeekdaySat' => '六',
@@ -5277,10 +5281,10 @@ extension on TranslationsZhTw {
 			'partRepoFetchFailed' => ({required Object list}) => '部分倉庫拉取失敗: ${list}',
 			'airTimeLabel' => ({required Object time}) => '放送時間：${time}',
 			'durationLabel' => ({required Object duration}) => '時長：${duration}',
-			'replyBracket' => '[回覆]',
-			'wantToWatch' => '想看',
 			_ => null,
 		} ?? switch (path) {
+			'replyBracket' => '[回覆]',
+			'wantToWatch' => '想看',
 			'watching' => '在看',
 			'addToFolder' => ({required Object folder}) => '新增到 ${folder}',
 			'removeFromFolder' => ({required Object folder}) => '從 ${folder} 刪除',
