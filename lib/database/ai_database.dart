@@ -13,7 +13,6 @@ import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_skill_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/consts.dart';
 import 'package:path/path.dart' as p;
 
 part 'ai_database.g.dart';
@@ -442,41 +441,19 @@ class AiDatabase extends _$AiDatabase {
       }
     },
     beforeOpen: (details) async {
+      // 清理旧版内置情景配置：内容已由代码常量 / 提示词注入提供，不再需要入库
       await batch((batch) {
-        batch.insertAll(aiConfigs, [
-          AiConfigsCompanion.insert(
-            id: const Value(1),
-            configKey: 'ai_translator_v1',
-            systemPrompt: aiTranslatePrompt,
-            temperature: const Value(0.3),
-            memo: const Value('专业母语译者'),
-            isSystem: const Value(true),
-          ),
-          AiConfigsCompanion.insert(
-            id: const Value(2),
-            configKey: 'soul_profiler_v1',
-            systemPrompt: soulProfilerSystemPrompt,
-            temperature: const Value(0.85),
-            memo: const Value('动漫灵魂侧写师'),
-            isSystem: const Value(true),
-          ),
-          AiConfigsCompanion.insert(
-            id: const Value(3),
-            configKey: 'image_tag_v1',
-            systemPrompt: imageTagSystemPrompt,
-            temperature: const Value(0.8),
-            memo: const Value('AI 绘画 Tag 生成'),
-            isSystem: const Value(true),
-          ),
-          AiConfigsCompanion.insert(
-            id: const Value(4),
-            configKey: 'summary_v1',
-            systemPrompt: summarySystemPrompt,
-            temperature: const Value(0.7),
-            memo: const Value('周月总结'),
-            isSystem: const Value(true),
-          ),
-        ], mode: InsertMode.insertOrReplace);
+        batch.deleteWhere(
+          aiConfigs,
+          (t) =>
+              t.isSystem.equals(true) &
+              t.configKey.isIn(const [
+                'ai_translator_v1',
+                'soul_profiler_v1',
+                'image_tag_v1',
+                'summary_v1',
+              ]),
+        );
       });
     },
   );
