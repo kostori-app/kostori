@@ -58,10 +58,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
       slivers: [
         SliverAppbar(
           title: Text(t.appearance),
-          bottom: TabBar(
+          bottom: CapsuleTabBar(
             controller: _tabController,
-            tabs: themeModes.values.map((label) => Tab(text: label)).toList(),
-            dividerColor: Colors.transparent,
+            labels: themeModes.values.toList(),
           ),
         ),
         SliverPadding(

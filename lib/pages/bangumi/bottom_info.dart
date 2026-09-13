@@ -887,18 +887,18 @@ class BottomInfoState extends State<BottomInfo>
             PreferredSize(
               preferredSize: Size.fromHeight(kToolbarHeight),
               child: Material(
-                child: TabBar(
-                  controller: infoTabController,
-                  tabs: [
-                    Tab(text: t.details),
-                    Tab(text: t.comments),
-                    Tab(text: t.comment),
-                    Tab(text: t.topics),
-                    Tab(text: t.reviews),
-                    Tab(text: t.characters),
-                    Tab(text: t.staffList),
-                  ],
-                ),
+              child: CapsuleTabBar(
+                controller: infoTabController,
+                labels: [
+                  t.details,
+                  t.comments,
+                  t.comment,
+                  t.topics,
+                  t.reviews,
+                  t.characters,
+                  t.staffList,
+                ],
+              ),
               ),
             ),
             Expanded(

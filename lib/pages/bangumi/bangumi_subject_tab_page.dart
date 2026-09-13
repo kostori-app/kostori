@@ -221,16 +221,10 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
       child: Scaffold(
         appBar: Appbar(
           title: Text(t.hotspot),
-          bottom: TabBar(
-            controller: infoTabController,
-            isScrollable: true,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            tabAlignment: TabAlignment.center,
-            tabs: [
-              Tab(text: t.topicsLatest),
-              Tab(text: t.topicsTrending),
-            ],
-          ),
+            bottom: CapsuleTabBar(
+              controller: infoTabController,
+              labels: [t.topicsLatest, t.topicsTrending],
+            ),
         ),
         body: TabBarView(
           controller: infoTabController,

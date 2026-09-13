@@ -334,9 +334,7 @@ class _LogsPageState extends State<LogsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = levelOrder
-        .map((lvl) => Tab(text: lvl.name.toUpperCase()))
-        .toList();
+    final labels = [for (final lvl in levelOrder) lvl.name.toUpperCase()];
     if (!_ready) {
       return const Center(child: PolygonRefreshIndicator());
     }
@@ -348,7 +346,7 @@ class _LogsPageState extends State<LogsPage> {
           children: [
             Row(
               children: [
-                Expanded(child: TabBar(tabs: tabs)),
+                Expanded(child: CapsuleTabBar(labels: labels)),
                 _LogMenuButton(
                   onClear: () => setState(() => Log.clear()),
                 ),
@@ -364,7 +362,7 @@ class _LogsPageState extends State<LogsPage> {
       child: Scaffold(
         appBar: Appbar(
           title: Text(t.logs),
-          bottom: TabBar(tabs: tabs),
+          bottom: CapsuleTabBar(labels: labels),
           actions: [
             _LogMenuButton(
               onClear: () => setState(() => Log.clear()),

@@ -873,14 +873,9 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
     return SizedBox(
       child: Column(
         children: [
-          ExtendedTabBar(
+          CapsuleTabBar(
             controller: _tabControllerZero,
-            mainAxisAlignment: MainAxisAlignment.center,
-            tabs: [
-              Tab(text: t.status),
-              Tab(text: t.log),
-            ],
-            indicatorSize: TabBarIndicatorSize.tab,
+            labels: [t.status, t.log],
           ),
           Expanded(
             child: ExtendedTabBarView(
@@ -1035,12 +1030,9 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: ExtendedTabBar(
+      appBar: CapsuleTabBar(
         controller: _tabControllerOne,
-        mainAxisAlignment: MainAxisAlignment.center,
-        tabs: logsByLevel.keys
-            .map((level) => Tab(text: level.toUpperCase()))
-            .toList(),
+        labels: [for (final level in logsByLevel.keys) level.toUpperCase()],
       ),
       body: ExtendedTabBarView(
         shouldIgnorePointerWhenScrolling: false,

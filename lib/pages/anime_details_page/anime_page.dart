@@ -459,17 +459,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     final tabBar = Container(
       color: Theme.of(context).colorScheme.surface,
-      child: TabBar(
+      child: CapsuleTabBar(
         controller: tabController,
-        isScrollable: true,
-        indicatorColor: Theme.of(context).colorScheme.primary,
-        tabAlignment: TabAlignment.center,
-        tabs: [
-          Tab(text: t.basicInfo),
-          Tab(text: t.allEpisodes),
-          Tab(text: t.relatedEntries),
-          Tab(text: t.imageOperations),
-          Tab(text: t.watchTogether),
+        labels: [
+          t.basicInfo,
+          t.allEpisodes,
+          t.relatedEntries,
+          t.imageOperations,
+          t.watchTogether,
         ],
       ),
     );

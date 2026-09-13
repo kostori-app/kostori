@@ -672,18 +672,11 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
                 child: Column(
                   children: [
                     // ── TabBar：主设置 / 模型设置 ─────────────
-                    TabBar(
-                      tabAlignment: TabAlignment.start,
-                      isScrollable: true,
-                      tabs: [
-                        Tab(
-                          icon: const Icon(Icons.settings_outlined, size: 18),
-                          text: t.mainSettings,
-                        ),
-                        Tab(
-                          icon: const Icon(Icons.model_training, size: 18),
-                          text: t.modelSettings,
-                        ),
+                    CapsuleTabBar(
+                      labels: [t.mainSettings, t.modelSettings],
+                      icons: const [
+                        Icons.settings_outlined,
+                        Icons.model_training,
                       ],
                     ),
                     Expanded(

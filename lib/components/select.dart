@@ -610,6 +610,108 @@ class CapsuleOptions extends StatelessWidget {
   }
 }
 
+/// 分段胶囊 tab 栏：可作为 `Appbar.bottom`（PreferredSizeWidget）或普通组件，
+/// 与 [TabController] 同步；不传 controller 时用最近的 [DefaultTabController]。
+class CapsuleTabBar extends StatelessWidget implements PreferredSizeWidget {
+  const CapsuleTabBar({
+    super.key,
+    this.controller,
+    required     this.labels,
+    this.icons,
+    this.badges,
+    this.padding = const EdgeInsets.fromLTRB(12, 6, 12, 6),
+    this.height = 46,
+    this.center = true,
+  });
+
+  final TabController? controller;
+  final List<String> labels;
+  final List<IconData?>? icons;
+
+  /// 每项右侧的小徽标计数（0 表示不显示）
+  final List<int>? badges;
+  final EdgeInsets padding;
+  final double height;
+  final bool center;
+
+  @override
+  Size get preferredSize => Size.fromHeight(height);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = controller ?? DefaultTabController.of(context);
+    return AnimatedBuilder(
+      animation: c,
+      builder: (context, _) {
+        return Padding(
+          padding: padding,
+          child: CapsuleOptions(
+            scrollable: true,
+            alignment: center ? WrapAlignment.center : WrapAlignment.start,
+            progress: c.animation,
+            children: [
+              for (var i = 0; i < labels.length; i++)
+                _option(
+                  context,
+                  c,
+                  i,
+                  (icons != null && i < icons!.length) ? icons![i] : null,
+                  (badges != null && i < badges!.length) ? badges![i] : 0,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _option(
+    BuildContext context,
+    TabController c,
+    int i,
+    IconData? icon,
+    int badge,
+  ) {
+    final selected = c.index == i;
+    if (icon == null && badge <= 0) {
+      return CapsuleOption(
+        text: labels[i],
+        isSelected: selected,
+        onTap: () => c.animateTo(i),
+      );
+    }
+    final scheme = Theme.of(context).colorScheme;
+    return CapsuleOption(
+      isSelected: selected,
+      onTap: () => c.animateTo(i),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 15),
+            const SizedBox(width: 4),
+          ],
+          Text(labels[i]),
+          if (badge > 0) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: scheme.error,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$badge',
+                style: TextStyle(fontSize: 10, color: scheme.onError),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// CapsuleOptions 内的单个选项（浮起胶囊由 CapsuleOptions 统一绘制并滑动）。
 /// 默认渲染 [text]；需要图标/计数等自定义内容时传 [child]（文字与图标会
 /// 继承选中态的主题色插值）。

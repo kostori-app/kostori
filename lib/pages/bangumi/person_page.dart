@@ -187,22 +187,14 @@ class _PersonPageState extends ConsumerState<PersonPage>
           PreferredSize(
             preferredSize: const Size.fromHeight(kToolbarHeight),
             child: Material(
-              child: TabBar(
-                controller: _tabController,
-                tabs: [
-                  Tab(
-                    text: widget.fromStaff
-                        ? t.personTabStaffInfo
-                        : t.personTabVoice,
-                  ),
-                  Tab(text: t.personTabChat),
-                  Tab(
-                    text: widget.fromStaff
-                        ? t.personTabWorks
-                        : t.personTabRelation,
-                  ),
-                ],
-              ),
+            child: CapsuleTabBar(
+              controller: _tabController,
+              labels: [
+                widget.fromStaff ? t.personTabStaffInfo : t.personTabVoice,
+                t.personTabChat,
+                widget.fromStaff ? t.personTabWorks : t.personTabRelation,
+              ],
+            ),
             ),
           ),
           Expanded(

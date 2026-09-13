@@ -20,11 +20,11 @@ class PromptManagementSettingsPage extends StatelessWidget {
               tooltip: t.back,
               onPressed: () => context.canPop() ? context.pop() : App.pop(),
             ),
-            bottom: TabBar(
-              tabs: [
-                Tab(text: t.promptInjection),
-                Tab(text: t.worldBook),
-                Tab(text: t.storySettingLibrary),
+            bottom: CapsuleTabBar(
+              labels: [
+                t.promptInjection,
+                t.worldBook,
+                t.storySettingLibrary,
               ],
             ),
           ),

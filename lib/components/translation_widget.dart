@@ -164,18 +164,9 @@ class _TranslationWidgetState extends State<TranslationWidget> {
               children: [
                 const SizedBox(height: 4),
                 // ── 语言 / 翻译源 切换 ───────────────
-                TabBar(
-                  tabAlignment: TabAlignment.center,
-                  tabs: [
-                    Tab(
-                      icon: const Icon(Icons.translate, size: 18),
-                      text: t.selectTranslationLanguage,
-                    ),
-                    Tab(
-                      icon: const Icon(Icons.sync_alt, size: 18),
-                      text: t.translationService,
-                    ),
-                  ],
+                CapsuleTabBar(
+                  labels: [t.selectTranslationLanguage, t.translationService],
+                  icons: const [Icons.translate, Icons.sync_alt],
                 ),
                 SizedBox(
                   height: MediaQuery.sizeOf(dialogContext).height * 0.6,

@@ -135,14 +135,14 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
           PreferredSize(
             preferredSize: const Size.fromHeight(kToolbarHeight),
             child: Material(
-              child: TabBar(
-                controller: _tabController,
-                tabs: [
-                  Tab(text: t.personTabProfile),
-                  Tab(text: t.personTabChat),
-                  Tab(text: t.personTabRelation),
-                ],
-              ),
+            child: CapsuleTabBar(
+              controller: _tabController,
+              labels: [
+                t.personTabProfile,
+                t.personTabChat,
+                t.personTabRelation,
+              ],
+            ),
             ),
           ),
           Expanded(

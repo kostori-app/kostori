@@ -59,44 +59,11 @@ class _HubPageState extends ConsumerState<HubPage>
       title: 'Hub',
       body: Column(
         children: [
-          TabBar(
+          CapsuleTabBar(
             controller: _tab,
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.meeting_room_outlined, size: 18),
-                text: t.rooms,
-              ),
-              Tab(
-                icon: const Icon(Icons.people, size: 18),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(t.members),
-                    if (totalUnread > 0) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '$totalUnread',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+            labels: [t.rooms, t.members],
+            icons: const [Icons.meeting_room_outlined, Icons.people],
+            badges: [0, totalUnread],
           ),
           Expanded(
             child: TabBarView(

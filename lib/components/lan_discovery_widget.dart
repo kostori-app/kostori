@@ -257,14 +257,10 @@ class _LanDiscoveryWidgetState extends ConsumerState<LanDiscoveryWidget>
               ),
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
-            TabBar(
-              controller: _tabController,
-              tabs: [
-                Tab(text: t.lanDiscoverDevices),
-                Tab(text: t.lanRemoteControl),
-              ],
-              labelStyle: ts.s14,
-            ),
+        CapsuleTabBar(
+          controller: _tabController,
+          labels: [t.lanDiscoverDevices, t.lanRemoteControl],
+        ),
             SizedBox(
               height: 280,
               child: TabBarView(

@@ -1459,17 +1459,16 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                 child: Column(
                   children: [
                     _buildTopFields(),
-                    TabBar(
-                      isScrollable: true,
-                      tabs: [
-                        Tab(text: t.profileTabBasic),
-                        Tab(text: t.profileTabPrompt),
-                        Tab(text: t.profileTabExtensions),
-                        Tab(text: t.profileTabMemory),
-                        Tab(text: t.profileTabRequest),
-                        Tab(text: t.profileTabMcp),
-                        Tab(text: t.profileTabLocalTools),
-                        Tab(text: t.profileTabLibrary),
+                    CapsuleTabBar(
+                      labels: [
+                        t.profileTabBasic,
+                        t.profileTabPrompt,
+                        t.profileTabExtensions,
+                        t.profileTabMemory,
+                        t.profileTabRequest,
+                        t.profileTabMcp,
+                        t.profileTabLocalTools,
+                        t.profileTabLibrary,
                       ],
                     ),
                     Expanded(

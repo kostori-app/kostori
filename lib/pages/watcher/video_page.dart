@@ -471,18 +471,9 @@ bool get _isSeries =>
   }
 
   Widget _buildTabBar() {
-    return TabBar(
+    return CapsuleTabBar(
       controller: _panelTabController,
-      isScrollable: true,
-      tabAlignment: TabAlignment.start,
-      indicatorColor: Theme.of(context).colorScheme.primary,
-      labelColor: Colors.white,
-      unselectedLabelColor: Colors.white60,
-      tabs: [
-        Tab(text: t.playlist),
-        Tab(text: t.videoDetails),
-        Tab(text: t.playerDetails),
-      ],
+      labels: [t.playlist, t.videoDetails, t.playerDetails],
     );
   }
 

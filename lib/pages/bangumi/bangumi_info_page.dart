@@ -384,15 +384,10 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                       ),
                     ),
                     forceElevated: innerBoxIsScrolled,
-                    bottom: TabBar(
-                      controller: infoTabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.center,
-                      dividerHeight: 0,
-                      tabs: infoController.tabs
-                          .map((name) => Tab(text: name))
-                          .toList(),
-                    ),
+            bottom: CapsuleTabBar(
+              controller: infoTabController,
+              labels: infoController.tabs,
+            ),
                   ),
                 ),
               ];

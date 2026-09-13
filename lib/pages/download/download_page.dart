@@ -229,11 +229,8 @@ class _DownloadPageState extends State<DownloadPage> {
               onPressed: () => _showSettings(context),
             ),
           ],
-          bottom: TabBar(
-            tabs: [
-              Tab(text: t.downloadActive),
-              Tab(text: t.downloadRecords),
-            ],
+          bottom: CapsuleTabBar(
+            labels: [t.downloadActive, t.downloadRecords],
           ),
         ),
         body: TabBarView(

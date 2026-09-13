@@ -198,47 +198,13 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                 ),
               ),
               // tab bar
-              TabBar(
+              CapsuleTabBar(
                 controller: _tabCtrl,
-                labelStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-                unselectedLabelStyle: const TextStyle(fontSize: 13),
-                indicatorSize: TabBarIndicatorSize.label,
-                dividerColor: cs.outlineVariant.toOpacity(0.4),
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.meeting_room_outlined, size: 15),
-                        const SizedBox(width: 6),
-                        Text(t.room),
-                      ],
-                    ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.people_outline, size: 15),
-                        const SizedBox(width: 6),
-                        Text(t.membersList),
-                      ],
-                    ),
-                  ),
-                  if (_isGlobal)
-                    Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.dns_outlined, size: 15),
-                          const SizedBox(width: 6),
-                          Text(t.server),
-                        ],
-                      ),
-                    ),
+                labels: [t.room, t.membersList, if (_isGlobal) t.server],
+                icons: const [
+                  Icons.meeting_room_outlined,
+                  Icons.people_outline,
+                  Icons.dns_outlined,
                 ],
               ),
               // tab content

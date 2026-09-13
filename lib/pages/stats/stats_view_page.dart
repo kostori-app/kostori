@@ -624,15 +624,11 @@ class _RatingDetailPageState extends State<_RatingDetailPage>
       title: t.ratingDetails,
       body: Column(
         children: [
-          TabBar(
+          CapsuleTabBar(
             controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.center,
-            tabs: List.generate(10, (i) {
+            labels: List.generate(10, (i) {
               final count = widget.ratingBangumiMap[i + 1]?.length ?? 0;
-              return Tab(
-                text: t.statsScoreCount(score: i + 1, count: count),
-              );
+              return t.statsScoreCount(score: i + 1, count: count);
             }),
           ),
           Expanded(

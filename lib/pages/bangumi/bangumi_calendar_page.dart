@@ -396,7 +396,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
     );
   }
 
-  List<Tab> getTabs() {
+  List<String> getTabs() {
     final currentDate = DateTime.now();
     return List.generate(7, (i) {
       final weekday = currentDate.add(
@@ -417,18 +417,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
         _ => '',
       };
 
-      return Tab(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              formattedDate,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(dayOfWeek),
-          ],
-        ),
-      );
+      return '$formattedDate $dayOfWeek';
     });
   }
 
@@ -608,13 +597,10 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
                     tooltip: t.calScreenshotSave,
                   ),
                 ],
-                bottom: TabBar(
-                  controller: controller,
-                  tabs: getTabs(),
-                  isScrollable: true,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
-                  tabAlignment: TabAlignment.center,
-                ),
+          bottom: CapsuleTabBar(
+            controller: controller,
+            labels: getTabs(),
+          ),
               ),
               body: Center(
                 child: ConstrainedBox(
