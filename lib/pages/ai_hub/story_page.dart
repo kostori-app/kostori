@@ -1914,9 +1914,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 是否已贴近底部（列表 reverse，底部即 offset 0）
   static bool _atBottom(ScrollMetrics m) => m.pixels <= 48;
 
-  /// 滚动状态机：仅 [UserScrollNotification]（用户拖动 / 滚轮 / 触摸板）
-  /// 可取消跟随；程序滚动不触发该通知，不会误伤跟随状态。
-  /// 回到底部时恢复跟随。
+  /// 滚动状态机：offset 增大（reverse 列表 = 上滑看历史）即暂停跟随；
+  /// 回到底部恢复跟随。程序滚动只会把 offset 拉向 0（变小），不会误判。
   bool _onUserScroll(ScrollNotification n) {
     if (n.metrics.axis == Axis.horizontal) return false;
     if (n is UserScrollNotification) {
@@ -1926,7 +1925,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         setState(() => _isFollowing = false);
       }
     } else if (n is ScrollUpdateNotification) {
-      if (_atBottom(n.metrics) && !_isFollowing) {
+      if ((n.scrollDelta ?? 0) > 0 && !_atBottom(n.metrics)) {
+        if (_isFollowing) setState(() => _isFollowing = false);
+      } else if (_atBottom(n.metrics) && !_isFollowing) {
         setState(() => _isFollowing = true);
       }
     }
@@ -1949,6 +1950,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (!force && !_isFollowing) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
+      // 回调排队期间用户可能已上滑，重新确认，避免把用户拽回底部
+      if (!force && !_isFollowing) return;
       if (animate) {
         _scrollController.animateTo(
           0,
@@ -3144,6 +3147,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       bottomTrailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (!_isFollowing)
+                            IconButton(
+                              icon: const Icon(Icons.arrow_downward),
+                              iconSize: 20,
+                              visualDensity: VisualDensity.compact,
+                              tooltip: t.jumpToBottom,
+                              onPressed: () {
+                                setState(() => _isFollowing = true);
+                                _scrollToBottom(force: true);
+                              },
+                            ),
                           IconButton(
                             icon: const Icon(Icons.auto_stories_outlined),
                             iconSize: 20,
@@ -3164,16 +3178,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                   ],
                 );
               },
-            ),
-      floatingActionButton: _isFollowing
-          ? null
-          : FloatingActionButton.small(
-              onPressed: () {
-                setState(() => _isFollowing = true);
-                _scrollToBottom(force: true);
-              },
-              tooltip: t.jumpToBottom,
-              child: const Icon(Icons.arrow_downward),
             ),
     );
   }
