@@ -2,7 +2,6 @@
 
 import 'dart:async';
 
-import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kostori/components/window_frame.dart';
