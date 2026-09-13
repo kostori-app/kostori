@@ -1980,7 +1980,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       if (!mounted) return;
       setState(() {
         _sessionId = saved.sessionId;
-        _state = saved.state;
+        _state = _mergeResources(saved.state);
         _booting = false;
       });
       // 按消息折叠变量，恢复分支正确的最新值
@@ -2095,6 +2095,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         '\n\n【致命资源（归零即游戏结束，请在归零前给出收尾叙事）】'
         '${story.deathResources.join('、')}',
       );
+    }
+    if (state.resources.isNotEmpty) {
+      buf.write('\n\n【数值条（每回合都要完整回传，勿遗漏任何一条）】');
+      for (final r in state.resources) {
+        buf.write('\n- ${r.name} ${r.cur}/${r.max}');
+      }
     }
     if (story.characters.isNotEmpty) {
       buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
@@ -2509,6 +2515,25 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _inputFocus.requestFocus();
   }
 
+  /// 按初始状态顺序补齐模型漏报的数值条；模型有更新则用模型的值。
+  /// [extra] 用于并入后续新增/当前已有的资源。
+  GameState _mergeResources(GameState state, {List<StatBar> extra = const []}) {
+    final aiRes = {for (final r in state.resources) r.name: r};
+    final merged = <StatBar>[];
+    final seen = <String>{};
+    for (final r in story.initialState.resources) {
+      merged.add(aiRes[r.name] ?? r);
+      seen.add(r.name);
+    }
+    for (final r in state.resources) {
+      if (seen.add(r.name)) merged.add(r);
+    }
+    for (final r in extra) {
+      if (seen.add(r.name)) merged.add(r);
+    }
+    return state.copyWith(resources: merged);
+  }
+
   /// 应用解析出的状态并持久化（含未登记道具校验 / 成就解锁提示）
   Future<void> _applyState(GameState? state) async {
     final sessionId = _sessionId;
@@ -2527,6 +2552,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       seenDefs['${d.kind}\u0000${d.key}'] = true;
     }
     next = next.copyWith(codex: mergedCodex);
+    // 资源合并：模型偶尔漏报部分数值条（如体力/进食），按初始状态顺序补齐
+    next = _mergeResources(next, extra: _state.resources);
     // 致命资源归零 → 游戏结束
     if (!next.gameOver && story.deathResources.isNotEmpty) {
       final death = story.deathResources.toSet();
