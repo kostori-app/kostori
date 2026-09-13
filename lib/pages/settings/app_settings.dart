@@ -1029,6 +1029,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'worldbook',
     'library',
     'story_chars',
+    'skills',
   ];
 
   int _tab = 0;
@@ -1053,6 +1054,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'worldbook' => WorldBookStore.instance.dirPath,
     'library' => SettingLibraryStore.instance.dirPath,
     'story_chars' => StoryCharacterStore.instance.dirPath,
+    'skills' => AiSkillStore.instance.dirPath,
     _ => '',
   };
 
@@ -1067,6 +1069,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     await WorldBookStore.instance.ensureLoaded();
     await SettingLibraryStore.instance.ensureLoaded();
     await StoryCharacterStore.instance.ensureLoaded();
+    await AiSkillStore.instance.ensureLoaded();
     final sync = DataSync();
     final remote = <String, Map<String, RemoteFileInfo>>{};
     for (final kind in _kinds) {
@@ -1092,6 +1095,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'worldbook' => {for (final e in WorldBookStore.instance.entries) e.id},
     'library' => {for (final e in SettingLibraryStore.instance.items) e.id},
     'story_chars' => {...StoryCharacterStore.instance.storyIds},
+    'skills' => {for (final s in AiSkillStore.instance.items) s.key},
     _ => <String>{},
   };
 
@@ -1103,6 +1107,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'worldbook' => _worldBookName(id),
     'library' => SettingLibraryStore.instance.find(id)?.name ?? id,
     'story_chars' => StoryStore.instance.find(id)?.name ?? id,
+    'skills' => AiSkillStore.instance.find(id)?.name ?? id,
     _ => id,
   };
 
@@ -1121,6 +1126,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'worldbook' => t.syncWorldBook,
     'library' => t.storySettingLibrary,
     'story_chars' => t.syncStoryChars,
+    'skills' => t.skills,
     _ => kind,
   };
 
@@ -1279,6 +1285,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       await WorldBookStore.instance.reload();
     await SettingLibraryStore.instance.reload();
     await StoryCharacterStore.instance.reload();
+    await AiSkillStore.instance.reload();
     } finally {
       if (mounted) {
         setState(() {
@@ -1323,6 +1330,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     await WorldBookStore.instance.reload();
     await SettingLibraryStore.instance.reload();
     await StoryCharacterStore.instance.reload();
+    await AiSkillStore.instance.reload();
     if (!mounted) return;
     setState(() {
       _busy = false;

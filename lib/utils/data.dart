@@ -204,6 +204,7 @@ Future<File> exportAppData() async {
       'world_book',
       'setting_library',
       'story_characters',
+      'ai_skills',
     ]) {
       final dir = FilePath.join(dataPath, dirName);
       if (Directory(dir).existsSync()) {
@@ -465,6 +466,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       'world_book',
       'setting_library',
       'story_characters',
+      'ai_skills',
     ]) {
       final src = FilePath.join(cacheDirPath, dirName);
       if (!Directory(src).existsSync()) continue;

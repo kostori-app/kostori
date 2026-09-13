@@ -905,10 +905,10 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
-          StreamBuilder<List<AiSkill>>(
-            stream: AiDatabase.instance.aiSkillDao.watchAll(),
-            builder: (context, snapshot) {
-              final skills = snapshot.data ?? [];
+          ListenableBuilder(
+            listenable: AiSkillStore.instance,
+            builder: (context, _) {
+              final skills = AiSkillStore.instance.items;
               if (skills.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.all(8),
@@ -925,7 +925,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                     secondary: const Icon(Icons.build_outlined, size: 20),
                     title: Text(s.name),
                     subtitle: Text(
-                      s.description ?? s.key,
+                      s.description.isEmpty ? s.key : s.description,
                       style: const TextStyle(fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

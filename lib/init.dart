@@ -10,6 +10,7 @@ import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
+import 'package:kostori/foundation/ai_service/ai_skill_store.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/ai_service/setting_library.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
@@ -93,6 +94,8 @@ Future<void> init() async {
     RecognizeAnimeSkill(),
   ]);
   await SkillRegistry.instance.syncMcp().wait();
+  await AiSkillStore.instance.init().wait();
+  await AiSkillStore.instance.migrateFromDb().wait();
   await AssistantProfileStore.instance.init().wait();
   await PromptInjectionStore.instance.init().wait();
   await WorldBookStore.instance.init().wait();

@@ -174,7 +174,7 @@ Future<void> _importSkills(BuildContext context) async {
   var seq = 0;
   final now = DateTime.now().millisecondsSinceEpoch;
   final usedKeys = <String>{};
-  final companions = <AiSkillsCompanion>[];
+  final skills = <AiSkillEntry>[];
   for (final entry in entries) {
     final parsed = _parseSkillMarkdown(entry.content, entry.name);
     if (parsed == null) {
@@ -183,23 +183,22 @@ Future<void> _importSkills(BuildContext context) async {
     }
     var key = _slugifySkillKey(parsed.name);
     if (key.isEmpty) key = 'skill_$now';
-    while (!usedKeys.add(key)) {
+    while (!usedKeys.add(key) || AiSkillStore.instance.find(key) != null) {
       key = '${key}_${++seq}';
     }
-    companions.add(
-      AiSkillsCompanion.insert(
+    skills.add(
+      AiSkillEntry(
         key: key,
         name: parsed.name,
-        description: Value(parsed.description),
+        description: parsed.description ?? '',
         systemPrompt: parsed.body,
-        isBuiltin: const Value(false),
-        isEnabled: const Value(true),
+        createdAt: now,
       ),
     );
     imported++;
   }
-  if (companions.isNotEmpty) {
-    await AiDatabase.instance.aiSkillDao.upsertAll(companions);
+  if (skills.isNotEmpty) {
+    await AiSkillStore.instance.putAll(skills);
   }
   App.rootContext.showMessage(
     message: skipped == 0
@@ -486,10 +485,10 @@ class _SkillsBlockState extends State<_SkillsBlock> {
             ],
           ),
         ),
-        StreamBuilder<List<AiSkill>>(
-          stream: AiDatabase.instance.aiSkillDao.watchAll(),
-          builder: (context, snapshot) {
-            final skills = snapshot.data ?? [];
+        ListenableBuilder(
+          listenable: AiSkillStore.instance,
+          builder: (context, _) {
+            final skills = AiSkillStore.instance.items;
             if (skills.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -511,12 +510,12 @@ class _SkillsBlockState extends State<_SkillsBlock> {
 class _SkillExtensionTile extends StatelessWidget {
   const _SkillExtensionTile({required this.skill});
 
-  final AiSkill skill;
+  final AiSkillEntry skill;
 
   @override
   Widget build(BuildContext context) {
-    final description = skill.description?.isNotEmpty == true
-        ? skill.description!
+    final description = skill.description.isNotEmpty
+        ? skill.description
         : skill.key;
 
     return ListTile(
@@ -557,7 +556,7 @@ class _SkillExtensionTile extends StatelessWidget {
           CustomSwitch(
             value: skill.isEnabled,
             onChanged: (v) =>
-                AiDatabase.instance.aiSkillDao.setEnabled(skill.id, enabled: v),
+                AiSkillStore.instance.setEnabled(skill.key, enabled: v),
           ),
           const Icon(Icons.arrow_right, size: 20),
         ],

@@ -33,6 +33,7 @@ import 'package:kostori/foundation/ai_service/balance_helper.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/mcp_client.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
+import 'package:kostori/foundation/ai_service/ai_skill_store.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/ai_service/setting_library.dart';
 import 'package:kostori/foundation/ai_service/story.dart';

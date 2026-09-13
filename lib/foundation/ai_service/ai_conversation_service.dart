@@ -11,6 +11,7 @@ import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
+import 'package:kostori/foundation/ai_service/ai_skill_store.dart';
 import 'package:kostori/foundation/ai_service/ai_request_log.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
@@ -211,8 +212,10 @@ class AiConversationService {
       _sessionDao.setFollowUps(sessionId, items);
 
   /// 启用中的技能
-  Future<List<AiSkill>> getEnabledSkills() =>
-      AiDatabase.instance.aiSkillDao.getEnabled();
+    Future<List<AiSkillEntry>> getEnabledSkills() async {
+      await AiSkillStore.instance.ensureLoaded();
+      return AiSkillStore.instance.enabled;
+    }
 
   /// 会话已选技能 keys
   static List<String> parseSkillKeys(String? json) {
@@ -1172,7 +1175,7 @@ class AiConversationService {
   /// 按技能 key 列表解析名称（改造点 7 扩展技能库）
   Future<List<String>> _skillNamesFor(List<String> keys) async {
     if (keys.isEmpty) return const [];
-    final skills = await AiDatabase.instance.aiSkillDao.getAll();
+    final skills = AiSkillStore.instance.items;
     final byKey = {for (final s in skills) s.key: s};
     return [
       for (final key in keys)
@@ -1303,8 +1306,8 @@ class AiConversationService {
     } else {
       final skillKeys = parseSkillKeys(session.skillKeys);
       if (skillKeys.isNotEmpty) {
-        final skills = await AiDatabase.instance.aiSkillDao.getEnabled();
-        final byKey = {for (final s in skills) s.key: s};
+          final skills = AiSkillStore.instance.enabled;
+          final byKey = {for (final s in skills) s.key: s};
         for (final key in skillKeys) {
           final skill = byKey[key];
           if (skill != null && skill.systemPrompt.isNotEmpty) {

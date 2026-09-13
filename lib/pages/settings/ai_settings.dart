@@ -2241,7 +2241,7 @@ String _slugifySkillKey(String name) => name
 class _SkillEditor extends StatefulWidget {
   const _SkillEditor({this.skill});
 
-  final AiSkill? skill;
+  final AiSkillEntry? skill;
 
   @override
   State<_SkillEditor> createState() => _SkillEditorState();
@@ -2267,7 +2267,6 @@ class _SkillEditorState extends State<_SkillEditor> {
   }
 
   Future<String> _deriveKey() async {
-    final dao = AiDatabase.instance.aiSkillDao;
     if (!_isNew) return widget.skill!.key;
     final base = _slugifySkillKey(_nameCtrl.text);
     if (base.isEmpty) {
@@ -2275,7 +2274,7 @@ class _SkillEditorState extends State<_SkillEditor> {
     }
     var key = base;
     var seq = 0;
-    while (await dao.getByKey(key) != null) {
+    while (AiSkillStore.instance.find(key) != null) {
       key = '${base}_${++seq}';
     }
     return key;
@@ -2284,19 +2283,17 @@ class _SkillEditorState extends State<_SkillEditor> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final key = await _deriveKey();
-    await AiDatabase.instance.aiSkillDao.upsert(
-      AiSkillsCompanion.insert(
-        id: widget.skill == null
-            ? const Value.absent()
-            : Value(widget.skill!.id),
+    await AiSkillStore.instance.upsert(
+      AiSkillEntry(
         key: key,
         name: _nameCtrl.text.trim(),
-        description: widget.skill?.description == null
-            ? const Value.absent()
-            : Value(widget.skill!.description),
+        description: widget.skill?.description ?? '',
         systemPrompt: _promptCtrl.text.trim(),
-        isBuiltin: Value(_isBuiltin),
-        isEnabled: Value(widget.skill?.isEnabled ?? true),
+        isBuiltin: _isBuiltin,
+        isEnabled: widget.skill?.isEnabled ?? true,
+        createdAt:
+            widget.skill?.createdAt ??
+            DateTime.now().millisecondsSinceEpoch,
       ),
     );
     if (mounted) {
@@ -2325,7 +2322,7 @@ class _SkillEditorState extends State<_SkillEditor> {
       ),
     );
     if (confirm == true) {
-      await AiDatabase.instance.aiSkillDao.deleteById(widget.skill!.id);
+      await AiSkillStore.instance.remove(widget.skill!.key);
       if (mounted) App.rootContext.pop();
     }
   }
