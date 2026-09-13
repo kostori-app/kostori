@@ -1617,6 +1617,8 @@ storySituation: 局势
 storyBackground: 背景
 storyNoSituation: 暂无局势信息
 storyNoEntry: 暂无设定
+storyResponseFailed: 上次回复中断了
+storyResponseStalled: 回复超时，已中断，可重试
 storyMore: 更多
 storyNoActions: 该故事未定义操作
 storyInspect: 检查

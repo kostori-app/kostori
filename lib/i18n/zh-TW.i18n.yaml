@@ -1622,6 +1622,8 @@ storySituation: 局勢
 storyBackground: 背景
 storyNoSituation: 暫無局勢資訊
 storyNoEntry: 暫無設定
+storyResponseFailed: 上次回覆中斷了
+storyResponseStalled: 回覆逾時，已中斷，可重試
 storyMore: 更多
 storyNoActions: 該故事未定義操作
 storyInspect: 檢查

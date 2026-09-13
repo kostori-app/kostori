@@ -1885,6 +1885,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   CancelToken? _cancelToken;
   int _lastMessageCount = 0;
 
+  /// 上次发送的原始输入（失败后用于重试）
+  String? _lastOutgoing;
+  bool _lastFailed = false;
+
+  /// 流式长时间无输出时的看门狗（超时中断，避免一直卡住）
+  Timer? _stallTimer;
+  bool _stallAborted = false;
+
   /// 新增但未在图鉴登记的物品（故事层校验结果）
   List<String> _unregistered = const [];
   bool _registering = false;
@@ -1936,6 +1944,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   @override
   void dispose() {
+    _stallTimer?.cancel();
     _input.dispose();
     _inputFocus.dispose();
     _scrollController.dispose();
@@ -2230,14 +2239,18 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final outgoing = applyStoryRegex(text, story.regexes, 'send');
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
+    _lastOutgoing = text;
+    _stallAborted = false;
     setState(() {
       _sending = true;
       _showStreamBubble = true;
       _streamText = '';
       _pendingUserText = outgoing;
       _isFollowing = true;
+      _lastFailed = false;
     });
     _scrollToBottom(force: true);
+    _armStallWatchdog();
     try {
       await for (final u in AiConversationService().sendMessageStream(
         sessionId: sessionId,
@@ -2252,12 +2265,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         cancelToken: cancelToken,
       )) {
         if (!mounted) return;
+        _armStallWatchdog();
         if (u.errorMessage != null) {
           setState(() {
             _sending = false;
             _showStreamBubble = false;
             _streamText = '';
             _pendingUserText = null;
+            _lastFailed = true;
           });
           App.rootContext.showMessage(
             message: u.errorMessage!,
@@ -2275,13 +2290,22 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       if (!mounted) return;
       final finalText = _streamText;
       final cancelled = cancelToken.isCancelled;
+      final stalled = _stallAborted;
       setState(() {
         _sending = false;
         _showStreamBubble = false;
         _streamText = '';
         _pendingUserText = null;
+        // 空回复视为失败，可重试；用户主动停止且有内容时不提示重试
+        _lastFailed = finalText.trim().isEmpty;
       });
       _scrollToBottom();
+      if (stalled) {
+        App.rootContext.showMessage(
+          message: t.storyResponseStalled,
+          level: LogLevel.warning,
+        );
+      }
       // 取消时服务端不落库，忽略本次结果
       if (cancelled || finalText.trim().isEmpty) return;
       final parsed = _parseReply(finalText);
@@ -2315,12 +2339,41 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           _showStreamBubble = false;
           _streamText = '';
           _pendingUserText = null;
+          _lastFailed = true;
         });
         App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
       }
     } finally {
+      _stallTimer?.cancel();
       _cancelToken = null;
     }
+  }
+
+  /// 流式看门狗：超过 90 秒没有任何输出则中断本次回复（可重试）
+  void _armStallWatchdog() {
+    _stallTimer?.cancel();
+    _stallTimer = Timer(const Duration(seconds: 90), () {
+      if (mounted && _sending) {
+        _stallAborted = true;
+        _cancelToken?.cancel();
+      }
+    });
+  }
+
+  /// 重试上一次发送：删除失败留下的用户消息，再重新发送
+  Future<void> _retryLast() async {
+    final text = _lastOutgoing;
+    if (text == null || _sending) return;
+    final sessionId = _sessionId;
+    if (sessionId != null) {
+      final msgs = await AiConversationService().watchMessages(sessionId).first;
+      if (msgs.isNotEmpty && msgs.last.role == 'user') {
+        await AiConversationService().deleteMessage(msgs.last.id);
+      }
+    }
+    if (!mounted) return;
+    setState(() => _lastFailed = false);
+    await _send(text);
   }
 
   /// 初始变量：故事初始状态 + 声明的默认值
@@ -3138,6 +3191,32 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           ],
                         ),
                       ),
+                    if (_lastFailed && !_sending)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 16,
+                              color: Colors.orange,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                t.storyResponseFailed,
+                                style: const TextStyle(fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _retryLast,
+                              child: Text(t.retry),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (_state.gameOver)
                       _gameOverBar(context)
                     else
@@ -3487,34 +3566,52 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
-  /// 把正文拆成旁白 / 角色片段（〖角色：名字〗...〖/角色〗）
+  /// 把正文拆成旁白 / 角色片段（〖角色：名字〗...〖/角色〗）。
+  /// 容错：结束标记可缺失，角色发言延伸到下一个开头标记或文本结尾；
+  /// 也支持模型自创的收尾写法（〖/名字〗）。
   List<StorySegment> _splitSegments(String text) {
-    final re = RegExp(r'〖角色[:：]\s*(.+?)〗([\s\S]*?)〖/角色〗');
+    final openRe = RegExp(r'〖\s*角色\s*[:：]\s*([^〗]+?)\s*〗');
+    // 先去掉规范的结束标记，避免被当成旁白
+    final clean = text.replaceAll(RegExp(r'〖\s*/\s*角色\s*〗'), '');
     final segments = <StorySegment>[];
     var index = 0;
-    for (final m in re.allMatches(text)) {
-      if (m.start > index) {
-        final before = text.substring(index, m.start).trim();
-        if (before.isNotEmpty) {
-          segments.add(StorySegment(type: 'narration', text: before));
-        }
+    while (index < clean.length) {
+      final open = openRe.firstMatch(clean.substring(index));
+      if (open == null) break;
+      final openStart = index + open.start;
+      final bodyStart = index + open.end;
+      final before = clean.substring(index, openStart).trim();
+      if (before.isNotEmpty) {
+        segments.add(StorySegment(type: 'narration', text: before));
       }
-      final body = m.group(2)!.trim();
+      final rest = clean.substring(bodyStart);
+      // 也把「〖/名字〗」当作结束标记
+      final name = open.group(1)!.trim();
+      final selfClose = RegExp('〖\\s*/\\s*${RegExp.escape(name)}\\s*〗');
+      final nextOpen = openRe.firstMatch(rest);
+      final nextClose = selfClose.firstMatch(rest);
+      var endRel = rest.length;
+      if (nextOpen != null) endRel = nextOpen.start;
+      if (nextClose != null && nextClose.start < endRel) {
+        endRel = nextClose.start;
+      }
+      final body = rest.substring(0, endRel).trim();
       if (body.isNotEmpty) {
-        segments.add(
-          StorySegment(type: 'npc', name: m.group(1)!.trim(), text: body),
-        );
+        segments.add(StorySegment(type: 'npc', name: name, text: body));
       }
-      index = m.end;
+      index = bodyStart + endRel;
+      if (nextClose != null && nextClose.start == endRel) {
+        index += nextClose.end - nextClose.start;
+      }
     }
-    if (index < text.length) {
-      final after = text.substring(index).trim();
+    if (index < clean.length) {
+      final after = clean.substring(index).trim();
       if (after.isNotEmpty) {
         segments.add(StorySegment(type: 'narration', text: after));
       }
     }
-    if (segments.isEmpty && text.trim().isNotEmpty) {
-      segments.add(StorySegment(type: 'narration', text: text.trim()));
+    if (segments.isEmpty && clean.trim().isNotEmpty) {
+      segments.add(StorySegment(type: 'narration', text: clean.trim()));
     }
     return segments;
   }

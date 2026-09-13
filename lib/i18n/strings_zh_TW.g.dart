@@ -1612,6 +1612,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyBackground => '背景';
 	@override String get storyNoSituation => '暫無局勢資訊';
 	@override String get storyNoEntry => '暫無設定';
+	@override String get storyResponseFailed => '上次回覆中斷了';
+	@override String get storyResponseStalled => '回覆逾時，已中斷，可重試';
 	@override String get storyMore => '更多';
 	@override String get storyNoActions => '該故事未定義操作';
 	@override String get storyInspect => '檢查';
@@ -4372,6 +4374,8 @@ extension on TranslationsZhTw {
 			'storyBackground' => '背景',
 			'storyNoSituation' => '暫無局勢資訊',
 			'storyNoEntry' => '暫無設定',
+			'storyResponseFailed' => '上次回覆中斷了',
+			'storyResponseStalled' => '回覆逾時，已中斷，可重試',
 			'storyMore' => '更多',
 			'storyNoActions' => '該故事未定義操作',
 			'storyInspect' => '檢查',
@@ -4803,10 +4807,10 @@ extension on TranslationsZhTw {
 			'selectSkills' => '選擇技能',
 			'noSkillsAvailable' => '暫無可用技能',
 			'usingTools' => '呼叫工具中...',
-			'toolCallingTool' => ({required Object tool}) => '呼叫 ${tool}...',
-			'toolCallLog' => ({required Object count}) => '工具呼叫: ${count}',
 			_ => null,
 		} ?? switch (path) {
+			'toolCallingTool' => ({required Object tool}) => '呼叫 ${tool}...',
+			'toolCallLog' => ({required Object count}) => '工具呼叫: ${count}',
 			'generatingReply' => '生成回覆中...',
 			'stopGenerating' => '停止生成',
 			'thinking' => '思考中',
@@ -5317,10 +5321,10 @@ extension on TranslationsZhTw {
 			'localPlayerSpeedTip' => '長按畫面切換倍速',
 			'audioTrack' => '音軌',
 			'subtitle' => '字幕',
-			'subtitleOff' => '關閉字幕',
-			'quality' => '清晰度',
 			_ => null,
 		} ?? switch (path) {
+			'subtitleOff' => '關閉字幕',
+			'quality' => '清晰度',
 			'copiedField' => ({required Object x}) => '已複製: ${x}',
 			'selectAliasCount' => ({required Object count}) => '選擇別名 (${count})',
 			'monthDayFormat' => 'M月d日',

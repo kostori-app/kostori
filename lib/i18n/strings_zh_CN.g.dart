@@ -1611,6 +1611,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyBackground => '背景';
 	@override String get storyNoSituation => '暂无局势信息';
 	@override String get storyNoEntry => '暂无设定';
+	@override String get storyResponseFailed => '上次回复中断了';
+	@override String get storyResponseStalled => '回复超时，已中断，可重试';
 	@override String get storyMore => '更多';
 	@override String get storyNoActions => '该故事未定义操作';
 	@override String get storyInspect => '检查';
@@ -4372,6 +4374,8 @@ extension on TranslationsZhCn {
 			'storyBackground' => '背景',
 			'storyNoSituation' => '暂无局势信息',
 			'storyNoEntry' => '暂无设定',
+			'storyResponseFailed' => '上次回复中断了',
+			'storyResponseStalled' => '回复超时，已中断，可重试',
 			'storyMore' => '更多',
 			'storyNoActions' => '该故事未定义操作',
 			'storyInspect' => '检查',
@@ -4804,10 +4808,10 @@ extension on TranslationsZhCn {
 			'skills' => '技能',
 			'selectSkills' => '选择技能',
 			'noSkillsAvailable' => '暂无可用技能',
-			'usingTools' => '调用工具中...',
-			'toolCallingTool' => ({required Object tool}) => '调用 ${tool}...',
 			_ => null,
 		} ?? switch (path) {
+			'usingTools' => '调用工具中...',
+			'toolCallingTool' => ({required Object tool}) => '调用 ${tool}...',
 			'toolCallLog' => ({required Object count}) => '工具调用: ${count}',
 			'generatingReply' => '生成回复中...',
 			'stopGenerating' => '停止生成',
@@ -5318,10 +5322,10 @@ extension on TranslationsZhCn {
 			'ungrouped' => '未分组',
 			'localPlayerSpeedTip' => '长按画面切换倍速',
 			'audioTrack' => '音轨',
-			'subtitle' => '字幕',
-			'subtitleOff' => '关闭字幕',
 			_ => null,
 		} ?? switch (path) {
+			'subtitle' => '字幕',
+			'subtitleOff' => '关闭字幕',
 			'quality' => '清晰度',
 			'copiedField' => ({required Object x}) => '已复制: ${x}',
 			'selectAliasCount' => ({required Object count}) => '选择别名 (${count})',

@@ -4759,6 +4759,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No entry yet'
 	String get storyNoEntry => 'No entry yet';
 
+	/// en: 'The last reply was interrupted'
+	String get storyResponseFailed => 'The last reply was interrupted';
+
+	/// en: 'The reply timed out and was stopped. You can retry.'
+	String get storyResponseStalled => 'The reply timed out and was stopped. You can retry.';
+
 	/// en: 'More'
 	String get storyMore => 'More';
 
@@ -9742,6 +9748,8 @@ extension on Translations {
 			'storyBackground' => 'Background',
 			'storyNoSituation' => 'No situation info yet',
 			'storyNoEntry' => 'No entry yet',
+			'storyResponseFailed' => 'The last reply was interrupted',
+			'storyResponseStalled' => 'The reply timed out and was stopped. You can retry.',
 			'storyMore' => 'More',
 			'storyNoActions' => 'This story has no actions defined',
 			'storyInspect' => 'Inspect',
@@ -10173,10 +10181,10 @@ extension on Translations {
 			'skills' => 'Skills',
 			'selectSkills' => 'Select skills',
 			'noSkillsAvailable' => 'No skills available',
-			'usingTools' => 'Calling tools...',
-			'toolCallingTool' => ({required Object tool}) => 'Calling ${tool}...',
 			_ => null,
 		} ?? switch (path) {
+			'usingTools' => 'Calling tools...',
+			'toolCallingTool' => ({required Object tool}) => 'Calling ${tool}...',
 			'toolCallLog' => ({required Object count}) => 'Tool calls: ${count}',
 			'generatingReply' => 'Generating reply...',
 			'stopGenerating' => 'Stop generating',
@@ -10687,10 +10695,10 @@ extension on Translations {
 			'ungrouped' => 'Ungrouped',
 			'localPlayerSpeedTip' => 'Long press to change speed',
 			'audioTrack' => 'Audio track',
-			'subtitle' => 'Subtitles',
-			'subtitleOff' => 'Off',
 			_ => null,
 		} ?? switch (path) {
+			'subtitle' => 'Subtitles',
+			'subtitleOff' => 'Off',
 			'quality' => 'Quality',
 			'copiedField' => ({required Object x}) => 'Copied: ${x}',
 			'selectAliasCount' => ({required Object count}) => 'Select alias (${count})',
