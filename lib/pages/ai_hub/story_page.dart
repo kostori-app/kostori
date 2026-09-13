@@ -2781,6 +2781,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                               ),
                                               isUser: false,
                                             ),
+                                    // 事件/检定卡片要等 JSON 生成完才出现，这里提示仍在生成
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: PolygonRefreshIndicator(),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 );
                               }
