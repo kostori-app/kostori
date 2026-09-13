@@ -184,7 +184,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncWorldBook => '世界书';
 	@override String get syncStoryChars => '故事角色卡';
 	@override String get syncParts => '整包 / 数据库';
-	@override String get syncPartsHint => '分部分同步：数据库各自独立，其余（设置/故事/角色卡…）整合为一个整包。';
+	@override String get syncPartsHint => '分部分同步：各数据库各自独立；「数据」整包只含设置、番剧源与插件；故事/角色卡/存档等请用其它分类。';
 	@override String get aiDatabase => 'AI 设置库';
 	@override String get aiMessages => 'AI 消息记录';
 	@override String get stats => '统计';
@@ -2973,7 +2973,7 @@ extension on TranslationsZhCn {
 			'syncWorldBook' => '世界书',
 			'syncStoryChars' => '故事角色卡',
 			'syncParts' => '整包 / 数据库',
-			'syncPartsHint' => '分部分同步：数据库各自独立，其余（设置/故事/角色卡…）整合为一个整包。',
+			'syncPartsHint' => '分部分同步：各数据库各自独立；「数据」整包只含设置、番剧源与插件；故事/角色卡/存档等请用其它分类。',
 			'aiDatabase' => 'AI 设置库',
 			'aiMessages' => 'AI 消息记录',
 			'stats' => '统计',

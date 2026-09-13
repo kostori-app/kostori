@@ -497,8 +497,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Bundles / databases'
 	String get syncParts => 'Bundles / databases';
 
-	/// en: 'Split sync: each database is separate; everything else (settings/stories/cards…) is one bundle.'
-	String get syncPartsHint => 'Split sync: each database is separate; everything else (settings/stories/cards…) is one bundle.';
+	/// en: 'Split sync: each database is separate; the data bundle only holds settings, anime sources and plugins; stories/cards/saves use the other categories.'
+	String get syncPartsHint => 'Split sync: each database is separate; the data bundle only holds settings, anime sources and plugins; stories/cards/saves use the other categories.';
 
 	/// en: 'AI settings DB'
 	String get aiDatabase => 'AI settings DB';
@@ -8501,7 +8501,7 @@ extension on Translations {
 			'syncWorldBook' => 'World Info',
 			'syncStoryChars' => 'Story characters',
 			'syncParts' => 'Bundles / databases',
-			'syncPartsHint' => 'Split sync: each database is separate; everything else (settings/stories/cards…) is one bundle.',
+			'syncPartsHint' => 'Split sync: each database is separate; the data bundle only holds settings, anime sources and plugins; stories/cards/saves use the other categories.',
 			'aiDatabase' => 'AI settings DB',
 			'aiMessages' => 'AI messages',
 			'stats' => 'Stats',

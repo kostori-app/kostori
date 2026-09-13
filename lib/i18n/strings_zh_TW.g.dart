@@ -183,7 +183,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncWorldBook => '世界書';
 	@override String get syncStoryChars => '故事角色卡';
 	@override String get syncParts => '整包 / 資料庫';
-	@override String get syncPartsHint => '分部分同步：資料庫各自獨立，其餘（設定/故事/角色卡…）整合為一個整包。';
+	@override String get syncPartsHint => '分部分同步：各資料庫各自獨立；「資料」整包只含設定、番劇源與外掛；故事/角色卡/存檔等請用其它分類。';
 	@override String get aiDatabase => 'AI 設定庫';
 	@override String get aiMessages => 'AI 訊息記錄';
 	@override String get stats => '統計';
@@ -2971,7 +2971,7 @@ extension on TranslationsZhTw {
 			'syncWorldBook' => '世界書',
 			'syncStoryChars' => '故事角色卡',
 			'syncParts' => '整包 / 資料庫',
-			'syncPartsHint' => '分部分同步：資料庫各自獨立，其餘（設定/故事/角色卡…）整合為一個整包。',
+			'syncPartsHint' => '分部分同步：各資料庫各自獨立；「資料」整包只含設定、番劇源與外掛；故事/角色卡/存檔等請用其它分類。',
 			'aiDatabase' => 'AI 設定庫',
 			'aiMessages' => 'AI 訊息記錄',
 			'stats' => '統計',
