@@ -1635,6 +1635,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexDefs => '预置词条';
 	@override String get storyCodexDisplay => '玩家可见描述';
 	@override String get storyCodexMechanics => '机制/数值';
+	@override String get storyTitleMode => '生效方式';
+	@override String get storyTitleModeAll => '全部生效';
+	@override String get storyTitleStackable => '可叠加';
+	@override String get storyJobLevel => '等级';
+	@override String get storyJobBonus => '加成';
+	@override String get storyBaseMaxLevel => '最高等级';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4450,6 +4456,12 @@ extension on TranslationsZhCn {
 			'storyCodexDefs' => '预置词条',
 			'storyCodexDisplay' => '玩家可见描述',
 			'storyCodexMechanics' => '机制/数值',
+			'storyTitleMode' => '生效方式',
+			'storyTitleModeAll' => '全部生效',
+			'storyTitleStackable' => '可叠加',
+			'storyJobLevel' => '等级',
+			'storyJobBonus' => '加成',
+			'storyBaseMaxLevel' => '最高等级',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4854,14 +4866,14 @@ extension on TranslationsZhCn {
 			'stopPreview' => '停止预览',
 			'loadingPreview' => '正在加载预览…',
 			'previewLoadFailed' => '预览加载失败',
+			_ => null,
+		} ?? switch (path) {
 			'reloadPreviewClip' => '重新加载预览片段',
 			'startPoint' => '起点',
 			'endPoint' => '终点',
 			'jumpToStart' => '跳到起点',
 			'setStartPoint' => '设置起点',
 			'setEndPoint' => '设置终点',
-			_ => null,
-		} ?? switch (path) {
 			'editStartPoint' => '修改起点',
 			'editEndPoint' => '修改终点',
 			'durationFormatHint' => '支持格式: 90, 01:30, 1.5...',
@@ -5368,14 +5380,14 @@ extension on TranslationsZhCn {
 			'downloadQueued' => '等待中',
 			'downloadCompleted' => '已完成',
 			'pauseDownload' => '暂停下载',
+			_ => null,
+		} ?? switch (path) {
 			'resumeDownload' => '继续下载',
 			'retryDownload' => '重试下载',
 			'pausedDownload' => '已暂停',
 			'downloadSettings' => '下载设置',
 			'downloadConcurrent' => '任务并发数',
 			'downloadSegmentConcurrent' => '分片并发数',
-			_ => null,
-		} ?? switch (path) {
 			'downloadWifiOnly' => '仅 WiFi 下载',
 			'downloadOther' => '其他',
 			'downloadRecords' => '下载记录',

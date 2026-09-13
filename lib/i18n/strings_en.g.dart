@@ -4831,6 +4831,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Mechanics / values'
 	String get storyCodexMechanics => 'Mechanics / values';
 
+	/// en: 'Effect mode'
+	String get storyTitleMode => 'Effect mode';
+
+	/// en: 'All active'
+	String get storyTitleModeAll => 'All active';
+
+	/// en: 'Stackable'
+	String get storyTitleStackable => 'Stackable';
+
+	/// en: 'Level'
+	String get storyJobLevel => 'Level';
+
+	/// en: 'Bonus'
+	String get storyJobBonus => 'Bonus';
+
+	/// en: 'Max level'
+	String get storyBaseMaxLevel => 'Max level';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9928,6 +9946,12 @@ extension on Translations {
 			'storyCodexDefs' => 'Preset entries',
 			'storyCodexDisplay' => 'Player-facing description',
 			'storyCodexMechanics' => 'Mechanics / values',
+			'storyTitleMode' => 'Effect mode',
+			'storyTitleModeAll' => 'All active',
+			'storyTitleStackable' => 'Stackable',
+			'storyJobLevel' => 'Level',
+			'storyJobBonus' => 'Bonus',
+			'storyBaseMaxLevel' => 'Max level',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10331,14 +10355,14 @@ extension on Translations {
 			'cancelExport' => 'Cancel Export?',
 			'exportInProgress' => 'Export in progress, closing will interrupt export.',
 			'confirmClose' => 'Confirm Close',
+			_ => null,
+		} ?? switch (path) {
 			'stopPreview' => 'Stop Preview',
 			'loadingPreview' => 'Loading preview…',
 			'previewLoadFailed' => 'Preview load failed',
 			'reloadPreviewClip' => 'Reload preview clip',
 			'videoTimelineThumbnails' => 'Video timeline thumbnails',
 			'startPoint' => 'Start',
-			_ => null,
-		} ?? switch (path) {
 			'endPoint' => 'End',
 			'jumpToStart' => 'Jump to start',
 			'setStartPoint' => 'Set Start',
@@ -10845,14 +10869,14 @@ extension on Translations {
 			'downloadQueued' => 'Queued',
 			'downloadCompleted' => 'Completed',
 			'pauseDownload' => 'Pause download',
+			_ => null,
+		} ?? switch (path) {
 			'resumeDownload' => 'Resume download',
 			'retryDownload' => 'Retry download',
 			'pausedDownload' => 'Paused',
 			'downloadSettings' => 'Download settings',
 			'downloadConcurrent' => 'Concurrent tasks',
 			'downloadSegmentConcurrent' => 'Segment concurrency',
-			_ => null,
-		} ?? switch (path) {
 			'downloadWifiOnly' => 'Wi-Fi only',
 			'downloadOther' => 'Other',
 			'downloadRecords' => 'Download records',

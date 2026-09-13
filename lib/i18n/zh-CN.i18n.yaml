@@ -1641,6 +1641,12 @@ storyDeathModeAll: 全部归零
 storyCodexDefs: 预置词条
 storyCodexDisplay: 玩家可见描述
 storyCodexMechanics: 机制/数值
+storyTitleMode: 生效方式
+storyTitleModeAll: 全部生效
+storyTitleStackable: 可叠加
+storyJobLevel: 等级
+storyJobBonus: 加成
+storyBaseMaxLevel: 最高等级
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得

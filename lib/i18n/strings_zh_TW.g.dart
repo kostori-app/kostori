@@ -1636,6 +1636,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexDefs => '預置詞條';
 	@override String get storyCodexDisplay => '玩家可見描述';
 	@override String get storyCodexMechanics => '機制/數值';
+	@override String get storyTitleMode => '生效方式';
+	@override String get storyTitleModeAll => '全部生效';
+	@override String get storyTitleStackable => '可疊加';
+	@override String get storyJobLevel => '等級';
+	@override String get storyJobBonus => '加成';
+	@override String get storyBaseMaxLevel => '最高等級';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4450,6 +4456,12 @@ extension on TranslationsZhTw {
 			'storyCodexDefs' => '預置詞條',
 			'storyCodexDisplay' => '玩家可見描述',
 			'storyCodexMechanics' => '機制/數值',
+			'storyTitleMode' => '生效方式',
+			'storyTitleModeAll' => '全部生效',
+			'storyTitleStackable' => '可疊加',
+			'storyJobLevel' => '等級',
+			'storyJobBonus' => '加成',
+			'storyBaseMaxLevel' => '最高等級',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4853,14 +4865,14 @@ extension on TranslationsZhTw {
 			'stopPreview' => '停止預覽',
 			'loadingPreview' => '正在載入預覽…',
 			'previewLoadFailed' => '預覽載入失敗',
+			_ => null,
+		} ?? switch (path) {
 			'reloadPreviewClip' => '重新載入預覽片段',
 			'videoTimelineThumbnails' => '影片時間軸縮圖',
 			'startPoint' => '起點',
 			'endPoint' => '終點',
 			'jumpToStart' => '跳到起點',
 			'setStartPoint' => '設定起點',
-			_ => null,
-		} ?? switch (path) {
 			'setEndPoint' => '設定終點',
 			'editStartPoint' => '修改起點',
 			'editEndPoint' => '修改終點',
@@ -5367,14 +5379,14 @@ extension on TranslationsZhTw {
 			'downloadCompleted' => '已完成',
 			'pauseDownload' => '暫停下載',
 			'resumeDownload' => '繼續下載',
+			_ => null,
+		} ?? switch (path) {
 			'retryDownload' => '重試下載',
 			'pausedDownload' => '已暫停',
 			'downloadSettings' => '下載設定',
 			'downloadConcurrent' => '任務並發數',
 			'downloadSegmentConcurrent' => '分片並發數',
 			'downloadWifiOnly' => '僅 WiFi 下載',
-			_ => null,
-		} ?? switch (path) {
 			'downloadOther' => '其他',
 			'downloadRecords' => '下載紀錄',
 			'openWithOtherPlayer' => '用其他播放器開啟',

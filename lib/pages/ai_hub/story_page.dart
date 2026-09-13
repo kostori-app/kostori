@@ -627,6 +627,78 @@ class _StoryCodexDraft {
   }
 }
 
+class _StoryTitleDraft {
+  final TextEditingController key = TextEditingController();
+  final TextEditingController name = TextEditingController();
+  final TextEditingController effects = TextEditingController();
+  bool stackable;
+
+  _StoryTitleDraft({
+    String keyText = '',
+    String nameText = '',
+    String effectsText = '',
+    this.stackable = false,
+  }) {
+    key.text = keyText;
+    name.text = nameText;
+    effects.text = effectsText;
+  }
+
+  void dispose() {
+    key.dispose();
+    name.dispose();
+    effects.dispose();
+  }
+}
+
+class _StoryJobLevelDraft {
+  final TextEditingController level = TextEditingController();
+  final TextEditingController name = TextEditingController();
+  final TextEditingController bonus = TextEditingController();
+
+  _StoryJobLevelDraft({
+    String levelText = '',
+    String nameText = '',
+    String bonusText = '',
+  }) {
+    level.text = levelText;
+    name.text = nameText;
+    bonus.text = bonusText;
+  }
+
+  void dispose() {
+    level.dispose();
+    name.dispose();
+    bonus.dispose();
+  }
+}
+
+class _StoryFacilityDraft {
+  final TextEditingController key = TextEditingController();
+  final TextEditingController name = TextEditingController();
+  final TextEditingController description = TextEditingController();
+  final TextEditingController maxLevel = TextEditingController();
+
+  _StoryFacilityDraft({
+    String keyText = '',
+    String nameText = '',
+    String descriptionText = '',
+    String maxLevelText = '1',
+  }) {
+    key.text = keyText;
+    name.text = nameText;
+    description.text = descriptionText;
+    maxLevel.text = maxLevelText;
+  }
+
+  void dispose() {
+    key.dispose();
+    name.dispose();
+    description.dispose();
+    maxLevel.dispose();
+  }
+}
+
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
@@ -732,6 +804,39 @@ class _StoryEditorState extends State<_StoryEditor> {
         kind: d.kind,
       ),
   ];
+  late String _titleMode = widget.story?.titleMode ?? 'all';
+  late final List<_StoryTitleDraft> _titles = [
+    for (final x in widget.story?.titles ?? const <StoryTitle>[])
+      _StoryTitleDraft(
+        keyText: x.key,
+        nameText: x.name,
+        effectsText: x.effects,
+        stackable: x.stackable,
+      ),
+  ];
+  late final _jobNameCtrl = TextEditingController(
+    text: widget.story?.job?.name ?? '',
+  );
+  late final _jobDescCtrl = TextEditingController(
+    text: widget.story?.job?.description ?? '',
+  );
+  late final List<_StoryJobLevelDraft> _jobLevels = [
+    for (final l in widget.story?.job?.levels ?? const <StoryJobLevel>[])
+      _StoryJobLevelDraft(
+        levelText: '${l.level}',
+        nameText: l.name,
+        bonusText: l.bonus,
+      ),
+  ];
+  late final List<_StoryFacilityDraft> _facilities = [
+    for (final f in widget.story?.facilities ?? const <StoryFacility>[])
+      _StoryFacilityDraft(
+        keyText: f.key,
+        nameText: f.name,
+        descriptionText: f.description,
+        maxLevelText: '${f.maxLevel}',
+      ),
+  ];
   late final Set<String> _worldBookIds = {
     ...widget.story?.worldBookIds ?? const <String>[],
   };
@@ -835,6 +940,17 @@ class _StoryEditorState extends State<_StoryEditor> {
     for (final d in _codexDefs) {
       d.dispose();
     }
+    for (final x in _titles) {
+      x.dispose();
+    }
+    _jobNameCtrl.dispose();
+    _jobDescCtrl.dispose();
+    for (final l in _jobLevels) {
+      l.dispose();
+    }
+    for (final f in _facilities) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -912,6 +1028,47 @@ class _StoryEditorState extends State<_StoryEditor> {
               name: d.name.text.trim(),
               display: d.display.text.trim(),
               mechanics: d.mechanics.text.trim(),
+            ),
+      ],
+      titleMode: _titleMode,
+      titles: [
+        for (final x in _titles)
+          if (x.name.text.trim().isNotEmpty)
+            StoryTitle(
+              key: x.key.text.trim().isEmpty
+                  ? x.name.text.trim()
+                  : x.key.text.trim(),
+              name: x.name.text.trim(),
+              effects: x.effects.text.trim(),
+              stackable: x.stackable,
+            ),
+      ],
+      job: (_jobNameCtrl.text.trim().isEmpty && _jobLevels.isEmpty)
+          ? null
+          : StoryJob(
+              name: _jobNameCtrl.text.trim(),
+              description: _jobDescCtrl.text.trim(),
+              levels: [
+                for (final l in _jobLevels)
+                  if (l.name.text.trim().isNotEmpty ||
+                      l.bonus.text.trim().isNotEmpty)
+                    StoryJobLevel(
+                      level: int.tryParse(l.level.text.trim()) ?? 0,
+                      name: l.name.text.trim(),
+                      bonus: l.bonus.text.trim(),
+                    ),
+              ],
+            ),
+      facilities: [
+        for (final f in _facilities)
+          if (f.name.text.trim().isNotEmpty)
+            StoryFacility(
+              key: f.key.text.trim().isEmpty
+                  ? f.name.text.trim()
+                  : f.key.text.trim(),
+              name: f.name.text.trim(),
+              description: f.description.text.trim(),
+              maxLevel: int.tryParse(f.maxLevel.text.trim()) ?? 1,
             ),
       ],
       variables: [
@@ -1824,6 +1981,210 @@ class _StoryEditorState extends State<_StoryEditor> {
             label: Text(t.storyAddEntry),
           ),
         ),
+
+        // ── 称号 ──
+        sectionTitle(t.storyTitles),
+        Row(
+          children: [
+            Text(
+              '${t.storyTitleMode}: ',
+              style: const TextStyle(fontSize: 13),
+            ),
+            Select(
+              current: _titleMode == 'equipped'
+                  ? t.storyTitleModeEquipped
+                  : t.storyTitleModeAll,
+              values: [t.storyTitleModeAll, t.storyTitleModeEquipped],
+              onTap: (i) =>
+                  setState(() => _titleMode = i == 1 ? 'equipped' : 'all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        for (var i = 0; i < _titles.length; i++)
+          card([
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _titles[i].name,
+                    decoration: InputDecoration(
+                      labelText: t.storyCharacterName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () =>
+                      setState(() => _titles.removeAt(i).dispose()),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _titles[i].effects,
+              decoration: InputDecoration(
+                labelText: t.storyCodexMechanics,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            Row(
+              children: [
+                Text(t.storyTitleStackable),
+                const Spacer(),
+                CustomSwitch(
+                  value: _titles[i].stackable,
+                  onChanged: (v) =>
+                      setState(() => _titles[i].stackable = v),
+                ),
+              ],
+            ),
+          ]),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _titles.add(_StoryTitleDraft())),
+            icon: const Icon(Icons.add),
+            label: Text(t.storyAddEntry),
+          ),
+        ),
+
+        // ── 职业 ──
+        sectionTitle(t.storyJob),
+        TextFormField(
+          controller: _jobNameCtrl,
+          decoration: InputDecoration(
+            labelText: t.storyCharacterName,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _jobDescCtrl,
+          decoration: InputDecoration(
+            labelText: t.storyCodexDisplay,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 6),
+        for (var i = 0; i < _jobLevels.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 56,
+                  child: TextFormField(
+                    controller: _jobLevels[i].level,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: t.storyJobLevel,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: TextFormField(
+                    controller: _jobLevels[i].name,
+                    decoration: InputDecoration(
+                      labelText: t.storyCharacterName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: TextFormField(
+                    controller: _jobLevels[i].bonus,
+                    decoration: InputDecoration(
+                      labelText: t.storyJobBonus,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () =>
+                      setState(() => _jobLevels.removeAt(i).dispose()),
+                ),
+              ],
+            ),
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () =>
+                setState(() => _jobLevels.add(_StoryJobLevelDraft())),
+            icon: const Icon(Icons.add),
+            label: Text(t.storyAddEntry),
+          ),
+        ),
+
+        // ── 据点 ──
+        sectionTitle(t.storyBase),
+        for (var i = 0; i < _facilities.length; i++)
+          card([
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _facilities[i].name,
+                    decoration: InputDecoration(
+                      labelText: t.storyCharacterName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 72,
+                  child: TextFormField(
+                    controller: _facilities[i].maxLevel,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: t.storyBaseMaxLevel,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () =>
+                      setState(() => _facilities.removeAt(i).dispose()),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _facilities[i].description,
+              decoration: InputDecoration(
+                labelText: t.storyCodexDisplay,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ]),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () =>
+                setState(() => _facilities.add(_StoryFacilityDraft())),
+            icon: const Icon(Icons.add),
+            label: Text(t.storyAddEntry),
+          ),
+        ),
+
         sectionTitle(t.storyCharacters),
         for (var i = 0; i < _characters.length; i++)
           card([

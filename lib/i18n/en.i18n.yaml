@@ -1646,6 +1646,12 @@ storyDeathModeAll: All reach 0
 storyCodexDefs: Preset entries
 storyCodexDisplay: Player-facing description
 storyCodexMechanics: Mechanics / values
+storyTitleMode: Effect mode
+storyTitleModeAll: All active
+storyTitleStackable: Stackable
+storyJobLevel: Level
+storyJobBonus: Bonus
+storyBaseMaxLevel: Max level
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned
