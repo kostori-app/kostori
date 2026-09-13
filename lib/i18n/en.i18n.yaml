@@ -1683,6 +1683,7 @@ characterExportV3: Export as V3
 characterExportV2: Export as V2
 characterSpec: Spec
 characterPickAvatar: Pick image
+characterDropHint: Drop character cards here (PNG / JSON)
 storyPersona: Player character
 storyPersonaHint: Describes who the user is. The AI must not roleplay this.
 storyTextStyle: Text style

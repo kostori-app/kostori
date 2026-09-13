@@ -13,10 +13,19 @@ class CharacterCardsSettingsPage extends StatefulWidget {
 
 class _CharacterCardsSettingsPageState
     extends State<CharacterCardsSettingsPage> {
+  bool _dragOver = false;
+
   @override
   void initState() {
     super.initState();
     CharacterCardStore.instance.init();
+  }
+
+  Future<bool> _importBytes(Uint8List bytes) async {
+    final card = CharacterCard.fromBytes(bytes);
+    if (card == null) return false;
+    await CharacterCardStore.instance.upsert(card);
+    return true;
   }
 
   Future<void> _import() async {
@@ -26,19 +35,36 @@ class _CharacterCardsSettingsPageState
     );
     if (result == null || result.files.isEmpty) return;
     try {
-      final bytes = await result.files.first.readAsBytes();
-      final card = CharacterCard.fromBytes(bytes);
-      if (card == null) {
-        App.rootContext.showMessage(
-          message: t.characterImportFailed,
-          level: LogLevel.error,
-        );
-        return;
-      }
-      await CharacterCardStore.instance.upsert(card);
-      if (mounted) setState(() {});
-      App.rootContext.showMessage(message: t.storyImported);
+      final ok = await _importBytes(await result.files.first.readAsBytes());
+      if (!mounted) return;
+      setState(() {});
+      App.rootContext.showMessage(
+        message: ok ? t.storyImported : t.characterImportFailed,
+        level: ok ? LogLevel.info : LogLevel.error,
+      );
     } catch (e) {
+      App.rootContext.showMessage(
+        message: t.characterImportFailed,
+        level: LogLevel.error,
+      );
+    }
+  }
+
+  /// 拖动导入角色卡（PNG / JSON）
+  Future<void> _onDrop(DropDoneDetails detail) async {
+    var imported = 0;
+    for (final file in detail.files) {
+      final name = file.name.toLowerCase();
+      if (!name.endsWith('.json') && !name.endsWith('.png')) continue;
+      try {
+        if (await _importBytes(await file.readAsBytes())) imported++;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() => _dragOver = false);
+    if (imported > 0) {
+      App.rootContext.showMessage(message: t.storyImported);
+    } else if (detail.files.isNotEmpty) {
       App.rootContext.showMessage(
         message: t.characterImportFailed,
         level: LogLevel.error,
@@ -60,9 +86,19 @@ class _CharacterCardsSettingsPageState
   @override
   Widget build(BuildContext context) {
     final store = CharacterCardStore.instance;
-    return Column(
-      children: [
-        Appbar(
+    return DropTarget(
+      onDragDone: _onDrop,
+      onDragEntered: (_) {
+        if (mounted) setState(() => _dragOver = true);
+      },
+      onDragExited: (_) {
+        if (mounted) setState(() => _dragOver = false);
+      },
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              Appbar(
           title: Text(t.characterCards),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new),
@@ -157,7 +193,29 @@ class _CharacterCardsSettingsPageState
             },
           ),
         ),
-      ],
+            ],
+          ),
+          if (_dragOver)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.scrim.withValues(alpha: 0.45),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.download_outlined, size: 48),
+                      const SizedBox(height: 12),
+                      Text(t.characterDropHint),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

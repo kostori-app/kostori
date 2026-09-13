@@ -1672,6 +1672,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get characterExportV2 => '导出为 V2';
 	@override String get characterSpec => '规范版本';
 	@override String get characterPickAvatar => '选择图片';
+	@override String get characterDropHint => '拖入角色卡（PNG / JSON）';
 	@override String get storyPersona => '玩家角色';
 	@override String get storyPersonaHint => '描述用户本人，AI 不得扮演。';
 	@override String get storyTextStyle => '文字样式';
@@ -4390,6 +4391,7 @@ extension on TranslationsZhCn {
 			'characterExportV2' => '导出为 V2',
 			'characterSpec' => '规范版本',
 			'characterPickAvatar' => '选择图片',
+			'characterDropHint' => '拖入角色卡（PNG / JSON）',
 			'storyPersona' => '玩家角色',
 			'storyPersonaHint' => '描述用户本人，AI 不得扮演。',
 			'storyTextStyle' => '文字样式',
@@ -4762,9 +4764,9 @@ extension on TranslationsZhCn {
 			'statsWeekdayTue' => '二',
 			'statsWeekdayWed' => '三',
 			'statsWeekdayThu' => '四',
-			'statsWeekdayFri' => '五',
 			_ => null,
 		} ?? switch (path) {
+			'statsWeekdayFri' => '五',
 			'statsWeekdaySat' => '六',
 			'statsWeekdaySun' => '日',
 			'statsYearlyOverview' => '年度总览',
@@ -5276,9 +5278,9 @@ extension on TranslationsZhCn {
 			'replyBracket' => '[回复]',
 			'wantToWatch' => '想看',
 			'watching' => '在看',
-			'addToFolder' => ({required Object folder}) => '添加到 ${folder}',
 			_ => null,
 		} ?? switch (path) {
+			'addToFolder' => ({required Object folder}) => '添加到 ${folder}',
 			'removeFromFolder' => ({required Object folder}) => '从 ${folder} 删除',
 			'movedFromTo' => ({required Object from, required Object to}) => '从 ${from} 移动到 ${to}',
 			'unknownFolder' => 'Unknown folder',
