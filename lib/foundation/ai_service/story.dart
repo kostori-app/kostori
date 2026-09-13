@@ -1398,6 +1398,9 @@ class Story {
   /// 成就定义（AI 解锁）
   final List<StoryAchievement> achievements;
 
+  /// 预置词条定义（物品/特质/种族/技能/天赋/身体），开局即已知
+  final List<StoryDefinition> codex;
+
   /// 称号定义（AI 授予）
   final List<StoryTitle> titles;
 
@@ -1451,6 +1454,7 @@ class Story {
     this.variables = const [],
     this.regexes = const [],
     this.achievements = const [],
+    this.codex = const [],
     this.titles = const [],
     this.titleMode = 'all',
     this.job,
@@ -1480,6 +1484,7 @@ class Story {
     List<StoryVariable>? variables,
     List<StoryRegex>? regexes,
     List<StoryAchievement>? achievements,
+    List<StoryDefinition>? codex,
     List<StoryTitle>? titles,
     String? titleMode,
     StoryJob? job,
@@ -1507,6 +1512,7 @@ class Story {
     variables: variables ?? this.variables,
     regexes: regexes ?? this.regexes,
     achievements: achievements ?? this.achievements,
+    codex: codex ?? this.codex,
     titles: titles ?? this.titles,
     titleMode: titleMode ?? this.titleMode,
     job: job ?? this.job,
@@ -1576,6 +1582,12 @@ class Story {
               if (e is Map) StoryAchievement.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    codex: json['codex'] is List
+        ? [
+            for (final e in json['codex'] as List)
+              if (e is Map) StoryDefinition.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     titles: json['titles'] is List
         ? [
             for (final e in json['titles'] as List)
@@ -1622,6 +1634,7 @@ class Story {
     'variables': [for (final v in variables) v.toJson()],
     'regexes': [for (final r in regexes) r.toJson()],
     'achievements': [for (final a in achievements) a.toJson()],
+    'codex': [for (final d in codex) d.toJson()],
     'titles': [for (final x in titles) x.toJson()],
     'titleMode': titleMode,
     if (job != null) 'job': job!.toJson(),
@@ -1654,6 +1667,16 @@ class Story {
       buf.writeln(
         '称号生效方式：${titleMode == 'equipped' ? '仅已佩戴(equipped)的称号生效' : '全部已获得称号叠加生效'}',
       );
+      buf.writeln();
+    }
+    if (codex.isNotEmpty) {
+      buf.writeln('【预置词条（已知设定，可直接引用；玩家已拥有则相应出现在 inventory/skills 中）】');
+      for (final d in codex) {
+        buf.write('- [${d.kind}] ${d.name}');
+        final desc = d.mechanics.isNotEmpty ? d.mechanics : d.display;
+        if (desc.trim().isNotEmpty) buf.write('：${desc.trim()}');
+        buf.writeln();
+      }
       buf.writeln();
     }
     final jb = job;
@@ -2005,6 +2028,7 @@ class StoryStore extends ChangeNotifier {
       variables: mapList('变量', StoryVariable.fromJson),
       regexes: mapList('正则', StoryRegex.fromJson),
       achievements: mapList('成就', StoryAchievement.fromJson),
+      codex: mapList('词条', StoryDefinition.fromJson),
       titles: titleDefs,
       titleMode: titleMode,
       job: jobDef,
@@ -2065,6 +2089,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.achievements.isNotEmpty) {
       section('成就', jsonEncode([for (final a in s.achievements) a.toJson()]));
+    }
+    if (s.codex.isNotEmpty) {
+      section('词条', jsonEncode([for (final d in s.codex) d.toJson()]));
     }
     if (s.titles.isNotEmpty) {
       section(

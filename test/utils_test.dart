@@ -442,6 +442,27 @@ void main() {
       expect(back.facilities.single.maxLevel, 3);
     });
 
+    test('preset codex entries round trip', () {
+      const story = Story(
+        id: 's',
+        name: 'S',
+        codex: [
+          StoryDefinition(
+            kind: 'item',
+            key: 'sword',
+            name: '长剑',
+            display: '一把剑',
+            mechanics: '攻击+3',
+          ),
+        ],
+      );
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.codex.single.kind, 'item');
+      expect(back.codex.single.name, '长剑');
+      expect(back.codex.single.mechanics, '攻击+3');
+    });
+
     test('death resources and mode round trip', () {
       const story = Story(
         id: 's',

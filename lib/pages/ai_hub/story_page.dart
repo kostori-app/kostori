@@ -601,6 +601,32 @@ class _StoryAchievementDraft {
   }
 }
 
+class _StoryCodexDraft {
+  final TextEditingController key;
+  final TextEditingController name;
+  final TextEditingController display;
+  final TextEditingController mechanics;
+  String kind;
+
+  _StoryCodexDraft({
+    String keyText = '',
+    String nameText = '',
+    String displayText = '',
+    String mechanicsText = '',
+    this.kind = 'item',
+  }) : key = TextEditingController(text: keyText),
+       name = TextEditingController(text: nameText),
+       display = TextEditingController(text: displayText),
+       mechanics = TextEditingController(text: mechanicsText);
+
+  void dispose() {
+    key.dispose();
+    name.dispose();
+    display.dispose();
+    mechanics.dispose();
+  }
+}
+
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
@@ -696,6 +722,16 @@ class _StoryEditorState extends State<_StoryEditor> {
         descriptionText: a.description,
       ),
   ];
+  late final List<_StoryCodexDraft> _codexDefs = [
+    for (final d in widget.story?.codex ?? const <StoryDefinition>[])
+      _StoryCodexDraft(
+        keyText: d.key,
+        nameText: d.name,
+        displayText: d.display,
+        mechanicsText: d.mechanics,
+        kind: d.kind,
+      ),
+  ];
   late final Set<String> _worldBookIds = {
     ...widget.story?.worldBookIds ?? const <String>[],
   };
@@ -709,6 +745,25 @@ class _StoryEditorState extends State<_StoryEditor> {
     WorldBookStore.instance.ensureLoaded();
     PromptInjectionStore.instance.ensureLoaded();
   }
+
+  static const _codexKinds = [
+    'item',
+    'trait',
+    'race',
+    'skill',
+    'talent',
+    'body',
+  ];
+
+  String _codexKindName(String kind) => switch (kind) {
+    'item' => t.storyCodexItem,
+    'trait' => t.storyCodexTrait,
+    'race' => t.storyCodexRace,
+    'skill' => t.skills,
+    'talent' => t.storyCodexTalent,
+    'body' => t.storyCodexBody,
+    _ => kind,
+  };
 
   bool get _isNew => widget.story == null;
 
@@ -777,6 +832,9 @@ class _StoryEditorState extends State<_StoryEditor> {
     for (final a in _achievements) {
       a.dispose();
     }
+    for (final d in _codexDefs) {
+      d.dispose();
+    }
     super.dispose();
   }
 
@@ -842,6 +900,19 @@ class _StoryEditorState extends State<_StoryEditor> {
       characters: [
         for (final c in _characters)
           if (c.name.trim().isNotEmpty) c,
+      ],
+      codex: [
+        for (final d in _codexDefs)
+          if (d.name.text.trim().isNotEmpty)
+            StoryDefinition(
+              kind: d.kind,
+              key: d.key.text.trim().isEmpty
+                  ? d.name.text.trim()
+                  : d.key.text.trim(),
+              name: d.name.text.trim(),
+              display: d.display.text.trim(),
+              mechanics: d.mechanics.text.trim(),
+            ),
       ],
       variables: [
         for (final v in _variables)
@@ -1698,6 +1769,61 @@ class _StoryEditorState extends State<_StoryEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        sectionTitle(t.storyCodexDefs),
+        for (var i = 0; i < _codexDefs.length; i++)
+          card([
+            Row(
+              children: [
+                Select(
+                  current: _codexKindName(_codexDefs[i].kind),
+                  values: [for (final k in _codexKinds) _codexKindName(k)],
+                  onTap: (idx) => setState(
+                    () => _codexDefs[i].kind = _codexKinds[idx],
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () =>
+                      setState(() => _codexDefs.removeAt(i).dispose()),
+                ),
+              ],
+            ),
+            TextFormField(
+              controller: _codexDefs[i].name,
+              decoration: InputDecoration(
+                labelText: t.storyCharacterName,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _codexDefs[i].display,
+              decoration: InputDecoration(
+                labelText: t.storyCodexDisplay,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _codexDefs[i].mechanics,
+              decoration: InputDecoration(
+                labelText: t.storyCodexMechanics,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ]),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _codexDefs.add(_StoryCodexDraft())),
+            icon: const Icon(Icons.add),
+            label: Text(t.storyAddEntry),
+          ),
+        ),
         sectionTitle(t.storyCharacters),
         for (var i = 0; i < _characters.length; i++)
           card([
@@ -2221,6 +2347,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   Future<void> _newSession({GameState? initialState}) async {
     var initial = initialState ?? story.initialState;
+    // 故事预置词条并入初始状态（开局即已知）
+    if (story.codex.isNotEmpty) {
+      final seen = {
+        for (final d in initial.codex) '${d.kind}\u0000${d.key}': true,
+      };
+      final merged = [...initial.codex];
+      for (final d in story.codex) {
+        if (seen['${d.kind}\u0000${d.key}'] == true) continue;
+        merged.add(d);
+        seen['${d.kind}\u0000${d.key}'] = true;
+      }
+      initial = initial.copyWith(codex: merged);
+    }
     // 把故事声明的变量初值并入初始状态
     if (story.variables.isNotEmpty) {
       final vars = Map<String, String>.from(initial.variables);

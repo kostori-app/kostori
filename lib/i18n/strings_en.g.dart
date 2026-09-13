@@ -4822,6 +4822,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'All reach 0'
 	String get storyDeathModeAll => 'All reach 0';
 
+	/// en: 'Preset entries'
+	String get storyCodexDefs => 'Preset entries';
+
+	/// en: 'Player-facing description'
+	String get storyCodexDisplay => 'Player-facing description';
+
+	/// en: 'Mechanics / values'
+	String get storyCodexMechanics => 'Mechanics / values';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9916,6 +9925,9 @@ extension on Translations {
 			'storyDeathMode' => 'Fatal rule',
 			'storyDeathModeAny' => 'Any reaches 0',
 			'storyDeathModeAll' => 'All reach 0',
+			'storyCodexDefs' => 'Preset entries',
+			'storyCodexDisplay' => 'Player-facing description',
+			'storyCodexMechanics' => 'Mechanics / values',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10325,11 +10337,11 @@ extension on Translations {
 			'reloadPreviewClip' => 'Reload preview clip',
 			'videoTimelineThumbnails' => 'Video timeline thumbnails',
 			'startPoint' => 'Start',
+			_ => null,
+		} ?? switch (path) {
 			'endPoint' => 'End',
 			'jumpToStart' => 'Jump to start',
 			'setStartPoint' => 'Set Start',
-			_ => null,
-		} ?? switch (path) {
 			'setEndPoint' => 'Set End',
 			'editStartPoint' => 'Edit Start',
 			'editEndPoint' => 'Edit End',
@@ -10839,11 +10851,11 @@ extension on Translations {
 			'downloadSettings' => 'Download settings',
 			'downloadConcurrent' => 'Concurrent tasks',
 			'downloadSegmentConcurrent' => 'Segment concurrency',
+			_ => null,
+		} ?? switch (path) {
 			'downloadWifiOnly' => 'Wi-Fi only',
 			'downloadOther' => 'Other',
 			'downloadRecords' => 'Download records',
-			_ => null,
-		} ?? switch (path) {
 			'openWithOtherPlayer' => 'Open with other player',
 			'downloadTitleFormat' => 'Download title format',
 			'downloadFormatHint' => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}',

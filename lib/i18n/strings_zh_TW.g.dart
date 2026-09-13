@@ -1633,6 +1633,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyDeathMode => '致命判定';
 	@override String get storyDeathModeAny => '任一歸零';
 	@override String get storyDeathModeAll => '全部歸零';
+	@override String get storyCodexDefs => '預置詞條';
+	@override String get storyCodexDisplay => '玩家可見描述';
+	@override String get storyCodexMechanics => '機制/數值';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4444,6 +4447,9 @@ extension on TranslationsZhTw {
 			'storyDeathMode' => '致命判定',
 			'storyDeathModeAny' => '任一歸零',
 			'storyDeathModeAll' => '全部歸零',
+			'storyCodexDefs' => '預置詞條',
+			'storyCodexDisplay' => '玩家可見描述',
+			'storyCodexMechanics' => '機制/數值',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4853,11 +4859,11 @@ extension on TranslationsZhTw {
 			'endPoint' => '終點',
 			'jumpToStart' => '跳到起點',
 			'setStartPoint' => '設定起點',
+			_ => null,
+		} ?? switch (path) {
 			'setEndPoint' => '設定終點',
 			'editStartPoint' => '修改起點',
 			'editEndPoint' => '修改終點',
-			_ => null,
-		} ?? switch (path) {
 			'durationFormatHint' => '支援格式: 90, 01:30, 1.5...',
 			'secondsAsNumber' => '輸入純數字視為秒數',
 			'exportSettings' => '導出設定',
@@ -5367,11 +5373,11 @@ extension on TranslationsZhTw {
 			'downloadConcurrent' => '任務並發數',
 			'downloadSegmentConcurrent' => '分片並發數',
 			'downloadWifiOnly' => '僅 WiFi 下載',
+			_ => null,
+		} ?? switch (path) {
 			'downloadOther' => '其他',
 			'downloadRecords' => '下載紀錄',
 			'openWithOtherPlayer' => '用其他播放器開啟',
-			_ => null,
-		} ?? switch (path) {
 			'downloadTitleFormat' => '下載標題格式',
 			'downloadFormatHint' => '佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份',
 			'rules' => '規則',

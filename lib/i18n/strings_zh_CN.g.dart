@@ -1632,6 +1632,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyDeathMode => '致命判定';
 	@override String get storyDeathModeAny => '任一归零';
 	@override String get storyDeathModeAll => '全部归零';
+	@override String get storyCodexDefs => '预置词条';
+	@override String get storyCodexDisplay => '玩家可见描述';
+	@override String get storyCodexMechanics => '机制/数值';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4444,6 +4447,9 @@ extension on TranslationsZhCn {
 			'storyDeathMode' => '致命判定',
 			'storyDeathModeAny' => '任一归零',
 			'storyDeathModeAll' => '全部归零',
+			'storyCodexDefs' => '预置词条',
+			'storyCodexDisplay' => '玩家可见描述',
+			'storyCodexMechanics' => '机制/数值',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4854,11 +4860,11 @@ extension on TranslationsZhCn {
 			'jumpToStart' => '跳到起点',
 			'setStartPoint' => '设置起点',
 			'setEndPoint' => '设置终点',
+			_ => null,
+		} ?? switch (path) {
 			'editStartPoint' => '修改起点',
 			'editEndPoint' => '修改终点',
 			'durationFormatHint' => '支持格式: 90, 01:30, 1.5...',
-			_ => null,
-		} ?? switch (path) {
 			'secondsAsNumber' => '输入纯数字视为秒数',
 			'exportSettings' => '导出设置',
 			'h264CRF' => 'H.264 · CRF',
@@ -5368,11 +5374,11 @@ extension on TranslationsZhCn {
 			'downloadSettings' => '下载设置',
 			'downloadConcurrent' => '任务并发数',
 			'downloadSegmentConcurrent' => '分片并发数',
+			_ => null,
+		} ?? switch (path) {
 			'downloadWifiOnly' => '仅 WiFi 下载',
 			'downloadOther' => '其他',
 			'downloadRecords' => '下载记录',
-			_ => null,
-		} ?? switch (path) {
 			'openWithOtherPlayer' => '用其他播放器打开',
 			'downloadTitleFormat' => '下载标题格式',
 			'downloadFormatHint' => '占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份',
