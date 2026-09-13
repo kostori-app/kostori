@@ -174,6 +174,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get selectiveSync => '选择性同步';
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存档';
+	@override String get storyGameOver => '游戏结束';
+	@override String get storyDeathResources => '致命资源（归零即游戏结束）';
 	@override String get syncStateSynced => '已同步';
 	@override String get syncStateLocalOnly => '未上传';
 	@override String get syncStateRemoteOnly => '未下载';
@@ -2878,6 +2880,8 @@ extension on TranslationsZhCn {
 			'selectiveSync' => '选择性同步',
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存档',
+			'storyGameOver' => '游戏结束',
+			'storyDeathResources' => '致命资源（归零即游戏结束）',
 			'syncStateSynced' => '已同步',
 			'syncStateLocalOnly' => '未上传',
 			'syncStateRemoteOnly' => '未下载',
@@ -3253,10 +3257,10 @@ extension on TranslationsZhCn {
 			'selectAiPersonality' => '选择 AI 人格',
 			'apply' => '应用',
 			'heightPx' => '高度(px)',
-			'setUniformHeight' => '设置统一高度',
-			'uniformHeight' => '统一高度',
 			_ => null,
 		} ?? switch (path) {
+			'setUniformHeight' => '设置统一高度',
+			'uniformHeight' => '统一高度',
 			'cropImage' => '裁剪图片',
 			'finishCropping' => '完成裁剪',
 			'sortImages' => '图片排序',
@@ -3767,10 +3771,10 @@ extension on TranslationsZhCn {
 			'searchGroupAll' => '全部',
 			'searchGroupBangumi' => '番组',
 			'searchGroupDefault' => '默认',
-			'chooseSearchSource' => '选择搜索源',
-			'singleSourceSearch' => '单源',
 			_ => null,
 		} ?? switch (path) {
+			'chooseSearchSource' => '选择搜索源',
+			'singleSourceSearch' => '单源',
 			'searchGroupBuiltIn' => '内置分组',
 			'searchGroupCustom' => '我的分组',
 			'manageGroups' => '管理分组',
@@ -4281,10 +4285,10 @@ extension on TranslationsZhCn {
 			'generateQrCodeShare' => '生成二维码分享',
 			'aiSettings' => 'AI 设置',
 			'aiConfigMissing' => 'AI配置缺失',
-			'generating' => '生成中...',
-			'generatedTags' => '已生成 Tags',
 			_ => null,
 		} ?? switch (path) {
+			'generating' => '生成中...',
+			'generatedTags' => '已生成 Tags',
 			'exportScreenshot' => '导出截图',
 			'copyAll' => '复制全部',
 			'timeRange' => '时间范围',
@@ -4795,10 +4799,10 @@ extension on TranslationsZhCn {
 			'streamInterrupted' => '生成已中断',
 			'showThinking' => '查看思考过程',
 			'hideThinking' => '收起思考过程',
-			'viewProcess' => '查看过程',
-			'stepThinking' => '思考',
 			_ => null,
 		} ?? switch (path) {
+			'viewProcess' => '查看过程',
+			'stepThinking' => '思考',
 			'stepTool' => '工具',
 			'thinkingInProgress' => '正在思考...',
 			'statsCached' => '缓存',
@@ -5309,10 +5313,10 @@ extension on TranslationsZhCn {
 			'monthDay' => ({required Object month, required Object day}) => '${month}月${day}日',
 			'qrAnimeId' => ({required Object id, required Object source}) => '番剧 ID：${id}\n来源：${source}',
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID：${id}',
-			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房间：${room}\n服务端：${server}',
-			'qrDetectedType' => ({required Object type}) => '检测到 ${type} 链接',
 			_ => null,
 		} ?? switch (path) {
+			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房间：${room}\n服务端：${server}',
+			'qrDetectedType' => ({required Object type}) => '检测到 ${type} 链接',
 			'qrPasswordResolved' => '（口令已解析）\n',
 			'reviewedAtTime' => ({required Object time}) => '评价时 ${time}',
 			'qrCopiedToClipboard' => '二维码已复制到剪贴板',

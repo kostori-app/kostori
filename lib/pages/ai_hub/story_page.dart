@@ -461,6 +461,9 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _descCtrl = TextEditingController(
     text: widget.story?.description ?? '',
   );
+  late final _deathCtrl = TextEditingController(
+    text: (widget.story?.deathResources ?? const []).join('、'),
+  );
   late final _openingCtrl = TextEditingController(
     text: widget.story?.opening ?? '',
   );
@@ -599,6 +602,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   void dispose() {
     _nameCtrl.dispose();
     _descCtrl.dispose();
+    _deathCtrl.dispose();
     _openingCtrl.dispose();
     _systemCtrl.dispose();
     _situationCtrl.dispose();
@@ -656,6 +660,11 @@ class _StoryEditorState extends State<_StoryEditor> {
       systemPrompt: _systemCtrl.text.trim(),
       worldBook: _serializeWorldBook(),
       situation: _situationCtrl.text.trim(),
+      deathResources: _deathCtrl.text
+          .split(RegExp(r'[、,，/]'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
       choicesPrompt: _choicesCtrl.text.trim(),
       setup: widget.story?.setup ?? const [],
       actions: [
@@ -968,6 +977,7 @@ class _StoryEditorState extends State<_StoryEditor> {
           required: false,
           multiline: true,
         ),
+        _field(t.storyDeathResources, _deathCtrl, required: false),
       ],
     );
   }
@@ -1966,6 +1976,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (story.opening.trim().isNotEmpty) {
       buf.write('\n\n【开局场景（请从这里开始叙事）】\n${sub(story.opening.trim())}');
     }
+    if (story.deathResources.isNotEmpty) {
+      buf.write(
+        '\n\n【致命资源（归零即游戏结束，请在归零前给出收尾叙事）】'
+        '${story.deathResources.join('、')}',
+      );
+    }
     if (story.characters.isNotEmpty) {
       buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
       for (final c in story.characters) {
@@ -2338,9 +2354,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _applyState(GameState? state) async {
     final sessionId = _sessionId;
     if (state == null || sessionId == null) return;
-    final next = state.copyWith(
+    var next = state.copyWith(
       variables: normalizeVariables(state.variables, story.variables),
     );
+    // 致命资源归零 → 游戏结束
+    if (!next.gameOver && story.deathResources.isNotEmpty) {
+      final death = story.deathResources.toSet();
+      for (final r in next.resources) {
+        if (death.contains(r.name) && r.cur <= 0) {
+          next = next.copyWith(gameOver: true);
+          break;
+        }
+      }
+    }
     final unregistered = _unregisteredFrom(next);
     final newlyUnlocked = next.achievements
         .where((k) => !_state.achievements.contains(k))
@@ -2987,7 +3013,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           ],
                         ),
                       ),
-                    _AiComposerBar(
+                    if (_state.gameOver)
+                      _gameOverBar(context)
+                    else
+                      _AiComposerBar(
                       controller: _input,
                       focusNode: _inputFocus,
                       onSend: _sendInput,
@@ -3553,6 +3582,53 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         ),
       ),
     );
+  }
+
+  /// 游戏结束条：提示 + 重新开始
+  Widget _gameOverBar(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.dangerous_outlined, color: scheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              t.storyGameOver,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          FilledButton(
+            onPressed: _restartGame,
+            child: Text(t.storyRestart),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _restartGame() async {
+    final sessionId = _sessionId;
+    if (sessionId != null) {
+      await AiConversationService().deleteSession(sessionId);
+    }
+    await StorySessionStore.instance.clear(story.id);
+    if (!mounted) return;
+    setState(() {
+      _sessionId = null;
+      _state = GameState.empty;
+      _unregistered = const [];
+      _lastMessageCount = 0;
+      _booting = true;
+      _needsSetup = false;
+    });
+    await _boot();
   }
 
   /// 项目风格开关行

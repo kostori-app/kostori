@@ -144,6 +144,8 @@ aiLogResponse: Response
 selectiveSync: Selective sync
 syncSuccess: Synced
 storySessions: Saves
+storyGameOver: Game over
+storyDeathResources: Fatal resources (game over at zero)
 syncStateSynced: Synced
 syncStateLocalOnly: Not uploaded
 syncStateRemoteOnly: Not downloaded

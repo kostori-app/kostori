@@ -705,6 +705,9 @@ class GameState {
   /// 动态局势（由 AI 每回合可选输出，展示在「局势」页签）
   final String situation;
 
+  /// 是否已游戏结束（致命资源归零）
+  final bool gameOver;
+
   /// 故事变量（AI 可读写，提示词里可用 {{var:名称}} 引用）
   final Map<String, String> variables;
 
@@ -730,6 +733,7 @@ class GameState {
     this.location = '',
     this.codex = const [],
     this.situation = '',
+    this.gameOver = false,
     this.variables = const {},
     this.present = const [],
     this.equipped = const [],
@@ -749,6 +753,7 @@ class GameState {
     String? location,
     List<StoryDefinition>? codex,
     String? situation,
+    bool? gameOver,
     Map<String, String>? variables,
     List<String>? present,
     List<String>? equipped,
@@ -764,6 +769,7 @@ class GameState {
     location: location ?? this.location,
     codex: codex ?? this.codex,
     situation: situation ?? this.situation,
+    gameOver: gameOver ?? this.gameOver,
     variables: variables ?? this.variables,
     present: present ?? this.present,
     equipped: equipped ?? this.equipped,
@@ -808,6 +814,7 @@ class GameState {
             ]
           : const [],
       situation: json['situation']?.toString() ?? '',
+      gameOver: json['gameOver'] as bool? ?? false,
       variables: json['variables'] is Map
           ? {
               for (final e in (json['variables'] as Map).entries)
@@ -836,6 +843,7 @@ class GameState {
     'location': location,
     'codex': [for (final d in codex) d.toJson()],
     'situation': situation,
+    'gameOver': gameOver,
     'variables': variables,
     'present': present,
     'equipped': equipped,
@@ -943,6 +951,9 @@ class Story {
   /// 自定义面板分区（为空表示使用默认分区）
   final List<StoryPanel> panels;
 
+  /// 致命资源：这些资源归零即游戏结束（为空则不判定）
+  final List<String> deathResources;
+
   /// 故事角色（多角色同场，复用角色卡模型）
   final List<CharacterCard> characters;
 
@@ -986,6 +997,7 @@ class Story {
     this.worldBookIds = const [],
     this.injectionIds = const [],
     this.panels = const [],
+    this.deathResources = const [],
     this.characters = const [],
     this.variables = const [],
     this.regexes = const [],
@@ -1009,6 +1021,7 @@ class Story {
     List<String>? worldBookIds,
     List<String>? injectionIds,
     List<StoryPanel>? panels,
+    List<String>? deathResources,
     List<CharacterCard>? characters,
     List<StoryVariable>? variables,
     List<StoryRegex>? regexes,
@@ -1030,6 +1043,7 @@ class Story {
     worldBookIds: worldBookIds ?? this.worldBookIds,
     injectionIds: injectionIds ?? this.injectionIds,
     panels: panels ?? this.panels,
+    deathResources: deathResources ?? this.deathResources,
     characters: characters ?? this.characters,
     variables: variables ?? this.variables,
     regexes: regexes ?? this.regexes,
@@ -1071,6 +1085,9 @@ class Story {
               if (e is Map) StoryPanel.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    deathResources:
+        (json['deathResources'] as List?)?.whereType<String>().toList() ??
+        const [],
     characters: json['characters'] is List
         ? [
             for (final e in json['characters'] as List)
@@ -1119,6 +1136,7 @@ class Story {
     'worldBookIds': worldBookIds,
     'injectionIds': injectionIds,
     'panels': [for (final p in panels) p.toJson()],
+    'deathResources': deathResources,
     'characters': [for (final c in characters) c.toJson()],
     'variables': [for (final v in variables) v.toJson()],
     'regexes': [for (final r in regexes) r.toJson()],
@@ -1392,6 +1410,7 @@ class StoryStore extends ChangeNotifier {
       worldBookIds: idList('世界书库'),
       injectionIds: idList('提示词库'),
       panels: panels,
+      deathResources: idList('致命资源'),
       characters: mapList('角色', CharacterCard.fromJson),
       variables: mapList('变量', StoryVariable.fromJson),
       regexes: mapList('正则', StoryRegex.fromJson),
@@ -1434,6 +1453,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.panels.isNotEmpty) {
       section('面板', jsonEncode([for (final p in s.panels) p.toJson()]));
+    }
+    if (s.deathResources.isNotEmpty) {
+      section('致命资源', jsonEncode(s.deathResources));
     }
     if (s.characters.isNotEmpty) {
       section('角色', jsonEncode([for (final c in s.characters) c.toJson()]));

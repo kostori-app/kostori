@@ -132,6 +132,8 @@ aiLogResponse: 回應
 selectiveSync: 選擇性同步
 syncSuccess: 同步成功
 storySessions: 存檔
+storyGameOver: 遊戲結束
+storyDeathResources: 致命資源（歸零即遊戲結束）
 syncStateSynced: 已同步
 syncStateLocalOnly: 未上傳
 syncStateRemoteOnly: 未下載

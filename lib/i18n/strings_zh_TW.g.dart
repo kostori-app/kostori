@@ -173,6 +173,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get selectiveSync => '選擇性同步';
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存檔';
+	@override String get storyGameOver => '遊戲結束';
+	@override String get storyDeathResources => '致命資源（歸零即遊戲結束）';
 	@override String get syncStateSynced => '已同步';
 	@override String get syncStateLocalOnly => '未上傳';
 	@override String get syncStateRemoteOnly => '未下載';
@@ -2876,6 +2878,8 @@ extension on TranslationsZhTw {
 			'selectiveSync' => '選擇性同步',
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存檔',
+			'storyGameOver' => '遊戲結束',
+			'storyDeathResources' => '致命資源（歸零即遊戲結束）',
 			'syncStateSynced' => '已同步',
 			'syncStateLocalOnly' => '未上傳',
 			'syncStateRemoteOnly' => '未下載',
@@ -3252,10 +3256,10 @@ extension on TranslationsZhTw {
 			'apply' => '應用',
 			'heightPx' => '高度(px)',
 			'setUniformHeight' => '設定統一高度',
-			'uniformHeight' => '統一高度',
-			'cropImage' => '裁剪圖片',
 			_ => null,
 		} ?? switch (path) {
+			'uniformHeight' => '統一高度',
+			'cropImage' => '裁剪圖片',
 			'finishCropping' => '完成裁剪',
 			'sortImages' => '圖片排序',
 			'finishSorting' => '完成排序',
@@ -3766,10 +3770,10 @@ extension on TranslationsZhTw {
 			'searchSources' => '搜尋源',
 			'searchGroupAll' => '全部',
 			'searchGroupBangumi' => '番組',
-			'searchGroupDefault' => '預設',
-			'chooseSearchSource' => '選擇搜尋源',
 			_ => null,
 		} ?? switch (path) {
+			'searchGroupDefault' => '預設',
+			'chooseSearchSource' => '選擇搜尋源',
 			'singleSourceSearch' => '單源',
 			'searchGroupBuiltIn' => '內建分組',
 			'searchGroupCustom' => '我的分組',
@@ -4280,10 +4284,10 @@ extension on TranslationsZhTw {
 			'tokenCopiedToClipboard' => 'Token已複製到剪貼簿',
 			'generateQrCodeShare' => '產生二維碼分享',
 			'aiSettings' => 'AI 設置',
-			'aiConfigMissing' => 'AI配置缺失',
-			'generating' => '生成中...',
 			_ => null,
 		} ?? switch (path) {
+			'aiConfigMissing' => 'AI配置缺失',
+			'generating' => '生成中...',
 			'generatedTags' => '已生成 Tags',
 			'exportScreenshot' => '導出截圖',
 			'copyAll' => '複製全部',
@@ -4794,10 +4798,10 @@ extension on TranslationsZhTw {
 			'showThinking' => '查看思考過程',
 			'hideThinking' => '收起思考過程',
 			'viewProcess' => '查看過程',
-			'stepThinking' => '思考',
-			'stepTool' => '工具',
 			_ => null,
 		} ?? switch (path) {
+			'stepThinking' => '思考',
+			'stepTool' => '工具',
 			'thinkingInProgress' => '正在思考...',
 			'statsCached' => '快取',
 			'statsNoRecords' => '尚無活動記錄',
@@ -5308,10 +5312,10 @@ extension on TranslationsZhTw {
 			'qrAnimeId' => ({required Object id, required Object source}) => '番劇 ID：${id}\n來源：${source}',
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID：${id}',
 			'qrWatchRoom' => ({required Object room, required Object server}) => '一起看房間：${room}\n服務端：${server}',
-			'qrDetectedType' => ({required Object type}) => '檢測到 ${type} 連結',
-			'qrPasswordResolved' => '（口令已解析）\n',
 			_ => null,
 		} ?? switch (path) {
+			'qrDetectedType' => ({required Object type}) => '檢測到 ${type} 連結',
+			'qrPasswordResolved' => '（口令已解析）\n',
 			'reviewedAtTime' => ({required Object time}) => '評價時 ${time}',
 			'qrCopiedToClipboard' => '二維碼已複製到剪貼簿',
 			'qrSavedToGallery' => '二維碼已儲存',

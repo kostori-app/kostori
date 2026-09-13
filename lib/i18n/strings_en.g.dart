@@ -467,6 +467,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Saves'
 	String get storySessions => 'Saves';
 
+	/// en: 'Game over'
+	String get storyGameOver => 'Game over';
+
+	/// en: 'Fatal resources (game over at zero)'
+	String get storyDeathResources => 'Fatal resources (game over at zero)';
+
 	/// en: 'Synced'
 	String get syncStateSynced => 'Synced';
 
@@ -8236,6 +8242,8 @@ extension on Translations {
 			'selectiveSync' => 'Selective sync',
 			'syncSuccess' => 'Synced',
 			'storySessions' => 'Saves',
+			'storyGameOver' => 'Game over',
+			'storyDeathResources' => 'Fatal resources (game over at zero)',
 			'syncStateSynced' => 'Synced',
 			'syncStateLocalOnly' => 'Not uploaded',
 			'syncStateRemoteOnly' => 'Not downloaded',
@@ -8604,10 +8612,10 @@ extension on Translations {
 			'conversationTitle' => 'Conversation Title',
 			'aiConversation' => 'AI Conversation',
 			'topicList' => 'Topic List',
-			'startConversationWithAI' => 'Start a conversation with AI',
-			'newConversation' => 'New Conversation',
 			_ => null,
 		} ?? switch (path) {
+			'startConversationWithAI' => 'Start a conversation with AI',
+			'newConversation' => 'New Conversation',
 			'inputMessage' => 'Input message...',
 			'noTopicsYet' => 'No topics yet',
 			'selectAiPersonality' => 'Select AI Personality',
@@ -9118,10 +9126,10 @@ extension on Translations {
 			'searchSources' => 'Search Sources',
 			'searchGroupAll' => 'All',
 			'searchGroupBangumi' => 'Bangumi',
-			'searchGroupDefault' => 'Default',
-			'chooseSearchSource' => 'Choose Search Source',
 			_ => null,
 		} ?? switch (path) {
+			'searchGroupDefault' => 'Default',
+			'chooseSearchSource' => 'Choose Search Source',
 			'singleSourceSearch' => 'Single Source',
 			'searchGroupBuiltIn' => 'Built-in groups',
 			'searchGroupCustom' => 'My groups',
@@ -9632,10 +9640,10 @@ extension on Translations {
 			'tokenCopiedToClipboard' => 'Token copied to clipboard',
 			'generateQrCodeShare' => 'Generate QR Code to Share',
 			'aiSettings' => 'AI Settings',
-			'aiConfigMissing' => 'AI Config Missing',
-			'generating' => 'Generating...',
 			_ => null,
 		} ?? switch (path) {
+			'aiConfigMissing' => 'AI Config Missing',
+			'generating' => 'Generating...',
 			'generatedTags' => 'Generated Tags',
 			'exportScreenshot' => 'Export Screenshot',
 			'copyAll' => 'Copy all',
@@ -10146,10 +10154,10 @@ extension on Translations {
 			'streamInterrupted' => 'Generation interrupted',
 			'showThinking' => 'Show thinking',
 			'hideThinking' => 'Hide thinking',
-			'viewProcess' => 'View process',
-			'stepThinking' => 'Thinking',
 			_ => null,
 		} ?? switch (path) {
+			'viewProcess' => 'View process',
+			'stepThinking' => 'Thinking',
 			'stepTool' => 'Tool',
 			'thinkingInProgress' => 'Thinking...',
 			'statsCached' => 'cached',
@@ -10660,10 +10668,10 @@ extension on Translations {
 			'monthDay' => ({required Object month, required Object day}) => '${month}/${day}',
 			'qrAnimeId' => ({required Object id, required Object source}) => 'Anime ID: ${id}\nSource: ${source}',
 			'qrBangumiId' => ({required Object id}) => 'Bangumi ID: ${id}',
-			'qrWatchRoom' => ({required Object room, required Object server}) => 'Watch together room: ${room}\nServer: ${server}',
-			'qrDetectedType' => ({required Object type}) => 'Detected ${type} link',
 			_ => null,
 		} ?? switch (path) {
+			'qrWatchRoom' => ({required Object room, required Object server}) => 'Watch together room: ${room}\nServer: ${server}',
+			'qrDetectedType' => ({required Object type}) => 'Detected ${type} link',
 			'qrPasswordResolved' => '(Password resolved)\n',
 			'reviewedAtTime' => ({required Object time}) => 'Reviewed at ${time}',
 			'qrCopiedToClipboard' => 'QR code copied to clipboard',
