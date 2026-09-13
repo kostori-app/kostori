@@ -4765,6 +4765,51 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'The reply timed out and was stopped. You can retry.'
 	String get storyResponseStalled => 'The reply timed out and was stopped. You can retry.';
 
+	/// en: 'Untitled story'
+	String get unnamedStory => 'Untitled story';
+
+	/// en: 'Success'
+	String get diceSuccess => 'Success';
+
+	/// en: 'Failure'
+	String get diceFailure => 'Failure';
+
+	/// en: 'Start the game'
+	String get storyCmdStart => 'Start the game';
+
+	/// en: 'Next round'
+	String get storyCmdNextRound => 'Next round';
+
+	/// en: 'Use ${item}'
+	String storyCmdUse({required Object item}) => 'Use ${item}';
+
+	/// en: 'Equip ${item}'
+	String storyCmdEquip({required Object item}) => 'Equip ${item}';
+
+	/// en: 'Unequip ${item}'
+	String storyCmdUnequip({required Object item}) => 'Unequip ${item}';
+
+	/// en: 'Drop ${item}'
+	String storyCmdDrop({required Object item}) => 'Drop ${item}';
+
+	/// en: 'To ${name}: '
+	String storyCmdAddress({required Object name}) => 'To ${name}: ';
+
+	/// en: '[Check result] ${label}: ${detail}'
+	String storyCmdCheckResult({required Object label, required Object detail}) => '[Check result] ${label}: ${detail}';
+
+	/// en: '[Character profile]'
+	String get storyCmdProfile => '[Character profile]';
+
+	/// en: 'You are a worldbuilding completion assistant. Output JSON only, no other text.'
+	String get storyCodexSystem => 'You are a worldbuilding completion assistant. Output JSON only, no other text.';
+
+	/// en: 'Complete the codex entries for the following items. Output JSON only:'
+	String get storyCodexPrompt => 'Complete the codex entries for the following items. Output JSON only:';
+
+	/// en: 'Items'
+	String get storyCodexItems => 'Items';
+
 	/// en: 'More'
 	String get storyMore => 'More';
 
@@ -9750,6 +9795,21 @@ extension on Translations {
 			'storyNoEntry' => 'No entry yet',
 			'storyResponseFailed' => 'The last reply was interrupted',
 			'storyResponseStalled' => 'The reply timed out and was stopped. You can retry.',
+			'unnamedStory' => 'Untitled story',
+			'diceSuccess' => 'Success',
+			'diceFailure' => 'Failure',
+			'storyCmdStart' => 'Start the game',
+			'storyCmdNextRound' => 'Next round',
+			'storyCmdUse' => ({required Object item}) => 'Use ${item}',
+			'storyCmdEquip' => ({required Object item}) => 'Equip ${item}',
+			'storyCmdUnequip' => ({required Object item}) => 'Unequip ${item}',
+			'storyCmdDrop' => ({required Object item}) => 'Drop ${item}',
+			'storyCmdAddress' => ({required Object name}) => 'To ${name}: ',
+			'storyCmdCheckResult' => ({required Object label, required Object detail}) => '[Check result] ${label}: ${detail}',
+			'storyCmdProfile' => '[Character profile]',
+			'storyCodexSystem' => 'You are a worldbuilding completion assistant. Output JSON only, no other text.',
+			'storyCodexPrompt' => 'Complete the codex entries for the following items. Output JSON only:',
+			'storyCodexItems' => 'Items',
 			'storyMore' => 'More',
 			'storyNoActions' => 'This story has no actions defined',
 			'storyInspect' => 'Inspect',
@@ -10166,6 +10226,8 @@ extension on Translations {
 			'apngFormat' => 'APNG',
 			'webpFormat' => 'WebP',
 			'browserCompatible' => 'Browser compatible',
+			_ => null,
+		} ?? switch (path) {
 			'smallestSize' => 'Smallest size',
 			'videoFormat' => 'Video Format',
 			'encoding' => 'Encoding…',
@@ -10181,8 +10243,6 @@ extension on Translations {
 			'skills' => 'Skills',
 			'selectSkills' => 'Select skills',
 			'noSkillsAvailable' => 'No skills available',
-			_ => null,
-		} ?? switch (path) {
 			'usingTools' => 'Calling tools...',
 			'toolCallingTool' => ({required Object tool}) => 'Calling ${tool}...',
 			'toolCallLog' => ({required Object count}) => 'Tool calls: ${count}',
@@ -10680,6 +10740,8 @@ extension on Translations {
 			'noResolutionAvailable' => 'No more qualities available',
 			'series' => 'Series',
 			'singleEpisode' => 'Single episode · 1 total',
+			_ => null,
+		} ?? switch (path) {
 			'playing' => 'Playing',
 			'selectNone' => 'Select none',
 			'downloadActive' => 'Downloading',
@@ -10695,8 +10757,6 @@ extension on Translations {
 			'ungrouped' => 'Ungrouped',
 			'localPlayerSpeedTip' => 'Long press to change speed',
 			'audioTrack' => 'Audio track',
-			_ => null,
-		} ?? switch (path) {
 			'subtitle' => 'Subtitles',
 			'subtitleOff' => 'Off',
 			'quality' => 'Quality',

@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 单项数值条（如 生命 100/100）
@@ -626,7 +627,7 @@ class DiceRoll {
     buf.write(' = $total');
     if (dc != null) {
       buf.write(' ${success == true ? '≥' : '<'} $dc');
-      buf.write(' → ${success == true ? '成功' : '失败'}');
+      buf.write(' → ${success == true ? t.diceSuccess : t.diceFailure}');
     }
     return buf.toString();
   }
@@ -1331,7 +1332,7 @@ class StoryStore extends ChangeNotifier {
 
   /// 从 .md 文本解析故事
   static Story storyFromMarkdown(String text, {String? id}) {
-    final name = _firstHeading(text) ?? '未命名故事';
+    final name = _firstHeading(text) ?? t.unnamedStory;
     final description = _quoteLine(text) ?? '';
     var initialState = GameState.empty;
     final stateText = _section(text, '初始状态');

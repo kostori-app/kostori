@@ -1619,6 +1619,21 @@ storyNoSituation: 暂无局势信息
 storyNoEntry: 暂无设定
 storyResponseFailed: 上次回复中断了
 storyResponseStalled: 回复超时，已中断，可重试
+unnamedStory: 未命名故事
+diceSuccess: 成功
+diceFailure: 失败
+storyCmdStart: 开始游戏
+storyCmdNextRound: 进入下一回合
+storyCmdUse: 使用 ${item}
+storyCmdEquip: 装备 ${item}
+storyCmdUnequip: 卸下 ${item}
+storyCmdDrop: 丢弃 ${item}
+storyCmdAddress: 对${name}：
+storyCmdCheckResult: 【检定结果】${label}：${detail}
+storyCmdProfile: 【角色档案】
+storyCodexSystem: 你是世界观设定补全助手，只输出 JSON，不要输出其它文字。
+storyCodexPrompt: 为下列道具补全图鉴设定，严格输出 JSON：
+storyCodexItems: 道具
 storyMore: 更多
 storyNoActions: 该故事未定义操作
 storyInspect: 检查

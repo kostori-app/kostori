@@ -658,7 +658,7 @@ class _StoryEditorState extends State<_StoryEditor> {
       final name = e.name.text.trim();
       final content = e.content.text.trim();
       if (name.isEmpty && content.isEmpty) continue;
-      buf.writeln('【${name.isEmpty ? '设定' : name}】');
+      buf.writeln('【${name.isEmpty ? t.storyDefinition : name}】');
       buf.writeln(content);
       buf.writeln();
     }
@@ -1996,7 +1996,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       return;
     }
     await _newSession();
-    await _send('开始游戏');
+    await _send(t.storyCmdStart);
   }
 
   Future<void> _newSession({GameState? initialState}) async {
@@ -2033,7 +2033,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   /// 校验并生成开局档案文本，然后开局（数值项并入初始状态属性）
   Future<void> _startWithSetup() async {
-    final buf = StringBuffer('【角色档案】');
+    final buf = StringBuffer(t.storyCmdProfile);
     final attrs = Map<String, int>.from(story.initialState.attributes);
     for (final part in story.setup) {
       final value = switch (part.type) {
@@ -2507,7 +2507,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   /// 对某个角色说话：在输入框前缀「对XX：」并聚焦
   void _addressCharacter(CharacterCard c) {
-    final prefix = '对${c.name}：';
+    final prefix = t.storyCmdAddress(name: c.name);
     if (!_input.text.startsWith(prefix)) {
       _input.text = '$prefix${_input.text}';
     }
@@ -2810,12 +2810,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         provider: aiHubProvider(),
         taskType: 'story_codex',
         sessionTitle: t.storyRegisterItems,
-        systemPrompt: '你是世界观设定补全助手，只输出 JSON，不要输出其它文字。',
+        systemPrompt: t.storyCodexSystem,
         prompt:
-            '为下列道具补全图鉴设定，严格输出 JSON：\n'
+            '${t.storyCodexPrompt}\n'
             '{"codex":[{"kind":"item","key":"道具名","name":"道具名",'
             '"display":"玩家可见描述","mechanics":"机制/数值"}]}\n'
-            '道具：${items.join('、')}',
+            '${t.storyCodexItems}：${items.join('、')}',
       );
       if (!mounted) return;
       if (!res.success) {
@@ -4052,7 +4052,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 title: Text(t.storyNextRound),
                 onTap: () {
                   Navigator.of(ctx).pop();
-                  _send('进入下一回合');
+                  _send(t.storyCmdNextRound);
                 },
               ),
             for (final a in story.actions)
@@ -4105,7 +4105,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final roll = rollDice(check.dice, modifier: check.modifier, dc: check.dc);
     await _showRollResult(roll, check.label.isEmpty ? t.storyRoll : check.label);
     if (!mounted) return;
-    await _send('【检定结果】${check.label}：${roll.detail}');
+    await _send(
+      t.storyCmdCheckResult(label: check.label, detail: roll.detail),
+    );
   }
 
   /// 手动掷骰：从当前属性里选一项 + 输入 DC
@@ -4171,7 +4173,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final roll = rollDice('1d20', modifier: entry.value, dc: dc);
     await _showRollResult(roll, '${entry.key} ${entry.value}');
     if (!mounted) return;
-    await _send('【检定结果】${entry.key}：${roll.detail}');
+    await _send(
+      t.storyCmdCheckResult(label: entry.key, detail: roll.detail),
+    );
   }
 }
 
@@ -4282,7 +4286,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               title: Text(t.storyUse),
               onTap: () {
                 Navigator.of(ctx).pop();
-                widget.onCommand('使用 $item');
+                widget.onCommand(t.storyCmdUse(item: item));
               },
             ),
             ListTile(
@@ -4294,7 +4298,11 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               title: Text(equipped ? t.storyUnequip : t.storyEquip),
               onTap: () {
                 Navigator.of(ctx).pop();
-                widget.onCommand(equipped ? '卸下 $item' : '装备 $item');
+                widget.onCommand(
+                  equipped
+                      ? t.storyCmdUnequip(item: item)
+                      : t.storyCmdEquip(item: item),
+                );
               },
             ),
             ListTile(
@@ -4302,7 +4310,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               title: Text(t.storyDrop),
               onTap: () {
                 Navigator.of(ctx).pop();
-                widget.onCommand('丢弃 $item');
+                widget.onCommand(t.storyCmdDrop(item: item));
               },
             ),
           ],

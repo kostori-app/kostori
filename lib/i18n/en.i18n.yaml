@@ -1624,6 +1624,21 @@ storyNoSituation: No situation info yet
 storyNoEntry: No entry yet
 storyResponseFailed: The last reply was interrupted
 storyResponseStalled: The reply timed out and was stopped. You can retry.
+unnamedStory: Untitled story
+diceSuccess: Success
+diceFailure: Failure
+storyCmdStart: Start the game
+storyCmdNextRound: Next round
+storyCmdUse: Use ${item}
+storyCmdEquip: Equip ${item}
+storyCmdUnequip: Unequip ${item}
+storyCmdDrop: Drop ${item}
+storyCmdAddress: 'To ${name}: '
+storyCmdCheckResult: '[Check result] ${label}: ${detail}'
+storyCmdProfile: '[Character profile]'
+storyCodexSystem: You are a worldbuilding completion assistant. Output JSON only, no other text.
+storyCodexPrompt: 'Complete the codex entries for the following items. Output JSON only:'
+storyCodexItems: Items
 storyMore: More
 storyNoActions: This story has no actions defined
 storyInspect: Inspect

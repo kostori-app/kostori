@@ -1613,6 +1613,21 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNoEntry => '暂无设定';
 	@override String get storyResponseFailed => '上次回复中断了';
 	@override String get storyResponseStalled => '回复超时，已中断，可重试';
+	@override String get unnamedStory => '未命名故事';
+	@override String get diceSuccess => '成功';
+	@override String get diceFailure => '失败';
+	@override String get storyCmdStart => '开始游戏';
+	@override String get storyCmdNextRound => '进入下一回合';
+	@override String storyCmdUse({required Object item}) => '使用 ${item}';
+	@override String storyCmdEquip({required Object item}) => '装备 ${item}';
+	@override String storyCmdUnequip({required Object item}) => '卸下 ${item}';
+	@override String storyCmdDrop({required Object item}) => '丢弃 ${item}';
+	@override String storyCmdAddress({required Object name}) => '对${name}：';
+	@override String storyCmdCheckResult({required Object label, required Object detail}) => '【检定结果】${label}：${detail}';
+	@override String get storyCmdProfile => '【角色档案】';
+	@override String get storyCodexSystem => '你是世界观设定补全助手，只输出 JSON，不要输出其它文字。';
+	@override String get storyCodexPrompt => '为下列道具补全图鉴设定，严格输出 JSON：';
+	@override String get storyCodexItems => '道具';
 	@override String get storyMore => '更多';
 	@override String get storyNoActions => '该故事未定义操作';
 	@override String get storyInspect => '检查';
@@ -4376,6 +4391,21 @@ extension on TranslationsZhCn {
 			'storyNoEntry' => '暂无设定',
 			'storyResponseFailed' => '上次回复中断了',
 			'storyResponseStalled' => '回复超时，已中断，可重试',
+			'unnamedStory' => '未命名故事',
+			'diceSuccess' => '成功',
+			'diceFailure' => '失败',
+			'storyCmdStart' => '开始游戏',
+			'storyCmdNextRound' => '进入下一回合',
+			'storyCmdUse' => ({required Object item}) => '使用 ${item}',
+			'storyCmdEquip' => ({required Object item}) => '装备 ${item}',
+			'storyCmdUnequip' => ({required Object item}) => '卸下 ${item}',
+			'storyCmdDrop' => ({required Object item}) => '丢弃 ${item}',
+			'storyCmdAddress' => ({required Object name}) => '对${name}：',
+			'storyCmdCheckResult' => ({required Object label, required Object detail}) => '【检定结果】${label}：${detail}',
+			'storyCmdProfile' => '【角色档案】',
+			'storyCodexSystem' => '你是世界观设定补全助手，只输出 JSON，不要输出其它文字。',
+			'storyCodexPrompt' => '为下列道具补全图鉴设定，严格输出 JSON：',
+			'storyCodexItems' => '道具',
 			'storyMore' => '更多',
 			'storyNoActions' => '该故事未定义操作',
 			'storyInspect' => '检查',
@@ -4793,6 +4823,8 @@ extension on TranslationsZhCn {
 			'showCropBox' => '显示裁剪框 (可拖动)',
 			'dragToSelectExportArea' => '开启后，拖动以选择导出区域',
 			'startPointMinus1s' => '起点 -1s',
+			_ => null,
+		} ?? switch (path) {
 			'endPointMinus1s' => '终点 -1s',
 			'startPointMinus0_1s' => '起点 -0.1s',
 			'endPointMinus0_1s' => '终点 -0.1s',
@@ -4808,8 +4840,6 @@ extension on TranslationsZhCn {
 			'skills' => '技能',
 			'selectSkills' => '选择技能',
 			'noSkillsAvailable' => '暂无可用技能',
-			_ => null,
-		} ?? switch (path) {
 			'usingTools' => '调用工具中...',
 			'toolCallingTool' => ({required Object tool}) => '调用 ${tool}...',
 			'toolCallLog' => ({required Object count}) => '工具调用: ${count}',
@@ -5307,6 +5337,8 @@ extension on TranslationsZhCn {
 			'noResolutionAvailable' => '无更多清晰度可选',
 			'series' => '系列',
 			'singleEpisode' => '单集 · 共 1 集',
+			_ => null,
+		} ?? switch (path) {
 			'playing' => '正在播放',
 			'selectNone' => '取消全选',
 			'downloadActive' => '正在下载',
@@ -5322,8 +5354,6 @@ extension on TranslationsZhCn {
 			'ungrouped' => '未分组',
 			'localPlayerSpeedTip' => '长按画面切换倍速',
 			'audioTrack' => '音轨',
-			_ => null,
-		} ?? switch (path) {
 			'subtitle' => '字幕',
 			'subtitleOff' => '关闭字幕',
 			'quality' => '清晰度',
