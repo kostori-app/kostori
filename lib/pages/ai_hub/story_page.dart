@@ -2742,6 +2742,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   final Map<String, TextEditingController> _textValues = {};
   final Map<String, int> _numberValues = {};
 
+  /// 开局档案里填的玩家名（供提示词里的 `{{user}}` 使用）
+  String _setupName = '';
+
   /// 运行时故事：角色卡来自独立存储，再并入从设定库选择的条目
   late Story _effective = widget.story;
 
@@ -2920,6 +2923,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.writeln('${part.title}：$value');
       if (part.type == 'number') attrs[part.title] = _partNumber(part);
     }
+    _setupName = _textValues['name']?.text.trim() ?? '';
     final initial = story.initialState.copyWith(attributes: attrs);
     setState(() => _needsSetup = false);
     await _newSession(initialState: initial);
@@ -2933,16 +2937,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }) async {
     final vars = state.variables;
     final persona = story.persona;
-    String sub(String text) {
-      var out = replaceStoryVars(text, vars);
-      if (!persona.isEmpty) {
-        final name = persona.name.trim().isEmpty ? '玩家' : persona.name.trim();
-        out = out
-            .replaceAll('{{user}}', name)
-            .replaceAll('{{persona}}', persona.description.trim());
-      }
-      return out;
-    }
+    // {{user}} = 玩家名（角色卡 > 开局档案 > 默认），{{persona}} = 玩家设定描述
+    final userName = persona.name.trim().isNotEmpty
+        ? persona.name.trim()
+        : (_setupName.isNotEmpty ? _setupName : '玩家');
+    String sub(String text) => replaceStoryVars(text, vars)
+        .replaceAll('{{user}}', userName)
+        .replaceAll('{{persona}}', persona.description.trim());
 
     final buf = StringBuffer(sub(story.buildSystemPrompt()));
     if (!persona.isEmpty) {
