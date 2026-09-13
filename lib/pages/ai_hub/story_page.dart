@@ -2084,9 +2084,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           buf.write('：${sub(c.description.trim())}');
         }
       }
-      if (state.present.isNotEmpty) {
-        buf.write('\n当前在场：${state.present.join('、')}');
-      }
+      buf.write(
+        '\n当前在场：'
+        '${state.present.isEmpty ? '（暂无。仅在剧情推进需要时逐个引入角色，不要一次性让所有角色登场）' : state.present.join('、')}',
+      );
     }
     if (story.achievements.isNotEmpty) {
       buf.write('\n\n【成就（解锁时把 key 加入 achievements，勿自创）】');
@@ -3035,35 +3036,43 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                         ),
                       ),
                     if (story.characters.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-                        child: SizedBox(
-                          height: 34,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: story.characters.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(width: 8),
-                            itemBuilder: (_, i) {
-                              final c = story.characters[i];
-                              final present = _state.present.contains(c.name);
-                              return ActionChip(
-                                avatar: CharacterAvatar(
-                                  name: c.name,
-                                  avatar: c.avatar,
-                                  radius: 10,
-                                ),
-                                label: Text(c.name),
-                                backgroundColor: present
-                                    ? Theme.of(context)
-                                          .colorScheme
-                                          .primaryContainer
-                                    : null,
-                                onPressed: () => _characterMenu(c),
-                              );
-                            },
-                          ),
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final presentChars = [
+                            for (final c in story.characters)
+                              if (_state.present.contains(c.name)) c,
+                          ];
+                          if (presentChars.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                            child: SizedBox(
+                              height: 34,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: presentChars.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (_, i) {
+                                  final c = presentChars[i];
+                                  return ActionChip(
+                                    avatar: CharacterAvatar(
+                                      name: c.name,
+                                      avatar: c.avatar,
+                                      radius: 10,
+                                    ),
+                                    label: Text(c.name),
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
+                                    onPressed: () => _characterMenu(c),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     if (_unregistered.isNotEmpty && !_sending)
                       Padding(
