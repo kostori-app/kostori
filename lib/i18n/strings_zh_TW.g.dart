@@ -1603,6 +1603,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexTrait => '特質';
 	@override String get storyCodexTalent => '天賦';
 	@override String get storyCodexRace => '種族';
+	@override String get storyNpcStatus => '角色狀態';
+	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
+	@override String get storyNpcNoStatus => '暫無角色狀態（該角色尚未出現在數值中）';
 	@override String get storyOwned => '已擁有';
 	@override String get storyNotOwned => '未擁有';
 	@override String get storyLearned => '已習得';
@@ -4384,6 +4387,9 @@ extension on TranslationsZhTw {
 			'storyCodexTrait' => '特質',
 			'storyCodexTalent' => '天賦',
 			'storyCodexRace' => '種族',
+			'storyNpcStatus' => '角色狀態',
+			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
+			'storyNpcNoStatus' => '暫無角色狀態（該角色尚未出現在數值中）',
 			'storyOwned' => '已擁有',
 			'storyNotOwned' => '未擁有',
 			'storyLearned' => '已習得',
@@ -4823,11 +4829,11 @@ extension on TranslationsZhTw {
 			'lanDeviceInfo' => '裝置資訊',
 			'lanDeviceDoesNotSupportQrPairing' => '裝置不支援 QR Code 配對',
 			'lanQrCodeFor' => 'QR Code 用於',
+			_ => null,
+		} ?? switch (path) {
 			'fixedBitrateOptional' => '固定位元率 (選填，將覆蓋 CRF)',
 			'fixedBitrate' => '固定位元率',
 			'paletteColors' => '調色盤顏色',
-			_ => null,
-		} ?? switch (path) {
 			'enableDither' => '啟用抖動 (Dither)',
 			'webpQuality' => 'WebP 品質',
 			'startPointMinus1s' => '起點 -1s',
@@ -5337,11 +5343,11 @@ extension on TranslationsZhTw {
 			'loadingStepBuffer' => '緩衝播放',
 			'downloadEpisode' => '選擇要下載的集數',
 			'downloadNotYet' => '暫無集數可下載',
+			_ => null,
+		} ?? switch (path) {
 			'downloadSelectedCount' => ({required Object n}) => '下載 ${n} 集',
 			'selectResolution' => '選擇解析度',
 			'defaultResolution' => '預設',
-			_ => null,
-		} ?? switch (path) {
 			'noResolutionAvailable' => '無更多畫質可選',
 			'series' => '系列',
 			'singleEpisode' => '單集 · 共 1 集',

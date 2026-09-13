@@ -1602,6 +1602,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexTrait => '特质';
 	@override String get storyCodexTalent => '天赋';
 	@override String get storyCodexRace => '种族';
+	@override String get storyNpcStatus => '角色状态';
+	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
+	@override String get storyNpcNoStatus => '暂无角色状态（该角色尚未出现在数值中）';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4384,6 +4387,9 @@ extension on TranslationsZhCn {
 			'storyCodexTrait' => '特质',
 			'storyCodexTalent' => '天赋',
 			'storyCodexRace' => '种族',
+			'storyNpcStatus' => '角色状态',
+			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
+			'storyNpcNoStatus' => '暂无角色状态（该角色尚未出现在数值中）',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4824,11 +4830,11 @@ extension on TranslationsZhCn {
 			'paletteColors' => '调色板颜色',
 			'paletteColorsHint' => '颜色越少 = 体积越小',
 			'enableDither' => '启用抖动 (Dither)',
+			_ => null,
+		} ?? switch (path) {
 			'ditherHint' => '质量更好，体积略微增大',
 			'webpQuality' => 'WebP 质量',
 			'aspectRatioPresets' => '画面比例预设',
-			_ => null,
-		} ?? switch (path) {
 			'hideCropBox' => '隐藏裁剪框',
 			'showCropBox' => '显示裁剪框 (可拖动)',
 			'dragToSelectExportArea' => '开启后，拖动以选择导出区域',
@@ -5338,11 +5344,11 @@ extension on TranslationsZhCn {
 			'loadingStepLoad' => '加载媒体数据',
 			'loadingStepBuffer' => '缓冲播放',
 			'downloadEpisode' => '选择要下载的剧集',
+			_ => null,
+		} ?? switch (path) {
 			'downloadNotYet' => '暂无选集可下载',
 			'downloadSelectedCount' => ({required Object n}) => '下载 ${n} 集',
 			'selectResolution' => '选择分辨率',
-			_ => null,
-		} ?? switch (path) {
 			'defaultResolution' => '默认',
 			'noResolutionAvailable' => '无更多清晰度可选',
 			'series' => '系列',

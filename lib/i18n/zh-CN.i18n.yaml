@@ -1608,6 +1608,9 @@ storyCodexItem: 物品
 storyCodexTrait: 特质
 storyCodexTalent: 天赋
 storyCodexRace: 种族
+storyNpcStatus: 角色状态
+storyNpcAffinity: 好感度 ${value}
+storyNpcNoStatus: 暂无角色状态（该角色尚未出现在数值中）
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得

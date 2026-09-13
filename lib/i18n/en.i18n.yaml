@@ -1613,6 +1613,9 @@ storyCodexItem: Items
 storyCodexTrait: Traits
 storyCodexTalent: Talents
 storyCodexRace: Races
+storyNpcStatus: NPC status
+storyNpcAffinity: Affinity ${value}
+storyNpcNoStatus: No status for this character yet.
 storyOwned: Owned
 storyNotOwned: Not owned
 storyLearned: Learned

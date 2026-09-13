@@ -690,6 +690,92 @@ class StoryDefinition {
   };
 }
 
+/// 在场角色的运行状态（数值条 / 属性 / 技能 / 携带 / 好感度 / 姿态）
+class NpcState {
+  final String name;
+  final List<StatBar> resources;
+  final Map<String, int> attributes;
+  final List<String> skills;
+  final List<String> inventory;
+
+  /// 好感度（对玩家的态度）
+  final int affinity;
+
+  /// 姿态 / 当前状态描述
+  final String status;
+
+  const NpcState({
+    required this.name,
+    this.resources = const [],
+    this.attributes = const {},
+    this.skills = const [],
+    this.inventory = const [],
+    this.affinity = 0,
+    this.status = '',
+  });
+
+  NpcState copyWith({
+    String? name,
+    List<StatBar>? resources,
+    Map<String, int>? attributes,
+    List<String>? skills,
+    List<String>? inventory,
+    int? affinity,
+    String? status,
+  }) => NpcState(
+    name: name ?? this.name,
+    resources: resources ?? this.resources,
+    attributes: attributes ?? this.attributes,
+    skills: skills ?? this.skills,
+    inventory: inventory ?? this.inventory,
+    affinity: affinity ?? this.affinity,
+    status: status ?? this.status,
+  );
+
+  factory NpcState.fromJson(Map<String, dynamic> json) {
+    final resources = <StatBar>[];
+    final rawRes = json['resources'];
+    if (rawRes is Map) {
+      for (final e in rawRes.entries) {
+        resources.add(StatBar.fromJson(e.key.toString(), e.value));
+      }
+    }
+    final attributes = <String, int>{};
+    final rawAttr = json['attributes'];
+    if (rawAttr is Map) {
+      for (final e in rawAttr.entries) {
+        if (e.value is num) {
+          attributes[e.key.toString()] = (e.value as num).toInt();
+        }
+      }
+    }
+    return NpcState(
+      name: json['name']?.toString() ?? '',
+      resources: resources,
+      attributes: attributes,
+      skills:
+          (json['skills'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
+      inventory:
+          (json['inventory'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
+      affinity: (json['affinity'] as num?)?.toInt() ?? 0,
+      status: json['status']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    if (resources.isNotEmpty)
+      'resources': {for (final r in resources) r.name: r.toJson()},
+    if (attributes.isNotEmpty) 'attributes': attributes,
+    if (skills.isNotEmpty) 'skills': skills,
+    if (inventory.isNotEmpty) 'inventory': inventory,
+    'affinity': affinity,
+    if (status.isNotEmpty) 'status': status,
+  };
+}
+
 /// 游戏状态：AI 每回合输出的结构化数值
 class GameState {
   final List<StatBar> resources;
@@ -715,6 +801,9 @@ class GameState {
   /// 当前在场的角色名（多角色同场）
   final List<String> present;
 
+  /// 在场角色的运行状态（血量 / 好感度等）
+  final List<NpcState> npcs;
+
   /// 已装备的物品名（其 codex 机制生效）
   final List<String> equipped;
 
@@ -737,6 +826,7 @@ class GameState {
     this.gameOver = false,
     this.variables = const {},
     this.present = const [],
+    this.npcs = const [],
     this.equipped = const [],
     this.combat = CombatState.idle,
     this.achievements = const [],
@@ -757,6 +847,7 @@ class GameState {
     bool? gameOver,
     Map<String, String>? variables,
     List<String>? present,
+    List<NpcState>? npcs,
     List<String>? equipped,
     CombatState? combat,
     List<String>? achievements,
@@ -773,6 +864,7 @@ class GameState {
     gameOver: gameOver ?? this.gameOver,
     variables: variables ?? this.variables,
     present: present ?? this.present,
+    npcs: npcs ?? this.npcs,
     equipped: equipped ?? this.equipped,
     combat: combat ?? this.combat,
     achievements: achievements ?? this.achievements,
@@ -823,6 +915,13 @@ class GameState {
             }
           : const {},
       present: (json['present'] as List?)?.whereType<String>().toList() ?? const [],
+      npcs: (json['npcs'] is List)
+          ? [
+              for (final e in json['npcs'] as List)
+                if (e is Map)
+                  NpcState.fromJson(e.cast<String, dynamic>()),
+            ]
+          : const [],
       equipped: (json['equipped'] as List?)?.whereType<String>().toList() ??
           const [],
       combat: json['combat'] is Map
@@ -847,6 +946,7 @@ class GameState {
     'gameOver': gameOver,
     'variables': variables,
     'present': present,
+    if (npcs.isNotEmpty) 'npcs': [for (final n in npcs) n.toJson()],
     'equipped': equipped,
     'combat': combat.toJson(),
     'achievements': achievements,
@@ -1192,7 +1292,8 @@ class Story {
     "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}],
     "situation": "当前局势/所在环境的简述（可选，展示在局势页签）",
     "varOps": [{"name": "变量名", "delta": 5}, {"name": "变量名2", "set": "取值"}],
-    "present": ["在场角色名"]
+    "present": ["在场角色名"],
+    "npcs": [{"name":"角色名","resources":{"资源名":{"cur":100,"max":100}},"attributes":{"属性名":5},"skills":["技能"],"inventory":["物品 x1"],"affinity":0,"status":"姿态/状态"}]
   },
   "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
   "choices": ["选项A", "选项B", "选项C"],
@@ -1206,6 +1307,7 @@ class Story {
 - **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
 - **变量**：用 varOps 记录本回合变量的变化（只写变化的项）：数值增减用 delta，其它用 set 赋值；键名须与已声明变量一致，并遵守其类型/范围/取值。没有变化时给空数组。
 - **在场角色**：present 必须每回合给出当前场景中实际出场的角色名（对应角色设定），无人在场时给空数组；角色随剧情逐个进出，不要一次性让所有角色登场。
+- **角色状态**：npcs 给出在场角色的运行状态：resources（生命等数值条）、attributes（属性）、skills（技能）、inventory（携带）、affinity（对玩家的好感度）、status（姿态/状态描述）。角色并非无敌，受伤、消耗、好感变化都要反映在 npcs 里；不在场可省略。
 - **装备**：equipped 列出当前已装备的物品（必须在 inventory 中）；装备的 codex 机制生效，未装备则不生效。
 - **战斗**：进入战斗时给出 combat（active=true、round、敌人血量），战斗结束设 active=false；回合推进由玩家发起。
 - **任务链**：同一 chain 的任务构成任务链，用 stage/totalStages 标记阶段，完成/失败改 status。

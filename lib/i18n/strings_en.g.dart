@@ -4732,6 +4732,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Races'
 	String get storyCodexRace => 'Races';
 
+	/// en: 'NPC status'
+	String get storyNpcStatus => 'NPC status';
+
+	/// en: 'Affinity ${value}'
+	String storyNpcAffinity({required Object value}) => 'Affinity ${value}';
+
+	/// en: 'No status for this character yet.'
+	String get storyNpcNoStatus => 'No status for this character yet.';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9796,6 +9805,9 @@ extension on Translations {
 			'storyCodexTrait' => 'Traits',
 			'storyCodexTalent' => 'Talents',
 			'storyCodexRace' => 'Races',
+			'storyNpcStatus' => 'NPC status',
+			'storyNpcAffinity' => ({required Object value}) => 'Affinity ${value}',
+			'storyNpcNoStatus' => 'No status for this character yet.',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10235,11 +10247,11 @@ extension on Translations {
 			'startPointPlus1s' => 'Start +1s',
 			'endPointPlus1s' => 'End +1s',
 			'withAudio' => 'With Audio',
+			_ => null,
+		} ?? switch (path) {
 			'noAudio' => 'No Audio',
 			'ditherOn' => 'Dither On',
 			'ditherOff' => 'Dither Off',
-			_ => null,
-		} ?? switch (path) {
 			'gifFormat' => 'GIF',
 			'apngFormat' => 'APNG',
 			'webpFormat' => 'WebP',
@@ -10749,11 +10761,11 @@ extension on Translations {
 			'loadingStepLoad' => 'Loading media',
 			'loadingStepBuffer' => 'Buffering',
 			'downloadEpisode' => 'Select episode to download',
+			_ => null,
+		} ?? switch (path) {
 			'downloadNotYet' => 'No episodes available to download',
 			'downloadSelectedCount' => ({required Object n}) => 'Download ${n} episodes',
 			'selectResolution' => 'Select resolution',
-			_ => null,
-		} ?? switch (path) {
 			'defaultResolution' => 'Default',
 			'noResolutionAvailable' => 'No more qualities available',
 			'series' => 'Series',

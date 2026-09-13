@@ -2476,6 +2476,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.monitor_heart_outlined),
+              title: Text(t.storyNpcStatus),
+              subtitle: Text(
+                t.storyNpcAffinity(
+                  value: '${_npcState(c.name)?.affinity ?? 0}',
+                ),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _showNpcStatus(c);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.chat_bubble_outline),
               title: Text(t.storyTalkTo),
               onTap: () {
@@ -2487,6 +2500,144 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         ),
       ),
     );
+  }
+
+  /// 按角色名取该角色的运行状态
+  NpcState? _npcState(String name) {
+    for (final n in _state.npcs) {
+      if (n.name == name) return n;
+    }
+    return null;
+  }
+
+  /// 角色状态面板：好感度 / 姿态 / 数值条 / 属性 / 技能 / 携带
+  Future<void> _showNpcStatus(CharacterCard c) async {
+    final npc = _npcState(c.name);
+    if (npc == null) {
+      App.rootContext.showMessage(
+        message: t.storyNpcNoStatus,
+        level: LogLevel.info,
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: c.name,
+        icon: Icons.monitor_heart_outlined,
+        initialSize: 0.72,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: _npcStatusWidgets(npc),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _npcStatusWidgets(NpcState npc) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget title(String s, IconData icon) => Padding(
+      padding: const EdgeInsets.only(top: 14, bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: scheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            s,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final out = <Widget>[
+      Row(
+        children: [
+          const Icon(Icons.favorite, size: 16, color: Colors.pinkAccent),
+          const SizedBox(width: 6),
+          Text(
+            t.storyNpcAffinity(value: '${npc.affinity}'),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    ];
+    if (npc.status.trim().isNotEmpty) {
+      out.add(const SizedBox(height: 8));
+      out.add(
+        Text(
+          npc.status.trim(),
+          style: const TextStyle(fontSize: 13, height: 1.5),
+        ),
+      );
+    }
+    if (npc.resources.isNotEmpty) {
+      out.add(title(t.storyState, Icons.monitor_heart_outlined));
+      for (final r in npc.resources) {
+        out.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${r.name}  ${r.cur}/${r.max}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: r.max <= 0 ? 0 : (r.cur / r.max).clamp(0.0, 1.0),
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+    if (npc.attributes.isNotEmpty) {
+      out.add(title(t.storyAttributes, Icons.tune));
+      out.add(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final e in npc.attributes.entries)
+              Chip(label: Text('${e.key} ${e.value}')),
+          ],
+        ),
+      );
+    }
+    if (npc.skills.isNotEmpty) {
+      out.add(title(t.skills, Icons.sports_martial_arts_outlined));
+      out.add(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [for (final s in npc.skills) Chip(label: Text(s))],
+        ),
+      );
+    }
+    if (npc.inventory.isNotEmpty) {
+      out.add(title(t.storyInventory, Icons.inventory_2_outlined));
+      out.add(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [for (final s in npc.inventory) Chip(label: Text(s))],
+        ),
+      );
+    }
+    return out;
   }
 
   /// 按角色名取头像（找不到时用默认）
@@ -2534,6 +2685,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return state.copyWith(resources: merged);
   }
 
+  /// 合并在场角色状态：模型给出的优先，之前已有但本次漏报的保留
+  GameState _mergeNpcs(GameState state) {
+    if (state.npcs.isEmpty && _state.npcs.isEmpty) return state;
+    final merged = <NpcState>[];
+    final seen = <String>{};
+    for (final n in state.npcs) {
+      if (seen.add(n.name)) merged.add(n);
+    }
+    for (final n in _state.npcs) {
+      if (seen.add(n.name)) merged.add(n);
+    }
+    return state.copyWith(npcs: merged);
+  }
+
   /// 应用解析出的状态并持久化（含未登记道具校验 / 成就解锁提示）
   Future<void> _applyState(GameState? state) async {
     final sessionId = _sessionId;
@@ -2554,6 +2719,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     next = next.copyWith(codex: mergedCodex);
     // 资源合并：模型偶尔漏报部分数值条（如体力/进食），按初始状态顺序补齐
     next = _mergeResources(next, extra: _state.resources);
+    // 角色状态合并：模型漏报时保留上一回合的值
+    next = _mergeNpcs(next);
     // 致命资源归零 → 游戏结束
     if (!next.gameOver && story.deathResources.isNotEmpty) {
       final death = story.deathResources.toSet();
