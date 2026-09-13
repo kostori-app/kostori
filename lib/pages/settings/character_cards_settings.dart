@@ -54,10 +54,7 @@ class _CharacterCardsSettingsPageState
   }
 
   Future<void> _export(CharacterCard card) async {
-    await saveFile(
-      data: utf8.encode(jsonEncode(card.toSillyTavernJson())),
-      filename: '${card.name}.json',
-    );
+    await exportCharacterCardPng(card);
   }
 
   @override

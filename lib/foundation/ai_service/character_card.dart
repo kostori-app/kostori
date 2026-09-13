@@ -161,6 +161,91 @@ class CharacterCard {
     },
   };
 
+  /// 酒馆角色卡文本：V2 JSON 的 base64
+  String toCharaText() =>
+      base64.encode(utf8.encode(jsonEncode(toSillyTavernJson())));
+
+  /// 头像若为图片 data URL 则解码出原始字节
+  Uint8List? decodeAvatarImage() {
+    final a = avatar.trim();
+    if (!a.startsWith('data:image')) return null;
+    final comma = a.indexOf(',');
+    if (comma < 0) return null;
+    try {
+      return base64.decode(a.substring(comma + 1));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 把 chara 文本作为 tEXt 块写入 PNG（插在 IEND 之前）
+  static Uint8List embedCharaChunk(Uint8List png, String charaText) {
+    const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+    if (png.length < 8) return png;
+    for (var i = 0; i < 8; i++) {
+      if (png[i] != signature[i]) return png;
+    }
+
+    final iendType = ascii.encode('IEND');
+    int? iendOffset;
+    var offset = 8;
+    while (offset + 8 <= png.length) {
+      final length = _readUint32(png, offset);
+      final typeStart = offset + 4;
+      final dataEnd = offset + 8 + length;
+      if (dataEnd + 4 > png.length) break;
+      var isIend = true;
+      for (var i = 0; i < 4; i++) {
+        if (png[typeStart + i] != iendType[i]) {
+          isIend = false;
+          break;
+        }
+      }
+      if (isIend) {
+        iendOffset = offset;
+        break;
+      }
+      offset = dataEnd + 4;
+    }
+    if (iendOffset == null) return png;
+
+    final chunkData = <int>[
+      ...ascii.encode('chara'),
+      0,
+      ...ascii.encode(charaText),
+    ];
+    final typeAndData = <int>[...ascii.encode('tEXt'), ...chunkData];
+    final chunk = <int>[
+      ..._uint32(chunkData.length),
+      ...typeAndData,
+      ..._uint32(_crc32(typeAndData)),
+    ];
+
+    return Uint8List.fromList([
+      ...png.sublist(0, iendOffset),
+      ...chunk,
+      ...png.sublist(iendOffset),
+    ]);
+  }
+
+  static List<int> _uint32(int value) => [
+    (value >> 24) & 0xFF,
+    (value >> 16) & 0xFF,
+    (value >> 8) & 0xFF,
+    value & 0xFF,
+  ];
+
+  static int _crc32(List<int> bytes) {
+    var crc = 0xFFFFFFFF;
+    for (final b in bytes) {
+      crc ^= b;
+      for (var i = 0; i < 8; i++) {
+        crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : crc >> 1;
+      }
+    }
+    return (crc ^ 0xFFFFFFFF) & 0xFFFFFFFF;
+  }
+
   /// 供系统提示词注入的文本
   String toPrompt() {
     final buf = StringBuffer('【角色：$name】');

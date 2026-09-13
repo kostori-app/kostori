@@ -1,9 +1,12 @@
 // 角色卡编辑 / 查看组件（故事与全局角色卡库共用）
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/utils/io.dart';
 
 /// 打开角色卡编辑器，返回编辑后的卡片（取消时为 null）
 Future<CharacterCard?> showCharacterCardEditor(
@@ -252,6 +255,71 @@ class CharacterCardView extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 渲染角色卡图片（头像 emoji + 名字，纯色渐变背景）
+Future<Uint8List?> renderCharacterCardImage(
+  CharacterCard card, {
+  double size = 512,
+}) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  final rect = Rect.fromLTWH(0, 0, size, size);
+  final hash = card.name.codeUnits.fold<int>(0, (a, b) => a + b);
+  final baseColor = HSVColor.fromAHSV(
+    1,
+    (hash * 37) % 360,
+    0.45,
+    0.35,
+  ).toColor();
+  final paint = Paint()
+    ..shader = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [baseColor, baseColor.withValues(alpha: 0.6)],
+    ).createShader(rect);
+  canvas.drawRect(rect, paint);
+
+  final avatarTp = TextPainter(
+    text: TextSpan(
+      text: card.avatar.isEmpty ? '🧑' : card.avatar,
+      style: TextStyle(fontSize: size * 0.42),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  avatarTp.paint(canvas, Offset((size - avatarTp.width) / 2, size * 0.16));
+
+  final nameTp = TextPainter(
+    text: TextSpan(
+      text: card.name,
+      style: TextStyle(
+        fontSize: size * 0.09,
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+    textAlign: TextAlign.center,
+    maxLines: 2,
+    ellipsis: '…',
+  )..layout(maxWidth: size * 0.86);
+  nameTp.paint(canvas, Offset((size - nameTp.width) / 2, size * 0.68));
+
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(size.toInt(), size.toInt());
+  final data = await image.toByteData(format: ui.ImageByteFormat.png);
+  picture.dispose();
+  image.dispose();
+  return data?.buffer.asUint8List();
+}
+
+/// 导出角色卡为 PNG（内嵌 chara 块），酒馆可直接导入
+Future<void> exportCharacterCardPng(CharacterCard card) async {
+  final base =
+      card.decodeAvatarImage() ?? await renderCharacterCardImage(card);
+  if (base == null) return;
+  final png = CharacterCard.embedCharaChunk(base, card.toCharaText());
+  await saveFile(data: png, filename: '${card.name}.png');
 }
 
 /// 以底部弹窗展示角色卡

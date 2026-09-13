@@ -1310,6 +1310,11 @@ class _StoryEditorState extends State<_StoryEditor> {
                   onPressed: () => _editCharacter(i),
                 ),
                 IconButton(
+                  icon: const Icon(Icons.save_alt),
+                  tooltip: t.characterExport,
+                  onPressed: () => exportCharacterCardPng(_characters[i]),
+                ),
+                IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => setState(() => _characters.removeAt(i)),
                 ),
