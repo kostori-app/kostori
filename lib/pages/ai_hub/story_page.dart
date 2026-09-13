@@ -2259,9 +2259,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       return false;
     }
 
+    // 明显不是道具的（长句/带句读）忽略
+    bool looksLikeItem(String item) =>
+        item.length <= 40 &&
+        !item.contains('。') &&
+        !item.contains('；') &&
+        !item.contains('！') &&
+        !item.contains('？');
+
     return [
       for (final item in state.inventory)
-        if (!isRegistered(item)) item,
+        if (looksLikeItem(item) && !isRegistered(item)) item,
     ];
   }
 
@@ -2358,6 +2366,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       story.id,
       StorySession(sessionId: sessionId, state: next),
     );
+    // 有新道具未登记则自动后台补全（无需手动）
+    if (unregistered.isNotEmpty && !_registering) {
+      unawaited(_registerUnregistered());
+    }
   }
 
   /// 消息长按菜单：复制 / 编辑 / 重生成 / 删除
@@ -3354,6 +3366,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             Widget roleTile(
               String label,
               StoryRoleStyle role,
+              StoryRoleStyle defaultRole,
               Color fallback,
               ValueChanged<StoryRoleStyle> onChanged, {
               bool allowFontStyle = true,
@@ -3391,8 +3404,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       IconButton(
                         icon: const Icon(Icons.restart_alt, size: 18),
                         tooltip: t.reset,
-                        onPressed: () =>
-                            onChanged(role.copyWith(clearColor: true)),
+                        onPressed: () => onChanged(defaultRole),
                       ),
                     ],
                   ),
@@ -3463,18 +3475,21 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 roleTile(
                   t.storyQuote,
                   s.quote,
+                  StoryTextStyle.defaults.quote,
                   scheme.primary,
                   (r) => store.update(s.copyWith(quote: r)),
                 ),
                 roleTile(
                   t.storyBracket,
                   s.bracket,
+                  StoryTextStyle.defaults.bracket,
                   scheme.onSurfaceVariant,
                   (r) => store.update(s.copyWith(bracket: r)),
                 ),
                 roleTile(
                   t.storyItalic,
                   s.italic,
+                  StoryTextStyle.defaults.italic,
                   scheme.onSurfaceVariant,
                   (r) => store.update(s.copyWith(italic: r)),
                   allowFontStyle: false,
@@ -3482,6 +3497,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 roleTile(
                   t.storyBold,
                   s.bold,
+                  StoryTextStyle.defaults.bold,
                   scheme.onSurface,
                   (r) => store.update(s.copyWith(bold: r)),
                   allowFontStyle: false,

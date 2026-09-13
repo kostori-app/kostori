@@ -43,25 +43,16 @@ class _AiRequestLogPageState extends State<AiRequestLogPage> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Appbar(
-          title: Text(t.aiRequestLog),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            tooltip: t.back,
-            onPressed: () => context.canPop() ? context.pop() : App.pop(),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: t.clear,
-              onPressed: _clear,
-            ),
-          ],
+    return PopUpWidgetScaffold(
+      title: t.aiRequestLog,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: t.clear,
+          onPressed: _clear,
         ),
-        Expanded(
-          child: ListenableBuilder(
+      ],
+      body: ListenableBuilder(
             listenable: AiRequestLogService.instance,
             builder: (context, _) {
               final entries = AiRequestLogService.instance.entries;
@@ -154,8 +145,6 @@ class _AiRequestLogPageState extends State<AiRequestLogPage> {
               );
             },
           ),
-        ),
-      ],
     );
   }
 }

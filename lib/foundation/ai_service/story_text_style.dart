@@ -124,6 +124,9 @@ class StoryTextStyle {
     this.bold = _defaultBold,
   });
 
+  /// 默认样式（重置时回到这里）
+  static const defaults = StoryTextStyle();
+
   StoryTextStyle copyWith({
     bool? shadow,
     bool? systemFont,

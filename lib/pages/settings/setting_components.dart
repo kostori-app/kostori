@@ -863,11 +863,16 @@ class _SettingCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Padding(
           padding: padding,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [...children, const SizedBox(height: 8)],
-          ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // padding 为 0 时（整卡 ListTile）不再留底部间隙，
+                  // 否则水波纹盖不满整卡
+                  children: [
+                    ...children,
+                    if (padding != EdgeInsets.zero) const SizedBox(height: 8),
+                  ],
+                ),
         ),
       ),
     );

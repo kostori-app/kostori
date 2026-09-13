@@ -1464,7 +1464,26 @@ class _StoryText extends StatelessWidget {
         if (index < text.length) {
           spans.add(TextSpan(text: text.substring(index), style: base));
         }
-        return SelectableText.rich(TextSpan(children: spans));
+        final rendered = SelectableText.rich(TextSpan(children: spans));
+        // 通用兜底：以【标签】开头的段落按引用块样式渲染（左竖条）
+        final trimmed = text.trimLeft();
+        final close = trimmed.indexOf('】');
+        final isCallout = trimmed.startsWith('【') && close > 1 && close <= 12;
+        if (!isCallout) return rendered;
+        return Container(
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow.withValues(alpha: 0.5),
+            border: Border(
+              left: BorderSide(color: scheme.primary, width: 3),
+            ),
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          child: rendered,
+        );
       },
     );
   }
