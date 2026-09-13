@@ -282,9 +282,71 @@ Future<void> _writeMergeFilesFor(String key) async {
   }
 }
 
-/// 导出单个部分为独立 zip
+/// 某部分包含的本地文件（archive 内名 → 本地路径）
+List<(String, String)> _partEntries(String key) {
+  final dp = App.dataPath;
+  final out = <(String, String)>[];
+  void add(String name, String path) {
+    if (File(path).existsSync()) out.add((name, path));
+  }
+
+  void addDir(String archiveDir, String localDir) {
+    final d = Directory(localDir);
+    if (!d.existsSync()) return;
+    for (final f in d.listSync()) {
+      if (f is File) {
+        out.add(('$archiveDir/${f.uri.pathSegments.last}', f.path));
+      }
+    }
+  }
+
+  if (key == 'ai') {
+    add('ai_database.db', FilePath.join(dp, 'ai_database.db'));
+  } else if (key == 'history') {
+    add('history.db', FilePath.join(dp, 'history.db'));
+    add(
+      'history_merge.json',
+      FilePath.join(App.cachePath, 'history_merge.json'),
+    );
+    add(
+      'plugin_history_merge.json',
+      FilePath.join(App.cachePath, 'plugin_history_merge.json'),
+    );
+    add(
+      'text_rules_merge.json',
+      FilePath.join(App.cachePath, 'text_rules_merge.json'),
+    );
+  } else if (key == 'favorites') {
+    add('local_favorite.db', FilePath.join(dp, 'local_favorite.db'));
+    add(
+      'favorites_merge.json',
+      FilePath.join(App.cachePath, 'favorites_merge.json'),
+    );
+  } else if (key == 'stats') {
+    add('stats.db', FilePath.join(dp, 'stats.db'));
+    add('stats_merge.json', FilePath.join(App.cachePath, 'stats_merge.json'));
+  } else if (key == 'bangumi') {
+    add('bangumi.db', FilePath.join(dp, 'bangumi.db'));
+  } else if (key == 'search') {
+    add('search_history.db', FilePath.join(dp, 'search_history.db'));
+  } else if (key == 'cookies') {
+    add('cookie.db', FilePath.join(dp, 'cookie.db'));
+  } else if (key == 'data') {
+    // 故事 / 角色卡 / 存档 / 世界书 / 设定库 / 技能等走「选择性同步」，
+    // 不放进整包，避免重复与体积膨胀
+    add('appdata.json', FilePath.join(dp, 'appdata.json'));
+    addDir('anime_source', FilePath.join(dp, 'anime_source'));
+    addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
+  }
+  return out;
+}
+
+/// 生成某部分需要的合并文件（上传/计算哈希前调用一次）
+Future<void> prepareSyncPart(String key) => _writeMergeFilesFor(key);
+
+/// 导出单个部分为独立 zip（调用前先 [prepareSyncPart]）
 Future<File> exportPart(String key) async {
-  await _writeMergeFilesFor(key);
+  final entries = _partEntries(key);
   final dir = Directory(FilePath.join(App.cachePath, 'sync_part'));
   if (dir.existsSync()) dir.deleteSync(recursive: true);
   dir.createSync(recursive: true);
@@ -293,68 +355,8 @@ Future<File> exportPart(String key) async {
   try {
     await Isolate.run(() {
       final zip = ZipFile.open(zipPath);
-      final dp = App.dataPath;
-      void add(String name, String path) {
-        if (File(path).existsSync()) zip.addFile(name, path);
-      }
-
-      void addDir(String archiveDir, String localDir) {
-        final d = Directory(localDir);
-        if (!d.existsSync()) return;
-        for (final f in d.listSync()) {
-          if (f is File) {
-            zip.addFile('$archiveDir/${f.uri.pathSegments.last}', f.path);
-          }
-        }
-      }
-
-      if (key == 'ai') {
-        add('ai_database.db', FilePath.join(dp, 'ai_database.db'));
-      } else if (key == 'history') {
-        add('history.db', FilePath.join(dp, 'history.db'));
-        add(
-          'history_merge.json',
-          FilePath.join(App.cachePath, 'history_merge.json'),
-        );
-        add(
-          'plugin_history_merge.json',
-          FilePath.join(App.cachePath, 'plugin_history_merge.json'),
-        );
-        add(
-          'text_rules_merge.json',
-          FilePath.join(App.cachePath, 'text_rules_merge.json'),
-        );
-      } else if (key == 'favorites') {
-        add('local_favorite.db', FilePath.join(dp, 'local_favorite.db'));
-        add(
-          'favorites_merge.json',
-          FilePath.join(App.cachePath, 'favorites_merge.json'),
-        );
-      } else if (key == 'stats') {
-        add('stats.db', FilePath.join(dp, 'stats.db'));
-        add('stats_merge.json', FilePath.join(App.cachePath, 'stats_merge.json'));
-      } else if (key == 'bangumi') {
-        add('bangumi.db', FilePath.join(dp, 'bangumi.db'));
-      } else if (key == 'search') {
-        add('search_history.db', FilePath.join(dp, 'search_history.db'));
-      } else if (key == 'cookies') {
-        add('cookie.db', FilePath.join(dp, 'cookie.db'));
-      } else if (key == 'data') {
-        add('appdata.json', FilePath.join(dp, 'appdata.json'));
-        addDir('anime_source', FilePath.join(dp, 'anime_source'));
-        addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
-        for (final d in const [
-          'character_cards',
-          'stories',
-          'story_sessions',
-          'prompt_injections',
-          'world_book',
-          'setting_library',
-          'story_characters',
-          'ai_skills',
-        ]) {
-          addDir(d, FilePath.join(dp, d));
-        }
+      for (final e in entries) {
+        zip.addFile(e.$1, e.$2);
       }
       zip.close();
     });
@@ -362,6 +364,33 @@ Future<File> exportPart(String key) async {
     HistoryWriteService.resume();
   }
   return File(zipPath);
+}
+
+/// 某部分内容的哈希（内容不变则无需重新上传）
+Future<String> partContentHash(String key) async {
+  final entries = _partEntries(key);
+  return Isolate.run(() {
+    var hash = 0xcbf29ce484222325;
+    void mix(List<int> bytes) {
+      for (final b in bytes) {
+        hash ^= b;
+        hash = (hash * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF;
+      }
+    }
+
+    for (final e in entries) {
+      mix(utf8.encode(e.$1));
+      final bytes = File(e.$2).readAsBytesSync();
+      mix([
+        bytes.length & 0xff,
+        (bytes.length >> 8) & 0xff,
+        (bytes.length >> 16) & 0xff,
+        (bytes.length >> 24) & 0xff,
+      ]);
+      mix(bytes);
+    }
+    return hash.toRadixString(16);
+  });
 }
 
 Future<void> importAppData(File file, [bool checkVersion = false]) async {

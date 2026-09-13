@@ -176,6 +176,7 @@ class DataSync with ChangeNotifier {
     final client = _client();
     if (client == null) return const Res.error('Invalid WebDAV configuration');
     try {
+      await prepareSyncPart(part.key);
       final file = await exportPart(part.key);
       try {
         final dir = _normDir(part.dir);
@@ -245,8 +246,23 @@ class DataSync with ChangeNotifier {
         final newVersion = (appdata.settings['dataVersion'] as int? ?? 0) + 1;
         appdata.settings['dataVersion'] = newVersion;
         await appdata.saveData(false);
+        // 读取旧清单：内容未变化的部分跳过上传（哈希比对）
+        final prevRes = await readManifest();
+        final prevParts =
+            (prevRes.data?['parts'] as Map?)?.cast<String, dynamic>() ??
+            const <String, dynamic>{};
         final partsMeta = <String, dynamic>{};
+        var uploaded = 0;
         for (final part in syncParts) {
+          await prepareSyncPart(part.key);
+          final hash = await partContentHash(part.key);
+          final prev = prevParts[part.key];
+          final prevHash = prev is Map ? prev['hash']?.toString() : null;
+          if (prevHash != null && prevHash == hash) {
+            // 未变化：跳过上传，沿用旧元数据
+            partsMeta[part.key] = prev;
+            continue;
+          }
           final file = await exportPart(part.key);
           try {
             final bytes = await file.readAsBytes();
@@ -264,7 +280,9 @@ class DataSync with ChangeNotifier {
               'version': newVersion,
               'size': bytes.length,
               'time': DateTime.now().millisecondsSinceEpoch,
+              'hash': hash,
             };
+            uploaded++;
           } finally {
             file.deleteIgnoreError();
           }
@@ -278,7 +296,7 @@ class DataSync with ChangeNotifier {
         await client.write(_manifestName, utf8.encode(manifest));
         Log.info(
           "Upload Data",
-          "Uploaded ${syncParts.length} parts (v$newVersion)",
+          "Uploaded $uploaded/${syncParts.length} parts (v$newVersion)",
         );
         return const Res(true);
       } catch (e, s) {
