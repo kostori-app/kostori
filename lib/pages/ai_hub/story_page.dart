@@ -2121,6 +2121,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         sessionId: sessionId,
         userMessage: outgoing,
         taskType: 'story',
+        useTools: false,
         providerOverride: aiHubProvider(),
         systemPromptOverride: await _systemPromptFor(
           _state,

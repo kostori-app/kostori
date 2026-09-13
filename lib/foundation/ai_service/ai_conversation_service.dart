@@ -1022,6 +1022,7 @@ class AiConversationService {
       sessionId: sessionId,
       userMessage: prompt,
       taskType: taskType,
+      useTools: false,
       maxContextMessages: 0,
       systemPromptOverride: systemPrompt,
     );
