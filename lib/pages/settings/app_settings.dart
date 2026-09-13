@@ -115,21 +115,6 @@ class _AppSettingsState extends State<AppSettings> {
                     showPopUpWidget(context, const _WebdavSetting());
                   },
                 ),
-                _CallbackSetting(
-                  title: t.hubUploadedImages,
-                  subtitle: t.hubUploadedImagesHint,
-                  actionTitle: t.manage,
-                  callback: () {
-                    showPopUpWidget(context, const _HubUploadedImagesPage());
-                  },
-                ),
-                _CallbackSetting(
-                  title: t.hubStickers,
-                  actionTitle: t.manage,
-                  callback: () {
-                    showPopUpWidget(context, const _HubStickersPage());
-                  },
-                ),
               ],
             ),
           ),
@@ -245,6 +230,35 @@ class _AppSettingsState extends State<AppSettings> {
               ),
             ),
           ),
+        // Hub 管理
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.hubManagement,
+                  icon: Icons.hub_outlined,
+                ),
+                _CallbackSetting(
+                  title: t.hubUploadedImages,
+                  subtitle: t.hubUploadedImagesHint,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(context, const _HubUploadedImagesPage());
+                  },
+                ),
+                _CallbackSetting(
+                  title: t.hubStickers,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(context, const _HubStickersPage());
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
