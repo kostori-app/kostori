@@ -112,108 +112,164 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _import() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    if (result == null || result.files.isEmpty) return;
+    try {
+      final text = utf8.decode(await result.files.first.readAsBytes());
+      final decoded = jsonDecode(text);
+      if (decoded is! List) throw 'invalid';
+      var count = 0;
+      for (final e in decoded) {
+        if (e is Map) {
+          await SettingLibraryStore.instance.upsert(
+            SettingEntry.fromJson(e.cast<String, dynamic>()),
+          );
+          count++;
+        }
+      }
+      App.rootContext.showMessage(message: t.importedEntries(count: count));
+    } catch (e) {
+      Log.error('importSettingLibrary', e.toString());
+      App.rootContext.showMessage(
+        message: t.importFailed,
+        level: LogLevel.error,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final store = SettingLibraryStore.instance;
-    return ListenableBuilder(
-      listenable: store,
-      builder: (context, _) {
-        final items = store.items;
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          floatingActionButton: FloatingActionButton(
-            onPressed: _add,
-            tooltip: t.storyAddEntry,
-            child: const Icon(Icons.add),
-          ),
-          body: items.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      t.storySettingLibraryEmpty,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: scheme.onSurfaceVariant),
-                    ),
-                  ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                  children: [
-                    for (final type in SettingTypes.all)
-                      if (store.byType(type).isNotEmpty) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 4),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _typeIcon(type),
-                                size: 16,
-                                color: scheme.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _typeLabel(type),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        for (final e in store.byType(type))
-                          _SettingCard(
-                            children: [
-                              ListTile(
-                                dense: true,
-                                leading: Icon(_typeIcon(type), size: 20),
-                                title: Text(
-                                  e.name.isEmpty ? e.id : e.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                subtitle: Text(
-                                  _entrySummary(e),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      iconSize: 18,
-                                      tooltip: t.edit,
-                                      icon: const Icon(Icons.edit_note, size: 18),
-                                      onPressed: () => _edit(e),
-                                    ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      iconSize: 18,
-                                      tooltip: t.delete,
-                                      icon: Icon(
-                                        Icons.delete_outline,
-                                        size: 18,
-                                        color: scheme.error,
-                                      ),
-                                      onPressed: () async {
-                                        await SettingLibraryStore.instance
-                                            .remove(e.id);
-                                        if (mounted) setState(() {});
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                  ],
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
+            children: [
+              const Icon(Icons.category_outlined, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  t.storySettingLibraryHint,
+                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                 ),
-        );
-      },
+              ),
+              IconButton(
+                icon: const Icon(Icons.file_open_outlined),
+                tooltip: t.importEntries,
+                onPressed: _import,
+              ),
+              IconButton(
+                icon: const Icon(Icons.save_alt),
+                tooltip: t.exportEntries,
+                onPressed: () => _exportJson(
+                  [for (final e in store.items) e.toJson()],
+                  'setting_library.json',
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: t.storyAddEntry,
+                onPressed: _add,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListenableBuilder(
+            listenable: store,
+            builder: (context, _) {
+              final items = store.items;
+              if (items.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(t.storySettingLibraryEmpty, style: ts.s12),
+                );
+              }
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  for (final type in SettingTypes.all)
+                    if (store.byType(type).isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _typeIcon(type),
+                              size: 16,
+                              color: scheme.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _typeLabel(type),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      for (final e in store.byType(type))
+                        _SettingCard(
+                          children: [
+                            ListTile(
+                              dense: true,
+                              leading: Icon(_typeIcon(type), size: 20),
+                              title: Text(
+                                e.name.isEmpty ? e.id : e.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                _entrySummary(e),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    iconSize: 18,
+                                    tooltip: t.edit,
+                                    icon: const Icon(Icons.edit_note, size: 18),
+                                    onPressed: () => _edit(e),
+                                  ),
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    iconSize: 18,
+                                    tooltip: t.delete,
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: scheme.error,
+                                    ),
+                                    onPressed: () async {
+                                      await SettingLibraryStore.instance.remove(
+                                        e.id,
+                                      );
+                                      if (mounted) setState(() {});
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
