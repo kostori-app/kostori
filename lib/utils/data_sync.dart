@@ -166,6 +166,9 @@ class DataSync with ChangeNotifier {
     appdata.writeImplicitData();
   }
 
+  /// 参与整包自动同步的部分（选择性同步专用的部分不在此列）
+  Iterable<SyncPart> get _autoParts => syncParts.where((p) => p.autoSync);
+
   /// 读取远端清单（无则返回 null）
   Future<Res<Map<String, dynamic>?>> readManifest() async {
     final client = _client();
@@ -240,7 +243,7 @@ class DataSync with ChangeNotifier {
         const <String, dynamic>{};
     final newHashes = <String, dynamic>{...localHashes};
     var downloaded = 0;
-    for (final part in syncParts) {
+    for (final part in _autoParts) {
       final meta = remoteMeta[part.key];
       if (meta is! Map) continue;
       final remoteHash = meta['hash']?.toString();
@@ -469,9 +472,10 @@ class DataSync with ChangeNotifier {
         final prevParts =
             (prevManifest?['parts'] as Map?)?.cast<String, dynamic>() ??
             const <String, dynamic>{};
-        final partsMeta = <String, dynamic>{};
+        // 从旧清单开始，保留选择性同步专用的部分（如 ai_tasks）
+        final partsMeta = <String, dynamic>{...prevParts};
         var uploaded = 0;
-        for (final part in syncParts) {
+        for (final part in _autoParts) {
           await prepareSyncPart(part.key);
           final hash = await partContentHash(part.key);
           final prev = prevParts[part.key];
@@ -534,7 +538,7 @@ class DataSync with ChangeNotifier {
         appdata.writeImplicitData();
         Log.info(
           "Upload Data",
-          "Uploaded $uploaded/${syncParts.length} parts (v$newVersion)",
+          "Uploaded $uploaded/${_autoParts.length} parts (v$newVersion)",
         );
         return const Res(true);
       } catch (e, s) {
@@ -591,7 +595,7 @@ class DataSync with ChangeNotifier {
         final downloaded = await _pullParts(client, remoteMeta);
         Log.info(
           "Data Sync",
-          "Downloaded $downloaded/${syncParts.length} parts (v$version)",
+          "Downloaded $downloaded/${_autoParts.length} parts (v$version)",
         );
         _setDataVersion(version);
         Log.info("Data Sync", "Data downloaded successfully");

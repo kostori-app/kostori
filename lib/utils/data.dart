@@ -237,12 +237,15 @@ class SyncPart {
   final String key;
   final String dir;
   final String name;
-  const SyncPart(this.key, this.dir, this.name);
+
+  /// 是否参与整包自动同步；false 时只在选择性同步里手动上传/下载
+  final bool autoSync;
+  const SyncPart(this.key, this.dir, this.name, {this.autoSync = true});
 }
 
 const syncParts = <SyncPart>[
   SyncPart('ai', 'db/ai_database', 'ai_database'),
-  SyncPart('ai_tasks', 'db/ai_tasks', 'ai_tasks'),
+  SyncPart('ai_tasks', 'db/ai_tasks', 'ai_tasks', autoSync: false),
   SyncPart('history', 'db/history', 'history'),
   SyncPart('favorites', 'db/favorites', 'favorites'),
   SyncPart('stats', 'db/stats', 'stats'),

@@ -158,6 +158,7 @@ syncPartsHint: 'Split sync: each database is separate; the data bundle only hold
 syncHistory: History backups
 syncHistoryEmpty: No history backups
 syncRestore: Restore
+syncManualOnly: Manual only
 aiDatabase: AI settings DB
 aiMessages: AI messages
 stats: Stats

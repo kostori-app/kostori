@@ -147,6 +147,7 @@ syncPartsHint: 分部分同步：各数据库各自独立；「数据」整包�
 syncHistory: 历史备份
 syncHistoryEmpty: 暂无历史备份
 syncRestore: 恢复
+syncManualOnly: 仅手动
 aiDatabase: AI 设置库
 aiMessages: AI 消息记录
 stats: 统计

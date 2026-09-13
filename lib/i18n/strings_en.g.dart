@@ -509,6 +509,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Restore'
 	String get syncRestore => 'Restore';
 
+	/// en: 'Manual only'
+	String get syncManualOnly => 'Manual only';
+
 	/// en: 'AI settings DB'
 	String get aiDatabase => 'AI settings DB';
 
@@ -8514,6 +8517,7 @@ extension on Translations {
 			'syncHistory' => 'History backups',
 			'syncHistoryEmpty' => 'No history backups',
 			'syncRestore' => 'Restore',
+			'syncManualOnly' => 'Manual only',
 			'aiDatabase' => 'AI settings DB',
 			'aiMessages' => 'AI messages',
 			'stats' => 'Stats',
@@ -8869,9 +8873,9 @@ extension on Translations {
 			'fridaySchedule' => 'Friday Schedule',
 			'saturdaySchedule' => 'Saturday Schedule',
 			'sundaySchedule' => 'Sunday Schedule',
-			'popularityRanking' => 'Popularity Ranking',
 			_ => null,
 		} ?? switch (path) {
+			'popularityRanking' => 'Popularity Ranking',
 			'imageOperations' => 'Image Operations',
 			'saveToAlbum' => 'Save to Album',
 			'stitchLongImage' => 'Stitch Long Image',
@@ -9383,9 +9387,9 @@ extension on Translations {
 			'videoSynchronizationMode' => 'Video synchronization mode',
 			'enableNoProxyOverrides' => 'Enable No Proxy Overrides',
 			'actor' => 'Actor',
-			'cv' => 'CV',
 			_ => null,
 		} ?? switch (path) {
+			'cv' => 'CV',
 			'dub' => 'Dub',
 			'chineseDub' => 'Chinese Dub',
 			'japaneseDub' => 'Japanese Dub',
@@ -9897,9 +9901,9 @@ extension on Translations {
 			'manualSelect' => 'Manual Select',
 			'qrAndClipboard' => 'QR & Clipboard',
 			'go' => 'Go',
-			'clipboard' => 'Clipboard',
 			_ => null,
 		} ?? switch (path) {
+			'clipboard' => 'Clipboard',
 			'recognizeFromGallery' => 'Recognize from Gallery',
 			'scanQrCode' => 'Scan QR Code',
 			'scanToJump' => 'Scan to Jump',
@@ -10411,9 +10415,9 @@ extension on Translations {
 			'lanRemoteWins' => 'Keep Remote',
 			'lanKeepBoth' => 'Keep Both',
 			'lanManualResolution' => 'Manual Resolution',
-			'lanConflictField' => 'Conflicting field',
 			_ => null,
 		} ?? switch (path) {
+			'lanConflictField' => 'Conflicting field',
 			'lanErrorOccurred' => 'Error occurred',
 			'lanCommandExecuted' => 'Command executed',
 			'lanCommandFailed' => 'Command failed',
@@ -10925,9 +10929,9 @@ extension on Translations {
 			'builderPlayDirect' => 'Directly return episode link',
 			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
 			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
-			'builderExplore' => 'Explore',
 			_ => null,
 		} ?? switch (path) {
+			'builderExplore' => 'Explore',
 			'builderExploreTitle' => 'Page title',
 			'builderExploreUrl' => 'List URL template ({page})',
 			'builderCategory' => 'Category',

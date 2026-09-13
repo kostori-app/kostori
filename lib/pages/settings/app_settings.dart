@@ -1157,10 +1157,16 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                   leading: Icon(_partIcon(part.key), size: 20),
                   title: Text(_partLabel(part.key)),
                   subtitle: Text(
-                    remoteParts.containsKey(part.key)
-                        ? '${t.syncStateSynced}'
-                              '${_fmtSize((remoteParts[part.key] as Map?)?['size']).isEmpty ? '' : ' · ${_fmtSize((remoteParts[part.key] as Map?)?['size'])}'}'
-                        : t.syncStateLocalOnly,
+                    [
+                      remoteParts.containsKey(part.key)
+                          ? t.syncStateSynced
+                          : t.syncStateLocalOnly,
+                      if (remoteParts.containsKey(part.key) &&
+                          _fmtSize((remoteParts[part.key] as Map?)?['size'])
+                              .isNotEmpty)
+                        _fmtSize((remoteParts[part.key] as Map?)?['size']),
+                      if (!part.autoSync) t.syncManualOnly,
+                    ].join(' · '),
                     style: const TextStyle(fontSize: 12),
                   ),
                   trailing: Row(
