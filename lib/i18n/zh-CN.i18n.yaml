@@ -2347,6 +2347,16 @@ worldBookTriggersHint: 用户消息命中任一触发词时才注入
 worldBookContent: 内容
 worldBookPriority: 优先级（越大越靠前）
 worldBookPriorityHint: 优先级高的条目先注入
+worldBookGroup: 分组
+worldBookSecondaryKeys: 次级键（每行一个，需全部命中）
+worldBookPosition: 注入位置
+worldBookPositionBefore: 正文之前
+worldBookPositionAfter: 正文之后
+worldBookDepth: 深度（越小越靠后）
+worldBookSticky: 保持回合数
+worldBookCooldown: 冷却回合数
+worldBookConstant: 常驻
+worldBookRecursive: 递归触发
 newWorldBookEntry: 新建条目
 worldBookHitTest: 命中测试
 worldBookHitTestHint: 输入一句话，查看哪些条目会被触发

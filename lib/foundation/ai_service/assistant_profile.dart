@@ -1000,6 +1000,13 @@ String buildSystemPrompt({
 }) {
   final parts = <String>[];
 
+  // 世界书：before 位置注入在正文之前
+  final hits = worldBookHits ?? const <WorldBookEntry>[];
+  final beforeBlock = _worldBookBlock(
+    hits.where((e) => e.position == 'before'),
+  );
+  if (beforeBlock != null) parts.add(beforeBlock);
+
   // ① 基础提示词（通用助手预填 kBaseSystemPrompt；自定义助手可自行填写或留空）
   final base = profile?.systemPrompt.trim() ?? '';
   if (base.isNotEmpty) {
@@ -1074,18 +1081,11 @@ String buildSystemPrompt({
     ),
   );
 
-  // ⑦ 世界书命中条目（按 priority 降序）
-  final hits = worldBookHits ?? const <WorldBookEntry>[];
-  if (hits.isNotEmpty) {
-    final buf = StringBuffer('【世界书】');
-    var seq = 0;
-    for (final e in hits) {
-      if (e.content.trim().isEmpty) continue;
-      seq++;
-      buf.write('\n$seq. ${e.content.trim()}');
-    }
-    if (seq > 0) parts.add(buf.toString());
-  }
+  // ⑦ 世界书命中条目（after 位置，按 priority 降序）
+  final afterBlock = _worldBookBlock(
+    hits.where((e) => e.position != 'before'),
+  );
+  if (afterBlock != null) parts.add(afterBlock);
 
   // ⑧ 当前时间 / 设备信息
   parts.add(_envBlock(now));
@@ -1204,6 +1204,18 @@ List<String> _injectionsAt(
         '【提示词注入 · ${inj.name.trim()}】\n'
             '${replaceTemplateVars(inj.content.trim(), now: now, modelName: modelName)}',
   ];
+}
+
+/// 把一组世界书条目拼成【世界书】块（无有效内容时返回 null）
+String? _worldBookBlock(Iterable<WorldBookEntry> entries) {
+  final buf = StringBuffer('【世界书】');
+  var seq = 0;
+  for (final e in entries) {
+    if (e.content.trim().isEmpty) continue;
+    seq++;
+    buf.write('\n$seq. ${e.content.trim()}');
+  }
+  return seq == 0 ? null : buf.toString();
 }
 
 String _envBlock(DateTime? now) {

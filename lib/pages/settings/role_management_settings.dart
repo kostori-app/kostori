@@ -657,19 +657,34 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
             listenable: store,
             builder: (context, _) {
               final entries = [...store.entries]
-                ..sort((a, b) => b.priority.compareTo(a.priority));
+                ..sort((a, b) {
+                  final byGroup = a.group.compareTo(b.group);
+                  if (byGroup != 0) return byGroup;
+                  return b.priority.compareTo(a.priority);
+                });
               if (entries.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(t.noWorldBookEntriesYet, style: ts.s12),
                 );
               }
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  return Padding(
+              final children = <Widget>[];
+              String? currentGroup;
+              for (final entry in entries) {
+                if (entry.group != currentGroup) {
+                  currentGroup = entry.group;
+                  children.add(
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, bottom: 6),
+                      child: Text(
+                        entry.group.isEmpty ? t.worldBook : entry.group,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  );
+                }
+                children.add(
+                  Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: _SettingCard(
                       padding: EdgeInsets.zero,
@@ -681,8 +696,12 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                         ),
                       ],
                     ),
-                  );
-                },
+                  ),
+                );
+              }
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: children,
               );
             },
           ),
@@ -760,8 +779,14 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
   final _formKey = GlobalKey<FormState>();
 
   late final _nameCtrl = TextEditingController(text: widget.entry?.name ?? '');
+  late final _groupCtrl = TextEditingController(
+    text: widget.entry?.group ?? '',
+  );
   late final _triggerCtrl = TextEditingController(
     text: (widget.entry?.triggers ?? const []).join('\n'),
+  );
+  late final _secondaryCtrl = TextEditingController(
+    text: (widget.entry?.secondaryKeys ?? const []).join('\n'),
   );
   late final _contentCtrl = TextEditingController(
     text: widget.entry?.content ?? '',
@@ -769,16 +794,33 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
   late final _priorityCtrl = TextEditingController(
     text: (widget.entry?.priority ?? 0).toString(),
   );
+  late final _depthCtrl = TextEditingController(
+    text: (widget.entry?.depth ?? 4).toString(),
+  );
+  late final _stickyCtrl = TextEditingController(
+    text: (widget.entry?.sticky ?? 0).toString(),
+  );
+  late final _cooldownCtrl = TextEditingController(
+    text: (widget.entry?.cooldown ?? 0).toString(),
+  );
   late bool _enabled = widget.entry?.enabled ?? true;
+  late bool _constant = widget.entry?.constant ?? false;
+  late bool _recursive = widget.entry?.recursive ?? false;
+  late String _position = widget.entry?.position ?? 'after';
 
   bool get _isNew => widget.entry == null;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _groupCtrl.dispose();
     _triggerCtrl.dispose();
+    _secondaryCtrl.dispose();
     _contentCtrl.dispose();
     _priorityCtrl.dispose();
+    _depthCtrl.dispose();
+    _stickyCtrl.dispose();
+    _cooldownCtrl.dispose();
     super.dispose();
   }
 
@@ -793,10 +835,18 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
     final entry = WorldBookEntry(
       id: widget.entry?.id ?? 'wb_${DateTime.now().millisecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),
+      group: _groupCtrl.text.trim(),
       triggers: _lines(_triggerCtrl),
+      secondaryKeys: _lines(_secondaryCtrl),
       content: _contentCtrl.text.trim(),
       priority: int.tryParse(_priorityCtrl.text.trim()) ?? 0,
       enabled: _enabled,
+      constant: _constant,
+      recursive: _recursive,
+      position: _position,
+      depth: int.tryParse(_depthCtrl.text.trim()) ?? 4,
+      sticky: int.tryParse(_stickyCtrl.text.trim()) ?? 0,
+      cooldown: int.tryParse(_cooldownCtrl.text.trim()) ?? 0,
     );
     await WorldBookStore.instance.upsert(entry);
     if (mounted) {
@@ -850,6 +900,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                             border: const OutlineInputBorder(),
                           ),
                           validator: (v) {
+                            if (_constant) return null;
                             final triggers = _lines(_triggerCtrl);
                             return triggers.isEmpty ? t.required : null;
                           },
@@ -894,6 +945,120 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                                 ? t.invalidNumber
                                 : null;
                           },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: TextFormField(
+                          controller: _groupCtrl,
+                          decoration: InputDecoration(
+                            labelText: t.worldBookGroup,
+                            prefixIcon: const Icon(
+                              Icons.folder_outlined,
+                              size: 20,
+                            ),
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: TextFormField(
+                          controller: _secondaryCtrl,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: t.worldBookSecondaryKeys,
+                            prefixIcon: const Icon(
+                              Icons.filter_alt_outlined,
+                              size: 20,
+                            ),
+                            alignLabelWithHint: true,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Row(
+                          children: [
+                            Text('${t.worldBookPosition}: '),
+                            const SizedBox(width: 8),
+                            DropdownButton<String>(
+                              value: _position,
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'before',
+                                  child: Text(t.worldBookPositionBefore),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'after',
+                                  child: Text(t.worldBookPositionAfter),
+                                ),
+                              ],
+                              onChanged: (v) =>
+                                  setState(() => _position = v ?? 'after'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _depthCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  labelText: t.worldBookDepth,
+                                  isDense: true,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _stickyCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  labelText: t.worldBookSticky,
+                                  isDense: true,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _cooldownCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  labelText: t.worldBookCooldown,
+                                  isDense: true,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildToggleRow(
+                          t.worldBookConstant,
+                          Icons.push_pin_outlined,
+                          _constant,
+                          (v) => setState(() => _constant = v),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildToggleRow(
+                          t.worldBookRecursive,
+                          Icons.account_tree_outlined,
+                          _recursive,
+                          (v) => setState(() => _recursive = v),
                         ),
                       ),
                       Padding(

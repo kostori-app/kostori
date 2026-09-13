@@ -314,6 +314,7 @@ class AiConversationService {
           session,
           profile: profile,
           userMessage: userMessage,
+          turn: contextMessages.length,
         );
 
     // 3. 取最近 N 条（保证不超过上下文窗口）
@@ -873,6 +874,7 @@ class AiConversationService {
           session,
           profile: profile,
           userMessage: target.inputContent,
+          turn: before.length,
         );
 
     final messages = <AiMessage>[
@@ -1190,6 +1192,7 @@ class AiConversationService {
     AiSession session, {
     AssistantProfile? profile,
     String? userMessage,
+    int turn = 0,
   }) async {
     // 档案可自定义选择库中条目；未选择时沿用全局启用项
     final injections = await PromptInjectionStore.instance.select(
@@ -1200,6 +1203,7 @@ class AiConversationService {
         : await WorldBookStore.instance.select(
             profile?.worldBookIds.toSet() ?? const {},
             userMessage,
+            turn: turn,
           );
     final memoryEntries = profile == null
         ? const <String>[]

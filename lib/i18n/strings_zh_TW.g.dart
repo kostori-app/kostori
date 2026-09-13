@@ -2323,6 +2323,16 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookContent => '內容';
 	@override String get worldBookPriority => '優先級（越大越靠前）';
 	@override String get worldBookPriorityHint => '優先級高的條目先注入';
+	@override String get worldBookGroup => '分組';
+	@override String get worldBookSecondaryKeys => '次級鍵（每行一個，需全部命中）';
+	@override String get worldBookPosition => '注入位置';
+	@override String get worldBookPositionBefore => '正文之前';
+	@override String get worldBookPositionAfter => '正文之後';
+	@override String get worldBookDepth => '深度（越小越靠後）';
+	@override String get worldBookSticky => '保持回合數';
+	@override String get worldBookCooldown => '冷卻回合數';
+	@override String get worldBookConstant => '常駐';
+	@override String get worldBookRecursive => '遞迴觸發';
 	@override String get newWorldBookEntry => '新增條目';
 	@override String get worldBookHitTest => '命中測試';
 	@override String get worldBookHitTestHint => '輸入一句話，查看哪些條目會被觸發';
@@ -4994,6 +5004,16 @@ extension on TranslationsZhTw {
 			'worldBookContent' => '內容',
 			'worldBookPriority' => '優先級（越大越靠前）',
 			'worldBookPriorityHint' => '優先級高的條目先注入',
+			'worldBookGroup' => '分組',
+			'worldBookSecondaryKeys' => '次級鍵（每行一個，需全部命中）',
+			'worldBookPosition' => '注入位置',
+			'worldBookPositionBefore' => '正文之前',
+			'worldBookPositionAfter' => '正文之後',
+			'worldBookDepth' => '深度（越小越靠後）',
+			'worldBookSticky' => '保持回合數',
+			'worldBookCooldown' => '冷卻回合數',
+			'worldBookConstant' => '常駐',
+			'worldBookRecursive' => '遞迴觸發',
 			'newWorldBookEntry' => '新增條目',
 			'worldBookHitTest' => '命中測試',
 			'worldBookHitTestHint' => '輸入一句話，查看哪些條目會被觸發',
@@ -5218,6 +5238,8 @@ extension on TranslationsZhTw {
 			'votes' => ({required Object n}) => '${n} 票',
 			'pagesCount' => ({required Object n}) => '${n} 頁',
 			'emptyPage' => '空頁面',
+			_ => null,
+		} ?? switch (path) {
 			'copyTextCommand' => '複製文字口令',
 			'saveFailedPermissionOrDirectory' => '保存失敗：權限或目錄異常',
 			'biometricsNotSupported' => '不支援生物辨識',
@@ -5228,8 +5250,6 @@ extension on TranslationsZhTw {
 			'inputPinTitle' => '輸入連接 PIN 碼',
 			'inputPinHint' => '請輸入 PIN 碼',
 			'topicsPoster' => '貼主',
-			_ => null,
-		} ?? switch (path) {
 			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable}（${count}）',
 			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}',
 			'connectToDevice' => ({required Object device}) => '連線到 ${device}',

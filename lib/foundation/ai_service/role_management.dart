@@ -235,73 +235,152 @@ class PromptInjectionStore extends ChangeNotifier {
   }
 }
 
-/// 世界书条目
+/// 世界书条目（酒馆式进阶：分组 / 常驻 / 次级键 / 递归 / 位置 / sticky / 冷却）
 class WorldBookEntry {
   final String id;
   final String name;
+
+  /// 分组名（用于分类展示）
+  final String group;
   final List<String> triggers;
+
+  /// 次级键：全部命中才算触发（AND，留空则忽略）
+  final List<String> secondaryKeys;
   final String content;
   final int priority;
   final bool enabled;
 
+  /// 常驻：无视触发词始终注入
+  final bool constant;
+
+  /// 递归：其内容可再次触发其它条目
+  final bool recursive;
+
+  /// 注入位置：before | after（相对系统提示词正文）
+  final String position;
+
+  /// 注入深度（越小越靠近末尾，仅影响同一位置内的排序）
+  final int depth;
+
+  /// 触发后保持注入的回合数（0 = 不保持）
+  final int sticky;
+
+  /// 触发后冷却的回合数（0 = 无冷却）
+  final int cooldown;
+
   const WorldBookEntry({
     required this.id,
     required this.name,
+    this.group = '',
     this.triggers = const [],
+    this.secondaryKeys = const [],
     this.content = '',
     this.priority = 0,
     this.enabled = true,
+    this.constant = false,
+    this.recursive = false,
+    this.position = 'after',
+    this.depth = 4,
+    this.sticky = 0,
+    this.cooldown = 0,
   });
 
   WorldBookEntry copyWith({
     String? name,
+    String? group,
     List<String>? triggers,
+    List<String>? secondaryKeys,
     String? content,
     int? priority,
     bool? enabled,
+    bool? constant,
+    bool? recursive,
+    String? position,
+    int? depth,
+    int? sticky,
+    int? cooldown,
   }) => WorldBookEntry(
     id: id,
     name: name ?? this.name,
+    group: group ?? this.group,
     triggers: triggers ?? this.triggers,
+    secondaryKeys: secondaryKeys ?? this.secondaryKeys,
     content: content ?? this.content,
     priority: priority ?? this.priority,
     enabled: enabled ?? this.enabled,
+    constant: constant ?? this.constant,
+    recursive: recursive ?? this.recursive,
+    position: position ?? this.position,
+    depth: depth ?? this.depth,
+    sticky: sticky ?? this.sticky,
+    cooldown: cooldown ?? this.cooldown,
   );
 
   factory WorldBookEntry.fromJson(Map<String, dynamic> json) {
-    final triggersRaw = json['triggers'];
+    List<String> strList(Object? v) =>
+        v is List ? v.whereType<String>().toList() : const <String>[];
     return WorldBookEntry(
       id:
           (json['id'] as String?) ??
           'wb_${DateTime.now().millisecondsSinceEpoch}',
       name: (json['name'] as String?) ?? '',
-      triggers: triggersRaw is List
-          ? triggersRaw.whereType<String>().toList()
-          : const <String>[],
+      group: (json['group'] as String?) ?? '',
+      triggers: strList(json['triggers']),
+      secondaryKeys: strList(json['secondaryKeys']),
       content: (json['content'] as String?) ?? '',
       priority: (json['priority'] as num?)?.toInt() ?? 0,
       enabled: (json['enabled'] as bool?) ?? true,
+      constant: (json['constant'] as bool?) ?? false,
+      recursive: (json['recursive'] as bool?) ?? false,
+      position: (json['position'] as String?) ?? 'after',
+      depth: (json['depth'] as num?)?.toInt() ?? 4,
+      sticky: (json['sticky'] as num?)?.toInt() ?? 0,
+      cooldown: (json['cooldown'] as num?)?.toInt() ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
+    'group': group,
     'triggers': triggers,
+    'secondaryKeys': secondaryKeys,
     'content': content,
     'priority': priority,
     'enabled': enabled,
+    'constant': constant,
+    'recursive': recursive,
+    'position': position,
+    'depth': depth,
+    'sticky': sticky,
+    'cooldown': cooldown,
   };
 
-  /// 用户消息是否命中任一触发词（不区分大小写；中文直接包含匹配）
-  bool hits(String text) {
-    final lower = text.toLowerCase();
+  /// 主键是否命中（不区分大小写；中文直接包含匹配）
+  bool hitsPrimary(String lowerText) {
     for (final t in triggers) {
       final trimmed = t.trim();
       if (trimmed.isEmpty) continue;
-      if (lower.contains(trimmed.toLowerCase())) return true;
+      if (lowerText.contains(trimmed.toLowerCase())) return true;
     }
     return false;
+  }
+
+  /// 次级键是否全部命中（为空视为通过）
+  bool hitsSecondary(String lowerText) {
+    for (final t in secondaryKeys) {
+      final trimmed = t.trim();
+      if (trimmed.isEmpty) continue;
+      if (!lowerText.contains(trimmed.toLowerCase())) return false;
+    }
+    return true;
+  }
+
+  /// 是否命中（常驻条目恒真；需同时满足主键与次级键）
+  bool hits(String text) {
+    if (constant) return true;
+    final lower = text.toLowerCase();
+    return hitsPrimary(lower) && hitsSecondary(lower);
   }
 }
 
@@ -352,31 +431,107 @@ class WorldBookStore extends ChangeNotifier {
     if (!_loaded) await init();
   }
 
-  /// 命中用户消息的启用条目，按 priority 降序（大者优先）
-  Future<List<WorldBookEntry>> hits(String text) async {
-    await ensureLoaded();
-    final list = _entries.where((e) => e.enabled && e.hits(text)).toList()
+  /// 触发状态：entryId -> 保持/冷却到的回合
+  final Map<String, int> _stickyUntil = {};
+  final Map<String, int> _cooldownUntil = {};
+
+  /// 解析命中条目（常驻 / sticky / 冷却 / 递归）
+  List<WorldBookEntry> _resolve(
+    Iterable<WorldBookEntry> pool,
+    String text, {
+    required int turn,
+    bool useTriggers = true,
+    int maxRecursive = 3,
+  }) {
+    final selected = <WorldBookEntry>[];
+    final selectedIds = <String>{};
+
+    void activate(WorldBookEntry e) {
+      selected.add(e);
+      selectedIds.add(e.id);
+      if (e.sticky > 0) _stickyUntil[e.id] = turn + e.sticky;
+      if (e.cooldown > 0) {
+        _cooldownUntil[e.id] = turn + e.sticky + e.cooldown;
+      }
+    }
+
+    final ordered = pool.toList()
       ..sort((a, b) => b.priority.compareTo(a.priority));
-    return list;
+
+    for (final e in ordered) {
+      if (selectedIds.contains(e.id)) continue;
+      if (!useTriggers) {
+        activate(e);
+        continue;
+      }
+      final cooling = _cooldownUntil[e.id];
+      if (cooling != null && turn < cooling) continue;
+      final stickyUntil = _stickyUntil[e.id];
+      final sticky = stickyUntil != null && turn < stickyUntil;
+      if (e.hits(text) || sticky) activate(e);
+    }
+
+    // 递归：用已注入内容继续扫描，触发更多条目
+    if (useTriggers && maxRecursive > 0) {
+      for (var depth = 0; depth < maxRecursive; depth++) {
+        final haystack = selected
+            .where((e) => e.recursive)
+            .map((e) => e.content)
+            .join('\n');
+        if (haystack.isEmpty) break;
+        final before = selected.length;
+        for (final e in ordered) {
+          if (selectedIds.contains(e.id)) continue;
+          final cooling = _cooldownUntil[e.id];
+          if (cooling != null && turn < cooling) continue;
+          if (e.hits(haystack)) activate(e);
+        }
+        if (selected.length == before) break;
+      }
+    }
+
+    selected.sort((a, b) {
+      final byPos = a.position.compareTo(b.position);
+      if (byPos != 0) return byPos;
+      final byDepth = a.depth.compareTo(b.depth);
+      if (byDepth != 0) return byDepth;
+      return b.priority.compareTo(a.priority);
+    });
+    return selected;
+  }
+
+  /// 命中用户消息的启用条目，按位置/深度/优先级排序
+  Future<List<WorldBookEntry>> hits(String text, {int turn = 0}) async {
+    await ensureLoaded();
+    return _resolve(_entries.where((e) => e.enabled), text, turn: turn);
   }
 
   /// 按选择集命中用户消息的条目：ids 为空表示沿用全局启用项（向后兼容）
-  Future<List<WorldBookEntry>> select(Set<String> ids, String text) async {
+  Future<List<WorldBookEntry>> select(
+    Set<String> ids,
+    String text, {
+    int turn = 0,
+  }) async {
     await ensureLoaded();
-    final list = _entries
-        .where((e) => (ids.isEmpty ? e.enabled : ids.contains(e.id)) && e.hits(text))
-        .toList()
-      ..sort((a, b) => b.priority.compareTo(a.priority));
-    return list;
+    final pool = ids.isEmpty
+        ? _entries.where((e) => e.enabled)
+        : _entries.where((e) => ids.contains(e.id));
+    return _resolve(pool, text, turn: turn);
   }
 
   /// 只返回选择集内的条目且不做触发词匹配（供故事等显式选择场景）
-  Future<List<WorldBookEntry>> selectAll(Set<String> ids) async {
+  Future<List<WorldBookEntry>> selectAll(
+    Set<String> ids, {
+    int turn = 0,
+  }) async {
     if (ids.isEmpty) return const [];
     await ensureLoaded();
-    final list = _entries.where((e) => ids.contains(e.id)).toList()
-      ..sort((a, b) => b.priority.compareTo(a.priority));
-    return list;
+    return _resolve(
+      _entries.where((e) => ids.contains(e.id)),
+      '',
+      turn: turn,
+      useTriggers: false,
+    );
   }
 
   Future<void> upsert(WorldBookEntry entry) async {

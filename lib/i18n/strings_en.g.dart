@@ -6895,6 +6895,36 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Higher priority entries are injected first'
 	String get worldBookPriorityHint => 'Higher priority entries are injected first';
 
+	/// en: 'Group'
+	String get worldBookGroup => 'Group';
+
+	/// en: 'Secondary keys (one per line, all must match)'
+	String get worldBookSecondaryKeys => 'Secondary keys (one per line, all must match)';
+
+	/// en: 'Injection position'
+	String get worldBookPosition => 'Injection position';
+
+	/// en: 'Before the prompt'
+	String get worldBookPositionBefore => 'Before the prompt';
+
+	/// en: 'After the prompt'
+	String get worldBookPositionAfter => 'After the prompt';
+
+	/// en: 'Depth (smaller = closer to the end)'
+	String get worldBookDepth => 'Depth (smaller = closer to the end)';
+
+	/// en: 'Sticky turns'
+	String get worldBookSticky => 'Sticky turns';
+
+	/// en: 'Cooldown turns'
+	String get worldBookCooldown => 'Cooldown turns';
+
+	/// en: 'Always on'
+	String get worldBookConstant => 'Always on';
+
+	/// en: 'Recursive scan'
+	String get worldBookRecursive => 'Recursive scan';
+
 	/// en: 'New Entry'
 	String get newWorldBookEntry => 'New Entry';
 
@@ -10183,6 +10213,16 @@ extension on Translations {
 			'worldBookContent' => 'Content',
 			'worldBookPriority' => 'Priority (higher first)',
 			'worldBookPriorityHint' => 'Higher priority entries are injected first',
+			'worldBookGroup' => 'Group',
+			'worldBookSecondaryKeys' => 'Secondary keys (one per line, all must match)',
+			'worldBookPosition' => 'Injection position',
+			'worldBookPositionBefore' => 'Before the prompt',
+			'worldBookPositionAfter' => 'After the prompt',
+			'worldBookDepth' => 'Depth (smaller = closer to the end)',
+			'worldBookSticky' => 'Sticky turns',
+			'worldBookCooldown' => 'Cooldown turns',
+			'worldBookConstant' => 'Always on',
+			'worldBookRecursive' => 'Recursive scan',
 			'newWorldBookEntry' => 'New Entry',
 			'worldBookHitTest' => 'Hit Test',
 			'worldBookHitTestHint' => 'Type a sentence to see which entries will be triggered',
@@ -10406,6 +10446,8 @@ extension on Translations {
 			'manual' => 'Manual',
 			'votes' => ({required Object n}) => '${n} votes',
 			'pagesCount' => ({required Object n}) => '${n} pages',
+			_ => null,
+		} ?? switch (path) {
 			'emptyPage' => 'Empty Page',
 			'copyTextCommand' => 'Copy text command',
 			'saveFailedPermissionOrDirectory' => 'Save failed: permission or directory error',
@@ -10416,8 +10458,6 @@ extension on Translations {
 			'errorsLabel' => ({required Object n}) => 'Errors: ${n}',
 			'inputPinTitle' => 'Enter connection PIN',
 			'inputPinHint' => 'Enter PIN code',
-			_ => null,
-		} ?? switch (path) {
 			'topicsPoster' => 'Post author',
 			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable} (${count})',
 			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}: ${count}',

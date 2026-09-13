@@ -2324,6 +2324,16 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookContent => '内容';
 	@override String get worldBookPriority => '优先级（越大越靠前）';
 	@override String get worldBookPriorityHint => '优先级高的条目先注入';
+	@override String get worldBookGroup => '分组';
+	@override String get worldBookSecondaryKeys => '次级键（每行一个，需全部命中）';
+	@override String get worldBookPosition => '注入位置';
+	@override String get worldBookPositionBefore => '正文之前';
+	@override String get worldBookPositionAfter => '正文之后';
+	@override String get worldBookDepth => '深度（越小越靠后）';
+	@override String get worldBookSticky => '保持回合数';
+	@override String get worldBookCooldown => '冷却回合数';
+	@override String get worldBookConstant => '常驻';
+	@override String get worldBookRecursive => '递归触发';
 	@override String get newWorldBookEntry => '新建条目';
 	@override String get worldBookHitTest => '命中测试';
 	@override String get worldBookHitTestHint => '输入一句话，查看哪些条目会被触发';
@@ -4996,6 +5006,16 @@ extension on TranslationsZhCn {
 			'worldBookContent' => '内容',
 			'worldBookPriority' => '优先级（越大越靠前）',
 			'worldBookPriorityHint' => '优先级高的条目先注入',
+			'worldBookGroup' => '分组',
+			'worldBookSecondaryKeys' => '次级键（每行一个，需全部命中）',
+			'worldBookPosition' => '注入位置',
+			'worldBookPositionBefore' => '正文之前',
+			'worldBookPositionAfter' => '正文之后',
+			'worldBookDepth' => '深度（越小越靠后）',
+			'worldBookSticky' => '保持回合数',
+			'worldBookCooldown' => '冷却回合数',
+			'worldBookConstant' => '常驻',
+			'worldBookRecursive' => '递归触发',
 			'newWorldBookEntry' => '新建条目',
 			'worldBookHitTest' => '命中测试',
 			'worldBookHitTestHint' => '输入一句话，查看哪些条目会被触发',
@@ -5219,6 +5239,8 @@ extension on TranslationsZhCn {
 			'manual' => '手动',
 			'votes' => ({required Object n}) => '${n} 票',
 			'pagesCount' => ({required Object n}) => '${n} 页',
+			_ => null,
+		} ?? switch (path) {
 			'emptyPage' => '空页面',
 			'copyTextCommand' => '复制文本口令',
 			'saveFailedPermissionOrDirectory' => '保存失败：权限或目录异常',
@@ -5229,8 +5251,6 @@ extension on TranslationsZhCn {
 			'errorsLabel' => ({required Object n}) => '错误：${n}',
 			'inputPinTitle' => '输入连接 PIN 码',
 			'inputPinHint' => '请输入 PIN 码',
-			_ => null,
-		} ?? switch (path) {
 			'topicsPoster' => '贴主',
 			'timetableCount' => ({required Object timetable, required Object count}) => '${timetable}（${count}）',
 			'fetchPluginsCount' => ({required Object fetchPlugins, required Object count}) => '${fetchPlugins}：${count}',

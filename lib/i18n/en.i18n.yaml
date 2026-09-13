@@ -2348,6 +2348,16 @@ worldBookTriggersHint: "Injected when the user message contains any trigger word
 worldBookContent: Content
 worldBookPriority: Priority (higher first)
 worldBookPriorityHint: Higher priority entries are injected first
+worldBookGroup: Group
+worldBookSecondaryKeys: Secondary keys (one per line, all must match)
+worldBookPosition: Injection position
+worldBookPositionBefore: Before the prompt
+worldBookPositionAfter: After the prompt
+worldBookDepth: Depth (smaller = closer to the end)
+worldBookSticky: Sticky turns
+worldBookCooldown: Cooldown turns
+worldBookConstant: Always on
+worldBookRecursive: Recursive scan
 newWorldBookEntry: New Entry
 worldBookHitTest: Hit Test
 worldBookHitTestHint: Type a sentence to see which entries will be triggered

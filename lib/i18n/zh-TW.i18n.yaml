@@ -2349,6 +2349,16 @@ worldBookTriggersHint: 使用者訊息命中任一觸發詞時才注入
 worldBookContent: 內容
 worldBookPriority: 優先級（越大越靠前）
 worldBookPriorityHint: 優先級高的條目先注入
+worldBookGroup: 分組
+worldBookSecondaryKeys: 次級鍵（每行一個，需全部命中）
+worldBookPosition: 注入位置
+worldBookPositionBefore: 正文之前
+worldBookPositionAfter: 正文之後
+worldBookDepth: 深度（越小越靠後）
+worldBookSticky: 保持回合數
+worldBookCooldown: 冷卻回合數
+worldBookConstant: 常駐
+worldBookRecursive: 遞迴觸發
 newWorldBookEntry: 新增條目
 worldBookHitTest: 命中測試
 worldBookHitTestHint: 輸入一句話，查看哪些條目會被觸發
