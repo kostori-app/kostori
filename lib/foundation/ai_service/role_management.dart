@@ -7,8 +7,10 @@
 // 二者均为全局（不分助手档案），经 buildSystemPrompt 管线拼入 system prompt。
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -102,13 +104,18 @@ class PromptInjectionStore extends ChangeNotifier {
 
   PromptInjectionStore._();
 
-  static const _kKey = 'prompt_injections';
-  static const _kSeededKey = 'prompt_injections_seeded_v1';
+  /// 旧版 shared_preferences key（用于一次性迁移）
+  static const _legacyKey = 'prompt_injections';
+  static const _legacySeededKey = 'prompt_injections_seeded_v1';
+  static const _dirName = 'prompt_injections';
 
   List<PromptInjection> _items = [];
   bool _loaded = false;
 
   List<PromptInjection> get items => List.unmodifiable(_items);
+
+  /// 目录（供选择性 WebDAV 同步）
+  String get dirPath => '${App.dataPath}/$_dirName';
 
   /// 情景模块的提示词以代码常量为准；这些 id 的历史副本若未被修改则清理掉。
   static const _scenarioDefaults = <String, String>{
@@ -119,34 +126,72 @@ class PromptInjectionStore extends ChangeNotifier {
   };
 
   Future<void> init() async {
+    _items = [];
+    try {
+      final dir = Directory(dirPath);
+      await dir.create(recursive: true);
+      for (final entity in dir.listSync()) {
+        if (entity is! File || !entity.path.endsWith('.json')) continue;
+        try {
+          final json = jsonDecode(await entity.readAsString());
+          if (json is Map) {
+            _items.add(PromptInjection.fromJson(json.cast<String, dynamic>()));
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    await _migrateLegacy();
+    // 清理未修改的内置情景注入副本（内容与代码常量一致才删，改过的保留）
+    final removed = <String>[];
+    _items.removeWhere((i) {
+      final def = _scenarioDefaults[i.id];
+      final hit = def != null && i.content.trim() == def.trim();
+      if (hit) removed.add(i.id);
+      return hit;
+    });
+    for (final id in removed) {
+      _deleteFile(id);
+    }
+    _loaded = true;
+    notifyListeners();
+  }
+
+  Future<void> _migrateLegacy() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kKey);
-    if (raw == null || raw.isEmpty) {
-      _items = [];
-    } else {
+    final raw = prefs.getString(_legacyKey);
+    if (raw != null && raw.isNotEmpty) {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          _items = [
-            for (final e in decoded)
-              if (e is Map) PromptInjection.fromJson(e.cast<String, dynamic>()),
-          ];
+          for (final e in decoded) {
+            if (e is! Map) continue;
+            final item = PromptInjection.fromJson(e.cast<String, dynamic>());
+            if (_items.any((i) => i.id == item.id)) continue;
+            _items.add(item);
+            await _writeItem(item);
+          }
         }
-      } catch (_) {
-        _items = [];
-      }
+      } catch (_) {}
     }
-    // 清理未修改的内置情景注入副本（内容与代码常量一致才删，改过的保留）
-    final before = _items.length;
-    _items.removeWhere((i) {
-      final def = _scenarioDefaults[i.id];
-      return def != null && i.content.trim() == def.trim();
-    });
-    if (_items.length != before) await _save();
-    // 移除旧的播种标记
-    await prefs.remove(_kSeededKey);
-    _loaded = true;
-    notifyListeners();
+    await prefs.remove(_legacyKey);
+    await prefs.remove(_legacySeededKey);
+  }
+
+  Future<void> _writeItem(PromptInjection item) async {
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await File(
+      '$dirPath/${item.id}.json',
+    ).writeAsString(jsonEncode(item.toJson()));
+  }
+
+  void _deleteFile(String id) {
+    final f = File('$dirPath/$id.json');
+    if (f.existsSync()) {
+      try {
+        f.deleteSync();
+      } catch (_) {}
+    }
   }
 
   /// 按 id 查找（无论是否启用，供情景模块引用）
@@ -157,17 +202,15 @@ class PromptInjectionStore extends ChangeNotifier {
     return null;
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kKey,
-      jsonEncode([for (final i in _items) i.toJson()]),
-    );
-  }
-
   /// 确保已加载（供聊天管线等非 UI 场景使用）
   Future<void> ensureLoaded() async {
     if (!_loaded) await init();
+  }
+
+  /// WebDAV 下载后重新加载
+  Future<void> reload() async {
+    _loaded = false;
+    await init();
   }
 
   /// 启用的注入片段，按（位置, 排序号）升序
@@ -206,14 +249,14 @@ class PromptInjectionStore extends ChangeNotifier {
     } else {
       _items.add(item);
     }
-    await _save();
+    await _writeItem(item);
     notifyListeners();
   }
 
   Future<void> remove(String id) async {
     await ensureLoaded();
     _items.removeWhere((i) => i.id == id);
-    await _save();
+    _deleteFile(id);
     notifyListeners();
   }
 }
@@ -367,51 +410,89 @@ class WorldBookEntry {
   }
 }
 
-/// 世界书存储：shared_preferences 持久化
+/// 世界书存储：存放于 `dataPath/world_book/` 的独立文件
 class WorldBookStore extends ChangeNotifier {
   static final WorldBookStore instance = WorldBookStore._();
 
   WorldBookStore._();
 
-  static const _kKey = 'world_book_entries';
+  /// 旧版 shared_preferences key（用于一次性迁移）
+  static const _legacyKey = 'world_book_entries';
+  static const _dirName = 'world_book';
 
   List<WorldBookEntry> _entries = [];
   bool _loaded = false;
 
   List<WorldBookEntry> get entries => List.unmodifiable(_entries);
 
+  /// 目录（供选择性 WebDAV 同步）
+  String get dirPath => '${App.dataPath}/$_dirName';
+
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kKey);
-    if (raw == null || raw.isEmpty) {
-      _entries = [];
-    } else {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          _entries = [
-            for (final e in decoded)
-              if (e is Map) WorldBookEntry.fromJson(e.cast<String, dynamic>()),
-          ];
-        }
-      } catch (_) {
-        _entries = [];
+    _entries = [];
+    try {
+      final dir = Directory(dirPath);
+      await dir.create(recursive: true);
+      for (final entity in dir.listSync()) {
+        if (entity is! File || !entity.path.endsWith('.json')) continue;
+        try {
+          final json = jsonDecode(await entity.readAsString());
+          if (json is Map) {
+            _entries.add(WorldBookEntry.fromJson(json.cast<String, dynamic>()));
+          }
+        } catch (_) {}
       }
-    }
+    } catch (_) {}
+    await _migrateLegacy();
     _loaded = true;
     notifyListeners();
   }
 
-  Future<void> _save() async {
+  Future<void> _migrateLegacy() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kKey,
-      jsonEncode([for (final e in _entries) e.toJson()]),
-    );
+    final raw = prefs.getString(_legacyKey);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          for (final e in decoded) {
+            if (e is! Map) continue;
+            final entry = WorldBookEntry.fromJson(e.cast<String, dynamic>());
+            if (_entries.any((x) => x.id == entry.id)) continue;
+            _entries.add(entry);
+            await _writeEntry(entry);
+          }
+        }
+      } catch (_) {}
+    }
+    await prefs.remove(_legacyKey);
+  }
+
+  Future<void> _writeEntry(WorldBookEntry entry) async {
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await File(
+      '$dirPath/${entry.id}.json',
+    ).writeAsString(jsonEncode(entry.toJson()));
+  }
+
+  void _deleteFile(String id) {
+    final f = File('$dirPath/$id.json');
+    if (f.existsSync()) {
+      try {
+        f.deleteSync();
+      } catch (_) {}
+    }
   }
 
   Future<void> ensureLoaded() async {
     if (!_loaded) await init();
+  }
+
+  /// WebDAV 下载后重新加载
+  Future<void> reload() async {
+    _loaded = false;
+    await init();
   }
 
   /// 触发状态：entryId -> 保持/冷却到的回合
@@ -525,14 +606,14 @@ class WorldBookStore extends ChangeNotifier {
     } else {
       _entries.add(entry);
     }
-    await _save();
+    await _writeEntry(entry);
     notifyListeners();
   }
 
   Future<void> remove(String id) async {
     await ensureLoaded();
     _entries.removeWhere((e) => e.id == id);
-    await _save();
+    _deleteFile(id);
     notifyListeners();
   }
 }

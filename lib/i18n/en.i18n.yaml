@@ -141,6 +141,12 @@ dataSync: Data Sync
 selectiveSync: Selective sync
 syncSuccess: Synced
 storySessions: Saves
+syncStateSynced: Synced
+syncStateLocalOnly: Not uploaded
+syncStateRemoteOnly: Not downloaded
+syncStateDiffers: Out of sync
+syncPromptInjections: Prompt injections
+syncWorldBook: World book
 data: Data
 dateDesc: Date Desc
 date: Date

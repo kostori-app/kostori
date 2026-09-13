@@ -171,6 +171,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get selectiveSync => '选择性同步';
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存档';
+	@override String get syncStateSynced => '已同步';
+	@override String get syncStateLocalOnly => '未上传';
+	@override String get syncStateRemoteOnly => '未下载';
+	@override String get syncStateDiffers => '有差异';
+	@override String get syncPromptInjections => '提示词注入';
+	@override String get syncWorldBook => '世界书';
 	@override String get data => '数据';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2847,6 +2853,12 @@ extension on TranslationsZhCn {
 			'selectiveSync' => '选择性同步',
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存档',
+			'syncStateSynced' => '已同步',
+			'syncStateLocalOnly' => '未上传',
+			'syncStateRemoteOnly' => '未下载',
+			'syncStateDiffers' => '有差异',
+			'syncPromptInjections' => '提示词注入',
+			'syncWorldBook' => '世界书',
 			'data' => '数据',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3221,14 +3233,14 @@ extension on TranslationsZhCn {
 			'cropImage' => '裁剪图片',
 			'finishCropping' => '完成裁剪',
 			'sortImages' => '图片排序',
+			_ => null,
+		} ?? switch (path) {
 			'finishSorting' => '完成排序',
 			'noImages' => '无图片',
 			'selectImages' => '选择图片',
 			'addImages' => '添加图片',
 			'importedCountI' => ({required Object i}) => '已导入 ${i} 张图片',
 			'exportImage' => '复制/分享',
-			_ => null,
-		} ?? switch (path) {
 			'saveAndShare' => '保存并分享',
 			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
 			'firstImageFullHeight' => '首张全高显示',
@@ -3735,14 +3747,14 @@ extension on TranslationsZhCn {
 			'searchGroupBuiltIn' => '内置分组',
 			'searchGroupCustom' => '我的分组',
 			'manageGroups' => '管理分组',
+			_ => null,
+		} ?? switch (path) {
 			'newGroup' => '新建分组',
 			'groupName' => '分组名称',
 			'groupExists' => '分组名称已存在',
 			'groupSources' => '分组内源',
 			'assignSources' => '分配源',
 			'deleteGroup' => '删除分组',
-			_ => null,
-		} ?? switch (path) {
 			'deleteGroupConfirm' => '确定删除该分组？',
 			'translation' => '翻译',
 			'translationService' => '翻译服务',
@@ -4249,14 +4261,14 @@ extension on TranslationsZhCn {
 			'exportScreenshot' => '导出截图',
 			'copyAll' => '复制全部',
 			'timeRange' => '时间范围',
+			_ => null,
+		} ?? switch (path) {
 			'thisWeek' => '本周',
 			'thisMonth' => '本月',
 			'generateSummary' => '生成总结',
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '总结报告',
 			'aiStatActiveTitles' => '活跃条目',
-			_ => null,
-		} ?? switch (path) {
 			'aiSoulStyle' => '分析风格',
 			'aiStyleBalanced' => '均衡',
 			'aiStyleDetailed' => '详细',
@@ -4763,14 +4775,14 @@ extension on TranslationsZhCn {
 			'statsCountComments' => ({required Object n}) => '${n} 条',
 			'statsCountItems' => ({required Object n}) => '${n} 个',
 			'statsDateFull' => ({required Object year, required Object month, required Object day}) => '${year}年${month}月${day}日',
+			_ => null,
+		} ?? switch (path) {
 			'statsDateRangeWeek' => ({required Object year, required Object month, required Object day, required Object endMonth, required Object endDay}) => '${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日',
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}年${month}月',
 			'statsYearMonthName' => ({required Object year, required Object month}) => '${year}年${month}',
 			'statsDateRangeHalf' => ({required Object year, required Object startMonth, required Object endMonth}) => '${year}年${startMonth}月 ~ ${endMonth}月',
 			'statsDateYear' => ({required Object year}) => '${year}年',
 			'statsDateDay' => ({required Object day}) => '${day}日',
-			_ => null,
-		} ?? switch (path) {
 			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
 			'statsWeekdayMon' => '一',
 			'statsWeekdayTue' => '二',
@@ -5277,14 +5289,14 @@ extension on TranslationsZhCn {
 			'viewingRecord' => '观看记录',
 			'watchDurationLabel' => ({required Object duration}) => '观看时长: ${duration}',
 			'completedStatus' => ({required Object status}) => '是否完成: ${status}',
+			_ => null,
+		} ?? switch (path) {
 			'yes' => '是',
 			'no' => '否',
 			'startTimeLabel' => ({required Object time}) => '开始时间: ${time}',
 			'endTimeLabel' => ({required Object time}) => '结束时间: ${time}',
 			'appInfo' => '应用信息',
 			'partRepoFetchFailed' => ({required Object list}) => '部分仓库拉取失败: ${list}',
-			_ => null,
-		} ?? switch (path) {
 			'airTimeLabel' => ({required Object time}) => '放送时间：${time}',
 			'durationLabel' => ({required Object duration}) => '时长：${duration}',
 			'replyBracket' => '[回复]',

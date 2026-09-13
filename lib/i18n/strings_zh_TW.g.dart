@@ -170,6 +170,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get selectiveSync => '選擇性同步';
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存檔';
+	@override String get syncStateSynced => '已同步';
+	@override String get syncStateLocalOnly => '未上傳';
+	@override String get syncStateRemoteOnly => '未下載';
+	@override String get syncStateDiffers => '有差異';
+	@override String get syncPromptInjections => '提示詞注入';
+	@override String get syncWorldBook => '世界書';
 	@override String get data => '數據';
 	@override String get dateDesc => '按日期降序';
 	@override String get date => '日期';
@@ -2845,6 +2851,12 @@ extension on TranslationsZhTw {
 			'selectiveSync' => '選擇性同步',
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存檔',
+			'syncStateSynced' => '已同步',
+			'syncStateLocalOnly' => '未上傳',
+			'syncStateRemoteOnly' => '未下載',
+			'syncStateDiffers' => '有差異',
+			'syncPromptInjections' => '提示詞注入',
+			'syncWorldBook' => '世界書',
 			'data' => '數據',
 			'dateDesc' => '按日期降序',
 			'date' => '日期',
@@ -3220,14 +3232,14 @@ extension on TranslationsZhTw {
 			'finishCropping' => '完成裁剪',
 			'sortImages' => '圖片排序',
 			'finishSorting' => '完成排序',
+			_ => null,
+		} ?? switch (path) {
 			'noImages' => '暫無圖片',
 			'selectImages' => '選擇圖片',
 			'addImages' => '新增圖片',
 			'importedCountI' => ({required Object i}) => '已匯入 ${i} 張圖片',
 			'exportImage' => '複製/分享',
 			'saveAndShare' => '儲存並分享',
-			_ => null,
-		} ?? switch (path) {
 			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
 			'firstImageFullHeight' => '首張全高顯示',
 			'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
@@ -3734,14 +3746,14 @@ extension on TranslationsZhTw {
 			'singleSourceSearch' => '單源',
 			'searchGroupBuiltIn' => '內建分組',
 			'searchGroupCustom' => '我的分組',
+			_ => null,
+		} ?? switch (path) {
 			'manageGroups' => '管理分組',
 			'newGroup' => '新增分組',
 			'groupName' => '分組名稱',
 			'groupExists' => '分組名稱已存在',
 			'groupSources' => '分組內源',
 			'assignSources' => '分配源',
-			_ => null,
-		} ?? switch (path) {
 			'deleteGroup' => '刪除分組',
 			'deleteGroupConfirm' => '確定刪除該分組？',
 			'translation' => '翻譯',
@@ -4248,14 +4260,14 @@ extension on TranslationsZhTw {
 			'generatedTags' => '已生成 Tags',
 			'exportScreenshot' => '導出截圖',
 			'copyAll' => '複製全部',
+			_ => null,
+		} ?? switch (path) {
 			'timeRange' => '時間範圍',
 			'thisWeek' => '本週',
 			'thisMonth' => '本月',
 			'generateSummary' => '生成總結',
 			'generateTag' => '生成 Tag',
 			'summaryReport' => '總結報告',
-			_ => null,
-		} ?? switch (path) {
 			'aiStatActiveTitles' => '活躍條目',
 			'aiSoulStyle' => '分析風格',
 			'aiStyleBalanced' => '均衡',
@@ -4762,14 +4774,14 @@ extension on TranslationsZhTw {
 			'statsCountItems' => ({required Object n}) => '${n} 個',
 			'statsDateFull' => ({required Object year, required Object month, required Object day}) => '${year}年${month}月${day}日',
 			'statsDateRangeWeek' => ({required Object year, required Object month, required Object day, required Object endMonth, required Object endDay}) => '${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日',
+			_ => null,
+		} ?? switch (path) {
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}年${month}月',
 			'statsYearMonthName' => ({required Object year, required Object month}) => '${year}年${month}',
 			'statsDateRangeHalf' => ({required Object year, required Object startMonth, required Object endMonth}) => '${year}年${startMonth}月 ~ ${endMonth}月',
 			'statsDateYear' => ({required Object year}) => '${year}年',
 			'statsDateDay' => ({required Object day}) => '${day}日',
 			'statsDateMonthOnly' => ({required Object month}) => '${month}月',
-			_ => null,
-		} ?? switch (path) {
 			'statsWeekdayMon' => '一',
 			'statsWeekdayTue' => '二',
 			'statsWeekdayWed' => '三',
@@ -5276,14 +5288,14 @@ extension on TranslationsZhTw {
 			'watchDurationLabel' => ({required Object duration}) => '觀看時長: ${duration}',
 			'completedStatus' => ({required Object status}) => '是否完成: ${status}',
 			'yes' => '是',
+			_ => null,
+		} ?? switch (path) {
 			'no' => '否',
 			'startTimeLabel' => ({required Object time}) => '開始時間: ${time}',
 			'endTimeLabel' => ({required Object time}) => '結束時間: ${time}',
 			'appInfo' => '應用資訊',
 			'partRepoFetchFailed' => ({required Object list}) => '部分倉庫拉取失敗: ${list}',
 			'airTimeLabel' => ({required Object time}) => '放送時間：${time}',
-			_ => null,
-		} ?? switch (path) {
 			'durationLabel' => ({required Object duration}) => '時長：${duration}',
 			'replyBracket' => '[回覆]',
 			'wantToWatch' => '想看',

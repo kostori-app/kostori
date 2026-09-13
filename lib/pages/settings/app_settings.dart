@@ -986,8 +986,11 @@ class _HubStickersPageState extends State<_HubStickersPage> {
 }
 
 // ─────────────────────────────────────────────
-// 选择性同步：按条目选择角色卡 / 故事观
+// 选择性同步：按条目选择角色卡 / 故事观 / 存档 / 提示词注入 / 世界书
 // ─────────────────────────────────────────────
+
+/// 同步条目的状态
+enum _SyncState { synced, localOnly, remoteOnly, differs }
 
 class _SelectiveSyncPage extends StatefulWidget {
   const _SelectiveSyncPage();
@@ -997,14 +1000,19 @@ class _SelectiveSyncPage extends StatefulWidget {
 }
 
 class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
+  static const _kinds = [
+    'cards',
+    'stories',
+    'sessions',
+    'prompts',
+    'worldbook',
+  ];
+
+  int _tab = 0;
   bool _loading = true;
   bool _busy = false;
-  List<String> _remoteCards = const [];
-  List<String> _remoteStories = const [];
-  List<String> _remoteSessions = const [];
-  final Set<String> _selectedCards = {};
-  final Set<String> _selectedStories = {};
-  final Set<String> _selectedSessions = {};
+  final Map<String, Map<String, RemoteFileInfo>> _remote = {};
+  final Map<String, Set<String>> _selected = {};
 
   @override
   void initState() {
@@ -1012,55 +1020,95 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     _load();
   }
 
+  String _ext(String kind) => kind == 'stories' ? '.md' : '.json';
+
+  String _localDir(String kind) => switch (kind) {
+    'cards' => CharacterCardStore.instance.dirPath,
+    'stories' => StoryStore.instance.dirPath,
+    'sessions' => StorySessionStore.instance.dirPath,
+    'prompts' => PromptInjectionStore.instance.dirPath,
+    'worldbook' => WorldBookStore.instance.dirPath,
+    _ => '',
+  };
+
+  Set<String> _sel(String kind) =>
+      _selected.putIfAbsent(kind, () => <String>{});
+
   Future<void> _load() async {
     await CharacterCardStore.instance.ensureLoaded();
     await StoryStore.instance.ensureLoaded();
     await StorySessionStore.instance.ensureLoaded();
+    await PromptInjectionStore.instance.ensureLoaded();
+    await WorldBookStore.instance.ensureLoaded();
     final sync = DataSync();
-    final cards = await sync.listRemoteFiles(dir: 'cards');
-    final stories = await sync.listRemoteFiles(dir: 'stories');
-    final sessions = await sync.listRemoteFiles(dir: 'sessions');
+    final remote = <String, Map<String, RemoteFileInfo>>{};
+    for (final kind in _kinds) {
+      final res = await sync.listRemoteEntries(dir: kind);
+      remote[kind] = res.success
+          ? {for (final e in res.data) e.name: e}
+          : {};
+    }
     if (!mounted) return;
     setState(() {
-      _remoteCards = cards.success ? cards.data : const [];
-      _remoteStories = stories.success ? stories.data : const [];
-      _remoteSessions = sessions.success ? sessions.data : const [];
+      _remote
+        ..clear()
+        ..addAll(remote);
       _loading = false;
     });
   }
 
-  List<String> get _cardIds {
-    final ids = <String>{
-      for (final c in CharacterCardStore.instance.cards) c.id,
-    };
-    for (final f in _remoteCards) {
-      if (f.endsWith('.json')) ids.add(f.substring(0, f.length - 5));
+  Set<String> _localIds(String kind) => switch (kind) {
+    'cards' => {for (final c in CharacterCardStore.instance.cards) c.id},
+    'stories' => {for (final s in StoryStore.instance.stories) s.id},
+    'sessions' => {...StorySessionStore.instance.storyIds},
+    'prompts' => {for (final i in PromptInjectionStore.instance.items) i.id},
+    'worldbook' => {for (final e in WorldBookStore.instance.entries) e.id},
+    _ => <String>{},
+  };
+
+  String _name(String kind, String id) => switch (kind) {
+    'cards' => CharacterCardStore.instance.find(id)?.name ?? id,
+    'stories' => StoryStore.instance.find(id)?.name ?? id,
+    'sessions' => StoryStore.instance.find(id)?.name ?? id,
+    'prompts' => PromptInjectionStore.instance.findById(id)?.name ?? id,
+    'worldbook' => _worldBookName(id),
+    _ => id,
+  };
+
+  String _worldBookName(String id) {
+    for (final e in WorldBookStore.instance.entries) {
+      if (e.id == id) return e.name.isEmpty ? id : e.name;
     }
-    return ids.toList()..sort();
+    return id;
   }
 
-  List<String> get _storyIds {
-    final ids = <String>{for (final s in StoryStore.instance.stories) s.id};
-    for (final f in _remoteStories) {
-      if (f.endsWith('.md')) ids.add(f.substring(0, f.length - 3));
+  String _label(String kind) => switch (kind) {
+    'cards' => t.characterCards,
+    'stories' => t.rolePlay,
+    'sessions' => t.storySessions,
+    'prompts' => t.syncPromptInjections,
+    'worldbook' => t.syncWorldBook,
+    _ => kind,
+  };
+
+  io.File _localFile(String kind, String id) =>
+      io.File('${_localDir(kind)}/$id${_ext(kind)}');
+
+  _SyncState _stateFor(String kind, String id) {
+    final file = _localFile(kind, id);
+    final localExists = file.existsSync();
+    final remote = (_remote[kind] ?? const {})['$id${_ext(kind)}'];
+    if (!localExists && remote == null) return _SyncState.synced;
+    if (localExists && remote == null) return _SyncState.localOnly;
+    if (!localExists && remote != null) return _SyncState.remoteOnly;
+    try {
+      return file.lengthSync() == remote!.size
+          ? _SyncState.synced
+          : _SyncState.differs;
+    } catch (_) {
+      return _SyncState.differs;
     }
-    return ids.toList()..sort();
   }
-
-  List<String> get _sessionIds {
-    final ids = <String>{...StorySessionStore.instance.storyIds};
-    for (final f in _remoteSessions) {
-      if (f.endsWith('.json')) ids.add(f.substring(0, f.length - 5));
-    }
-    return ids.toList()..sort();
-  }
-
-  String _cardName(String id) =>
-      CharacterCardStore.instance.find(id)?.name ?? id;
-
-  String _storyName(String id) => StoryStore.instance.find(id)?.name ?? id;
-
-  String _sessionName(String id) => StoryStore.instance.find(id)?.name ?? id;
 
   void _toast(bool ok) {
     App.rootContext.showMessage(
@@ -1069,236 +1117,268 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     );
   }
 
-  Future<void> _upload(Set<String> ids, String kind) async {
+  Future<void> _upload(String kind, Set<String> ids) async {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
     final sync = DataSync();
+    final dir = _localDir(kind);
+    final ext = _ext(kind);
     var ok = 0;
     for (final id in ids) {
+      final file = io.File('$dir/$id$ext');
+      if (file.existsSync()) {
+        final r = await sync.uploadFile(
+          localPath: file.path,
+          remoteName: '$id$ext',
+          remoteDir: kind,
+        );
+        if (r.success) ok++;
+      }
       if (kind == 'cards') {
-        final dir = CharacterCardStore.instance.dirPath;
-        final json = io.File('$dir/$id.json');
-        if (json.existsSync()) {
-          final r = await sync.uploadFile(
-            localPath: json.path,
-            remoteName: '$id.json',
-            remoteDir: 'cards',
-          );
-          if (r.success) ok++;
-        }
         final png = io.File('$dir/$id.png');
         if (png.existsSync()) {
           await sync.uploadFile(
             localPath: png.path,
             remoteName: '$id.png',
-            remoteDir: 'cards',
+            remoteDir: kind,
           );
-        }
-      } else if (kind == 'stories') {
-        final md = io.File('${StoryStore.instance.dirPath}/$id.md');
-        if (md.existsSync()) {
-          final r = await sync.uploadFile(
-            localPath: md.path,
-            remoteName: '$id.md',
-            remoteDir: 'stories',
-          );
-          if (r.success) ok++;
-        }
-      } else {
-        final json = io.File('${StorySessionStore.instance.dirPath}/$id.json');
-        if (json.existsSync()) {
-          final r = await sync.uploadFile(
-            localPath: json.path,
-            remoteName: '$id.json',
-            remoteDir: 'sessions',
-          );
-          if (r.success) ok++;
         }
       }
     }
     if (!mounted) return;
-    setState(() => _busy = false);
+    setState(() {
+      _busy = false;
+      _sel(kind).clear();
+    });
     _toast(ok > 0);
     await _load();
   }
 
-  Future<void> _download(Set<String> ids, String kind) async {
+  Future<void> _download(String kind, Set<String> ids) async {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
     final sync = DataSync();
+    final dir = _localDir(kind);
+    final ext = _ext(kind);
+    final remote = _remote[kind] ?? const <String, RemoteFileInfo>{};
     var ok = 0;
     for (final id in ids) {
-      if (kind == 'cards') {
-        final dir = CharacterCardStore.instance.dirPath;
-        if (_remoteCards.contains('$id.json')) {
-          final r = await sync.downloadFile(
-            remoteName: '$id.json',
-            localPath: '$dir/$id.json',
-            remoteDir: 'cards',
+      if (remote.containsKey('$id$ext')) {
+        final r = await sync.downloadFile(
+          remoteName: '$id$ext',
+          localPath: '$dir/$id$ext',
+          remoteDir: kind,
+        );
+        if (r.success) ok++;
+        if (kind == 'cards' && remote.containsKey('$id.png')) {
+          await sync.downloadFile(
+            remoteName: '$id.png',
+            localPath: '$dir/$id.png',
+            remoteDir: kind,
           );
-          if (r.success) ok++;
-          if (_remoteCards.contains('$id.png')) {
-            await sync.downloadFile(
-              remoteName: '$id.png',
-              localPath: '$dir/$id.png',
-              remoteDir: 'cards',
-            );
-          }
-        }
-      } else if (kind == 'stories') {
-        if (_remoteStories.contains('$id.md')) {
-          final r = await sync.downloadFile(
-            remoteName: '$id.md',
-            localPath: '${StoryStore.instance.dirPath}/$id.md',
-            remoteDir: 'stories',
-          );
-          if (r.success) ok++;
-        }
-      } else {
-        if (_remoteSessions.contains('$id.json')) {
-          final r = await sync.downloadFile(
-            remoteName: '$id.json',
-            localPath: '${StorySessionStore.instance.dirPath}/$id.json',
-            remoteDir: 'sessions',
-          );
-          if (r.success) ok++;
         }
       }
     }
     await CharacterCardStore.instance.reload();
     await StoryStore.instance.reload();
     await StorySessionStore.instance.reload();
+    await PromptInjectionStore.instance.reload();
+    await WorldBookStore.instance.reload();
     if (!mounted) return;
-    setState(() => _busy = false);
+    setState(() {
+      _busy = false;
+      _sel(kind).clear();
+    });
     _toast(ok > 0);
+    await _load();
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          Appbar(
-            title: Text(t.selectiveSync),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new),
-              tooltip: t.back,
-              onPressed: () => context.canPop() ? context.pop() : App.pop(),
+    return Column(
+      children: [
+        Appbar(
+          title: Text(t.selectiveSync),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new),
+            tooltip: t.back,
+            onPressed: () => context.canPop() ? context.pop() : App.pop(),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: t.refresh,
+              onPressed: _loading ? null : _load,
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: t.refresh,
-                onPressed: _load,
-              ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: CapsuleOptions(
+            scrollable: true,
+            children: [
+              for (var i = 0; i < _kinds.length; i++)
+                CapsuleOption(
+                  text: _label(_kinds[i]),
+                  isSelected: _tab == i,
+                  onTap: () => setState(() => _tab = i),
+                ),
             ],
-            bottom: TabBar(
-              tabs: [
-                Tab(text: t.characterCards),
-                Tab(text: t.rolePlay),
-                Tab(text: t.storySessions),
-              ],
-            ),
           ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : TabBarView(
-                    children: [
-                      _buildList('cards'),
-                      _buildList('stories'),
-                      _buildList('sessions'),
-                    ],
-                  ),
-          ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildList(_kinds[_tab]),
+        ),
+      ],
     );
   }
 
   Widget _buildList(String kind) {
-    final ids = switch (kind) {
-      'cards' => _cardIds,
-      'stories' => _storyIds,
-      _ => _sessionIds,
-    };
-    final selected = switch (kind) {
-      'cards' => _selectedCards,
-      'stories' => _selectedStories,
-      _ => _selectedSessions,
-    };
+    final ids = <String>{
+      ..._localIds(kind),
+      for (final name in (_remote[kind] ?? const {}).keys)
+        if (name.endsWith(_ext(kind)))
+          name.substring(0, name.length - _ext(kind).length),
+    }.toList()..sort();
+    final selected = _sel(kind);
     if (ids.isEmpty) {
-      final empty = switch (kind) {
-        'cards' => t.characterCardsEmpty,
-        'stories' => t.storyNoStories,
-        _ => t.storySessions,
-      };
-      return Center(child: Text(empty));
+      return Center(
+        child: Text(
+          t.characterCardsEmpty,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      );
     }
-    String title(String id) => switch (kind) {
-      'cards' => _cardName(id),
-      'stories' => _storyName(id),
-      _ => _sessionName(id),
-    };
-    String subtitle(String id) => switch (kind) {
-      'cards' => 'cards/$id.json',
-      'stories' => 'stories/$id.md',
-      _ => 'sessions/$id.json',
-    };
     return Column(
       children: [
         Expanded(
           child: ListView(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
             children: [
-              for (final id in ids)
-                CheckboxListTile(
-                  dense: true,
-                  value: selected.contains(id),
-                  title: Text(title(id)),
-                  subtitle: Text(
-                    subtitle(id),
-                    style: const TextStyle(fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  onChanged: (v) => setState(() {
-                    if (v == true) {
-                      selected.add(id);
-                    } else {
-                      selected.remove(id);
-                    }
-                  }),
-                ),
+              for (final id in ids) _buildItem(kind, id, selected),
             ],
           ),
         ),
-        SafeArea(
-          top: false,
+        _buildActions(kind, selected),
+      ],
+    );
+  }
+
+  Widget _buildItem(String kind, String id, Set<String> selected) {
+    final scheme = Theme.of(context).colorScheme;
+    final isSelected = selected.contains(id);
+    final state = _stateFor(kind, id);
+    final (label, color) = switch (state) {
+      _SyncState.synced => (t.syncStateSynced, scheme.primary),
+      _SyncState.localOnly => (t.syncStateLocalOnly, scheme.tertiary),
+      _SyncState.remoteOnly => (t.syncStateRemoteOnly, scheme.secondary),
+      _SyncState.differs => (t.syncStateDiffers, scheme.error),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isSelected
+            ? scheme.primaryContainer
+            : scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => setState(() {
+            if (isSelected) {
+              selected.remove(id);
+            } else {
+              selected.add(id);
+            }
+          }),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _busy ? null : () => _upload(selected, kind),
-                    icon: const Icon(Icons.cloud_upload_outlined, size: 18),
-                    label: Text('${t.upload} (${selected.length})'),
-                  ),
+                Icon(
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.circle_outlined,
+                  size: 20,
+                  color: isSelected ? scheme.primary : scheme.outline,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: _busy ? null : () => _download(selected, kind),
-                    icon: const Icon(Icons.cloud_download_outlined, size: 18),
-                    label: Text('${t.download} (${selected.length})'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _name(kind, id),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$kind/$id${_ext(kind)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(fontSize: 11, color: color),
                   ),
                 ),
               ],
             ),
           ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildActions(String kind, Set<String> selected) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: (_busy || selected.isEmpty)
+                    ? null
+                    : () => _upload(kind, selected),
+                icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                label: Text('${t.upload} (${selected.length})'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: (_busy || selected.isEmpty)
+                    ? null
+                    : () => _download(kind, selected),
+                icon: const Icon(Icons.cloud_download_outlined, size: 18),
+                label: Text('${t.download} (${selected.length})'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

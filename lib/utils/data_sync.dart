@@ -16,6 +16,15 @@ import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
 
+/// 远端文件信息（用于判断是否已同步）
+class RemoteFileInfo {
+  final String name;
+  final int size;
+  final DateTime? modified;
+
+  const RemoteFileInfo({required this.name, this.size = 0, this.modified});
+}
+
 class DataSync with ChangeNotifier {
   DataSync._() {
     final t = appdata.implicitData['dataLastSyncTime'];
@@ -360,13 +369,28 @@ class DataSync with ChangeNotifier {
 
   /// 远端目录下的文件名列表（目录不存在时返回空）
   Future<Res<List<String>>> listRemoteFiles({String dir = '/'}) async {
+    final entries = await listRemoteEntries(dir: dir);
+    return entries.success
+        ? Res([for (final e in entries.data) e.name])
+        : Res.error(entries.errorMessage ?? '');
+  }
+
+  /// 远端目录下的文件信息（名称 / 大小 / 修改时间）
+  Future<Res<List<RemoteFileInfo>>> listRemoteEntries({
+    String dir = '/',
+  }) async {
     final client = _client();
     if (client == null) return const Res([]);
     try {
       final files = await client.readDir(_normDir(dir));
       return Res([
         for (final f in files)
-          if (f.name != null && !f.name!.endsWith('.part')) f.name!,
+          if (f.name != null && !f.name!.endsWith('.part'))
+            RemoteFileInfo(
+              name: f.name!,
+              size: f.size ?? 0,
+              modified: f.mTime,
+            ),
       ]);
     } catch (e, s) {
       Log.error('List Remote', e, s);

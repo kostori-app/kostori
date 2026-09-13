@@ -458,6 +458,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Saves'
 	String get storySessions => 'Saves';
 
+	/// en: 'Synced'
+	String get syncStateSynced => 'Synced';
+
+	/// en: 'Not uploaded'
+	String get syncStateLocalOnly => 'Not uploaded';
+
+	/// en: 'Not downloaded'
+	String get syncStateRemoteOnly => 'Not downloaded';
+
+	/// en: 'Out of sync'
+	String get syncStateDiffers => 'Out of sync';
+
+	/// en: 'Prompt injections'
+	String get syncPromptInjections => 'Prompt injections';
+
+	/// en: 'World book'
+	String get syncWorldBook => 'World book';
+
 	/// en: 'Data'
 	String get data => 'Data';
 
@@ -8149,6 +8167,12 @@ extension on Translations {
 			'selectiveSync' => 'Selective sync',
 			'syncSuccess' => 'Synced',
 			'storySessions' => 'Saves',
+			'syncStateSynced' => 'Synced',
+			'syncStateLocalOnly' => 'Not uploaded',
+			'syncStateRemoteOnly' => 'Not downloaded',
+			'syncStateDiffers' => 'Out of sync',
+			'syncPromptInjections' => 'Prompt injections',
+			'syncWorldBook' => 'World book',
 			'data' => 'Data',
 			'dateDesc' => 'Date Desc',
 			'date' => 'Date',
@@ -8516,14 +8540,14 @@ extension on Translations {
 			'inputMessage' => 'Input message...',
 			'noTopicsYet' => 'No topics yet',
 			'selectAiPersonality' => 'Select AI Personality',
+			_ => null,
+		} ?? switch (path) {
 			'apply' => 'Apply',
 			'heightPx' => 'Height(px)',
 			'setUniformHeight' => 'Set Uniform Height',
 			'uniformHeight' => 'Uniform Height',
 			'cropImage' => 'Crop Image',
 			'finishCropping' => 'Finish Cropping',
-			_ => null,
-		} ?? switch (path) {
 			'sortImages' => 'Sort Images',
 			'finishSorting' => 'Finish Sorting',
 			'noImages' => 'No Images',
@@ -9030,14 +9054,14 @@ extension on Translations {
 			'singleSourceSearch' => 'Single Source',
 			'searchGroupBuiltIn' => 'Built-in groups',
 			'searchGroupCustom' => 'My groups',
+			_ => null,
+		} ?? switch (path) {
 			'manageGroups' => 'Manage Groups',
 			'newGroup' => 'New Group',
 			'groupName' => 'Group Name',
 			'groupExists' => 'Group name already exists',
 			'groupSources' => 'Sources in group',
 			'assignSources' => 'Assign sources',
-			_ => null,
-		} ?? switch (path) {
 			'deleteGroup' => 'Delete Group',
 			'deleteGroupConfirm' => 'Delete this group?',
 			'translation' => 'Translation',
@@ -9544,14 +9568,14 @@ extension on Translations {
 			'generatedTags' => 'Generated Tags',
 			'exportScreenshot' => 'Export Screenshot',
 			'copyAll' => 'Copy all',
+			_ => null,
+		} ?? switch (path) {
 			'timeRange' => 'Time Range',
 			'thisWeek' => 'This Week',
 			'thisMonth' => 'This Month',
 			'generateSummary' => 'Generate Summary',
 			'generateTag' => 'Generate Tag',
 			'summaryReport' => 'Summary Report',
-			_ => null,
-		} ?? switch (path) {
 			'aiStatActiveTitles' => 'Active titles',
 			'aiSoulStyle' => 'Analysis style',
 			'aiStyleBalanced' => 'Balanced',
@@ -10058,14 +10082,14 @@ extension on Translations {
 			'statsCountComments' => ({required Object n}) => '${n} comments',
 			'statsCountItems' => ({required Object n}) => '${n} items',
 			'statsDateFull' => ({required Object month, required Object day, required Object year}) => '${month}/${day}/${year}',
+			_ => null,
+		} ?? switch (path) {
 			'statsDateRangeWeek' => ({required Object month, required Object day, required Object endMonth, required Object endDay, required Object year}) => '${month}/${day} - ${endMonth}/${endDay}, ${year}',
 			'statsDateMonth' => ({required Object year, required Object month}) => '${year}.${month}',
 			'statsYearMonthName' => ({required Object month, required Object year}) => '${month} ${year}',
 			'statsDateRangeHalf' => ({required Object year, required Object startMonth, required Object endMonth}) => '${year}.${startMonth} - ${endMonth}',
 			'statsDateYear' => ({required Object year}) => '${year}',
 			'statsDateDay' => ({required Object day}) => '${day}',
-			_ => null,
-		} ?? switch (path) {
 			'statsDateMonthOnly' => ({required Object month}) => '${month}',
 			'statsWeekdayMon' => 'Mon',
 			'statsWeekdayTue' => 'Tue',
@@ -10572,14 +10596,14 @@ extension on Translations {
 			'viewingRecord' => 'Viewing record',
 			'watchDurationLabel' => ({required Object duration}) => 'Watch duration: ${duration}',
 			'completedStatus' => ({required Object status}) => 'Completed: ${status}',
+			_ => null,
+		} ?? switch (path) {
 			'yes' => 'Yes',
 			'no' => 'No',
 			'startTimeLabel' => ({required Object time}) => 'Start time: ${time}',
 			'endTimeLabel' => ({required Object time}) => 'End time: ${time}',
 			'appInfo' => 'App info',
 			'partRepoFetchFailed' => ({required Object list}) => 'Some repositories failed to fetch: ${list}',
-			_ => null,
-		} ?? switch (path) {
 			'airTimeLabel' => ({required Object time}) => 'Air time: ${time}',
 			'durationLabel' => ({required Object duration}) => 'Duration: ${duration}',
 			'replyBracket' => '[Reply]',

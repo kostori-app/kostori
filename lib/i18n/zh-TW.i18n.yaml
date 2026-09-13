@@ -129,6 +129,12 @@ dataSync: 數據同步
 selectiveSync: 選擇性同步
 syncSuccess: 同步成功
 storySessions: 存檔
+syncStateSynced: 已同步
+syncStateLocalOnly: 未上傳
+syncStateRemoteOnly: 未下載
+syncStateDiffers: 有差異
+syncPromptInjections: 提示詞注入
+syncWorldBook: 世界書
 data: 數據
 dateDesc: 按日期降序
 date: 日期

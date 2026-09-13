@@ -9,6 +9,7 @@ import 'package:kostori/database/history_write_service.dart';
 import 'package:kostori/database/search_history.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -194,8 +195,14 @@ Future<File> exportAppData() async {
         }
       }
     }
-    // 角色卡 / 故事观：独立目录（也随整包备份）
-    for (final dirName in const ['character_cards', 'stories']) {
+    // 角色卡 / 故事观 / 存档 / 提示词注入 / 世界书：独立目录（也随整包备份）
+    for (final dirName in const [
+      'character_cards',
+      'stories',
+      'story_sessions',
+      'prompt_injections',
+      'world_book',
+    ]) {
       final dir = FilePath.join(dataPath, dirName);
       if (Directory(dir).existsSync()) {
         for (var file in Directory(dir).listSync()) {
@@ -447,8 +454,14 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       }
       await MePagePluginManager().reload();
     }
-    // 角色卡 / 故事观：合并导入（保留本地独有文件）
-    for (final dirName in const ['character_cards', 'stories']) {
+    // 角色卡 / 故事观 / 存档 / 提示词注入 / 世界书：合并导入（保留本地独有文件）
+    for (final dirName in const [
+      'character_cards',
+      'stories',
+      'story_sessions',
+      'prompt_injections',
+      'world_book',
+    ]) {
       final src = FilePath.join(cacheDirPath, dirName);
       if (!Directory(src).existsSync()) continue;
       final dest = FilePath.join(App.dataPath, dirName);
@@ -461,6 +474,9 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     }
     await CharacterCardStore.instance.reload();
     await StoryStore.instance.reload();
+    await StorySessionStore.instance.reload();
+    await PromptInjectionStore.instance.reload();
+    await WorldBookStore.instance.reload();
   } catch (e) {
     DebugLog.error('importAppData', '$e');
   } finally {
