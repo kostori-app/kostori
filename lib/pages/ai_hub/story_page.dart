@@ -1911,13 +1911,24 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _boot();
   }
 
-  /// 仅用户拖动时更新跟随状态（避免内容增高被误判为“离底”）
+  /// 是否已贴近底部（列表 reverse，底部即 offset 0）
+  static bool _atBottom(ScrollMetrics m) => m.pixels <= 48;
+
+  /// 滚动状态机：仅 [UserScrollNotification]（用户拖动 / 滚轮 / 触摸板）
+  /// 可取消跟随；程序滚动不触发该通知，不会误伤跟随状态。
+  /// 回到底部时恢复跟随。
   bool _onUserScroll(ScrollNotification n) {
-    if (n is! ScrollUpdateNotification || n.dragDetails == null) return false;
-    if (!_scrollController.hasClients) return false;
-    final atBottom = _scrollController.offset < 48;
-    if (atBottom != _isFollowing) {
-      setState(() => _isFollowing = atBottom);
+    if (n.metrics.axis == Axis.horizontal) return false;
+    if (n is UserScrollNotification) {
+      if (n.direction != ScrollDirection.idle &&
+          !_atBottom(n.metrics) &&
+          _isFollowing) {
+        setState(() => _isFollowing = false);
+      }
+    } else if (n is ScrollUpdateNotification) {
+      if (_atBottom(n.metrics) && !_isFollowing) {
+        setState(() => _isFollowing = true);
+      }
     }
     return false;
   }
@@ -3153,6 +3164,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                   ],
                 );
               },
+            ),
+      floatingActionButton: _isFollowing
+          ? null
+          : FloatingActionButton.small(
+              onPressed: () {
+                setState(() => _isFollowing = true);
+                _scrollToBottom(force: true);
+              },
+              tooltip: t.jumpToBottom,
+              child: const Icon(Icons.arrow_downward),
             ),
     );
   }
