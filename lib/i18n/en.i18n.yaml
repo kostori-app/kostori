@@ -1652,6 +1652,14 @@ storyRegexTargetUser: User input
 storyRegexTargetBoth: Both
 storyAddRegex: Add rule
 storyRegexEnabled: Enabled
+storyEquipment: Equipment
+storyCombat: Combat
+storyRound: Round
+storyAchievements: Achievements
+storyEquip: Equip
+storyUnequip: Unequip
+storyNextRound: Next round
+storyAchievementUnlocked: Achievement unlocked
 noActivityInTimeRange: No activity in this time range
 weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary

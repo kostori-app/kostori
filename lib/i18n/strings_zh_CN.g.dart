@@ -1641,6 +1641,14 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRegexTargetBoth => '两者';
 	@override String get storyAddRegex => '添加正则';
 	@override String get storyRegexEnabled => '启用';
+	@override String get storyEquipment => '装备';
+	@override String get storyCombat => '战斗';
+	@override String get storyRound => '回合';
+	@override String get storyAchievements => '成就';
+	@override String get storyEquip => '装备';
+	@override String get storyUnequip => '卸下';
+	@override String get storyNextRound => '下一回合';
+	@override String get storyAchievementUnlocked => '解锁成就';
 	@override String get noActivityInTimeRange => '该时间段内暂无活动记录';
 	@override String get weeklySummary => '本周总结';
 	@override String get monthlySummary => '本月总结';
@@ -4321,6 +4329,14 @@ extension on TranslationsZhCn {
 			'storyRegexTargetBoth' => '两者',
 			'storyAddRegex' => '添加正则',
 			'storyRegexEnabled' => '启用',
+			'storyEquipment' => '装备',
+			'storyCombat' => '战斗',
+			'storyRound' => '回合',
+			'storyAchievements' => '成就',
+			'storyEquip' => '装备',
+			'storyUnequip' => '卸下',
+			'storyNextRound' => '下一回合',
+			'storyAchievementUnlocked' => '解锁成就',
 			'noActivityInTimeRange' => '该时间段内暂无活动记录',
 			'weeklySummary' => '本周总结',
 			'monthlySummary' => '本月总结',
@@ -4717,6 +4733,8 @@ extension on TranslationsZhCn {
 			'dropJsPluginHint' => '把 .js 插件文件拖到这里即可安装',
 			'mustBeJs' => '仅支持 .js 文件',
 			'pluginSourceList' => '插件源列表',
+			_ => null,
+		} ?? switch (path) {
 			'pluginRepoEmpty' => '还没有配置插件源仓库，点右上角添加',
 			'onlyEnabled' => '只显示已启用',
 			'filterLogged' => '已登录',
@@ -4725,8 +4743,6 @@ extension on TranslationsZhCn {
 			'loggedIn' => '已登录',
 			'oneKeySign' => '一键签到',
 			'signAllSuccess' => ({required Object success}) => '已签到 ${success} 个',
-			_ => null,
-		} ?? switch (path) {
 			'signAllPartial' => ({required Object success, required Object fail}) => '完成 ${success} 个，失败 ${fail} 个',
 			'noPluginToSign' => '今日无需签到',
 			'signInManager' => '签到管理',
@@ -5231,6 +5247,8 @@ extension on TranslationsZhCn {
 			'historyTooShort' => '历史消息太少，无需压缩',
 			'messageTooLarge' => '消息过大，最大允许 64KB',
 			'rateLimit' => '请求过于频繁，请稍后再试',
+			_ => null,
+		} ?? switch (path) {
 			'portBusy' => ({required Object start, required Object end}) => '端口 ${start} 到 ${end} 全部被占用',
 			'webSocketOnly' => '仅支持 WebSocket 连接',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具调用轮次过多',
@@ -5239,8 +5257,6 @@ extension on TranslationsZhCn {
 			'manual' => '手动',
 			'votes' => ({required Object n}) => '${n} 票',
 			'pagesCount' => ({required Object n}) => '${n} 页',
-			_ => null,
-		} ?? switch (path) {
 			'emptyPage' => '空页面',
 			'copyTextCommand' => '复制文本口令',
 			'saveFailedPermissionOrDirectory' => '保存失败：权限或目录异常',

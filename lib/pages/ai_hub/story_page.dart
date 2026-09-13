@@ -434,6 +434,26 @@ class _StoryRegexDraft {
   }
 }
 
+class _StoryAchievementDraft {
+  final TextEditingController key;
+  final TextEditingController name;
+  final TextEditingController description;
+
+  _StoryAchievementDraft({
+    String keyText = '',
+    String nameText = '',
+    String descriptionText = '',
+  }) : key = TextEditingController(text: keyText),
+       name = TextEditingController(text: nameText),
+       description = TextEditingController(text: descriptionText);
+
+  void dispose() {
+    key.dispose();
+    name.dispose();
+    description.dispose();
+  }
+}
+
 class _StoryEditorState extends State<_StoryEditor> {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
@@ -506,6 +526,14 @@ class _StoryEditorState extends State<_StoryEditor> {
         replacementText: r.replacement,
         target: r.target,
         enabled: r.enabled,
+      ),
+  ];
+  late final List<_StoryAchievementDraft> _achievements = [
+    for (final a in widget.story?.achievements ?? const <StoryAchievement>[])
+      _StoryAchievementDraft(
+        keyText: a.key,
+        nameText: a.name,
+        descriptionText: a.description,
       ),
   ];
   late final Set<String> _worldBookIds = {
@@ -586,6 +614,9 @@ class _StoryEditorState extends State<_StoryEditor> {
     }
     for (final r in _regexes) {
       r.dispose();
+    }
+    for (final a in _achievements) {
+      a.dispose();
     }
     super.dispose();
   }
@@ -673,6 +704,17 @@ class _StoryEditorState extends State<_StoryEditor> {
               replacement: r.replacement.text,
               enabled: r.enabled,
               target: r.target,
+            ),
+      ],
+      achievements: [
+        for (final a in _achievements)
+          if (a.key.text.trim().isNotEmpty)
+            StoryAchievement(
+              key: a.key.text.trim(),
+              name: a.name.text.trim().isEmpty
+                  ? a.key.text.trim()
+                  : a.name.text.trim(),
+              description: a.description.text.trim(),
             ),
       ],
       initialState: initialState,
@@ -984,6 +1026,9 @@ class _StoryEditorState extends State<_StoryEditor> {
       'quests',
       'codex',
       'variables',
+      'equipment',
+      'combat',
+      'achievements',
     ];
     String sourceLabel(String s) => switch (s) {
       'resources' => t.storyResources,
@@ -993,6 +1038,9 @@ class _StoryEditorState extends State<_StoryEditor> {
       'quests' => t.storyQuests,
       'codex' => t.storyCodex,
       'variables' => t.storyVariables,
+      'equipment' => t.storyEquipment,
+      'combat' => t.storyCombat,
+      'achievements' => t.storyAchievements,
       _ => s,
     };
     return ListView(
@@ -1328,6 +1376,57 @@ class _StoryEditorState extends State<_StoryEditor> {
           icon: const Icon(Icons.add),
           label: Text(t.storyAddRegex),
         ),
+        sectionTitle(t.storyAchievements),
+        for (var i = 0; i < _achievements.length; i++)
+          card([
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _achievements[i].key,
+                    decoration: InputDecoration(
+                      labelText: t.storyRegexName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _achievements[i].name,
+                    decoration: InputDecoration(
+                      labelText: t.storyCharacterName,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => setState(() {
+                    _achievements[i].dispose();
+                    _achievements.removeAt(i);
+                  }),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _achievements[i].description,
+              decoration: InputDecoration(
+                labelText: t.storyCharacterDescription,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ]),
+        TextButton.icon(
+          onPressed: () =>
+              setState(() => _achievements.add(_StoryAchievementDraft())),
+          icon: const Icon(Icons.add),
+          label: Text(t.storyAddAction),
+        ),
       ],
     );
   }
@@ -1532,6 +1631,24 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         buf.write('\n当前在场：${state.present.join('、')}');
       }
     }
+    if (story.achievements.isNotEmpty) {
+      buf.write('\n\n【成就（解锁时把 key 加入 achievements，勿自创）】');
+      for (final a in story.achievements) {
+        buf.write('\n- ${a.key}：${a.name}');
+        if (a.description.trim().isNotEmpty) {
+          buf.write('（${a.description.trim()}）');
+        }
+      }
+    }
+    if (state.equipped.isNotEmpty) {
+      buf.write('\n\n【已装备（其机制当前生效）】${state.equipped.join('、')}');
+    }
+    if (state.combat.active) {
+      buf.write('\n\n【战斗中 · 第${state.combat.round}回合】');
+      for (final e in state.combat.enemies) {
+        buf.write('\n- ${e.name} ${e.hp}/${e.maxHp}${e.note.isEmpty ? '' : '（${e.note}）'}');
+      }
+    }
     if (vars.isNotEmpty) {
       buf.write('\n\n【变量（每回合回传最新值）】');
       final desc = {
@@ -1642,16 +1759,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           }
           state = state.copyWith(inventory: inv);
         }
-        // 故事层校验：新道具是否已在图鉴登记（未登记则提示补全）
-        final unregistered = _unregisteredItems(_state, state);
-        setState(() {
-          _state = state;
-          _unregistered = unregistered;
-        });
-        await StorySessionStore.instance.put(
-          story.id,
-          StorySession(sessionId: sessionId, state: state),
-        );
+        await _applyState(state);
       }
     } catch (e) {
       if (mounted) {
@@ -1693,15 +1801,32 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _inputFocus.requestFocus();
   }
 
-  /// 应用解析出的状态并持久化（含未登记道具校验）
+  /// 应用解析出的状态并持久化（含未登记道具校验 / 成就解锁提示）
   Future<void> _applyState(GameState? state) async {
     final sessionId = _sessionId;
     if (state == null || sessionId == null) return;
     final unregistered = _unregisteredItems(_state, state);
+    final newlyUnlocked = state.achievements
+        .where((k) => !_state.achievements.contains(k))
+        .toList();
     setState(() {
       _state = state;
       _unregistered = unregistered;
     });
+    if (newlyUnlocked.isNotEmpty) {
+      final names = [
+        for (final k in newlyUnlocked)
+          story.achievements
+              .firstWhere(
+                (a) => a.key == k,
+                orElse: () => StoryAchievement(key: k, name: k),
+              )
+              .name,
+      ];
+      App.rootContext.showMessage(
+        message: '${t.storyAchievementUnlocked}: ${names.join('、')}',
+      );
+    }
     await StorySessionStore.instance.put(
       story.id,
       StorySession(sessionId: sessionId, state: state),
@@ -2460,6 +2585,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 _manualRoll();
               },
             ),
+            if (_state.combat.active)
+              ListTile(
+                leading: const Icon(Icons.skip_next_outlined),
+                title: Text(t.storyNextRound),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _send('进入下一回合');
+                },
+              ),
             for (final a in story.actions)
               ListTile(
                 leading: Icon(_storyActionIcon(a.icon)),
@@ -2702,6 +2836,22 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               },
             ),
             ListTile(
+              leading: Icon(
+                state.equipped.contains(item)
+                    ? Icons.remove_circle_outline
+                    : Icons.shield_outlined,
+              ),
+              title: Text(
+                state.equipped.contains(item) ? t.storyUnequip : t.storyEquip,
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                widget.onCommand(
+                  state.equipped.contains(item) ? '卸下 $item' : '装备 $item',
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete_outline),
               title: Text(t.storyDrop),
               onTap: () {
@@ -2896,6 +3046,92 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               ),
             ),
         ];
+      case 'equipment':
+        if (state.equipped.isEmpty) return const [];
+        return [
+          _sectionTitle(
+            panel.title.isEmpty ? t.storyEquipment : panel.title,
+            icon,
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in state.equipped)
+                _entry(
+                  label: s,
+                  kind: 'item',
+                  onLongPress: () => _itemMenu(s),
+                  onSecondaryTap: () => _itemMenu(s),
+                ),
+            ],
+          ),
+        ];
+      case 'combat':
+        if (!state.combat.active && state.combat.enemies.isEmpty) {
+          return const [];
+        }
+        return [
+          _sectionTitle(
+            panel.title.isEmpty
+                ? '${t.storyCombat} · ${t.storyRound}${state.combat.round}'
+                : panel.title,
+            icon,
+          ),
+          for (final e in state.combat.enemies)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${e.name}  ${e.hp}/${e.maxHp}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: e.maxHp <= 0
+                          ? 0
+                          : (e.hp / e.maxHp).clamp(0.0, 1.0),
+                      minHeight: 6,
+                    ),
+                  ),
+                  if (e.note.isNotEmpty)
+                    Text(
+                      e.note,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ];
+      case 'achievements':
+        if (state.achievements.isEmpty) return const [];
+        final byKey = {for (final a in widget.story.achievements) a.key: a};
+        return [
+          _sectionTitle(
+            panel.title.isEmpty ? t.storyAchievements : panel.title,
+            icon,
+          ),
+          for (final key in state.achievements)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.emoji_events_outlined, size: 20),
+              title: Text(byKey[key]?.name ?? key),
+              subtitle: (byKey[key]?.description.isEmpty ?? true)
+                  ? null
+                  : Text(
+                      byKey[key]!.description,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+            ),
+        ];
       case 'variables':
         if (state.variables.isEmpty) return const [];
         return [
@@ -3026,6 +3262,10 @@ IconData? _panelIcon(String name) {
     'inventory' => Icons.inventory_2_outlined,
     'quests' => Icons.flag_outlined,
     'codex' => Icons.menu_book_outlined,
+    'variables' => Icons.tune,
+    'equipment' => Icons.shield_outlined,
+    'combat' => Icons.local_fire_department_outlined,
+    'achievements' => Icons.emoji_events_outlined,
     _ => _storyActionIcon(name),
   };
 }

@@ -40,7 +40,25 @@ class QuestItem {
   final String desc;
   final int progress; // 0..100
 
-  const QuestItem({required this.title, this.desc = '', this.progress = 0});
+  /// 任务链：所属链名（空 = 独立任务）
+  final String chain;
+
+  /// 当前阶段 / 总阶段（0 表示不分阶段）
+  final int stage;
+  final int totalStages;
+
+  /// active | done | failed
+  final String status;
+
+  const QuestItem({
+    required this.title,
+    this.desc = '',
+    this.progress = 0,
+    this.chain = '',
+    this.stage = 0,
+    this.totalStages = 0,
+    this.status = 'active',
+  });
 
   factory QuestItem.fromJson(dynamic v) {
     if (v is Map) {
@@ -48,6 +66,10 @@ class QuestItem {
         title: v['title']?.toString() ?? '',
         desc: v['desc']?.toString() ?? '',
         progress: (v['progress'] as num?)?.toInt() ?? 0,
+        chain: v['chain']?.toString() ?? '',
+        stage: (v['stage'] as num?)?.toInt() ?? 0,
+        totalStages: (v['totalStages'] as num?)?.toInt() ?? 0,
+        status: v['status']?.toString() ?? 'active',
       );
     }
     return QuestItem(title: v.toString());
@@ -57,6 +79,104 @@ class QuestItem {
     'title': title,
     'desc': desc,
     'progress': progress,
+    if (chain.isNotEmpty) 'chain': chain,
+    if (stage > 0) 'stage': stage,
+    if (totalStages > 0) 'totalStages': totalStages,
+    if (status != 'active') 'status': status,
+  };
+}
+
+/// 战斗单位（敌人 / 同伴）
+class Combatant {
+  final String name;
+  final int hp;
+  final int maxHp;
+  final String note;
+
+  const Combatant({
+    required this.name,
+    this.hp = 0,
+    this.maxHp = 0,
+    this.note = '',
+  });
+
+  factory Combatant.fromJson(dynamic v) {
+    if (v is Map) {
+      return Combatant(
+        name: v['name']?.toString() ?? '',
+        hp: (v['hp'] as num?)?.toInt() ?? 0,
+        maxHp: (v['maxHp'] as num?)?.toInt() ?? 0,
+        note: v['note']?.toString() ?? '',
+      );
+    }
+    return Combatant(name: v.toString());
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'hp': hp,
+    'maxHp': maxHp,
+    if (note.isNotEmpty) 'note': note,
+  };
+}
+
+/// 战斗状态（简单回合制）
+class CombatState {
+  final bool active;
+  final int round;
+  final List<Combatant> enemies;
+  final String note;
+
+  const CombatState({
+    this.active = false,
+    this.round = 1,
+    this.enemies = const [],
+    this.note = '',
+  });
+
+  static const idle = CombatState();
+
+  factory CombatState.fromJson(Map<String, dynamic> json) => CombatState(
+    active: json['active'] as bool? ?? false,
+    round: (json['round'] as num?)?.toInt() ?? 1,
+    enemies: [
+      for (final e in (json['enemies'] as List? ?? const []))
+        Combatant.fromJson(e),
+    ],
+    note: json['note']?.toString() ?? '',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'active': active,
+    'round': round,
+    'enemies': [for (final e in enemies) e.toJson()],
+    if (note.isNotEmpty) 'note': note,
+  };
+}
+
+/// 故事成就定义
+class StoryAchievement {
+  final String key;
+  final String name;
+  final String description;
+
+  const StoryAchievement({
+    required this.key,
+    required this.name,
+    this.description = '',
+  });
+
+  factory StoryAchievement.fromJson(Map<String, dynamic> json) =>
+      StoryAchievement(
+        key: json['key']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        description: json['description']?.toString() ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'name': name,
+    'description': description,
   };
 }
 
@@ -444,6 +564,15 @@ class GameState {
   /// 当前在场的角色名（多角色同场）
   final List<String> present;
 
+  /// 已装备的物品名（其 codex 机制生效）
+  final List<String> equipped;
+
+  /// 战斗状态
+  final CombatState combat;
+
+  /// 已解锁的成就 key
+  final List<String> achievements;
+
   const GameState({
     this.resources = const [],
     this.attributes = const {},
@@ -456,6 +585,9 @@ class GameState {
     this.situation = '',
     this.variables = const {},
     this.present = const [],
+    this.equipped = const [],
+    this.combat = CombatState.idle,
+    this.achievements = const [],
   });
 
   static const empty = GameState();
@@ -472,6 +604,9 @@ class GameState {
     String? situation,
     Map<String, String>? variables,
     List<String>? present,
+    List<String>? equipped,
+    CombatState? combat,
+    List<String>? achievements,
   }) => GameState(
     resources: resources ?? this.resources,
     attributes: attributes ?? this.attributes,
@@ -484,6 +619,9 @@ class GameState {
     situation: situation ?? this.situation,
     variables: variables ?? this.variables,
     present: present ?? this.present,
+    equipped: equipped ?? this.equipped,
+    combat: combat ?? this.combat,
+    achievements: achievements ?? this.achievements,
   );
 
   factory GameState.fromJson(Map<String, dynamic> json) {
@@ -530,6 +668,14 @@ class GameState {
             }
           : const {},
       present: (json['present'] as List?)?.whereType<String>().toList() ?? const [],
+      equipped: (json['equipped'] as List?)?.whereType<String>().toList() ??
+          const [],
+      combat: json['combat'] is Map
+          ? CombatState.fromJson((json['combat'] as Map).cast<String, dynamic>())
+          : CombatState.idle,
+      achievements:
+          (json['achievements'] as List?)?.whereType<String>().toList() ??
+          const [],
     );
   }
 
@@ -545,6 +691,9 @@ class GameState {
     'situation': situation,
     'variables': variables,
     'present': present,
+    'equipped': equipped,
+    'combat': combat.toJson(),
+    'achievements': achievements,
   };
 }
 
@@ -656,6 +805,9 @@ class Story {
   /// 正则替换规则（对 AI 输出 / 用户输入后处理）
   final List<StoryRegex> regexes;
 
+  /// 成就定义（AI 解锁）
+  final List<StoryAchievement> achievements;
+
   /// 默认面板分区（详情面板未自定义时使用）
   static const defaultPanels = <StoryPanel>[
     StoryPanel(source: 'resources'),
@@ -687,6 +839,7 @@ class Story {
     this.characters = const [],
     this.variables = const [],
     this.regexes = const [],
+    this.achievements = const [],
     this.initialState = GameState.empty,
     this.isBuiltin = false,
   });
@@ -708,6 +861,7 @@ class Story {
     List<StoryCharacter>? characters,
     List<StoryVariable>? variables,
     List<StoryRegex>? regexes,
+    List<StoryAchievement>? achievements,
     GameState? initialState,
   }) => Story(
     id: id,
@@ -727,6 +881,7 @@ class Story {
     characters: characters ?? this.characters,
     variables: variables ?? this.variables,
     regexes: regexes ?? this.regexes,
+    achievements: achievements ?? this.achievements,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
   );
@@ -781,6 +936,12 @@ class Story {
               if (e is Map) StoryRegex.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    achievements: json['achievements'] is List
+        ? [
+            for (final e in json['achievements'] as List)
+              if (e is Map) StoryAchievement.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     initialState: json['initialState'] is Map
         ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
         : GameState.empty,
@@ -805,6 +966,7 @@ class Story {
     'characters': [for (final c in characters) c.toJson()],
     'variables': [for (final v in variables) v.toJson()],
     'regexes': [for (final r in regexes) r.toJson()],
+    'achievements': [for (final a in achievements) a.toJson()],
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
   };
@@ -833,7 +995,10 @@ class Story {
     "attributes": { "力量": 5, "敏捷": 5, "智力": 5 },
     "skills": ["技能名"],
     "inventory": ["物品 x1"],
-    "quests": [{"title": "任务", "desc": "描述", "progress": 0}],
+    "quests": [{"title": "任务", "desc": "描述", "progress": 0, "chain": "主线", "stage": 1, "totalStages": 3, "status": "active"}],
+    "equipped": ["已装备物品名"],
+    "combat": {"active": true, "round": 1, "enemies": [{"name": "敌人", "hp": 8, "maxHp": 10, "note": "状态"}]},
+    "achievements": ["已解锁成就key"],
     "time": "第1天 08:00",
     "location": "地点",
     "codex": [{"kind":"item|race|trait|talent|skill","key":"唯一键","name":"名称","display":"给玩家看的表面描述","mechanics":"给GM看的机制/数值，后续必须严格遵守"}],
@@ -853,6 +1018,10 @@ class Story {
 - **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
 - **变量**：variables 用于记录剧情状态（好感度、线索、进度等），键值均为字符串，每回合给出当前完整值；有变化时才需要改动。
 - **在场角色**：present 列出当前场景中出场的角色名（对应角色设定），随剧情进出更新。
+- **装备**：equipped 列出当前已装备的物品（必须在 inventory 中）；装备的 codex 机制生效，未装备则不生效。
+- **战斗**：进入战斗时给出 combat（active=true、round、敌人血量），战斗结束设 active=false；回合推进由玩家发起。
+- **任务链**：同一 chain 的任务构成任务链，用 stage/totalStages 标记阶段，完成/失败改 status。
+- **成就**：解锁成就时把其 key 加入 achievements；只能使用故事预定义的成就 key，不要自创。
 - **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
@@ -1019,6 +1188,7 @@ class StoryStore extends ChangeNotifier {
       characters: mapList('角色', StoryCharacter.fromJson),
       variables: mapList('变量', StoryVariable.fromJson),
       regexes: mapList('正则', StoryRegex.fromJson),
+      achievements: mapList('成就', StoryAchievement.fromJson),
       initialState: initialState,
     );
   }
@@ -1065,6 +1235,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.regexes.isNotEmpty) {
       section('正则', jsonEncode([for (final r in s.regexes) r.toJson()]));
+    }
+    if (s.achievements.isNotEmpty) {
+      section('成就', jsonEncode([for (final a in s.achievements) a.toJson()]));
     }
     section('初始状态', jsonEncode(s.initialState.toJson()));
     return buf.toString();

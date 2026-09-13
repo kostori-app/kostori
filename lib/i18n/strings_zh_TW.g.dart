@@ -1642,6 +1642,14 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRegexTargetBoth => '兩者';
 	@override String get storyAddRegex => '新增正則';
 	@override String get storyRegexEnabled => '啟用';
+	@override String get storyEquipment => '裝備';
+	@override String get storyCombat => '戰鬥';
+	@override String get storyRound => '回合';
+	@override String get storyAchievements => '成就';
+	@override String get storyEquip => '裝備';
+	@override String get storyUnequip => '卸下';
+	@override String get storyNextRound => '下一回合';
+	@override String get storyAchievementUnlocked => '解鎖成就';
 	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
 	@override String get weeklySummary => '本週總結';
 	@override String get monthlySummary => '本月總結';
@@ -4321,6 +4329,14 @@ extension on TranslationsZhTw {
 			'storyRegexTargetBoth' => '兩者',
 			'storyAddRegex' => '新增正則',
 			'storyRegexEnabled' => '啟用',
+			'storyEquipment' => '裝備',
+			'storyCombat' => '戰鬥',
+			'storyRound' => '回合',
+			'storyAchievements' => '成就',
+			'storyEquip' => '裝備',
+			'storyUnequip' => '卸下',
+			'storyNextRound' => '下一回合',
+			'storyAchievementUnlocked' => '解鎖成就',
 			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
 			'weeklySummary' => '本週總結',
 			'monthlySummary' => '本月總結',
@@ -4716,6 +4732,8 @@ extension on TranslationsZhTw {
 			'mustBeJs' => '僅支援 .js 檔案',
 			'pluginSourceList' => '插件源列表',
 			'pluginRepoEmpty' => '還沒有設定插件源倉庫，點右上角新增',
+			_ => null,
+		} ?? switch (path) {
 			'onlyEnabled' => '只顯示已啟用',
 			'filterLogged' => '已登入',
 			'filterNotLogged' => '未登入',
@@ -4724,8 +4742,6 @@ extension on TranslationsZhTw {
 			'oneKeySign' => '一鍵簽到',
 			'signAllSuccess' => ({required Object success}) => '已簽到 ${success} 個',
 			'signAllPartial' => ({required Object success, required Object fail}) => '完成 ${success} 個，失敗 ${fail} 個',
-			_ => null,
-		} ?? switch (path) {
 			'noPluginToSign' => '今日無需簽到',
 			'signInManager' => '簽到管理',
 			'signAll' => '全部簽到',
@@ -5230,6 +5246,8 @@ extension on TranslationsZhTw {
 			'messageTooLarge' => '訊息過大，最大允許 64KB',
 			'rateLimit' => '請求過於頻繁，請稍後再試',
 			'portBusy' => ({required Object start, required Object end}) => '連接埠 ${start} 到 ${end} 全部被佔用',
+			_ => null,
+		} ?? switch (path) {
 			'webSocketOnly' => '僅支援 WebSocket 連線',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} 工具呼叫輪次過多',
 			'requestHeaders' => '請求頭',
@@ -5238,8 +5256,6 @@ extension on TranslationsZhTw {
 			'votes' => ({required Object n}) => '${n} 票',
 			'pagesCount' => ({required Object n}) => '${n} 頁',
 			'emptyPage' => '空頁面',
-			_ => null,
-		} ?? switch (path) {
 			'copyTextCommand' => '複製文字口令',
 			'saveFailedPermissionOrDirectory' => '保存失敗：權限或目錄異常',
 			'biometricsNotSupported' => '不支援生物辨識',

@@ -4849,6 +4849,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Enabled'
 	String get storyRegexEnabled => 'Enabled';
 
+	/// en: 'Equipment'
+	String get storyEquipment => 'Equipment';
+
+	/// en: 'Combat'
+	String get storyCombat => 'Combat';
+
+	/// en: 'Round'
+	String get storyRound => 'Round';
+
+	/// en: 'Achievements'
+	String get storyAchievements => 'Achievements';
+
+	/// en: 'Equip'
+	String get storyEquip => 'Equip';
+
+	/// en: 'Unequip'
+	String get storyUnequip => 'Unequip';
+
+	/// en: 'Next round'
+	String get storyNextRound => 'Next round';
+
+	/// en: 'Achievement unlocked'
+	String get storyAchievementUnlocked => 'Achievement unlocked';
+
 	/// en: 'No activity in this time range'
 	String get noActivityInTimeRange => 'No activity in this time range';
 
@@ -9529,6 +9553,14 @@ extension on Translations {
 			'storyRegexTargetBoth' => 'Both',
 			'storyAddRegex' => 'Add rule',
 			'storyRegexEnabled' => 'Enabled',
+			'storyEquipment' => 'Equipment',
+			'storyCombat' => 'Combat',
+			'storyRound' => 'Round',
+			'storyAchievements' => 'Achievements',
+			'storyEquip' => 'Equip',
+			'storyUnequip' => 'Unequip',
+			'storyNextRound' => 'Next round',
+			'storyAchievementUnlocked' => 'Achievement unlocked',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
 			'monthlySummary' => 'Monthly Summary',
@@ -9924,6 +9956,8 @@ extension on Translations {
 			'dropJsPluginHint' => 'Drop a .js plugin file here to install',
 			'mustBeJs' => 'Only .js files are supported',
 			'pluginSourceList' => 'Plugin source list',
+			_ => null,
+		} ?? switch (path) {
 			'pluginRepoEmpty' => 'No plugin repo configured yet. Tap the top-right to add one.',
 			'onlyEnabled' => 'Show enabled only',
 			'filterLogged' => 'Logged in',
@@ -9932,8 +9966,6 @@ extension on Translations {
 			'loggedIn' => 'Logged in',
 			'oneKeySign' => 'Sign in all',
 			'signAllSuccess' => ({required Object success}) => 'Signed ${success}',
-			_ => null,
-		} ?? switch (path) {
 			'signAllPartial' => ({required Object success, required Object fail}) => '${success} done, ${fail} failed',
 			'noPluginToSign' => 'Nothing to sign today',
 			'signInManager' => 'Sign-in manager',
@@ -10438,6 +10470,8 @@ extension on Translations {
 			'historyTooShort' => 'Not enough history to compress',
 			'messageTooLarge' => 'Message too large, maximum 64KB',
 			'rateLimit' => 'Too many requests, please try again later',
+			_ => null,
+		} ?? switch (path) {
 			'portBusy' => ({required Object start, required Object end}) => 'Ports ${start} to ${end} are all occupied',
 			'webSocketOnly' => 'Only WebSocket connections are supported',
 			'toolRoundsExceeded' => ({required Object source}) => '${source} has too many tool call rounds',
@@ -10446,8 +10480,6 @@ extension on Translations {
 			'manual' => 'Manual',
 			'votes' => ({required Object n}) => '${n} votes',
 			'pagesCount' => ({required Object n}) => '${n} pages',
-			_ => null,
-		} ?? switch (path) {
 			'emptyPage' => 'Empty Page',
 			'copyTextCommand' => 'Copy text command',
 			'saveFailedPermissionOrDirectory' => 'Save failed: permission or directory error',

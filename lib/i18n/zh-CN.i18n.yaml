@@ -1647,6 +1647,14 @@ storyRegexTargetUser: 用户输入
 storyRegexTargetBoth: 两者
 storyAddRegex: 添加正则
 storyRegexEnabled: 启用
+storyEquipment: 装备
+storyCombat: 战斗
+storyRound: 回合
+storyAchievements: 成就
+storyEquip: 装备
+storyUnequip: 卸下
+storyNextRound: 下一回合
+storyAchievementUnlocked: 解锁成就
 noActivityInTimeRange: 该时间段内暂无活动记录
 weeklySummary: 本周总结
 monthlySummary: 本月总结
