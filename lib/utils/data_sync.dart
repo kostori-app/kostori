@@ -313,6 +313,16 @@ class DataSync with ChangeNotifier {
         await client.write(_manifestName, utf8.encode(manifest));
         // 仅在全部上传成功后才推进本地版本号（失败不推进，避免漏下载）
         _setDataVersion(newVersion);
+        // 记录本次上传后的各部分哈希，避免本机之后重复下载自己刚传的内容
+        final syncedHashes = <String, dynamic>{};
+        for (final entry in partsMeta.entries) {
+          final meta = entry.value;
+          if (meta is Map && meta['hash'] != null) {
+            syncedHashes[entry.key] = meta['hash'];
+          }
+        }
+        appdata.implicitData['syncPartHashes'] = syncedHashes;
+        appdata.writeImplicitData();
         Log.info(
           "Upload Data",
           "Uploaded $uploaded/${syncParts.length} parts (v$newVersion)",
