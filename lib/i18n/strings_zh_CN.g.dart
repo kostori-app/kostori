@@ -1628,6 +1628,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyAddEntry => '添加条目';
 	@override String get storyImportPrompt => '导入提示词';
 	@override String get storyExportSt => '导出为 ST 角色卡';
+	@override String get storyLibraryManage => '管理知识库';
 	@override String get storyOwned => '已拥有';
 	@override String get storyNotOwned => '未拥有';
 	@override String get storyLearned => '已习得';
@@ -4436,6 +4437,7 @@ extension on TranslationsZhCn {
 			'storyAddEntry' => '添加条目',
 			'storyImportPrompt' => '导入提示词',
 			'storyExportSt' => '导出为 ST 角色卡',
+			'storyLibraryManage' => '管理知识库',
 			'storyOwned' => '已拥有',
 			'storyNotOwned' => '未拥有',
 			'storyLearned' => '已习得',
@@ -4852,9 +4854,9 @@ extension on TranslationsZhCn {
 			'secondsAsNumber' => '输入纯数字视为秒数',
 			'exportSettings' => '导出设置',
 			'h264CRF' => 'H.264 · CRF',
-			'withAudio' => '含音频',
 			_ => null,
 		} ?? switch (path) {
+			'withAudio' => '含音频',
 			'noAudio' => '无音频',
 			'ditherOn' => '抖动开',
 			'ditherOff' => '抖动关',
@@ -5366,9 +5368,9 @@ extension on TranslationsZhCn {
 			'openWithOtherPlayer' => '用其他播放器打开',
 			'downloadTitleFormat' => '下载标题格式',
 			'downloadFormatHint' => '占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份',
-			'rules' => '规则',
 			_ => null,
 		} ?? switch (path) {
+			'rules' => '规则',
 			'textRules' => '文本规则',
 			'textRuleAdd' => '新增规则',
 			'textRuleName' => '规则名称',

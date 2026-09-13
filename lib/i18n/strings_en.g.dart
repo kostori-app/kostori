@@ -4810,6 +4810,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Export as ST card'
 	String get storyExportSt => 'Export as ST card';
 
+	/// en: 'Manage library'
+	String get storyLibraryManage => 'Manage library';
+
 	/// en: 'Owned'
 	String get storyOwned => 'Owned';
 
@@ -9900,6 +9903,7 @@ extension on Translations {
 			'storyAddEntry' => 'Add entry',
 			'storyImportPrompt' => 'Import prompt',
 			'storyExportSt' => 'Export as ST card',
+			'storyLibraryManage' => 'Manage library',
 			'storyOwned' => 'Owned',
 			'storyNotOwned' => 'Not owned',
 			'storyLearned' => 'Learned',
@@ -10315,9 +10319,9 @@ extension on Translations {
 			'setEndPoint' => 'Set End',
 			'editStartPoint' => 'Edit Start',
 			'editEndPoint' => 'Edit End',
-			'durationFormatHint' => 'Supported formats: 90, 01:30, 1.5...',
 			_ => null,
 		} ?? switch (path) {
+			'durationFormatHint' => 'Supported formats: 90, 01:30, 1.5...',
 			'secondsAsNumber' => 'Pure numbers are treated as seconds',
 			'exportSettings' => 'Export Settings',
 			'fixedBitrateOptional' => 'Fixed bitrate (optional, overrides CRF)',
@@ -10829,9 +10833,9 @@ extension on Translations {
 			'openWithOtherPlayer' => 'Open with other player',
 			'downloadTitleFormat' => 'Download title format',
 			'downloadFormatHint' => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}',
-			'rules' => 'Rules',
 			_ => null,
 		} ?? switch (path) {
+			'rules' => 'Rules',
 			'textRules' => 'Text rules',
 			'textRuleAdd' => 'Add rule',
 			'textRuleName' => 'Rule name',

@@ -1634,6 +1634,7 @@ storyNoEntries: 暂无条目
 storyAddEntry: 添加条目
 storyImportPrompt: 导入提示词
 storyExportSt: 导出为 ST 角色卡
+storyLibraryManage: 管理知识库
 storyOwned: 已拥有
 storyNotOwned: 未拥有
 storyLearned: 已习得

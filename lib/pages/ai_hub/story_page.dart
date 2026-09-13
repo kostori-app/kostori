@@ -1458,15 +1458,33 @@ class _StoryEditorState extends State<_StoryEditor> {
       builder: (context, _) {
         final worldBook = WorldBookStore.instance.entries;
         final injections = PromptInjectionStore.instance.items;
+        final manage = Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => App.rootContext.to(
+              () => const PromptManagementSettingsPage(),
+            ),
+            icon: const Icon(Icons.settings_outlined, size: 18),
+            label: Text(t.storyLibraryManage),
+          ),
+        );
         if (worldBook.isEmpty && injections.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(t.storyLibraryEmpty, textAlign: TextAlign.center),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(t.storyLibraryEmpty, textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                manage,
+              ],
+            ),
           );
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            manage,
             Text(
               t.storyLibraryHint,
               style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
