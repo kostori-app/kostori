@@ -278,12 +278,12 @@ class DataSync with ChangeNotifier {
       try {
         // 读取旧清单：内容未变化的部分跳过上传（哈希比对）
         final prevRes = await readManifest();
-        final remoteVersion =
-            (prevRes.data?['version'] as num?)?.toInt() ?? 0;
+        final prevManifest = prevRes.dataOrNull;
+        final remoteVersion = (prevManifest?['version'] as num?)?.toInt() ?? 0;
         final newVersion =
             (remoteVersion > _dataVersion ? remoteVersion : _dataVersion) + 1;
         final prevParts =
-            (prevRes.data?['parts'] as Map?)?.cast<String, dynamic>() ??
+            (prevManifest?['parts'] as Map?)?.cast<String, dynamic>() ??
             const <String, dynamic>{};
         final partsMeta = <String, dynamic>{};
         var uploaded = 0;
@@ -390,7 +390,7 @@ class DataSync with ChangeNotifier {
 
       try {
         final manifestRes = await readManifest();
-        final manifest = manifestRes.data;
+        final manifest = manifestRes.dataOrNull;
         if (manifest == null) throw 'No data file found';
         final version = (manifest['version'] as num?)?.toInt() ?? 0;
         final currentVersion = _dataVersion;

@@ -1127,7 +1127,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       _remote
         ..clear()
         ..addAll(remote);
-      _manifest = manifest.data;
+      _manifest = manifest.dataOrNull;
       _loading = false;
     });
   }
