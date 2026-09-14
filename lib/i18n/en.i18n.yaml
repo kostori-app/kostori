@@ -2547,8 +2547,10 @@ worldBookPriorityHint: Higher priority entries are injected first
 worldBookGroup: Group
 worldBookSecondaryKeys: Secondary keys (one per line, all must match)
 worldBookPosition: Injection position
-worldBookPositionBefore: Before the prompt
-worldBookPositionAfter: After the prompt
+worldBookPositionBefore: Before character definitions
+worldBookPositionAfter: After character definitions
+worldBookPositionAtDepth: At depth
+worldBookRole: Message role
 worldBookDepth: Depth (smaller = closer to the end)
 worldBookSticky: Sticky turns
 worldBookCooldown: Cooldown turns

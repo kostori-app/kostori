@@ -2522,8 +2522,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookGroup => '分組';
 	@override String get worldBookSecondaryKeys => '次級鍵（每行一個，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
-	@override String get worldBookPositionBefore => '正文之前';
-	@override String get worldBookPositionAfter => '正文之後';
+	@override String get worldBookPositionBefore => '角色定義前';
+	@override String get worldBookPositionAfter => '角色定義後';
+	@override String get worldBookPositionAtDepth => '按深度插入';
+	@override String get worldBookRole => '訊息角色';
 	@override String get worldBookDepth => '深度（越小越靠後）';
 	@override String get worldBookSticky => '保持回合數';
 	@override String get worldBookCooldown => '冷卻回合數';
@@ -5399,8 +5401,10 @@ extension on TranslationsZhTw {
 			'worldBookGroup' => '分組',
 			'worldBookSecondaryKeys' => '次級鍵（每行一個，需全部命中）',
 			'worldBookPosition' => '注入位置',
-			'worldBookPositionBefore' => '正文之前',
-			'worldBookPositionAfter' => '正文之後',
+			'worldBookPositionBefore' => '角色定義前',
+			'worldBookPositionAfter' => '角色定義後',
+			'worldBookPositionAtDepth' => '按深度插入',
+			'worldBookRole' => '訊息角色',
 			'worldBookDepth' => '深度（越小越靠後）',
 			'worldBookSticky' => '保持回合數',
 			'worldBookCooldown' => '冷卻回合數',
@@ -5432,10 +5436,10 @@ extension on TranslationsZhTw {
 			'replyUseMarkdown' => '使用 Markdown 排版',
 			'replyAskBack' => '結尾反問使用者',
 			'mcpConnectionStatus' => '連線狀態',
-			'mcpConnected' => '已連線',
-			'mcpDisconnected' => '未連線',
 			_ => null,
 		} ?? switch (path) {
+			'mcpConnected' => '已連線',
+			'mcpDisconnected' => '未連線',
 			'mcpToolsImported' => '個工具',
 			'mcpReconnect' => '重新連線',
 			'mcpTestConnection' => '測試連線',

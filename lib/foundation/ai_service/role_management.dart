@@ -282,8 +282,12 @@ class WorldBookEntry {
   /// 递归：其内容可再次触发其它条目
   final bool recursive;
 
-  /// 注入位置：before | after（相对系统提示词正文）
+  /// 注入位置：before_char（角色定义前）| after_char（角色定义后）|
+  /// at_depth（按深度插入对话历史）
   final String position;
+
+  /// at_depth 时的消息角色：system | user | assistant
+  final String role;
 
   /// 注入深度（越小越靠近末尾，仅影响同一位置内的排序）
   final int depth;
@@ -305,7 +309,8 @@ class WorldBookEntry {
     this.enabled = true,
     this.constant = false,
     this.recursive = false,
-    this.position = 'after',
+    this.position = 'after_char',
+    this.role = 'system',
     this.depth = 4,
     this.sticky = 0,
     this.cooldown = 0,
@@ -322,6 +327,7 @@ class WorldBookEntry {
     bool? constant,
     bool? recursive,
     String? position,
+    String? role,
     int? depth,
     int? sticky,
     int? cooldown,
@@ -337,6 +343,7 @@ class WorldBookEntry {
     constant: constant ?? this.constant,
     recursive: recursive ?? this.recursive,
     position: position ?? this.position,
+    role: role ?? this.role,
     depth: depth ?? this.depth,
     sticky: sticky ?? this.sticky,
     cooldown: cooldown ?? this.cooldown,
@@ -358,7 +365,13 @@ class WorldBookEntry {
       enabled: (json['enabled'] as bool?) ?? true,
       constant: (json['constant'] as bool?) ?? false,
       recursive: (json['recursive'] as bool?) ?? false,
-      position: (json['position'] as String?) ?? 'after',
+      // 兼容旧值 before / after
+      position: switch (json['position'] as String?) {
+        'before' => 'before_char',
+        'after' || null => 'after_char',
+        final p => p,
+      },
+      role: (json['role'] as String?) ?? 'system',
       depth: (json['depth'] as num?)?.toInt() ?? 4,
       sticky: (json['sticky'] as num?)?.toInt() ?? 0,
       cooldown: (json['cooldown'] as num?)?.toInt() ?? 0,
@@ -377,6 +390,7 @@ class WorldBookEntry {
     'constant': constant,
     'recursive': recursive,
     'position': position,
+    'role': role,
     'depth': depth,
     'sticky': sticky,
     'cooldown': cooldown,

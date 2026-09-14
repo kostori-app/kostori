@@ -1500,7 +1500,8 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
   late bool _enabled = widget.entry?.enabled ?? true;
   late bool _constant = widget.entry?.constant ?? false;
   late bool _recursive = widget.entry?.recursive ?? false;
-  late String _position = widget.entry?.position ?? 'after';
+  late String _position = widget.entry?.position ?? 'after_char';
+  late String _role = widget.entry?.role ?? 'system';
 
   bool get _isNew => widget.entry == null;
 
@@ -1568,6 +1569,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       constant: _constant || _lines(_triggerCtrl).isEmpty,
       recursive: _recursive,
       position: _position,
+      role: _role,
       depth: int.tryParse(_depthCtrl.text.trim()) ?? 4,
       sticky: int.tryParse(_stickyCtrl.text.trim()) ?? 0,
       cooldown: int.tryParse(_cooldownCtrl.text.trim()) ?? 0,
@@ -1694,20 +1696,53 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                             Text(t.worldBookPosition),
                             const Spacer(),
                             Select(
-                              current: _position == 'before'
-                                  ? t.worldBookPositionBefore
-                                  : t.worldBookPositionAfter,
+                              current: switch (_position) {
+                                'before_char' || 'before' =>
+                                  t.worldBookPositionBefore,
+                                'at_depth' => t.worldBookPositionAtDepth,
+                                _ => t.worldBookPositionAfter,
+                              },
                               values: [
                                 t.worldBookPositionBefore,
                                 t.worldBookPositionAfter,
+                                t.worldBookPositionAtDepth,
                               ],
                               onTap: (i) => setState(
-                                () => _position = i == 0 ? 'before' : 'after',
+                                () => _position = const [
+                                  'before_char',
+                                  'after_char',
+                                  'at_depth',
+                                ][i],
                               ),
                             ),
                           ],
                         ),
                       ),
+                      if (_position == 'at_depth')
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Row(
+                            children: [
+                              Text(t.worldBookRole),
+                              const Spacer(),
+                              Select(
+                                current: _role,
+                                values: const [
+                                  'system',
+                                  'user',
+                                  'assistant',
+                                ],
+                                onTap: (i) => setState(
+                                  () => _role = const [
+                                    'system',
+                                    'user',
+                                    'assistant',
+                                  ][i],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(

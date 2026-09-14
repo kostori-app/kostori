@@ -2523,8 +2523,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookGroup => '分组';
 	@override String get worldBookSecondaryKeys => '次级键（每行一个，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
-	@override String get worldBookPositionBefore => '正文之前';
-	@override String get worldBookPositionAfter => '正文之后';
+	@override String get worldBookPositionBefore => '角色定义前';
+	@override String get worldBookPositionAfter => '角色定义后';
+	@override String get worldBookPositionAtDepth => '按深度插入';
+	@override String get worldBookRole => '消息角色';
 	@override String get worldBookDepth => '深度（越小越靠后）';
 	@override String get worldBookSticky => '保持回合数';
 	@override String get worldBookCooldown => '冷却回合数';
@@ -5401,8 +5403,10 @@ extension on TranslationsZhCn {
 			'worldBookGroup' => '分组',
 			'worldBookSecondaryKeys' => '次级键（每行一个，需全部命中）',
 			'worldBookPosition' => '注入位置',
-			'worldBookPositionBefore' => '正文之前',
-			'worldBookPositionAfter' => '正文之后',
+			'worldBookPositionBefore' => '角色定义前',
+			'worldBookPositionAfter' => '角色定义后',
+			'worldBookPositionAtDepth' => '按深度插入',
+			'worldBookRole' => '消息角色',
 			'worldBookDepth' => '深度（越小越靠后）',
 			'worldBookSticky' => '保持回合数',
 			'worldBookCooldown' => '冷却回合数',
@@ -5433,10 +5437,10 @@ extension on TranslationsZhCn {
 			'replyUseEmoji' => '使用 emoji',
 			'replyUseMarkdown' => '使用 Markdown 排版',
 			'replyAskBack' => '结尾反问用户',
-			'mcpConnectionStatus' => '连接状态',
-			'mcpConnected' => '已连接',
 			_ => null,
 		} ?? switch (path) {
+			'mcpConnectionStatus' => '连接状态',
+			'mcpConnected' => '已连接',
 			'mcpDisconnected' => '未连接',
 			'mcpToolsImported' => '个工具',
 			'mcpReconnect' => '重连',

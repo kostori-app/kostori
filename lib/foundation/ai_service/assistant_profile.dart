@@ -986,10 +986,10 @@ String buildSystemPrompt({
 }) {
   final parts = <String>[];
 
-  // 世界书：before 位置注入在正文之前
+  // 世界书：角色定义前（before_char，兼容旧值 before）
   final hits = worldBookHits ?? const <WorldBookEntry>[];
   final beforeBlock = _worldBookBlock(
-    hits.where((e) => e.position == 'before'),
+    hits.where((e) => e.position == 'before_char' || e.position == 'before'),
   );
   if (beforeBlock != null) parts.add(beforeBlock);
 
@@ -1007,6 +1007,13 @@ String buildSystemPrompt({
   if (cards.isNotEmpty) {
     parts.add('【角色卡】\n${cards.map((c) => c.toPrompt()).join('\n\n')}');
   }
+
+  // 世界书：角色定义后（after_char，兼容旧值 after；
+  // at_depth 由调用方作为消息插入历史，不在这里）
+  final afterBlock = _worldBookBlock(
+    hits.where((e) => e.position == 'after_char' || e.position == 'after'),
+  );
+  if (afterBlock != null) parts.add(afterBlock);
 
   // ③ 提示词注入（按 位置→排序号 分组插入）
   parts.addAll(
@@ -1073,11 +1080,7 @@ String buildSystemPrompt({
     ),
   );
 
-  // ⑦ 世界书命中条目（after 位置，按 priority 降序）
-  final afterBlock = _worldBookBlock(
-    hits.where((e) => e.position != 'before'),
-  );
-  if (afterBlock != null) parts.add(afterBlock);
+  // ⑦ 世界书 at_depth 条目由调用方按深度插入对话历史，不写进系统提示词
 
   // ⑧ 当前时间 / 设备信息
   parts.add(_envBlock(now));

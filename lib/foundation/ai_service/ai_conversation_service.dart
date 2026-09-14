@@ -333,6 +333,7 @@ class AiConversationService {
 
     // 2. 组装 System Prompt（配置 + 技能 + 压缩摘要；关联助手档案时优先档案）
     final profile = await _resolveProfile(session);
+    var depthHits = const <WorldBookEntry>[];
     final systemPrompt =
         systemPromptOverride ??
         await _buildSystemPrompt(
@@ -344,6 +345,7 @@ class AiConversationService {
               m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
           ],
           turn: contextMessages.length,
+          onDepthHits: (h) => depthHits = h,
         );
 
     // 3. 取最近 N 条（保证不超过上下文窗口）
@@ -368,6 +370,7 @@ class AiConversationService {
           AiAssistantMessage(content: m.outputContent ?? ''),
       AiUserMessage(content: modelUserText, parts: null),
     ];
+    _insertDepthHits(messages, depthHits);
 
     // 4. 记录用户消息
     await _taskDao.insert(
@@ -533,6 +536,7 @@ class AiConversationService {
 
     // 2. 组装 System Prompt（配置 + 技能 + 压缩摘要；关联助手档案时优先档案）
     final profile = await _resolveProfile(session);
+    var depthHits = const <WorldBookEntry>[];
     final systemPrompt =
         systemPromptOverride ??
         await _buildSystemPrompt(
@@ -544,6 +548,7 @@ class AiConversationService {
               m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
           ],
           turn: contextMessages.length,
+          onDepthHits: (h) => depthHits = h,
         );
 
     // 3. 取最近 N 条（保证不超过上下文窗口）
@@ -567,6 +572,7 @@ class AiConversationService {
           AiAssistantMessage(content: m.outputContent ?? ''),
       AiUserMessage(content: modelUserText, parts: null),
     ];
+    _insertDepthHits(aiMessages, depthHits);
 
     // 4. 记录用户消息
     await _taskDao.insert(
@@ -1069,6 +1075,22 @@ class AiConversationService {
   Future<int> _budgetForSession(AiSession session, {int? override}) async =>
       _budgetFor(await _resolveProfile(session), override: override);
 
+  /// 把 at_depth 世界书条目按深度插入对话历史（depth 越小越靠后，1 = 末尾前一条）
+  void _insertDepthHits(List<AiMessage> messages, List<WorldBookEntry> hits) {
+    for (final e in hits) {
+      if (e.content.trim().isEmpty) continue;
+      final idx = (messages.length - e.depth).clamp(0, messages.length);
+      messages.insert(
+        idx,
+        switch (e.role) {
+          'user' => AiUserMessage(content: e.content),
+          'assistant' => AiAssistantMessage(content: e.content),
+          _ => AiSystemMessage(content: e.content),
+        },
+      );
+    }
+  }
+
   /// 按字符预算从最新往前截取消息。
   /// [maxMessages] > 0 时额外限制条数；[budgetChars] <= 0 表示不限预算。
   List<AiTask> _trimToBudget(
@@ -1332,6 +1354,7 @@ class AiConversationService {
     String? userMessage,
     List<String>? scanMessages,
     int turn = 0,
+    void Function(List<WorldBookEntry>)? onDepthHits,
   }) async {
     // 档案可自定义选择库中条目；未选择时沿用全局启用项
     final injections = await PromptInjectionStore.instance.select(
@@ -1344,6 +1367,10 @@ class AiConversationService {
             userMessage,
             turn: turn,
           );
+    // at_depth 条目由调用方按深度插入对话历史
+    onDepthHits?.call(
+      worldHits.where((e) => e.position == 'at_depth').toList(),
+    );
     final memoryEntries = profile == null
         ? const <String>[]
         : await AssistantMemoryStore.instance.entriesFor(profile.id);

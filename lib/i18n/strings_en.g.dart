@@ -7492,11 +7492,17 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Injection position'
 	String get worldBookPosition => 'Injection position';
 
-	/// en: 'Before the prompt'
-	String get worldBookPositionBefore => 'Before the prompt';
+	/// en: 'Before character definitions'
+	String get worldBookPositionBefore => 'Before character definitions';
 
-	/// en: 'After the prompt'
-	String get worldBookPositionAfter => 'After the prompt';
+	/// en: 'After character definitions'
+	String get worldBookPositionAfter => 'After character definitions';
+
+	/// en: 'At depth'
+	String get worldBookPositionAtDepth => 'At depth';
+
+	/// en: 'Message role'
+	String get worldBookRole => 'Message role';
 
 	/// en: 'Depth (smaller = closer to the end)'
 	String get worldBookDepth => 'Depth (smaller = closer to the end)';
@@ -11000,8 +11006,10 @@ extension on Translations {
 			'worldBookGroup' => 'Group',
 			'worldBookSecondaryKeys' => 'Secondary keys (one per line, all must match)',
 			'worldBookPosition' => 'Injection position',
-			'worldBookPositionBefore' => 'Before the prompt',
-			'worldBookPositionAfter' => 'After the prompt',
+			'worldBookPositionBefore' => 'Before character definitions',
+			'worldBookPositionAfter' => 'After character definitions',
+			'worldBookPositionAtDepth' => 'At depth',
+			'worldBookRole' => 'Message role',
 			'worldBookDepth' => 'Depth (smaller = closer to the end)',
 			'worldBookSticky' => 'Sticky turns',
 			'worldBookCooldown' => 'Cooldown turns',
@@ -11032,10 +11040,10 @@ extension on Translations {
 			'replyUseEmoji' => 'Use emoji',
 			'replyUseMarkdown' => 'Use Markdown formatting',
 			'replyAskBack' => 'Ask back at the end',
-			'mcpConnectionStatus' => 'Connection status',
-			'mcpConnected' => 'Connected',
 			_ => null,
 		} ?? switch (path) {
+			'mcpConnectionStatus' => 'Connection status',
+			'mcpConnected' => 'Connected',
 			'mcpDisconnected' => 'Disconnected',
 			'mcpToolsImported' => 'tools imported',
 			'mcpReconnect' => 'Reconnect',

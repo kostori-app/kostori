@@ -2548,8 +2548,10 @@ worldBookPriorityHint: 優先級高的條目先注入
 worldBookGroup: 分組
 worldBookSecondaryKeys: 次級鍵（每行一個，需全部命中）
 worldBookPosition: 注入位置
-worldBookPositionBefore: 正文之前
-worldBookPositionAfter: 正文之後
+worldBookPositionBefore: 角色定義前
+worldBookPositionAfter: 角色定義後
+worldBookPositionAtDepth: 按深度插入
+worldBookRole: 訊息角色
 worldBookDepth: 深度（越小越靠後）
 worldBookSticky: 保持回合數
 worldBookCooldown: 冷卻回合數
