@@ -8,10 +8,12 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
 
@@ -748,26 +750,47 @@ class _CharacterCardViewState extends State<CharacterCardView>
     App.rootContext.showMessage(message: t.copied);
   }
 
+  /// 每个字段一个翻译控制器（英文卡可一键翻译查看）
+  final Map<String, TranslationController> _transCtrl = {};
+
+  TranslationController _ctrlFor(String key) =>
+      _transCtrl.putIfAbsent(key, () => TranslationController());
+
   Widget _block(BuildContext context, String title, String content) {
     if (content.trim().isEmpty) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
+    final tc = _ctrlFor(title);
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: scheme.primary,
-            ),
+          Row(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.primary,
+                ),
+              ),
+              const Spacer(),
+              TranslateIconButton(
+                data: content.trim(),
+                controller: tc,
+                iconSize: 18,
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           SelectableText(
             content.trim(),
             style: const TextStyle(fontSize: 13, height: 1.5),
+          ),
+          TranslationOutput(
+            controller: tc,
+            padding: const EdgeInsets.only(top: 8),
           ),
         ],
       ),
