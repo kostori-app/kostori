@@ -5373,6 +5373,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
+  /// 解析 NdM 记法 → (数量, 面数)
+  (int, int) _parseDiceNotation(String notation) {
+    final m = RegExp(r'^\s*(\d+)\s*[dD]\s*(\d+)\s*$').firstMatch(notation);
+    if (m == null) return (1, 20);
+    return (
+      (int.tryParse(m.group(1)!) ?? 1).clamp(1, 20),
+      (int.tryParse(m.group(2)!) ?? 20).clamp(2, 1000),
+    );
+  }
+
   /// 手动掷骰：从当前属性里选一项 + 输入 DC
   Future<void> _manualRoll() async {
     final entries = _state.attributes.entries.toList();
@@ -5396,6 +5406,30 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (story.dice.isNotEmpty) ...[
+                Text(
+                  t.storyDiceLibrary,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final d in story.dice)
+                      OptionChip(
+                        text: d.name,
+                        isSelected: false,
+                        onTap: () {
+                          final (c, s) = _parseDiceNotation(d.dice);
+                          countCtrl.text = '$c';
+                          setLocal(() => sides = s);
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(t.storyRollDice, style: const TextStyle(fontSize: 12)),
               const SizedBox(height: 8),
               Wrap(

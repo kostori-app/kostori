@@ -464,6 +464,18 @@ void main() {
       expect(back.codex.single.mechanics, '攻击+3');
     });
 
+    test('story dice library round trips', () {
+      const story = Story(
+        id: 's',
+        name: 'S',
+        dice: [StoryDice(name: '力量检定', dice: '1d20')],
+      );
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.dice.single.name, '力量检定');
+      expect(back.dice.single.dice, '1d20');
+    });
+
     test('setting library ids round trip', () {
       const story = Story(id: 's', name: 'S', settingIds: ['set_1', 'set_2']);
       final md = StoryStore.storyToMarkdown(story);

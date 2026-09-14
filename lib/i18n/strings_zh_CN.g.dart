@@ -1713,6 +1713,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyLibraryEmpty => '知识库还是空的，请先在 AI 设置里添加。';
 	@override String get storyRollAttribute => '属性';
 	@override String get storyRollDice => '骰子';
+	@override String get storyDiceLibrary => '骰子库';
 	@override String get storyRollCount => '数量';
 	@override String get storyNoAttributes => '没有可用于检定的属性';
 	@override String get storyRollResult => '掷骰结果';
@@ -4561,6 +4562,7 @@ extension on TranslationsZhCn {
 			'storyLibraryEmpty' => '知识库还是空的，请先在 AI 设置里添加。',
 			'storyRollAttribute' => '属性',
 			'storyRollDice' => '骰子',
+			'storyDiceLibrary' => '骰子库',
 			'storyRollCount' => '数量',
 			'storyNoAttributes' => '没有可用于检定的属性',
 			'storyRollResult' => '掷骰结果',
@@ -4892,9 +4894,9 @@ extension on TranslationsZhCn {
 			'lanSyncing' => '同步中...',
 			'lanLastSyncTime' => '上次同步时间',
 			'lanPendingChanges' => '待同步更改',
-			'lanConflictDetected' => '检测到冲突',
 			_ => null,
 		} ?? switch (path) {
+			'lanConflictDetected' => '检测到冲突',
 			'lanConflictResolution' => '冲突解决',
 			'lanLocalWins' => '保留本地',
 			'lanRemoteWins' => '保留远程',
@@ -5406,9 +5408,9 @@ extension on TranslationsZhCn {
 			'builderEpisodeSelector' => '剧集列表选择器',
 			'builderEpisodeTitleSelector' => '剧集标题选择器',
 			'builderEpisodeLinkSelector' => '剧集链接选择器',
-			'builderPlay' => '播放',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlay' => '播放',
 			'builderPlayUrl' => '播放页 URL 模板',
 			'builderExtractRegex' => '播放地址正则',
 			'builderMaxPageSelector' => '总页数选择器',

@@ -583,6 +583,23 @@ class StoryPanel {
   };
 }
 
+/// 故事自定义骰子（`## 骰子`）：一组命名骰型，供手动判定快速选择
+class StoryDice {
+  final String name;
+
+  /// 骰子记法，如 1d20 / 2d6
+  final String dice;
+
+  const StoryDice({required this.name, this.dice = '1d20'});
+
+  factory StoryDice.fromJson(Map<String, dynamic> json) => StoryDice(
+    name: json['name']?.toString() ?? '',
+    dice: json['dice']?.toString() ?? '1d20',
+  );
+
+  Map<String, dynamic> toJson() => {'name': name, 'dice': dice};
+}
+
 /// 检定请求：由 AI 声明、项目负责掷骰（避免模型自编点数）
 class StoryCheck {
   final String label;
@@ -1454,6 +1471,9 @@ class Story {
   /// 预置词条定义（物品/特质/种族/技能/天赋/身体），开局即已知
   final List<StoryDefinition> codex;
 
+  /// 自定义骰子（`## 骰子`），供手动判定快速选择
+  final List<StoryDice> dice;
+
   /// 称号定义（AI 授予）
   final List<StoryTitle> titles;
 
@@ -1516,6 +1536,7 @@ class Story {
     this.regexes = const [],
     this.achievements = const [],
     this.codex = const [],
+    this.dice = const [],
     this.titles = const [],
     this.titleMode = 'all',
     this.job,
@@ -1553,6 +1574,7 @@ class Story {
     List<StoryRegex>? regexes,
     List<StoryAchievement>? achievements,
     List<StoryDefinition>? codex,
+    List<StoryDice>? dice,
     List<StoryTitle>? titles,
     String? titleMode,
     StoryJob? job,
@@ -1587,6 +1609,7 @@ class Story {
     regexes: regexes ?? this.regexes,
     achievements: achievements ?? this.achievements,
     codex: codex ?? this.codex,
+    dice: dice ?? this.dice,
     titles: titles ?? this.titles,
     titleMode: titleMode ?? this.titleMode,
     job: job ?? this.job,
@@ -1669,6 +1692,12 @@ class Story {
               if (e is Map) StoryDefinition.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    dice: json['dice'] is List
+        ? [
+            for (final e in json['dice'] as List)
+              if (e is Map) StoryDice.fromJson(e.cast<String, dynamic>()),
+          ]
+        : const [],
     titles: json['titles'] is List
         ? [
             for (final e in json['titles'] as List)
@@ -1722,6 +1751,7 @@ class Story {
     'regexes': [for (final r in regexes) r.toJson()],
     'achievements': [for (final a in achievements) a.toJson()],
     'codex': [for (final d in codex) d.toJson()],
+    'dice': [for (final d in dice) d.toJson()],
     'titles': [for (final x in titles) x.toJson()],
     'titleMode': titleMode,
     if (job != null) 'job': job!.toJson(),
@@ -2269,6 +2299,7 @@ class StoryStore extends ChangeNotifier {
       regexes: mapList('正则', StoryRegex.fromJson),
       achievements: mapList('成就', StoryAchievement.fromJson),
       codex: mapList('词条', StoryDefinition.fromJson),
+      dice: mapList('骰子', StoryDice.fromJson),
       titles: titleDefs,
       titleMode: titleMode,
       job: jobDef,
@@ -2346,6 +2377,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.codex.isNotEmpty) {
       section('词条', jsonEncode([for (final d in s.codex) d.toJson()]));
+    }
+    if (s.dice.isNotEmpty) {
+      section('骰子', jsonEncode([for (final d in s.dice) d.toJson()]));
     }
     if (s.titles.isNotEmpty) {
       section(

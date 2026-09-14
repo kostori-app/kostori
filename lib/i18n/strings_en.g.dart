@@ -5065,6 +5065,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Dice'
 	String get storyRollDice => 'Dice';
 
+	/// en: 'Dice library'
+	String get storyDiceLibrary => 'Dice library';
+
 	/// en: 'Count'
 	String get storyRollCount => 'Count';
 
@@ -10105,6 +10108,7 @@ extension on Translations {
 			'storyLibraryEmpty' => 'No library entries yet. Add them in AI settings first.',
 			'storyRollAttribute' => 'Attribute',
 			'storyRollDice' => 'Dice',
+			'storyDiceLibrary' => 'Dice library',
 			'storyRollCount' => 'Count',
 			'storyNoAttributes' => 'No attributes available to roll',
 			'storyRollResult' => 'Roll result',
@@ -10435,9 +10439,9 @@ extension on Translations {
 			'lanWaitingForEpisodeInfo' => 'Waiting for the controlled device to send episode info...',
 			'lanSyncStatus' => 'Sync Status',
 			'lanSyncing' => 'Syncing...',
-			'lanLastSyncTime' => 'Last sync time',
 			_ => null,
 		} ?? switch (path) {
+			'lanLastSyncTime' => 'Last sync time',
 			'lanPendingChanges' => 'Pending changes',
 			'lanConflictDetected' => 'Conflict Detected',
 			'lanConflictResolution' => 'Conflict Resolution',
@@ -10949,9 +10953,9 @@ extension on Translations {
 			'builderEpisodeSelector' => 'Episode list selector',
 			'builderEpisodeTitleSelector' => 'Episode title selector',
 			'builderEpisodeLinkSelector' => 'Episode link selector',
-			'builderPlay' => 'Playback',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlay' => 'Playback',
 			'builderPlayUrl' => 'Play page URL template',
 			'builderExtractRegex' => 'Playback URL regex',
 			'builderMaxPageSelector' => 'Max page selector',

@@ -1714,6 +1714,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyLibraryEmpty => '知識庫還是空的，請先在 AI 設定裡新增。';
 	@override String get storyRollAttribute => '屬性';
 	@override String get storyRollDice => '骰子';
+	@override String get storyDiceLibrary => '骰子庫';
 	@override String get storyRollCount => '數量';
 	@override String get storyNoAttributes => '沒有可用於檢定的屬性';
 	@override String get storyRollResult => '擲骰結果';
@@ -4561,6 +4562,7 @@ extension on TranslationsZhTw {
 			'storyLibraryEmpty' => '知識庫還是空的，請先在 AI 設定裡新增。',
 			'storyRollAttribute' => '屬性',
 			'storyRollDice' => '骰子',
+			'storyDiceLibrary' => '骰子庫',
 			'storyRollCount' => '數量',
 			'storyNoAttributes' => '沒有可用於檢定的屬性',
 			'storyRollResult' => '擲骰結果',
@@ -4891,9 +4893,9 @@ extension on TranslationsZhTw {
 			'lanLastSyncTime' => '上次同步時間',
 			'lanPendingChanges' => '待同步更改',
 			'lanConflictDetected' => '檢測到衝突',
-			'lanConflictResolution' => '衝突解決',
 			_ => null,
 		} ?? switch (path) {
+			'lanConflictResolution' => '衝突解決',
 			'lanLocalWins' => '保留本地',
 			'lanRemoteWins' => '保留遠端',
 			'lanKeepBoth' => '保留兩者',
@@ -5405,9 +5407,9 @@ extension on TranslationsZhTw {
 			'builderEpisodeTitleSelector' => '劇集標題選擇器',
 			'builderEpisodeLinkSelector' => '劇集連結選擇器',
 			'builderPlay' => '播放',
-			'builderPlayUrl' => '播放頁 URL 模板',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlayUrl' => '播放頁 URL 模板',
 			'builderExtractRegex' => '播放位址正則',
 			'builderMaxPageSelector' => '總頁數選擇器',
 			'builderUserAgent' => 'User-Agent',
