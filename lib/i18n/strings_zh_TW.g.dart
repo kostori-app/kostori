@@ -1636,6 +1636,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyBaseStorage => '倉儲儲備';
 	@override String get storyNpcStatus => '角色狀態';
 	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
+	@override String get storyNpcAffinityLabel => '好感度';
+	@override String get affinityHate => '仇恨';
+	@override String get affinityCold => '冷漠';
+	@override String get affinityStranger => '陌生';
+	@override String get affinityFriend => '朋友';
+	@override String get affinityClose => '戀人/摯友';
 	@override String get storyNpcNoStatus => '暫無角色狀態（該角色尚未出現在數值中）';
 	@override String get storyCharacterAlreadyAdded => '該角色卡已新增';
 	@override String get storyAllCharactersAdded => '角色卡都已新增';
@@ -4499,6 +4505,12 @@ extension on TranslationsZhTw {
 			'storyBaseStorage' => '倉儲儲備',
 			'storyNpcStatus' => '角色狀態',
 			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
+			'storyNpcAffinityLabel' => '好感度',
+			'affinityHate' => '仇恨',
+			'affinityCold' => '冷漠',
+			'affinityStranger' => '陌生',
+			'affinityFriend' => '朋友',
+			'affinityClose' => '戀人/摯友',
 			'storyNpcNoStatus' => '暫無角色狀態（該角色尚未出現在數值中）',
 			'storyCharacterAlreadyAdded' => '該角色卡已新增',
 			'storyAllCharactersAdded' => '角色卡都已新增',
@@ -4902,14 +4914,14 @@ extension on TranslationsZhTw {
 			'lanNavSettings' => '設定',
 			'lanSeekBack' => '後退',
 			'lanSeekForward' => '快進',
+			_ => null,
+		} ?? switch (path) {
 			'lanNavigation' => '導航',
 			'lanSearch' => '搜尋',
 			'lanPlaybackControl' => '播放控制',
 			'lanPlay' => '播放',
 			'lanPause' => '暫停',
 			'lanSeekTo' => '跳轉到',
-			_ => null,
-		} ?? switch (path) {
 			'lanVolume' => '音量',
 			'lanPlaybackSpeed' => '播放速度',
 			'lanSelectEpisode' => '選擇集數',
@@ -5416,14 +5428,14 @@ extension on TranslationsZhTw {
 			'mcpConnecting' => '連線中...',
 			'mcpConnectionFailed' => '連線失敗',
 			'builderTitle' => '來源建構器',
+			_ => null,
+		} ?? switch (path) {
 			'builderEntry' => '建構來源',
 			'builderBasic' => '基本資訊',
 			'builderName' => '名稱',
 			'builderKey' => '鍵',
 			'builderVersion' => '版本',
 			'builderBaseUrl' => '基礎位址',
-			_ => null,
-		} ?? switch (path) {
 			'builderSearch' => '搜尋',
 			'builderSearchUrl' => '搜尋 URL 模板',
 			'builderListSelector' => '列表項選擇器',

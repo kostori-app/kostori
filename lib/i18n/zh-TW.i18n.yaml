@@ -1646,6 +1646,12 @@ storyBaseMaterials: 據點物質
 storyBaseStorage: 倉儲儲備
 storyNpcStatus: 角色狀態
 storyNpcAffinity: 好感度 ${value}
+storyNpcAffinityLabel: 好感度
+affinityHate: 仇恨
+affinityCold: 冷漠
+affinityStranger: 陌生
+affinityFriend: 朋友
+affinityClose: 戀人/摯友
 storyNpcNoStatus: 暫無角色狀態（該角色尚未出現在數值中）
 storyCharacterAlreadyAdded: 該角色卡已新增
 storyAllCharactersAdded: 角色卡都已新增

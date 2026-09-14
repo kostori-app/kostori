@@ -1646,6 +1646,12 @@ storyBaseMaterials: Materials
 storyBaseStorage: Storage
 storyNpcStatus: NPC status
 storyNpcAffinity: Affinity ${value}
+storyNpcAffinityLabel: Affinity
+affinityHate: Hatred
+affinityCold: Cold
+affinityStranger: Stranger
+affinityFriend: Friend
+affinityClose: Close
 storyNpcNoStatus: No status for this character yet.
 storyCharacterAlreadyAdded: This character card is already added
 storyAllCharactersAdded: All character cards are already added

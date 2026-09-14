@@ -1635,6 +1635,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyBaseStorage => '仓储储备';
 	@override String get storyNpcStatus => '角色状态';
 	@override String storyNpcAffinity({required Object value}) => '好感度 ${value}';
+	@override String get storyNpcAffinityLabel => '好感度';
+	@override String get affinityHate => '仇恨';
+	@override String get affinityCold => '冷漠';
+	@override String get affinityStranger => '陌生';
+	@override String get affinityFriend => '朋友';
+	@override String get affinityClose => '恋人/挚友';
 	@override String get storyNpcNoStatus => '暂无角色状态（该角色尚未出现在数值中）';
 	@override String get storyCharacterAlreadyAdded => '该角色卡已添加';
 	@override String get storyAllCharactersAdded => '角色卡都已添加';
@@ -4499,6 +4505,12 @@ extension on TranslationsZhCn {
 			'storyBaseStorage' => '仓储储备',
 			'storyNpcStatus' => '角色状态',
 			'storyNpcAffinity' => ({required Object value}) => '好感度 ${value}',
+			'storyNpcAffinityLabel' => '好感度',
+			'affinityHate' => '仇恨',
+			'affinityCold' => '冷漠',
+			'affinityStranger' => '陌生',
+			'affinityFriend' => '朋友',
+			'affinityClose' => '恋人/挚友',
 			'storyNpcNoStatus' => '暂无角色状态（该角色尚未出现在数值中）',
 			'storyCharacterAlreadyAdded' => '该角色卡已添加',
 			'storyAllCharactersAdded' => '角色卡都已添加',
@@ -4903,14 +4915,14 @@ extension on TranslationsZhCn {
 			'lanNavSearch' => '搜索',
 			'lanNavSettings' => '设置',
 			'lanSeekBack' => '后退',
+			_ => null,
+		} ?? switch (path) {
 			'lanSeekForward' => '快进',
 			'lanNavigation' => '导航',
 			'lanSearch' => '搜索',
 			'lanPlaybackControl' => '播放控制',
 			'lanPlay' => '播放',
 			'lanPause' => '暂停',
-			_ => null,
-		} ?? switch (path) {
 			'lanSeekTo' => '跳转到',
 			'lanVolume' => '音量',
 			'lanPlaybackSpeed' => '播放速度',
@@ -5417,14 +5429,14 @@ extension on TranslationsZhCn {
 			'mcpTestConnection' => '测试连接',
 			'mcpConnecting' => '连接中...',
 			'mcpConnectionFailed' => '连接失败',
+			_ => null,
+		} ?? switch (path) {
 			'builderTitle' => '源构建器',
 			'builderEntry' => '构建源',
 			'builderBasic' => '基础信息',
 			'builderName' => '名称',
 			'builderKey' => '键',
 			'builderVersion' => '版本',
-			_ => null,
-		} ?? switch (path) {
 			'builderBaseUrl' => '基础地址',
 			'builderSearch' => '搜索',
 			'builderSearchUrl' => '搜索 URL 模板',

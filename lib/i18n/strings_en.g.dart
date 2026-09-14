@@ -4831,6 +4831,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Affinity ${value}'
 	String storyNpcAffinity({required Object value}) => 'Affinity ${value}';
 
+	/// en: 'Affinity'
+	String get storyNpcAffinityLabel => 'Affinity';
+
+	/// en: 'Hatred'
+	String get affinityHate => 'Hatred';
+
+	/// en: 'Cold'
+	String get affinityCold => 'Cold';
+
+	/// en: 'Stranger'
+	String get affinityStranger => 'Stranger';
+
+	/// en: 'Friend'
+	String get affinityFriend => 'Friend';
+
+	/// en: 'Close'
+	String get affinityClose => 'Close';
+
 	/// en: 'No status for this character yet.'
 	String get storyNpcNoStatus => 'No status for this character yet.';
 
@@ -10075,6 +10093,12 @@ extension on Translations {
 			'storyBaseStorage' => 'Storage',
 			'storyNpcStatus' => 'NPC status',
 			'storyNpcAffinity' => ({required Object value}) => 'Affinity ${value}',
+			'storyNpcAffinityLabel' => 'Affinity',
+			'affinityHate' => 'Hatred',
+			'affinityCold' => 'Cold',
+			'affinityStranger' => 'Stranger',
+			'affinityFriend' => 'Friend',
+			'affinityClose' => 'Close',
 			'storyNpcNoStatus' => 'No status for this character yet.',
 			'storyCharacterAlreadyAdded' => 'This character card is already added',
 			'storyAllCharactersAdded' => 'All character cards are already added',
@@ -10478,14 +10502,14 @@ extension on Translations {
 			'lanNavigationControl' => 'Navigation Control',
 			'lanNavHome' => 'Home',
 			'lanNavSearch' => 'Search',
+			_ => null,
+		} ?? switch (path) {
 			'lanNavSettings' => 'Settings',
 			'lanSeekBack' => 'Seek Back',
 			'lanSeekForward' => 'Seek Forward',
 			'lanNavigation' => 'Navigation',
 			'lanSearch' => 'Search',
 			'lanPlaybackControl' => 'Playback Control',
-			_ => null,
-		} ?? switch (path) {
 			'lanPlay' => 'Play',
 			'lanPause' => 'Pause',
 			'lanSeekTo' => 'Seek to',
@@ -10992,14 +11016,14 @@ extension on Translations {
 			'mcpTestConnection' => 'Test connection',
 			'mcpConnecting' => 'Connecting...',
 			'mcpConnectionFailed' => 'Connection failed',
+			_ => null,
+		} ?? switch (path) {
 			'builderTitle' => 'Source Builder',
 			'builderEntry' => 'Build source',
 			'builderBasic' => 'Basic Info',
 			'builderName' => 'Name',
 			'builderKey' => 'Key',
 			'builderVersion' => 'Version',
-			_ => null,
-		} ?? switch (path) {
 			'builderBaseUrl' => 'Base URL',
 			'builderSearch' => 'Search',
 			'builderSearchUrl' => 'Search URL template',

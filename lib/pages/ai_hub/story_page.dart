@@ -3615,16 +3615,48 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       ),
     );
 
+    final (tier, tierColor) = npcAffinityTier(npc.affinity, scheme);
     final out = <Widget>[
       Row(
         children: [
-          const Icon(Icons.favorite, size: 16, color: Colors.pinkAccent),
-          const SizedBox(width: 6),
           Text(
-            t.storyNpcAffinity(value: '${npc.affinity}'),
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            t.storyNpcAffinityLabel,
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: tierColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              tier,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: tierColor,
+              ),
+            ),
+          ),
+          const Spacer(),
+          Text(
+            '${npc.affinity}',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: tierColor,
+            ),
           ),
         ],
+      ),
+      const SizedBox(height: 6),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(
+          value: ((npc.affinity + 100) / 200).clamp(0.0, 1.0),
+          minHeight: 6,
+          color: tierColor,
+        ),
       ),
     ];
     if (npc.status.trim().isNotEmpty) {
@@ -6897,6 +6929,15 @@ final List<StoryPanelSourceDef> storyPanelSources = [
     label: () => t.storyAchievements,
   ),
 ];
+
+/// 好感度档位（范围 -100..100）
+(String, Color) npcAffinityTier(int v, ColorScheme cs) {
+  if (v <= -60) return (t.affinityHate, cs.error);
+  if (v < -20) return (t.affinityCold, cs.outline);
+  if (v < 20) return (t.affinityStranger, cs.onSurfaceVariant);
+  if (v < 60) return (t.affinityFriend, cs.primary);
+  return (t.affinityClose, cs.tertiary);
+}
 
 IconData? _panelIcon(String name) {
   if (name.isEmpty) return null;
