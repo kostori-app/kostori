@@ -203,6 +203,14 @@ class _StoryPageState extends ConsumerState<StoryPage> {
                   title: Text(t.rolePlay),
                   actions: [
                     IconButton(
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      tooltip: t.aiRequestLog,
+                      onPressed: () => showPopUpWidget(
+                        App.rootContext,
+                        const AiRequestLogPage(),
+                      ),
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.file_open_outlined),
                       tooltip: t.importEntries,
                       onPressed: _import,
@@ -4200,6 +4208,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             icon: const Icon(Icons.text_fields_outlined),
             tooltip: t.storyTextStyle,
             onPressed: _showTextStyleSheet,
+          ),
+          // 便于排查问题：直接打开 AI 请求日志（仅图标，文字在 tooltip）
+          IconButton(
+            icon: const Icon(Icons.receipt_long_outlined),
+            tooltip: t.aiRequestLog,
+            onPressed: () =>
+                showPopUpWidget(App.rootContext, const AiRequestLogPage()),
           ),
         ],
       ),

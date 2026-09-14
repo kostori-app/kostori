@@ -87,6 +87,12 @@ class _LogSettingsState extends State<LogSettings> {
                   actionTitle: t.clear,
                   callback: _clearAllLogs,
                 ),
+                _CallbackSetting(
+                  title: t.aiRequestLog,
+                  actionTitle: t.open,
+                  callback: () =>
+                      showPopUpWidget(context, const AiRequestLogPage()),
+                ),
               ],
             ),
           ),
