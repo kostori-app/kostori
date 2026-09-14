@@ -320,23 +320,46 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 生成用的厂商（可在弹窗里直接切换）
-              Row(
-                children: [
-                  Text('${t.model}: '),
-                  Select(
-                    current: providers[genProvider]?.name ?? genProvider,
-                    values: [for (final e in providers.entries) e.value.name],
-                    onTap: (i) {
-                      final key = providers.keys.elementAt(i);
-                      setLocal(() => genProvider = key);
-                      appdata.implicitData['settingGenProvider'] = key;
-                      appdata.writeImplicitData();
-                    },
-                  ),
-                ],
+              // 生成用的厂商 / 模型（复用 AI 工坊的模型选择组件）
+              StreamBuilder<AiApiKey?>(
+                stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(
+                  genProvider,
+                ),
+                builder: (_, snap) {
+                  final model = snap.data?.model ?? '';
+                  final label =
+                      '${providers[genProvider]?.name ?? genProvider} · '
+                      '${model.isEmpty ? t.set : model}';
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => showModalBottomSheet<void>(
+                      context: App.rootContext,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ProviderModelSheet(
+                        provider: genProvider,
+                        onProviderChanged: (p) {
+                          setLocal(() => genProvider = p);
+                          appdata.implicitData['settingGenProvider'] = p;
+                          appdata.writeImplicitData();
+                        },
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.model_training, size: 16),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(label)),
+                          const Icon(Icons.arrow_drop_down, size: 18),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
               if (!isFirst) ...[
                 Text(
                   jsonEncode(current),
