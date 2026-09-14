@@ -3094,7 +3094,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _startWithSetup() async {
     final buf = StringBuffer(t.storyCmdProfile);
     final attrs = Map<String, int>.from(story.initialState.attributes);
+    // 玩家角色卡已有名字时，name 字段不展示，也不参与必填校验
+    final personaName =
+        StoryCharacterStore.instance.persona(story.id)?.name.trim() ?? '';
+    if (personaName.isNotEmpty) buf.writeln('姓名：$personaName');
     for (final part in story.setup) {
+      if (personaName.isNotEmpty && part.key == 'name') continue;
       final value = switch (part.type) {
         'multi' => (_multiValues[part.key] ?? const <String>{}).join('、'),
         'text' => (_textValues[part.key]?.text.trim() ?? ''),
@@ -4897,8 +4902,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 开局档案设置（类似 DnD 捏人）：单选 / 多选 / 自填 / 数值(可掷骰)，仅开局一次
   Widget _buildSetup(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // 已设置玩家角色卡的名字时，跳过开局设置里的 name 字段（{{user}} 优先用角色卡）
+    final personaName =
+        StoryCharacterStore.instance.persona(story.id)?.name.trim() ?? '';
+    final setupParts = [
+      for (final p in story.setup)
+        if (!(personaName.isNotEmpty && p.key == 'name')) p,
+    ];
     final groups = <String, List<StorySetupPart>>{};
-    for (final p in story.setup) {
+    for (final p in setupParts) {
       groups.putIfAbsent(p.group, () => []).add(p);
     }
     return Scaffold(
