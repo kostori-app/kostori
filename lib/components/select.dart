@@ -512,11 +512,6 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
         );
       },
     );
-    final track = Container(
-      padding: widget.padding,
-      decoration: widget.trackDecoration,
-      child: content,
-    );
     final alignment = switch (widget.alignment) {
       WrapAlignment.center ||
       WrapAlignment.spaceBetween ||
@@ -525,16 +520,21 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
       WrapAlignment.end => Alignment.centerRight,
       _ => Alignment.centerLeft,
     };
-    // 内容不足一行 → 按内容宽度收缩并居中；超出一行 → 可左右滑动
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: constraints.maxWidth.isFinite ? constraints.maxWidth : 0,
-          ),
-          child: Align(alignment: alignment, child: track),
+    // 轨道（圆角背景）放在滚动视图「外面」，宽度取 min(内容宽, 可用宽)：
+    // 内容不足一行 → 按内容宽度收缩并居中；超出一行 → 轨道占满可用宽度
+    // （四角保持圆角），内容在其中左右滚动。
+    // 之前的写法把轨道放在滚动视图「里面」，超宽时圆角端被滚出屏幕，
+    // 可视边缘就变成了直角。
+    return Align(
+      alignment: alignment,
+      child: Container(
+        padding: widget.padding,
+        decoration: widget.trackDecoration,
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          child: content,
         ),
       ),
     );
