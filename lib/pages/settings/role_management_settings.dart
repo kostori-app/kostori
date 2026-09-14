@@ -1564,7 +1564,8 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       content: _contentCtrl.text.trim(),
       priority: int.tryParse(_priorityCtrl.text.trim()) ?? 0,
       enabled: _enabled,
-      constant: _constant,
+      // 没填触发词就按常驻处理（对齐 SillyTavern：条目可以没有关键词）
+      constant: _constant || _lines(_triggerCtrl).isEmpty,
       recursive: _recursive,
       position: _position,
       depth: int.tryParse(_depthCtrl.text.trim()) ?? 4,
@@ -1628,11 +1629,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                             alignLabelWithHint: true,
                             border: const OutlineInputBorder(),
                           ),
-                          validator: (v) {
-                            if (_constant) return null;
-                            final triggers = _lines(_triggerCtrl);
-                            return triggers.isEmpty ? t.required : null;
-                          },
+                          // 留空视为常驻，不再强制要求触发词
                         ),
                       ),
                       Padding(
@@ -1694,22 +1691,19 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         child: Row(
                           children: [
-                            Text('${t.worldBookPosition}: '),
-                            const SizedBox(width: 8),
-                            DropdownButton<String>(
-                              value: _position,
-                              items: [
-                                DropdownMenuItem(
-                                  value: 'before',
-                                  child: Text(t.worldBookPositionBefore),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'after',
-                                  child: Text(t.worldBookPositionAfter),
-                                ),
+                            Text(t.worldBookPosition),
+                            const Spacer(),
+                            Select(
+                              current: _position == 'before'
+                                  ? t.worldBookPositionBefore
+                                  : t.worldBookPositionAfter,
+                              values: [
+                                t.worldBookPositionBefore,
+                                t.worldBookPositionAfter,
                               ],
-                              onChanged: (v) =>
-                                  setState(() => _position = v ?? 'after'),
+                              onTap: (i) => setState(
+                                () => _position = i == 0 ? 'before' : 'after',
+                              ),
                             ),
                           ],
                         ),

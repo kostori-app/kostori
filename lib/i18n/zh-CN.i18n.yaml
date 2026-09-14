@@ -2539,7 +2539,7 @@ injectionSortOrder: 排序号
 noInjectionsYet: 暂无提示词注入
 worldBookName: 名称
 worldBookTriggers: 触发词（每行一个）
-worldBookTriggersHint: 用户消息命中任一触发词时才注入
+worldBookTriggersHint: 用户消息命中任一触发词时才注入；留空表示常驻
 worldBookContent: 内容
 worldBookPriority: 优先级（越大越靠前）
 worldBookPriorityHint: 优先级高的条目先注入

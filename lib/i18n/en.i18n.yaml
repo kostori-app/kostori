@@ -2540,7 +2540,7 @@ injectionSortOrder: Sort order
 noInjectionsYet: No prompt injections yet
 worldBookName: Name
 worldBookTriggers: Trigger words (one per line)
-worldBookTriggersHint: "Injected when the user message contains any trigger word"
+worldBookTriggersHint: "Injected when the user message contains any trigger word; leave empty to always inject"
 worldBookContent: Content
 worldBookPriority: Priority (higher first)
 worldBookPriorityHint: Higher priority entries are injected first

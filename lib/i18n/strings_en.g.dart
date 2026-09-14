@@ -7471,8 +7471,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Trigger words (one per line)'
 	String get worldBookTriggers => 'Trigger words (one per line)';
 
-	/// en: 'Injected when the user message contains any trigger word'
-	String get worldBookTriggersHint => 'Injected when the user message contains any trigger word';
+	/// en: 'Injected when the user message contains any trigger word; leave empty to always inject'
+	String get worldBookTriggersHint => 'Injected when the user message contains any trigger word; leave empty to always inject';
 
 	/// en: 'Content'
 	String get worldBookContent => 'Content';
@@ -10993,7 +10993,7 @@ extension on Translations {
 			'noInjectionsYet' => 'No prompt injections yet',
 			'worldBookName' => 'Name',
 			'worldBookTriggers' => 'Trigger words (one per line)',
-			'worldBookTriggersHint' => 'Injected when the user message contains any trigger word',
+			'worldBookTriggersHint' => 'Injected when the user message contains any trigger word; leave empty to always inject',
 			'worldBookContent' => 'Content',
 			'worldBookPriority' => 'Priority (higher first)',
 			'worldBookPriorityHint' => 'Higher priority entries are injected first',
