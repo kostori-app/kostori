@@ -134,6 +134,8 @@ selectiveSync: 选择性同步
 syncSuccess: 同步成功
 storySessions: 存档
 storyGameOver: 游戏结束
+storyThinking: 思考中…
+storyAssemblingData: 正在拼凑数据…
 storyDeathResources: 致命资源（归零即游戏结束）
 syncStateSynced: 已同步
 syncStateLocalOnly: 未上传

@@ -174,6 +174,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存檔';
 	@override String get storyGameOver => '遊戲結束';
+	@override String get storyThinking => '思考中…';
+	@override String get storyAssemblingData => '正在拼湊資料…';
 	@override String get storyDeathResources => '致命資源（歸零即遊戲結束）';
 	@override String get syncStateSynced => '已同步';
 	@override String get syncStateLocalOnly => '未上傳';
@@ -2969,6 +2971,8 @@ extension on TranslationsZhTw {
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存檔',
 			'storyGameOver' => '遊戲結束',
+			'storyThinking' => '思考中…',
+			'storyAssemblingData' => '正在拼湊資料…',
 			'storyDeathResources' => '致命資源（歸零即遊戲結束）',
 			'syncStateSynced' => '已同步',
 			'syncStateLocalOnly' => '未上傳',
@@ -3344,10 +3348,10 @@ extension on TranslationsZhTw {
 			'popularityRanking' => '人氣排行',
 			'imageOperations' => '圖片操作',
 			'saveToAlbum' => '儲存到相簿',
-			'stitchLongImage' => '拼長圖',
-			'stitchHorizontalImage' => '橫向拼圖',
 			_ => null,
 		} ?? switch (path) {
+			'stitchLongImage' => '拼長圖',
+			'stitchHorizontalImage' => '橫向拼圖',
 			'stitchSubtitles' => '台詞拼接',
 			'saveLongImage' => '儲存長圖',
 			'borderColor' => '邊框顏色',
@@ -3858,10 +3862,10 @@ extension on TranslationsZhTw {
 			'player' => '播放器',
 			'audioOption' => '低延遲音訊',
 			'hardwareDecoding' => '硬體解碼',
-			'hardwareDecoder' => '硬體解碼器',
-			'videoRenderer' => '影片渲染器',
 			_ => null,
 		} ?? switch (path) {
+			'hardwareDecoder' => '硬體解碼器',
+			'videoRenderer' => '影片渲染器',
 			'videoSynchronizationMode' => '影片同步模式',
 			'enableNoProxyOverrides' => '啟用無代理覆寫',
 			'actor' => '角色',
@@ -4372,10 +4376,10 @@ extension on TranslationsZhTw {
 			'quickSelect' => '快速選擇',
 			'selectDateRange' => '選擇日期範圍',
 			'subject' => '条目',
-			'character' => '角色',
-			'person' => '人物',
 			_ => null,
 		} ?? switch (path) {
+			'character' => '角色',
+			'person' => '人物',
 			'manualSelect' => '手動選擇',
 			'qrAndClipboard' => '二維碼與剪貼簿',
 			'go' => '前往',
@@ -4886,10 +4890,10 @@ extension on TranslationsZhTw {
 			'lanConflictResolution' => '衝突解決',
 			'lanLocalWins' => '保留本地',
 			'lanRemoteWins' => '保留遠端',
-			'lanKeepBoth' => '保留兩者',
-			'lanManualResolution' => '手動解決',
 			_ => null,
 		} ?? switch (path) {
+			'lanKeepBoth' => '保留兩者',
+			'lanManualResolution' => '手動解決',
 			'lanConflictField' => '衝突欄位',
 			'lanErrorOccurred' => '發生錯誤',
 			'lanCommandExecuted' => '命令已執行',
@@ -5400,10 +5404,10 @@ extension on TranslationsZhTw {
 			'builderPlayUrl' => '播放頁 URL 模板',
 			'builderExtractRegex' => '播放位址正則',
 			'builderMaxPageSelector' => '總頁數選擇器',
-			'builderUserAgent' => 'User-Agent',
-			'builderPlayDirect' => '直接回傳劇集連結',
 			_ => null,
 		} ?? switch (path) {
+			'builderUserAgent' => 'User-Agent',
+			'builderPlayDirect' => '直接回傳劇集連結',
 			'builderPlayDirectDesc' => '劇集連結本身就是播放位址（無需二次請求）',
 			'builderPlayRegexDesc' => '請求播放頁並透過正則提取播放位址',
 			'builderExplore' => '探索',

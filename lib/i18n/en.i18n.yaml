@@ -145,6 +145,8 @@ selectiveSync: Selective sync
 syncSuccess: Synced
 storySessions: Saves
 storyGameOver: Game over
+storyThinking: Thinking…
+storyAssemblingData: Assembling data…
 storyDeathResources: Fatal resources (game over at zero)
 syncStateSynced: Synced
 syncStateLocalOnly: Not uploaded

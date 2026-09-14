@@ -470,6 +470,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Game over'
 	String get storyGameOver => 'Game over';
 
+	/// en: 'Thinking…'
+	String get storyThinking => 'Thinking…';
+
+	/// en: 'Assembling data…'
+	String get storyAssemblingData => 'Assembling data…';
+
 	/// en: 'Fatal resources (game over at zero)'
 	String get storyDeathResources => 'Fatal resources (game over at zero)';
 
@@ -8513,6 +8519,8 @@ extension on Translations {
 			'syncSuccess' => 'Synced',
 			'storySessions' => 'Saves',
 			'storyGameOver' => 'Game over',
+			'storyThinking' => 'Thinking…',
+			'storyAssemblingData' => 'Assembling data…',
 			'storyDeathResources' => 'Fatal resources (game over at zero)',
 			'syncStateSynced' => 'Synced',
 			'syncStateLocalOnly' => 'Not uploaded',
@@ -8880,10 +8888,10 @@ extension on Translations {
 			'dynamicColor' => 'Dynamic color',
 			'mondaySchedule' => 'Monday Schedule',
 			'tuesdaySchedule' => 'Tuesday Schedule',
-			'wednesdaySchedule' => 'Wednesday Schedule',
-			'thursdaySchedule' => 'Thursday Schedule',
 			_ => null,
 		} ?? switch (path) {
+			'wednesdaySchedule' => 'Wednesday Schedule',
+			'thursdaySchedule' => 'Thursday Schedule',
 			'fridaySchedule' => 'Friday Schedule',
 			'saturdaySchedule' => 'Saturday Schedule',
 			'sundaySchedule' => 'Sunday Schedule',
@@ -9394,10 +9402,10 @@ extension on Translations {
 			'player' => 'Player',
 			'audioOption' => 'Low-latency audio',
 			'hardwareDecoding' => 'Hardware Decoding',
-			'hardwareDecoder' => 'Hardware decoder',
-			'videoRenderer' => 'Video renderer',
 			_ => null,
 		} ?? switch (path) {
+			'hardwareDecoder' => 'Hardware decoder',
+			'videoRenderer' => 'Video renderer',
 			'videoSynchronizationMode' => 'Video synchronization mode',
 			'enableNoProxyOverrides' => 'Enable No Proxy Overrides',
 			'actor' => 'Actor',
@@ -9908,10 +9916,10 @@ extension on Translations {
 			'quickSelect' => 'Quick Select',
 			'selectDateRange' => 'Select Date Range',
 			'subject' => 'Subject',
-			'character' => 'Character',
-			'person' => 'Person',
 			_ => null,
 		} ?? switch (path) {
+			'character' => 'Character',
+			'person' => 'Person',
 			'manualSelect' => 'Manual Select',
 			'qrAndClipboard' => 'QR & Clipboard',
 			'go' => 'Go',
@@ -10422,10 +10430,10 @@ extension on Translations {
 			'lanLastSyncTime' => 'Last sync time',
 			'lanPendingChanges' => 'Pending changes',
 			'lanConflictDetected' => 'Conflict Detected',
-			'lanConflictResolution' => 'Conflict Resolution',
-			'lanLocalWins' => 'Keep Local',
 			_ => null,
 		} ?? switch (path) {
+			'lanConflictResolution' => 'Conflict Resolution',
+			'lanLocalWins' => 'Keep Local',
 			'lanRemoteWins' => 'Keep Remote',
 			'lanKeepBoth' => 'Keep Both',
 			'lanManualResolution' => 'Manual Resolution',
@@ -10936,10 +10944,10 @@ extension on Translations {
 			'builderPlay' => 'Playback',
 			'builderPlayUrl' => 'Play page URL template',
 			'builderExtractRegex' => 'Playback URL regex',
-			'builderMaxPageSelector' => 'Max page selector',
-			'builderUserAgent' => 'User-Agent',
 			_ => null,
 		} ?? switch (path) {
+			'builderMaxPageSelector' => 'Max page selector',
+			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => 'Directly return episode link',
 			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
 			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',

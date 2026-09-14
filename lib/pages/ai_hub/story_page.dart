@@ -4191,16 +4191,31 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   'display',
                                 );
                                 if (streamNarrative.trim().isEmpty) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
                                       vertical: 12,
                                     ),
                                     child: Align(
                                       alignment: Alignment.centerLeft,
-                                      child: SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: PolygonRefreshIndicator(),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: PolygonRefreshIndicator(),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            t.storyThinking,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   );
@@ -4234,16 +4249,31 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                               isUser: false,
                                             ),
                                     // 事件/检定卡片要等 JSON 生成完才出现，这里提示仍在生成
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
                                         vertical: 8,
                                       ),
                                       child: Align(
                                         alignment: Alignment.centerLeft,
-                                        child: SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: PolygonRefreshIndicator(),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: PolygonRefreshIndicator(),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              t.storyAssemblingData,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),

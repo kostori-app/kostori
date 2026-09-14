@@ -175,6 +175,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get syncSuccess => '同步成功';
 	@override String get storySessions => '存档';
 	@override String get storyGameOver => '游戏结束';
+	@override String get storyThinking => '思考中…';
+	@override String get storyAssemblingData => '正在拼凑数据…';
 	@override String get storyDeathResources => '致命资源（归零即游戏结束）';
 	@override String get syncStateSynced => '已同步';
 	@override String get syncStateLocalOnly => '未上传';
@@ -2971,6 +2973,8 @@ extension on TranslationsZhCn {
 			'syncSuccess' => '同步成功',
 			'storySessions' => '存档',
 			'storyGameOver' => '游戏结束',
+			'storyThinking' => '思考中…',
+			'storyAssemblingData' => '正在拼凑数据…',
 			'storyDeathResources' => '致命资源（归零即游戏结束）',
 			'syncStateSynced' => '已同步',
 			'syncStateLocalOnly' => '未上传',
@@ -3345,10 +3349,10 @@ extension on TranslationsZhCn {
 			'sundaySchedule' => '周日时间表',
 			'popularityRanking' => '人气排行',
 			'imageOperations' => '图片操作',
-			'saveToAlbum' => '保存到相册',
-			'stitchLongImage' => '拼接长图',
 			_ => null,
 		} ?? switch (path) {
+			'saveToAlbum' => '保存到相册',
+			'stitchLongImage' => '拼接长图',
 			'stitchHorizontalImage' => '横向拼接',
 			'stitchSubtitles' => '拼接字幕',
 			'saveLongImage' => '保存长图',
@@ -3859,10 +3863,10 @@ extension on TranslationsZhCn {
 			'audioOption' => '低延迟音频',
 			'hardwareDecoding' => '硬件解码',
 			'hardwareDecoder' => '硬件解码器',
-			'videoRenderer' => '视频渲染器',
-			'videoSynchronizationMode' => '视频同步模式',
 			_ => null,
 		} ?? switch (path) {
+			'videoRenderer' => '视频渲染器',
+			'videoSynchronizationMode' => '视频同步模式',
 			'enableNoProxyOverrides' => '启用无代理覆写',
 			'actor' => '演员',
 			'cv' => 'CV',
@@ -4373,10 +4377,10 @@ extension on TranslationsZhCn {
 			'selectDateRange' => '选择日期范围',
 			'subject' => '条目',
 			'character' => '角色',
-			'person' => '人物',
-			'manualSelect' => '手动选择',
 			_ => null,
 		} ?? switch (path) {
+			'person' => '人物',
+			'manualSelect' => '手动选择',
 			'qrAndClipboard' => '二维码与剪贴板',
 			'go' => '前往',
 			'clipboard' => '剪贴板',
@@ -4887,10 +4891,10 @@ extension on TranslationsZhCn {
 			'lanConflictDetected' => '检测到冲突',
 			'lanConflictResolution' => '冲突解决',
 			'lanLocalWins' => '保留本地',
-			'lanRemoteWins' => '保留远程',
-			'lanKeepBoth' => '保留两者',
 			_ => null,
 		} ?? switch (path) {
+			'lanRemoteWins' => '保留远程',
+			'lanKeepBoth' => '保留两者',
 			'lanManualResolution' => '手动解决',
 			'lanConflictField' => '冲突字段',
 			'lanErrorOccurred' => '发生错误',
@@ -5401,10 +5405,10 @@ extension on TranslationsZhCn {
 			'builderPlay' => '播放',
 			'builderPlayUrl' => '播放页 URL 模板',
 			'builderExtractRegex' => '播放地址正则',
-			'builderMaxPageSelector' => '总页数选择器',
-			'builderUserAgent' => 'User-Agent',
 			_ => null,
 		} ?? switch (path) {
+			'builderMaxPageSelector' => '总页数选择器',
+			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => '直接返回剧集链接',
 			'builderPlayDirectDesc' => '剧集链接本身就是播放地址（无需二次请求）',
 			'builderPlayRegexDesc' => '请求播放页并通过正则提取播放地址',

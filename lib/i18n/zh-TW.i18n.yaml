@@ -133,6 +133,8 @@ selectiveSync: 選擇性同步
 syncSuccess: 同步成功
 storySessions: 存檔
 storyGameOver: 遊戲結束
+storyThinking: 思考中…
+storyAssemblingData: 正在拼湊資料…
 storyDeathResources: 致命資源（歸零即遊戲結束）
 syncStateSynced: 已同步
 syncStateLocalOnly: 未上傳
