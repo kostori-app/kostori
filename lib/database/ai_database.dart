@@ -71,8 +71,11 @@ class AiSessions extends Table {
   /// 使用的服务商
   TextColumn get provider => text()();
 
-  /// 已压缩的旧上下文摘要
+  /// 已压缩的旧上下文摘要（滚动摘要）
   TextColumn get compressedContent => text().nullable()();
+
+  /// 已总结到的最后一条消息 id（滚动摘要用，null 表示尚未总结）
+  IntColumn get summaryMessageId => integer().nullable()();
 
   /// 会话启用的技能 keys（JSON 数组字符串）
   TextColumn get skillKeys => text().nullable()();
@@ -263,7 +266,7 @@ class AiDatabase extends _$AiDatabase {
   AiDatabase._() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -285,6 +288,9 @@ class AiDatabase extends _$AiDatabase {
         await _ensureTableExists(m, aiMcpServers);
         await m.addColumn(aiSessions, aiSessions.compressedContent);
         await m.addColumn(aiSessions, aiSessions.skillKeys);
+      }
+      if (from < 14) {
+        await _addColumnIfMissing(m, aiSessions, aiSessions.summaryMessageId);
       }
       if (from < 6) {
         // 余额查询：内置/自定义服务商均可配置查询地址与结果字段

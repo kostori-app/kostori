@@ -975,7 +975,8 @@ class AiConversationService {
 
   // ─── 压缩 ─────────────────────────────────
 
-  /// 将较早的历史消息压缩为摘要并写入会话，保留最近 [keepRecent] 条
+  /// 滚动总结：把「上一版摘要 + 上次总结之后的新消息」交给辅助模型重新总结，
+  /// 写入会话摘要，**不删除任何消息**（对齐 SillyTavern 的 Summarize 长期记忆）。
   Future<Res<String>> compressSession(
     String sessionId, {
     int keepRecent = 10,
@@ -991,12 +992,17 @@ class AiConversationService {
     final contextMessages = history
         .where((m) => m.role == 'user' || m.role == 'model')
         .toList();
-    final keep = contextMessages.length > keepRecent
-        ? contextMessages.length - keepRecent
-        : 0;
-    if (keep <= 0) return Res.error(t.historyTooShort);
 
-    final older = contextMessages.take(keep).toList();
+    // 只总结「上次总结之后」的新消息，实现滚动而非每次重头总结
+    final lastId = session.summaryMessageId;
+    final fresh = lastId == null
+        ? contextMessages
+        : contextMessages.where((m) => m.id > lastId).toList();
+    // 最近 keepRecent 条留给上下文窗口，不进摘要
+    final count = fresh.length - keepRecent;
+    if (count <= 0) return Res.error(t.historyTooShort);
+
+    final older = fresh.take(count).toList();
     final conversationText = older
         .map(
           (m) =>
@@ -1005,22 +1011,26 @@ class AiConversationService {
         )
         .join('\n\n');
 
+    final prev = session.compressedContent;
+    final buffer = StringBuffer();
+    if (prev != null && prev.trim().isNotEmpty) {
+      buffer.writeln('已有摘要（需与新内容合并，保持连贯、不要重复）：\n$prev\n');
+    }
+    buffer.write('新发生的对话：\n$conversationText');
     final prompt =
-        '请将下面这段多轮对话压缩成一段简明中文摘要，'
-        '保留重要信息、事实与结论，方便后续继续对话时引用：\n\n$conversationText';
+        '请把下面的内容整理成一段简明中文摘要，作为长期记忆保留关键人物、'
+        '事件、约定与结论；不要遗漏已有摘要里的重要信息，也不要啰嗦重复：\n\n'
+        '${buffer.toString()}';
     final result = await ai.generate(
       prompt,
-      systemPrompt: '你是高效的对话压缩助手，只输出摘要本身。',
+      systemPrompt: '你是高效的对话记忆整理助手，只输出摘要本身。',
       modelOverride: aux.model,
       params: _auxParams(aux.temperature),
     );
     if (!result.success) return result;
 
-    await _sessionDao.setCompressedContent(sessionId, result.data);
-    // 删除已压缩的旧消息（保留最近 keepRecent 条）
-    if (older.isNotEmpty) {
-      await _taskDao.deleteMessagesTo(sessionId, older.last.id);
-    }
+    // 不删除消息，只更新摘要与「已总结到哪条」
+    await _sessionDao.setSummary(sessionId, result.data, older.last.id);
     return result;
   }
 

@@ -58,6 +58,20 @@ class AiSessionDao extends DatabaseAccessor<AiDatabase>
         ),
       );
 
+  /// 写入滚动摘要与「已总结到哪条消息」
+  Future<void> setSummary(
+    String sessionId,
+    String content,
+    int? lastMessageId,
+  ) =>
+      (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
+        AiSessionsCompanion(
+          compressedContent: Value(content),
+          summaryMessageId: Value(lastMessageId),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
   Future<void> setSkillKeys(String sessionId, List<String> keys) =>
       (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
         AiSessionsCompanion(

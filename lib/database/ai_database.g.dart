@@ -714,6 +714,17 @@ class $AiSessionsTable extends AiSessions
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _summaryMessageIdMeta = const VerificationMeta(
+    'summaryMessageId',
+  );
+  @override
+  late final GeneratedColumn<int> summaryMessageId = GeneratedColumn<int>(
+    'summary_message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _skillKeysMeta = const VerificationMeta(
     'skillKeys',
   );
@@ -769,6 +780,7 @@ class $AiSessionsTable extends AiSessions
     profileId,
     provider,
     compressedContent,
+    summaryMessageId,
     skillKeys,
     followUps,
     createdAt,
@@ -837,6 +849,15 @@ class $AiSessionsTable extends AiSessions
         ),
       );
     }
+    if (data.containsKey('summary_message_id')) {
+      context.handle(
+        _summaryMessageIdMeta,
+        summaryMessageId.isAcceptableOrUnknown(
+          data['summary_message_id']!,
+          _summaryMessageIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('skill_keys')) {
       context.handle(
         _skillKeysMeta,
@@ -898,6 +919,10 @@ class $AiSessionsTable extends AiSessions
         DriftSqlType.string,
         data['${effectivePrefix}compressed_content'],
       ),
+      summaryMessageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}summary_message_id'],
+      ),
       skillKeys: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}skill_keys'],
@@ -942,8 +967,11 @@ class AiSession extends DataClass implements Insertable<AiSession> {
   /// 使用的服务商
   final String provider;
 
-  /// 已压缩的旧上下文摘要
+  /// 已压缩的旧上下文摘要（滚动摘要）
   final String? compressedContent;
+
+  /// 已总结到的最后一条消息 id（滚动摘要用，null 表示尚未总结）
+  final int? summaryMessageId;
 
   /// 会话启用的技能 keys（JSON 数组字符串）
   final String? skillKeys;
@@ -960,6 +988,7 @@ class AiSession extends DataClass implements Insertable<AiSession> {
     this.profileId,
     required this.provider,
     this.compressedContent,
+    this.summaryMessageId,
     this.skillKeys,
     this.followUps,
     required this.createdAt,
@@ -980,6 +1009,9 @@ class AiSession extends DataClass implements Insertable<AiSession> {
     map['provider'] = Variable<String>(provider);
     if (!nullToAbsent || compressedContent != null) {
       map['compressed_content'] = Variable<String>(compressedContent);
+    }
+    if (!nullToAbsent || summaryMessageId != null) {
+      map['summary_message_id'] = Variable<int>(summaryMessageId);
     }
     if (!nullToAbsent || skillKeys != null) {
       map['skill_keys'] = Variable<String>(skillKeys);
@@ -1007,6 +1039,9 @@ class AiSession extends DataClass implements Insertable<AiSession> {
       compressedContent: compressedContent == null && nullToAbsent
           ? const Value.absent()
           : Value(compressedContent),
+      summaryMessageId: summaryMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(summaryMessageId),
       skillKeys: skillKeys == null && nullToAbsent
           ? const Value.absent()
           : Value(skillKeys),
@@ -1033,6 +1068,7 @@ class AiSession extends DataClass implements Insertable<AiSession> {
       compressedContent: serializer.fromJson<String?>(
         json['compressedContent'],
       ),
+      summaryMessageId: serializer.fromJson<int?>(json['summaryMessageId']),
       skillKeys: serializer.fromJson<String?>(json['skillKeys']),
       followUps: serializer.fromJson<String?>(json['followUps']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -1050,6 +1086,7 @@ class AiSession extends DataClass implements Insertable<AiSession> {
       'profileId': serializer.toJson<String?>(profileId),
       'provider': serializer.toJson<String>(provider),
       'compressedContent': serializer.toJson<String?>(compressedContent),
+      'summaryMessageId': serializer.toJson<int?>(summaryMessageId),
       'skillKeys': serializer.toJson<String?>(skillKeys),
       'followUps': serializer.toJson<String?>(followUps),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -1065,6 +1102,7 @@ class AiSession extends DataClass implements Insertable<AiSession> {
     Value<String?> profileId = const Value.absent(),
     String? provider,
     Value<String?> compressedContent = const Value.absent(),
+    Value<int?> summaryMessageId = const Value.absent(),
     Value<String?> skillKeys = const Value.absent(),
     Value<String?> followUps = const Value.absent(),
     DateTime? createdAt,
@@ -1079,6 +1117,9 @@ class AiSession extends DataClass implements Insertable<AiSession> {
     compressedContent: compressedContent.present
         ? compressedContent.value
         : this.compressedContent,
+    summaryMessageId: summaryMessageId.present
+        ? summaryMessageId.value
+        : this.summaryMessageId,
     skillKeys: skillKeys.present ? skillKeys.value : this.skillKeys,
     followUps: followUps.present ? followUps.value : this.followUps,
     createdAt: createdAt ?? this.createdAt,
@@ -1095,6 +1136,9 @@ class AiSession extends DataClass implements Insertable<AiSession> {
       compressedContent: data.compressedContent.present
           ? data.compressedContent.value
           : this.compressedContent,
+      summaryMessageId: data.summaryMessageId.present
+          ? data.summaryMessageId.value
+          : this.summaryMessageId,
       skillKeys: data.skillKeys.present ? data.skillKeys.value : this.skillKeys,
       followUps: data.followUps.present ? data.followUps.value : this.followUps,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -1112,6 +1156,7 @@ class AiSession extends DataClass implements Insertable<AiSession> {
           ..write('profileId: $profileId, ')
           ..write('provider: $provider, ')
           ..write('compressedContent: $compressedContent, ')
+          ..write('summaryMessageId: $summaryMessageId, ')
           ..write('skillKeys: $skillKeys, ')
           ..write('followUps: $followUps, ')
           ..write('createdAt: $createdAt, ')
@@ -1129,6 +1174,7 @@ class AiSession extends DataClass implements Insertable<AiSession> {
     profileId,
     provider,
     compressedContent,
+    summaryMessageId,
     skillKeys,
     followUps,
     createdAt,
@@ -1145,6 +1191,7 @@ class AiSession extends DataClass implements Insertable<AiSession> {
           other.profileId == this.profileId &&
           other.provider == this.provider &&
           other.compressedContent == this.compressedContent &&
+          other.summaryMessageId == this.summaryMessageId &&
           other.skillKeys == this.skillKeys &&
           other.followUps == this.followUps &&
           other.createdAt == this.createdAt &&
@@ -1159,6 +1206,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
   final Value<String?> profileId;
   final Value<String> provider;
   final Value<String?> compressedContent;
+  final Value<int?> summaryMessageId;
   final Value<String?> skillKeys;
   final Value<String?> followUps;
   final Value<DateTime> createdAt;
@@ -1172,6 +1220,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
     this.profileId = const Value.absent(),
     this.provider = const Value.absent(),
     this.compressedContent = const Value.absent(),
+    this.summaryMessageId = const Value.absent(),
     this.skillKeys = const Value.absent(),
     this.followUps = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1186,6 +1235,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
     this.profileId = const Value.absent(),
     required String provider,
     this.compressedContent = const Value.absent(),
+    this.summaryMessageId = const Value.absent(),
     this.skillKeys = const Value.absent(),
     this.followUps = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1202,6 +1252,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
     Expression<String>? profileId,
     Expression<String>? provider,
     Expression<String>? compressedContent,
+    Expression<int>? summaryMessageId,
     Expression<String>? skillKeys,
     Expression<String>? followUps,
     Expression<DateTime>? createdAt,
@@ -1216,6 +1267,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
       if (profileId != null) 'profile_id': profileId,
       if (provider != null) 'provider': provider,
       if (compressedContent != null) 'compressed_content': compressedContent,
+      if (summaryMessageId != null) 'summary_message_id': summaryMessageId,
       if (skillKeys != null) 'skill_keys': skillKeys,
       if (followUps != null) 'follow_ups': followUps,
       if (createdAt != null) 'created_at': createdAt,
@@ -1232,6 +1284,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
     Value<String?>? profileId,
     Value<String>? provider,
     Value<String?>? compressedContent,
+    Value<int?>? summaryMessageId,
     Value<String?>? skillKeys,
     Value<String?>? followUps,
     Value<DateTime>? createdAt,
@@ -1246,6 +1299,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
       profileId: profileId ?? this.profileId,
       provider: provider ?? this.provider,
       compressedContent: compressedContent ?? this.compressedContent,
+      summaryMessageId: summaryMessageId ?? this.summaryMessageId,
       skillKeys: skillKeys ?? this.skillKeys,
       followUps: followUps ?? this.followUps,
       createdAt: createdAt ?? this.createdAt,
@@ -1278,6 +1332,9 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
     if (compressedContent.present) {
       map['compressed_content'] = Variable<String>(compressedContent.value);
     }
+    if (summaryMessageId.present) {
+      map['summary_message_id'] = Variable<int>(summaryMessageId.value);
+    }
     if (skillKeys.present) {
       map['skill_keys'] = Variable<String>(skillKeys.value);
     }
@@ -1306,6 +1363,7 @@ class AiSessionsCompanion extends UpdateCompanion<AiSession> {
           ..write('profileId: $profileId, ')
           ..write('provider: $provider, ')
           ..write('compressedContent: $compressedContent, ')
+          ..write('summaryMessageId: $summaryMessageId, ')
           ..write('skillKeys: $skillKeys, ')
           ..write('followUps: $followUps, ')
           ..write('createdAt: $createdAt, ')
@@ -4744,6 +4802,7 @@ typedef $$AiSessionsTableCreateCompanionBuilder = AiSessionsCompanion Function({
   Value<String?> profileId,
   required String provider,
   Value<String?> compressedContent,
+  Value<int?> summaryMessageId,
   Value<String?> skillKeys,
   Value<String?> followUps,
   Value<DateTime> createdAt,
@@ -4758,6 +4817,7 @@ typedef $$AiSessionsTableUpdateCompanionBuilder = AiSessionsCompanion Function({
   Value<String?> profileId,
   Value<String> provider,
   Value<String?> compressedContent,
+  Value<int?> summaryMessageId,
   Value<String?> skillKeys,
   Value<String?> followUps,
   Value<DateTime> createdAt,
@@ -4806,6 +4866,11 @@ class $$AiSessionsTableFilterComposer
 
   ColumnFilters<String> get compressedContent => $composableBuilder(
     column: $table.compressedContent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get summaryMessageId => $composableBuilder(
+    column: $table.summaryMessageId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4874,6 +4939,11 @@ class $$AiSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get summaryMessageId => $composableBuilder(
+    column: $table.summaryMessageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get skillKeys => $composableBuilder(
     column: $table.skillKeys,
     builder: (column) => ColumnOrderings(column),
@@ -4924,6 +4994,11 @@ class $$AiSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get compressedContent => $composableBuilder(
     column: $table.compressedContent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get summaryMessageId => $composableBuilder(
+    column: $table.summaryMessageId,
     builder: (column) => column,
   );
 
@@ -4978,6 +5053,7 @@ class $$AiSessionsTableTableManager
                 Value<String?> profileId = const Value.absent(),
                 Value<String> provider = const Value.absent(),
                 Value<String?> compressedContent = const Value.absent(),
+                Value<int?> summaryMessageId = const Value.absent(),
                 Value<String?> skillKeys = const Value.absent(),
                 Value<String?> followUps = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -4991,6 +5067,7 @@ class $$AiSessionsTableTableManager
                 profileId: profileId,
                 provider: provider,
                 compressedContent: compressedContent,
+                summaryMessageId: summaryMessageId,
                 skillKeys: skillKeys,
                 followUps: followUps,
                 createdAt: createdAt,
@@ -5006,6 +5083,7 @@ class $$AiSessionsTableTableManager
                 Value<String?> profileId = const Value.absent(),
                 required String provider,
                 Value<String?> compressedContent = const Value.absent(),
+                Value<int?> summaryMessageId = const Value.absent(),
                 Value<String?> skillKeys = const Value.absent(),
                 Value<String?> followUps = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -5019,6 +5097,7 @@ class $$AiSessionsTableTableManager
                 profileId: profileId,
                 provider: provider,
                 compressedContent: compressedContent,
+                summaryMessageId: summaryMessageId,
                 skillKeys: skillKeys,
                 followUps: followUps,
                 createdAt: createdAt,
