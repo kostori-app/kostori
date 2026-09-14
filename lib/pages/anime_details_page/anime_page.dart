@@ -1107,8 +1107,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       await _onDownloadSeries();
       return;
     }
-    final records = await DownloadManager.recordsFor(_animeId, _sourceKey);
-    if (!mounted) return;
     final eps = episode.values.first;
     final items = <_DownloadItem>[
       for (final e in eps.entries)
@@ -1118,6 +1116,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           final keyStr = e.key.toString();
           return _DownloadItem(
             key: keyStr,
+            animeId: _animeId,
             title: name,
             subtitle: '',
             episodeName: name,
@@ -1128,7 +1127,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     ];
     await _openDownloadPicker(
       items: items,
-      downloaded: records.map((r) => r['episode'] as String? ?? '').toSet(),
+      downloaded: await DownloadManager.downloadedKeysFor(_sourceKey),
     );
   }
 
@@ -1146,12 +1145,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       App.rootContext.showMessage(message: t.downloadNotYet);
       return;
     }
-    final records = await DownloadManager.recordsFor(_animeId, _sourceKey);
     if (!mounted) return;
     final items = <_DownloadItem>[
       for (final a in series)
         _DownloadItem(
           key: a.id,
+          // 系列每条都是独立番剧条目：记录/已下载标记都按自身 id
+          animeId: a.id,
           title: a.title,
           subtitle: a.subtitle ?? '',
           episodeName: a.title,
@@ -1160,7 +1160,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     ];
     await _openDownloadPicker(
       items: items,
-      downloaded: records.map((r) => r['episode'] as String? ?? '').toSet(),
+      downloaded: await DownloadManager.downloadedKeysFor(_sourceKey),
       // 系列条目逐个访问详情取自身标题用于命名
       resolveAnimeTitle: (id) async {
         final load = source.loadAnimeInfo;
@@ -1196,6 +1196,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (result == null || result.isEmpty || !mounted) return;
     for (final item in result) {
       await _downloadEpisode(
+        item.animeId,
         item.key,
         item.episodeName,
         url: item.url,
@@ -1222,6 +1223,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   /// 解析地址并加入下载队列；[url]/[resolution] 指定分辨率时使用该清晰度
   Future<void> _downloadEpisode(
+    String animeId,
     String epKey,
     String epName, {
     String? url,
@@ -1257,7 +1259,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       subtitle: epName,
       cover: data!.cover,
       sourceKey: data!.sourceKey,
-      animeId: _animeId,
+      animeId: animeId,
       animeTitle: animeTitle ?? data!.title,
       episode: epName,
       episodeNo: episodeNo,

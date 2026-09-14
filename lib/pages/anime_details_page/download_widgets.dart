@@ -5,6 +5,10 @@ part of 'anime_page.dart';
 class _DownloadItem {
   final String key;
 
+  /// 下载记录归属的番剧 id：剧集 = 当前页 id，系列 = 该系列条目自身 id
+  /// （系列里同名条目靠它区分，避免互相覆盖 / 误标已下载）
+  final String animeId;
+
   final String title;
 
   final String subtitle;
@@ -20,6 +24,7 @@ class _DownloadItem {
 
   const _DownloadItem({
     required this.key,
+    required this.animeId,
     required this.title,
     this.subtitle = '',
     required this.episodeName,
@@ -31,6 +36,8 @@ class _DownloadItem {
 /// 下载选择结果
 class _DownloadPick {
   final String key;
+
+  final String animeId;
 
   final String episodeName;
 
@@ -51,6 +58,7 @@ class _DownloadPick {
 
   const _DownloadPick({
     required this.key,
+    required this.animeId,
     required this.episodeName,
     this.animeTitle,
     this.episodeNo,
@@ -423,6 +431,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
             : (_animeTitle.trim().isEmpty ? null : _animeTitle.trim());
         return _DownloadPick(
           key: item.key,
+          animeId: item.animeId,
           // 用户编辑过标题时用它（用于文件名），否则用原始集名
           episodeName: _nameOverrides[item.key] ?? item.episodeName,
           animeTitle: resolvedTitle,
@@ -535,7 +544,9 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
             _DownloadItemCard(
               item: item,
               displayTitle: _nameOverrides[item.key] ?? item.title,
-              isDownloaded: widget.downloaded.contains(item.episodeName),
+                      isDownloaded: widget.downloaded.contains(
+                        '${item.animeId}|${item.episodeName}',
+                      ),
               isSelected: selected.contains(item.key),
               resolutionLabel: _resolutionLabelByKey[item.key],
               onToggle: () => _toggle(item.key),

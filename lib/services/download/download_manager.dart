@@ -278,7 +278,7 @@ class DownloadManager extends ChangeNotifier {
       } catch (_) {}
     }
     final task = DownloadTask(
-      id: '${DateTime.now().millisecondsSinceEpoch}_${url.hashCode}',
+      id: '${DateTime.now().millisecondsSinceEpoch}_${_taskIdSeq++}_${url.hashCode}',
       title: title ?? url,
       subtitle: subtitle,
       cover: cover,
@@ -1221,6 +1221,27 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
+  /// 已下载的 `animeId|episode` 集合（同源；供下载面板标记"已下载"，
+  /// 系列里同名条目靠 animeId 区分）
+  static Future<Set<String>> downloadedKeysFor(String sourceKey) async {
+    final file = File(p.join(App.dataPath, 'download_records.json'));
+    if (!await file.exists()) return {};
+    try {
+      final list = jsonDecode(await file.readAsString()) as List;
+      final out = <String>{};
+      for (final e in list.whereType<Map>()) {
+        if (e['sourceKey'] != sourceKey) continue;
+        final fp = e['filePath'] as String?;
+        if (fp == null || fp.isEmpty) continue;
+        if (!await File(fp).exists()) continue;
+        out.add('${e['animeId']}|${e['episode']}');
+      }
+      return out;
+    } catch (_) {
+      return {};
+    }
+  }
+
   /// 查询全部下载记录（含文件已丢失的，供"下载记录"页标记"已删除"）
   static Future<List<Map<String, dynamic>>> allRecords() async {
     final file = File(p.join(App.dataPath, 'download_records.json'));
@@ -1251,6 +1272,10 @@ class DownloadManager extends ChangeNotifier {
   // ── 分组（= 下载目录）────────────────────────
 
   static const String groupsKey = 'downloadGroups';
+
+  /// 任务 id 自增序号：避免「同一毫秒 + 同一 URL」时 id 冲突
+  /// （系列里同名条目并发下载会因此互相覆盖）
+  static int _taskIdSeq = 0;
 
   static List<String> groups() {
     final raw = appdata.implicitData[groupsKey];
