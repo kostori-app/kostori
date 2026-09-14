@@ -1640,7 +1640,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get affinityCold => '冷漠';
 	@override String get affinityStranger => '陌生';
 	@override String get affinityFriend => '朋友';
-	@override String get affinityClose => '恋人/挚友';
+	@override String get affinityClose => '亲密';
 	@override String get storyNpcNoStatus => '暂无角色状态（该角色尚未出现在数值中）';
 	@override String get storyCharacterAlreadyAdded => '该角色卡已添加';
 	@override String get storyAllCharactersAdded => '角色卡都已添加';
@@ -4510,7 +4510,7 @@ extension on TranslationsZhCn {
 			'affinityCold' => '冷漠',
 			'affinityStranger' => '陌生',
 			'affinityFriend' => '朋友',
-			'affinityClose' => '恋人/挚友',
+			'affinityClose' => '亲密',
 			'storyNpcNoStatus' => '暂无角色状态（该角色尚未出现在数值中）',
 			'storyCharacterAlreadyAdded' => '该角色卡已添加',
 			'storyAllCharactersAdded' => '角色卡都已添加',

@@ -4846,8 +4846,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Friend'
 	String get affinityFriend => 'Friend';
 
-	/// en: 'Close'
-	String get affinityClose => 'Close';
+	/// en: 'Intimate'
+	String get affinityClose => 'Intimate';
 
 	/// en: 'No status for this character yet.'
 	String get storyNpcNoStatus => 'No status for this character yet.';
@@ -10098,7 +10098,7 @@ extension on Translations {
 			'affinityCold' => 'Cold',
 			'affinityStranger' => 'Stranger',
 			'affinityFriend' => 'Friend',
-			'affinityClose' => 'Close',
+			'affinityClose' => 'Intimate',
 			'storyNpcNoStatus' => 'No status for this character yet.',
 			'storyCharacterAlreadyAdded' => 'This character card is already added',
 			'storyAllCharactersAdded' => 'All character cards are already added',

@@ -1641,7 +1641,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get affinityCold => '冷漠';
 	@override String get affinityStranger => '陌生';
 	@override String get affinityFriend => '朋友';
-	@override String get affinityClose => '戀人/摯友';
+	@override String get affinityClose => '親密';
 	@override String get storyNpcNoStatus => '暫無角色狀態（該角色尚未出現在數值中）';
 	@override String get storyCharacterAlreadyAdded => '該角色卡已新增';
 	@override String get storyAllCharactersAdded => '角色卡都已新增';
@@ -4510,7 +4510,7 @@ extension on TranslationsZhTw {
 			'affinityCold' => '冷漠',
 			'affinityStranger' => '陌生',
 			'affinityFriend' => '朋友',
-			'affinityClose' => '戀人/摯友',
+			'affinityClose' => '親密',
 			'storyNpcNoStatus' => '暫無角色狀態（該角色尚未出現在數值中）',
 			'storyCharacterAlreadyAdded' => '該角色卡已新增',
 			'storyAllCharactersAdded' => '角色卡都已新增',
