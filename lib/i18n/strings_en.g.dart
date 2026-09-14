@@ -5029,6 +5029,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Describe what you want; AI fills in the details'
 	String get aiGenerateHint => 'Describe what you want; AI fills in the details';
 
+	/// en: 'Refine'
+	String get aiRefine => 'Refine';
+
+	/// en: 'Say what to change or improve'
+	String get aiRefineHint => 'Say what to change or improve';
+
+	/// en: 'Previous version'
+	String get aiPreviousResult => 'Previous version';
+
+	/// en: 'Requested changes'
+	String get aiRefineFeedback => 'Requested changes';
+
 	/// en: 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.'
 	String get worldBookAiSystem => 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.';
 
@@ -10129,6 +10141,10 @@ extension on Translations {
 			'storyCodexPrompt' => 'Complete the codex entries for the following items. Output JSON only:',
 			'aiGenerate' => 'Generate with AI',
 			'aiGenerateHint' => 'Describe what you want; AI fills in the details',
+			'aiRefine' => 'Refine',
+			'aiRefineHint' => 'Say what to change or improve',
+			'aiPreviousResult' => 'Previous version',
+			'aiRefineFeedback' => 'Requested changes',
 			'worldBookAiSystem' => 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.',
 			'settingAiSystem' => 'You are a tabletop setting editor. Given a type and a short description, output ONE JSON object with exactly the keys shown in the example, values detailed and self-consistent (numbers where numeric). Output JSON only, no markdown.',
 			'worldBookAiPrompt' => 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}',
@@ -10468,12 +10484,12 @@ extension on Translations {
 			'lanNavigation' => 'Navigation',
 			'lanSearch' => 'Search',
 			'lanPlaybackControl' => 'Playback Control',
+			_ => null,
+		} ?? switch (path) {
 			'lanPlay' => 'Play',
 			'lanPause' => 'Pause',
 			'lanSeekTo' => 'Seek to',
 			'lanVolume' => 'Volume',
-			_ => null,
-		} ?? switch (path) {
 			'lanPlaybackSpeed' => 'Playback Speed',
 			'lanSelectEpisode' => 'Select Episode',
 			'lanNextEpisode' => 'Next Episode',
@@ -10982,12 +10998,12 @@ extension on Translations {
 			'builderName' => 'Name',
 			'builderKey' => 'Key',
 			'builderVersion' => 'Version',
+			_ => null,
+		} ?? switch (path) {
 			'builderBaseUrl' => 'Base URL',
 			'builderSearch' => 'Search',
 			'builderSearchUrl' => 'Search URL template',
 			'builderListSelector' => 'List item selector',
-			_ => null,
-		} ?? switch (path) {
 			'builderTitleSelector' => 'Title selector',
 			'builderCoverSelector' => 'Cover selector',
 			'builderCoverAttr' => 'Cover attribute',

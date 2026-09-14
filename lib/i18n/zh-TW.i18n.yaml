@@ -1712,6 +1712,10 @@ storyCodexSystem: 你是世界觀設定補全助手，只輸出 JSON，不要輸
 storyCodexPrompt: 為下列道具補全圖鑑設定，嚴格輸出 JSON：
 aiGenerate: AI 生成
 aiGenerateHint: 描述你想要的設定，AI 會補全細節
+aiRefine: 繼續改進
+aiRefineHint: 說明要修改/改進的地方
+aiPreviousResult: 上一版
+aiRefineFeedback: 修改要求
 worldBookAiSystem: 你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。
 settingAiSystem: 你是跑團設定編輯。根據類型和簡短描述，輸出一個 JSON 物件，鍵名嚴格照範例，內容詳細、自洽（該是數值就給數值）。只輸出 JSON，不要 markdown。
 worldBookAiPrompt: '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}'

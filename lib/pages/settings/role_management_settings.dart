@@ -288,56 +288,91 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
 }
 
 /// 编辑设定库条目（按类型显示不同字段）
-/// 用 AI 按用户描述生成设定 JSON（返回的键名由 [promptTemplate] 指定）
+/// 用 AI 按用户描述生成设定 JSON（返回的键名由 [promptTemplate] 指定）。
+/// 支持多轮迭代：生成后可继续输入修改意见，AI 在上一版基础上改进，直到点「完成」。
 Future<Map<String, dynamic>?> aiGenerateEntry({
   required String title,
   required String systemPrompt,
   required String promptTemplate,
 }) async {
+  const done = '__ai_done__';
   final descCtrl = TextEditingController();
-  final desc = await showDialog<String>(
-    context: App.rootContext,
-    builder: (ctx) => ContentDialog(
-      title: title,
-      content: TextField(
-        controller: descCtrl,
-        autofocus: true,
-        minLines: 2,
-        maxLines: 6,
-        decoration: InputDecoration(
-          hintText: t.aiGenerateHint,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-      actions: [
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(descCtrl.text.trim()),
-          child: Text(t.aiGenerate),
-        ),
-      ],
-    ),
-  );
-  descCtrl.dispose();
-  if (desc == null || desc.isEmpty) return null;
+  final refineCtrl = TextEditingController();
+  Map<String, dynamic>? current;
   try {
-    final stored = appdata.implicitData['aiHubProvider'];
-    final provider = (stored is String && stored.isNotEmpty)
-        ? stored
-        : 'siliconFlow';
-    final res = await AiConversationService().runTask(
-      provider: provider,
-      taskType: 'setting_gen',
-      sessionTitle: title,
-      systemPrompt: systemPrompt,
-      prompt: promptTemplate.replaceAll('{input}', desc),
-    );
-    if (!res.success) return null;
-    final m = RegExp(r'\{[\s\S]*\}').firstMatch(res.dataOrNull ?? '');
-    if (m == null) return null;
-    final d = jsonDecode(m.group(0)!);
-    return d is Map ? d.cast<String, dynamic>() : null;
-  } catch (_) {
-    return null;
+    while (true) {
+      final isFirst = current == null;
+      final input = await showDialog<String>(
+        context: App.rootContext,
+        builder: (ctx) => ContentDialog(
+          title: isFirst ? title : '$title · ${t.aiRefine}',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isFirst) ...[
+                Text(
+                  jsonEncode(current),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+              ],
+              TextField(
+                controller: isFirst ? descCtrl : refineCtrl,
+                autofocus: true,
+                minLines: 2,
+                maxLines: 6,
+                decoration: InputDecoration(
+                  hintText: isFirst ? t.aiGenerateHint : t.aiRefineHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            if (!isFirst)
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(done),
+                child: Text(t.confirm),
+              ),
+            FilledButton(
+              onPressed: () => Navigator.of(
+                ctx,
+              ).pop((isFirst ? descCtrl : refineCtrl).text.trim()),
+              child: Text(isFirst ? t.aiGenerate : t.aiRefine),
+            ),
+          ],
+        ),
+      );
+      if (input == null || input == done) return current;
+      if (input.isEmpty) continue;
+      final prompt = isFirst
+          ? promptTemplate.replaceAll('{input}', input)
+          : '${promptTemplate.replaceAll('{input}', input)}\n\n'
+                '${t.aiPreviousResult}：${jsonEncode(current)}\n'
+                '${t.aiRefineFeedback}：$input';
+      final stored = appdata.implicitData['aiHubProvider'];
+      final provider = (stored is String && stored.isNotEmpty)
+          ? stored
+          : 'siliconFlow';
+      final res = await AiConversationService().runTask(
+        provider: provider,
+        taskType: 'setting_gen',
+        sessionTitle: title,
+        systemPrompt: systemPrompt,
+        prompt: prompt,
+      );
+      if (!res.success) continue;
+      final m = RegExp(r'\{[\s\S]*\}').firstMatch(res.dataOrNull ?? '');
+      if (m == null) continue;
+      try {
+        final d = jsonDecode(m.group(0)!);
+        if (d is Map) current = d.cast<String, dynamic>();
+      } catch (_) {}
+    }
+  } finally {
+    descCtrl.dispose();
+    refineCtrl.dispose();
   }
 }
 

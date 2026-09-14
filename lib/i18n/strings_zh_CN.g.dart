@@ -1701,6 +1701,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexPrompt => '为下列道具补全图鉴设定，严格输出 JSON：';
 	@override String get aiGenerate => 'AI 生成';
 	@override String get aiGenerateHint => '描述你想要的设定，AI 会补全细节';
+	@override String get aiRefine => '继续改进';
+	@override String get aiRefineHint => '说明要修改/改进的地方';
+	@override String get aiPreviousResult => '上一版';
+	@override String get aiRefineFeedback => '修改要求';
 	@override String get worldBookAiSystem => '你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。';
 	@override String get settingAiSystem => '你是跑团设定编辑。根据类型和简短描述，输出一个 JSON 对象，键名严格照示例，内容详细、自洽（该是数值的就给数值）。只输出 JSON，不要 markdown。';
 	@override String get worldBookAiPrompt => '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}';
@@ -4561,6 +4565,10 @@ extension on TranslationsZhCn {
 			'storyCodexPrompt' => '为下列道具补全图鉴设定，严格输出 JSON：',
 			'aiGenerate' => 'AI 生成',
 			'aiGenerateHint' => '描述你想要的设定，AI 会补全细节',
+			'aiRefine' => '继续改进',
+			'aiRefineHint' => '说明要修改/改进的地方',
+			'aiPreviousResult' => '上一版',
+			'aiRefineFeedback' => '修改要求',
 			'worldBookAiSystem' => '你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。',
 			'settingAiSystem' => '你是跑团设定编辑。根据类型和简短描述，输出一个 JSON 对象，键名严格照示例，内容详细、自洽（该是数值的就给数值）。只输出 JSON，不要 markdown。',
 			'worldBookAiPrompt' => '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}',
@@ -4901,12 +4909,12 @@ extension on TranslationsZhCn {
 			'lanPlaybackControl' => '播放控制',
 			'lanPlay' => '播放',
 			'lanPause' => '暂停',
+			_ => null,
+		} ?? switch (path) {
 			'lanSeekTo' => '跳转到',
 			'lanVolume' => '音量',
 			'lanPlaybackSpeed' => '播放速度',
 			'lanSelectEpisode' => '选择集数',
-			_ => null,
-		} ?? switch (path) {
 			'lanNextEpisode' => '下一集',
 			'lanPreviousEpisode' => '上一集',
 			'lanToggleFullscreen' => '切换全屏',
@@ -5415,12 +5423,12 @@ extension on TranslationsZhCn {
 			'builderName' => '名称',
 			'builderKey' => '键',
 			'builderVersion' => '版本',
+			_ => null,
+		} ?? switch (path) {
 			'builderBaseUrl' => '基础地址',
 			'builderSearch' => '搜索',
 			'builderSearchUrl' => '搜索 URL 模板',
 			'builderListSelector' => '列表项选择器',
-			_ => null,
-		} ?? switch (path) {
 			'builderTitleSelector' => '标题选择器',
 			'builderCoverSelector' => '封面选择器',
 			'builderCoverAttr' => '封面属性',

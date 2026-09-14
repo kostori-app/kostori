@@ -1707,6 +1707,10 @@ storyCodexSystem: 你是世界观设定补全助手，只输出 JSON，不要输
 storyCodexPrompt: 为下列道具补全图鉴设定，严格输出 JSON：
 aiGenerate: AI 生成
 aiGenerateHint: 描述你想要的设定，AI 会补全细节
+aiRefine: 继续改进
+aiRefineHint: 说明要修改/改进的地方
+aiPreviousResult: 上一版
+aiRefineFeedback: 修改要求
 worldBookAiSystem: 你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。
 settingAiSystem: 你是跑团设定编辑。根据类型和简短描述，输出一个 JSON 对象，键名严格照示例，内容详细、自洽（该是数值的就给数值）。只输出 JSON，不要 markdown。
 worldBookAiPrompt: '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}'

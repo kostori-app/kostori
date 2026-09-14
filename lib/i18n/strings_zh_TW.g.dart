@@ -1702,6 +1702,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCodexPrompt => '為下列道具補全圖鑑設定，嚴格輸出 JSON：';
 	@override String get aiGenerate => 'AI 生成';
 	@override String get aiGenerateHint => '描述你想要的設定，AI 會補全細節';
+	@override String get aiRefine => '繼續改進';
+	@override String get aiRefineHint => '說明要修改/改進的地方';
+	@override String get aiPreviousResult => '上一版';
+	@override String get aiRefineFeedback => '修改要求';
 	@override String get worldBookAiSystem => '你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。';
 	@override String get settingAiSystem => '你是跑團設定編輯。根據類型和簡短描述，輸出一個 JSON 物件，鍵名嚴格照範例，內容詳細、自洽（該是數值就給數值）。只輸出 JSON，不要 markdown。';
 	@override String get worldBookAiPrompt => '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}';
@@ -4561,6 +4565,10 @@ extension on TranslationsZhTw {
 			'storyCodexPrompt' => '為下列道具補全圖鑑設定，嚴格輸出 JSON：',
 			'aiGenerate' => 'AI 生成',
 			'aiGenerateHint' => '描述你想要的設定，AI 會補全細節',
+			'aiRefine' => '繼續改進',
+			'aiRefineHint' => '說明要修改/改進的地方',
+			'aiPreviousResult' => '上一版',
+			'aiRefineFeedback' => '修改要求',
 			'worldBookAiSystem' => '你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。',
 			'settingAiSystem' => '你是跑團設定編輯。根據類型和簡短描述，輸出一個 JSON 物件，鍵名嚴格照範例，內容詳細、自洽（該是數值就給數值）。只輸出 JSON，不要 markdown。',
 			'worldBookAiPrompt' => '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}',
@@ -4900,12 +4908,12 @@ extension on TranslationsZhTw {
 			'lanPlay' => '播放',
 			'lanPause' => '暫停',
 			'lanSeekTo' => '跳轉到',
+			_ => null,
+		} ?? switch (path) {
 			'lanVolume' => '音量',
 			'lanPlaybackSpeed' => '播放速度',
 			'lanSelectEpisode' => '選擇集數',
 			'lanNextEpisode' => '下一集',
-			_ => null,
-		} ?? switch (path) {
 			'lanPreviousEpisode' => '上一集',
 			'lanToggleFullscreen' => '切換全屏',
 			'lanVolumeUp' => '音量加',
@@ -5414,12 +5422,12 @@ extension on TranslationsZhTw {
 			'builderKey' => '鍵',
 			'builderVersion' => '版本',
 			'builderBaseUrl' => '基礎位址',
+			_ => null,
+		} ?? switch (path) {
 			'builderSearch' => '搜尋',
 			'builderSearchUrl' => '搜尋 URL 模板',
 			'builderListSelector' => '列表項選擇器',
 			'builderTitleSelector' => '標題選擇器',
-			_ => null,
-		} ?? switch (path) {
 			'builderCoverSelector' => '封面選擇器',
 			'builderCoverAttr' => '封面屬性',
 			'builderLinkSelector' => '連結選擇器',

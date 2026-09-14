@@ -1712,6 +1712,10 @@ storyCodexSystem: You are a worldbuilding completion assistant. Output JSON only
 storyCodexPrompt: 'Complete the codex entries for the following items. Output JSON only:'
 aiGenerate: Generate with AI
 aiGenerateHint: Describe what you want; AI fills in the details
+aiRefine: Refine
+aiRefineHint: Say what to change or improve
+aiPreviousResult: Previous version
+aiRefineFeedback: Requested changes
 worldBookAiSystem: You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.
 settingAiSystem: You are a tabletop setting editor. Given a type and a short description, output ONE JSON object with exactly the keys shown in the example, values detailed and self-consistent (numbers where numeric). Output JSON only, no markdown.
 worldBookAiPrompt: 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}'
