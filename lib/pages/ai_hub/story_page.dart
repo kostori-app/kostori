@@ -4060,7 +4060,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 后台为未登记的道具补全图鉴设定（不进入当前对话上下文）
   Future<void> _registerUnregistered() async {
     if (_unregistered.isEmpty || _registering) return;
-    final items = List<String>.from(_unregistered);
+    await _generateCodex(List<String>.from(_unregistered));
+  }
+
+  /// 用 AI 为缺失设定的物品/技能批量生成词条（单个也走这里）
+  Future<void> _generateCodex(List<String> items) async {
+    if (items.isEmpty || _registering) return;
     setState(() => _registering = true);
     try {
       final res = await AiConversationService().runTask(
@@ -5359,6 +5364,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         story: story,
         state: state,
         onCommand: _send,
+        onGenerateCodex: _generateCodex,
       ),
     );
   }
@@ -5585,11 +5591,15 @@ class _StoryDetailsSheet extends StatefulWidget {
     required this.story,
     required this.state,
     required this.onCommand,
+    this.onGenerateCodex,
   });
 
   final Story story;
   final GameState state;
   final ValueChanged<String> onCommand;
+
+  /// 为缺失设定的物品/技能生成词条
+  final Future<void> Function(List<String> items)? onGenerateCodex;
 
   @override
   State<_StoryDetailsSheet> createState() => _StoryDetailsSheetState();
@@ -5637,9 +5647,26 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
       _codexIcon(_findDef(name)?.kind ?? fallbackKind);
 
   /// 查看条目说明：图鉴里显示图鉴描述，否则提示暂无
+  /// 缺失设定的物品/技能：批量生成词条按钮
+  Widget _generateMissing(List<String> names) {
+    final gen = widget.onGenerateCodex;
+    if (gen == null) return const SizedBox.shrink();
+    final missing = [for (final n in names) if (_findDef(n) == null) n];
+    if (missing.isEmpty) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () => gen(missing),
+        icon: const Icon(Icons.auto_awesome, size: 16),
+        label: Text('${t.storyRegisterItems} (${missing.length})'),
+      ),
+    );
+  }
+
   Future<void> _inspect(String name, String kind) async {
     final def = _findDef(name);
     final scheme = Theme.of(context).colorScheme;
+    var generate = false;
     await ContentDialog.show<void>(
       context: App.rootContext,
       title: def?.name ?? name,
@@ -5670,12 +5697,23 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
         ],
       ),
       actions: [
+        if (def == null && widget.onGenerateCodex != null)
+          TextButton(
+            onPressed: () {
+              generate = true;
+              Navigator.of(App.rootContext).pop();
+            },
+            child: Text(t.storyRegisterItems),
+          ),
         FilledButton(
           onPressed: () => Navigator.of(App.rootContext).pop(),
           child: Text(t.confirm),
         ),
       ],
     );
+    if (generate) {
+      await widget.onGenerateCodex?.call([name]);
+    }
   }
 
   /// 物品菜单：检查 / 使用 / 装备 / 丢弃
@@ -5981,6 +6019,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               for (final s in state.skills) _entry(label: s, kind: 'skill'),
             ],
           ),
+          _generateMissing(state.skills),
         ];
       case 'inventory':
         if (state.inventory.isEmpty) return const [];
@@ -6003,6 +6042,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                 ),
             ],
           ),
+          _generateMissing([for (final s in state.inventory) _baseName(s)]),
         ];
       case 'quests':
         if (state.quests.isEmpty) return const [];
