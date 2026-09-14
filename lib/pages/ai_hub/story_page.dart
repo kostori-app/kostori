@@ -4879,47 +4879,58 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   _ParsedReply _parseReply(String content) {
-    final matches = RegExp(
-      r'```json\s*([\s\S]*?)```',
-      caseSensitive: false,
-    ).allMatches(content).toList();
     var narrative = content;
     GameState? state;
     var choices = <String>[];
     var events = <StoryEvent>[];
     var varOps = <VarOp>[];
     StoryCheck? check;
-    if (matches.isNotEmpty) {
-      final m = matches.last;
-      narrative = content.replaceRange(m.start, m.end, '').trim();
-      try {
-        final decoded = jsonDecode(m.group(1)!.trim());
-        if (decoded is Map) {
-          if (decoded['state'] is Map) {
-            state = GameState.fromJson(
-              (decoded['state'] as Map).cast<String, dynamic>(),
-            );
-          }
-          final c = decoded['choices'];
-          if (c is List) choices = c.map((e) => e.toString()).toList();
-          final ev = decoded['events'];
-          if (ev is List) {
-            events = [for (final e in ev) StoryEvent.fromJson(e)];
-          }
-          if (decoded['check'] is Map) {
-            check = StoryCheck.fromJson(
-              (decoded['check'] as Map).cast<String, dynamic>(),
-            );
-          }
-          final vo = decoded['varOps'];
-          if (vo is List) varOps = [for (final e in vo) VarOp.fromJson(e)];
+
+    Map<String, dynamic>? decoded;
+    // 1) 代码块：不限定 ```json，兼容 ``` / ```JSON / ```markdown 等标记，
+    //    取最后一个「像状态块」的（含 state/choices/events/varOps/check）
+    final fenceRe = RegExp(r'```[ \t]*[a-zA-Z]*[ \t]*\r?\n?([\s\S]*?)```');
+    for (final m in fenceRe.allMatches(content).toList().reversed) {
+      final d = _tryDecodeStateJson(m.group(1)?.trim() ?? '');
+      if (d != null) {
+        decoded = d;
+        narrative = content.replaceRange(m.start, m.end, '').trim();
+        break;
+      }
+    }
+    // 2) 没有代码块时，尝试末尾的裸 JSON 对象（有些模型不加围栏）
+    if (decoded == null) {
+      final bare = _trailingJsonObject(content);
+      if (bare != null) {
+        final d = _tryDecodeStateJson(bare.$1);
+        if (d != null) {
+          decoded = d;
+          narrative = content.substring(0, bare.$2).trim();
         }
-      } catch (_) {}
+      }
+    }
+    if (decoded != null) {
+      if (decoded['state'] is Map) {
+        state = GameState.fromJson(
+          (decoded['state'] as Map).cast<String, dynamic>(),
+        );
+      }
+      final c = decoded['choices'];
+      if (c is List) choices = c.map((e) => e.toString()).toList();
+      final ev = decoded['events'];
+      if (ev is List) {
+        events = [for (final e in ev) StoryEvent.fromJson(e)];
+      }
+      if (decoded['check'] is Map) {
+        check = StoryCheck.fromJson(
+          (decoded['check'] as Map).cast<String, dynamic>(),
+        );
+      }
+      final vo = decoded['varOps'];
+      if (vo is List) varOps = [for (final e in vo) VarOp.fromJson(e)];
     } else if ('```'.allMatches(content).length.isOdd) {
       // 流式过程中可能出现未闭合的代码块，先隐藏
-      narrative = content
-          .substring(0, content.lastIndexOf('```'))
-          .trim();
+      narrative = content.substring(0, content.lastIndexOf('```')).trim();
     }
     return _ParsedReply(
       narrative: narrative,
@@ -4930,6 +4941,40 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       check: check,
       segments: _splitSegments(narrative),
     );
+  }
+
+  /// 解析出「像状态块」的 JSON 对象（含 state/choices/events/varOps/check 之一）
+  Map<String, dynamic>? _tryDecodeStateJson(String body) {
+    if (body.isEmpty || !body.startsWith('{')) return null;
+    try {
+      final d = jsonDecode(body);
+      if (d is! Map) return null;
+      const keys = ['state', 'choices', 'events', 'varOps', 'check'];
+      if (keys.any(d.containsKey)) return d.cast<String, dynamic>();
+    } catch (_) {}
+    return null;
+  }
+
+  /// 从文本末尾找一个平衡的 JSON 对象 → (JSON 文本, 起始下标)
+  (String, int)? _trailingJsonObject(String content) {
+    final end = content.lastIndexOf('}');
+    if (end < 0) return null;
+    var depth = 0;
+    for (var i = end; i >= 0; i--) {
+      final ch = content[i];
+      if (ch == '}') {
+        depth++;
+      } else if (ch == '{') {
+        depth--;
+        if (depth == 0) {
+          final candidate = content.substring(i, end + 1);
+          const marks = ['"state"', '"choices"', '"events"', '"varOps"'];
+          if (marks.any(candidate.contains)) return (candidate, i);
+          return null;
+        }
+      }
+    }
+    return null;
   }
 
   /// 把正文拆成旁白 / 角色片段（〖角色：名字〗...〖/角色〗）。
