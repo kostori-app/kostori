@@ -2837,10 +2837,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         maxWidth: MediaQuery.sizeOf(context).width * 0.72,
         maxHeight: MediaQuery.sizeOf(context).height * 0.4,
       ),
-      child: Material(
-        color: cs.surfaceContainerHigh,
+      // 磨砂玻璃背景
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
-        clipBehavior: Clip.antiAlias,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Material(
+        color: cs.surfaceContainerHigh.withValues(alpha: 0.7),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -2882,6 +2885,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               ),
             ),
           ],
+        ),
+        ),
         ),
       ),
     );
@@ -4518,14 +4523,31 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                             ),
                           ),
                           ),
+                          // 展开时点其它地方即收起
+                          if (choices.isNotEmpty &&
+                              _suggestExpanded &&
+                              !_state.gameOver)
+                            Positioned.fill(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => setState(
+                                  () => _suggestExpanded = false,
+                                ),
+                              ),
+                            ),
                           // 追问建议：浮在对话内容之上（不占内容区高度）
                           if (choices.isNotEmpty && !_state.gameOver)
                             Positioned(
                               right: 12,
                               bottom: 8,
-                              child: _suggestExpanded
-                                  ? _suggestPanel(choices)
-                                  : _suggestToggle(),
+                              child: AnimatedSize(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOut,
+                                alignment: Alignment.bottomRight,
+                                child: _suggestExpanded
+                                    ? _suggestPanel(choices)
+                                    : _suggestToggle(),
+                              ),
                             ),
                         ],
                       ),
@@ -5195,7 +5217,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     required bool closed,
   }) {
     if (!_speechRe.hasMatch(body)) {
-      segments.add(StorySegment(type: 'npc', name: name, text: body.trim()));
+      // 没有引号：有结束标记才算角色发言，否则视为旁白
+      // （模型常把动作描写也塞进 〖角色〗 标记里）
+      segments.add(
+        StorySegment(
+          type: closed ? 'npc' : 'narration',
+          name: name,
+          text: body.trim(),
+        ),
+      );
       return;
     }
     if (closed) {
