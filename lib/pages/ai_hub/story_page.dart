@@ -4317,7 +4317,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     for (final seg in streamSegments)
-                                      _renderStorySegment(seg, depth: 0),
+                                      _buildBlock(
+                                        seg.type == 'npc'
+                                            ? StoryBlock.dialogue(
+                                                seg.name,
+                                                seg.text,
+                                              )
+                                            : StoryBlock.narration(seg.text),
+                                        depth: 0,
+                                      ),
                                     // 事件/检定卡片要等 JSON 生成完才出现，这里提示仍在生成
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -4365,8 +4373,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   i == messages.length - 1 &&
                                   !_sending;
                               final persona = story.persona;
-                              final segments =
-                                  parsed?.segments ?? const <StorySegment>[];
+                              final blocks =
+                                  parsed?.blocks ?? const <StoryBlock>[];
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
@@ -4451,15 +4459,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.stretch,
                                             children: [
-                                              for (final seg in segments)
-                                                _renderStorySegment(
-                                                  seg,
+                                              // 内容块：旁白 / 对白 / 事件 / 检定
+                                              for (final b in blocks)
+                                                _buildBlock(
+                                                  b,
                                                   depth: messages.length - 1 - i,
+                                                  showCheck: showCheck,
                                                 ),
-                                              for (final e
-                                                  in parsed?.events ??
-                                                      const <StoryEvent>[])
-                                                _StoryEventCard(event: e),
                                               AiUsageMeta(task: m),
                                             ],
                                           ),
@@ -4467,17 +4473,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   _messageFooter(m),
                                   if (variants.length > 1)
                                     _variantNav(m, variants),
-                                  if (showCheck)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        top: 6,
-                                        bottom: 4,
-                                      ),
-                                      child: _StoryCheckCard(
-                                        check: check,
-                                        onRoll: () => _rollCheck(check),
-                                      ),
-                                    ),
                                 ],
                               );
                             },
@@ -4975,8 +4970,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       events: events,
       varOps: varOps,
       check: check,
-      segments: _splitSegments(narrative),
+      blocks: _buildBlocks(narrative, events, check),
     );
+  }
+
+  /// 把正文 + 事件 + 检定拼成内容块列表
+  List<StoryBlock> _buildBlocks(
+    String narrative,
+    List<StoryEvent> events,
+    StoryCheck? check,
+  ) {
+    final out = <StoryBlock>[
+      for (final seg in _splitSegments(narrative))
+        seg.type == 'npc'
+            ? StoryBlock.dialogue(seg.name, seg.text)
+            : StoryBlock.narration(seg.text),
+    ];
+    for (final e in events) {
+      out.add(StoryBlock.event(e));
+    }
+    if (check != null) out.add(StoryBlock.check(check));
+    return out;
   }
 
   /// 解析出「像状态块」的 JSON 对象（含 state/choices/events/varOps/check 之一）
@@ -5013,20 +5027,33 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return null;
   }
 
-  /// 渲染单个正文块（旁白 / 角色对白 / …）。
-  /// 新增块类型只需在这里登记渲染方式，不必改消息列表。
-  Widget _renderStorySegment(StorySegment seg, {required int depth}) {
+  /// 渲染单个内容块。新增块类型只需在这里登记渲染方式，不必改消息列表。
+  Widget _buildBlock(
+    StoryBlock b, {
+    required int depth,
+    bool showCheck = false,
+  }) {
     final s = story;
-    final text = applyStoryRegex(seg.text, s.regexes, 'display', depth: depth);
-    switch (seg.type) {
-      case 'npc':
+    String rx(String t) => applyStoryRegex(t, s.regexes, 'display', depth: depth);
+    switch (b.type) {
+      case 'dialogue':
         return _NpcBubble(
-          name: seg.name,
-          content: text,
-          avatar: _avatarForName(seg.name),
+          name: b.name,
+          content: rx(b.text),
+          avatar: _avatarForName(b.name),
+        );
+      case 'event':
+        final e = b.event;
+        return e == null ? const SizedBox.shrink() : _StoryEventCard(event: e);
+      case 'check':
+        final c = b.check;
+        if (c == null || !showCheck) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 4),
+          child: _StoryCheckCard(check: c, onRoll: () => _rollCheck(c)),
         );
       default:
-        return _StoryBubble(content: text, isUser: false);
+        return _StoryBubble(content: rx(b.text), isUser: false);
     }
   }
 
@@ -6745,7 +6772,9 @@ class _ParsedReply {
   final List<StoryEvent> events;
   final List<VarOp> varOps;
   final StoryCheck? check;
-  final List<StorySegment> segments;
+
+  /// 结构化内容块（旁白 / 对白 / 事件 / 检定），渲染按块分派
+  final List<StoryBlock> blocks;
 
   const _ParsedReply({
     required this.narrative,
@@ -6754,7 +6783,7 @@ class _ParsedReply {
     this.events = const [],
     this.varOps = const [],
     this.check,
-    this.segments = const [],
+    this.blocks = const [],
   });
 }
 

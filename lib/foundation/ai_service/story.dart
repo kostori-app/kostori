@@ -760,6 +760,45 @@ DiceRoll rollDice(
   );
 }
 
+/// 内容块：一条回复被解析成的结构化片段。
+/// 渲染按 [type] 分派，新增块类型只需在渲染处登记，不必改消息列表。
+class StoryBlock {
+  /// narration | dialogue | event | check
+  final String type;
+
+  /// 正文（narration / dialogue）
+  final String text;
+
+  /// dialogue 的角色名
+  final String name;
+
+  final StoryEvent? event;
+  final StoryCheck? check;
+
+  const StoryBlock.narration(this.text)
+    : type = 'narration',
+      name = '',
+      event = null,
+      check = null;
+
+  const StoryBlock.dialogue(this.name, this.text)
+    : type = 'dialogue',
+      event = null,
+      check = null;
+
+  const StoryBlock.event(this.event)
+    : type = 'event',
+      text = '',
+      name = '',
+      check = null;
+
+  const StoryBlock.check(this.check)
+    : type = 'check',
+      text = '',
+      name = '',
+      event = null;
+}
+
 /// 设定条目（道具 / 种族 / 特质 / 天赋等）：一层给玩家看，一层给 AI 看
 class StoryDefinition {
   final String kind; // item | race | trait | talent | skill | ...
