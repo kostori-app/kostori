@@ -1044,7 +1044,8 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
             children: [
               Positioned.fill(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  // 底部留白：避免右下角「应用」按钮遮住最后几个字段
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                   child: _SettingCard(
                     children: [
                       Padding(
@@ -1488,7 +1489,8 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
             children: [
               Positioned.fill(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  // 底部留白：避免右下角「应用」按钮遮住最后几个字段
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                   child: _SettingCard(
                     children: [
                       Padding(
