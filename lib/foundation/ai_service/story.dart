@@ -1885,7 +1885,8 @@ class Story {
 - **战斗**：进入战斗时给出 combat（active=true、round、敌人血量），战斗结束设 active=false；回合推进由玩家发起。
 - **任务链**：同一 chain 的任务构成任务链，用 stage/totalStages 标记阶段。status 只能取 active / done / failed 三者之一（不要写 completed 等其它写法）；标记为 done 时必须同时把 stage 设为 totalStages、progress 设为 100，避免出现「1/2 却已完成」这种矛盾。
 - **成就**：解锁成就时把其 key 加入 achievements；只能使用故事预定义的成就 key，不要自创。
-- **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。''');
+- **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。
+- **骰子工具**：也可以直接调用 `roll_dice` 工具（参数 label / dice / modifier / dc）让系统掷骰，NPC 或剧情需要判定时同样用它；除 `roll_dice` 外不要调用其它工具。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
       buf.writeln('【后续建议要求】');
