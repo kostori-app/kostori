@@ -1072,6 +1072,13 @@ class AiConversationService {
     return result;
   }
 
+  /// 会话当前的滚动摘要（长期记忆），没有则返回 null
+  Future<String?> sessionSummary(String sessionId) async {
+    final session = await _sessionDao.getSession(sessionId);
+    final s = session?.compressedContent;
+    return (s == null || s.trim().isEmpty) ? null : s;
+  }
+
   /// 取上下文预算（字符）：故事覆盖 > 档案 > 全局默认（0 表示不限制）
   int _budgetFor(AssistantProfile? profile, {int? override}) =>
       override ??

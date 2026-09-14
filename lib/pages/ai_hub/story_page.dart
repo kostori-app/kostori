@@ -3243,6 +3243,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.write('\n\n【当前局势（延续此设定，除非剧情已推进）】\n');
       buf.write(state.situation.trim());
     }
+    // 滚动摘要（长期记忆）：故事走 systemPromptOverride，不会经过
+    // buildSystemPrompt，所以这里显式把摘要拼进来，超长局才不掉老上下文
+    final summary = _sessionId == null
+        ? null
+        : await AiConversationService().sessionSummary(_sessionId!);
+    if (summary != null) {
+      buf.write('\n\n【历史对话摘要（长期记忆）】\n$summary');
+    }
     // 故事从库里显式选择的世界书 / 提示词（未选则不注入）
     final injections = await PromptInjectionStore.instance.selectExact(
       story.injectionIds.toSet(),

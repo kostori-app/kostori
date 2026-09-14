@@ -2182,10 +2182,31 @@ class StoryStore extends ChangeNotifier {
     final id = story.id;
     if (asBase || _bases[id] == null) {
       // 导入 / 首次保存：作为基底
+      final oldBase = _bases[id];
       _bases[id] = story;
       await _writeBase(story);
-      final overlay = _overlays[id] ?? const <String, dynamic>{};
-      _setEffective(id, storyMerge(story, overlay));
+      // 重新导入时旧覆盖层是按「旧基底」算的差集，直接叠加会把新基底
+      // （如世界书）盖回旧内容。这里只保留「作者没改动过的字段」上的用户编辑：
+      // 新旧基底该字段一致 → 用户的修改仍然有意义，保留；作者改过 → 以新基底为准。
+      final oldOverlay = _overlays[id];
+      final kept = <String, dynamic>{};
+      if (oldOverlay != null && oldBase != null) {
+        final oldFull = storyJsonFull(oldBase);
+        final newFull = storyJsonFull(story);
+        for (final e in oldOverlay.entries) {
+          if (jsonEncode(oldFull[e.key]) == jsonEncode(newFull[e.key])) {
+            kept[e.key] = e.value;
+          }
+        }
+      }
+      if (kept.isEmpty) {
+        _overlays.remove(id);
+        await _writeOverlay(id, const {});
+      } else {
+        _overlays[id] = kept;
+        await _writeOverlay(id, kept);
+      }
+      _setEffective(id, storyMerge(story, kept));
     } else {
       // 编辑：基底不变，只写覆盖层
       final overlay = storyDiff(_bases[id]!, story);
