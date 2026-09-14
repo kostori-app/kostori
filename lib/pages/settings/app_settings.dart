@@ -1588,7 +1588,10 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     final names = res.success
         ? {for (final e in res.data) e.name}
         : <String>{};
-    Log.info('SelectiveSync', 'download $kind: remote=[${names.join(', ')}]');
+    Log.info(
+      'SelectiveSync',
+      'download $kind: remote=[${res.dataOrNull?.map((e) => '${e.name}(${e.size})').join(', ') ?? names.join(', ')}]',
+    );
     var ok = 0;
     for (final id in ids) {
       final files = _entryFiles(kind, id);

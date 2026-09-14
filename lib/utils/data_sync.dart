@@ -712,10 +712,17 @@ class DataSync with ChangeNotifier {
   }) async {
     final client = _client();
     if (client == null) return const Res.error('Invalid WebDAV configuration');
+    final remotePath = _join(_normDir(remoteDir), remoteName);
     try {
       final parent = File(localPath).parent;
       if (!parent.existsSync()) parent.createSync(recursive: true);
-      await client.read2File(_join(_normDir(remoteDir), remoteName), localPath);
+      try {
+        await client.read2File(remotePath, localPath);
+      } catch (_) {
+        // 部分服务器对「流式 GET」会 404（尤其 .md），退回按字节读取
+        final bytes = await client.read(remotePath);
+        await File(localPath).writeAsBytes(bytes);
+      }
       return const Res(true);
     } catch (e, s) {
       Log.error('Download File', e, s);
