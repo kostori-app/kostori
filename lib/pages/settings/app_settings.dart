@@ -1453,24 +1453,31 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     final sync = DataSync();
     var ok = 0;
     for (final id in ids) {
-      var any = false;
-      for (final f in _entryFiles(kind, id)) {
+      final files = _entryFiles(kind, id);
+      var mainOk = false;
+      for (var i = 0; i < files.length; i++) {
+        final f = files[i];
         if (!f.existsSync()) continue;
         final r = await sync.uploadFile(
           localPath: f.path,
           remoteName: f.uri.pathSegments.last,
           remoteDir: kind,
         );
-        if (r.success) any = true;
+        if (r.success) {
+          // 主文件成功才算这个条目成功（附属文件失败不掩盖）
+          if (i == 0) mainOk = true;
+        } else {
+          Log.error('SelectiveSync', 'upload failed: $kind/${f.uri.pathSegments.last}');
+        }
       }
-      if (any) ok++;
+      if (mainOk) ok++;
     }
     if (!mounted) return;
     setState(() {
       _busy = false;
       _sel(kind).clear();
     });
-    _toast(ok > 0);
+    _toast(ok > 0 && ok == ids.length);
     await _load();
   }
 
@@ -1581,12 +1588,18 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     final names = res.success
         ? {for (final e in res.data) e.name}
         : <String>{};
+    Log.info('SelectiveSync', 'download $kind: remote=[${names.join(', ')}]');
     var ok = 0;
     for (final id in ids) {
-      var any = false;
-      for (final f in _entryFiles(kind, id)) {
+      final files = _entryFiles(kind, id);
+      var mainOk = false;
+      for (var i = 0; i < files.length; i++) {
+        final f = files[i];
         final name = f.uri.pathSegments.last;
-        if (!names.contains(name)) continue;
+        if (!names.contains(name)) {
+          Log.info('SelectiveSync', 'not on remote, skip: $kind/$name');
+          continue;
+        }
         var r = await sync.downloadFile(
           remoteName: name,
           localPath: f.path,
@@ -1600,9 +1613,14 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
             remoteDir: '/',
           );
         }
-        if (r.success) any = true;
+        if (r.success) {
+          // 主文件成功才算这个条目成功
+          if (i == 0) mainOk = true;
+        } else {
+          Log.error('SelectiveSync', 'download failed: $kind/$name');
+        }
       }
-      if (any) ok++;
+      if (mainOk) ok++;
     }
     await CharacterCardStore.instance.reload();
     await StoryStore.instance.reload();
@@ -1617,7 +1635,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       _busy = false;
       _sel(kind).clear();
     });
-    _toast(ok > 0);
+    _toast(ok > 0 && ok == ids.length);
     await _load();
   }
 
