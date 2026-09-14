@@ -5872,6 +5872,8 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
       if (_findDef(_baseName(s)) == null) (name: _baseName(s), kind: 'item'),
     for (final s in state.skills)
       if (_findDef(s) == null) (name: s, kind: 'skill'),
+    for (final a in state.attributes.keys)
+      if (_findDef(a) == null) (name: a, kind: 'trait'),
   ];
 
   Future<void> _generateMissingAll() async {
@@ -5881,7 +5883,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     setState(() => _generating = true);
     try {
       GameState? next;
-      for (final kind in const ['item', 'skill']) {
+      for (final kind in const ['item', 'skill', 'trait']) {
         final names = [
           for (final m in missing)
             if (m.kind == kind) m.name,
@@ -6016,6 +6018,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     required String label,
     required String kind,
     bool equipped = false,
+    VoidCallback? onTap,
     VoidCallback? onLongPress,
     VoidCallback? onSecondaryTap,
   }) {
@@ -6036,7 +6039,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
           ],
         ),
         backgroundColor: equipped ? scheme.primaryContainer : null,
-        onPressed: () => _inspect(label, kind),
+        onPressed: onTap ?? () => _inspect(label, kind),
       ),
     );
   }
@@ -6244,8 +6247,13 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
             spacing: 8,
             runSpacing: 8,
             children: [
+              // 属性可点击：查看该属性影响什么（由故事观的词条定义）
               for (final e in state.attributes.entries)
-                Chip(label: Text('${e.key} ${e.value}')),
+                _entry(
+                  label: '${e.key} ${e.value}',
+                  kind: 'trait',
+                  onTap: () => _inspect(e.key, 'trait'),
+                ),
             ],
           ),
         ];
