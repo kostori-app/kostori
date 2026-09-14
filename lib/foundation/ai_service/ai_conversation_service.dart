@@ -457,6 +457,7 @@ class AiConversationService {
     int maxContextMessages = 20,
     String? providerOverride,
     bool useTools = true,
+    Set<String>? toolNames,
     CancelToken? cancelToken,
     void Function()? onAutoCompressed,
     AiGenerationParams? paramsOverride,
@@ -577,8 +578,22 @@ class AiConversationService {
           SkillRegistry.instance.setEnabled(profile.enabledSkillIds);
         }
         final built = SkillRegistry.instance.buildTools();
-        tools = built.tools;
-        toolHandler = built.handler;
+        if (toolNames != null) {
+          // 只放行白名单里的工具（例如酒馆只允许 roll_dice）
+          tools = built.tools
+              .where((t) => toolNames.contains(t.name))
+              .toList();
+          final inner = built.handler;
+          toolHandler = (name, args) {
+            if (!toolNames.contains(name)) {
+              throw Exception('未允许的工具: $name');
+            }
+            return inner(name, args);
+          };
+        } else {
+          tools = built.tools;
+          toolHandler = built.handler;
+        }
       }
     }
     final genParams = paramsOverride ?? _profileParams(profile);

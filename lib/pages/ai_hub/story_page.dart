@@ -3299,8 +3299,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         sessionId: sessionId,
         userMessage: outgoing,
         taskType: 'story',
-        // 允许模型调用 roll_dice（NPC / 剧情判定由系统掷骰）
+        // 只允许模型调用 roll_dice（NPC / 剧情判定由系统掷骰），
+        // 不暴露其它助手技能
         useTools: true,
+        toolNames: const {'roll_dice'},
         providerOverride: aiHubProvider(),
         systemPromptOverride: await _systemPromptFor(
           _state,
