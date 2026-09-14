@@ -4094,8 +4094,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 用 AI 为缺失设定的物品/技能批量生成词条（单个也走这里）
-  Future<void> _generateCodex(List<String> items) async {
-    if (items.isEmpty || _registering) return;
+  Future<GameState?> _generateCodex(
+    List<String> items, {
+    String kind = 'item',
+  }) async {
+    if (items.isEmpty || _registering) return null;
     setState(() => _registering = true);
     try {
       final res = await AiConversationService().runTask(
@@ -4105,17 +4108,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         systemPrompt: t.storyCodexSystem,
         prompt:
             '${t.storyCodexPrompt}\n'
-            '{"codex":[{"kind":"item","key":"道具名","name":"道具名",'
+            '{"codex":[{"kind":"$kind","key":"名称","name":"名称",'
             '"display":"玩家可见描述","mechanics":"机制/数值"}]}\n'
-            '${t.storyCodexItems}：${items.join('、')}',
+            '${t.storyCodexItems}（kind 用 $kind）：${items.join('、')}',
       );
-      if (!mounted) return;
+      if (!mounted) return null;
       if (!res.success) {
         App.rootContext.showMessage(
           message: res.errorMessage ?? '',
           level: LogLevel.error,
         );
-        return;
+        return null;
       }
       final defs = _parseCodexDefs(res.data);
       if (defs.isEmpty) {
@@ -4129,7 +4132,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           message: t.characterImportFailed,
           level: LogLevel.warning,
         );
-        return;
+        return null;
       }
       final codex = [..._state.codex];
       for (final d in defs) {
@@ -4157,6 +4160,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           StorySession(sessionId: sessionId, state: next),
         );
       }
+      return next;
     } finally {
       if (mounted) setState(() => _registering = false);
     }
@@ -5548,7 +5552,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         story: story,
         state: state,
         onCommand: _send,
-        onGenerateCodex: _generateCodex,
+        onGenerateCodex: (items, kind) => _generateCodex(items, kind: kind),
       ),
     );
   }
@@ -5804,8 +5808,9 @@ class _StoryDetailsSheet extends StatefulWidget {
   final GameState state;
   final ValueChanged<String> onCommand;
 
-  /// 为缺失设定的物品/技能生成词条
-  final Future<void> Function(List<String> items)? onGenerateCodex;
+  /// 为缺失设定的物品/技能生成词条（返回更新后的状态，供本页刷新）
+  final Future<GameState?> Function(List<String> items, String kind)?
+  onGenerateCodex;
 
   @override
   State<_StoryDetailsSheet> createState() => _StoryDetailsSheetState();
@@ -5834,16 +5839,74 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     );
   }
 
+  /// 本页刚生成的词条（覆盖层）：生成后立即生效，不必重开面板
+  List<StoryDefinition>? _codexOverride;
+  bool _generating = false;
+
+  /// 头部「补全缺失设定」按钮（icon，文字放 tooltip）
+  Widget _generateHeaderButton() {
+    final gen = widget.onGenerateCodex;
+    if (gen == null) return const SizedBox.shrink();
+    if (_generating) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: PolygonRefreshIndicator(),
+        ),
+      );
+    }
+    final missing = _missingDefs();
+    if (missing.isEmpty) return const SizedBox.shrink();
+    return IconButton(
+      icon: const Icon(Icons.auto_awesome, size: 20),
+      tooltip: '${t.storyRegisterItems} (${missing.length})',
+      onPressed: _generateMissingAll,
+    );
+  }
+
+  /// 缺失设定的条目（物品 / 技能，带 kind）
+  List<({String name, String kind})> _missingDefs() => [
+    for (final s in state.inventory)
+      if (_findDef(_baseName(s)) == null) (name: _baseName(s), kind: 'item'),
+    for (final s in state.skills)
+      if (_findDef(s) == null) (name: s, kind: 'skill'),
+  ];
+
+  Future<void> _generateMissingAll() async {
+    final gen = widget.onGenerateCodex;
+    final missing = _missingDefs();
+    if (gen == null || missing.isEmpty || _generating) return;
+    setState(() => _generating = true);
+    try {
+      GameState? next;
+      for (final kind in const ['item', 'skill']) {
+        final names = [
+          for (final m in missing)
+            if (m.kind == kind) m.name,
+        ];
+        if (names.isEmpty) continue;
+        next = await gen(names, kind) ?? next;
+      }
+      if (next != null && mounted) {
+        setState(() => _codexOverride = next!.codex);
+      }
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
   /// 在 codex 里按名称/键查找设定（容忍「物品 x2」这类后缀）
   StoryDefinition? _findDef(String name) {
     final key = _baseName(name);
-    for (final d in state.codex) {
+    for (final d in _codexOverride ?? state.codex) {
       if (d.key == name || d.name == name || d.key == key || d.name == key) {
         return d;
       }
     }
     // 宽松匹配：数量后缀 / 名称写法不完全一致（如「工程铅笔（半支）x1」）
-    for (final d in state.codex) {
+    for (final d in _codexOverride ?? state.codex) {
       if (_nameMatch(d.key, key) || _nameMatch(d.name, key)) return d;
     }
     return null;
@@ -5851,23 +5914,6 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
 
   IconData _iconFor(String name, String fallbackKind) =>
       _codexIcon(_findDef(name)?.kind ?? fallbackKind);
-
-  /// 查看条目说明：图鉴里显示图鉴描述，否则提示暂无
-  /// 缺失设定的物品/技能：批量生成词条按钮
-  Widget _generateMissing(List<String> names) {
-    final gen = widget.onGenerateCodex;
-    if (gen == null) return const SizedBox.shrink();
-    final missing = [for (final n in names) if (_findDef(n) == null) n];
-    if (missing.isEmpty) return const SizedBox.shrink();
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: () => gen(missing),
-        icon: const Icon(Icons.auto_awesome, size: 16),
-        label: Text('${t.storyRegisterItems} (${missing.length})'),
-      ),
-    );
-  }
 
   Future<void> _inspect(String name, String kind) async {
     final def = _findDef(name);
@@ -6094,6 +6140,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     return Sheet(
       title: t.storyDetails,
       icon: Icons.auto_stories_outlined,
+      headerTrailing: _generateHeaderButton(),
       initialSize: 0.7,
       builder: (ctx, sc) => Column(
         children: [
@@ -6213,7 +6260,6 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               for (final s in state.skills) _entry(label: s, kind: 'skill'),
             ],
           ),
-          _generateMissing(state.skills),
         ];
       case 'inventory':
         if (state.inventory.isEmpty) return const [];
@@ -6236,7 +6282,6 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
                 ),
             ],
           ),
-          _generateMissing([for (final s in state.inventory) _baseName(s)]),
         ];
       case 'quests':
         if (state.quests.isEmpty) return const [];
