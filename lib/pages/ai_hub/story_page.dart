@@ -3691,14 +3691,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return '';
   }
 
-  /// 消息时间：yyyy-MM-dd HH:mm:ss
-  String _formatTime(DateTime t) =>
-      '${t.year}-${t.month.toString().padLeft(2, '0')}-'
-      '${t.day.toString().padLeft(2, '0')} '
-      '${t.hour.toString().padLeft(2, '0')}:'
-      '${t.minute.toString().padLeft(2, '0')}:'
-      '${t.second.toString().padLeft(2, '0')}';
-
   /// 对某个角色说话：在输入框前缀「对XX：」并聚焦
   void _addressCharacter(CharacterCard c) {
     final prefix = t.storyCmdAddress(name: c.name);
@@ -4308,7 +4300,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   headerName: persona.name.trim().isEmpty
                                       ? t.storyPersona
                                       : persona.name.trim(),
-                                  headerTime: _formatTime(DateTime.now()),
+                                  // 玩家消息显示游戏内时间，而不是现实时间
+                                  headerTime: _state.time,
                                   headerAvatar: persona.avatar,
                                 );
                               }
@@ -4442,9 +4435,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                               .isEmpty
                                                           ? t.storyPersona
                                                           : persona.name.trim(),
-                                                      headerTime: _formatTime(
-                                                        m.createdAt,
-                                                      ),
+                                                      headerTime: _state.time,
                                                       headerAvatar:
                                                           persona.avatar,
                                                     ),
@@ -5881,7 +5872,6 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
   Future<void> _inspect(String name, String kind) async {
     final def = _findDef(name);
     final scheme = Theme.of(context).colorScheme;
-    var generate = false;
     await ContentDialog.show<void>(
       context: App.rootContext,
       title: def?.name ?? name,
@@ -5911,24 +5901,9 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
           ],
         ],
       ),
-      actions: [
-        if (def == null && widget.onGenerateCodex != null)
-          TextButton(
-            onPressed: () {
-              generate = true;
-              Navigator.of(App.rootContext).pop();
-            },
-            child: Text(t.storyRegisterItems),
-          ),
-        FilledButton(
-          onPressed: () => Navigator.of(App.rootContext).pop(),
-          child: Text(t.confirm),
-        ),
-      ],
+      // 只读查看：不需要确认/取消按钮
+      actions: const [],
     );
-    if (generate) {
-      await widget.onGenerateCodex?.call([name]);
-    }
   }
 
   /// 物品菜单：检查 / 使用 / 装备 / 丢弃
@@ -6066,7 +6041,10 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
   Widget _codexTile(StoryDefinition d, ColorScheme scheme) {
     final status = _codexStatus(d);
     final owned = status?.$2;
-    return ListTile(
+    // 圆角裁切：让点击水波纹也跟随圆角（默认是直角）
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       leading: Icon(_codexIcon(d.kind), size: 20),
@@ -6106,6 +6084,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
         ),
       ),
       onTap: () => _inspect(d.name, d.kind),
+      ),
     );
   }
 
