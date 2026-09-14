@@ -308,6 +308,9 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
           providers.containsKey(storedProvider))
       ? storedProvider
       : providers.keys.firstWhere((_) => true, orElse: () => 'siliconFlow');
+  // 生成专用的模型（为空则用该厂商已保存的模型）
+  final storedModel = appdata.implicitData['settingGenModel'];
+  var genModel = storedModel is String ? storedModel : '';
   try {
     while (true) {
       final isFirst = current == null;
@@ -326,7 +329,9 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
                   genProvider,
                 ),
                 builder: (_, snap) {
-                  final model = snap.data?.model ?? '';
+                  final model = genModel.isNotEmpty
+                      ? genModel
+                      : (snap.data?.model ?? '');
                   final label =
                       '${providers[genProvider]?.name ?? genProvider} · '
                       '${model.isEmpty ? t.set : model}';
@@ -341,6 +346,13 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
                         onProviderChanged: (p) {
                           setLocal(() => genProvider = p);
                           appdata.implicitData['settingGenProvider'] = p;
+                          appdata.writeImplicitData();
+                        },
+                        currentModel: genModel.isEmpty ? null : genModel,
+                        // 生成专用模型：不写回该厂商的聊天模型
+                        onModelSelected: (m) {
+                          setLocal(() => genModel = m);
+                          appdata.implicitData['settingGenModel'] = m;
                           appdata.writeImplicitData();
                         },
                       ),
@@ -411,6 +423,7 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
             sessionTitle: title,
             systemPrompt: systemPrompt,
             prompt: prompt,
+            modelOverride: genModel.isEmpty ? null : genModel,
           )
           .whenComplete(() => loading.close());
       if (!res.success) continue;

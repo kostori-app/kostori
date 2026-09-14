@@ -273,6 +273,7 @@ class AiConversationService {
     void Function()? onAutoCompressed,
     String? systemPromptOverride,
     AiGenerationParams? paramsOverride,
+    String? modelOverride,
   }) async {
     var session = await _sessionDao.getSession(sessionId);
     if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
@@ -397,6 +398,7 @@ class AiConversationService {
       useTools: useTools,
       onToolCall: onToolCall,
       params: paramsOverride ?? _profileParams(profile),
+      modelOverride: modelOverride,
       configOverride: await _configOverrideFor(ai, provider, profile),
     );
     sw.stop();
@@ -1032,6 +1034,7 @@ class AiConversationService {
     String? configKey,
     String? systemPrompt,
     String? sessionTitle,
+    String? modelOverride,
   }) async {
     final sessionId = await createSession(
       type: taskType,
@@ -1046,6 +1049,7 @@ class AiConversationService {
       useTools: false,
       maxContextMessages: 0,
       systemPromptOverride: systemPrompt,
+      modelOverride: modelOverride,
     );
   }
 
@@ -1365,6 +1369,7 @@ class AiConversationService {
     required bool useTools,
     void Function(String toolName)? onToolCall,
     AiGenerationParams? params,
+    String? modelOverride,
     AiProviderConfig? configOverride,
   }) async {
     if (!useTools) {
@@ -1372,6 +1377,7 @@ class AiConversationService {
         messages,
         systemPrompt: systemPrompt,
         params: params,
+        modelOverride: modelOverride,
         configOverride: configOverride,
       );
     }
@@ -1381,6 +1387,7 @@ class AiConversationService {
         messages,
         systemPrompt: systemPrompt,
         params: params,
+        modelOverride: modelOverride,
         configOverride: configOverride,
       );
     }
@@ -1390,6 +1397,7 @@ class AiConversationService {
         messages,
         systemPrompt: systemPrompt,
         params: params,
+        modelOverride: modelOverride,
         configOverride: configOverride,
       );
     }
@@ -1402,6 +1410,7 @@ class AiConversationService {
         return built.handler(name, arguments);
       },
       params: params,
+      modelOverride: modelOverride,
       configOverride: configOverride,
     );
   }
