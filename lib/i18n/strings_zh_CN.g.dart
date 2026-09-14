@@ -2480,7 +2480,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileMemoryHint => '记录用户偏好/常问话题/关键结论，随助手切换';
 	@override String get profileMemoryMaxEntries => '记忆条目上限';
 	@override String get profileMemoryContextBudget => '上下文预算（字符）';
-	@override String get profileMemoryContextBudgetHint => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；0 表示不限制';
+	@override String get profileMemoryContextBudgetHint => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制';
+	@override String get aiContextBudget => '上下文预算（字符）';
+	@override String get aiContextBudgetHint => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制';
 	@override String get profileMemoryEntries => '记忆条目';
 	@override String get profileMemoryClear => '清空';
 	@override String get profileMemoryEmpty => '暂无记忆条目';
@@ -5354,7 +5356,9 @@ extension on TranslationsZhCn {
 			'profileMemoryHint' => '记录用户偏好/常问话题/关键结论，随助手切换',
 			'profileMemoryMaxEntries' => '记忆条目上限',
 			'profileMemoryContextBudget' => '上下文预算（字符）',
-			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；0 表示不限制',
+			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制',
+			'aiContextBudget' => '上下文预算（字符）',
+			'aiContextBudgetHint' => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制',
 			'profileMemoryEntries' => '记忆条目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暂无记忆条目',
@@ -5429,10 +5433,10 @@ extension on TranslationsZhCn {
 			'mcpConnected' => '已连接',
 			'mcpDisconnected' => '未连接',
 			'mcpToolsImported' => '个工具',
-			'mcpReconnect' => '重连',
-			'mcpTestConnection' => '测试连接',
 			_ => null,
 		} ?? switch (path) {
+			'mcpReconnect' => '重连',
+			'mcpTestConnection' => '测试连接',
 			'mcpConnecting' => '连接中...',
 			'mcpConnectionFailed' => '连接失败',
 			'builderTitle' => '源构建器',

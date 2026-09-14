@@ -7363,8 +7363,14 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Context budget (chars)'
 	String get profileMemoryContextBudget => 'Context budget (chars)';
 
-	/// en: 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. 0 = unlimited'
-	String get profileMemoryContextBudgetHint => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. 0 = unlimited';
+	/// en: 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited'
+	String get profileMemoryContextBudgetHint => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited';
+
+	/// en: 'Context budget (chars)'
+	String get aiContextBudget => 'Context budget (chars)';
+
+	/// en: 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited'
+	String get aiContextBudgetHint => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited';
 
 	/// en: 'Memory entries'
 	String get profileMemoryEntries => 'Memory entries';
@@ -10945,7 +10951,9 @@ extension on Translations {
 			'profileMemoryHint' => 'Records preferences, frequent topics and key conclusions; switches with the assistant',
 			'profileMemoryMaxEntries' => 'Memory entry limit',
 			'profileMemoryContextBudget' => 'Context budget (chars)',
-			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. 0 = unlimited',
+			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited',
+			'aiContextBudget' => 'Context budget (chars)',
+			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',
 			'profileMemoryEmpty' => 'No memory entries yet',
@@ -11020,10 +11028,10 @@ extension on Translations {
 			'mcpConnected' => 'Connected',
 			'mcpDisconnected' => 'Disconnected',
 			'mcpToolsImported' => 'tools imported',
-			'mcpReconnect' => 'Reconnect',
-			'mcpTestConnection' => 'Test connection',
 			_ => null,
 		} ?? switch (path) {
+			'mcpReconnect' => 'Reconnect',
+			'mcpTestConnection' => 'Test connection',
 			'mcpConnecting' => 'Connecting...',
 			'mcpConnectionFailed' => 'Connection failed',
 			'builderTitle' => 'Source Builder',

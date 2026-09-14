@@ -77,6 +77,9 @@ class _AiSettingsState extends State<AiSettings> {
           ),
         ),
 
+        // ── 上下文预算（全局默认）─────────────────
+        _BuildSectionPadding(const _GlobalContextBudgetCard()),
+
         // ── 助手档案（助手管理）───────────────────
         _BuildSectionPadding(_AssistantProfileSection()),
 
@@ -2462,6 +2465,77 @@ class _SkillEditorState extends State<_SkillEditor> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 全局上下文预算（字符）：所有对话 / 故事共用的默认值
+class _GlobalContextBudgetCard extends StatefulWidget {
+  const _GlobalContextBudgetCard();
+
+  @override
+  State<_GlobalContextBudgetCard> createState() =>
+      _GlobalContextBudgetCardState();
+}
+
+class _GlobalContextBudgetCardState extends State<_GlobalContextBudgetCard> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: aiGlobalContextBudgetChars.toString());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final v = int.tryParse(_ctrl.text.trim());
+    if (v == null || v < 0) return;
+    aiGlobalContextBudgetChars = v;
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingCard(
+      children: [
+        _SettingPartTitle(
+          title: t.aiContextBudget,
+          icon: Icons.data_usage_outlined,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Text(
+            t.aiContextBudgetHint,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: t.profileMemoryContextBudget,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(onPressed: _save, child: Text(t.apply)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
