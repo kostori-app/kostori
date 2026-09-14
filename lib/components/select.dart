@@ -420,7 +420,7 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
 
   /// 选中项不在可视区时滚动过去（对齐 TabBar 的自动滚动行为）
   void _scrollSelectedIntoView(double value, List<Rect> rects) {
-    if (!widget.scrollable || !widget.autoScroll) return;
+    if (!widget.autoScroll) return;
     if (rects.isEmpty || !_scrollController.hasClients) return;
     final index = value.round().clamp(0, rects.length - 1);
     final rect = rects[index];
@@ -515,16 +515,8 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
     final track = Container(
       padding: widget.padding,
       decoration: widget.trackDecoration,
-      child: widget.scrollable
-          ? SingleChildScrollView(
-              controller: _scrollController,
-              scrollDirection: Axis.horizontal,
-              child: content,
-            )
-          : content,
+      child: content,
     );
-    // 非滚动时轨道按内容宽度收缩（不占满整行），并按 alignment 对齐/居中
-    if (widget.scrollable) return track;
     final alignment = switch (widget.alignment) {
       WrapAlignment.center ||
       WrapAlignment.spaceBetween ||
@@ -533,7 +525,19 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
       WrapAlignment.end => Alignment.centerRight,
       _ => Alignment.centerLeft,
     };
-    return Align(alignment: alignment, child: track);
+    // 内容不足一行 → 按内容宽度收缩并居中；超出一行 → 可左右滑动
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        controller: _scrollController,
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: constraints.maxWidth.isFinite ? constraints.maxWidth : 0,
+          ),
+          child: Align(alignment: alignment, child: track),
+        ),
+      ),
+    );
   }
 }
 
