@@ -4269,7 +4269,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 return Column(
                   children: [
                     Expanded(
-                      child: NotificationListener<ScrollNotification>(
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: NotificationListener<ScrollNotification>(
                         onNotification: _onUserScroll,
                         // 列表铺满整宽，内容用左右留白居中：
                         // 这样鼠标滚轮/拖动在两侧空白处也能滚动
@@ -4508,17 +4511,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           },
                             ),
                           ),
-                    ),
-                    if (choices.isNotEmpty && !_state.gameOver)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-                          child: _suggestExpanded
-                              ? _suggestPanel(choices)
-                              : _suggestToggle(),
-                        ),
+                          ),
+                          // 追问建议：浮在对话内容之上（不占内容区高度）
+                          if (choices.isNotEmpty && !_state.gameOver)
+                            Positioned(
+                              right: 12,
+                              bottom: 8,
+                              child: _suggestExpanded
+                                  ? _suggestPanel(choices)
+                                  : _suggestToggle(),
+                            ),
+                        ],
                       ),
+                    ),
                     if (story.characters.isNotEmpty)
                       Builder(
                         builder: (context) {
