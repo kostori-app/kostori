@@ -303,9 +303,13 @@ class _ExplorePageState extends State<ExplorePage>
     final key = appdata.implicitData['exploreSourceKey']?.toString();
     if (key == null || key.isEmpty) return;
     final idx = sources.indexOf(key);
-    if (idx >= 0 && idx < sources.length) {
-      sourceController.index = idx;
-    }
+    if (idx <= 0 || idx >= sources.length) return;
+    // 在首帧之后再切换：ExtendedTabBarView 尚未构建时直接设 index 会丢失，
+    // 导致停在默认（第一个）或异常跳到末尾
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || idx >= sourceController.length) return;
+      sourceController.animateTo(idx, duration: Duration.zero);
+    });
   }
 
   /// 源切换：刷新悬浮头（分类胶囊随源变化）+ 持久化
