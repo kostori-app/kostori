@@ -2875,18 +2875,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 回到底部恢复跟随。程序滚动只会把 offset 拉向 0（变小），不会误判。
   bool _onUserScroll(ScrollNotification n) {
     if (n.metrics.axis == Axis.horizontal) return false;
+    // 用户开始拖动（含触摸/鼠标拖拽）时立即解除跟随：
+    // 之前要求「已离开底部」才解除，流式输出每帧把列表拉回底部，
+    // 导致 json 阶段根本滑不上去。拖动结束再按是否到底决定是否恢复跟随。
+    if (n is ScrollStartNotification && n.dragDetails != null) {
+      if (_isFollowing) setState(() => _isFollowing = false);
+      return false;
+    }
     if (n is UserScrollNotification) {
-      if (n.direction != ScrollDirection.idle &&
-          !_atBottom(n.metrics) &&
-          _isFollowing) {
+      if (n.direction != ScrollDirection.idle && _isFollowing) {
         setState(() => _isFollowing = false);
       }
     } else if (n is ScrollUpdateNotification) {
-      if ((n.scrollDelta ?? 0) > 0 && !_atBottom(n.metrics)) {
-        if (_isFollowing) setState(() => _isFollowing = false);
+      if ((n.scrollDelta ?? 0) > 0 && _isFollowing) {
+        setState(() => _isFollowing = false);
       } else if (_atBottom(n.metrics) && !_isFollowing) {
         setState(() => _isFollowing = true);
       }
+    } else if (n is ScrollEndNotification &&
+        _atBottom(n.metrics) &&
+        !_isFollowing) {
+      setState(() => _isFollowing = true);
     }
     return false;
   }
