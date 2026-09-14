@@ -301,17 +301,42 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
   final refineCtrl = TextEditingController();
   // 传入已有条目 → 直接在它基础上迭代优化
   Map<String, dynamic>? current = previous;
+  // 单独指定生成用的厂商（模型取该厂商已保存的模型）
+  final providers = OpenAiProviderRegistry.allProviders;
+  final storedProvider = appdata.implicitData['settingGenProvider'];
+  var genProvider = (storedProvider is String &&
+          providers.containsKey(storedProvider))
+      ? storedProvider
+      : providers.keys.firstWhere((_) => true, orElse: () => 'siliconFlow');
   try {
     while (true) {
       final isFirst = current == null;
       final input = await showDialog<String>(
         context: App.rootContext,
-        builder: (ctx) => ContentDialog(
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setLocal) => ContentDialog(
           title: isFirst ? title : '$title · ${t.aiRefine}',
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 生成用的厂商（可在弹窗里直接切换）
+              Row(
+                children: [
+                  Text('${t.model}: '),
+                  Select(
+                    current: providers[genProvider]?.name ?? genProvider,
+                    values: [for (final e in providers.entries) e.value.name],
+                    onTap: (i) {
+                      final key = providers.keys.elementAt(i);
+                      setLocal(() => genProvider = key);
+                      appdata.implicitData['settingGenProvider'] = key;
+                      appdata.writeImplicitData();
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               if (!isFirst) ...[
                 Text(
                   jsonEncode(current),
@@ -345,6 +370,7 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
             ),
           ],
         ),
+        ),
       );
       if (input == null || input == done) return current;
       if (input.isEmpty) continue;
@@ -353,15 +379,11 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
           : '${promptTemplate.replaceAll('{input}', input)}\n\n'
                 '${t.aiPreviousResult}：${jsonEncode(current)}\n'
                 '${t.aiRefineFeedback}：$input';
-      final stored = appdata.implicitData['aiHubProvider'];
-      final provider = (stored is String && stored.isNotEmpty)
-          ? stored
-          : 'siliconFlow';
       // 生成期间显示 loading：否则点了没反应，过一会才突然弹出来
       final loading = showLoadingDialog(App.rootContext);
       final res = await AiConversationService()
           .runTask(
-            provider: provider,
+            provider: genProvider,
             taskType: 'setting_gen',
             sessionTitle: title,
             systemPrompt: systemPrompt,
