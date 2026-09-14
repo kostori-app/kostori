@@ -448,6 +448,43 @@ class _StoryCard extends StatelessWidget {
   }
 }
 
+/// 引用块提示（`> …`）：单独成块，样式与旁白区分
+class _StoryCallout extends StatelessWidget {
+  const _StoryCallout({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 15, color: cs.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 骰子判定结果卡片：由系统掷出，样式与普通消息框区分，只读（可复制）
 class _DiceResultCard extends StatelessWidget {
   const _DiceResultCard({required this.text});
@@ -4309,23 +4346,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                     ),
                                   );
                                 }
-                                final streamSegments = _splitSegments(
-                                  streamNarrative,
-                                );
                                 return Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    for (final seg in streamSegments)
-                                      _buildBlock(
-                                        seg.type == 'npc'
-                                            ? StoryBlock.dialogue(
-                                                seg.name,
-                                                seg.text,
-                                              )
-                                            : StoryBlock.narration(seg.text),
-                                        depth: 0,
-                                      ),
+                                    for (final b in _blocksFromNarrative(
+                                      streamNarrative,
+                                    ))
+                                      _buildBlock(b, depth: 0),
                                     // 事件/检定卡片要等 JSON 生成完才出现，这里提示仍在生成
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -4980,16 +5008,49 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     List<StoryEvent> events,
     StoryCheck? check,
   ) {
-    final out = <StoryBlock>[
-      for (final seg in _splitSegments(narrative))
-        seg.type == 'npc'
-            ? StoryBlock.dialogue(seg.name, seg.text)
-            : StoryBlock.narration(seg.text),
-    ];
+    final out = _blocksFromNarrative(narrative);
     for (final e in events) {
       out.add(StoryBlock.event(e));
     }
     if (check != null) out.add(StoryBlock.check(check));
+    return out;
+  }
+
+  /// 正文 → 块：旁白 / 对白（〖角色〗）/ 引用块提示（`> `）
+  List<StoryBlock> _blocksFromNarrative(String narrative) {
+    final out = <StoryBlock>[];
+    for (final seg in _splitSegments(narrative)) {
+      if (seg.type == 'npc') {
+        out.add(StoryBlock.dialogue(seg.name, seg.text));
+      } else {
+        out.addAll(_splitCallouts(seg.text));
+      }
+    }
+    return out;
+  }
+
+  /// 把一段旁白按 `> ` 引用块拆成 callout / narration 块
+  List<StoryBlock> _splitCallouts(String text) {
+    final out = <StoryBlock>[];
+    final cur = StringBuffer();
+    var inQuote = false;
+    void flush() {
+      final t = cur.toString().trim();
+      if (t.isNotEmpty) {
+        out.add(inQuote ? StoryBlock.callout(t) : StoryBlock.narration(t));
+      }
+      cur.clear();
+    }
+
+    for (final line in text.split('\n')) {
+      final m = RegExp(r'^\s*>\s?(.*)$').firstMatch(line);
+      final isQuote = m != null;
+      if (isQuote != inQuote && cur.isNotEmpty) flush();
+      inQuote = isQuote;
+      if (cur.isNotEmpty) cur.write('\n');
+      cur.write(isQuote ? m.group(1) : line);
+    }
+    flush();
     return out;
   }
 
@@ -5042,6 +5103,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           content: rx(b.text),
           avatar: _avatarForName(b.name),
         );
+      case 'callout':
+        return _StoryCallout(text: rx(b.text));
       case 'event':
         final e = b.event;
         return e == null ? const SizedBox.shrink() : _StoryEventCard(event: e);

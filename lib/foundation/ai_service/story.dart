@@ -763,7 +763,7 @@ DiceRoll rollDice(
 /// 内容块：一条回复被解析成的结构化片段。
 /// 渲染按 [type] 分派，新增块类型只需在渲染处登记，不必改消息列表。
 class StoryBlock {
-  /// narration | dialogue | event | check
+  /// narration | dialogue | callout | event | check
   final String type;
 
   /// 正文（narration / dialogue）
@@ -783,6 +783,13 @@ class StoryBlock {
 
   const StoryBlock.dialogue(this.name, this.text)
     : type = 'dialogue',
+      event = null,
+      check = null;
+
+  /// 引用块提示（`> …`）
+  const StoryBlock.callout(this.text)
+    : type = 'callout',
+      name = '',
       event = null,
       check = null;
 
