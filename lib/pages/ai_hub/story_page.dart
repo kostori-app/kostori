@@ -2754,6 +2754,72 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 是否跟随到底部（用户上滑后暂停，发送时恢复）
   bool _isFollowing = true;
 
+  /// 追问建议：默认收起，展开后是输入框上方靠右的竖排面板
+  bool _suggestExpanded = false;
+
+  Widget _suggestToggle() => TextButton.icon(
+    onPressed: () => setState(() => _suggestExpanded = true),
+    icon: const Icon(Icons.auto_awesome, size: 16),
+    label: Text(t.suggestions),
+  );
+
+  Widget _suggestPanel(List<String> choices) {
+    final cs = Theme.of(context).colorScheme;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.sizeOf(context).width * 0.72,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.4,
+      ),
+      child: Material(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 2, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    t.suggestions,
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: t.collapse,
+                    onPressed: () => setState(() => _suggestExpanded = false),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (final c in choices)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: _FollowUpChip(
+                          text: c,
+                          onTap: _sending ? () {} : () => _send(c),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 发送后、真正落库前先乐观显示的用户消息
   String? _pendingUserText;
 
@@ -4284,22 +4350,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                             ),
                           ),
                     ),
-                    if (choices.isNotEmpty)
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 132),
-                        child: SingleChildScrollView(
+                    if (choices.isNotEmpty && !_state.gameOver)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
                           padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              for (final c in choices)
-                                _FollowUpChip(
-                                  text: c,
-                                  onTap: _sending ? () {} : () => _send(c),
-                                ),
-                            ],
-                          ),
+                          child: _suggestExpanded
+                              ? _suggestPanel(choices)
+                              : _suggestToggle(),
                         ),
                       ),
                     if (story.characters.isNotEmpty)
