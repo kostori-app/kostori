@@ -387,7 +387,9 @@ class ContentDialog extends StatelessWidget {
         child: content,
       ),
     );
-    final actionsWidget = displayButton
+    // 智能默认：没有自定义 actions、也没传 cancel 回调时，不再露出孤零零的「取消」
+    final showActions = displayButton && (actions.isNotEmpty || cancel != null);
+    final actionsWidget = showActions
         ? Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Row(
@@ -415,7 +417,7 @@ class ContentDialog extends StatelessWidget {
             ),
           )
         : null;
-    final divider = displayButton
+    final divider = showActions
         ? Divider(
             height: 1,
             thickness: 0.5,
@@ -461,7 +463,7 @@ class ContentDialog extends StatelessWidget {
                   const SizedBox(height: 4),
                   if (divider != null) divider,
                   if (actionsWidget != null) actionsWidget,
-                  if (!displayButton) const SizedBox(height: 16),
+                  if (!showActions) const SizedBox(height: 16),
                 ],
               ),
             ),
