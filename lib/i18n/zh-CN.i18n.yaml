@@ -1700,6 +1700,10 @@ storyCmdCheckResult: 【检定结果】${label}：${detail}
 storyCmdProfile: 【角色档案】
 storyCodexSystem: 你是世界观设定补全助手，只输出 JSON，不要输出其它文字。
 storyCodexPrompt: 为下列道具补全图鉴设定，严格输出 JSON：
+aiGenerate: AI 生成
+aiGenerateHint: 描述你想要的设定，AI 会补全细节
+worldBookAiSystem: 你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。
+worldBookAiPrompt: '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}'
 storyCodexItems: 道具
 storyMore: 更多
 storyNoActions: 该故事未定义操作

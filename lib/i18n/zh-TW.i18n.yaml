@@ -1705,6 +1705,10 @@ storyCmdCheckResult: 【檢定結果】${label}：${detail}
 storyCmdProfile: 【角色檔案】
 storyCodexSystem: 你是世界觀設定補全助手，只輸出 JSON，不要輸出其它文字。
 storyCodexPrompt: 為下列道具補全圖鑑設定，嚴格輸出 JSON：
+aiGenerate: AI 生成
+aiGenerateHint: 描述你想要的設定，AI 會補全細節
+worldBookAiSystem: 你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。
+worldBookAiPrompt: '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}'
 storyCodexItems: 道具
 storyMore: 更多
 storyNoActions: 該故事未定義操作

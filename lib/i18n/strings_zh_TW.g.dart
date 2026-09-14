@@ -1695,6 +1695,10 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCmdProfile => '【角色檔案】';
 	@override String get storyCodexSystem => '你是世界觀設定補全助手，只輸出 JSON，不要輸出其它文字。';
 	@override String get storyCodexPrompt => '為下列道具補全圖鑑設定，嚴格輸出 JSON：';
+	@override String get aiGenerate => 'AI 生成';
+	@override String get aiGenerateHint => '描述你想要的設定，AI 會補全細節';
+	@override String get worldBookAiSystem => '你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。';
+	@override String get worldBookAiPrompt => '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}';
 	@override String get storyCodexItems => '道具';
 	@override String get storyMore => '更多';
 	@override String get storyNoActions => '該故事未定義操作';
@@ -4544,6 +4548,10 @@ extension on TranslationsZhTw {
 			'storyCmdProfile' => '【角色檔案】',
 			'storyCodexSystem' => '你是世界觀設定補全助手，只輸出 JSON，不要輸出其它文字。',
 			'storyCodexPrompt' => '為下列道具補全圖鑑設定，嚴格輸出 JSON：',
+			'aiGenerate' => 'AI 生成',
+			'aiGenerateHint' => '描述你想要的設定，AI 會補全細節',
+			'worldBookAiSystem' => '你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。',
+			'worldBookAiPrompt' => '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}',
 			'storyCodexItems' => '道具',
 			'storyMore' => '更多',
 			'storyNoActions' => '該故事未定義操作',
@@ -4890,12 +4898,12 @@ extension on TranslationsZhTw {
 			'lanVolumeDown' => '音量減',
 			'lanWaitingForEpisodeInfo' => '等待被控制端發送劇集資訊...',
 			'lanSyncStatus' => '同步狀態',
+			_ => null,
+		} ?? switch (path) {
 			'lanSyncing' => '同步中...',
 			'lanLastSyncTime' => '上次同步時間',
 			'lanPendingChanges' => '待同步更改',
 			'lanConflictDetected' => '檢測到衝突',
-			_ => null,
-		} ?? switch (path) {
 			'lanConflictResolution' => '衝突解決',
 			'lanLocalWins' => '保留本地',
 			'lanRemoteWins' => '保留遠端',
@@ -5404,12 +5412,12 @@ extension on TranslationsZhTw {
 			'builderPageParam' => '翻頁參數',
 			'builderDetail' => '番劇詳情',
 			'builderDetailUrl' => '詳情 URL 模板',
+			_ => null,
+		} ?? switch (path) {
 			'builderDescSelector' => '簡介選擇器',
 			'builderEpisodeSelector' => '劇集列表選擇器',
 			'builderEpisodeTitleSelector' => '劇集標題選擇器',
 			'builderEpisodeLinkSelector' => '劇集連結選擇器',
-			_ => null,
-		} ?? switch (path) {
 			'builderPlay' => '播放',
 			'builderPlayUrl' => '播放頁 URL 模板',
 			'builderExtractRegex' => '播放位址正則',

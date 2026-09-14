@@ -288,6 +288,59 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
 }
 
 /// 编辑设定库条目（按类型显示不同字段）
+/// 用 AI 按用户描述生成设定 JSON（返回的键名由 [promptTemplate] 指定）
+Future<Map<String, dynamic>?> aiGenerateEntry({
+  required String title,
+  required String systemPrompt,
+  required String promptTemplate,
+}) async {
+  final descCtrl = TextEditingController();
+  final desc = await showDialog<String>(
+    context: App.rootContext,
+    builder: (ctx) => ContentDialog(
+      title: title,
+      content: TextField(
+        controller: descCtrl,
+        autofocus: true,
+        minLines: 2,
+        maxLines: 6,
+        decoration: InputDecoration(
+          hintText: t.aiGenerateHint,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(descCtrl.text.trim()),
+          child: Text(t.aiGenerate),
+        ),
+      ],
+    ),
+  );
+  descCtrl.dispose();
+  if (desc == null || desc.isEmpty) return null;
+  try {
+    final stored = appdata.implicitData['aiHubProvider'];
+    final provider = (stored is String && stored.isNotEmpty)
+        ? stored
+        : 'siliconFlow';
+    final res = await AiConversationService().runTask(
+      provider: provider,
+      taskType: 'setting_gen',
+      sessionTitle: title,
+      systemPrompt: systemPrompt,
+      prompt: promptTemplate.replaceAll('{input}', desc),
+    );
+    if (!res.success) return null;
+    final m = RegExp(r'\{[\s\S]*\}').firstMatch(res.dataOrNull ?? '');
+    if (m == null) return null;
+    final d = jsonDecode(m.group(0)!);
+    return d is Map ? d.cast<String, dynamic>() : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   final nameCtrl = TextEditingController(text: entry.name);
   var codexKind = entry.payload['kind']?.toString() ?? 'item';
@@ -1316,6 +1369,26 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       .where((e) => e.isNotEmpty)
       .toList();
 
+  /// 用 AI 按描述补全名称 / 触发词 / 内容
+  Future<void> _aiFill() async {
+    final data = await aiGenerateEntry(
+      title: t.aiGenerate,
+      systemPrompt: t.worldBookAiSystem,
+      promptTemplate: t.worldBookAiPrompt,
+    );
+    if (data == null || !mounted) return;
+    setState(() {
+      final n = data['name']?.toString() ?? '';
+      if (n.isNotEmpty) _nameCtrl.text = n;
+      final triggers = data['triggers'];
+      if (triggers is List && triggers.isNotEmpty) {
+        _triggerCtrl.text = triggers.map((e) => e.toString()).join('\n');
+      }
+      final content = data['content']?.toString() ?? '';
+      if (content.isNotEmpty) _contentCtrl.text = content;
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final entry = WorldBookEntry(
@@ -1346,6 +1419,13 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
     final scheme = Theme.of(context).colorScheme;
     return PopUpWidgetScaffold(
       title: _isNew ? t.newWorldBookEntry : entryName,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.auto_awesome),
+          tooltip: t.aiGenerate,
+          onPressed: _aiFill,
+        ),
+      ],
       body: Form(
         key: _formKey,
         child: ConstrainedBox(

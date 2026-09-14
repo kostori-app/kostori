@@ -1694,6 +1694,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyCmdProfile => '【角色档案】';
 	@override String get storyCodexSystem => '你是世界观设定补全助手，只输出 JSON，不要输出其它文字。';
 	@override String get storyCodexPrompt => '为下列道具补全图鉴设定，严格输出 JSON：';
+	@override String get aiGenerate => 'AI 生成';
+	@override String get aiGenerateHint => '描述你想要的设定，AI 会补全细节';
+	@override String get worldBookAiSystem => '你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。';
+	@override String get worldBookAiPrompt => '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}';
 	@override String get storyCodexItems => '道具';
 	@override String get storyMore => '更多';
 	@override String get storyNoActions => '该故事未定义操作';
@@ -4544,6 +4548,10 @@ extension on TranslationsZhCn {
 			'storyCmdProfile' => '【角色档案】',
 			'storyCodexSystem' => '你是世界观设定补全助手，只输出 JSON，不要输出其它文字。',
 			'storyCodexPrompt' => '为下列道具补全图鉴设定，严格输出 JSON：',
+			'aiGenerate' => 'AI 生成',
+			'aiGenerateHint' => '描述你想要的设定，AI 会补全细节',
+			'worldBookAiSystem' => '你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。',
+			'worldBookAiPrompt' => '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}',
 			'storyCodexItems' => '道具',
 			'storyMore' => '更多',
 			'storyNoActions' => '该故事未定义操作',
@@ -4891,12 +4899,12 @@ extension on TranslationsZhCn {
 			'lanVolumeUp' => '音量加',
 			'lanVolumeDown' => '音量减',
 			'lanWaitingForEpisodeInfo' => '等待被控制端发送剧集信息...',
+			_ => null,
+		} ?? switch (path) {
 			'lanSyncStatus' => '同步状态',
 			'lanSyncing' => '同步中...',
 			'lanLastSyncTime' => '上次同步时间',
 			'lanPendingChanges' => '待同步更改',
-			_ => null,
-		} ?? switch (path) {
 			'lanConflictDetected' => '检测到冲突',
 			'lanConflictResolution' => '冲突解决',
 			'lanLocalWins' => '保留本地',
@@ -5405,12 +5413,12 @@ extension on TranslationsZhCn {
 			'builderLinkSelector' => '链接选择器',
 			'builderPageParam' => '翻页参数',
 			'builderDetail' => '番剧详情',
+			_ => null,
+		} ?? switch (path) {
 			'builderDetailUrl' => '详情 URL 模板',
 			'builderDescSelector' => '简介选择器',
 			'builderEpisodeSelector' => '剧集列表选择器',
 			'builderEpisodeTitleSelector' => '剧集标题选择器',
-			_ => null,
-		} ?? switch (path) {
 			'builderEpisodeLinkSelector' => '剧集链接选择器',
 			'builderPlay' => '播放',
 			'builderPlayUrl' => '播放页 URL 模板',

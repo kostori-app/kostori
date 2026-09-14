@@ -5008,6 +5008,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Complete the codex entries for the following items. Output JSON only:'
 	String get storyCodexPrompt => 'Complete the codex entries for the following items. Output JSON only:';
 
+	/// en: 'Generate with AI'
+	String get aiGenerate => 'Generate with AI';
+
+	/// en: 'Describe what you want; AI fills in the details'
+	String get aiGenerateHint => 'Describe what you want; AI fills in the details';
+
+	/// en: 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.'
+	String get worldBookAiSystem => 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.';
+
+	/// en: 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}'
+	String get worldBookAiPrompt => 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}';
+
 	/// en: 'Items'
 	String get storyCodexItems => 'Items';
 
@@ -10092,6 +10104,10 @@ extension on Translations {
 			'storyCmdProfile' => '[Character profile]',
 			'storyCodexSystem' => 'You are a worldbuilding completion assistant. Output JSON only, no other text.',
 			'storyCodexPrompt' => 'Complete the codex entries for the following items. Output JSON only:',
+			'aiGenerate' => 'Generate with AI',
+			'aiGenerateHint' => 'Describe what you want; AI fills in the details',
+			'worldBookAiSystem' => 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.',
+			'worldBookAiPrompt' => 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}',
 			'storyCodexItems' => 'Items',
 			'storyMore' => 'More',
 			'storyNoActions' => 'This story has no actions defined',
@@ -10438,12 +10454,12 @@ extension on Translations {
 			'lanPreviousEpisode' => 'Previous Episode',
 			'lanToggleFullscreen' => 'Toggle Fullscreen',
 			'lanVolumeUp' => 'Volume Up',
+			_ => null,
+		} ?? switch (path) {
 			'lanVolumeDown' => 'Volume Down',
 			'lanWaitingForEpisodeInfo' => 'Waiting for the controlled device to send episode info...',
 			'lanSyncStatus' => 'Sync Status',
 			'lanSyncing' => 'Syncing...',
-			_ => null,
-		} ?? switch (path) {
 			'lanLastSyncTime' => 'Last sync time',
 			'lanPendingChanges' => 'Pending changes',
 			'lanConflictDetected' => 'Conflict Detected',
@@ -10952,12 +10968,12 @@ extension on Translations {
 			'builderLinkSelector' => 'Link selector',
 			'builderPageParam' => 'Page parameter',
 			'builderDetail' => 'Anime Detail',
+			_ => null,
+		} ?? switch (path) {
 			'builderDetailUrl' => 'Detail URL template',
 			'builderDescSelector' => 'Description selector',
 			'builderEpisodeSelector' => 'Episode list selector',
 			'builderEpisodeTitleSelector' => 'Episode title selector',
-			_ => null,
-		} ?? switch (path) {
 			'builderEpisodeLinkSelector' => 'Episode link selector',
 			'builderPlay' => 'Playback',
 			'builderPlayUrl' => 'Play page URL template',

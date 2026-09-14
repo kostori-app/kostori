@@ -19,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/ai_model_card.dart';
 import 'package:kostori/components/character_card_editor.dart';
+import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/components/color_pick_page.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
