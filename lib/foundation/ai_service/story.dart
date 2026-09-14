@@ -475,6 +475,22 @@ const kStoryDiceMarker = '🎲 ';
 /// 渲染时隐藏标记并显示特殊判定图标。
 const kStoryCheckMarker = '⚡ ';
 
+/// 词条类型（`## 词条` / codex 的 kind）——统一在这里声明，避免各处硬编码。
+const kStoryCodexKinds = <String>[
+  'item',
+  'trait',
+  'race',
+  'skill',
+  'talent',
+  'body',
+];
+
+/// 状态效果类型
+const kStoryEffectKinds = <String>['buff', 'debuff'];
+
+/// 正则作用阶段
+const kStoryRegexPhases = <String>['display', 'send', 'both'];
+
 /// 用变量值替换 {{var:名称}}（未定义时原样保留）
 String replaceStoryVars(String text, Map<String, String> vars) {
   if (vars.isEmpty || !text.contains('{{')) return text;
@@ -1043,7 +1059,9 @@ class EffectState {
 
   factory EffectState.fromJson(Map<String, dynamic> json) => EffectState(
     name: json['name']?.toString() ?? '',
-    kind: json['kind']?.toString() ?? 'buff',
+    kind: kStoryEffectKinds.contains(json['kind']?.toString())
+        ? json['kind'].toString()
+        : 'buff',
     stacks: (json['stacks'] as num?)?.toInt() ?? 1,
     remaining: (json['remaining'] as num?)?.toInt() ?? 0,
     description: json['description']?.toString() ?? '',

@@ -368,7 +368,7 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
     ].join('\n'),
   );
 
-  const codexKinds = ['item', 'trait', 'race', 'skill', 'talent', 'body'];
+  const codexKinds = kStoryCodexKinds;
   String kindLabel(String k) => switch (k) {
     'item' => t.storyCodexItem,
     'trait' => t.storyCodexTrait,

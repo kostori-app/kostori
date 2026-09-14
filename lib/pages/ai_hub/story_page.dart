@@ -918,14 +918,7 @@ class _StoryEditorState extends State<_StoryEditor>
     _tabCtrl = TabController(length: _editorTabs().length, vsync: this);
   }
 
-  static const _codexKinds = [
-    'item',
-    'trait',
-    'race',
-    'skill',
-    'talent',
-    'body',
-  ];
+  static const _codexKinds = kStoryCodexKinds;
 
   String _codexKindName(String kind) => switch (kind) {
     'item' => t.storyCodexItem,
