@@ -2291,6 +2291,7 @@ myMessage: 我的訊息
 aiMessage: AI 訊息
 resendFromHere: 從此處重新發送
 regenerateReply: 重新生成此回覆
+regenerateConfirm: 重新生成會覆蓋目前回覆，確定繼續？
 noPersonality: 無人格
 noSystemPromptUsed: 不使用系統提示詞
 

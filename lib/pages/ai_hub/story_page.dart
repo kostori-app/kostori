@@ -3968,6 +3968,25 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _regenerate(AiTask m) async {
     final sessionId = _sessionId;
     if (sessionId == null || _sending) return;
+    // 二次确认，避免手滑覆盖当前回复
+    final ok = await showDialog<bool>(
+      context: App.rootContext,
+      builder: (ctx) => ContentDialog(
+        title: t.regenerate,
+        content: Text(t.regenerateConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
     setState(() => _sending = true);
     try {
       final res = await AiConversationService().regenerateMessage(

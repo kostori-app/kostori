@@ -2289,6 +2289,7 @@ myMessage: 我的消息
 aiMessage: AI 消息
 resendFromHere: 从此处重新发送
 regenerateReply: 重新生成此回复
+regenerateConfirm: 重新生成会覆盖当前回复，确定继续？
 noPersonality: 无人格
 noSystemPromptUsed: 不使用系统提示词
 

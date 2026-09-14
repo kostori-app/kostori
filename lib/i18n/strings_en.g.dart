@@ -6739,6 +6739,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Regenerate this reply'
 	String get regenerateReply => 'Regenerate this reply';
 
+	/// en: 'Regenerating will overwrite the current reply. Continue?'
+	String get regenerateConfirm => 'Regenerating will overwrite the current reply. Continue?';
+
 	/// en: 'No personality'
 	String get noPersonality => 'No personality';
 
@@ -10668,6 +10671,7 @@ extension on Translations {
 			'aiMessage' => 'AI message',
 			'resendFromHere' => 'Resend from here',
 			'regenerateReply' => 'Regenerate this reply',
+			'regenerateConfirm' => 'Regenerating will overwrite the current reply. Continue?',
 			'noPersonality' => 'No personality',
 			'noSystemPromptUsed' => 'No system prompt used',
 			'queryBalance' => 'Query Balance',
@@ -10952,9 +10956,9 @@ extension on Translations {
 			'builderDescSelector' => 'Description selector',
 			'builderEpisodeSelector' => 'Episode list selector',
 			'builderEpisodeTitleSelector' => 'Episode title selector',
-			'builderEpisodeLinkSelector' => 'Episode link selector',
 			_ => null,
 		} ?? switch (path) {
+			'builderEpisodeLinkSelector' => 'Episode link selector',
 			'builderPlay' => 'Playback',
 			'builderPlayUrl' => 'Play page URL template',
 			'builderExtractRegex' => 'Playback URL regex',

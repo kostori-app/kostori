@@ -2272,6 +2272,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiMessage => 'AI 消息';
 	@override String get resendFromHere => '从此处重新发送';
 	@override String get regenerateReply => '重新生成此回复';
+	@override String get regenerateConfirm => '重新生成会覆盖当前回复，确定继续？';
 	@override String get noPersonality => '无人格';
 	@override String get noSystemPromptUsed => '不使用系统提示词';
 	@override String get queryBalance => '查询余额';
@@ -5123,6 +5124,7 @@ extension on TranslationsZhCn {
 			'aiMessage' => 'AI 消息',
 			'resendFromHere' => '从此处重新发送',
 			'regenerateReply' => '重新生成此回复',
+			'regenerateConfirm' => '重新生成会覆盖当前回复，确定继续？',
 			'noPersonality' => '无人格',
 			'noSystemPromptUsed' => '不使用系统提示词',
 			'queryBalance' => '查询余额',
@@ -5407,9 +5409,9 @@ extension on TranslationsZhCn {
 			'builderDescSelector' => '简介选择器',
 			'builderEpisodeSelector' => '剧集列表选择器',
 			'builderEpisodeTitleSelector' => '剧集标题选择器',
-			'builderEpisodeLinkSelector' => '剧集链接选择器',
 			_ => null,
 		} ?? switch (path) {
+			'builderEpisodeLinkSelector' => '剧集链接选择器',
 			'builderPlay' => '播放',
 			'builderPlayUrl' => '播放页 URL 模板',
 			'builderExtractRegex' => '播放地址正则',

@@ -2290,6 +2290,7 @@ myMessage: My message
 aiMessage: AI message
 resendFromHere: Resend from here
 regenerateReply: Regenerate this reply
+regenerateConfirm: Regenerating will overwrite the current reply. Continue?
 noPersonality: No personality
 noSystemPromptUsed: No system prompt used
 

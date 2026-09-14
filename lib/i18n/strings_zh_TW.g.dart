@@ -2271,6 +2271,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiMessage => 'AI 訊息';
 	@override String get resendFromHere => '從此處重新發送';
 	@override String get regenerateReply => '重新生成此回覆';
+	@override String get regenerateConfirm => '重新生成會覆蓋目前回覆，確定繼續？';
 	@override String get noPersonality => '無人格';
 	@override String get noSystemPromptUsed => '不使用系統提示詞';
 	@override String get queryBalance => '查詢餘額';
@@ -5121,6 +5122,7 @@ extension on TranslationsZhTw {
 			'aiMessage' => 'AI 訊息',
 			'resendFromHere' => '從此處重新發送',
 			'regenerateReply' => '重新生成此回覆',
+			'regenerateConfirm' => '重新生成會覆蓋目前回覆，確定繼續？',
 			'noPersonality' => '無人格',
 			'noSystemPromptUsed' => '不使用系統提示詞',
 			'queryBalance' => '查詢餘額',
@@ -5406,9 +5408,9 @@ extension on TranslationsZhTw {
 			'builderEpisodeSelector' => '劇集列表選擇器',
 			'builderEpisodeTitleSelector' => '劇集標題選擇器',
 			'builderEpisodeLinkSelector' => '劇集連結選擇器',
-			'builderPlay' => '播放',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlay' => '播放',
 			'builderPlayUrl' => '播放頁 URL 模板',
 			'builderExtractRegex' => '播放位址正則',
 			'builderMaxPageSelector' => '總頁數選擇器',
