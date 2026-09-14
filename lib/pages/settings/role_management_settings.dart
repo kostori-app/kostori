@@ -389,6 +389,58 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final keys = switch (entry.type) {
+                      SettingTypes.codex =>
+                        '{"name":"名称","kind":"item|trait|race|skill|talent|body",'
+                            '"display":"玩家可见描述","mechanics":"机制/数值"}',
+                      SettingTypes.title => '{"name":"称号名","effects":"效果（数值/机制）"}',
+                      SettingTypes.job =>
+                        '{"name":"职业名","description":"简介",'
+                            '"levels":[{"level":1,"name":"阶段名","bonus":"加成"}]}',
+                      SettingTypes.facility =>
+                        '{"name":"设施名","description":"说明","maxLevel":3}',
+                      _ => '{"name":"名称","description":"说明"}',
+                    };
+                    final data = await aiGenerateEntry(
+                      title: t.aiGenerate,
+                      systemPrompt: t.settingAiSystem,
+                      promptTemplate: '$keys\n{input}',
+                    );
+                    if (data == null || !ctx.mounted) return;
+                    setLocal(() {
+                      final n = data['name']?.toString() ?? '';
+                      if (n.isNotEmpty) nameCtrl.text = n;
+                      final k = data['kind']?.toString() ?? '';
+                      if (codexKinds.contains(k)) codexKind = k;
+                      final d = data['display']?.toString() ?? '';
+                      if (d.isNotEmpty) displayCtrl.text = d;
+                      final me = data['mechanics']?.toString() ?? '';
+                      if (me.isNotEmpty) mechanicsCtrl.text = me;
+                      final ef = data['effects']?.toString() ?? '';
+                      if (ef.isNotEmpty) effectsCtrl.text = ef;
+                      final de = data['description']?.toString() ?? '';
+                      if (de.isNotEmpty) descCtrl.text = de;
+                      final ml = data['maxLevel'];
+                      if (ml is num) maxLevelCtrl.text = '${ml.toInt()}';
+                      final lv = data['levels'];
+                      if (lv is List) {
+                        levelsCtrl.text = [
+                          for (final l in lv)
+                            if (l is Map)
+                              '${l['level'] ?? ''}|${l['name'] ?? ''}|${l['bonus'] ?? ''}',
+                        ].join('\n');
+                      }
+                    });
+                  },
+                  icon: const Icon(Icons.auto_awesome, size: 16),
+                  label: Text(t.aiGenerate),
+                ),
+              ),
+              const SizedBox(height: 4),
               TextField(
                 controller: nameCtrl,
                 decoration: InputDecoration(

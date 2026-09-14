@@ -5017,6 +5017,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.'
 	String get worldBookAiSystem => 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.';
 
+	/// en: 'You are a tabletop setting editor. Given a type and a short description, output ONE JSON object with exactly the keys shown in the example, values detailed and self-consistent (numbers where numeric). Output JSON only, no markdown.'
+	String get settingAiSystem => 'You are a tabletop setting editor. Given a type and a short description, output ONE JSON object with exactly the keys shown in the example, values detailed and self-consistent (numbers where numeric). Output JSON only, no markdown.';
+
 	/// en: 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}'
 	String get worldBookAiPrompt => 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}';
 
@@ -10107,6 +10110,7 @@ extension on Translations {
 			'aiGenerate' => 'Generate with AI',
 			'aiGenerateHint' => 'Describe what you want; AI fills in the details',
 			'worldBookAiSystem' => 'You are a world-book editor. Given a short description, output ONE JSON object with keys name (short entry name), triggers (array of 1-4 trigger keywords) and content (a detailed, self-contained lore paragraph, 2-5 sentences, no markdown). Output JSON only.',
+			'settingAiSystem' => 'You are a tabletop setting editor. Given a type and a short description, output ONE JSON object with exactly the keys shown in the example, values detailed and self-consistent (numbers where numeric). Output JSON only, no markdown.',
 			'worldBookAiPrompt' => 'Description: {input}\nReturn JSON: {"name":"...","triggers":["..."],"content":"..."}',
 			'storyCodexItems' => 'Items',
 			'storyMore' => 'More',
@@ -10453,9 +10457,9 @@ extension on Translations {
 			'lanNextEpisode' => 'Next Episode',
 			'lanPreviousEpisode' => 'Previous Episode',
 			'lanToggleFullscreen' => 'Toggle Fullscreen',
-			'lanVolumeUp' => 'Volume Up',
 			_ => null,
 		} ?? switch (path) {
+			'lanVolumeUp' => 'Volume Up',
 			'lanVolumeDown' => 'Volume Down',
 			'lanWaitingForEpisodeInfo' => 'Waiting for the controlled device to send episode info...',
 			'lanSyncStatus' => 'Sync Status',
@@ -10967,9 +10971,9 @@ extension on Translations {
 			'builderCoverAttr' => 'Cover attribute',
 			'builderLinkSelector' => 'Link selector',
 			'builderPageParam' => 'Page parameter',
-			'builderDetail' => 'Anime Detail',
 			_ => null,
 		} ?? switch (path) {
+			'builderDetail' => 'Anime Detail',
 			'builderDetailUrl' => 'Detail URL template',
 			'builderDescSelector' => 'Description selector',
 			'builderEpisodeSelector' => 'Episode list selector',

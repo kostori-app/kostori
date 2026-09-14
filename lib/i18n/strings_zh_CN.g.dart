@@ -1697,6 +1697,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiGenerate => 'AI 生成';
 	@override String get aiGenerateHint => '描述你想要的设定，AI 会补全细节';
 	@override String get worldBookAiSystem => '你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。';
+	@override String get settingAiSystem => '你是跑团设定编辑。根据类型和简短描述，输出一个 JSON 对象，键名严格照示例，内容详细、自洽（该是数值的就给数值）。只输出 JSON，不要 markdown。';
 	@override String get worldBookAiPrompt => '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}';
 	@override String get storyCodexItems => '道具';
 	@override String get storyMore => '更多';
@@ -4551,6 +4552,7 @@ extension on TranslationsZhCn {
 			'aiGenerate' => 'AI 生成',
 			'aiGenerateHint' => '描述你想要的设定，AI 会补全细节',
 			'worldBookAiSystem' => '你是世界书编辑。根据简短描述输出一个 JSON 对象，键为 name（简短条目名）、triggers（1-4 个触发关键词数组）、content（详细、自洽的设定正文，2-5 句，不要 markdown）。只输出 JSON。',
+			'settingAiSystem' => '你是跑团设定编辑。根据类型和简短描述，输出一个 JSON 对象，键名严格照示例，内容详细、自洽（该是数值的就给数值）。只输出 JSON，不要 markdown。',
 			'worldBookAiPrompt' => '描述：{input}\n返回 JSON：{"name":"...","triggers":["..."],"content":"..."}',
 			'storyCodexItems' => '道具',
 			'storyMore' => '更多',
@@ -4898,9 +4900,9 @@ extension on TranslationsZhCn {
 			'lanToggleFullscreen' => '切换全屏',
 			'lanVolumeUp' => '音量加',
 			'lanVolumeDown' => '音量减',
-			'lanWaitingForEpisodeInfo' => '等待被控制端发送剧集信息...',
 			_ => null,
 		} ?? switch (path) {
+			'lanWaitingForEpisodeInfo' => '等待被控制端发送剧集信息...',
 			'lanSyncStatus' => '同步状态',
 			'lanSyncing' => '同步中...',
 			'lanLastSyncTime' => '上次同步时间',
@@ -5412,9 +5414,9 @@ extension on TranslationsZhCn {
 			'builderCoverAttr' => '封面属性',
 			'builderLinkSelector' => '链接选择器',
 			'builderPageParam' => '翻页参数',
-			'builderDetail' => '番剧详情',
 			_ => null,
 		} ?? switch (path) {
+			'builderDetail' => '番剧详情',
 			'builderDetailUrl' => '详情 URL 模板',
 			'builderDescSelector' => '简介选择器',
 			'builderEpisodeSelector' => '剧集列表选择器',

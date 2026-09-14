@@ -1698,6 +1698,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiGenerate => 'AI 生成';
 	@override String get aiGenerateHint => '描述你想要的設定，AI 會補全細節';
 	@override String get worldBookAiSystem => '你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。';
+	@override String get settingAiSystem => '你是跑團設定編輯。根據類型和簡短描述，輸出一個 JSON 物件，鍵名嚴格照範例，內容詳細、自洽（該是數值就給數值）。只輸出 JSON，不要 markdown。';
 	@override String get worldBookAiPrompt => '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}';
 	@override String get storyCodexItems => '道具';
 	@override String get storyMore => '更多';
@@ -4551,6 +4552,7 @@ extension on TranslationsZhTw {
 			'aiGenerate' => 'AI 生成',
 			'aiGenerateHint' => '描述你想要的設定，AI 會補全細節',
 			'worldBookAiSystem' => '你是世界書編輯。根據簡短描述輸出一個 JSON 物件，鍵為 name（簡短條目名）、triggers（1-4 個觸發關鍵詞陣列）、content（詳細、自洽的設定正文，2-5 句，不要 markdown）。只輸出 JSON。',
+			'settingAiSystem' => '你是跑團設定編輯。根據類型和簡短描述，輸出一個 JSON 物件，鍵名嚴格照範例，內容詳細、自洽（該是數值就給數值）。只輸出 JSON，不要 markdown。',
 			'worldBookAiPrompt' => '描述：{input}\n回傳 JSON：{"name":"...","triggers":["..."],"content":"..."}',
 			'storyCodexItems' => '道具',
 			'storyMore' => '更多',
@@ -4897,9 +4899,9 @@ extension on TranslationsZhTw {
 			'lanVolumeUp' => '音量加',
 			'lanVolumeDown' => '音量減',
 			'lanWaitingForEpisodeInfo' => '等待被控制端發送劇集資訊...',
-			'lanSyncStatus' => '同步狀態',
 			_ => null,
 		} ?? switch (path) {
+			'lanSyncStatus' => '同步狀態',
 			'lanSyncing' => '同步中...',
 			'lanLastSyncTime' => '上次同步時間',
 			'lanPendingChanges' => '待同步更改',
@@ -5411,9 +5413,9 @@ extension on TranslationsZhTw {
 			'builderLinkSelector' => '連結選擇器',
 			'builderPageParam' => '翻頁參數',
 			'builderDetail' => '番劇詳情',
-			'builderDetailUrl' => '詳情 URL 模板',
 			_ => null,
 		} ?? switch (path) {
+			'builderDetailUrl' => '詳情 URL 模板',
 			'builderDescSelector' => '簡介選擇器',
 			'builderEpisodeSelector' => '劇集列表選擇器',
 			'builderEpisodeTitleSelector' => '劇集標題選擇器',
