@@ -5592,7 +5592,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 执行 AI 声明的检定：项目掷骰，再把结果回传给 GM
   Future<void> _rollCheck(StoryCheck check) async {
     if (_sending) return;
-    final roll = rollDice(check.dice, modifier: check.modifier, dc: check.dc);
+    final roll = rollDice(
+      check.dice,
+      modifier: check.modifier,
+      dc: check.dc,
+      crits: story.crits,
+    );
     await _showRollResult(roll, check.label.isEmpty ? t.storyRoll : check.label);
     if (!mounted) return;
     await _send(
@@ -5723,7 +5728,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     countCtrl.dispose();
     if (ok != true || !mounted) return;
     final entry = entries[index];
-    final roll = rollDice('${count}d$sides', modifier: entry.value, dc: dc);
+    final roll = rollDice(
+      '${count}d$sides',
+      modifier: entry.value,
+      dc: dc,
+      crits: story.crits,
+    );
     await _showRollResult(roll, '${entry.key} ${entry.value}');
     if (!mounted) return;
     await _send(

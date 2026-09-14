@@ -1516,6 +1516,9 @@ class Story {
   /// 自定义骰子（`## 骰子`），供手动判定快速选择
   final List<StoryDice> dice;
 
+  /// 是否启用大成功/大失败（单骰掷出最大点/1，房规）
+  final bool crits;
+
   /// 称号定义（AI 授予）
   final List<StoryTitle> titles;
 
@@ -1579,6 +1582,7 @@ class Story {
     this.achievements = const [],
     this.codex = const [],
     this.dice = const [],
+    this.crits = true,
     this.titles = const [],
     this.titleMode = 'all',
     this.job,
@@ -1617,6 +1621,7 @@ class Story {
     List<StoryAchievement>? achievements,
     List<StoryDefinition>? codex,
     List<StoryDice>? dice,
+    bool? crits,
     List<StoryTitle>? titles,
     String? titleMode,
     StoryJob? job,
@@ -1652,6 +1657,7 @@ class Story {
     achievements: achievements ?? this.achievements,
     codex: codex ?? this.codex,
     dice: dice ?? this.dice,
+    crits: crits ?? this.crits,
     titles: titles ?? this.titles,
     titleMode: titleMode ?? this.titleMode,
     job: job ?? this.job,
@@ -1740,6 +1746,7 @@ class Story {
               if (e is Map) StoryDice.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
+    crits: (json['crits'] as bool?) ?? true,
     titles: json['titles'] is List
         ? [
             for (final e in json['titles'] as List)
@@ -1794,6 +1801,7 @@ class Story {
     'achievements': [for (final a in achievements) a.toJson()],
     'codex': [for (final d in codex) d.toJson()],
     'dice': [for (final d in dice) d.toJson()],
+    'crits': crits,
     'titles': [for (final x in titles) x.toJson()],
     'titleMode': titleMode,
     if (job != null) 'job': job!.toJson(),
@@ -2285,6 +2293,30 @@ class StoryStore extends ChangeNotifier {
         }
       } catch (_) {}
     }
+    // 骰子：列表（只定义骰型）或对象 {crits, dice:[...]}
+    var diceDefs = <StoryDice>[];
+    var crits = true;
+    final diceText = _section(text, '骰子');
+    if (diceText != null && diceText.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(diceText.trim());
+        if (decoded is List) {
+          diceDefs = [
+            for (final e in decoded)
+              if (e is Map) StoryDice.fromJson(e.cast<String, dynamic>()),
+          ];
+        } else if (decoded is Map) {
+          crits = decoded['crits'] as bool? ?? true;
+          final list = decoded['dice'];
+          if (list is List) {
+            diceDefs = [
+              for (final e in list)
+                if (e is Map) StoryDice.fromJson(e.cast<String, dynamic>()),
+            ];
+          }
+        }
+      } catch (_) {}
+    }
     double? genTemp;
     double? genTopP;
     int? genMaxTokens;
@@ -2343,7 +2375,8 @@ class StoryStore extends ChangeNotifier {
       regexes: mapList('正则', StoryRegex.fromJson),
       achievements: mapList('成就', StoryAchievement.fromJson),
       codex: mapList('词条', StoryDefinition.fromJson),
-      dice: mapList('骰子', StoryDice.fromJson),
+      dice: diceDefs,
+      crits: crits,
       titles: titleDefs,
       titleMode: titleMode,
       job: jobDef,
@@ -2422,8 +2455,17 @@ class StoryStore extends ChangeNotifier {
     if (s.codex.isNotEmpty) {
       section('词条', jsonEncode([for (final d in s.codex) d.toJson()]));
     }
-    if (s.dice.isNotEmpty) {
-      section('骰子', jsonEncode([for (final d in s.dice) d.toJson()]));
+    if (s.dice.isNotEmpty || !s.crits) {
+      // crits 为真时沿用旧的纯列表格式（向后兼容）
+      section(
+        '骰子',
+        s.crits
+            ? jsonEncode([for (final d in s.dice) d.toJson()])
+            : jsonEncode({
+                'crits': false,
+                'dice': [for (final d in s.dice) d.toJson()],
+              }),
+      );
     }
     if (s.titles.isNotEmpty) {
       section(
