@@ -7360,6 +7360,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Memory entry limit'
 	String get profileMemoryMaxEntries => 'Memory entry limit';
 
+	/// en: 'Context budget (chars)'
+	String get profileMemoryContextBudget => 'Context budget (chars)';
+
+	/// en: 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. 0 = unlimited'
+	String get profileMemoryContextBudgetHint => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. 0 = unlimited';
+
 	/// en: 'Memory entries'
 	String get profileMemoryEntries => 'Memory entries';
 
@@ -10938,6 +10944,8 @@ extension on Translations {
 			'profileMemoryEnabled' => 'Enable long-term memory',
 			'profileMemoryHint' => 'Records preferences, frequent topics and key conclusions; switches with the assistant',
 			'profileMemoryMaxEntries' => 'Memory entry limit',
+			'profileMemoryContextBudget' => 'Context budget (chars)',
+			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',
 			'profileMemoryEmpty' => 'No memory entries yet',
@@ -11014,10 +11022,10 @@ extension on Translations {
 			'mcpToolsImported' => 'tools imported',
 			'mcpReconnect' => 'Reconnect',
 			'mcpTestConnection' => 'Test connection',
-			'mcpConnecting' => 'Connecting...',
-			'mcpConnectionFailed' => 'Connection failed',
 			_ => null,
 		} ?? switch (path) {
+			'mcpConnecting' => 'Connecting...',
+			'mcpConnectionFailed' => 'Connection failed',
 			'builderTitle' => 'Source Builder',
 			'builderEntry' => 'Build source',
 			'builderBasic' => 'Basic Info',

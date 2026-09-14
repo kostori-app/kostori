@@ -72,6 +72,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
   late final TextEditingController _stopCtrl;
   late final TextEditingController _memoryEntryCtrl;
   late final TextEditingController _memoryMaxCtrl;
+  late final TextEditingController _memoryBudgetCtrl;
 
   late Set<String> _enabledSkillIds;
   late List<String> _skillIds;
@@ -146,6 +147,9 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     _memoryMaxCtrl = TextEditingController(
       text: (p?.memory.maxEntries ?? 50).toString(),
     );
+    _memoryBudgetCtrl = TextEditingController(
+      text: (p?.memory.contextBudgetChars ?? 24000).toString(),
+    );
     _enabledSkillIds = {...?p?.enabledSkillIds};
     _skillIds = [...?p?.skillIds];
     _worldBookIds = {...?p?.worldBookIds};
@@ -188,6 +192,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     _stopCtrl.dispose();
     _memoryEntryCtrl.dispose();
     _memoryMaxCtrl.dispose();
+    _memoryBudgetCtrl.dispose();
     super.dispose();
   }
 
@@ -245,6 +250,8 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       memory: MemorySettings(
         enabled: _memory.enabled,
         maxEntries: int.tryParse(_memoryMaxCtrl.text.trim()) ?? 50,
+        contextBudgetChars:
+            int.tryParse(_memoryBudgetCtrl.text.trim()) ?? 24000,
       ),
       request: RequestSettings(
         baseUrlOverride: _baseUrlCtrl.text.trim().isEmpty
@@ -1258,6 +1265,16 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             _memoryMaxCtrl,
             icon: Icons.numbers_outlined,
             validator: _validatePositiveInt,
+          ),
+          _field(
+            t.profileMemoryContextBudget,
+            _memoryBudgetCtrl,
+            icon: Icons.data_usage_outlined,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            t.profileMemoryContextBudgetHint,
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
           Row(

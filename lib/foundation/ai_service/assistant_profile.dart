@@ -150,11 +150,24 @@ class MemorySettings {
   final bool enabled;
   final int maxEntries;
 
-  const MemorySettings({this.enabled = false, this.maxEntries = 50});
+  /// 送入模型的上下文预算（字符数）：按最近消息累加，超出预算的更早消息
+  /// 不进上下文，改由滚动摘要记忆。0 表示不限制。
+  final int contextBudgetChars;
 
-  MemorySettings copyWith({bool? enabled, int? maxEntries}) => MemorySettings(
+  const MemorySettings({
+    this.enabled = false,
+    this.maxEntries = 50,
+    this.contextBudgetChars = 24000,
+  });
+
+  MemorySettings copyWith({
+    bool? enabled,
+    int? maxEntries,
+    int? contextBudgetChars,
+  }) => MemorySettings(
     enabled: enabled ?? this.enabled,
     maxEntries: maxEntries ?? this.maxEntries,
+    contextBudgetChars: contextBudgetChars ?? this.contextBudgetChars,
   );
 
   factory MemorySettings.fromJson(Map<String, dynamic>? json) {
@@ -162,12 +175,15 @@ class MemorySettings {
     return MemorySettings(
       enabled: (json['enabled'] as bool?) ?? false,
       maxEntries: (json['maxEntries'] as num?)?.toInt() ?? 50,
+      contextBudgetChars:
+          (json['contextBudgetChars'] as num?)?.toInt() ?? 24000,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'enabled': enabled,
     'maxEntries': maxEntries,
+    'contextBudgetChars': contextBudgetChars,
   };
 }
 

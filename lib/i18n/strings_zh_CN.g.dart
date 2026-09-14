@@ -2479,6 +2479,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileMemoryEnabled => '启用长期记忆';
 	@override String get profileMemoryHint => '记录用户偏好/常问话题/关键结论，随助手切换';
 	@override String get profileMemoryMaxEntries => '记忆条目上限';
+	@override String get profileMemoryContextBudget => '上下文预算（字符）';
+	@override String get profileMemoryContextBudgetHint => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；0 表示不限制';
 	@override String get profileMemoryEntries => '记忆条目';
 	@override String get profileMemoryClear => '清空';
 	@override String get profileMemoryEmpty => '暂无记忆条目';
@@ -5351,6 +5353,8 @@ extension on TranslationsZhCn {
 			'profileMemoryEnabled' => '启用长期记忆',
 			'profileMemoryHint' => '记录用户偏好/常问话题/关键结论，随助手切换',
 			'profileMemoryMaxEntries' => '记忆条目上限',
+			'profileMemoryContextBudget' => '上下文预算（字符）',
+			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；0 表示不限制',
 			'profileMemoryEntries' => '记忆条目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暂无记忆条目',
@@ -5427,10 +5431,10 @@ extension on TranslationsZhCn {
 			'mcpToolsImported' => '个工具',
 			'mcpReconnect' => '重连',
 			'mcpTestConnection' => '测试连接',
-			'mcpConnecting' => '连接中...',
-			'mcpConnectionFailed' => '连接失败',
 			_ => null,
 		} ?? switch (path) {
+			'mcpConnecting' => '连接中...',
+			'mcpConnectionFailed' => '连接失败',
 			'builderTitle' => '源构建器',
 			'builderEntry' => '构建源',
 			'builderBasic' => '基础信息',

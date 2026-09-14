@@ -27,8 +27,9 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
-/// 上下文总字符数超过该值时，自动压缩较早的历史消息
-const _kAutoCompressChars = 40000;
+/// 默认上下文预算（字符数）：按最近消息累加，超出预算的更早消息不进上下文，
+/// 改由滚动摘要记忆（对齐 SillyTavern 的 Context Size 思路）。
+const _kDefaultContextBudgetChars = 24000;
 
 // 辅助任务（上下文压缩 / 后续建议 / 自动标题）的模型配置 key。
 // 空值表示跟随会话自身使用的服务商与模型。
@@ -298,7 +299,7 @@ class AiConversationService {
               ? m.inputContent.length
               : (m.outputContent?.length ?? 0)),
     );
-    if (totalChars > _kAutoCompressChars) {
+    if (totalChars > await _budgetForSession(session)) {
       final compressRes = await compressSession(
         sessionId,
         keepRecent: (maxContextMessages ~/ 2).clamp(4, 20),
@@ -330,9 +331,11 @@ class AiConversationService {
         );
 
     // 3. 取最近 N 条（保证不超过上下文窗口）
-    final trimmed = contextMessages.length > maxContextMessages
-        ? contextMessages.sublist(contextMessages.length - maxContextMessages)
-        : contextMessages;
+    final trimmed = _trimToBudget(
+      contextMessages,
+      _budgetFor(profile),
+      maxMessages: maxContextMessages,
+    );
 
     // 图片不直接塞给模型（部分服务商不支持图片，如 DeepSeek），
     // 由 recognize_anime 技能读取上下文图片处理；并给模型一条提示。
@@ -494,7 +497,7 @@ class AiConversationService {
               ? m.inputContent.length
               : (m.outputContent?.length ?? 0)),
     );
-    if (totalChars > _kAutoCompressChars) {
+    if (totalChars > await _budgetForSession(session)) {
       final compressRes = await compressSession(
         sessionId,
         keepRecent: (maxContextMessages ~/ 2).clamp(4, 20),
@@ -526,9 +529,11 @@ class AiConversationService {
         );
 
     // 3. 取最近 N 条（保证不超过上下文窗口）
-    final trimmed = contextMessages.length > maxContextMessages
-        ? contextMessages.sublist(contextMessages.length - maxContextMessages)
-        : contextMessages;
+    final trimmed = _trimToBudget(
+      contextMessages,
+      _budgetFor(profile),
+      maxMessages: maxContextMessages,
+    );
 
     // 图片不直接塞给模型（部分服务商不支持图片），由 recognize_anime 技能处理
     final hasImages = images != null && images.isNotEmpty;
@@ -928,9 +933,11 @@ class AiConversationService {
     final before = history
         .where((m) => (m.role == 'user' || m.role == 'model') && m.id < taskId)
         .toList();
-    final trimmed = before.length > maxContextMessages
-        ? before.sublist(before.length - maxContextMessages)
-        : before;
+    final trimmed = _trimToBudget(
+      before,
+      await _budgetForSession(session),
+      maxMessages: maxContextMessages,
+    );
 
     final profile = await _resolveProfile(session);
     final systemPrompt =
@@ -1031,6 +1038,38 @@ class AiConversationService {
 
     // 不删除消息，只更新摘要与「已总结到哪条」
     await _sessionDao.setSummary(sessionId, result.data, older.last.id);
+    return result;
+  }
+
+  /// 取档案配置的上下文预算（字符），未配置时用默认值
+  int _budgetFor(AssistantProfile? profile) =>
+      profile?.memory.contextBudgetChars ?? _kDefaultContextBudgetChars;
+
+  Future<int> _budgetForSession(AiSession session) async =>
+      _budgetFor(await _resolveProfile(session));
+
+  /// 按字符预算从最新往前截取消息。
+  /// [maxMessages] > 0 时额外限制条数；[budgetChars] <= 0 表示不限预算。
+  List<AiTask> _trimToBudget(
+    List<AiTask> messages,
+    int budgetChars, {
+    int maxMessages = 0,
+  }) {
+    final capped = maxMessages > 0 && messages.length > maxMessages
+        ? messages.sublist(messages.length - maxMessages)
+        : messages;
+    if (budgetChars <= 0) return capped;
+    final result = <AiTask>[];
+    var used = 0;
+    for (var i = capped.length - 1; i >= 0; i--) {
+      final m = capped[i];
+      final len = m.role == 'user'
+          ? m.inputContent.length
+          : (m.outputContent?.length ?? 0);
+      if (result.isNotEmpty && used + len > budgetChars) break;
+      used += len;
+      result.insert(0, m);
+    }
     return result;
   }
 
