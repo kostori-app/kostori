@@ -542,6 +542,24 @@ void main() {
       expect(merged.opening, 'y');
     });
 
+    test('rollDice grades into four outcome tiers', () {
+      final outcomes = {
+        for (var i = 0; i < 400; i++) rollDice('1d20', dc: 10).outcome,
+      };
+      expect(outcomes.contains('success'), isTrue);
+      expect(outcomes.contains('failure'), isTrue);
+      expect(outcomes.contains('critSuccess'), isTrue);
+      expect(outcomes.contains('critFailure'), isTrue);
+
+      // 关闭大成功/大失败后只剩两档
+      final plain = {
+        for (var i = 0; i < 400; i++)
+          rollDice('1d20', dc: 10, crits: false).outcome,
+      };
+      expect(plain.contains('critSuccess'), isFalse);
+      expect(plain.contains('critFailure'), isFalse);
+    });
+
     test('mergeSettingLibrary merges codex/title/job/facility', () {
       const story = Story(id: 's', name: 'S');
       final merged = mergeSettingLibrary(story, const [

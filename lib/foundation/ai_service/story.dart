@@ -659,6 +659,9 @@ class DiceRoll {
   final int? dc;
   final bool? success;
 
+  /// 判定档位：critSuccess / success / failure / critFailure（无 dc 时为 null）
+  final String? outcome;
+
   const DiceRoll({
     required this.notation,
     required this.dice,
@@ -667,7 +670,16 @@ class DiceRoll {
     required this.total,
     this.dc,
     this.success,
+    this.outcome,
   });
+
+  bool get isCrit => outcome == 'critSuccess' || outcome == 'critFailure';
+
+  String get outcomeLabel => switch (outcome) {
+    'critSuccess' => t.diceCritSuccess,
+    'critFailure' => t.diceCritFailure,
+    _ => success == true ? t.diceSuccess : t.diceFailure,
+  };
 
   /// 明细：1d20(15) + 3 = 18 ≥ 12 → 成功
   String get detail {
@@ -681,20 +693,39 @@ class DiceRoll {
     buf.write(' = $total');
     if (dc != null) {
       buf.write(' ${success == true ? '≥' : '<'} $dc');
-      buf.write(' → ${success == true ? t.diceSuccess : t.diceFailure}');
+      buf.write(' → $outcomeLabel');
     }
     return buf.toString();
   }
 }
 
-/// 解析并掷骰（记法形如 NdM；不合法时回退为 1d20）
-DiceRoll rollDice(String notation, {int modifier = 0, int? dc}) {
+/// 解析并掷骰（记法形如 NdM；不合法时回退为 1d20）。
+/// [crits] 为真且是单骰时：掷出最大点 = 大成功、掷出 1 = 大失败（房规）。
+DiceRoll rollDice(
+  String notation, {
+  int modifier = 0,
+  int? dc,
+  bool crits = true,
+}) {
   final m = RegExp(r'(\d*)\s*[dD]\s*(\d+)').firstMatch(notation);
   final count = (m == null ? 1 : (int.tryParse(m.group(1) ?? '') ?? 1)).clamp(1, 100);
   final sides = (m == null ? 20 : (int.tryParse(m.group(2) ?? '') ?? 20)).clamp(2, 1000);
   final rng = math.Random();
   final dice = [for (var i = 0; i < count; i++) 1 + rng.nextInt(sides)];
   final total = dice.fold(0, (a, b) => a + b) + modifier;
+
+  String? outcome;
+  if (dc != null) {
+    final natMax = count == 1 && dice.first == sides;
+    final natMin = count == 1 && dice.first == 1;
+    if (crits && natMax) {
+      outcome = 'critSuccess';
+    } else if (crits && natMin) {
+      outcome = 'critFailure';
+    } else {
+      outcome = total >= dc ? 'success' : 'failure';
+    }
+  }
   return DiceRoll(
     notation: notation,
     dice: dice,
@@ -702,7 +733,10 @@ DiceRoll rollDice(String notation, {int modifier = 0, int? dc}) {
     modifier: modifier,
     total: total,
     dc: dc,
-    success: dc == null ? null : total >= dc,
+    success: dc == null
+        ? null
+        : (outcome == 'success' || outcome == 'critSuccess'),
+    outcome: outcome,
   );
 }
 

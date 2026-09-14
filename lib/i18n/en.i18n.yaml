@@ -1694,6 +1694,8 @@ storyResponseStalled: The reply timed out and was stopped. You can retry.
 unnamedStory: Untitled story
 diceSuccess: Success
 diceFailure: Failure
+diceCritSuccess: Critical success
+diceCritFailure: Critical failure
 storyCmdStart: Start the game
 storyCmdNextRound: Next round
 storyCmdUse: Use ${item}

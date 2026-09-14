@@ -1683,6 +1683,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get unnamedStory => '未命名故事';
 	@override String get diceSuccess => '成功';
 	@override String get diceFailure => '失败';
+	@override String get diceCritSuccess => '大成功';
+	@override String get diceCritFailure => '大失败';
 	@override String get storyCmdStart => '开始游戏';
 	@override String get storyCmdNextRound => '进入下一回合';
 	@override String storyCmdUse({required Object item}) => '使用 ${item}';
@@ -4538,6 +4540,8 @@ extension on TranslationsZhCn {
 			'unnamedStory' => '未命名故事',
 			'diceSuccess' => '成功',
 			'diceFailure' => '失败',
+			'diceCritSuccess' => '大成功',
+			'diceCritFailure' => '大失败',
 			'storyCmdStart' => '开始游戏',
 			'storyCmdNextRound' => '进入下一回合',
 			'storyCmdUse' => ({required Object item}) => '使用 ${item}',
@@ -4898,10 +4902,10 @@ extension on TranslationsZhCn {
 			'lanNextEpisode' => '下一集',
 			'lanPreviousEpisode' => '上一集',
 			'lanToggleFullscreen' => '切换全屏',
-			'lanVolumeUp' => '音量加',
-			'lanVolumeDown' => '音量减',
 			_ => null,
 		} ?? switch (path) {
+			'lanVolumeUp' => '音量加',
+			'lanVolumeDown' => '音量减',
 			'lanWaitingForEpisodeInfo' => '等待被控制端发送剧集信息...',
 			'lanSyncStatus' => '同步状态',
 			'lanSyncing' => '同步中...',
@@ -5412,10 +5416,10 @@ extension on TranslationsZhCn {
 			'builderTitleSelector' => '标题选择器',
 			'builderCoverSelector' => '封面选择器',
 			'builderCoverAttr' => '封面属性',
-			'builderLinkSelector' => '链接选择器',
-			'builderPageParam' => '翻页参数',
 			_ => null,
 		} ?? switch (path) {
+			'builderLinkSelector' => '链接选择器',
+			'builderPageParam' => '翻页参数',
 			'builderDetail' => '番剧详情',
 			'builderDetailUrl' => '详情 URL 模板',
 			'builderDescSelector' => '简介选择器',

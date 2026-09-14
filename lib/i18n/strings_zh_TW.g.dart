@@ -1684,6 +1684,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get unnamedStory => '未命名故事';
 	@override String get diceSuccess => '成功';
 	@override String get diceFailure => '失敗';
+	@override String get diceCritSuccess => '大成功';
+	@override String get diceCritFailure => '大失敗';
 	@override String get storyCmdStart => '開始遊戲';
 	@override String get storyCmdNextRound => '進入下一回合';
 	@override String storyCmdUse({required Object item}) => '使用 ${item}';
@@ -4538,6 +4540,8 @@ extension on TranslationsZhTw {
 			'unnamedStory' => '未命名故事',
 			'diceSuccess' => '成功',
 			'diceFailure' => '失敗',
+			'diceCritSuccess' => '大成功',
+			'diceCritFailure' => '大失敗',
 			'storyCmdStart' => '開始遊戲',
 			'storyCmdNextRound' => '進入下一回合',
 			'storyCmdUse' => ({required Object item}) => '使用 ${item}',
@@ -4897,10 +4901,10 @@ extension on TranslationsZhTw {
 			'lanPreviousEpisode' => '上一集',
 			'lanToggleFullscreen' => '切換全屏',
 			'lanVolumeUp' => '音量加',
-			'lanVolumeDown' => '音量減',
-			'lanWaitingForEpisodeInfo' => '等待被控制端發送劇集資訊...',
 			_ => null,
 		} ?? switch (path) {
+			'lanVolumeDown' => '音量減',
+			'lanWaitingForEpisodeInfo' => '等待被控制端發送劇集資訊...',
 			'lanSyncStatus' => '同步狀態',
 			'lanSyncing' => '同步中...',
 			'lanLastSyncTime' => '上次同步時間',
@@ -5411,10 +5415,10 @@ extension on TranslationsZhTw {
 			'builderCoverSelector' => '封面選擇器',
 			'builderCoverAttr' => '封面屬性',
 			'builderLinkSelector' => '連結選擇器',
-			'builderPageParam' => '翻頁參數',
-			'builderDetail' => '番劇詳情',
 			_ => null,
 		} ?? switch (path) {
+			'builderPageParam' => '翻頁參數',
+			'builderDetail' => '番劇詳情',
 			'builderDetailUrl' => '詳情 URL 模板',
 			'builderDescSelector' => '簡介選擇器',
 			'builderEpisodeSelector' => '劇集列表選擇器',

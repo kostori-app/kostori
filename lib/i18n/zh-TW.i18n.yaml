@@ -1694,6 +1694,8 @@ storyResponseStalled: 回覆逾時，已中斷，可重試
 unnamedStory: 未命名故事
 diceSuccess: 成功
 diceFailure: 失敗
+diceCritSuccess: 大成功
+diceCritFailure: 大失敗
 storyCmdStart: 開始遊戲
 storyCmdNextRound: 進入下一回合
 storyCmdUse: 使用 ${item}

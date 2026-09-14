@@ -4975,6 +4975,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Failure'
 	String get diceFailure => 'Failure';
 
+	/// en: 'Critical success'
+	String get diceCritSuccess => 'Critical success';
+
+	/// en: 'Critical failure'
+	String get diceCritFailure => 'Critical failure';
+
 	/// en: 'Start the game'
 	String get storyCmdStart => 'Start the game';
 
@@ -10096,6 +10102,8 @@ extension on Translations {
 			'unnamedStory' => 'Untitled story',
 			'diceSuccess' => 'Success',
 			'diceFailure' => 'Failure',
+			'diceCritSuccess' => 'Critical success',
+			'diceCritFailure' => 'Critical failure',
 			'storyCmdStart' => 'Start the game',
 			'storyCmdNextRound' => 'Next round',
 			'storyCmdUse' => ({required Object item}) => 'Use ${item}',
@@ -10455,10 +10463,10 @@ extension on Translations {
 			'lanPlaybackSpeed' => 'Playback Speed',
 			'lanSelectEpisode' => 'Select Episode',
 			'lanNextEpisode' => 'Next Episode',
-			'lanPreviousEpisode' => 'Previous Episode',
-			'lanToggleFullscreen' => 'Toggle Fullscreen',
 			_ => null,
 		} ?? switch (path) {
+			'lanPreviousEpisode' => 'Previous Episode',
+			'lanToggleFullscreen' => 'Toggle Fullscreen',
 			'lanVolumeUp' => 'Volume Up',
 			'lanVolumeDown' => 'Volume Down',
 			'lanWaitingForEpisodeInfo' => 'Waiting for the controlled device to send episode info...',
@@ -10969,10 +10977,10 @@ extension on Translations {
 			'builderTitleSelector' => 'Title selector',
 			'builderCoverSelector' => 'Cover selector',
 			'builderCoverAttr' => 'Cover attribute',
-			'builderLinkSelector' => 'Link selector',
-			'builderPageParam' => 'Page parameter',
 			_ => null,
 		} ?? switch (path) {
+			'builderLinkSelector' => 'Link selector',
+			'builderPageParam' => 'Page parameter',
 			'builderDetail' => 'Anime Detail',
 			'builderDetailUrl' => 'Detail URL template',
 			'builderDescSelector' => 'Description selector',
