@@ -2505,6 +2505,8 @@ profileMemoryContextBudget: Context budget (chars)
 profileMemoryContextBudgetHint: Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited
 aiContextBudget: Context budget (chars)
 aiContextBudgetHint: Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited
+contextBudget: Context budget (chars)
+contextBudgetHint: Leave empty to follow the profile / global setting; 0 = unlimited
 profileMemoryEntries: Memory entries
 profileMemoryClear: Clear
 profileMemoryEmpty: No memory entries yet

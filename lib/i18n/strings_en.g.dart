@@ -7372,6 +7372,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited'
 	String get aiContextBudgetHint => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited';
 
+	/// en: 'Context budget (chars)'
+	String get contextBudget => 'Context budget (chars)';
+
+	/// en: 'Leave empty to follow the profile / global setting; 0 = unlimited'
+	String get contextBudgetHint => 'Leave empty to follow the profile / global setting; 0 = unlimited';
+
 	/// en: 'Memory entries'
 	String get profileMemoryEntries => 'Memory entries';
 
@@ -10954,6 +10960,8 @@ extension on Translations {
 			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited',
 			'aiContextBudget' => 'Context budget (chars)',
 			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',
+			'contextBudget' => 'Context budget (chars)',
+			'contextBudgetHint' => 'Leave empty to follow the profile / global setting; 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',
 			'profileMemoryEmpty' => 'No memory entries yet',
@@ -11026,10 +11034,10 @@ extension on Translations {
 			'replyAskBack' => 'Ask back at the end',
 			'mcpConnectionStatus' => 'Connection status',
 			'mcpConnected' => 'Connected',
-			'mcpDisconnected' => 'Disconnected',
-			'mcpToolsImported' => 'tools imported',
 			_ => null,
 		} ?? switch (path) {
+			'mcpDisconnected' => 'Disconnected',
+			'mcpToolsImported' => 'tools imported',
 			'mcpReconnect' => 'Reconnect',
 			'mcpTestConnection' => 'Test connection',
 			'mcpConnecting' => 'Connecting...',

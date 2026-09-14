@@ -1600,6 +1600,9 @@ class Story {
   final double? topP;
   final int? maxTokens;
 
+  /// 上下文预算（字符），null 表示跟随助手档案 / 全局设置，0 表示不限制
+  final int? contextBudgetChars;
+
   /// 玩家 persona（用户本人，AI 不扮演）
   final StoryPersona persona;
 
@@ -1654,6 +1657,7 @@ class Story {
     this.temperature,
     this.topP,
     this.maxTokens,
+    this.contextBudgetChars,
     this.persona = const StoryPersona(),
     this.initialState = GameState.empty,
     this.isBuiltin = false,
@@ -1693,6 +1697,7 @@ class Story {
     double? temperature,
     double? topP,
     int? maxTokens,
+    int? contextBudgetChars,
     StoryPersona? persona,
     GameState? initialState,
   }) => Story(
@@ -1729,6 +1734,7 @@ class Story {
     temperature: temperature ?? this.temperature,
     topP: topP ?? this.topP,
     maxTokens: maxTokens ?? this.maxTokens,
+    contextBudgetChars: contextBudgetChars ?? this.contextBudgetChars,
     persona: persona ?? this.persona,
     initialState: initialState ?? this.initialState,
     isBuiltin: isBuiltin,
@@ -1830,6 +1836,7 @@ class Story {
     temperature: (json['temperature'] as num?)?.toDouble(),
     topP: (json['topP'] as num?)?.toDouble(),
     maxTokens: (json['maxTokens'] as num?)?.toInt(),
+    contextBudgetChars: (json['contextBudgetChars'] as num?)?.toInt(),
     persona: json['persona'] is Map
         ? StoryPersona.fromJson((json['persona'] as Map).cast<String, dynamic>())
         : const StoryPersona(),
@@ -1873,6 +1880,8 @@ class Story {
     if (temperature != null) 'temperature': temperature,
     if (topP != null) 'topP': topP,
     if (maxTokens != null) 'maxTokens': maxTokens,
+    if (contextBudgetChars != null)
+      'contextBudgetChars': contextBudgetChars,
     'persona': persona.toJson(),
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
@@ -2125,6 +2134,7 @@ class StoryStore extends ChangeNotifier {
     j['temperature'] = s.temperature;
     j['topP'] = s.topP;
     j['maxTokens'] = s.maxTokens;
+    j['contextBudgetChars'] = s.contextBudgetChars;
     return j;
   }
 
@@ -2386,6 +2396,7 @@ class StoryStore extends ChangeNotifier {
     double? genTemp;
     double? genTopP;
     int? genMaxTokens;
+    int? genBudget;
     final genText = _section(text, '生成参数');
     if (genText != null && genText.trim().isNotEmpty) {
       try {
@@ -2394,6 +2405,7 @@ class StoryStore extends ChangeNotifier {
           genTemp = (decoded['temperature'] as num?)?.toDouble();
           genTopP = (decoded['topP'] as num?)?.toDouble();
           genMaxTokens = (decoded['maxTokens'] as num?)?.toInt();
+          genBudget = (decoded['contextBudgetChars'] as num?)?.toInt();
         }
       } catch (_) {}
     }
@@ -2450,6 +2462,7 @@ class StoryStore extends ChangeNotifier {
       temperature: genTemp,
       topP: genTopP,
       maxTokens: genMaxTokens,
+      contextBudgetChars: genBudget,
       persona: persona,
       initialState: initialState,
     );
@@ -2548,13 +2561,18 @@ class StoryStore extends ChangeNotifier {
     if (s.facilities.isNotEmpty) {
       section('据点', jsonEncode([for (final f in s.facilities) f.toJson()]));
     }
-    if (s.temperature != null || s.topP != null || s.maxTokens != null) {
+    if (s.temperature != null ||
+        s.topP != null ||
+        s.maxTokens != null ||
+        s.contextBudgetChars != null) {
       section(
         '生成参数',
         jsonEncode({
           if (s.temperature != null) 'temperature': s.temperature,
           if (s.topP != null) 'topP': s.topP,
           if (s.maxTokens != null) 'maxTokens': s.maxTokens,
+          if (s.contextBudgetChars != null)
+            'contextBudgetChars': s.contextBudgetChars,
         }),
       );
     }

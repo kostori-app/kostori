@@ -2482,6 +2482,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileMemoryContextBudgetHint => '由最新訊息往前累加，超出預算的較早訊息不進上下文，改由滾動摘要記憶；留空跟隨全域設定，0 表示不限制';
 	@override String get aiContextBudget => '上下文預算（字元）';
 	@override String get aiContextBudgetHint => '所有對話與故事共用的預設上下文預算；助手檔案或故事另有設定時以它們為準，0 表示不限制';
+	@override String get contextBudget => '上下文預算（字元）';
+	@override String get contextBudgetHint => '留空跟隨助手檔案 / 全域設定，0 表示不限制';
 	@override String get profileMemoryEntries => '記憶條目';
 	@override String get profileMemoryClear => '清空';
 	@override String get profileMemoryEmpty => '暫無記憶條目';
@@ -5357,6 +5359,8 @@ extension on TranslationsZhTw {
 			'profileMemoryContextBudgetHint' => '由最新訊息往前累加，超出預算的較早訊息不進上下文，改由滾動摘要記憶；留空跟隨全域設定，0 表示不限制',
 			'aiContextBudget' => '上下文預算（字元）',
 			'aiContextBudgetHint' => '所有對話與故事共用的預設上下文預算；助手檔案或故事另有設定時以它們為準，0 表示不限制',
+			'contextBudget' => '上下文預算（字元）',
+			'contextBudgetHint' => '留空跟隨助手檔案 / 全域設定，0 表示不限制',
 			'profileMemoryEntries' => '記憶條目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暫無記憶條目',
@@ -5430,10 +5434,10 @@ extension on TranslationsZhTw {
 			'mcpConnectionStatus' => '連線狀態',
 			'mcpConnected' => '已連線',
 			'mcpDisconnected' => '未連線',
-			'mcpToolsImported' => '個工具',
-			'mcpReconnect' => '重新連線',
 			_ => null,
 		} ?? switch (path) {
+			'mcpToolsImported' => '個工具',
+			'mcpReconnect' => '重新連線',
 			'mcpTestConnection' => '測試連線',
 			'mcpConnecting' => '連線中...',
 			'mcpConnectionFailed' => '連線失敗',

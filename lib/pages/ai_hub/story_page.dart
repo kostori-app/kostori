@@ -804,6 +804,9 @@ class _StoryEditorState extends State<_StoryEditor>
   late final _maxTokensCtrl = TextEditingController(
     text: widget.story?.maxTokens?.toString() ?? '',
   );
+  late final _contextBudgetCtrl = TextEditingController(
+    text: widget.story?.contextBudgetChars?.toString() ?? '',
+  );
   late final TabController _tabCtrl;
   late final _openingCtrl = TextEditingController(
     text: widget.story?.opening ?? '',
@@ -1063,6 +1066,7 @@ class _StoryEditorState extends State<_StoryEditor>
     _tempCtrl.dispose();
     _topPCtrl.dispose();
     _maxTokensCtrl.dispose();
+    _contextBudgetCtrl.dispose();
     super.dispose();
   }
 
@@ -1117,6 +1121,7 @@ class _StoryEditorState extends State<_StoryEditor>
       temperature: double.tryParse(_tempCtrl.text.trim()),
       topP: double.tryParse(_topPCtrl.text.trim()),
       maxTokens: int.tryParse(_maxTokensCtrl.text.trim()),
+      contextBudgetChars: int.tryParse(_contextBudgetCtrl.text.trim()),
       choicesPrompt: _choicesCtrl.text.trim(),
       setup: widget.story?.setup ?? const [],
       actions: [
@@ -1530,6 +1535,15 @@ class _StoryEditorState extends State<_StoryEditor>
               child: _field(t.maxTokens, _maxTokensCtrl, required: false),
             ),
           ],
+        ),
+        const SizedBox(height: 8),
+        _field(t.contextBudget, _contextBudgetCtrl, required: false),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+          child: Text(
+            t.contextBudgetHint,
+            style: const TextStyle(fontSize: 12),
+          ),
         ),
       ],
     );
@@ -3327,6 +3341,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           check: check,
         ),
         paramsOverride: _storyParams(),
+        contextBudgetOverride: story.contextBudgetChars,
         cancelToken: cancelToken,
       )) {
         if (!mounted) return;
@@ -4076,6 +4091,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           scanText: m.inputContent,
         ),
         paramsOverride: _storyParams(),
+        contextBudgetOverride: story.contextBudgetChars,
       );
       if (!mounted) return;
       if (!res.success) {

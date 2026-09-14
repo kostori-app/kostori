@@ -2483,6 +2483,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileMemoryContextBudgetHint => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制';
 	@override String get aiContextBudget => '上下文预算（字符）';
 	@override String get aiContextBudgetHint => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制';
+	@override String get contextBudget => '上下文预算（字符）';
+	@override String get contextBudgetHint => '留空跟随助手档案 / 全局设置，0 表示不限制';
 	@override String get profileMemoryEntries => '记忆条目';
 	@override String get profileMemoryClear => '清空';
 	@override String get profileMemoryEmpty => '暂无记忆条目';
@@ -5359,6 +5361,8 @@ extension on TranslationsZhCn {
 			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制',
 			'aiContextBudget' => '上下文预算（字符）',
 			'aiContextBudgetHint' => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制',
+			'contextBudget' => '上下文预算（字符）',
+			'contextBudgetHint' => '留空跟随助手档案 / 全局设置，0 表示不限制',
 			'profileMemoryEntries' => '记忆条目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暂无记忆条目',
@@ -5431,10 +5435,10 @@ extension on TranslationsZhCn {
 			'replyAskBack' => '结尾反问用户',
 			'mcpConnectionStatus' => '连接状态',
 			'mcpConnected' => '已连接',
-			'mcpDisconnected' => '未连接',
-			'mcpToolsImported' => '个工具',
 			_ => null,
 		} ?? switch (path) {
+			'mcpDisconnected' => '未连接',
+			'mcpToolsImported' => '个工具',
 			'mcpReconnect' => '重连',
 			'mcpTestConnection' => '测试连接',
 			'mcpConnecting' => '连接中...',
