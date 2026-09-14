@@ -1613,6 +1613,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyChoicesPrompt => '后续建议提示词';
 	@override String get storyStart => '开始游戏';
 	@override String get storyRoll => '掷骰';
+	@override String get storySpecialCheck => '特殊判定';
+	@override String get storyCheckPending => '下一条消息将进行动作判定';
+	@override String get storyManualRoll => '立即掷骰';
 	@override String get storyPointsLeft => '剩余点数';
 	@override String get storyCodex => '词条';
 	@override String get storyCodexItem => '物品';
@@ -4470,6 +4473,9 @@ extension on TranslationsZhCn {
 			'storyChoicesPrompt' => '后续建议提示词',
 			'storyStart' => '开始游戏',
 			'storyRoll' => '掷骰',
+			'storySpecialCheck' => '特殊判定',
+			'storyCheckPending' => '下一条消息将进行动作判定',
+			'storyManualRoll' => '立即掷骰',
 			'storyPointsLeft' => '剩余点数',
 			'storyCodex' => '词条',
 			'storyCodexItem' => '物品',
@@ -4899,11 +4905,11 @@ extension on TranslationsZhCn {
 			'lanVolume' => '音量',
 			'lanPlaybackSpeed' => '播放速度',
 			'lanSelectEpisode' => '选择集数',
+			_ => null,
+		} ?? switch (path) {
 			'lanNextEpisode' => '下一集',
 			'lanPreviousEpisode' => '上一集',
 			'lanToggleFullscreen' => '切换全屏',
-			_ => null,
-		} ?? switch (path) {
 			'lanVolumeUp' => '音量加',
 			'lanVolumeDown' => '音量减',
 			'lanWaitingForEpisodeInfo' => '等待被控制端发送剧集信息...',
@@ -5413,11 +5419,11 @@ extension on TranslationsZhCn {
 			'builderSearch' => '搜索',
 			'builderSearchUrl' => '搜索 URL 模板',
 			'builderListSelector' => '列表项选择器',
+			_ => null,
+		} ?? switch (path) {
 			'builderTitleSelector' => '标题选择器',
 			'builderCoverSelector' => '封面选择器',
 			'builderCoverAttr' => '封面属性',
-			_ => null,
-		} ?? switch (path) {
 			'builderLinkSelector' => '链接选择器',
 			'builderPageParam' => '翻页参数',
 			'builderDetail' => '番剧详情',

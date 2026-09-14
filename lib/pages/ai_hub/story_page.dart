@@ -2809,6 +2809,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 追问建议：默认收起，展开后是输入框上方靠右的竖排面板
   bool _suggestExpanded = false;
 
+  /// 特殊判定：一次性开关，下一条消息作为动作判定（输出一次即清除）
+  bool _pendingCheck = false;
+
   Widget _suggestToggle() => TextButton.icon(
     onPressed: () => setState(() => _suggestExpanded = true),
     icon: const Icon(Icons.auto_awesome, size: 16),
@@ -3089,6 +3092,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<String> _systemPromptFor(
     GameState state, {
     String scanText = '',
+    bool check = false,
   }) async {
     final vars = state.variables;
     final persona = story.persona;
@@ -3101,6 +3105,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         .replaceAll('{{persona}}', persona.description.trim());
 
     final buf = StringBuffer(sub(story.buildSystemPrompt()));
+    if (check) {
+      buf.write(
+        '\n\n【特殊判定】玩家本条消息要求进行一次动作判定：'
+        '请调用 roll_dice 工具掷骰（给出合适的 label / dice / modifier / dc），'
+        '再依据结果描述成败，不要自己编点数。',
+      );
+    }
     if (!persona.isEmpty) {
       buf.write('\n\n【玩家角色（用户本人，禁止扮演；你只需知道他是谁）】');
       if (persona.name.trim().isNotEmpty) {
@@ -3265,7 +3276,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return buf.toString();
   }
 
-  Future<void> _send(String text) async {
+  Future<void> _send(String text, {bool check = false}) async {
     final sessionId = _sessionId;
     if (sessionId == null || _sending) return;
     final outgoing = applyStoryRegex(text, story.regexes, 'send');
@@ -3294,6 +3305,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         systemPromptOverride: await _systemPromptFor(
           _state,
           scanText: outgoing,
+          check: check,
         ),
         paramsOverride: _storyParams(),
         cancelToken: cancelToken,
@@ -4199,10 +4211,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   void _sendInput() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
+    final check = _pendingCheck;
     _input.clear();
     // 发送后收起键盘：否则移动端会一直占着输入法空间
     _inputFocus.unfocus();
-    _send(text);
+    if (check) setState(() => _pendingCheck = false);
+    _send(check ? '$kStoryCheckMarker$text' : text, check: check);
   }
 
   @override
@@ -4421,17 +4435,70 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                         kStoryDiceMarker.length,
                                                       ),
                                                 )
-                                              : _StoryBubble(
-                                                  content: m.inputContent,
-                                                  isUser: true,
-                                                  headerName:
-                                                      persona.name.trim().isEmpty
-                                                      ? t.storyPersona
-                                                      : persona.name.trim(),
-                                                  headerTime: _formatTime(
-                                                    m.createdAt,
-                                                  ),
-                                                  headerAvatar: persona.avatar,
+                                              : Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    _StoryBubble(
+                                                      content: m.inputContent
+                                                              .startsWith(
+                                                                kStoryCheckMarker,
+                                                              )
+                                                          ? m.inputContent
+                                                                .substring(
+                                                                  kStoryCheckMarker
+                                                                      .length,
+                                                                )
+                                                          : m.inputContent,
+                                                      isUser: true,
+                                                      headerName: persona.name
+                                                              .trim()
+                                                              .isEmpty
+                                                          ? t.storyPersona
+                                                          : persona.name.trim(),
+                                                      headerTime: _formatTime(
+                                                        m.createdAt,
+                                                      ),
+                                                      headerAvatar:
+                                                          persona.avatar,
+                                                    ),
+                                                    if (m.inputContent
+                                                        .startsWith(
+                                                          kStoryCheckMarker,
+                                                        ))
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              top: 2,
+                                                              right: 4,
+                                                            ),
+                                                        child: Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.bolt,
+                                                              size: 12,
+                                                              color: Theme.of(
+                                                                context,
+                                                              ).colorScheme.tertiary,
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 3,
+                                                            ),
+                                                            Text(
+                                                              t.storySpecialCheck,
+                                                              style: TextStyle(
+                                                                fontSize: 10,
+                                                                color: Theme.of(
+                                                                  context,
+                                                                ).colorScheme.tertiary,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                  ],
                                                 ))
                                         : Column(
                                             crossAxisAlignment:
@@ -4625,12 +4692,32 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       sending: _sending,
                       onStop: () => _cancelToken?.cancel(),
                       hintText: t.storyInput,
-                      bottomLeading: _ModelSelector(
-                        provider: aiHubProvider(),
-                        onProviderChanged: (p) {
-                          setAiHubProvider(p);
-                          setState(() {});
-                        },
+                      bottomLeading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ModelSelector(
+                            provider: aiHubProvider(),
+                            onProviderChanged: (p) {
+                              setAiHubProvider(p);
+                              setState(() {});
+                            },
+                          ),
+                          // 已选择「特殊判定」：在模型图标旁显示，点击可取消
+                          if (_pendingCheck)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 2),
+                              child: ActionChip(
+                                avatar: const Icon(Icons.bolt, size: 14),
+                                label: Text(
+                                  t.storySpecialCheck,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () =>
+                                    setState(() => _pendingCheck = false),
+                              ),
+                            ),
+                        ],
                       ),
                       bottomTrailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -5457,8 +5544,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           controller: sc,
           children: [
             ListTile(
+              leading: const Icon(Icons.bolt),
+              title: Text(t.storySpecialCheck),
+              subtitle: Text(
+                t.storyCheckPending,
+                style: const TextStyle(fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                setState(() => _pendingCheck = true);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.casino_outlined),
-              title: Text(t.storyRoll),
+              title: Text(t.storyManualRoll),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _manualRoll();

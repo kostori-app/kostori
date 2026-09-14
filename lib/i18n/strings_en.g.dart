@@ -4765,6 +4765,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Roll'
 	String get storyRoll => 'Roll';
 
+	/// en: 'Special check'
+	String get storySpecialCheck => 'Special check';
+
+	/// en: 'The next message will be an action check'
+	String get storyCheckPending => 'The next message will be an action check';
+
+	/// en: 'Roll now'
+	String get storyManualRoll => 'Roll now';
+
 	/// en: 'Points left'
 	String get storyPointsLeft => 'Points left';
 
@@ -10032,6 +10041,9 @@ extension on Translations {
 			'storyChoicesPrompt' => 'Follow-up prompt',
 			'storyStart' => 'Start game',
 			'storyRoll' => 'Roll',
+			'storySpecialCheck' => 'Special check',
+			'storyCheckPending' => 'The next message will be an action check',
+			'storyManualRoll' => 'Roll now',
 			'storyPointsLeft' => 'Points left',
 			'storyCodex' => 'Entries',
 			'storyCodexItem' => 'Items',
@@ -10460,11 +10472,11 @@ extension on Translations {
 			'lanPause' => 'Pause',
 			'lanSeekTo' => 'Seek to',
 			'lanVolume' => 'Volume',
+			_ => null,
+		} ?? switch (path) {
 			'lanPlaybackSpeed' => 'Playback Speed',
 			'lanSelectEpisode' => 'Select Episode',
 			'lanNextEpisode' => 'Next Episode',
-			_ => null,
-		} ?? switch (path) {
 			'lanPreviousEpisode' => 'Previous Episode',
 			'lanToggleFullscreen' => 'Toggle Fullscreen',
 			'lanVolumeUp' => 'Volume Up',
@@ -10974,11 +10986,11 @@ extension on Translations {
 			'builderSearch' => 'Search',
 			'builderSearchUrl' => 'Search URL template',
 			'builderListSelector' => 'List item selector',
+			_ => null,
+		} ?? switch (path) {
 			'builderTitleSelector' => 'Title selector',
 			'builderCoverSelector' => 'Cover selector',
 			'builderCoverAttr' => 'Cover attribute',
-			_ => null,
-		} ?? switch (path) {
 			'builderLinkSelector' => 'Link selector',
 			'builderPageParam' => 'Page parameter',
 			'builderDetail' => 'Anime Detail',

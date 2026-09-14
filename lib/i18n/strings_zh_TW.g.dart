@@ -1614,6 +1614,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyChoicesPrompt => '後續建議提示詞';
 	@override String get storyStart => '開始遊戲';
 	@override String get storyRoll => '擲骰';
+	@override String get storySpecialCheck => '特殊判定';
+	@override String get storyCheckPending => '下一條訊息將進行動作判定';
+	@override String get storyManualRoll => '立即擲骰';
 	@override String get storyPointsLeft => '剩餘點數';
 	@override String get storyCodex => '詞條';
 	@override String get storyCodexItem => '物品';
@@ -4470,6 +4473,9 @@ extension on TranslationsZhTw {
 			'storyChoicesPrompt' => '後續建議提示詞',
 			'storyStart' => '開始遊戲',
 			'storyRoll' => '擲骰',
+			'storySpecialCheck' => '特殊判定',
+			'storyCheckPending' => '下一條訊息將進行動作判定',
+			'storyManualRoll' => '立即擲骰',
 			'storyPointsLeft' => '剩餘點數',
 			'storyCodex' => '詞條',
 			'storyCodexItem' => '物品',
@@ -4898,11 +4904,11 @@ extension on TranslationsZhTw {
 			'lanPlaybackSpeed' => '播放速度',
 			'lanSelectEpisode' => '選擇集數',
 			'lanNextEpisode' => '下一集',
+			_ => null,
+		} ?? switch (path) {
 			'lanPreviousEpisode' => '上一集',
 			'lanToggleFullscreen' => '切換全屏',
 			'lanVolumeUp' => '音量加',
-			_ => null,
-		} ?? switch (path) {
 			'lanVolumeDown' => '音量減',
 			'lanWaitingForEpisodeInfo' => '等待被控制端發送劇集資訊...',
 			'lanSyncStatus' => '同步狀態',
@@ -5412,11 +5418,11 @@ extension on TranslationsZhTw {
 			'builderSearchUrl' => '搜尋 URL 模板',
 			'builderListSelector' => '列表項選擇器',
 			'builderTitleSelector' => '標題選擇器',
+			_ => null,
+		} ?? switch (path) {
 			'builderCoverSelector' => '封面選擇器',
 			'builderCoverAttr' => '封面屬性',
 			'builderLinkSelector' => '連結選擇器',
-			_ => null,
-		} ?? switch (path) {
 			'builderPageParam' => '翻頁參數',
 			'builderDetail' => '番劇詳情',
 			'builderDetailUrl' => '詳情 URL 模板',

@@ -471,6 +471,10 @@ class StoryRegex {
 /// 渲染为专用卡片且不可编辑（防作弊），玩家名/语言无关。
 const kStoryDiceMarker = '🎲 ';
 
+/// 特殊判定标记：带此前缀的用户消息表示「本条要求一次动作判定」，
+/// 渲染时隐藏标记并显示特殊判定图标。
+const kStoryCheckMarker = '⚡ ';
+
 /// 用变量值替换 {{var:名称}}（未定义时原样保留）
 String replaceStoryVars(String text, Map<String, String> vars) {
   if (vars.isEmpty || !text.contains('{{')) return text;

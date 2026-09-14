@@ -1619,6 +1619,9 @@ storyWorldBook: 世界书
 storyChoicesPrompt: 后续建议提示词
 storyStart: 开始游戏
 storyRoll: 掷骰
+storySpecialCheck: 特殊判定
+storyCheckPending: 下一条消息将进行动作判定
+storyManualRoll: 立即掷骰
 storyPointsLeft: 剩余点数
 storyCodex: 词条
 storyCodexItem: 物品

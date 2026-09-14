@@ -1624,6 +1624,9 @@ storyWorldBook: World Info
 storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
 storyRoll: Roll
+storySpecialCheck: Special check
+storyCheckPending: The next message will be an action check
+storyManualRoll: Roll now
 storyPointsLeft: Points left
 storyCodex: Entries
 storyCodexItem: Items
