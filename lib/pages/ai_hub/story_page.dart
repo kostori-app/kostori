@@ -4573,12 +4573,29 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                               right: 12,
                               bottom: 8,
                               child: AnimatedSize(
-                                duration: const Duration(milliseconds: 180),
+                                duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeOut,
                                 alignment: Alignment.bottomRight,
-                                child: _suggestExpanded
-                                    ? _suggestPanel(choices)
-                                    : _suggestToggle(),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  switchInCurve: Curves.easeOutBack,
+                                  switchOutCurve: Curves.easeIn,
+                                  transitionBuilder: (child, anim) =>
+                                      FadeTransition(
+                                        opacity: anim,
+                                        child: ScaleTransition(
+                                          scale: Tween<double>(
+                                            begin: 0.9,
+                                            end: 1,
+                                          ).animate(anim),
+                                          alignment: Alignment.bottomRight,
+                                          child: child,
+                                        ),
+                                      ),
+                                  child: _suggestExpanded
+                                      ? _suggestPanel(choices)
+                                      : _suggestToggle(),
+                                ),
                               ),
                             ),
                         ],

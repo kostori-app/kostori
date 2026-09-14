@@ -71,6 +71,9 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   }
 
   void scrollListener() {
+    // 列表为空时不触发（首次加载由 initState 负责）：
+    // 否则布局/窗口尺寸变化也会命中"接近底部"而重复请求
+    if (bangumiItems.isEmpty) return;
     if (scrollController.position.pixels >=
             scrollController.position.maxScrollExtent - 200 &&
         !isLoadingMore) {
@@ -100,6 +103,8 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   }
 
   Future<void> queryBangumiByTrend() async {
+    // 防止并发/重复请求
+    if (isLoadingMore) return;
     isLoadingMore = true;
     setState(() {});
     var result = await Bangumi.instance.getBangumiTrendsList(
