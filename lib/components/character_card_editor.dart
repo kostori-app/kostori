@@ -210,7 +210,8 @@ class CharacterCardEditor extends StatefulWidget {
   State<CharacterCardEditor> createState() => _CharacterCardEditorState();
 }
 
-class _CharacterCardEditorState extends State<CharacterCardEditor> {
+class _CharacterCardEditorState extends State<CharacterCardEditor>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late String _avatar = widget.card?.avatar ?? '';
   late final _nameCtrl = TextEditingController(text: widget.card?.name ?? '');
@@ -275,10 +276,12 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
           'enabled': e.enabled,
         },
     ];
+    _tabCtrl = TabController(length: _editorTabs().length, vsync: this);
   }
 
   @override
   void dispose() {
+    _tabCtrl.dispose();
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _personalityCtrl.dispose();
@@ -315,23 +318,23 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
   ];
 
   void _save() {
-    if (!_formKey.currentState!.validate()) {
-      // 必填项可能在别的页签：切过去并提示缺了哪些，避免"点了没反应"
-      final missing = [
-        for (final f in _requiredFields())
-          if (f.$3.text.trim().isEmpty) f,
-      ];
-      if (missing.isNotEmpty) {
-        setState(() => _tab = missing.first.$1);
-        App.rootContext.showMessage(
-          message:
-              '${t.characterRequiredFields}: '
-              '${missing.map((e) => e.$2).join('、')}',
-          level: LogLevel.warning,
-        );
-      }
+    // 必填项可能在别的页签（TabBarView 不会构建屏幕外的页，Form.validate 查不到），
+    // 所以先自己查一遍：切到缺内容的页签并提示缺了哪些，避免"点了没反应"
+    final missing = [
+      for (final f in _requiredFields())
+        if (f.$3.text.trim().isEmpty) f,
+    ];
+    if (missing.isNotEmpty) {
+      _tabCtrl.animateTo(missing.first.$1);
+      App.rootContext.showMessage(
+        message:
+            '${t.characterRequiredFields}: '
+            '${missing.map((e) => e.$2).join('、')}',
+        level: LogLevel.warning,
+      );
       return;
     }
+    if (!_formKey.currentState!.validate()) return;
     final card = CharacterCard(
       id: widget.card?.id ?? 'card_${DateTime.now().microsecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),
@@ -368,7 +371,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
     Navigator.of(context, rootNavigator: true).pop(card);
   }
 
-  int _tab = 0;
+  late final TabController _tabCtrl;
 
   List<(String, Widget)> _editorTabs() => [
     (t.basicInfo, _basicSection()),
@@ -398,19 +401,20 @@ class _CharacterCardEditorState extends State<CharacterCardEditor> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
               child: CapsuleOptions(
                 scrollable: true,
+                progress: _tabCtrl.animation,
                 children: [
                   for (var i = 0; i < tabs.length; i++)
                     CapsuleOption(
                       text: tabs[i].$1,
-                      isSelected: _tab == i,
-                      onTap: () => setState(() => _tab = i),
+                      isSelected: _tabCtrl.index == i,
+                      onTap: () => _tabCtrl.animateTo(i),
                     ),
                 ],
               ),
             ),
             Expanded(
-              child: IndexedStack(
-                index: _tab.clamp(0, tabs.length - 1),
+              child: TabBarView(
+                controller: _tabCtrl,
                 children: [
                   for (final tab in tabs)
                     SingleChildScrollView(

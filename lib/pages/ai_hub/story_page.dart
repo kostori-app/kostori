@@ -694,7 +694,8 @@ class _StoryFacilityDraft {
   }
 }
 
-class _StoryEditorState extends State<_StoryEditor> {
+class _StoryEditorState extends State<_StoryEditor>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late final _nameCtrl = TextEditingController(text: widget.story?.name ?? '');
 
@@ -714,7 +715,7 @@ class _StoryEditorState extends State<_StoryEditor> {
   late final _maxTokensCtrl = TextEditingController(
     text: widget.story?.maxTokens?.toString() ?? '',
   );
-  int _tab = 0;
+  late final TabController _tabCtrl;
   late final _openingCtrl = TextEditingController(
     text: widget.story?.opening ?? '',
   );
@@ -862,6 +863,7 @@ class _StoryEditorState extends State<_StoryEditor> {
     PromptInjectionStore.instance.ensureLoaded();
     StoryCharacterStore.instance.ensureLoaded();
     SettingLibraryStore.instance.ensureLoaded();
+    _tabCtrl = TabController(length: _editorTabs().length, vsync: this);
   }
 
   static const _codexKinds = [
@@ -922,6 +924,7 @@ class _StoryEditorState extends State<_StoryEditor> {
 
   @override
   void dispose() {
+    _tabCtrl.dispose();
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _deathCtrl.dispose();
@@ -981,6 +984,15 @@ class _StoryEditorState extends State<_StoryEditor> {
   }
 
   Future<void> _save() async {
+    // 名称在「基本信息」页；TabBarView 不构建屏幕外的页，需自己查并切回去
+    if (_nameCtrl.text.trim().isEmpty) {
+      _tabCtrl.animateTo(0);
+      App.rootContext.showMessage(
+        message: '${t.required}: ${t.name}',
+        level: LogLevel.warning,
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     final initialState = _parseState();
     if (initialState == null) {
@@ -1342,19 +1354,20 @@ class _StoryEditorState extends State<_StoryEditor> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
               child: CapsuleOptions(
                 scrollable: true,
+                progress: _tabCtrl.animation,
                 children: [
                   for (var i = 0; i < tabs.length; i++)
                     CapsuleOption(
                       text: tabs[i].$1,
-                      isSelected: _tab == i,
-                      onTap: () => setState(() => _tab = i),
+                      isSelected: _tabCtrl.index == i,
+                      onTap: () => _tabCtrl.animateTo(i),
                     ),
                 ],
               ),
             ),
             Expanded(
-              child: IndexedStack(
-                index: _tab.clamp(0, tabs.length - 1),
+              child: TabBarView(
+                controller: _tabCtrl,
                 children: [
                   for (final tab in tabs)
                     SingleChildScrollView(
