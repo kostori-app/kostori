@@ -294,11 +294,13 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
   required String title,
   required String systemPrompt,
   required String promptTemplate,
+  Map<String, dynamic>? previous,
 }) async {
   const done = '__ai_done__';
   final descCtrl = TextEditingController();
   final refineCtrl = TextEditingController();
-  Map<String, dynamic>? current;
+  // 传入已有条目 → 直接在它基础上迭代优化
+  Map<String, dynamic>? current = previous;
   try {
     while (true) {
       final isFirst = current == null;
@@ -355,13 +357,17 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
       final provider = (stored is String && stored.isNotEmpty)
           ? stored
           : 'siliconFlow';
-      final res = await AiConversationService().runTask(
-        provider: provider,
-        taskType: 'setting_gen',
-        sessionTitle: title,
-        systemPrompt: systemPrompt,
-        prompt: prompt,
-      );
+      // 生成期间显示 loading：否则点了没反应，过一会才突然弹出来
+      final loading = showLoadingDialog(App.rootContext);
+      final res = await AiConversationService()
+          .runTask(
+            provider: provider,
+            taskType: 'setting_gen',
+            sessionTitle: title,
+            systemPrompt: systemPrompt,
+            prompt: prompt,
+          )
+          .whenComplete(() => loading.close());
       if (!res.success) continue;
       final m = RegExp(r'\{[\s\S]*\}').firstMatch(res.dataOrNull ?? '');
       if (m == null) continue;
@@ -444,6 +450,8 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                       title: t.aiGenerate,
                       systemPrompt: t.settingAiSystem,
                       promptTemplate: '$keys\n{input}',
+                      // 已有内容 → 在现有基础上优化
+                      previous: entry.payload.isEmpty ? null : entry.payload,
                     );
                     if (data == null || !ctx.mounted) return;
                     setLocal(() {
@@ -499,6 +507,8 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                 const SizedBox(height: 8),
                 TextField(
                   controller: displayCtrl,
+                  minLines: 2,
+                  maxLines: 6,
                   decoration: InputDecoration(
                     labelText: t.storyCodexDisplay,
                     isDense: true,
@@ -508,6 +518,8 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                 const SizedBox(height: 8),
                 TextField(
                   controller: mechanicsCtrl,
+                  minLines: 2,
+                  maxLines: 6,
                   decoration: InputDecoration(
                     labelText: t.storyCodexMechanics,
                     isDense: true,
@@ -517,6 +529,8 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
               ] else if (entry.type == SettingTypes.title) ...[
                 TextField(
                   controller: effectsCtrl,
+                  minLines: 2,
+                  maxLines: 6,
                   decoration: InputDecoration(
                     labelText: t.storyCodexMechanics,
                     isDense: true,
@@ -537,6 +551,8 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
               ] else if (entry.type == SettingTypes.job) ...[
                 TextField(
                   controller: descCtrl,
+                  minLines: 2,
+                  maxLines: 6,
                   decoration: InputDecoration(
                     labelText: t.storyCodexDisplay,
                     isDense: true,
@@ -558,6 +574,8 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
               ] else ...[
                 TextField(
                   controller: descCtrl,
+                  minLines: 2,
+                  maxLines: 6,
                   decoration: InputDecoration(
                     labelText: t.storyCodexDisplay,
                     isDense: true,
@@ -1459,10 +1477,19 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
 
   /// 用 AI 按描述补全名称 / 触发词 / 内容
   Future<void> _aiFill() async {
+    final existing = <String, dynamic>{
+      if (_nameCtrl.text.trim().isNotEmpty) 'name': _nameCtrl.text.trim(),
+      if (_contentCtrl.text.trim().isNotEmpty)
+        'content': _contentCtrl.text.trim(),
+      if (_triggerCtrl.text.trim().isNotEmpty)
+        'triggers': _lines(_triggerCtrl),
+    };
     final data = await aiGenerateEntry(
       title: t.aiGenerate,
       systemPrompt: t.worldBookAiSystem,
       promptTemplate: t.worldBookAiPrompt,
+      // 已有内容 → 在现有基础上优化
+      previous: existing.isEmpty ? null : existing,
     );
     if (data == null || !mounted) return;
     setState(() {
