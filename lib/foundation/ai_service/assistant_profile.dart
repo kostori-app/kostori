@@ -151,13 +151,13 @@ class MemorySettings {
   final int maxEntries;
 
   /// 送入模型的上下文预算（字符数）：按最近消息累加，超出预算的更早消息
-  /// 不进上下文，改由滚动摘要记忆。0 表示不限制。
-  final int contextBudgetChars;
+  /// 不进上下文，改由滚动摘要记忆。null 表示跟随全局设置，0 表示不限制。
+  final int? contextBudgetChars;
 
   const MemorySettings({
     this.enabled = false,
     this.maxEntries = 50,
-    this.contextBudgetChars = 24000,
+    this.contextBudgetChars,
   });
 
   MemorySettings copyWith({
@@ -175,15 +175,14 @@ class MemorySettings {
     return MemorySettings(
       enabled: (json['enabled'] as bool?) ?? false,
       maxEntries: (json['maxEntries'] as num?)?.toInt() ?? 50,
-      contextBudgetChars:
-          (json['contextBudgetChars'] as num?)?.toInt() ?? 24000,
+      contextBudgetChars: (json['contextBudgetChars'] as num?)?.toInt(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'enabled': enabled,
     'maxEntries': maxEntries,
-    'contextBudgetChars': contextBudgetChars,
+    if (contextBudgetChars != null) 'contextBudgetChars': contextBudgetChars,
   };
 }
 

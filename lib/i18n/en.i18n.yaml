@@ -2502,7 +2502,7 @@ profileMemoryEnabled: Enable long-term memory
 profileMemoryHint: Records preferences, frequent topics and key conclusions; switches with the assistant
 profileMemoryMaxEntries: Memory entry limit
 profileMemoryContextBudget: Context budget (chars)
-profileMemoryContextBudgetHint: Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. 0 = unlimited
+profileMemoryContextBudgetHint: Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited
 profileMemoryEntries: Memory entries
 profileMemoryClear: Clear
 profileMemoryEmpty: No memory entries yet

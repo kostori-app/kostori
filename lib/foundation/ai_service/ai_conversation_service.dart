@@ -12,6 +12,7 @@ import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/database/ai_task_database.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/ai_service/ai_skill_store.dart';
 import 'package:kostori/foundation/ai_service/ai_request_log.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
@@ -30,6 +31,19 @@ const _uuid = Uuid();
 /// 默认上下文预算（字符数）：按最近消息累加，超出预算的更早消息不进上下文，
 /// 改由滚动摘要记忆（对齐 SillyTavern 的 Context Size 思路）。
 const _kDefaultContextBudgetChars = 24000;
+
+/// 全局上下文预算（字符）在 implicitData 里的 key
+const _kGlobalContextBudgetKey = 'aiContextBudgetChars';
+
+/// 全局上下文预算（字符）；故事 / 档案未单独指定时使用，0 表示不限制
+int get aiGlobalContextBudgetChars =>
+    (appdata.implicitData[_kGlobalContextBudgetKey] as num?)?.toInt() ??
+    _kDefaultContextBudgetChars;
+
+set aiGlobalContextBudgetChars(int value) {
+  appdata.implicitData[_kGlobalContextBudgetKey] = value;
+  appdata.writeImplicitData();
+}
 
 // 辅助任务（上下文压缩 / 后续建议 / 自动标题）的模型配置 key。
 // 空值表示跟随会话自身使用的服务商与模型。
@@ -268,6 +282,7 @@ class AiConversationService {
     List<AiImagePart>? images,
     String taskType = 'chat',
     int maxContextMessages = 20,
+    int? contextBudgetOverride,
     String? providerOverride,
     bool useTools = true,
     void Function(String toolName)? onToolCall,
@@ -299,7 +314,8 @@ class AiConversationService {
               ? m.inputContent.length
               : (m.outputContent?.length ?? 0)),
     );
-    if (totalChars > await _budgetForSession(session)) {
+    if (totalChars >
+        await _budgetForSession(session, override: contextBudgetOverride)) {
       final compressRes = await compressSession(
         sessionId,
         keepRecent: (maxContextMessages ~/ 2).clamp(4, 20),
@@ -333,7 +349,7 @@ class AiConversationService {
     // 3. 取最近 N 条（保证不超过上下文窗口）
     final trimmed = _trimToBudget(
       contextMessages,
-      _budgetFor(profile),
+      _budgetFor(profile, override: contextBudgetOverride),
       maxMessages: maxContextMessages,
     );
 
@@ -460,6 +476,7 @@ class AiConversationService {
     List<AiImagePart>? images,
     String taskType = 'chat',
     int maxContextMessages = 20,
+    int? contextBudgetOverride,
     String? providerOverride,
     bool useTools = true,
     Set<String>? toolNames,
@@ -497,7 +514,8 @@ class AiConversationService {
               ? m.inputContent.length
               : (m.outputContent?.length ?? 0)),
     );
-    if (totalChars > await _budgetForSession(session)) {
+    if (totalChars >
+        await _budgetForSession(session, override: contextBudgetOverride)) {
       final compressRes = await compressSession(
         sessionId,
         keepRecent: (maxContextMessages ~/ 2).clamp(4, 20),
@@ -531,7 +549,7 @@ class AiConversationService {
     // 3. 取最近 N 条（保证不超过上下文窗口）
     final trimmed = _trimToBudget(
       contextMessages,
-      _budgetFor(profile),
+      _budgetFor(profile, override: contextBudgetOverride),
       maxMessages: maxContextMessages,
     );
 
@@ -918,6 +936,7 @@ class AiConversationService {
     String? systemPromptOverride,
     AiGenerationParams? paramsOverride,
     int maxContextMessages = 20,
+    int? contextBudgetOverride,
   }) async {
     final session = await _sessionDao.getSession(sessionId);
     if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
@@ -935,7 +954,7 @@ class AiConversationService {
         .toList();
     final trimmed = _trimToBudget(
       before,
-      await _budgetForSession(session),
+      await _budgetForSession(session, override: contextBudgetOverride),
       maxMessages: maxContextMessages,
     );
 
@@ -1041,12 +1060,14 @@ class AiConversationService {
     return result;
   }
 
-  /// 取档案配置的上下文预算（字符），未配置时用默认值
-  int _budgetFor(AssistantProfile? profile) =>
-      profile?.memory.contextBudgetChars ?? _kDefaultContextBudgetChars;
+  /// 取上下文预算（字符）：故事覆盖 > 档案 > 全局默认（0 表示不限制）
+  int _budgetFor(AssistantProfile? profile, {int? override}) =>
+      override ??
+      profile?.memory.contextBudgetChars ??
+      aiGlobalContextBudgetChars;
 
-  Future<int> _budgetForSession(AiSession session) async =>
-      _budgetFor(await _resolveProfile(session));
+  Future<int> _budgetForSession(AiSession session, {int? override}) async =>
+      _budgetFor(await _resolveProfile(session), override: override);
 
   /// 按字符预算从最新往前截取消息。
   /// [maxMessages] > 0 时额外限制条数；[budgetChars] <= 0 表示不限预算。

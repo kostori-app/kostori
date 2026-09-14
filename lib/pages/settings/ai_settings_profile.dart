@@ -148,7 +148,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       text: (p?.memory.maxEntries ?? 50).toString(),
     );
     _memoryBudgetCtrl = TextEditingController(
-      text: (p?.memory.contextBudgetChars ?? 24000).toString(),
+      text: p?.memory.contextBudgetChars?.toString() ?? '',
     );
     _enabledSkillIds = {...?p?.enabledSkillIds};
     _skillIds = [...?p?.skillIds];
@@ -250,8 +250,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       memory: MemorySettings(
         enabled: _memory.enabled,
         maxEntries: int.tryParse(_memoryMaxCtrl.text.trim()) ?? 50,
-        contextBudgetChars:
-            int.tryParse(_memoryBudgetCtrl.text.trim()) ?? 24000,
+        contextBudgetChars: int.tryParse(_memoryBudgetCtrl.text.trim()),
       ),
       request: RequestSettings(
         baseUrlOverride: _baseUrlCtrl.text.trim().isEmpty

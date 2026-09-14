@@ -2503,7 +2503,7 @@ profileMemoryEnabled: 啟用長期記憶
 profileMemoryHint: 記錄使用者偏好/常問話題/關鍵結論，隨助手切換
 profileMemoryMaxEntries: 記憶條目上限
 profileMemoryContextBudget: 上下文預算（字元）
-profileMemoryContextBudgetHint: 由最新訊息往前累加，超出預算的較早訊息不進上下文，改由滾動摘要記憶；0 表示不限制
+profileMemoryContextBudgetHint: 由最新訊息往前累加，超出預算的較早訊息不進上下文，改由滾動摘要記憶；留空跟隨全域設定，0 表示不限制
 profileMemoryEntries: 記憶條目
 profileMemoryClear: 清空
 profileMemoryEmpty: 暫無記憶條目
