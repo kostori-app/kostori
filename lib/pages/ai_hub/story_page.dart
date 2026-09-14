@@ -4098,6 +4098,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final text = _input.text.trim();
     if (text.isEmpty) return;
     _input.clear();
+    // 发送后收起键盘：否则移动端会一直占着输入法空间
+    _inputFocus.unfocus();
     _send(text);
   }
 
@@ -5235,6 +5237,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         .first;
     final state = _lastAiReply(messages)?.state ?? _state;
     if (!mounted) return;
+    // 打开详情前先失焦：否则关闭 sheet 后焦点回到输入框会重新唤起输入法
+    _inputFocus.unfocus();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
