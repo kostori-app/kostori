@@ -1758,6 +1758,12 @@ storyCharacters: 角色
 storyRegex: 正则
 storyAdvanced: 高级
 storyCharacterName: 角色名
+storyTitleName: 称号名
+storyJobName: 职业名
+storyJobLevelName: 等级名
+storyAchievementName: 成就名
+storyFacilityName: 据点名
+storyCodexName: 词条名
 storyCharacterAvatar: 头像（emoji）
 storyCharacterPersona: 人设
 storyCharacterDescription: 描述

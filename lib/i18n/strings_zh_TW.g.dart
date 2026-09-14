@@ -1753,6 +1753,12 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRegex => '正則';
 	@override String get storyAdvanced => '進階';
 	@override String get storyCharacterName => '角色名';
+	@override String get storyTitleName => '稱號名';
+	@override String get storyJobName => '職業名';
+	@override String get storyJobLevelName => '等級名';
+	@override String get storyAchievementName => '成就名';
+	@override String get storyFacilityName => '據點名';
+	@override String get storyCodexName => '詞條名';
 	@override String get storyCharacterAvatar => '頭像（emoji）';
 	@override String get storyCharacterPersona => '人設';
 	@override String get storyCharacterDescription => '描述';
@@ -4632,6 +4638,12 @@ extension on TranslationsZhTw {
 			'storyRegex' => '正則',
 			'storyAdvanced' => '進階',
 			'storyCharacterName' => '角色名',
+			'storyTitleName' => '稱號名',
+			'storyJobName' => '職業名',
+			'storyJobLevelName' => '等級名',
+			'storyAchievementName' => '成就名',
+			'storyFacilityName' => '據點名',
+			'storyCodexName' => '詞條名',
 			'storyCharacterAvatar' => '頭像（emoji）',
 			'storyCharacterPersona' => '人設',
 			'storyCharacterDescription' => '描述',
@@ -4918,14 +4930,14 @@ extension on TranslationsZhTw {
 			'lanConnectedDevices' => '已連線設備',
 			'lanNoDeviceConnected' => '無設備連線',
 			'lanPlayerControl' => '播放器控制',
+			_ => null,
+		} ?? switch (path) {
 			'lanNavigationControl' => '導航控制',
 			'lanNavHome' => '首頁',
 			'lanNavSearch' => '搜尋',
 			'lanNavSettings' => '設定',
 			'lanSeekBack' => '後退',
 			'lanSeekForward' => '快進',
-			_ => null,
-		} ?? switch (path) {
 			'lanNavigation' => '導航',
 			'lanSearch' => '搜尋',
 			'lanPlaybackControl' => '播放控制',
@@ -5432,14 +5444,14 @@ extension on TranslationsZhTw {
 			'profileExamples' => '對話示例（few-shot）',
 			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
 			'profileReplyStyle' => '回覆風格',
+			_ => null,
+		} ?? switch (path) {
 			'replyLength' => '回覆長度',
 			'replyLengthShort' => '簡短',
 			'replyLengthNormal' => '適中',
 			'replyLengthDetailed' => '詳細',
 			'replyUseEmoji' => '使用 emoji',
 			'replyUseMarkdown' => '使用 Markdown 排版',
-			_ => null,
-		} ?? switch (path) {
 			'replyAskBack' => '結尾反問使用者',
 			'mcpConnectionStatus' => '連線狀態',
 			'mcpConnected' => '已連線',

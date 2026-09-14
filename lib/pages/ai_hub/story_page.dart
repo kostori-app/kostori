@@ -2174,7 +2174,7 @@ class _StoryEditorState extends State<_StoryEditor>
             TextFormField(
               controller: _codexDefs[i].name,
               decoration: InputDecoration(
-                labelText: t.storyCharacterName,
+                labelText: t.storyCodexName,
                 isDense: true,
                 border: const OutlineInputBorder(),
               ),
@@ -2234,7 +2234,7 @@ class _StoryEditorState extends State<_StoryEditor>
                   child: TextFormField(
                     controller: _titles[i].name,
                     decoration: InputDecoration(
-                      labelText: t.storyCharacterName,
+                      labelText: t.storyTitleName,
                       isDense: true,
                       border: const OutlineInputBorder(),
                     ),
@@ -2256,6 +2256,7 @@ class _StoryEditorState extends State<_StoryEditor>
                 border: const OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Text(t.storyTitleStackable),
@@ -2267,6 +2268,7 @@ class _StoryEditorState extends State<_StoryEditor>
                 ),
               ],
             ),
+            const SizedBox(height: 4),
           ]),
         Align(
           alignment: Alignment.centerLeft,
@@ -2282,7 +2284,7 @@ class _StoryEditorState extends State<_StoryEditor>
         TextFormField(
           controller: _jobNameCtrl,
           decoration: InputDecoration(
-            labelText: t.storyCharacterName,
+            labelText: t.storyJobName,
             isDense: true,
             border: const OutlineInputBorder(),
           ),
@@ -2319,7 +2321,7 @@ class _StoryEditorState extends State<_StoryEditor>
                   child: TextFormField(
                     controller: _jobLevels[i].name,
                     decoration: InputDecoration(
-                      labelText: t.storyCharacterName,
+                      labelText: t.storyJobLevelName,
                       isDense: true,
                       border: const OutlineInputBorder(),
                     ),
@@ -2364,7 +2366,7 @@ class _StoryEditorState extends State<_StoryEditor>
                   child: TextFormField(
                     controller: _facilities[i].name,
                     decoration: InputDecoration(
-                      labelText: t.storyCharacterName,
+                      labelText: t.storyFacilityName,
                       isDense: true,
                       border: const OutlineInputBorder(),
                     ),
@@ -2731,7 +2733,7 @@ class _StoryEditorState extends State<_StoryEditor>
                   child: TextFormField(
                     controller: _achievements[i].name,
                     decoration: InputDecoration(
-                      labelText: t.storyCharacterName,
+                      labelText: t.storyAchievementName,
                       isDense: true,
                       border: const OutlineInputBorder(),
                     ),

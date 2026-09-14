@@ -1752,6 +1752,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyRegex => '正则';
 	@override String get storyAdvanced => '高级';
 	@override String get storyCharacterName => '角色名';
+	@override String get storyTitleName => '称号名';
+	@override String get storyJobName => '职业名';
+	@override String get storyJobLevelName => '等级名';
+	@override String get storyAchievementName => '成就名';
+	@override String get storyFacilityName => '据点名';
+	@override String get storyCodexName => '词条名';
 	@override String get storyCharacterAvatar => '头像（emoji）';
 	@override String get storyCharacterPersona => '人设';
 	@override String get storyCharacterDescription => '描述';
@@ -4632,6 +4638,12 @@ extension on TranslationsZhCn {
 			'storyRegex' => '正则',
 			'storyAdvanced' => '高级',
 			'storyCharacterName' => '角色名',
+			'storyTitleName' => '称号名',
+			'storyJobName' => '职业名',
+			'storyJobLevelName' => '等级名',
+			'storyAchievementName' => '成就名',
+			'storyFacilityName' => '据点名',
+			'storyCodexName' => '词条名',
 			'storyCharacterAvatar' => '头像（emoji）',
 			'storyCharacterPersona' => '人设',
 			'storyCharacterDescription' => '描述',
@@ -4919,14 +4931,14 @@ extension on TranslationsZhCn {
 			'lanRemoteControlConnectionFailed' => '远程控制连接失败',
 			'lanConnectedDevices' => '已连接设备',
 			'lanNoDeviceConnected' => '无设备连接',
+			_ => null,
+		} ?? switch (path) {
 			'lanPlayerControl' => '播放器控制',
 			'lanNavigationControl' => '导航控制',
 			'lanNavHome' => '首页',
 			'lanNavSearch' => '搜索',
 			'lanNavSettings' => '设置',
 			'lanSeekBack' => '后退',
-			_ => null,
-		} ?? switch (path) {
 			'lanSeekForward' => '快进',
 			'lanNavigation' => '导航',
 			'lanSearch' => '搜索',
@@ -5433,14 +5445,14 @@ extension on TranslationsZhCn {
 			'profileCatchphrasesHint' => '每行一个',
 			'profileExamples' => '对话示例（few-shot）',
 			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
+			_ => null,
+		} ?? switch (path) {
 			'profileReplyStyle' => '回复风格',
 			'replyLength' => '回复长度',
 			'replyLengthShort' => '简短',
 			'replyLengthNormal' => '适中',
 			'replyLengthDetailed' => '详细',
 			'replyUseEmoji' => '使用 emoji',
-			_ => null,
-		} ?? switch (path) {
 			'replyUseMarkdown' => '使用 Markdown 排版',
 			'replyAskBack' => '结尾反问用户',
 			'mcpConnectionStatus' => '连接状态',

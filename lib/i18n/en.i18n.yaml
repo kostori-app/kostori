@@ -1763,6 +1763,12 @@ storyCharacters: Characters
 storyRegex: Regex
 storyAdvanced: Advanced
 storyCharacterName: Name
+storyTitleName: Title name
+storyJobName: Job name
+storyJobLevelName: Level name
+storyAchievementName: Achievement name
+storyFacilityName: Facility name
+storyCodexName: Entry name
 storyCharacterAvatar: Avatar (emoji)
 storyCharacterPersona: Persona
 storyCharacterDescription: Description

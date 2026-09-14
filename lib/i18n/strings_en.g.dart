@@ -5182,6 +5182,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Name'
 	String get storyCharacterName => 'Name';
 
+	/// en: 'Title name'
+	String get storyTitleName => 'Title name';
+
+	/// en: 'Job name'
+	String get storyJobName => 'Job name';
+
+	/// en: 'Level name'
+	String get storyJobLevelName => 'Level name';
+
+	/// en: 'Achievement name'
+	String get storyAchievementName => 'Achievement name';
+
+	/// en: 'Facility name'
+	String get storyFacilityName => 'Facility name';
+
+	/// en: 'Entry name'
+	String get storyCodexName => 'Entry name';
+
 	/// en: 'Avatar (emoji)'
 	String get storyCharacterAvatar => 'Avatar (emoji)';
 
@@ -10240,6 +10258,12 @@ extension on Translations {
 			'storyRegex' => 'Regex',
 			'storyAdvanced' => 'Advanced',
 			'storyCharacterName' => 'Name',
+			'storyTitleName' => 'Title name',
+			'storyJobName' => 'Job name',
+			'storyJobLevelName' => 'Level name',
+			'storyAchievementName' => 'Achievement name',
+			'storyFacilityName' => 'Facility name',
+			'storyCodexName' => 'Entry name',
 			'storyCharacterAvatar' => 'Avatar (emoji)',
 			'storyCharacterPersona' => 'Persona',
 			'storyCharacterDescription' => 'Description',
@@ -10526,14 +10550,14 @@ extension on Translations {
 			'lanDeviceId' => 'Device ID',
 			'lanConnect' => 'Connect',
 			'lanExitControl' => 'Exit Control',
+			_ => null,
+		} ?? switch (path) {
 			'lanConnectedDevices' => 'Connected Devices',
 			'lanNoDeviceConnected' => 'No device connected',
 			'lanPlayerControl' => 'Player Control',
 			'lanNavigationControl' => 'Navigation Control',
 			'lanNavHome' => 'Home',
 			'lanNavSearch' => 'Search',
-			_ => null,
-		} ?? switch (path) {
 			'lanNavSettings' => 'Settings',
 			'lanSeekBack' => 'Seek Back',
 			'lanSeekForward' => 'Seek Forward',
@@ -11040,14 +11064,14 @@ extension on Translations {
 			'profileCatchphrasesHint' => 'One per line',
 			'profileExamples' => 'Example dialogs (few-shot)',
 			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
+			_ => null,
+		} ?? switch (path) {
 			'profileReplyStyle' => 'Reply style',
 			'replyLength' => 'Reply length',
 			'replyLengthShort' => 'Concise',
 			'replyLengthNormal' => 'Normal',
 			'replyLengthDetailed' => 'Detailed',
 			'replyUseEmoji' => 'Use emoji',
-			_ => null,
-		} ?? switch (path) {
 			'replyUseMarkdown' => 'Use Markdown formatting',
 			'replyAskBack' => 'Ask back at the end',
 			'mcpConnectionStatus' => 'Connection status',
