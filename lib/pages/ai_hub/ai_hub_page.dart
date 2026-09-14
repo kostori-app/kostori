@@ -2075,60 +2075,23 @@ class _ModelSelector extends StatelessWidget {
         final displayName = model.isEmpty
             ? t.set
             : (model.contains('/') ? model.split('/').last : model);
-        final chipLabel = '$providerName · $displayName';
 
-        return StreamBuilder<List<AiModel>>(
-          stream: (AiDatabase.instance.select(
-            AiDatabase.instance.aiModels,
-          )..where((t) => t.provider.equals(provider))).watch(),
-          builder: (ctx, modelSnap) {
-            final models = modelSnap.data ?? [];
-
-            final chip = Container(
-              constraints: const BoxConstraints(maxWidth: 220),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20),
+        // 只留一个图标按钮，省掉输入框左下角的宽度；厂商/模型放 tooltip，
+        // 具体用的模型显示在每条模型输出的底部
+        return Tooltip(
+          message: '$providerName · $displayName',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => _showSheet(context),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                Icons.model_training,
+                size: 20,
+                color: scheme.onSurfaceVariant,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.model_training,
-                    size: 13,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      chipLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  if (models.length > 1) ...[
-                    const SizedBox(width: 2),
-                    Icon(
-                      Icons.arrow_drop_up,
-                      size: 14,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ],
-                ],
-              ),
-            );
-
-            return InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => _showSheet(context),
-              child: chip,
-            );
-          },
+            ),
+          ),
         );
       },
     );

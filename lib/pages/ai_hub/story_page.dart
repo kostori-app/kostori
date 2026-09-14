@@ -3861,6 +3861,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             // 骰子判定结果由系统掷出，只读（防作弊）
             if (isUser && !m.inputContent.startsWith(kStoryDiceMarker))
               _msgAction(Icons.edit_outlined, t.edit, () => _editMessage(m)),
+            // 标注本条回复用的是哪个厂商的哪个模型
+            if (!isUser && m.provider.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Text(
+                  (m.modelName ?? '').isEmpty
+                      ? m.provider
+                      : '${m.provider} • ${m.modelName}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
