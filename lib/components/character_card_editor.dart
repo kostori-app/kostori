@@ -278,7 +278,18 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
           'enabled': e.enabled,
         },
     ];
-    _tabCtrl = TabController(length: _editorTabs().length, vsync: this);
+  }
+
+  bool _tabCtrlReady = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 不能在 initState 里构建页签（部分页签会调用 Theme.of），放到这里
+    if (!_tabCtrlReady) {
+      _tabCtrl = TabController(length: _editorTabs().length, vsync: this);
+      _tabCtrlReady = true;
+    }
   }
 
   @override

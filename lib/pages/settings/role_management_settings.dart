@@ -1165,7 +1165,6 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
                           controller: _nameCtrl,
                           decoration: InputDecoration(
                             labelText: t.injectionName,
-                            prefixIcon: const Icon(Icons.title, size: 20),
                             border: const OutlineInputBorder(),
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty)
@@ -1195,10 +1194,6 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
                           initialValue: _position,
                           decoration: InputDecoration(
                             labelText: t.injectionPosition,
-                            prefixIcon: const Icon(
-                              Icons.schedule_send_outlined,
-                              size: 20,
-                            ),
                             border: const OutlineInputBorder(),
                           ),
                           items: [
@@ -1220,10 +1215,6 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: t.injectionSortOrder,
-                            prefixIcon: const Icon(
-                              Icons.sort_by_alpha,
-                              size: 20,
-                            ),
                             border: const OutlineInputBorder(),
                           ),
                           validator: (v) {
@@ -1619,7 +1610,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           controller: _nameCtrl,
                           decoration: InputDecoration(
                             labelText: t.worldBookName,
-                            prefixIcon: const Icon(Icons.title, size: 20),
                             border: const OutlineInputBorder(),
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty)
@@ -1635,7 +1625,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           decoration: InputDecoration(
                             labelText: t.worldBookTriggers,
                             helperText: t.worldBookTriggersHint,
-                            prefixIcon: const Icon(Icons.gesture, size: 20),
                             alignLabelWithHint: true,
                             border: const OutlineInputBorder(),
                           ),
@@ -1653,10 +1642,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           maxLines: 8,
                           decoration: InputDecoration(
                             labelText: t.worldBookContent,
-                            prefixIcon: const Icon(
-                              Icons.notes_outlined,
-                              size: 20,
-                            ),
                             alignLabelWithHint: true,
                             border: const OutlineInputBorder(),
                           ),
@@ -1673,10 +1658,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           decoration: InputDecoration(
                             labelText: t.worldBookPriority,
                             helperText: t.worldBookPriorityHint,
-                            prefixIcon: const Icon(
-                              Icons.format_list_numbered,
-                              size: 20,
-                            ),
                             border: const OutlineInputBorder(),
                           ),
                           validator: (v) {
@@ -1693,10 +1674,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           controller: _groupCtrl,
                           decoration: InputDecoration(
                             labelText: t.worldBookGroup,
-                            prefixIcon: const Icon(
-                              Icons.folder_outlined,
-                              size: 20,
-                            ),
                             border: const OutlineInputBorder(),
                           ),
                         ),
@@ -1708,10 +1685,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           maxLines: 3,
                           decoration: InputDecoration(
                             labelText: t.worldBookSecondaryKeys,
-                            prefixIcon: const Icon(
-                              Icons.filter_alt_outlined,
-                              size: 20,
-                            ),
                             alignLabelWithHint: true,
                             border: const OutlineInputBorder(),
                           ),

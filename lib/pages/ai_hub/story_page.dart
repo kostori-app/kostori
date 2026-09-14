@@ -952,7 +952,18 @@ class _StoryEditorState extends State<_StoryEditor>
     PromptInjectionStore.instance.ensureLoaded();
     StoryCharacterStore.instance.ensureLoaded();
     SettingLibraryStore.instance.ensureLoaded();
-    _tabCtrl = TabController(length: _editorTabs().length, vsync: this);
+  }
+
+  bool _tabCtrlReady = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 不能在 initState 里构建页签（部分页签会调用 Theme.of），放到这里
+    if (!_tabCtrlReady) {
+      _tabCtrl = TabController(length: _editorTabs().length, vsync: this);
+      _tabCtrlReady = true;
+    }
   }
 
   static const _codexKinds = kStoryCodexKinds;
