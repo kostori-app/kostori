@@ -4317,26 +4317,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     for (final seg in streamSegments)
-                                      seg.type == 'npc'
-                                          ? _NpcBubble(
-                                              name: seg.name,
-                                              content: applyStoryRegex(
-                                                seg.text,
-                                                story.regexes,
-                                                'display',
-                                                depth: 0,
-                                              ),
-                                              avatar: _avatarForName(seg.name),
-                                            )
-                                          : _StoryBubble(
-                                              content: applyStoryRegex(
-                                                seg.text,
-                                                story.regexes,
-                                                'display',
-                                                depth: 0,
-                                              ),
-                                              isUser: false,
-                                            ),
+                                      _renderStorySegment(seg, depth: 0),
                                     // 事件/检定卡片要等 JSON 生成完才出现，这里提示仍在生成
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -4471,38 +4452,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                                 CrossAxisAlignment.stretch,
                                             children: [
                                               for (final seg in segments)
-                                                seg.type == 'npc'
-                                                    ? _NpcBubble(
-                                                        name: seg.name,
-                                                        content:
-                                                            applyStoryRegex(
-                                                              seg.text,
-                                                              story.regexes,
-                                                              'display',
-                                                              depth:
-                                                                  messages
-                                                                      .length -
-                                                                  1 -
-                                                                  i,
-                                                            ),
-                                                        avatar: _avatarForName(
-                                                          seg.name,
-                                                        ),
-                                                      )
-                                                    : _StoryBubble(
-                                                        content:
-                                                            applyStoryRegex(
-                                                              seg.text,
-                                                              story.regexes,
-                                                              'display',
-                                                              depth:
-                                                                  messages
-                                                                      .length -
-                                                                  1 -
-                                                                  i,
-                                                            ),
-                                                        isUser: false,
-                                                      ),
+                                                _renderStorySegment(
+                                                  seg,
+                                                  depth: messages.length - 1 - i,
+                                                ),
                                               for (final e
                                                   in parsed?.events ??
                                                       const <StoryEvent>[])
@@ -5058,6 +5011,23 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
     }
     return null;
+  }
+
+  /// 渲染单个正文块（旁白 / 角色对白 / …）。
+  /// 新增块类型只需在这里登记渲染方式，不必改消息列表。
+  Widget _renderStorySegment(StorySegment seg, {required int depth}) {
+    final s = story;
+    final text = applyStoryRegex(seg.text, s.regexes, 'display', depth: depth);
+    switch (seg.type) {
+      case 'npc':
+        return _NpcBubble(
+          name: seg.name,
+          content: text,
+          avatar: _avatarForName(seg.name),
+        );
+      default:
+        return _StoryBubble(content: text, isUser: false);
+    }
   }
 
   /// 把正文拆成旁白 / 角色片段（〖角色：名字〗...〖/角色〗）。
