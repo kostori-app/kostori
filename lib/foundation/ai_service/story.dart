@@ -2633,7 +2633,15 @@ class StoryStore extends ChangeNotifier {
       }
       if (inSection) buf.writeln(line);
     }
-    final out = buf.toString().trim();
+    var out = buf.toString().trim();
+    // 容错：作者可能把 JSON 章节写成 ```json 围栏，这里自动剥掉
+    if (out.startsWith('```')) {
+      final nl = out.indexOf('\n');
+      out = nl >= 0 ? out.substring(nl + 1).trim() : '';
+    }
+    if (out.endsWith('```')) {
+      out = out.substring(0, out.length - 3).trim();
+    }
     return out.isEmpty ? null : out;
   }
 }
