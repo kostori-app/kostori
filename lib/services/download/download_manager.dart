@@ -1275,6 +1275,18 @@ class DownloadManager extends ChangeNotifier {
     await Directory(groupDir(g)).create(recursive: true);
   }
 
+  /// 调整分组顺序（[groups] 的顺序即显示顺序）
+  static void reorderGroups(int oldIndex, int newIndex) {
+    final list = groups();
+    if (oldIndex < 0 || oldIndex >= list.length) return;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex > list.length) newIndex = list.length;
+    if (oldIndex == newIndex) return;
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
+    _saveGroups(list);
+  }
+
   /// 重命名分组：重命名目录 + 更新任务/记录
   Future<void> renameGroup(String from, String to) async {
     final name = to.trim();
