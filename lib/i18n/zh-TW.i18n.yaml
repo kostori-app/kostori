@@ -1723,6 +1723,8 @@ storyLibrary: 知識庫
 storyLibraryHint: 僅勾選的條目會注入到本故事。
 storyLibraryEmpty: 知識庫還是空的，請先在 AI 設定裡新增。
 storyRollAttribute: 屬性
+storyRollDice: 骰子
+storyRollCount: 數量
 storyNoAttributes: 沒有可用於檢定的屬性
 storyRollResult: 擲骰結果
 storyResources: 資源

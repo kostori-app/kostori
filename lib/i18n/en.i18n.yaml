@@ -1723,6 +1723,8 @@ storyLibrary: Library
 storyLibraryHint: Only the selected entries are injected into this story.
 storyLibraryEmpty: No library entries yet. Add them in AI settings first.
 storyRollAttribute: Attribute
+storyRollDice: Dice
+storyRollCount: Count
 storyNoAttributes: No attributes available to roll
 storyRollResult: Roll result
 storyResources: Resources

@@ -5384,7 +5384,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       return;
     }
     var index = 0;
+    var sides = 20;
     final dcCtrl = TextEditingController(text: '12');
+    final countCtrl = TextEditingController(text: '1');
     final ok = await showDialog<bool>(
       context: App.rootContext,
       builder: (ctx) => ContentDialog(
@@ -5394,6 +5396,31 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(t.storyRollDice, style: const TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final s in const [4, 6, 8, 10, 12, 20, 100])
+                    OptionChip(
+                      text: 'd$s',
+                      isSelected: sides == s,
+                      onTap: () => setLocal(() => sides = s),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: countCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: t.storyRollCount,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
               Text(t.storyRollAttribute, style: const TextStyle(fontSize: 12)),
               const SizedBox(height: 8),
               Wrap(
@@ -5430,10 +5457,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       ),
     );
     final dc = int.tryParse(dcCtrl.text.trim());
+    final count = (int.tryParse(countCtrl.text.trim()) ?? 1).clamp(1, 20);
     dcCtrl.dispose();
+    countCtrl.dispose();
     if (ok != true || !mounted) return;
     final entry = entries[index];
-    final roll = rollDice('1d20', modifier: entry.value, dc: dc);
+    final roll = rollDice('${count}d$sides', modifier: entry.value, dc: dc);
     await _showRollResult(roll, '${entry.key} ${entry.value}');
     if (!mounted) return;
     await _send(

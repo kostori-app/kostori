@@ -1713,6 +1713,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyLibraryHint => '僅勾選的條目會注入到本故事。';
 	@override String get storyLibraryEmpty => '知識庫還是空的，請先在 AI 設定裡新增。';
 	@override String get storyRollAttribute => '屬性';
+	@override String get storyRollDice => '骰子';
+	@override String get storyRollCount => '數量';
 	@override String get storyNoAttributes => '沒有可用於檢定的屬性';
 	@override String get storyRollResult => '擲骰結果';
 	@override String get storyResources => '資源';
@@ -4558,6 +4560,8 @@ extension on TranslationsZhTw {
 			'storyLibraryHint' => '僅勾選的條目會注入到本故事。',
 			'storyLibraryEmpty' => '知識庫還是空的，請先在 AI 設定裡新增。',
 			'storyRollAttribute' => '屬性',
+			'storyRollDice' => '骰子',
+			'storyRollCount' => '數量',
 			'storyNoAttributes' => '沒有可用於檢定的屬性',
 			'storyRollResult' => '擲骰結果',
 			'storyResources' => '資源',
@@ -4888,10 +4892,10 @@ extension on TranslationsZhTw {
 			'lanPendingChanges' => '待同步更改',
 			'lanConflictDetected' => '檢測到衝突',
 			'lanConflictResolution' => '衝突解決',
-			'lanLocalWins' => '保留本地',
-			'lanRemoteWins' => '保留遠端',
 			_ => null,
 		} ?? switch (path) {
+			'lanLocalWins' => '保留本地',
+			'lanRemoteWins' => '保留遠端',
 			'lanKeepBoth' => '保留兩者',
 			'lanManualResolution' => '手動解決',
 			'lanConflictField' => '衝突欄位',
@@ -5402,10 +5406,10 @@ extension on TranslationsZhTw {
 			'builderEpisodeLinkSelector' => '劇集連結選擇器',
 			'builderPlay' => '播放',
 			'builderPlayUrl' => '播放頁 URL 模板',
-			'builderExtractRegex' => '播放位址正則',
-			'builderMaxPageSelector' => '總頁數選擇器',
 			_ => null,
 		} ?? switch (path) {
+			'builderExtractRegex' => '播放位址正則',
+			'builderMaxPageSelector' => '總頁數選擇器',
 			'builderUserAgent' => 'User-Agent',
 			'builderPlayDirect' => '直接回傳劇集連結',
 			'builderPlayDirectDesc' => '劇集連結本身就是播放位址（無需二次請求）',
