@@ -440,6 +440,50 @@ class _StoryCard extends StatelessWidget {
   }
 }
 
+/// 骰子判定结果卡片：由系统掷出，样式与普通消息框区分，只读（可复制）
+class _DiceResultCard extends StatelessWidget {
+  const _DiceResultCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: cs.tertiaryContainer.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.tertiary.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.casino_outlined,
+              size: 16,
+              color: cs.onTertiaryContainer,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onTertiaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────
 // 故事编辑器
 // ─────────────────────────────────────────────
@@ -3806,7 +3850,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 t.regenerateReply,
                 () => _regenerate(m),
               ),
-            if (isUser)
+            // 骰子判定结果由系统掷出，只读（防作弊）
+            if (isUser && !m.inputContent.startsWith(kStoryDiceMarker))
               _msgAction(Icons.edit_outlined, t.edit, () => _editMessage(m)),
           ],
         ),
@@ -3868,7 +3913,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 App.rootContext.showMessage(message: t.copied);
               },
             ),
-            if (isUser)
+            // 骰子判定结果只读（防作弊）
+            if (isUser && !m.inputContent.startsWith(kStoryDiceMarker))
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
                 title: Text(t.edit),
@@ -4312,18 +4358,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   GestureDetector(
                                     onLongPress: () => _messageMenu(m),
                                     child: isUser
-                                        ? _StoryBubble(
-                                            content: m.inputContent,
-                                            isUser: true,
-                                            headerName:
-                                                persona.name.trim().isEmpty
-                                                ? t.storyPersona
-                                                : persona.name.trim(),
-                                            headerTime: _formatTime(
-                                              m.createdAt,
-                                            ),
-                                            headerAvatar: persona.avatar,
-                                          )
+                                        ? (m.inputContent.startsWith(
+                                                kStoryDiceMarker,
+                                              )
+                                              ? _DiceResultCard(
+                                                  text: m.inputContent
+                                                      .substring(
+                                                        kStoryDiceMarker.length,
+                                                      ),
+                                                )
+                                              : _StoryBubble(
+                                                  content: m.inputContent,
+                                                  isUser: true,
+                                                  headerName:
+                                                      persona.name.trim().isEmpty
+                                                      ? t.storyPersona
+                                                      : persona.name.trim(),
+                                                  headerTime: _formatTime(
+                                                    m.createdAt,
+                                                  ),
+                                                  headerAvatar: persona.avatar,
+                                                ))
                                         : Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.stretch,
@@ -5369,7 +5424,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     await _showRollResult(roll, check.label.isEmpty ? t.storyRoll : check.label);
     if (!mounted) return;
     await _send(
-      t.storyCmdCheckResult(label: check.label, detail: roll.detail),
+      '$kStoryDiceMarker${t.storyCmdCheckResult(label: check.label, detail: roll.detail)}',
     );
   }
 
@@ -5500,7 +5555,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     await _showRollResult(roll, '${entry.key} ${entry.value}');
     if (!mounted) return;
     await _send(
-      t.storyCmdCheckResult(label: entry.key, detail: roll.detail),
+      '$kStoryDiceMarker${t.storyCmdCheckResult(label: entry.key, detail: roll.detail)}',
     );
   }
 }

@@ -467,6 +467,10 @@ class StoryRegex {
   };
 }
 
+/// 骰子判定结果的标记前缀：带此前缀的用户消息由系统掷骰产生，
+/// 渲染为专用卡片且不可编辑（防作弊），玩家名/语言无关。
+const kStoryDiceMarker = '🎲 ';
+
 /// 用变量值替换 {{var:名称}}（未定义时原样保留）
 String replaceStoryVars(String text, Map<String, String> vars) {
   if (vars.isEmpty || !text.contains('{{')) return text;
