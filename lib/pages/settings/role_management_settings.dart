@@ -768,11 +768,36 @@ List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
     final constant = m['constant'] == true;
     // 常驻条目可以没有触发词
     if ((triggers.isEmpty && !constant) || content.trim().isEmpty) return;
-    // ST position：0=before_char，其余视为 after
+    // ST position：0=角色定义前，1=角色定义后，2/3=作者注释（项目无此概念，
+    // 就近归到角色定义后），4=按深度插入；字符串值按关键字判断
     final position = switch (m['position']) {
-      final num p => p.toInt() == 0 ? 'before' : 'after',
-      final Object s when s.toString().contains('before') => 'before',
-      _ => 'after',
+      final num p => switch (p.toInt()) {
+        0 => 'before_char',
+        4 => 'at_depth',
+        _ => 'after_char',
+      },
+      final Object s when s.toString().toLowerCase().contains('depth') =>
+        'at_depth',
+      final Object s when s.toString().toLowerCase().contains('before') =>
+        'before_char',
+      final Object s when s.toString().toLowerCase().contains('after') =>
+        'after_char',
+      _ => 'after_char',
+    };
+    // ST role：0=system，1=user，2=assistant
+    final role = switch (m['role']) {
+      final num r => switch (r.toInt()) {
+        1 => 'user',
+        2 => 'assistant',
+        _ => 'system',
+      },
+      final Object s when const {
+        'system',
+        'user',
+        'assistant',
+      }.contains(s.toString().toLowerCase()) =>
+        s.toString().toLowerCase(),
+      _ => 'system',
     };
     out.add(
       WorldBookEntry(
@@ -792,6 +817,7 @@ List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
         constant: constant,
         recursive: m['recursive'] == true,
         position: position,
+        role: role,
         depth: (m['depth'] as num?)?.toInt() ?? 4,
         sticky: (m['sticky'] as num?)?.toInt() ?? 0,
         cooldown: (m['cooldown'] as num?)?.toInt() ?? 0,
