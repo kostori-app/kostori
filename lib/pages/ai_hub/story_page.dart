@@ -1962,39 +1962,10 @@ class _StoryEditorState extends State<_StoryEditor>
 
   Widget _panelsTab() {
     final scheme = Theme.of(context).colorScheme;
-    const sources = [
-      'resources',
-      'attributes',
-      'skills',
-      'inventory',
-      'quests',
-      'effects',
-      'titles',
-      'job',
-      'base',
-      'codex',
-      'variables',
-      'equipment',
-      'combat',
-      'achievements',
-    ];
-    String sourceLabel(String s) => switch (s) {
-      'resources' => t.storyResources,
-      'attributes' => t.storyAttributes,
-      'skills' => t.skills,
-      'inventory' => t.storyInventory,
-      'quests' => t.storyQuests,
-      'effects' => t.storyEffects,
-      'titles' => t.storyTitles,
-      'job' => t.storyJob,
-      'base' => t.storyBase,
-      'codex' => t.storyCodex,
-      'variables' => t.storyVariables,
-      'equipment' => t.storyEquipment,
-      'combat' => t.storyCombat,
-      'achievements' => t.storyAchievements,
-      _ => s,
-    };
+    final sources = [for (final s in storyPanelSources) s.id];
+    String sourceLabel(String s) => storyPanelSources
+        .firstWhere((e) => e.id == s, orElse: () => storyPanelSources.first)
+        .label();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -6741,21 +6712,57 @@ Widget _sectionTitle(String text, [IconData? icon]) => Padding(
   ),
 );
 
+/// 面板数据源注册表：编辑器的选择项 / 图标 / 标签都由这里驱动，
+/// 新增数据源时在此登记，并在 [_StoryDetailsSheetState._buildPanel] 补渲染分支。
+typedef StoryPanelSourceDef = ({
+  String id,
+  IconData icon,
+  String Function() label,
+});
+
+final List<StoryPanelSourceDef> storyPanelSources = [
+  (id: 'resources', icon: Icons.favorite_border, label: () => t.storyResources),
+  (
+    id: 'attributes',
+    icon: Icons.insights_outlined,
+    label: () => t.storyAttributes,
+  ),
+  (
+    id: 'skills',
+    icon: Icons.sports_martial_arts_outlined,
+    label: () => t.skills,
+  ),
+  (
+    id: 'inventory',
+    icon: Icons.inventory_2_outlined,
+    label: () => t.storyInventory,
+  ),
+  (id: 'quests', icon: Icons.flag_outlined, label: () => t.storyQuests),
+  (id: 'effects', icon: Icons.auto_awesome, label: () => t.storyEffects),
+  (id: 'titles', icon: Icons.workspace_premium_outlined, label: () => t.storyTitles),
+  (id: 'job', icon: Icons.badge_outlined, label: () => t.storyJob),
+  (id: 'base', icon: Icons.home_work_outlined, label: () => t.storyBase),
+  (id: 'codex', icon: Icons.menu_book_outlined, label: () => t.storyCodex),
+  (id: 'variables', icon: Icons.tune, label: () => t.storyVariables),
+  (id: 'equipment', icon: Icons.shield_outlined, label: () => t.storyEquipment),
+  (
+    id: 'combat',
+    icon: Icons.local_fire_department_outlined,
+    label: () => t.storyCombat,
+  ),
+  (
+    id: 'achievements',
+    icon: Icons.emoji_events_outlined,
+    label: () => t.storyAchievements,
+  ),
+];
+
 IconData? _panelIcon(String name) {
   if (name.isEmpty) return null;
-  return switch (name) {
-    'resources' => Icons.favorite_border,
-    'attributes' => Icons.insights_outlined,
-    'skills' => Icons.sports_martial_arts_outlined,
-    'inventory' => Icons.inventory_2_outlined,
-    'quests' => Icons.flag_outlined,
-    'codex' => Icons.menu_book_outlined,
-    'variables' => Icons.tune,
-    'equipment' => Icons.shield_outlined,
-    'combat' => Icons.local_fire_department_outlined,
-    'achievements' => Icons.emoji_events_outlined,
-    _ => _storyActionIcon(name),
-  };
+  for (final s in storyPanelSources) {
+    if (s.id == name) return s.icon;
+  }
+  return _storyActionIcon(name);
 }
 
 class _ParsedReply {
