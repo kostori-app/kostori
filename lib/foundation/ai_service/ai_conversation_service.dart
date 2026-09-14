@@ -283,6 +283,7 @@ class AiConversationService {
     String taskType = 'chat',
     int maxContextMessages = 20,
     int? contextBudgetOverride,
+    List<WorldBookEntry>? extraDepthHits,
     String? providerOverride,
     bool useTools = true,
     void Function(String toolName)? onToolCall,
@@ -370,7 +371,7 @@ class AiConversationService {
           AiAssistantMessage(content: m.outputContent ?? ''),
       AiUserMessage(content: modelUserText, parts: null),
     ];
-    _insertDepthHits(messages, depthHits);
+    _insertDepthHits(messages, [...depthHits, ...?extraDepthHits]);
 
     // 4. 记录用户消息
     await _taskDao.insert(
@@ -480,6 +481,7 @@ class AiConversationService {
     String taskType = 'chat',
     int maxContextMessages = 20,
     int? contextBudgetOverride,
+    List<WorldBookEntry>? extraDepthHits,
     String? providerOverride,
     bool useTools = true,
     Set<String>? toolNames,
@@ -572,7 +574,7 @@ class AiConversationService {
           AiAssistantMessage(content: m.outputContent ?? ''),
       AiUserMessage(content: modelUserText, parts: null),
     ];
-    _insertDepthHits(aiMessages, depthHits);
+    _insertDepthHits(aiMessages, [...depthHits, ...?extraDepthHits]);
 
     // 4. 记录用户消息
     await _taskDao.insert(
@@ -943,6 +945,7 @@ class AiConversationService {
     AiGenerationParams? paramsOverride,
     int maxContextMessages = 20,
     int? contextBudgetOverride,
+    List<WorldBookEntry>? extraDepthHits,
   }) async {
     final session = await _sessionDao.getSession(sessionId);
     if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
@@ -965,6 +968,7 @@ class AiConversationService {
     );
 
     final profile = await _resolveProfile(session);
+    var depthHits = const <WorldBookEntry>[];
     final systemPrompt =
         systemPromptOverride ??
         await _buildSystemPrompt(
@@ -972,6 +976,7 @@ class AiConversationService {
           profile: profile,
           userMessage: target.inputContent,
           turn: before.length,
+          onDepthHits: (h) => depthHits = h,
         );
 
     final messages = <AiMessage>[
@@ -987,6 +992,7 @@ class AiConversationService {
         trimmed.last.inputContent != target.inputContent) {
       messages.add(AiUserMessage(content: target.inputContent));
     }
+    _insertDepthHits(messages, [...depthHits, ...?extraDepthHits]);
 
     final result = await _chat(
       ai,

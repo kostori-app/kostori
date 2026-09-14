@@ -3252,9 +3252,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.write('\n\n【${inj.name.trim().isEmpty ? '提示词' : inj.name.trim()}】\n');
       buf.write(inj.content.trim());
     }
-    final worldBook = await WorldBookStore.instance.selectAll(
+    // 绑定过滤：绑定了角色卡 / 标签的条目，需与故事角色有交集；
+    // at_depth 条目不进系统提示词，改由发送时插进对话历史
+    final boundIds = {for (final c in story.characters) c.id};
+    final boundTags = <String>{
+      for (final c in story.characters) ...c.tags,
+    };
+    final allWorldBook = await WorldBookStore.instance.selectAll(
       story.worldBookIds.toSet(),
     );
+    _storyDepthHits = allWorldBook
+        .where(
+          (e) =>
+              e.position == 'at_depth' && e.matchesBinding(boundIds, boundTags),
+        )
+        .toList();
+    final worldBook = allWorldBook
+        .where(
+          (e) =>
+              e.position != 'at_depth' && e.matchesBinding(boundIds, boundTags),
+        )
+        .toList();
     if (worldBook.isNotEmpty) {
       buf.write('\n\n【世界书】');
       var seq = 0;
@@ -3342,6 +3360,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         ),
         paramsOverride: _storyParams(),
         contextBudgetOverride: story.contextBudgetChars,
+        extraDepthHits: _storyDepthHits,
         cancelToken: cancelToken,
       )) {
         if (!mounted) return;
@@ -3764,6 +3783,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _inputFocus.requestFocus();
   }
 
+  /// at_depth 世界书条目（_systemPromptFor 解析后填入，发送时插进对话历史）
+  List<WorldBookEntry> _storyDepthHits = const [];
+
   /// 故事的生成参数（为空则跟随服务商默认值）
   AiGenerationParams? _storyParams() {
     if (story.temperature == null &&
@@ -4092,6 +4114,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         ),
         paramsOverride: _storyParams(),
         contextBudgetOverride: story.contextBudgetChars,
+        extraDepthHits: _storyDepthHits,
       );
       if (!mounted) return;
       if (!res.success) {
