@@ -6086,8 +6086,9 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
           ],
         ],
       ),
-      // 只读查看：不需要确认/取消按钮
+      // 只读查看：不显示底部按钮（displayButton 默认 true，光给空 actions 仍会露出「取消」）
       actions: const [],
+      displayButton: false,
     );
   }
 
