@@ -1427,6 +1427,17 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     );
   }
 
+  /// 条目副标题：本地已存在的文件（没有则显示主文件名）
+  String _entrySubtitle(String kind, String id) {
+    final existing = [
+      for (final f in _entryFiles(kind, id))
+        if (f.existsSync()) f.uri.pathSegments.last,
+    ];
+    return existing.isEmpty
+        ? '$kind/$id${_ext(kind)}'
+        : '$kind/${existing.join(' + ')}';
+  }
+
   /// 某个条目对应的全部本地文件（主文件 + 附属：角色卡 png、故事覆盖层）
   List<io.File> _entryFiles(String kind, String id) {
     final dir = _localDir(kind);
@@ -1565,24 +1576,30 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
     final sync = DataSync();
-    final dir = _localDir(kind);
-    final ext = _ext(kind);
-    final remote = _remote[kind] ?? const <String, RemoteFileInfo>{};
+    // 用最新的远端列表，避免拿过期文件名去下载（404）
+    final res = await sync.listRemoteEntries(dir: kind);
+    final names = res.success
+        ? {for (final e in res.data) e.name}
+        : <String>{};
     var ok = 0;
     for (final id in ids) {
-      if (!remote.containsKey('$id$ext')) continue;
       var any = false;
-      for (final name in [
-        '$id$ext',
-        if (kind == 'cards') '$id.png',
-        if (kind == 'stories') '$id.overlay.json',
-      ]) {
-        if (!remote.containsKey(name)) continue;
-        final r = await sync.downloadFile(
+      for (final f in _entryFiles(kind, id)) {
+        final name = f.uri.pathSegments.last;
+        if (!names.contains(name)) continue;
+        var r = await sync.downloadFile(
           remoteName: name,
-          localPath: '$dir/$name',
+          localPath: f.path,
           remoteDir: kind,
         );
+        if (!r.success) {
+          // 兼容旧版把文件直接放在根目录
+          r = await sync.downloadFile(
+            remoteName: name,
+            localPath: f.path,
+            remoteDir: '/',
+          );
+        }
         if (r.success) any = true;
       }
       if (any) ok++;
@@ -1738,10 +1755,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                       const SizedBox(height: 2),
                       Text(
                         // 列出该条目实际涉及的文件（含附属文件，如角色卡 png、故事覆盖层）
-                        '$kind/${[
-                          for (final f in _entryFiles(kind, id))
-                            if (f.existsSync()) f.uri.pathSegments.last,
-                        ].join(' + ')}',
+                        _entrySubtitle(kind, id),
                         style: TextStyle(
                           fontSize: 11,
                           color: scheme.onSurfaceVariant,
