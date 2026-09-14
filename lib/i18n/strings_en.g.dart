@@ -1187,6 +1187,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Sort'
 	String get sort => 'Sort';
 
+	/// en: 'Sort by name'
+	String get sortModeName => 'Sort by name';
+
+	/// en: 'Sort by time'
+	String get sortModeTime => 'Sort by time';
+
 	/// en: 'Source Folder'
 	String get sourceFolder => 'Source Folder';
 
@@ -8746,6 +8752,8 @@ extension on Translations {
 			'sizeInMb' => 'Size in MB',
 			'sizeOfAnimeTile' => 'Size of anime tile',
 			'sort' => 'Sort',
+			'sortModeName' => 'Sort by name',
+			'sortModeTime' => 'Sort by time',
 			'sourceFolder' => 'Source Folder',
 			'sourceUrl' => 'Source URL',
 			'staffList' => 'Staff',
@@ -8874,10 +8882,10 @@ extension on Translations {
 			'tuesdaySchedule' => 'Tuesday Schedule',
 			'wednesdaySchedule' => 'Wednesday Schedule',
 			'thursdaySchedule' => 'Thursday Schedule',
-			'fridaySchedule' => 'Friday Schedule',
-			'saturdaySchedule' => 'Saturday Schedule',
 			_ => null,
 		} ?? switch (path) {
+			'fridaySchedule' => 'Friday Schedule',
+			'saturdaySchedule' => 'Saturday Schedule',
 			'sundaySchedule' => 'Sunday Schedule',
 			'popularityRanking' => 'Popularity Ranking',
 			'imageOperations' => 'Image Operations',
@@ -9388,10 +9396,10 @@ extension on Translations {
 			'hardwareDecoding' => 'Hardware Decoding',
 			'hardwareDecoder' => 'Hardware decoder',
 			'videoRenderer' => 'Video renderer',
-			'videoSynchronizationMode' => 'Video synchronization mode',
-			'enableNoProxyOverrides' => 'Enable No Proxy Overrides',
 			_ => null,
 		} ?? switch (path) {
+			'videoSynchronizationMode' => 'Video synchronization mode',
+			'enableNoProxyOverrides' => 'Enable No Proxy Overrides',
 			'actor' => 'Actor',
 			'cv' => 'CV',
 			'dub' => 'Dub',
@@ -9902,10 +9910,10 @@ extension on Translations {
 			'subject' => 'Subject',
 			'character' => 'Character',
 			'person' => 'Person',
-			'manualSelect' => 'Manual Select',
-			'qrAndClipboard' => 'QR & Clipboard',
 			_ => null,
 		} ?? switch (path) {
+			'manualSelect' => 'Manual Select',
+			'qrAndClipboard' => 'QR & Clipboard',
 			'go' => 'Go',
 			'clipboard' => 'Clipboard',
 			'recognizeFromGallery' => 'Recognize from Gallery',
@@ -10416,10 +10424,10 @@ extension on Translations {
 			'lanConflictDetected' => 'Conflict Detected',
 			'lanConflictResolution' => 'Conflict Resolution',
 			'lanLocalWins' => 'Keep Local',
-			'lanRemoteWins' => 'Keep Remote',
-			'lanKeepBoth' => 'Keep Both',
 			_ => null,
 		} ?? switch (path) {
+			'lanRemoteWins' => 'Keep Remote',
+			'lanKeepBoth' => 'Keep Both',
 			'lanManualResolution' => 'Manual Resolution',
 			'lanConflictField' => 'Conflicting field',
 			'lanErrorOccurred' => 'Error occurred',
@@ -10930,10 +10938,10 @@ extension on Translations {
 			'builderExtractRegex' => 'Playback URL regex',
 			'builderMaxPageSelector' => 'Max page selector',
 			'builderUserAgent' => 'User-Agent',
-			'builderPlayDirect' => 'Directly return episode link',
-			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlayDirect' => 'Directly return episode link',
+			'builderPlayDirectDesc' => 'The episode link itself is the playable URL (no extra request)',
 			'builderPlayRegexDesc' => 'Fetch the play page and extract the URL via regex',
 			'builderExplore' => 'Explore',
 			'builderExploreTitle' => 'Page title',

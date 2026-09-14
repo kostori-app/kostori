@@ -372,6 +372,8 @@ singleAnime: 單部動漫
 sizeInMb: 大小 (MB)
 sizeOfAnimeTile: 動漫卡片尺寸
 sort: 排序
+sortModeName: 按名稱排序
+sortModeTime: 按時間排序
 sourceFolder: 源資料夾
 sourceUrl: 源 URL
 staffList: 製作人員

@@ -384,6 +384,8 @@ singleAnime: Single Anime
 sizeInMb: Size in MB
 sizeOfAnimeTile: Size of anime tile
 sort: Sort
+sortModeName: Sort by name
+sortModeTime: Sort by time
 sourceFolder: Source Folder
 sourceUrl: Source URL
 staffList: Staff

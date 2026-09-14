@@ -373,6 +373,8 @@ singleAnime: 单部番剧
 sizeInMb: 大小 (MB)
 sizeOfAnimeTile: 番剧卡片大小
 sort: 排序
+sortModeName: 按名称排序
+sortModeTime: 按时间排序
 sourceFolder: 源文件夹
 sourceUrl: 源 URL
 staffList: 制作人员

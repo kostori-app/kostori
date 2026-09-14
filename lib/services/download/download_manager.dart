@@ -1275,15 +1275,13 @@ class DownloadManager extends ChangeNotifier {
     await Directory(groupDir(g)).create(recursive: true);
   }
 
-  /// 调整分组顺序（[groups] 的顺序即显示顺序）
+  /// 调整分组顺序（[groups] 的顺序即显示顺序）；
+  /// [newIndex] 为移除后的目标位置（与 ReorderableListView.onReorderItem 一致）
   static void reorderGroups(int oldIndex, int newIndex) {
     final list = groups();
     if (oldIndex < 0 || oldIndex >= list.length) return;
-    if (newIndex < 0) newIndex = 0;
-    if (newIndex > list.length) newIndex = list.length;
-    if (oldIndex == newIndex) return;
     final item = list.removeAt(oldIndex);
-    list.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
+    list.insert(newIndex.clamp(0, list.length), item);
     _saveGroups(list);
   }
 

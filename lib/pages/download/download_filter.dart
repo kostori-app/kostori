@@ -41,6 +41,8 @@ class DownloadFilterBar extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     required this.onManage,
+    required this.sortByName,
+    required this.onToggleSort,
   });
 
   final List<DownloadFilterOption> builtins;
@@ -48,6 +50,8 @@ class DownloadFilterBar extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onSelected;
   final VoidCallback onManage;
+  final bool sortByName;
+  final VoidCallback onToggleSort;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +79,15 @@ class DownloadFilterBar extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+          IconButton(
+            tooltip: sortByName ? t.sortModeName : t.sortModeTime,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              sortByName ? Icons.sort_by_alpha : Icons.sort,
+              size: 20,
+            ),
+            onPressed: onToggleSort,
           ),
           IconButton(
             tooltip: t.manageGroups,
@@ -333,43 +346,57 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
                 style: TextStyle(color: cs.onSurfaceVariant),
               ),
             )
-          : ListView(
-              controller: sc,
-              children: [
-                for (final name in _groups)
-                  ListTile(
-                    leading: Icon(
-                      Icons.create_new_folder_outlined,
-                      color: cs.primary,
-                    ),
-                    title: Text(name),
-                    subtitle: Text(
-                      t.itemsCount(
-                        n: widget.items.where((e) => e.group == name).length,
-                      ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: t.assignSources,
-                          icon: const Icon(Icons.checklist),
-                          onPressed: () => _assign(name),
-                        ),
-                        IconButton(
-                          tooltip: t.rename,
-                          icon: const Icon(Icons.edit_outlined),
-                          onPressed: () => _rename(name),
-                        ),
-                        IconButton(
-                          tooltip: t.delete,
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () => _delete(name),
-                        ),
-                      ],
+          : ReorderableListView.builder(
+              scrollController: sc,
+              buildDefaultDragHandles: false,
+              itemCount: _groups.length,
+              onReorderItem: (oldIndex, newIndex) {
+                DownloadManager.reorderGroups(oldIndex, newIndex);
+                _refresh();
+              },
+              itemBuilder: (context, i) {
+                final name = _groups[i];
+                return ListTile(
+                  key: ValueKey(name),
+                  leading: Icon(
+                    Icons.create_new_folder_outlined,
+                    color: cs.primary,
+                  ),
+                  title: Text(name),
+                  subtitle: Text(
+                    t.itemsCount(
+                      n: widget.items.where((e) => e.group == name).length,
                     ),
                   ),
-              ],
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: t.assignSources,
+                        icon: const Icon(Icons.checklist),
+                        onPressed: () => _assign(name),
+                      ),
+                      IconButton(
+                        tooltip: t.rename,
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () => _rename(name),
+                      ),
+                      IconButton(
+                        tooltip: t.delete,
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _delete(name),
+                      ),
+                      ReorderableDragStartListener(
+                        index: i,
+                        child: Icon(
+                          Icons.drag_handle,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
     );
   }

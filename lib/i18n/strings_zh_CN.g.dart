@@ -414,6 +414,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get sizeInMb => '大小 (MB)';
 	@override String get sizeOfAnimeTile => '番剧卡片大小';
 	@override String get sort => '排序';
+	@override String get sortModeName => '按名称排序';
+	@override String get sortModeTime => '按时间排序';
 	@override String get sourceFolder => '源文件夹';
 	@override String get sourceUrl => '源 URL';
 	@override String get staffList => '制作人员';
@@ -3208,6 +3210,8 @@ extension on TranslationsZhCn {
 			'sizeInMb' => '大小 (MB)',
 			'sizeOfAnimeTile' => '番剧卡片大小',
 			'sort' => '排序',
+			'sortModeName' => '按名称排序',
+			'sortModeTime' => '按时间排序',
 			'sourceFolder' => '源文件夹',
 			'sourceUrl' => '源 URL',
 			'staffList' => '制作人员',
@@ -3343,10 +3347,10 @@ extension on TranslationsZhCn {
 			'imageOperations' => '图片操作',
 			'saveToAlbum' => '保存到相册',
 			'stitchLongImage' => '拼接长图',
-			'stitchHorizontalImage' => '横向拼接',
-			'stitchSubtitles' => '拼接字幕',
 			_ => null,
 		} ?? switch (path) {
+			'stitchHorizontalImage' => '横向拼接',
+			'stitchSubtitles' => '拼接字幕',
 			'saveLongImage' => '保存长图',
 			'borderColor' => '边框颜色',
 			'conversationTitle' => '对话标题',
@@ -3857,10 +3861,10 @@ extension on TranslationsZhCn {
 			'hardwareDecoder' => '硬件解码器',
 			'videoRenderer' => '视频渲染器',
 			'videoSynchronizationMode' => '视频同步模式',
-			'enableNoProxyOverrides' => '启用无代理覆写',
-			'actor' => '演员',
 			_ => null,
 		} ?? switch (path) {
+			'enableNoProxyOverrides' => '启用无代理覆写',
+			'actor' => '演员',
 			'cv' => 'CV',
 			'dub' => '配音',
 			'chineseDub' => '中配',
@@ -4371,10 +4375,10 @@ extension on TranslationsZhCn {
 			'character' => '角色',
 			'person' => '人物',
 			'manualSelect' => '手动选择',
-			'qrAndClipboard' => '二维码与剪贴板',
-			'go' => '前往',
 			_ => null,
 		} ?? switch (path) {
+			'qrAndClipboard' => '二维码与剪贴板',
+			'go' => '前往',
 			'clipboard' => '剪贴板',
 			'recognizeFromGallery' => '从相册识别',
 			'scanQrCode' => '扫码',
@@ -4885,10 +4889,10 @@ extension on TranslationsZhCn {
 			'lanLocalWins' => '保留本地',
 			'lanRemoteWins' => '保留远程',
 			'lanKeepBoth' => '保留两者',
-			'lanManualResolution' => '手动解决',
-			'lanConflictField' => '冲突字段',
 			_ => null,
 		} ?? switch (path) {
+			'lanManualResolution' => '手动解决',
+			'lanConflictField' => '冲突字段',
 			'lanErrorOccurred' => '发生错误',
 			'lanCommandExecuted' => '命令已执行',
 			'lanCommandFailed' => '命令执行失败',
@@ -5399,10 +5403,10 @@ extension on TranslationsZhCn {
 			'builderExtractRegex' => '播放地址正则',
 			'builderMaxPageSelector' => '总页数选择器',
 			'builderUserAgent' => 'User-Agent',
-			'builderPlayDirect' => '直接返回剧集链接',
-			'builderPlayDirectDesc' => '剧集链接本身就是播放地址（无需二次请求）',
 			_ => null,
 		} ?? switch (path) {
+			'builderPlayDirect' => '直接返回剧集链接',
+			'builderPlayDirectDesc' => '剧集链接本身就是播放地址（无需二次请求）',
 			'builderPlayRegexDesc' => '请求播放页并通过正则提取播放地址',
 			'builderExplore' => '探索',
 			'builderExploreTitle' => '页面标题',

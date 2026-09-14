@@ -271,7 +271,7 @@ class _DownloadPageState extends State<DownloadPage> {
       );
     }
 
-    final filtered = _filterTasks(unfinished);
+    final filtered = _sortTasks(_filterTasks(unfinished));
     return Column(
       children: [
         DownloadFilterBar(
@@ -284,6 +284,8 @@ class _DownloadPageState extends State<DownloadPage> {
           groups: DownloadManager.groups(),
           selected: _taskFilter,
           onSelected: _setTaskFilter,
+          sortByName: _sortByName,
+          onToggleSort: _toggleSort,
           onManage: () => _manageTaskGroups([
             for (final task in tasks)
               (
@@ -357,6 +359,23 @@ class _DownloadPageState extends State<DownloadPage> {
                 ),
         ),
       ],
+    );
+  }
+
+  /// 排序方式：false = 时间，true = 名称 A-Z
+  bool get _sortByName => appdata.implicitData['downloadSortByName'] == true;
+
+  void _toggleSort() {
+    setState(() {
+      appdata.implicitData['downloadSortByName'] = !_sortByName;
+      appdata.writeImplicitData();
+    });
+  }
+
+  List<DownloadTask> _sortTasks(List<DownloadTask> list) {
+    if (!_sortByName) return list;
+    return [...list]..sort(
+      (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
     );
   }
 
@@ -535,24 +554,60 @@ class _RecordsTabState extends State<_RecordsTab> {
     await _reload();
   }
 
+  /// 排序方式：false = 时间，true = 名称 A-Z
+  bool get _sortByName => appdata.implicitData['downloadSortByName'] == true;
+
+  void _toggleSort() {
+    setState(() {
+      appdata.implicitData['downloadSortByName'] = !_sortByName;
+      appdata.writeImplicitData();
+    });
+  }
+
+  /// 记录排序：已删除（文件不存在）沉底，其余按时间倒序或名称 A-Z
+  List<Map<String, dynamic>> _sortRecords(List<Map<String, dynamic>> list) {
+    final byName = _sortByName;
+    return [...list]..sort((a, b) {
+      final da = _exists[a['filePath']] == true ? 0 : 1;
+      final db = _exists[b['filePath']] == true ? 0 : 1;
+      if (da != db) return da - db;
+      if (byName) {
+        return (a['title'] as String? ?? '').toLowerCase().compareTo(
+          (b['title'] as String? ?? '').toLowerCase(),
+        );
+      }
+      return (b['time'] as String? ?? '').compareTo(
+        a['time'] as String? ?? '',
+      );
+    });
+  }
+
   List<Map<String, dynamic>> _filtered() {
     switch (_filter) {
       case 'exists':
-        return _records.where((r) => _exists[r['filePath']] == true).toList();
+        return _sortRecords(
+          _records.where((r) => _exists[r['filePath']] == true).toList(),
+        );
       case 'deleted':
-        return _records.where((r) => _exists[r['filePath']] != true).toList();
+        return _sortRecords(
+          _records.where((r) => _exists[r['filePath']] != true).toList(),
+        );
       case 'ungrouped':
-        return _records
-            .where((r) => (r['group']?.toString() ?? '') == '')
-            .toList();
+        return _sortRecords(
+          _records
+              .where((r) => (r['group']?.toString() ?? '') == '')
+              .toList(),
+        );
     }
     if (_filter.startsWith(kDownloadGroupPrefix)) {
       final name = _filter.substring(kDownloadGroupPrefix.length);
-      return _records
-          .where((r) => (r['group']?.toString() ?? '') == name)
-          .toList();
+      return _sortRecords(
+        _records
+            .where((r) => (r['group']?.toString() ?? '') == name)
+            .toList(),
+      );
     }
-    return _records;
+    return _sortRecords(_records);
   }
 
   String _recordLabel(Map<String, dynamic> r) {
@@ -627,6 +682,8 @@ class _RecordsTabState extends State<_RecordsTab> {
           groups: DownloadManager.groups(),
           selected: _filter,
           onSelected: _setFilter,
+          sortByName: _sortByName,
+          onToggleSort: _toggleSort,
           onManage: _manageGroups,
         ),
         const Divider(height: 1),
