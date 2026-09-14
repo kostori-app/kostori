@@ -716,12 +716,14 @@ class _StoryTitleDraft {
   final TextEditingController name = TextEditingController();
   final TextEditingController effects = TextEditingController();
   bool stackable;
+  bool passive;
 
   _StoryTitleDraft({
     String keyText = '',
     String nameText = '',
     String effectsText = '',
     this.stackable = false,
+    this.passive = false,
   }) {
     key.text = keyText;
     name.text = nameText;
@@ -913,6 +915,7 @@ class _StoryEditorState extends State<_StoryEditor>
         nameText: x.name,
         effectsText: x.effects,
         stackable: x.stackable,
+        passive: x.passive,
       ),
   ];
   late final _jobNameCtrl = TextEditingController(
@@ -1173,6 +1176,7 @@ class _StoryEditorState extends State<_StoryEditor>
               name: x.name.text.trim(),
               effects: x.effects.text.trim(),
               stackable: x.stackable,
+              passive: x.passive,
             ),
       ],
       job: (_jobNameCtrl.text.trim().isEmpty && _jobLevels.isEmpty)
@@ -2265,6 +2269,21 @@ class _StoryEditorState extends State<_StoryEditor>
                   value: _titles[i].stackable,
                   onChanged: (v) =>
                       setState(() => _titles[i].stackable = v),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t.storyTitlePassive,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                CustomSwitch(
+                  value: _titles[i].passive,
+                  onChanged: (v) => setState(() => _titles[i].passive = v),
                 ),
               ],
             ),

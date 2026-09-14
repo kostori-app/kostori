@@ -1754,6 +1754,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyAdvanced => '進階';
 	@override String get storyCharacterName => '角色名';
 	@override String get storyTitleName => '稱號名';
+	@override String get storyTitlePassive => '被動生效（獲得即生效，無需佩戴）';
 	@override String get storyJobName => '職業名';
 	@override String get storyJobLevelName => '等級名';
 	@override String get storyAchievementName => '成就名';
@@ -4639,6 +4640,7 @@ extension on TranslationsZhTw {
 			'storyAdvanced' => '進階',
 			'storyCharacterName' => '角色名',
 			'storyTitleName' => '稱號名',
+			'storyTitlePassive' => '被動生效（獲得即生效，無需佩戴）',
 			'storyJobName' => '職業名',
 			'storyJobLevelName' => '等級名',
 			'storyAchievementName' => '成就名',
@@ -4929,9 +4931,9 @@ extension on TranslationsZhTw {
 			'lanRemoteControlConnectionFailed' => '遠端控制連線失敗',
 			'lanConnectedDevices' => '已連線設備',
 			'lanNoDeviceConnected' => '無設備連線',
-			'lanPlayerControl' => '播放器控制',
 			_ => null,
 		} ?? switch (path) {
+			'lanPlayerControl' => '播放器控制',
 			'lanNavigationControl' => '導航控制',
 			'lanNavHome' => '首頁',
 			'lanNavSearch' => '搜尋',
@@ -5443,9 +5445,9 @@ extension on TranslationsZhTw {
 			'profileCatchphrasesHint' => '每行一個',
 			'profileExamples' => '對話示例（few-shot）',
 			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
-			'profileReplyStyle' => '回覆風格',
 			_ => null,
 		} ?? switch (path) {
+			'profileReplyStyle' => '回覆風格',
 			'replyLength' => '回覆長度',
 			'replyLengthShort' => '簡短',
 			'replyLengthNormal' => '適中',

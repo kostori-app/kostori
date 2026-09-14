@@ -942,12 +942,16 @@ class StoryTitle {
   /// 是否可叠加（同称号可叠层，效果按层数放大）
   final bool stackable;
 
+  /// 被动：获得即永久生效，不需要佩戴（不受「仅已佩戴生效」模式影响）
+  final bool passive;
+
   const StoryTitle({
     required this.key,
     required this.name,
     this.description = '',
     this.effects = '',
     this.stackable = false,
+    this.passive = false,
   });
 
   factory StoryTitle.fromJson(Map<String, dynamic> json) => StoryTitle(
@@ -956,6 +960,7 @@ class StoryTitle {
     description: json['description']?.toString() ?? '',
     effects: json['effects']?.toString() ?? '',
     stackable: json['stackable'] as bool? ?? false,
+    passive: json['passive'] as bool? ?? false,
   );
 
   Map<String, dynamic> toJson() => {
@@ -964,6 +969,7 @@ class StoryTitle {
     'description': description,
     'effects': effects,
     'stackable': stackable,
+    if (passive) 'passive': true,
   };
 }
 
@@ -1905,10 +1911,11 @@ class Story {
         buf.write('- ${x.key}：${x.name}');
         if (x.effects.trim().isNotEmpty) buf.write('（效果：${x.effects.trim()}）');
         if (x.stackable) buf.write('（可叠加）');
+        if (x.passive) buf.write('（被动：获得即永久生效，无需佩戴）');
         buf.writeln();
       }
       buf.writeln(
-        '称号生效方式：${titleMode == 'equipped' ? '仅已佩戴(equipped)的称号生效' : '全部已获得称号叠加生效'}',
+        '称号生效方式：${titleMode == 'equipped' ? '仅已佩戴(equipped)的称号生效，但被动称号获得即生效' : '全部已获得称号叠加生效'}',
       );
       buf.writeln();
     }

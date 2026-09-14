@@ -5185,6 +5185,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Title name'
 	String get storyTitleName => 'Title name';
 
+	/// en: 'Passive (always on once acquired)'
+	String get storyTitlePassive => 'Passive (always on once acquired)';
+
 	/// en: 'Job name'
 	String get storyJobName => 'Job name';
 
@@ -10259,6 +10262,7 @@ extension on Translations {
 			'storyAdvanced' => 'Advanced',
 			'storyCharacterName' => 'Name',
 			'storyTitleName' => 'Title name',
+			'storyTitlePassive' => 'Passive (always on once acquired)',
 			'storyJobName' => 'Job name',
 			'storyJobLevelName' => 'Level name',
 			'storyAchievementName' => 'Achievement name',
@@ -10549,9 +10553,9 @@ extension on Translations {
 			'lanAccept' => 'Accept',
 			'lanDeviceId' => 'Device ID',
 			'lanConnect' => 'Connect',
-			'lanExitControl' => 'Exit Control',
 			_ => null,
 		} ?? switch (path) {
+			'lanExitControl' => 'Exit Control',
 			'lanConnectedDevices' => 'Connected Devices',
 			'lanNoDeviceConnected' => 'No device connected',
 			'lanPlayerControl' => 'Player Control',
@@ -11063,9 +11067,9 @@ extension on Translations {
 			'profileCatchphrases' => 'Catchphrases',
 			'profileCatchphrasesHint' => 'One per line',
 			'profileExamples' => 'Example dialogs (few-shot)',
-			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
 			_ => null,
 		} ?? switch (path) {
+			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
 			'profileReplyStyle' => 'Reply style',
 			'replyLength' => 'Reply length',
 			'replyLengthShort' => 'Concise',

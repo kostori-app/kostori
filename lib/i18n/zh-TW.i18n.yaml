@@ -1764,6 +1764,7 @@ storyRegex: 正則
 storyAdvanced: 進階
 storyCharacterName: 角色名
 storyTitleName: 稱號名
+storyTitlePassive: 被動生效（獲得即生效，無需佩戴）
 storyJobName: 職業名
 storyJobLevelName: 等級名
 storyAchievementName: 成就名

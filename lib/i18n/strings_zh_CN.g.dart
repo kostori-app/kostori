@@ -1753,6 +1753,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyAdvanced => '高级';
 	@override String get storyCharacterName => '角色名';
 	@override String get storyTitleName => '称号名';
+	@override String get storyTitlePassive => '被动生效（获得即生效，无需佩戴）';
 	@override String get storyJobName => '职业名';
 	@override String get storyJobLevelName => '等级名';
 	@override String get storyAchievementName => '成就名';
@@ -4639,6 +4640,7 @@ extension on TranslationsZhCn {
 			'storyAdvanced' => '高级',
 			'storyCharacterName' => '角色名',
 			'storyTitleName' => '称号名',
+			'storyTitlePassive' => '被动生效（获得即生效，无需佩戴）',
 			'storyJobName' => '职业名',
 			'storyJobLevelName' => '等级名',
 			'storyAchievementName' => '成就名',
@@ -4930,9 +4932,9 @@ extension on TranslationsZhCn {
 			'lanRemoteControlConnected' => '远程控制已连接',
 			'lanRemoteControlConnectionFailed' => '远程控制连接失败',
 			'lanConnectedDevices' => '已连接设备',
-			'lanNoDeviceConnected' => '无设备连接',
 			_ => null,
 		} ?? switch (path) {
+			'lanNoDeviceConnected' => '无设备连接',
 			'lanPlayerControl' => '播放器控制',
 			'lanNavigationControl' => '导航控制',
 			'lanNavHome' => '首页',
@@ -5444,9 +5446,9 @@ extension on TranslationsZhCn {
 			'profileCatchphrases' => '口头禅',
 			'profileCatchphrasesHint' => '每行一个',
 			'profileExamples' => '对话示例（few-shot）',
-			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
 			_ => null,
 		} ?? switch (path) {
+			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
 			'profileReplyStyle' => '回复风格',
 			'replyLength' => '回复长度',
 			'replyLengthShort' => '简短',
