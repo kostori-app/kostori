@@ -7504,6 +7504,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Message role'
 	String get worldBookRole => 'Message role';
 
+	/// en: 'Bound character cards (empty = any)'
+	String get worldBookBindCharacters => 'Bound character cards (empty = any)';
+
+	/// en: 'Bound tags (from character cards; empty = any)'
+	String get worldBookBindTags => 'Bound tags (from character cards; empty = any)';
+
 	/// en: 'Depth (smaller = closer to the end)'
 	String get worldBookDepth => 'Depth (smaller = closer to the end)';
 
@@ -11010,6 +11016,8 @@ extension on Translations {
 			'worldBookPositionAfter' => 'After character definitions',
 			'worldBookPositionAtDepth' => 'At depth',
 			'worldBookRole' => 'Message role',
+			'worldBookBindCharacters' => 'Bound character cards (empty = any)',
+			'worldBookBindTags' => 'Bound tags (from character cards; empty = any)',
 			'worldBookDepth' => 'Depth (smaller = closer to the end)',
 			'worldBookSticky' => 'Sticky turns',
 			'worldBookCooldown' => 'Cooldown turns',
@@ -11038,10 +11046,10 @@ extension on Translations {
 			'replyLengthNormal' => 'Normal',
 			'replyLengthDetailed' => 'Detailed',
 			'replyUseEmoji' => 'Use emoji',
-			'replyUseMarkdown' => 'Use Markdown formatting',
-			'replyAskBack' => 'Ask back at the end',
 			_ => null,
 		} ?? switch (path) {
+			'replyUseMarkdown' => 'Use Markdown formatting',
+			'replyAskBack' => 'Ask back at the end',
 			'mcpConnectionStatus' => 'Connection status',
 			'mcpConnected' => 'Connected',
 			'mcpDisconnected' => 'Disconnected',

@@ -1360,17 +1360,13 @@ class AiConversationService {
     final injections = await PromptInjectionStore.instance.select(
       profile?.injectionIds.toSet() ?? const {},
     );
-    final worldHits = (userMessage == null || userMessage.trim().isEmpty)
+    var worldHits = (userMessage == null || userMessage.trim().isEmpty)
         ? const <WorldBookEntry>[]
         : await WorldBookStore.instance.select(
             profile?.worldBookIds.toSet() ?? const {},
             userMessage,
             turn: turn,
           );
-    // at_depth 条目由调用方按深度插入对话历史
-    onDepthHits?.call(
-      worldHits.where((e) => e.position == 'at_depth').toList(),
-    );
     final memoryEntries = profile == null
         ? const <String>[]
         : await AssistantMemoryStore.instance.entriesFor(profile.id);
@@ -1388,6 +1384,19 @@ class AiConversationService {
             if (CharacterCardStore.instance.find(id) case final c?) c,
         ];
       }
+      // 世界书绑定过滤：绑定了角色/标签的条目需与当前角色上下文有交集
+      final boundTags = <String>{
+        for (final c in characterCards) ...c.tags,
+      };
+      worldHits = worldHits
+          .where(
+            (e) => e.matchesBinding(profile.characterIds.toSet(), boundTags),
+          )
+          .toList();
+      // at_depth 条目由调用方按深度插入对话历史
+      onDepthHits?.call(
+        worldHits.where((e) => e.position == 'at_depth').toList(),
+      );
       parts.add(
         buildSystemPrompt(
           profile: profile,
@@ -1423,6 +1432,13 @@ class AiConversationService {
         if (n > 0) parts.add(buf.toString());
       }
     } else {
+      // 无档案：没有角色上下文，绑定角色/标签的条目不注入
+      worldHits = worldHits
+          .where((e) => e.matchesBinding(const {}, const {}))
+          .toList();
+      onDepthHits?.call(
+        worldHits.where((e) => e.position == 'at_depth').toList(),
+      );
       final skillKeys = parseSkillKeys(session.skillKeys);
       if (skillKeys.isNotEmpty) {
           final skills = AiSkillStore.instance.enabled;

@@ -2551,6 +2551,8 @@ worldBookPositionBefore: Before character definitions
 worldBookPositionAfter: After character definitions
 worldBookPositionAtDepth: At depth
 worldBookRole: Message role
+worldBookBindCharacters: Bound character cards (empty = any)
+worldBookBindTags: Bound tags (from character cards; empty = any)
 worldBookDepth: Depth (smaller = closer to the end)
 worldBookSticky: Sticky turns
 worldBookCooldown: Cooldown turns

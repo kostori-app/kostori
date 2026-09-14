@@ -2550,6 +2550,8 @@ worldBookPositionBefore: 角色定义前
 worldBookPositionAfter: 角色定义后
 worldBookPositionAtDepth: 按深度插入
 worldBookRole: 消息角色
+worldBookBindCharacters: 绑定角色卡（留空不限制）
+worldBookBindTags: 绑定标签（取自角色卡，留空不限制）
 worldBookDepth: 深度（越小越靠后）
 worldBookSticky: 保持回合数
 worldBookCooldown: 冷却回合数

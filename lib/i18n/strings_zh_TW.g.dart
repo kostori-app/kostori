@@ -2526,6 +2526,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookPositionAfter => '角色定義後';
 	@override String get worldBookPositionAtDepth => '按深度插入';
 	@override String get worldBookRole => '訊息角色';
+	@override String get worldBookBindCharacters => '綁定角色卡（留空不限制）';
+	@override String get worldBookBindTags => '綁定標籤（取自角色卡，留空不限制）';
 	@override String get worldBookDepth => '深度（越小越靠後）';
 	@override String get worldBookSticky => '保持回合數';
 	@override String get worldBookCooldown => '冷卻回合數';
@@ -5405,6 +5407,8 @@ extension on TranslationsZhTw {
 			'worldBookPositionAfter' => '角色定義後',
 			'worldBookPositionAtDepth' => '按深度插入',
 			'worldBookRole' => '訊息角色',
+			'worldBookBindCharacters' => '綁定角色卡（留空不限制）',
+			'worldBookBindTags' => '綁定標籤（取自角色卡，留空不限制）',
 			'worldBookDepth' => '深度（越小越靠後）',
 			'worldBookSticky' => '保持回合數',
 			'worldBookCooldown' => '冷卻回合數',
@@ -5434,10 +5438,10 @@ extension on TranslationsZhTw {
 			'replyLengthDetailed' => '詳細',
 			'replyUseEmoji' => '使用 emoji',
 			'replyUseMarkdown' => '使用 Markdown 排版',
-			'replyAskBack' => '結尾反問使用者',
-			'mcpConnectionStatus' => '連線狀態',
 			_ => null,
 		} ?? switch (path) {
+			'replyAskBack' => '結尾反問使用者',
+			'mcpConnectionStatus' => '連線狀態',
 			'mcpConnected' => '已連線',
 			'mcpDisconnected' => '未連線',
 			'mcpToolsImported' => '個工具',

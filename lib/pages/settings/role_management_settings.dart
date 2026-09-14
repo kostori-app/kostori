@@ -1502,6 +1502,8 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
   late bool _recursive = widget.entry?.recursive ?? false;
   late String _position = widget.entry?.position ?? 'after_char';
   late String _role = widget.entry?.role ?? 'system';
+  late final List<String> _boundChars = [...?widget.entry?.characterIds];
+  late final List<String> _boundTags = [...?widget.entry?.tags];
 
   bool get _isNew => widget.entry == null;
 
@@ -1517,6 +1519,17 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
     _stickyCtrl.dispose();
     _cooldownCtrl.dispose();
     super.dispose();
+  }
+
+  /// 角色卡上出现过的全部标签（绑定标签从这里选）
+  List<String> get _availableTags {
+    final out = <String>{};
+    for (final c in CharacterCardStore.instance.cards) {
+      out.addAll(c.tags.where((e) => e.trim().isNotEmpty));
+    }
+    out.addAll(_boundTags);
+    final list = out.toList()..sort();
+    return list;
   }
 
   List<String> _lines(TextEditingController ctrl) => ctrl.text
@@ -1570,6 +1583,8 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       recursive: _recursive,
       position: _position,
       role: _role,
+      characterIds: _boundChars,
+      tags: _boundTags,
       depth: int.tryParse(_depthCtrl.text.trim()) ?? 4,
       sticky: int.tryParse(_stickyCtrl.text.trim()) ?? 0,
       cooldown: int.tryParse(_cooldownCtrl.text.trim()) ?? 0,
@@ -1743,6 +1758,52 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                             ],
                           ),
                         ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(t.worldBookBindCharacters),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                for (final c
+                                    in CharacterCardStore.instance.cards)
+                                  OptionChip(
+                                    text: c.name,
+                                    isSelected: _boundChars.contains(c.id),
+                                    onTap: () => setState(() {
+                                      _boundChars.contains(c.id)
+                                          ? _boundChars.remove(c.id)
+                                          : _boundChars.add(c.id);
+                                    }),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(t.worldBookBindTags),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                for (final tag in _availableTags)
+                                  OptionChip(
+                                    text: tag,
+                                    isSelected: _boundTags.contains(tag),
+                                    onTap: () => setState(() {
+                                      _boundTags.contains(tag)
+                                          ? _boundTags.remove(tag)
+                                          : _boundTags.add(tag);
+                                    }),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(

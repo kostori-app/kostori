@@ -2527,6 +2527,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookPositionAfter => '角色定义后';
 	@override String get worldBookPositionAtDepth => '按深度插入';
 	@override String get worldBookRole => '消息角色';
+	@override String get worldBookBindCharacters => '绑定角色卡（留空不限制）';
+	@override String get worldBookBindTags => '绑定标签（取自角色卡，留空不限制）';
 	@override String get worldBookDepth => '深度（越小越靠后）';
 	@override String get worldBookSticky => '保持回合数';
 	@override String get worldBookCooldown => '冷却回合数';
@@ -5407,6 +5409,8 @@ extension on TranslationsZhCn {
 			'worldBookPositionAfter' => '角色定义后',
 			'worldBookPositionAtDepth' => '按深度插入',
 			'worldBookRole' => '消息角色',
+			'worldBookBindCharacters' => '绑定角色卡（留空不限制）',
+			'worldBookBindTags' => '绑定标签（取自角色卡，留空不限制）',
 			'worldBookDepth' => '深度（越小越靠后）',
 			'worldBookSticky' => '保持回合数',
 			'worldBookCooldown' => '冷却回合数',
@@ -5435,10 +5439,10 @@ extension on TranslationsZhCn {
 			'replyLengthNormal' => '适中',
 			'replyLengthDetailed' => '详细',
 			'replyUseEmoji' => '使用 emoji',
-			'replyUseMarkdown' => '使用 Markdown 排版',
-			'replyAskBack' => '结尾反问用户',
 			_ => null,
 		} ?? switch (path) {
+			'replyUseMarkdown' => '使用 Markdown 排版',
+			'replyAskBack' => '结尾反问用户',
 			'mcpConnectionStatus' => '连接状态',
 			'mcpConnected' => '已连接',
 			'mcpDisconnected' => '未连接',

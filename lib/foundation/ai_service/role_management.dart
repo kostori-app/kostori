@@ -289,6 +289,12 @@ class WorldBookEntry {
   /// at_depth 时的消息角色：system | user | assistant
   final String role;
 
+  /// 绑定角色卡 id（空 = 不限制；非空时当前上下文需包含其中之一）
+  final List<String> characterIds;
+
+  /// 绑定标签（标签取自角色卡；空 = 不限制；非空时需有交集）
+  final List<String> tags;
+
   /// 注入深度（越小越靠近末尾，仅影响同一位置内的排序）
   final int depth;
 
@@ -311,6 +317,8 @@ class WorldBookEntry {
     this.recursive = false,
     this.position = 'after_char',
     this.role = 'system',
+    this.characterIds = const [],
+    this.tags = const [],
     this.depth = 4,
     this.sticky = 0,
     this.cooldown = 0,
@@ -328,6 +336,8 @@ class WorldBookEntry {
     bool? recursive,
     String? position,
     String? role,
+    List<String>? characterIds,
+    List<String>? tags,
     int? depth,
     int? sticky,
     int? cooldown,
@@ -344,6 +354,8 @@ class WorldBookEntry {
     recursive: recursive ?? this.recursive,
     position: position ?? this.position,
     role: role ?? this.role,
+    characterIds: characterIds ?? this.characterIds,
+    tags: tags ?? this.tags,
     depth: depth ?? this.depth,
     sticky: sticky ?? this.sticky,
     cooldown: cooldown ?? this.cooldown,
@@ -372,6 +384,8 @@ class WorldBookEntry {
         final p => p,
       },
       role: (json['role'] as String?) ?? 'system',
+      characterIds: strList(json['characterIds']),
+      tags: strList(json['tags']),
       depth: (json['depth'] as num?)?.toInt() ?? 4,
       sticky: (json['sticky'] as num?)?.toInt() ?? 0,
       cooldown: (json['cooldown'] as num?)?.toInt() ?? 0,
@@ -391,6 +405,8 @@ class WorldBookEntry {
     'recursive': recursive,
     'position': position,
     'role': role,
+    'characterIds': characterIds,
+    'tags': tags,
     'depth': depth,
     'sticky': sticky,
     'cooldown': cooldown,
@@ -414,6 +430,14 @@ class WorldBookEntry {
       if (!lowerText.contains(trimmed.toLowerCase())) return false;
     }
     return true;
+  }
+
+  /// 绑定过滤：未绑定角色/标签时恒通过；绑定时需与当前上下文有交集
+  bool matchesBinding(Set<String> boundCharacterIds, Set<String> boundTags) {
+    if (characterIds.isEmpty && tags.isEmpty) return true;
+    if (characterIds.any(boundCharacterIds.contains)) return true;
+    final lower = boundTags.map((e) => e.toLowerCase()).toSet();
+    return tags.any((t) => lower.contains(t.trim().toLowerCase()));
   }
 
   /// 是否命中（常驻条目恒真；需同时满足主键与次级键）
