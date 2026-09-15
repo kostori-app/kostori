@@ -1063,14 +1063,16 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
               )
             else
               for (final c in cards)
-                CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(c.displayName),
-                  value: _characterIds.contains(c.id),
+                _bookSelectCard(
+                  name: c.displayName,
+                  leading: CharacterAvatar(
+                    name: c.displayName,
+                    avatar: c.avatar,
+                    radius: 14,
+                  ),
+                  selected: _characterIds.contains(c.id),
                   onChanged: (v) => setState(() {
-                    if (v == true) {
+                    if (v) {
                       _characterIds.add(c.id);
                     } else {
                       _characterIds.remove(c.id);
@@ -1083,12 +1085,13 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
   }
 
-  /// 世界书分组卡片：点击整组勾选，选中时高亮（与故事编辑一致）
+  /// 勾选卡片：点击切换，选中时高亮（与故事编辑一致，无左侧勾选框）
   Widget _bookSelectCard({
     required String name,
-    required int count,
     required bool selected,
     required ValueChanged<bool> onChanged,
+    int? count,
+    Widget? leading,
   }) {
     final cs = Theme.of(context).colorScheme;
     return Padding(
@@ -1099,6 +1102,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
         clipBehavior: Clip.antiAlias,
         child: ListTile(
           dense: true,
+          leading: leading,
           onTap: () => onChanged(!selected),
           title: Text(
             name,
@@ -1106,10 +1110,12 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          trailing: Text(
-            '$count',
-            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-          ),
+          trailing: count == null
+              ? null
+              : Text(
+                  '$count',
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
         ),
       ),
     );

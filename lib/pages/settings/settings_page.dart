@@ -532,7 +532,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       );
 
       return AnimatedPadding(
-        padding: EdgeInsets.fromLTRB(24, 0, selected ? 12 : 24, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         duration: const Duration(milliseconds: 200),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
