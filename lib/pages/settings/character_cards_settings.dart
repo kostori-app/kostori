@@ -39,7 +39,7 @@ class _CharacterCardsSettingsPageState
       if (!mounted) return;
       setState(() {});
       App.rootContext.showMessage(
-        message: ok ? t.storyImported : t.characterImportFailed,
+        message: ok ? t.characterImported : t.characterImportFailed,
         level: ok ? LogLevel.info : LogLevel.error,
       );
     } catch (e) {
@@ -63,7 +63,7 @@ class _CharacterCardsSettingsPageState
     if (!mounted) return;
     setState(() => _dragOver = false);
     if (imported > 0) {
-      App.rootContext.showMessage(message: t.storyImported);
+      App.rootContext.showMessage(message: t.characterImported);
     } else if (detail.files.isNotEmpty) {
       App.rootContext.showMessage(
         message: t.characterImportFailed,

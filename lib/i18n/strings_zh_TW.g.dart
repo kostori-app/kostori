@@ -1596,6 +1596,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get rolePlayDescription => '故事驅動的文字冒險，帶狀態面板與選項';
 	@override String get importCharacter => '導入角色卡';
 	@override String get characterImportFailed => '角色卡導入失敗';
+	@override String get characterImported => '角色卡已導入';
 	@override String get cannotDeletePreset => '預設不可刪除';
 	@override String get importEntries => '導入';
 	@override String get exportEntries => '匯出';
@@ -4502,6 +4503,7 @@ extension on TranslationsZhTw {
 			'rolePlayDescription' => '故事驅動的文字冒險，帶狀態面板與選項',
 			'importCharacter' => '導入角色卡',
 			'characterImportFailed' => '角色卡導入失敗',
+			'characterImported' => '角色卡已導入',
 			'cannotDeletePreset' => '預設不可刪除',
 			'importEntries' => '導入',
 			'exportEntries' => '匯出',
@@ -4950,9 +4952,9 @@ extension on TranslationsZhTw {
 			'lanAccept' => '接受',
 			'lanScanQrCodeToConnect' => '掃碼連接',
 			'lanGeneratingQrCode' => '正在生成二維碼',
-			'lanRemoteControlDescription' => '手機掃碼即可遠端控制',
 			_ => null,
 		} ?? switch (path) {
+			'lanRemoteControlDescription' => '手機掃碼即可遠端控制',
 			'lanInvalidRemoteControlLink' => '無效的遠端控制連結',
 			'lanRemoteControlConnection' => '遠端控制連線',
 			'lanDeviceId' => '設備 ID',
@@ -5464,9 +5466,9 @@ extension on TranslationsZhTw {
 			'worldBookBindCharacters' => '綁定角色卡（留空不限制）',
 			'worldBookBindTags' => '綁定標籤（取自角色卡，留空不限制）',
 			'worldBookDepth' => '深度（越小越靠後）',
-			'worldBookSticky' => '保持回合數',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookSticky' => '保持回合數',
 			'worldBookCooldown' => '冷卻回合數',
 			'worldBookConstant' => '常駐',
 			'worldBookRecursive' => '遞迴觸發',

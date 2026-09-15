@@ -4711,6 +4711,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Failed to import character card'
 	String get characterImportFailed => 'Failed to import character card';
 
+	/// en: 'Character card imported'
+	String get characterImported => 'Character card imported';
+
 	/// en: 'Preset cannot be deleted'
 	String get cannotDeletePreset => 'Preset cannot be deleted';
 
@@ -10164,6 +10167,7 @@ extension on Translations {
 			'rolePlayDescription' => 'Story-driven text adventure with status panels and choices',
 			'importCharacter' => 'Import character card',
 			'characterImportFailed' => 'Failed to import character card',
+			'characterImported' => 'Character card imported',
 			'cannotDeletePreset' => 'Preset cannot be deleted',
 			'importEntries' => 'Import',
 			'exportEntries' => 'Export',
@@ -10612,9 +10616,9 @@ extension on Translations {
 			'lanQrCodeFor' => 'QR Code for',
 			'lanScanQrCodeToConnect' => 'Scan QR code to connect remote device',
 			'lanGeneratingQrCode' => 'Generating QR Code...',
-			'lanRemoteControlDescription' => 'After scanning, you can remotely control this device',
 			_ => null,
 		} ?? switch (path) {
+			'lanRemoteControlDescription' => 'After scanning, you can remotely control this device',
 			'lanPairingRequestReceived' => 'Pairing Request Received',
 			'lanDevice' => 'Device',
 			'lanConnectingToRemoteDevice' => 'Connecting to remote device...',
@@ -11126,9 +11130,9 @@ extension on Translations {
 			'worldBookRole' => 'Message role',
 			'worldBookBindCharacters' => 'Bound character cards (empty = any)',
 			'worldBookBindTags' => 'Bound tags (from character cards; empty = any)',
-			'worldBookDepth' => 'Depth (smaller = closer to the end)',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookDepth' => 'Depth (smaller = closer to the end)',
 			'worldBookSticky' => 'Sticky turns',
 			'worldBookCooldown' => 'Cooldown turns',
 			'worldBookConstant' => 'Always on',

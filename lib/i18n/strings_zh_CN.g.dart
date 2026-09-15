@@ -1595,6 +1595,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get rolePlayDescription => '故事驱动的文字冒险，带状态面板与选项';
 	@override String get importCharacter => '导入角色卡';
 	@override String get characterImportFailed => '角色卡导入失败';
+	@override String get characterImported => '角色卡已导入';
 	@override String get cannotDeletePreset => '预设不可删除';
 	@override String get importEntries => '导入';
 	@override String get exportEntries => '导出';
@@ -4502,6 +4503,7 @@ extension on TranslationsZhCn {
 			'rolePlayDescription' => '故事驱动的文字冒险，带状态面板与选项',
 			'importCharacter' => '导入角色卡',
 			'characterImportFailed' => '角色卡导入失败',
+			'characterImported' => '角色卡已导入',
 			'cannotDeletePreset' => '预设不可删除',
 			'importEntries' => '导入',
 			'exportEntries' => '导出',
@@ -4951,9 +4953,9 @@ extension on TranslationsZhCn {
 			'lanDevice' => '设备',
 			'lanAccept' => '接受',
 			'lanScanQrCodeToConnect' => '扫码连接',
-			'lanGeneratingQrCode' => '正在生成二维码',
 			_ => null,
 		} ?? switch (path) {
+			'lanGeneratingQrCode' => '正在生成二维码',
 			'lanRemoteControlDescription' => '手机扫码即可远程控制',
 			'lanInvalidRemoteControlLink' => '无效的远程控制链接',
 			'lanRemoteControlConnection' => '远程控制连接',
@@ -5465,9 +5467,9 @@ extension on TranslationsZhCn {
 			'worldBookRole' => '消息角色',
 			'worldBookBindCharacters' => '绑定角色卡（留空不限制）',
 			'worldBookBindTags' => '绑定标签（取自角色卡，留空不限制）',
-			'worldBookDepth' => '深度（越小越靠后）',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookDepth' => '深度（越小越靠后）',
 			'worldBookSticky' => '保持回合数',
 			'worldBookCooldown' => '冷却回合数',
 			'worldBookConstant' => '常驻',

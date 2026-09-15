@@ -1606,6 +1606,7 @@ rolePlay: Tavern
 rolePlayDescription: Story-driven text adventure with status panels and choices
 importCharacter: Import character card
 characterImportFailed: Failed to import character card
+characterImported: Character card imported
 cannotDeletePreset: Preset cannot be deleted
 importEntries: Import
 exportEntries: Export

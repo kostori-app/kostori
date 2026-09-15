@@ -1601,6 +1601,7 @@ rolePlay: 酒馆
 rolePlayDescription: 故事驱动的文字冒险，带状态面板与选项
 importCharacter: 导入角色卡
 characterImportFailed: 角色卡导入失败
+characterImported: 角色卡已导入
 cannotDeletePreset: 预设不可删除
 importEntries: 导入
 exportEntries: 导出

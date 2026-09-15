@@ -825,7 +825,7 @@ class _StoryEditorState extends State<_StoryEditor>
         return;
       }
       setState(() => _characters.add(card));
-      App.rootContext.showMessage(message: t.storyImported);
+      App.rootContext.showMessage(message: t.characterImported);
     } catch (e) {
       App.rootContext.showMessage(
         message: t.characterImportFailed,
@@ -1147,7 +1147,7 @@ class _StoryEditorState extends State<_StoryEditor>
         final cur = _systemCtrl.text.trim();
         _systemCtrl.text = cur.isEmpty ? prompt.trim() : '$cur\n\n${prompt.trim()}';
       });
-      App.rootContext.showMessage(message: t.storyImported);
+      App.rootContext.showMessage(message: t.imported);
     } catch (e) {
       App.rootContext.showMessage(
         message: t.importFailed,

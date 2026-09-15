@@ -1606,6 +1606,7 @@ rolePlay: 酒館
 rolePlayDescription: 故事驅動的文字冒險，帶狀態面板與選項
 importCharacter: 導入角色卡
 characterImportFailed: 角色卡導入失敗
+characterImported: 角色卡已導入
 cannotDeletePreset: 預設不可刪除
 importEntries: 導入
 exportEntries: 匯出
