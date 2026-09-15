@@ -175,8 +175,13 @@ class PolygonRefreshIndicator extends StatelessWidget {
     if (size != null) return loader(size!);
     return LayoutBuilder(
       builder: (context, constraints) {
-        double effectiveSize = min(constraints.maxWidth, constraints.maxHeight);
-        if (effectiveSize == double.infinity) effectiveSize = 36.0;
+        var effectiveSize = min(constraints.maxWidth, constraints.maxHeight);
+        if (!effectiveSize.isFinite || effectiveSize <= 0) {
+          effectiveSize = 36.0;
+        }
+        // 自动尺寸只用于「填满小容器」；上限设 36，避免在大容器（如整屏
+        // Center/Expanded）里被放大成巨大图标。需要更大请显式传 size。
+        if (effectiveSize > 36.0) effectiveSize = 36.0;
         return loader(effectiveSize);
       },
     );
