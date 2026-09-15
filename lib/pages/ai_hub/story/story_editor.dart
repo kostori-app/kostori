@@ -876,11 +876,11 @@ class _StoryEditorState extends State<_StoryEditor>
             for (final c in cards)
               ListTile(
                 leading: CharacterAvatar(
-                  name: c.name,
+                  name: c.displayName,
                   avatar: c.avatar,
                   radius: 16,
                 ),
-                title: Text(c.name),
+                title: Text(c.displayName),
                 subtitle: c.tags.isEmpty ? null : Text(c.tags.join(' · ')),
                 onTap: () => Navigator.of(ctx).pop(c),
               ),
@@ -1990,7 +1990,7 @@ class _StoryEditorState extends State<_StoryEditor>
             Row(
               children: [
                 CharacterAvatar(
-                  name: _characters[i].name,
+                  name: _characters[i].displayName,
                   avatar: _characters[i].avatar,
                   radius: 18,
                 ),
@@ -2000,7 +2000,7 @@ class _StoryEditorState extends State<_StoryEditor>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _characters[i].name,
+                        _characters[i].displayName,
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       if (_characters[i].tags.isNotEmpty)

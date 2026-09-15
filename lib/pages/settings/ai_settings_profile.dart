@@ -1062,7 +1062,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(c.name),
+                  title: Text(c.displayName),
                   value: _characterIds.contains(c.id),
                   onChanged: (v) => setState(() {
                     if (v == true) {

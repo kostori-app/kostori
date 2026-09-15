@@ -2496,7 +2496,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                                 for (final c
                                     in CharacterCardStore.instance.cards)
                                   CapsuleChip(
-                                    text: c.name,
+                                    text: c.displayName,
                                     isSelected: _boundChars.contains(c.id),
                                     onTap: () => setState(() {
                                       _boundChars.contains(c.id)

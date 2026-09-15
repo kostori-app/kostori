@@ -9,10 +9,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/translation_widget.dart';
+import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
+import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
@@ -288,21 +294,135 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
     return 'zh-CN';
   }
 
+  /// 上次/默认的目标语言
+  Sort _currentTargetSort() {
+    final saved = appdata.implicitData['characterNameTargetLang'] as String?;
+    return translationSorts.firstWhere(
+      (s) => s.extData == saved,
+      orElse: () => translationSorts.firstWhere(
+        (s) => s.extData == _translationTarget,
+        orElse: () => translationSorts.first,
+      ),
+    );
+  }
+
+  /// 选择翻译目标语言
+  Future<Sort?> _pickTargetLanguage() {
+    final selected = _currentTargetSort();
+    return showDialog<Sort>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.selectTranslationLanguage,
+        displayButton: false,
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: RadioGroup<SortId>(
+              groupValue: selected.id,
+              onChanged: (_) {},
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final sort in translationSorts)
+                    ListTile(
+                      dense: true,
+                      title: Text(sort.label),
+                      trailing: Radio<SortId>(value: sort.id),
+                      onTap: () => Navigator.of(ctx).pop(sort),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 挑选一个可用的 AI 服务商（优先当前翻译源 / 生成源）
+  Future<String?> _resolveNameTranslateProvider() async {
+    await OpenAiProviderRegistry.refreshCustomProviders();
+    final available = OpenAiProviderRegistry.allProviders.keys.toSet();
+    final raw = (appdata.settings['translationSource'] as String? ?? '')
+        .toLowerCase();
+    final genProvider = appdata.implicitData['settingGenProvider'];
+    final preferred = <String>[
+      if (_aiTranslateProviders.contains(raw)) raw,
+      if (genProvider is String) genProvider,
+    ];
+    final order = <String>{
+      for (final p in preferred)
+        if (available.contains(p)) p,
+      ...available,
+    };
+    for (final p in order) {
+      if (OpenAiProviderRegistry.isCustomSource(p)) return p;
+      final row = await AiDatabase.instance.aiApiKeyDao.getByProvider(p);
+      if (row != null && row.apiKey.trim().isNotEmpty && row.isEnabled) {
+        return p;
+      }
+    }
+    return null;
+  }
+
+  static const _aiTranslateProviders = {
+    'siliconflow',
+    'doubao',
+    'gemini',
+    'deepseek',
+    'qiniu',
+    'openrouter',
+    'ohmygpt',
+  };
+
+  /// 去掉译文里的引号 / “翻译：” 前缀等噪声
+  String _cleanName(String raw) {
+    var s = raw.trim();
+    if (s.contains('\n')) s = s.split('\n').first.trim();
+    s = s.replaceAll(RegExp(r'''^["“”'‘’`]+|["“”'‘’`]+$'''), '').trim();
+    s = s.replaceAll(RegExp(r'^(翻译|译文|译名|结果)\s*[:：]\s*'), '').trim();
+    return s;
+  }
+
+  /// 翻译角色名：优先用 AI 转写专名，失败再退回普通翻译
+  Future<String> _translateName(String name, String lang) async {
+    final label = translationSorts.labelByExtData(lang);
+    final provider = await _resolveNameTranslateProvider();
+    if (provider != null) {
+      final ai = AiFactory.create(provider);
+      if (ai != null) {
+        final res = await ai.generate(
+          '目标语言：$label\n角色名：$name',
+          systemPrompt:
+              '你是角色名本地化助手。把给定的角色名翻译成目标语言的写法，'
+              '人名、专名必须按目标语言的书写习惯转写（例如英文名译为中文汉字音译），'
+              '不要保留拉丁字母原文，不要加引号，不要解释，只输出翻译后的名字。',
+        );
+        final out = _cleanName(res.dataOrNull ?? '');
+        if (out.isNotEmpty) return out;
+      }
+    }
+    final res = await TranslationService().translate(name, targetLanguage: lang);
+    return _cleanName(res.dataOrNull ?? '');
+  }
+
   /// 把角色名翻译后填入昵称（英文名 → 中文名等）
-  Future<void> _translateNameToNickname() async {
+  Future<void> _translateNameToNickname({bool pickLanguage = false}) async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
+    final Sort? lang = pickLanguage
+        ? await _pickTargetLanguage()
+        : _currentTargetSort();
+    if (lang == null || !mounted) return;
+    appdata.implicitData['characterNameTargetLang'] = lang.extData;
+    appdata.writeImplicitData();
     setState(() => _translating = true);
     try {
-      final res = await TranslationService().translate(
-        name,
-        targetLanguage: _translationTarget,
-      );
-      final text = res.dataOrNull?.trim() ?? '';
+      final text = await _translateName(name, lang.extData);
       if (!mounted) return;
       if (text.isEmpty) {
         App.rootContext.showMessage(
-          message: res.errorMessage ?? t.translationFailed,
+          message: t.translationFailed,
           level: LogLevel.warning,
         );
         return;
@@ -482,12 +602,27 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
       _field(
         t.characterNickname,
         _nicknameCtrl,
-        suffixIcon: IconButton(
-          tooltip: t.translate,
-          onPressed: _translating ? null : _translateNameToNickname,
-          icon: _translating
-              ? const PolygonRefreshIndicator(size: 16)
-              : const Icon(Icons.translate, size: 18),
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: t.translate,
+              onPressed: _translating ? null : () => _translateNameToNickname(),
+              icon: _translating
+                  ? const PolygonRefreshIndicator(size: 16)
+                  : const Icon(Icons.translate, size: 18),
+            ),
+            IconButton(
+              tooltip: t.selectTranslationLanguage,
+              onPressed: _translating
+                  ? null
+                  : () => _translateNameToNickname(pickLanguage: true),
+              icon: const Icon(
+                Icons.keyboard_double_arrow_down_rounded,
+                size: 18,
+              ),
+            ),
+          ],
         ),
       ),
       _field(t.characterTags, _tagsCtrl),
@@ -791,7 +926,7 @@ class _CharacterCardViewState extends State<CharacterCardView>
   }
 
   void _copyName() {
-    Clipboard.setData(ClipboardData(text: card.name));
+    Clipboard.setData(ClipboardData(text: card.displayName));
     App.rootContext.showMessage(message: t.copied);
   }
 
@@ -921,7 +1056,11 @@ class _CharacterCardViewState extends State<CharacterCardView>
     final basic = <Widget>[
       Row(
         children: [
-          CharacterAvatar(name: card.name, avatar: card.avatar, radius: 26),
+          CharacterAvatar(
+            name: card.displayName,
+            avatar: card.avatar,
+            radius: 26,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -937,7 +1076,7 @@ class _CharacterCardViewState extends State<CharacterCardView>
                       children: [
                         Flexible(
                           child: Text(
-                            card.name,
+                            card.displayName,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -954,9 +1093,9 @@ class _CharacterCardViewState extends State<CharacterCardView>
                     ),
                   ),
                 ),
-                if (card.nickname.trim().isNotEmpty)
+                if (card.displayName != card.name)
                   Text(
-                    card.nickname.trim(),
+                    card.name,
                     style: TextStyle(
                       fontSize: 12,
                       color: scheme.onSurfaceVariant,
@@ -1113,7 +1252,7 @@ Future<Uint8List?> renderCharacterCardImage(
 
   final nameTp = TextPainter(
     text: TextSpan(
-      text: card.name,
+      text: card.displayName,
       style: TextStyle(
         fontSize: size * 0.09,
         color: Colors.white,
@@ -1156,7 +1295,7 @@ Future<void> showCharacterCardView(BuildContext context, CharacterCard card) {
     context: context,
     isScrollControlled: true,
     builder: (_) => Sheet(
-      title: card.name,
+      title: card.displayName,
       icon: Icons.badge_outlined,
       initialSize: 0.7,
       builder: (ctx, sc) => CharacterCardView(card: card),

@@ -142,11 +142,11 @@ class _CharacterCardsSettingsPageState
                       children: [
                         ListTile(
                           leading: CharacterAvatar(
-                            name: c.name,
+                            name: c.displayName,
                             avatar: c.avatar,
                             radius: 20,
                           ),
-                          title: Text(c.name),
+                          title: Text(c.displayName),
                           subtitle: c.tags.isNotEmpty
                               ? Text(
                                   c.tags.join(' · '),
