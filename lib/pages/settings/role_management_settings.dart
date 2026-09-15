@@ -599,152 +599,343 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
   required String promptTemplate,
   Map<String, dynamic>? previous,
 }) async {
-  const done = '__ai_done__';
-  final descCtrl = TextEditingController();
-  final refineCtrl = TextEditingController();
-  // 传入已有条目 → 直接在它基础上迭代优化
-  Map<String, dynamic>? current = previous;
   // 生成用厂商/模型：优先「辅助任务模型 → 设定生成」，再回退旧设置
-  final providers = OpenAiProviderRegistry.allProviders;
   final base = await resolveSettingGenConfig();
-  var genProvider = base.provider;
-  var genModel = base.model ?? '';
-  final genParams = base.params;
-  try {
-    while (true) {
-      final isFirst = current == null;
-      final input = await showDialog<String>(
-        context: App.rootContext,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setLocal) => ContentDialog(
-          title: isFirst ? title : '$title · ${t.aiRefine}',
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 生成用的厂商 / 模型（复用 AI 工坊的模型选择组件）
-              StreamBuilder<AiApiKey?>(
-                stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(
-                  genProvider,
-                ),
-                builder: (_, snap) {
-                  final model = genModel.isNotEmpty
-                      ? genModel
-                      : (snap.data?.model ?? '');
-                  final label =
-                      '${providers[genProvider]?.name ?? genProvider} · '
-                      '${model.isEmpty ? t.set : model}';
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () => showModalBottomSheet<void>(
-                      context: App.rootContext,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => ProviderModelSheet(
-                        provider: genProvider,
-                        onProviderChanged: (p) {
-                          setLocal(() => genProvider = p);
-                          appdata.implicitData['settingGenProvider'] = p;
-                          appdata.writeImplicitData();
-                          AiDatabase.instance.aiAuxSettingsDao.set(
-                            'settingGenProvider',
-                            p,
-                          );
-                        },
-                        currentModel: genModel.isEmpty ? null : genModel,
-                        // 生成专用模型：不写回该厂商的聊天模型
-                        onModelSelected: (m) {
-                          setLocal(() => genModel = m);
-                          appdata.implicitData['settingGenModel'] = m;
-                          appdata.writeImplicitData();
-                          AiDatabase.instance.aiAuxSettingsDao.set(
-                            'settingGenModel',
-                            m,
-                          );
-                        },
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.model_training, size: 16),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(label)),
-                          const Icon(Icons.arrow_drop_down, size: 18),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 4),
-              if (!isFirst) ...[
-                Text(
-                  jsonEncode(current),
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-              ],
-              TextField(
-                controller: isFirst ? descCtrl : refineCtrl,
-                autofocus: true,
-                minLines: 2,
-                maxLines: 6,
-                decoration: InputDecoration(
-                  hintText: isFirst ? t.aiGenerateHint : t.aiRefineHint,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            if (!isFirst)
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(done),
-                child: Text(t.confirm),
-              ),
-            FilledButton(
-              onPressed: () => Navigator.of(
-                ctx,
-              ).pop((isFirst ? descCtrl : refineCtrl).text.trim()),
-              child: Text(isFirst ? t.aiGenerate : t.aiRefine),
-            ),
-          ],
-        ),
-        ),
+  return showDialog<Map<String, dynamic>>(
+    context: App.rootContext,
+    builder: (_) => _SettingGenDialog(
+      title: title,
+      systemPrompt: systemPrompt,
+      promptTemplate: promptTemplate,
+      previous: previous,
+      provider: base.provider,
+      model: base.model ?? '',
+      params: base.params,
+    ),
+  );
+}
+
+/// AI 生成 / 精修设定条目的对话框（流式 + actions 差分精修）
+class _SettingGenDialog extends StatefulWidget {
+  const _SettingGenDialog({
+    required this.title,
+    required this.systemPrompt,
+    required this.promptTemplate,
+    required this.provider,
+    required this.model,
+    required this.params,
+    this.previous,
+  });
+
+  final String title;
+  final String systemPrompt;
+  final String promptTemplate;
+  final String provider;
+  final String model;
+  final AiGenerationParams? params;
+  final Map<String, dynamic>? previous;
+
+  @override
+  State<_SettingGenDialog> createState() => _SettingGenDialogState();
+}
+
+class _SettingGenDialogState extends State<_SettingGenDialog> {
+  late Map<String, dynamic>? _current = widget.previous;
+  late String _provider = widget.provider;
+  late String _model = widget.model;
+  final _inputCtrl = TextEditingController();
+  bool _streaming = false;
+  String _streamText = '';
+  CancelToken? _cancel;
+
+  bool get _isFirst => _current == null;
+
+  @override
+  void dispose() {
+    _cancel?.cancel();
+    _inputCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<String?> _run(String prompt) async {
+    final ai = AiFactory.create(_provider);
+    if (ai == null) {
+      App.rootContext.showMessage(
+        message: t.unknownServiceProvider(provider: _provider),
+        level: LogLevel.error,
       );
-      if (input == null || input == done) return current;
-      if (input.isEmpty) continue;
-      final prompt = isFirst
-          ? promptTemplate.replaceAll('{input}', input)
-          : '${promptTemplate.replaceAll('{input}', input)}\n\n'
-                '${t.aiPreviousResult}：${jsonEncode(current)}\n'
-                '${t.aiRefineFeedback}：$input';
-      // 生成期间显示 loading：否则点了没反应，过一会才突然弹出来
-      final loading = showLoadingDialog(App.rootContext);
-      final res = await AiConversationService()
-          .runTask(
-            provider: genProvider,
-            taskType: 'setting_gen',
-            sessionTitle: title,
-            systemPrompt: systemPrompt,
-            prompt: prompt,
-            modelOverride: genModel.isEmpty ? null : genModel,
-            params: genParams,
-          )
-          .whenComplete(() => loading.close());
-      if (!res.success) continue;
-      final m = RegExp(r'\{[\s\S]*\}').firstMatch(res.dataOrNull ?? '');
-      if (m == null) continue;
+      return null;
+    }
+    final cancel = CancelToken();
+    _cancel = cancel;
+    final buf = StringBuffer();
+    setState(() {
+      _streaming = true;
+      _streamText = '';
+    });
+    try {
+      await for (final chunk in ai.chatStream(
+        [AiUserMessage(content: prompt)],
+        systemPrompt: widget.systemPrompt,
+        modelOverride: _model.isEmpty ? null : _model,
+        params: widget.params,
+        cancelToken: cancel,
+      )) {
+        if (!mounted) return null;
+        if (chunk.errorMessage != null) {
+          App.rootContext.showMessage(
+            message: chunk.errorMessage!,
+            level: LogLevel.error,
+          );
+          return null;
+        }
+        buf
+          ..clear()
+          ..write(chunk.text);
+        setState(() => _streamText = chunk.text);
+        if (chunk.done) break;
+      }
+    } catch (e) {
+      if (mounted && !cancel.isCancelled) {
+        App.rootContext.showMessage(
+          message: e.toString(),
+          level: LogLevel.error,
+        );
+      }
+      return null;
+    } finally {
+      _cancel = null;
+      if (mounted) setState(() => _streaming = false);
+    }
+    return buf.toString();
+  }
+
+  Future<void> _generate(String text) async {
+    final reply = await _run(widget.promptTemplate.replaceAll('{input}', text));
+    if (!mounted || reply == null) return;
+    final parsed = _parseObject(reply);
+    setState(() {
+      _streamText = '';
+      if (parsed != null) _current = parsed;
+    });
+    if (parsed == null) {
+      App.rootContext.showMessage(
+        message: t.cardAiParseFailed,
+        level: LogLevel.warning,
+      );
+    }
+  }
+
+  /// 精修：优先按 actions 差分改字段，失败再退回整段 JSON
+  Future<void> _refine(String text) async {
+    final current = _current;
+    if (current == null) return;
+    final keys = current.keys.join('、');
+    final prompt =
+        '${widget.promptTemplate.replaceAll('{input}', text)}\n\n'
+        '当前条目 JSON：${jsonEncode(current)}\n'
+        '可用字段：$keys\n'
+        '用户的修改要求：$text\n\n'
+        '请只输出需要变更的部分，用 <actions> 标签包裹 JSON 数组，'
+        'path 使用条目 JSON 的字段名，例如 '
+        '{"type":"set","path":"name","value":"新值"}；'
+        '向数组追加用 add（path 指向该数组），删除数组元素用 remove 并给出 index。';
+    final reply = await _run(prompt);
+    if (!mounted || reply == null) return;
+    final actions = parseJsonActions(reply);
+    final next = actions.isNotEmpty
+        ? applyJsonActions(current, actions)
+        : _parseObject(reply);
+    setState(() {
+      _streamText = '';
+      if (next != null) _current = next;
+    });
+    if (next == null) {
+      App.rootContext.showMessage(
+        message: t.cardAiParseFailed,
+        level: LogLevel.warning,
+      );
+    }
+  }
+
+  Map<String, dynamic>? _parseObject(String text) {
+    final candidates = <String>[];
+    final fenced = RegExp(r'```(?:json)?\s*([\s\S]*?)```').firstMatch(text);
+    if (fenced != null) candidates.add(fenced.group(1)!);
+    final first = text.indexOf('{');
+    final last = text.lastIndexOf('}');
+    if (first >= 0 && last > first) {
+      candidates.add(text.substring(first, last + 1));
+    }
+    for (final raw in candidates) {
       try {
-        final d = jsonDecode(m.group(0)!);
-        if (d is Map) current = d.cast<String, dynamic>();
+        final decoded = jsonDecode(raw.trim());
+        if (decoded is Map) return decoded.cast<String, dynamic>();
       } catch (_) {}
     }
-  } finally {
-    descCtrl.dispose();
-    refineCtrl.dispose();
+    return null;
+  }
+
+  void _submit() {
+    if (_streaming) return;
+    final text = _inputCtrl.text.trim();
+    if (text.isEmpty) return;
+    _inputCtrl.clear();
+    if (_isFirst) {
+      _generate(text);
+    } else {
+      _refine(text);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final providers = OpenAiProviderRegistry.allProviders;
+    final scheme = Theme.of(context).colorScheme;
+    return ContentDialog(
+      title: _isFirst ? widget.title : '${widget.title} · ${t.aiRefine}',
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 生成用的厂商 / 模型（复用 AI 工坊的模型选择组件）
+            StreamBuilder<AiApiKey?>(
+              stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(_provider),
+              builder: (_, snap) {
+                final model = _model.isNotEmpty
+                    ? _model
+                    : (snap.data?.model ?? '');
+                final label =
+                    '${providers[_provider]?.name ?? _provider} · '
+                    '${model.isEmpty ? t.set : model}';
+                return InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: _streaming
+                      ? null
+                      : () => showModalBottomSheet<void>(
+                          context: App.rootContext,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => ProviderModelSheet(
+                            provider: _provider,
+                            onProviderChanged: (p) {
+                              setState(() => _provider = p);
+                              appdata.implicitData['settingGenProvider'] = p;
+                              appdata.writeImplicitData();
+                              AiDatabase.instance.aiAuxSettingsDao.set(
+                                'settingGenProvider',
+                                p,
+                              );
+                            },
+                            currentModel: _model.isEmpty ? null : _model,
+                            // 生成专用模型：不写回该厂商的聊天模型
+                            onModelSelected: (m) {
+                              setState(() => _model = m);
+                              appdata.implicitData['settingGenModel'] = m;
+                              appdata.writeImplicitData();
+                              AiDatabase.instance.aiAuxSettingsDao.set(
+                                'settingGenModel',
+                                m,
+                              );
+                            },
+                          ),
+                        ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.model_training, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(label)),
+                        const Icon(Icons.arrow_drop_down, size: 18),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 4),
+            // 预览：流式文本 / 当前 JSON
+            if (_streaming || _streamText.isNotEmpty)
+              _previewBox(
+                SelectableText(
+                  _streamText,
+                  style: const TextStyle(fontSize: 12, height: 1.4),
+                ),
+              )
+            else if (_current != null)
+              _previewBox(
+                SelectableText(
+                  const JsonEncoder.withIndent('  ').convert(_current),
+                  style: const TextStyle(fontSize: 12, height: 1.4),
+                ),
+              ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _inputCtrl,
+              enabled: !_streaming,
+              autofocus: true,
+              minLines: 2,
+              maxLines: 5,
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                hintText: _isFirst ? t.aiGenerateHint : t.aiRefineHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            if (_streaming) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const PolygonRefreshIndicator(size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    t.generatingReply,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        if (_current != null && !_streaming)
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(_current),
+            child: Text(t.confirm),
+          ),
+        if (_streaming)
+          FilledButton(
+            onPressed: () => _cancel?.cancel(),
+            child: Text(t.stopGenerating),
+          )
+        else
+          FilledButton(
+            onPressed: _submit,
+            child: Text(_isFirst ? t.aiGenerate : t.aiRefine),
+          ),
+      ],
+    );
+  }
+
+  Widget _previewBox(Widget child) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 260),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: SingleChildScrollView(child: child),
+    );
   }
 }
 
