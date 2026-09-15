@@ -267,14 +267,6 @@ class _AiHubPageState extends State<AiHubPage> {
             color: const Color(0xFF7E57C2),
             onTap: () => context.to(() => const StoryPage()),
           ),
-          const SizedBox(height: 8),
-          _HubModuleCard(
-            icon: Icons.groups_outlined,
-            title: t.groupChat,
-            subtitle: t.groupChatDescription,
-            color: const Color(0xFF5C6BC0),
-            onTap: () => context.to(() => const GroupChatPage()),
-          ),
           const SizedBox(height: 16),
           // ── 插件模块 ──
           Row(

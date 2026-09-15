@@ -620,11 +620,8 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
               ],
             ],
           ),
+          // ContentDialog 自带「取消」，这里只加确认，避免出现两个取消
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(t.cancel),
-            ),
             FilledButton(
               onPressed: () {
                 final name = nameCtrl.text.trim();

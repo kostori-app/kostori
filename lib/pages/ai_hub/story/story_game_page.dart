@@ -1442,11 +1442,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       builder: (ctx) => ContentDialog(
         title: t.regenerate,
         content: Text(t.regenerateConfirm),
+        // ContentDialog 自带「取消」，这里只加确认，避免出现两个取消
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(t.cancel),
-          ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(t.confirm),
