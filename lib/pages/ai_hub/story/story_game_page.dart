@@ -2370,15 +2370,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          CapsuleChipGroup(
             children: [
               for (final o in part.options)
-                OptionChip(
+                CapsuleChip(
                   text: o,
                   hint: o == _customOption ? '' : (_fixedHints[o] ?? ''),
-                  showCheck: true,
                   isSelected: selected.contains(o),
                   onTap: () => setState(() {
                     final set = _multiValues.putIfAbsent(part.key, () => {});
@@ -2409,15 +2406,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          CapsuleChipGroup(
             children: [
               for (final o in _partOptions(part))
-                OptionChip(
+                CapsuleChip(
                   text: o,
                   hint: o == _customOption ? '' : (_fixedHints[o] ?? ''),
-                  showCheck: true,
                   isSelected: selected == o,
                   onTap: () => setState(() {
                     _singleValues[part.key] = o;
@@ -2465,6 +2459,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                     padding: const EdgeInsets.only(left: 6),
                     child: Tooltip(
                       message: part.hint,
+                      triggerMode: TooltipTriggerMode.longPress,
                       child: Icon(
                         Icons.info_outline,
                         size: 14,

@@ -305,7 +305,114 @@ class OptionChip extends StatelessWidget {
       ),
     );
     if (hint.trim().isNotEmpty) {
-      chip = Tooltip(message: hint.trim(), child: chip);
+      chip = Tooltip(
+        message: hint.trim(),
+        triggerMode: TooltipTriggerMode.longPress,
+        child: chip,
+      );
+    }
+    return chip;
+  }
+}
+
+/// 胶囊式选项组：外观与 [CapsuleOptions] 一致（浅色轨道 + 浮起的选中胶囊），
+/// 但支持多选与换行，用于「开局设置」这类需要多选/长按看说明的场景。
+class CapsuleChipGroup extends StatelessWidget {
+  const CapsuleChipGroup({
+    super.key,
+    required this.children,
+    this.alignment = WrapAlignment.start,
+    this.padding = const EdgeInsets.all(3),
+    this.spacing = 2,
+    this.runSpacing = 2,
+  });
+
+  final List<Widget> children;
+  final WrapAlignment alignment;
+  final EdgeInsets padding;
+  final double spacing;
+  final double runSpacing;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Wrap(
+        alignment: alignment,
+        spacing: spacing,
+        runSpacing: runSpacing,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// 胶囊式选项卡（配合 [CapsuleChipGroup]）：选中时浮起成白色胶囊。
+class CapsuleChip extends StatelessWidget {
+  const CapsuleChip({
+    super.key,
+    required this.text,
+    required this.isSelected,
+    required this.onTap,
+    this.hint = '',
+  });
+
+  final String text;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  /// 悬停 / 长按提示（为空则不挂 Tooltip）
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    Widget chip = AnimatedContainer(
+      duration: _fastAnimationDuration,
+      decoration: BoxDecoration(
+        color: isSelected ? cs.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? cs.primary : cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (hint.trim().isNotEmpty) {
+      chip = Tooltip(
+        message: hint.trim(),
+        triggerMode: TooltipTriggerMode.longPress,
+        child: chip,
+      );
     }
     return chip;
   }
