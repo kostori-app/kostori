@@ -4919,6 +4919,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   int _partNumber(StorySetupPart p) =>
       _numberValues[p.key] ?? p.value ?? p.min ?? 0;
 
+  /// 字段当前可选项：有 dependsOn 时按被依赖字段的当前值取，否则用自身 options
+  List<String> _partOptions(StorySetupPart p) {
+    if (p.dependsOn.isEmpty) return p.options;
+    final owner = _singleValues[p.dependsOn] ?? '';
+    return p.optionsBy[owner] ?? const [];
+  }
+
   int? _groupPool(List<StorySetupPart> parts) {
     for (final p in parts) {
       if (p.pool != null) return p.pool;
@@ -5126,11 +5133,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         spacing: 8,
         runSpacing: 8,
         children: [
-          for (final o in part.options)
+          for (final o in _partOptions(part))
             OptionChip(
               text: o,
               isSelected: _singleValues[part.key] == o,
-              onTap: () => setState(() => _singleValues[part.key] = o),
+              onTap: () => setState(() {
+                _singleValues[part.key] = o;
+                // 换了被依赖项 → 依赖它的选择要重来（如换主职 → 子职重选）
+                for (final q in story.setup) {
+                  if (q.dependsOn == part.key) _singleValues.remove(q.key);
+                }
+              }),
             ),
         ],
       );

@@ -1475,6 +1475,12 @@ class StorySetupPart {
   /// 所在分组的可分配点数池（组内取第一个非空；null = 不限制）
   final int? pool;
 
+  /// 依赖字段 key：本字段的可选项随该字段的当前值变化（如「子职业」依赖「主职业」）
+  final String dependsOn;
+
+  /// 依赖字段值 → 本字段可选项
+  final Map<String, List<String>> optionsBy;
+
   const StorySetupPart({
     required this.key,
     required this.title,
@@ -1487,6 +1493,8 @@ class StorySetupPart {
     this.max,
     this.value,
     this.pool,
+    this.dependsOn = '',
+    this.optionsBy = const {},
   });
 
   factory StorySetupPart.fromJson(Map<String, dynamic> json) => StorySetupPart(
@@ -1503,6 +1511,15 @@ class StorySetupPart {
     max: (json['max'] as num?)?.toInt(),
     value: (json['value'] as num?)?.toInt(),
     pool: (json['pool'] as num?)?.toInt(),
+    dependsOn: json['dependsOn']?.toString() ?? '',
+    optionsBy: json['optionsBy'] is Map
+        ? {
+            for (final e in (json['optionsBy'] as Map).entries)
+              e.key.toString():
+                  (e.value as List?)?.map((x) => x.toString()).toList() ??
+                  const <String>[],
+          }
+        : const {},
   );
 
   Map<String, dynamic> toJson() => {
@@ -1517,6 +1534,8 @@ class StorySetupPart {
     if (max != null) 'max': max,
     if (value != null) 'value': value,
     if (pool != null) 'pool': pool,
+    if (dependsOn.isNotEmpty) 'dependsOn': dependsOn,
+    if (optionsBy.isNotEmpty) 'optionsBy': optionsBy,
   };
 }
 
