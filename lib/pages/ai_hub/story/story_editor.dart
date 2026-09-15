@@ -1384,36 +1384,36 @@ class _StoryEditorState extends State<_StoryEditor>
                 ),
                 () => setState(() => _worldBookIds.clear()),
               ),
-              for (final group in _groupBy(worldBook, (e) => e.group).entries) ...[
-                if (group.key.isNotEmpty)
+              for (final book in WorldBookStore.instance.books)
+                if (book.entries.isNotEmpty) ...[
                   _groupHeader(
-                    group.key,
+                    book.name.isEmpty ? t.worldBook : book.name,
                     () => setState(
                       () => _worldBookIds.addAll([
-                        for (final e in group.value) e.id,
+                        for (final e in book.entries) e.id,
                       ]),
                     ),
                     () => setState(
                       () => _worldBookIds.removeAll([
-                        for (final e in group.value) e.id,
+                        for (final e in book.entries) e.id,
                       ]),
                     ),
                   ),
-                for (final e in group.value)
-                  CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(e.name.isEmpty ? e.content : e.name),
-                    value: _worldBookIds.contains(e.id),
-                    onChanged: (v) => setState(() {
-                      if (v == true) {
-                        _worldBookIds.add(e.id);
-                      } else {
-                        _worldBookIds.remove(e.id);
-                      }
-                    }),
-                  ),
-              ],
+                  for (final e in book.entries)
+                    CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(e.name.isEmpty ? e.content : e.name),
+                      value: _worldBookIds.contains(e.id),
+                      onChanged: (v) => setState(() {
+                        if (v == true) {
+                          _worldBookIds.add(e.id);
+                        } else {
+                          _worldBookIds.remove(e.id);
+                        }
+                      }),
+                    ),
+                ],
               const SizedBox(height: 12),
             ],
             if (injections.isNotEmpty) ...[
@@ -1507,74 +1507,40 @@ class _StoryEditorState extends State<_StoryEditor>
                 ),
               ],
             ),
-            for (final type in SettingTypes.all)
-              if (store.byType(type).isNotEmpty) ...[
+            for (final book in store.books)
+              if (book.entries.isNotEmpty) ...[
                 _groupHeader(
-                  _settingTypeLabel(type),
+                  book.name.isEmpty ? t.storySettingLibrary : book.name,
                   () => setState(
                     () => _settingIds.addAll([
-                      for (final e in store.byType(type)) e.id,
+                      for (final e in book.entries) e.id,
                     ]),
                   ),
                   () => setState(
                     () => _settingIds.removeAll([
-                      for (final e in store.byType(type)) e.id,
+                      for (final e in book.entries) e.id,
                     ]),
                   ),
                 ),
-                for (final group
-                    in _groupBy(store.byType(type), (e) => e.group).entries) ...[
-                  if (group.key.isNotEmpty)
-                    _groupHeader(
-                      group.key,
-                      () => setState(
-                        () => _settingIds.addAll([
-                          for (final e in group.value) e.id,
-                        ]),
-                      ),
-                      () => setState(
-                        () => _settingIds.removeAll([
-                          for (final e in group.value) e.id,
-                        ]),
-                      ),
-                    ),
-                  for (final e in group.value)
-                    CheckboxListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(e.name.isEmpty ? e.id : e.name),
-                      value: _settingIds.contains(e.id),
-                      onChanged: (v) => setState(() {
-                        if (v == true) {
-                          _settingIds.add(e.id);
-                        } else {
-                          _settingIds.remove(e.id);
-                        }
-                      }),
-                    ),
-                ],
+                for (final e in book.entries)
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(e.name.isEmpty ? e.id : e.name),
+                    value: _settingIds.contains(e.id),
+                    onChanged: (v) => setState(() {
+                      if (v == true) {
+                        _settingIds.add(e.id);
+                      } else {
+                        _settingIds.remove(e.id);
+                      }
+                    }),
+                  ),
               ],
           ],
         );
       },
     );
-  }
-
-  String _settingTypeLabel(String type) => switch (type) {
-    SettingTypes.codex => t.storyCodex,
-    SettingTypes.title => t.storyTitles,
-    SettingTypes.job => t.storyJob,
-    SettingTypes.facility => t.storyBase,
-    _ => type,
-  };
-
-  /// 按 key 分组（保持出现顺序）
-  Map<String, List<T>> _groupBy<T>(List<T> items, String Function(T) key) {
-    final m = <String, List<T>>{};
-    for (final e in items) {
-      m.putIfAbsent(key(e), () => []).add(e);
-    }
-    return m;
   }
 
   /// 分组标题行：名称 + 本组全选 / 清空
