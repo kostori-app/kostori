@@ -342,6 +342,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   Future<void> _deleteMessage(AiTask m) =>
       AiConversationService().deleteMessage(m.id);
 
+  /// 重试一条未获回复的用户消息（删除后重发，避免重复）
+  Future<void> _retryMessage(AiTask m) async {
+    if (_isSending) return;
+    await AiConversationService().deleteMessage(m.id);
+    if (!mounted) return;
+    await _send(overrideMessage: m.inputContent);
+  }
+
   Future<void> _selectVariant(AiTask m, List<String> variants, int index) =>
       AiConversationService().selectVariant(m.id, variants, index);
 
@@ -1250,6 +1258,31 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                                                           variants,
                                                           v,
                                                         ),
+                                                  ),
+                                                // 该轮无回复（失败/中断，含重进页面后）→ 重试
+                                                if (isLast &&
+                                                    isUser &&
+                                                    !_isSending &&
+                                                    !_showStreamBubble)
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 4,
+                                                          bottom: 6,
+                                                        ),
+                                                    child: Align(
+                                                      alignment: Alignment
+                                                          .centerRight,
+                                                      child: TextButton.icon(
+                                                        onPressed: () =>
+                                                            _retryMessage(m),
+                                                        icon: const Icon(
+                                                          Icons.refresh,
+                                                          size: 16,
+                                                        ),
+                                                        label: Text(t.retry),
+                                                      ),
+                                                    ),
                                                   ),
                                               ],
                                             );

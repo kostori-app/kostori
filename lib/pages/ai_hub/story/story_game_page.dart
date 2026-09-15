@@ -30,6 +30,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   String? _lastOutgoing;
   bool _lastFailed = false;
 
+  /// 最后一条消息是用户消息（说明该轮没有回复，可能失败/中断）——
+  /// 重新进入页面时据此恢复「重试」入口
+  bool _lastTurnPending = false;
+
   /// 流式长时间无输出时的看门狗（超时中断，避免一直卡住）
   Timer? _stallTimer;
   bool _stallAborted = false;
@@ -731,18 +735,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     });
   }
 
-  /// 重试上一次发送：删除失败留下的用户消息，再重新发送
+  /// 重试上一次发送：删除失败留下的用户消息，再重新发送。
+  /// 重新进入页面后 [_lastOutgoing] 为空，从最后一条未回复的用户消息恢复。
   Future<void> _retryLast() async {
-    final text = _lastOutgoing;
-    if (text == null || _sending) return;
+    if (_sending) return;
+    var text = _lastOutgoing;
     final sessionId = _sessionId;
     if (sessionId != null) {
       final msgs = await AiConversationService().watchMessages(sessionId).first;
       if (msgs.isNotEmpty && msgs.last.role == 'user') {
+        text ??= msgs.last.inputContent;
         await AiConversationService().deleteMessage(msgs.last.id);
       }
     }
-    if (!mounted) return;
+    if (!mounted || text == null || text.trim().isEmpty) return;
     setState(() => _lastFailed = false);
     await _send(text);
   }
@@ -1699,6 +1705,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                   _lastMessageCount = messages.length;
                   _scrollToBottom();
                 }
+                _lastTurnPending =
+                    messages.isNotEmpty && messages.last.role == 'user';
                 return Column(
                   children: [
                     Expanded(
@@ -2077,7 +2085,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                           ],
                         ),
                       ),
-                    if (_lastFailed && !_sending)
+                    if ((_lastFailed || _lastTurnPending) && !_sending)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
                         child: Row(
