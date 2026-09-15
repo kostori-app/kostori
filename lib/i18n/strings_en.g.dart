@@ -4765,6 +4765,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Custom content'
 	String get storyCustomize => 'Custom content';
 
+	/// en: 'Auto-generated'
+	String get storyAutoNpc => 'Auto-generated';
+
+	/// en: 'Export to card library'
+	String get storyExportToLibrary => 'Export to card library';
+
+	/// en: 'Exported to card library'
+	String get storyExported => 'Exported to card library';
+
 	/// en: 'Roll'
 	String get storyRoll => 'Roll';
 
@@ -10128,6 +10137,9 @@ extension on Translations {
 			'storyChoicesPrompt' => 'Follow-up prompt',
 			'storyStart' => 'Start game',
 			'storyCustomize' => 'Custom content',
+			'storyAutoNpc' => 'Auto-generated',
+			'storyExportToLibrary' => 'Export to card library',
+			'storyExported' => 'Exported to card library',
 			'storyRoll' => 'Roll',
 			'storySpecialCheck' => 'Special check',
 			'storyCheckPending' => 'The next message will be an action check',
@@ -10556,11 +10568,11 @@ extension on Translations {
 			'lanConnectingToRemoteDevice' => 'Connecting to remote device...',
 			'lanRemoteControlConnected' => 'Remote control connected',
 			'lanRemoteControlConnectionFailed' => 'Remote control connection failed',
+			_ => null,
+		} ?? switch (path) {
 			'lanInvalidRemoteControlLink' => 'Invalid remote control link',
 			'lanRemoteControlConnection' => 'Remote Control Connection',
 			'lanAccept' => 'Accept',
-			_ => null,
-		} ?? switch (path) {
 			'lanDeviceId' => 'Device ID',
 			'lanConnect' => 'Connect',
 			'lanExitControl' => 'Exit Control',
@@ -11070,11 +11082,11 @@ extension on Translations {
 			'auxTemperature' => 'Temperature',
 			'selectAssistantProfile' => 'Select an assistant',
 			'selectModel' => 'Select model',
+			_ => null,
+		} ?? switch (path) {
 			'profilePersonalityTags' => 'Personality tags',
 			'profilePersonalityTagsHint' => 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle',
 			'profileCatchphrases' => 'Catchphrases',
-			_ => null,
-		} ?? switch (path) {
 			'profileCatchphrasesHint' => 'One per line',
 			'profileExamples' => 'Example dialogs (few-shot)',
 			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',

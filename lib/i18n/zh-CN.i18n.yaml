@@ -1619,6 +1619,9 @@ storyWorldBook: 世界书
 storyChoicesPrompt: 后续建议提示词
 storyStart: 开始游戏
 storyCustomize: 自定义内容
+storyAutoNpc: 自动生成
+storyExportToLibrary: 导出到角色卡库
+storyExported: 已导出到角色卡库
 storyRoll: 掷骰
 storySpecialCheck: 特殊判定
 storyCheckPending: 下一条消息将进行动作判定

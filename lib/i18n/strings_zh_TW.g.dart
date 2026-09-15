@@ -1614,6 +1614,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyChoicesPrompt => '後續建議提示詞';
 	@override String get storyStart => '開始遊戲';
 	@override String get storyCustomize => '自訂內容';
+	@override String get storyAutoNpc => '自動生成';
+	@override String get storyExportToLibrary => '匯出到角色卡庫';
+	@override String get storyExported => '已匯出到角色卡庫';
 	@override String get storyRoll => '擲骰';
 	@override String get storySpecialCheck => '特殊判定';
 	@override String get storyCheckPending => '下一條訊息將進行動作判定';
@@ -4502,6 +4505,9 @@ extension on TranslationsZhTw {
 			'storyChoicesPrompt' => '後續建議提示詞',
 			'storyStart' => '開始遊戲',
 			'storyCustomize' => '自訂內容',
+			'storyAutoNpc' => '自動生成',
+			'storyExportToLibrary' => '匯出到角色卡庫',
+			'storyExported' => '已匯出到角色卡庫',
 			'storyRoll' => '擲骰',
 			'storySpecialCheck' => '特殊判定',
 			'storyCheckPending' => '下一條訊息將進行動作判定',
@@ -4930,11 +4936,11 @@ extension on TranslationsZhTw {
 			'lanDeviceId' => '設備 ID',
 			'lanConnect' => '連接',
 			'lanExitControl' => '退出控制',
+			_ => null,
+		} ?? switch (path) {
 			'lanConnectingToRemoteDevice' => '正在連線遠端設備',
 			'lanRemoteControlConnected' => '遠端控制已連線',
 			'lanRemoteControlConnectionFailed' => '遠端控制連線失敗',
-			_ => null,
-		} ?? switch (path) {
 			'lanConnectedDevices' => '已連線設備',
 			'lanNoDeviceConnected' => '無設備連線',
 			'lanPlayerControl' => '播放器控制',
@@ -5444,11 +5450,11 @@ extension on TranslationsZhTw {
 			'selectAssistantProfile' => '選擇助手檔案',
 			'selectModel' => '選擇模型',
 			'profilePersonalityTags' => '性格標籤',
+			_ => null,
+		} ?? switch (path) {
 			'profilePersonalityTagsHint' => '多選標籤，如 理性/幽默/毒舌/溫柔',
 			'profileCatchphrases' => '口頭禪',
 			'profileCatchphrasesHint' => '每行一個',
-			_ => null,
-		} ?? switch (path) {
 			'profileExamples' => '對話示例（few-shot）',
 			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
 			'profileReplyStyle' => '回覆風格',

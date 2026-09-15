@@ -1624,6 +1624,9 @@ storyWorldBook: World Info
 storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
 storyCustomize: Custom content
+storyAutoNpc: Auto-generated
+storyExportToLibrary: Export to card library
+storyExported: Exported to card library
 storyRoll: Roll
 storySpecialCheck: Special check
 storyCheckPending: The next message will be an action check

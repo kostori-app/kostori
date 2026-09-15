@@ -861,6 +861,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 _addressCharacter(c);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.library_add_outlined),
+              title: Text(t.storyExportToLibrary),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await CharacterCardStore.instance.upsert(c);
+                App.rootContext.showMessage(message: t.storyExported);
+              },
+            ),
           ],
         ),
       ),
@@ -1105,6 +1114,69 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return state.copyWith(npcs: merged);
   }
 
+  /// 为新登场、还没有角色卡的 NPC 自动生成一张角色卡（按名字去重）
+  Future<void> _autoCreateNpcCards(GameState state) async {
+    final names = <String>{
+      for (final n in state.present)
+        if (n.trim().isNotEmpty) n.trim(),
+      for (final n in state.npcs)
+        if (n.name.trim().isNotEmpty) n.name.trim(),
+    };
+    if (names.isEmpty) return;
+    final existing = {
+      for (final c in StoryCharacterStore.instance.get(story.id)) c.name,
+      for (final c in story.characters) c.name,
+    };
+    final added = <CharacterCard>[];
+    for (final name in names) {
+      if (existing.contains(name)) continue;
+      final npc = _npcIn(state, name);
+      added.add(
+        CharacterCard(
+          id: 'npc_${name.hashCode.toRadixString(16)}',
+          name: name,
+          avatar: '🧑',
+          description: _npcAutoDescription(name, npc, state),
+          tags: [t.storyAutoNpc],
+          creator: 'auto',
+        ),
+      );
+      existing.add(name);
+    }
+    if (added.isEmpty) return;
+    await StoryCharacterStore.instance.put(story.id, [
+      ...StoryCharacterStore.instance.get(story.id),
+      ...added,
+    ]);
+    _effective = _computeEffective();
+  }
+
+  NpcState? _npcIn(GameState state, String name) {
+    for (final n in state.npcs) {
+      if (n.name == name) return n;
+    }
+    return null;
+  }
+
+  /// 自动角色卡描述：姿态 / 好感度 / 同名词条
+  String _npcAutoDescription(String name, NpcState? npc, GameState state) {
+    final parts = <String>[];
+    if (npc != null && npc.status.trim().isNotEmpty) {
+      parts.add(npc.status.trim());
+    }
+    if (npc != null) parts.add(t.storyNpcAffinity(value: '${npc.affinity}'));
+    for (final d in state.codex) {
+      if (d.name == name || d.key == name) {
+        final text = d.display.trim().isNotEmpty
+            ? d.display.trim()
+            : d.mechanics.trim();
+        if (text.isNotEmpty) parts.add(text);
+        break;
+      }
+    }
+    return parts.join('；');
+  }
+
   /// 合并称号：模型给出的优先，之前已有的保留
   GameState _mergeTitles(GameState state) {
     if (state.titles.isEmpty && _state.titles.isEmpty) return state;
@@ -1176,6 +1248,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final newlyUnlocked = next.achievements
         .where((k) => !_state.achievements.contains(k))
         .toList();
+    // 新登场的 NPC（非角色卡）自动建卡，便于在 NPC 栏查看/导出
+    await _autoCreateNpcCards(next);
     setState(() {
       _state = next;
       _unregistered = unregistered;
