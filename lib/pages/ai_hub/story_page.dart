@@ -2955,7 +2955,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                         padding: const EdgeInsets.only(bottom: 6),
                         child: _FollowUpChip(
                           text: c,
-                          onTap: _sending ? () {} : () => _send(c),
+                          onTap: _sending
+                              ? () {}
+                              : () {
+                                  setState(() => _suggestExpanded = false);
+                                  _send(c);
+                                },
                         ),
                       ),
                   ],
@@ -4710,48 +4715,61 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                       ),
                                   child: _suggestExpanded
                                       ? _suggestPanel(choices)
-                                      : _suggestToggle(),
+                                      : const SizedBox.shrink(),
                                 ),
                               ),
                             ),
                         ],
                       ),
                     ),
-                    if (story.characters.isNotEmpty)
+                    if (story.characters.isNotEmpty ||
+                        (choices.isNotEmpty && !_state.gameOver))
                       Builder(
                         builder: (context) {
                           final presentChars = [
                             for (final c in story.characters)
                               if (_state.present.contains(c.name)) c,
                           ];
-                          if (presentChars.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
+                          final showSuggest =
+                              choices.isNotEmpty && !_state.gameOver;
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
                             child: SizedBox(
                               height: 34,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: presentChars.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(width: 8),
-                                itemBuilder: (_, i) {
-                                  final c = presentChars[i];
-                                  return ActionChip(
-                                    avatar: CharacterAvatar(
-                                      name: c.name,
-                                      avatar: c.avatar,
-                                      radius: 10,
-                                      enablePreview: false,
-                                    ),
-                                    label: Text(c.name),
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.primaryContainer,
-                                    onPressed: () => _characterMenu(c),
-                                  );
-                                },
+                              child: Row(
+                                children: [
+                                  // NPC 卡片：多了就横向滑动
+                                  if (presentChars.isNotEmpty)
+                                    Expanded(
+                                      child: ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: presentChars.length,
+                                        separatorBuilder: (_, _) =>
+                                            const SizedBox(width: 8),
+                                        itemBuilder: (_, i) {
+                                          final c = presentChars[i];
+                                          return ActionChip(
+                                            avatar: CharacterAvatar(
+                                              name: c.name,
+                                              avatar: c.avatar,
+                                              radius: 10,
+                                              enablePreview: false,
+                                            ),
+                                            label: Text(c.name),
+                                            backgroundColor: Theme.of(
+                                              context,
+                                            ).colorScheme.primaryContainer,
+                                            onPressed: () =>
+                                                _characterMenu(c),
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  else
+                                    const Spacer(),
+                                  // 追问建议入口：固定在 NPC 一栏最右边
+                                  if (showSuggest) _suggestToggle(),
+                                ],
                               ),
                             ),
                           );
