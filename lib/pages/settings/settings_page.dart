@@ -468,41 +468,87 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   Widget buildCategories() {
     Widget buildItem(String name, int id) {
       final bool selected = id == currentPage;
+      final isDark = context.isDarkMode;
+      final primary = colors.primary;
 
       Widget content = ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           key: ValueKey(id),
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
           width: double.infinity,
           height: 46,
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
           decoration: BoxDecoration(
-            color: selected ? colors.primaryContainer.toOpacity(0.36) : null,
-            border: Border(
-              left: BorderSide(
-                color: selected ? colors.primary : Colors.transparent,
-                width: 4,
-              ),
+            borderRadius: BorderRadius.circular(16),
+            gradient: selected
+                ? LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      primary.toOpacity(isDark ? 0.34 : 0.20),
+                      primary.toOpacity(isDark ? 0.08 : 0.04),
+                    ],
+                  )
+                : null,
+            border: Border.all(
+              color: selected
+                  ? primary.toOpacity(isDark ? 0.55 : 0.40)
+                  : Colors.transparent,
             ),
           ),
           child: Row(
             children: [
-              Icon(
-                icons[id],
-                size: 28,
-                color: Color.lerp(
-                  Theme.of(context).colorScheme.primary,
-                  !context.isDarkMode
-                      ? Colors.black.toOpacity(0.72)
-                      : Colors.white.toOpacity(0.72),
-                  0.4,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? primary.toOpacity(isDark ? 0.22 : 0.14)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  icons[id],
+                  size: 24,
+                  color: selected
+                      ? primary
+                      : Color.lerp(
+                          primary,
+                          isDark
+                              ? Colors.white.toOpacity(0.72)
+                              : Colors.black.toOpacity(0.72),
+                          0.4,
+                        ),
                 ),
               ),
-              const SizedBox(width: 16),
-              Text(name, style: ts.s16),
-              const Spacer(),
-              if (selected) const Icon(Icons.arrow_right),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: ts.s16.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : null,
+                    color: selected ? primary : null,
+                  ),
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: selected
+                    ? Icon(
+                        Icons.chevron_right_rounded,
+                        key: const ValueKey('selected'),
+                        color: primary,
+                      )
+                    : const SizedBox.shrink(key: ValueKey('empty')),
+              ),
             ],
           ),
         ),
@@ -511,20 +557,37 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       return AnimatedPadding(
         padding: EdgeInsets.fromLTRB(24, 0, selected ? 12 : 24, 0),
         duration: const Duration(milliseconds: 200),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Material(
-            color: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: InkWell(
-              highlightColor: !context.isDarkMode
-                  ? Colors.black.toOpacity(0.1)
-                  : Colors.white.toOpacity(0.1),
-              splashColor: Colors.transparent.toOpacity(0.0),
-              onTap: () => setState(() => currentPage = id),
-              child: content,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: primary.toOpacity(isDark ? 0.30 : 0.18),
+                      blurRadius: 18,
+                      spreadRadius: -2,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Material(
+              color: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: InkWell(
+                highlightColor: !isDark
+                    ? Colors.black.toOpacity(0.1)
+                    : Colors.white.toOpacity(0.1),
+                splashColor: Colors.transparent.toOpacity(0.0),
+                onTap: () => setState(() => currentPage = id),
+                child: content,
+              ),
             ),
           ),
         ).paddingVertical(4),
