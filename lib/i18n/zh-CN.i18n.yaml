@@ -1746,6 +1746,7 @@ storyRollResult: 掷骰结果
 storyResources: 资源
 storyAttributes: 属性
 storyPanels: 面板
+storyPanelGroup: 分组
 storyPanelTitle: 分区标题
 storyPanelSource: 数据源
 storyPanelKind: 图鉴类型

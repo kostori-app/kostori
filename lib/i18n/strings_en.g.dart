@@ -5146,6 +5146,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Panels'
 	String get storyPanels => 'Panels';
 
+	/// en: 'Group'
+	String get storyPanelGroup => 'Group';
+
 	/// en: 'Section title'
 	String get storyPanelTitle => 'Section title';
 
@@ -10249,6 +10252,7 @@ extension on Translations {
 			'storyResources' => 'Resources',
 			'storyAttributes' => 'Attributes',
 			'storyPanels' => 'Panels',
+			'storyPanelGroup' => 'Group',
 			'storyPanelTitle' => 'Section title',
 			'storyPanelSource' => 'Data source',
 			'storyPanelKind' => 'Codex kind',
@@ -10552,9 +10556,9 @@ extension on Translations {
 			'lanRemoteControlConnection' => 'Remote Control Connection',
 			'lanAccept' => 'Accept',
 			'lanDeviceId' => 'Device ID',
-			'lanConnect' => 'Connect',
 			_ => null,
 		} ?? switch (path) {
+			'lanConnect' => 'Connect',
 			'lanExitControl' => 'Exit Control',
 			'lanConnectedDevices' => 'Connected Devices',
 			'lanNoDeviceConnected' => 'No device connected',
@@ -11066,9 +11070,9 @@ extension on Translations {
 			'profilePersonalityTagsHint' => 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle',
 			'profileCatchphrases' => 'Catchphrases',
 			'profileCatchphrasesHint' => 'One per line',
-			'profileExamples' => 'Example dialogs (few-shot)',
 			_ => null,
 		} ?? switch (path) {
+			'profileExamples' => 'Example dialogs (few-shot)',
 			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
 			'profileReplyStyle' => 'Reply style',
 			'replyLength' => 'Reply length',

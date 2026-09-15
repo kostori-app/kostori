@@ -585,11 +585,15 @@ class StoryPanel {
   final String kind;
   final String icon;
 
+  /// 分组标签：同一分组归入同一个分段胶囊 tab（空 = 不分组）
+  final String group;
+
   const StoryPanel({
     this.title = '',
     this.source = 'attributes',
     this.kind = '',
     this.icon = '',
+    this.group = '',
   });
 
   factory StoryPanel.fromJson(Map<String, dynamic> json) => StoryPanel(
@@ -597,6 +601,7 @@ class StoryPanel {
     source: json['source']?.toString() ?? 'attributes',
     kind: json['kind']?.toString() ?? '',
     icon: json['icon']?.toString() ?? '',
+    group: json['group']?.toString() ?? '',
   );
 
   Map<String, dynamic> toJson() => {
@@ -604,6 +609,7 @@ class StoryPanel {
     'source': source,
     if (kind.isNotEmpty) 'kind': kind,
     if (icon.isNotEmpty) 'icon': icon,
+    if (group.isNotEmpty) 'group': group,
   };
 }
 

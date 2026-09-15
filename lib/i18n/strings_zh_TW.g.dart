@@ -1741,6 +1741,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyResources => '資源';
 	@override String get storyAttributes => '屬性';
 	@override String get storyPanels => '面板';
+	@override String get storyPanelGroup => '分組';
 	@override String get storyPanelTitle => '分區標題';
 	@override String get storyPanelSource => '資料來源';
 	@override String get storyPanelKind => '圖鑑類型';
@@ -4627,6 +4628,7 @@ extension on TranslationsZhTw {
 			'storyResources' => '資源',
 			'storyAttributes' => '屬性',
 			'storyPanels' => '面板',
+			'storyPanelGroup' => '分組',
 			'storyPanelTitle' => '分區標題',
 			'storyPanelSource' => '資料來源',
 			'storyPanelKind' => '圖鑑類型',
@@ -4930,9 +4932,9 @@ extension on TranslationsZhTw {
 			'lanRemoteControlConnected' => '遠端控制已連線',
 			'lanRemoteControlConnectionFailed' => '遠端控制連線失敗',
 			'lanConnectedDevices' => '已連線設備',
-			'lanNoDeviceConnected' => '無設備連線',
 			_ => null,
 		} ?? switch (path) {
+			'lanNoDeviceConnected' => '無設備連線',
 			'lanPlayerControl' => '播放器控制',
 			'lanNavigationControl' => '導航控制',
 			'lanNavHome' => '首頁',
@@ -5444,9 +5446,9 @@ extension on TranslationsZhTw {
 			'profileCatchphrases' => '口頭禪',
 			'profileCatchphrasesHint' => '每行一個',
 			'profileExamples' => '對話示例（few-shot）',
-			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
 			_ => null,
 		} ?? switch (path) {
+			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
 			'profileReplyStyle' => '回覆風格',
 			'replyLength' => '回覆長度',
 			'replyLengthShort' => '簡短',

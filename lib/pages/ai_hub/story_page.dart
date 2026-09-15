@@ -577,6 +577,7 @@ class _StoryPanelDraft {
   final TextEditingController title;
   final TextEditingController kind;
   final TextEditingController icon;
+  final TextEditingController group;
   String source;
 
   _StoryPanelDraft({
@@ -584,14 +585,17 @@ class _StoryPanelDraft {
     this.source = 'attributes',
     String kindText = '',
     String iconText = '',
+    String groupText = '',
   }) : title = TextEditingController(text: titleText),
        kind = TextEditingController(text: kindText),
-       icon = TextEditingController(text: iconText);
+       icon = TextEditingController(text: iconText),
+       group = TextEditingController(text: groupText);
 
   void dispose() {
     title.dispose();
     kind.dispose();
     icon.dispose();
+    group.dispose();
   }
 }
 
@@ -858,6 +862,7 @@ class _StoryEditorState extends State<_StoryEditor>
         source: p.source,
         kindText: p.kind,
         iconText: p.icon,
+        groupText: p.group,
       ),
   ];
   // 角色卡来自独立存储（不再写进故事文件）
@@ -1150,6 +1155,7 @@ class _StoryEditorState extends State<_StoryEditor>
             source: p.source,
             kind: p.kind.text.trim(),
             icon: p.icon.text.trim(),
+            group: p.group.text.trim(),
           ),
       ],
       // 角色卡不写进故事文件（见下方 StoryCharacterStore.put）
@@ -2076,6 +2082,15 @@ class _StoryEditorState extends State<_StoryEditor>
                   ],
                 ),
                 const SizedBox(height: 8),
+                TextFormField(
+                  controller: _panels[i].group,
+                  decoration: InputDecoration(
+                    labelText: t.storyPanelGroup,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Text(
@@ -2127,6 +2142,7 @@ class _StoryEditorState extends State<_StoryEditor>
                         source: p.source,
                         kindText: p.kind,
                         iconText: p.icon,
+                        groupText: p.group,
                       ),
                   ]);
               }),
@@ -6067,6 +6083,9 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
   /// 词条按类型筛选（'' = 全部）
   String _codexKind = '';
 
+  /// 面板分组筛选（'' = 第一个分组）
+  String _statePanelGroup = '';
+
   GameState get state => widget.state;
 
   @override
@@ -6447,14 +6466,62 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
         ),
       );
     }
+    // 分区：按 group 归入分段胶囊 tab（无分组时保持平铺）
+    final groups = <String>[];
+    for (final p in panels) {
+      if (!groups.contains(p.group)) groups.add(p.group);
+    }
+    final grouped =
+        groups.length > 1 || (groups.length == 1 && groups.first.isNotEmpty);
+    if (grouped) {
+      final selected = groups.contains(_statePanelGroup)
+          ? _statePanelGroup
+          : groups.first;
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: CapsuleOptions(
+            scrollable: true,
+            children: [
+              for (final g in groups)
+                CapsuleOption(
+                  text: _panelGroupLabel(g),
+                  isSelected: selected == g,
+                  onTap: () => setState(() => _statePanelGroup = g),
+                ),
+            ],
+          ),
+        ),
+      );
+      _appendPanels(
+        widgets,
+        panels.where((p) => p.group == selected).toList(),
+        scheme,
+      );
+      return widgets;
+    }
+
+    _appendPanels(widgets, panels, scheme);
+    return widgets;
+  }
+
+  /// 把分区依次追加到列表（跳过空分区，块间留白）
+  void _appendPanels(
+    List<Widget> widgets,
+    List<StoryPanel> panels,
+    ColorScheme scheme,
+  ) {
+    var first = true;
     for (final p in panels) {
       final section = _buildPanel(p, scheme);
       if (section.isEmpty) continue;
-      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 12));
+      if (!first) widgets.add(const SizedBox(height: 12));
+      first = false;
       widgets.addAll(section);
     }
-    return widgets;
   }
+
+  String _panelGroupLabel(String group) => group.isEmpty ? t.storyState : group;
 
   /// 渲染单个面板分区（由故事自定义 source/title/kind/icon）
   List<Widget> _buildPanel(StoryPanel panel, ColorScheme scheme) {

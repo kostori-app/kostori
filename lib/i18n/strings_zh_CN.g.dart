@@ -1740,6 +1740,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyResources => '资源';
 	@override String get storyAttributes => '属性';
 	@override String get storyPanels => '面板';
+	@override String get storyPanelGroup => '分组';
 	@override String get storyPanelTitle => '分区标题';
 	@override String get storyPanelSource => '数据源';
 	@override String get storyPanelKind => '图鉴类型';
@@ -4627,6 +4628,7 @@ extension on TranslationsZhCn {
 			'storyResources' => '资源',
 			'storyAttributes' => '属性',
 			'storyPanels' => '面板',
+			'storyPanelGroup' => '分组',
 			'storyPanelTitle' => '分区标题',
 			'storyPanelSource' => '数据源',
 			'storyPanelKind' => '图鉴类型',
@@ -4931,9 +4933,9 @@ extension on TranslationsZhCn {
 			'lanConnectingToRemoteDevice' => '正在连接远程设备',
 			'lanRemoteControlConnected' => '远程控制已连接',
 			'lanRemoteControlConnectionFailed' => '远程控制连接失败',
-			'lanConnectedDevices' => '已连接设备',
 			_ => null,
 		} ?? switch (path) {
+			'lanConnectedDevices' => '已连接设备',
 			'lanNoDeviceConnected' => '无设备连接',
 			'lanPlayerControl' => '播放器控制',
 			'lanNavigationControl' => '导航控制',
@@ -5445,9 +5447,9 @@ extension on TranslationsZhCn {
 			'profilePersonalityTagsHint' => '多选标签，如 理性/幽默/毒舌/温柔',
 			'profileCatchphrases' => '口头禅',
 			'profileCatchphrasesHint' => '每行一个',
-			'profileExamples' => '对话示例（few-shot）',
 			_ => null,
 		} ?? switch (path) {
+			'profileExamples' => '对话示例（few-shot）',
 			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
 			'profileReplyStyle' => '回复风格',
 			'replyLength' => '回复长度',

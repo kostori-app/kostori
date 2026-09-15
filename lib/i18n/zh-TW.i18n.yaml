@@ -1751,6 +1751,7 @@ storyRollResult: 擲骰結果
 storyResources: 資源
 storyAttributes: 屬性
 storyPanels: 面板
+storyPanelGroup: 分組
 storyPanelTitle: 分區標題
 storyPanelSource: 資料來源
 storyPanelKind: 圖鑑類型

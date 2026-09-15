@@ -443,6 +443,26 @@ void main() {
       expect(back.facilities.single.maxLevel, 3);
     });
 
+    test('panel groups survive export and import', () {
+      const story = Story(
+        id: 's',
+        name: 'S',
+        panels: [
+          StoryPanel(title: '身体', source: 'resources', group: '状态'),
+          StoryPanel(title: '物品', source: 'inventory', group: '物品'),
+          StoryPanel(source: 'attributes'),
+        ],
+      );
+      final md = StoryStore.storyToMarkdown(story);
+      final back = StoryStore.storyFromMarkdown(md, id: 's');
+      expect(back.panels.length, 3);
+      expect(back.panels[0].title, '身体');
+      expect(back.panels[0].group, '状态');
+      expect(back.panels[1].source, 'inventory');
+      expect(back.panels[1].group, '物品');
+      expect(back.panels[2].group, '');
+    });
+
     test('preset codex entries round trip', () {
       const story = Story(
         id: 's',

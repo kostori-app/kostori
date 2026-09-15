@@ -1751,6 +1751,7 @@ storyRollResult: Roll result
 storyResources: Resources
 storyAttributes: Attributes
 storyPanels: Panels
+storyPanelGroup: Group
 storyPanelTitle: Section title
 storyPanelSource: Data source
 storyPanelKind: Codex kind
