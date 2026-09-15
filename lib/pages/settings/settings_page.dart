@@ -487,14 +487,14 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      primary.toOpacity(isDark ? 0.34 : 0.20),
-                      primary.toOpacity(isDark ? 0.08 : 0.04),
+                      primary.toOpacity(isDark ? 0.20 : 0.12),
+                      primary.toOpacity(isDark ? 0.04 : 0.02),
                     ],
                   )
                 : null,
             border: Border.all(
               color: selected
-                  ? primary.toOpacity(isDark ? 0.55 : 0.40)
+                  ? primary.toOpacity(isDark ? 0.34 : 0.26)
                   : Colors.transparent,
             ),
           ),
@@ -507,7 +507,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
                 height: 30,
                 decoration: BoxDecoration(
                   color: selected
-                      ? primary.toOpacity(isDark ? 0.22 : 0.14)
+                      ? primary.toOpacity(isDark ? 0.14 : 0.09)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(9),
                 ),
@@ -565,10 +565,10 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: primary.toOpacity(isDark ? 0.30 : 0.18),
-                      blurRadius: 18,
+                      color: primary.toOpacity(isDark ? 0.16 : 0.10),
+                      blurRadius: 14,
                       spreadRadius: -2,
-                      offset: const Offset(0, 5),
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : null,
