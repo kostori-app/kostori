@@ -319,6 +319,10 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     return null;
   }
 
+  /// 本地工具是否启用（空集合表示全部启用）
+  bool _localToolEnabled(String id) =>
+      _enabledSkillIds.isEmpty || _enabledSkillIds.contains(id);
+
   void _toggleSkill(String id, bool selected) {
     setState(() {
       final allIds = SkillRegistry.instance.all.map((s) => s.id).toSet();
@@ -783,32 +787,26 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             onSelectionChanged: (s) => setState(() => _replyLength = s.first),
           ),
         ),
-        CheckboxListTile(
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          controlAffinity: ListTileControlAffinity.leading,
-          secondary: const Icon(Icons.emoji_emotions_outlined, size: 20),
-          title: Text(t.replyUseEmoji),
-          value: _useEmoji,
-          onChanged: (v) => setState(() => _useEmoji = v ?? false),
+        SelectCard(
+          title: t.replyUseEmoji,
+          selected: _useEmoji,
+          leading: const Icon(Icons.emoji_emotions_outlined, size: 20),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          onChanged: (v) => setState(() => _useEmoji = v),
         ),
-        CheckboxListTile(
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          controlAffinity: ListTileControlAffinity.leading,
-          secondary: const Icon(Icons.format_align_left, size: 20),
-          title: Text(t.replyUseMarkdown),
-          value: _useMarkdown,
-          onChanged: (v) => setState(() => _useMarkdown = v ?? false),
+        SelectCard(
+          title: t.replyUseMarkdown,
+          selected: _useMarkdown,
+          leading: const Icon(Icons.format_align_left, size: 20),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          onChanged: (v) => setState(() => _useMarkdown = v),
         ),
-        CheckboxListTile(
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          controlAffinity: ListTileControlAffinity.leading,
-          secondary: const Icon(Icons.help_outline, size: 20),
-          title: Text(t.replyAskBack),
-          value: _askBack,
-          onChanged: (v) => setState(() => _askBack = v ?? false),
+        SelectCard(
+          title: t.replyAskBack,
+          selected: _askBack,
+          leading: const Icon(Icons.help_outline, size: 20),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          onChanged: (v) => setState(() => _askBack = v),
         ),
         _personaSectionTitle(t.profileExamples, Icons.forum_outlined),
         _field(
@@ -878,19 +876,13 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
               child: Text(t.noSkillsAvailable, style: ts.s12),
             )
           else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            CapsuleChipGroup(
               children: [
                 for (final s in localTools)
-                  FilterChip(
-                    avatar: const Icon(Icons.extension, size: 16),
-                    label: Text(s.name),
-                    selected:
-                        _enabledSkillIds.isEmpty ||
-                        _enabledSkillIds.contains(s.id),
-                    visualDensity: VisualDensity.compact,
-                    onSelected: (sel) => _toggleSkill(s.id, sel),
+                  CapsuleChip(
+                    text: s.name,
+                    isSelected: _localToolEnabled(s.id),
+                    onTap: () => _toggleSkill(s.id, !_localToolEnabled(s.id)),
                   ),
               ],
             ),
@@ -923,22 +915,13 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
               }
               return Column(
                 children: skills.map((s) {
-                  final selected = _skillIds.contains(s.key);
-                  return CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    secondary: const Icon(Icons.build_outlined, size: 20),
-                    title: Text(s.name),
-                    subtitle: Text(
-                      s.description.isEmpty ? s.key : s.description,
-                      style: const TextStyle(fontSize: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    value: selected,
+                  return SelectCard(
+                    title: s.name,
+                    subtitle: s.description.isEmpty ? s.key : s.description,
+                    leading: const Icon(Icons.build_outlined, size: 20),
+                    selected: _skillIds.contains(s.key),
                     onChanged: (v) => setState(() {
-                      if (v == true) {
+                      if (v) {
                         if (!_skillIds.contains(s.key)) _skillIds.add(s.key);
                       } else {
                         _skillIds.remove(s.key);
@@ -1030,14 +1013,11 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
               )
             else
               for (final i in injections)
-                CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(i.name),
-                  value: _injectionIds.contains(i.id),
+                SelectCard(
+                  title: i.name,
+                  selected: _injectionIds.contains(i.id),
                   onChanged: (v) => setState(() {
-                    if (v == true) {
+                    if (v) {
                       _injectionIds.add(i.id);
                     } else {
                       _injectionIds.remove(i.id);
@@ -1094,30 +1074,17 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     Widget? leading,
   }) {
     final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: selected ? cs.primaryContainer : cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        clipBehavior: Clip.antiAlias,
-        child: ListTile(
-          dense: true,
-          leading: leading,
-          onTap: () => onChanged(!selected),
-          title: Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          trailing: count == null
-              ? null
-              : Text(
-                  '$count',
-                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                ),
-        ),
-      ),
+    return SelectCard(
+      title: name,
+      selected: selected,
+      onChanged: onChanged,
+      leading: leading,
+      trailing: count == null
+          ? null
+          : Text(
+              '$count',
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            ),
     );
   }
 
@@ -1182,15 +1149,11 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             ],
           ),
           for (final (key, label, icon) in prefs)
-            CheckboxListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              secondary: Icon(icon, size: 20),
-              title: Text(label),
-              value: _behaviorPrefs[key] ?? false,
-              onChanged: (v) =>
-                  setState(() => _behaviorPrefs[key] = v ?? false),
+            SelectCard(
+              title: label,
+              selected: _behaviorPrefs[key] ?? false,
+              leading: Icon(icon, size: 20),
+              onChanged: (v) => setState(() => _behaviorPrefs[key] = v),
             ),
           const SizedBox(height: 12),
           Row(
@@ -1267,15 +1230,12 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
           ),
           const SizedBox(height: 8),
           for (final (id, label, desc) in _knownExtensions)
-            CheckboxListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              secondary: const Icon(Icons.extension_outlined, size: 20),
-              title: Text(label),
-              subtitle: Text(desc, style: const TextStyle(fontSize: 11)),
-              value: isEnabled(id),
-              onChanged: (v) => toggle(id, v ?? false),
+            SelectCard(
+              title: label,
+              subtitle: desc,
+              leading: const Icon(Icons.extension_outlined, size: 20),
+              selected: isEnabled(id),
+              onChanged: (v) => toggle(id, v),
             ),
         ],
       ),
@@ -1435,23 +1395,15 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                   final endpoint = s.transport == 'stdio'
                       ? (s.command ?? '')
                       : (s.url ?? '');
-                  return CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    secondary: const Icon(Icons.dns_outlined, size: 20),
-                    title: Text(s.name),
-                    subtitle: Text(
-                      endpoint,
-                      style: const TextStyle(fontSize: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    value: bound(s.id.toString()),
+                  return SelectCard(
+                    title: s.name,
+                    subtitle: endpoint,
+                    leading: const Icon(Icons.dns_outlined, size: 20),
+                    selected: bound(s.id.toString()),
                     onChanged: (v) => setState(() {
                       final id = s.id.toString();
                       final idx = _mcpServers.indexWhere((m) => m.id == id);
-                      if (v == true) {
+                      if (v) {
                         if (idx >= 0) {
                           _mcpServers[idx] = _mcpServers[idx].copyWith(
                             enabled: true,

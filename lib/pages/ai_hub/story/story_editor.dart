@@ -1408,13 +1408,11 @@ class _StoryEditorState extends State<_StoryEditor>
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               for (final i in injections)
-                CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(i.name),
-                  value: _injectionIds.contains(i.id),
+                SelectCard(
+                  title: i.name,
+                  selected: _injectionIds.contains(i.id),
                   onChanged: (v) => setState(() {
-                    if (v == true) {
+                    if (v) {
                       _injectionIds.add(i.id);
                     } else {
                       _injectionIds.remove(i.id);

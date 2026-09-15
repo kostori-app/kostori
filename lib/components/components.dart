@@ -94,6 +94,8 @@ part 'scroll.dart';
 
 part 'select.dart';
 
+part 'select_card.dart';
+
 part 'sheet.dart';
 
 part 'side_bar.dart';
