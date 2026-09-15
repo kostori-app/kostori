@@ -475,6 +475,23 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     } catch (_) {}
   }
 
+  /// 输入框快捷键：Ctrl+Enter 发送、Ctrl+V 粘贴图片（桌面端）
+  KeyEventResult _composerKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || !App.isDesktop) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      _send();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyV &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_pasteImage());
+    }
+    return KeyEventResult.ignored;
+  }
+
   Future<void> _addImage(Uint8List bytes, String fileName) async {
     if (!mounted) return;
     setState(() => _isCompressingImage = true);
@@ -1325,13 +1342,17 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     ),
                   ),
 
-                // ── 输入框（与群聊共用 ChatComposerShell）──
-                ChatComposerShell(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_pendingImages.isNotEmpty || _isCompressingImage)
-                        SizedBox(
+                // ── 输入框（与群聊 / AI 共创共用 ChatComposer）──
+                ChatComposer(
+                  controller: _inputCtrl,
+                  focusNode: _focusNode,
+                  hintText: t.inputMessage,
+                  sending: _isSending,
+                  onSend: _send,
+                  onStop: () => _cancelToken?.cancel(),
+                  onKeyEvent: _composerKey,
+                  top: (_pendingImages.isNotEmpty || _isCompressingImage)
+                      ? SizedBox(
                           height: 64,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
@@ -1356,106 +1377,28 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                               );
                             },
                           ),
-                        ),
-                      // 输入行：文本框（图片/文件等入口移入右下"+"面板）
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Focus(
-                                onKeyEvent: (_, event) {
-                                  if (event is! KeyDownEvent ||
-                                      !App.isDesktop) {
-                                    return KeyEventResult.ignored;
-                                  }
-                                  if (event.logicalKey ==
-                                      LogicalKeyboardKey.enter) {
-                                    if (HardwareKeyboard
-                                        .instance
-                                        .isControlPressed) {
-                                      _send();
-                                      return KeyEventResult.handled;
-                                    }
-                                  }
-                                  // 支持粘贴剪贴板图片（Ctrl+V）
-                                  if (event.logicalKey ==
-                                          LogicalKeyboardKey.keyV &&
-                                      HardwareKeyboard
-                                          .instance
-                                          .isControlPressed) {
-                                    unawaited(_pasteImage());
-                                  }
-                                  return KeyEventResult.ignored;
-                                },
-                                child: TextField(
-                                  controller: _inputCtrl,
-                                  focusNode: _focusNode,
-                                  autofocus: false,
-                                  maxLines: 4,
-                                  minLines: 1,
-                                  textInputAction: TextInputAction.newline,
-                                  decoration: InputDecoration(
-                                    hintText: t.inputMessage,
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 12,
-                                    ),
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // 选项行：思考程度 + 模型 + 新对话 + "+" + 发送（右下）
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
-                        child: Row(
-                          children: [
-                            _buildThinkingLevelButton(),
-                            const SizedBox(width: 6),
-                            _buildModelProviderButton(),
-                            const SizedBox(width: 6),
-                            _buildOptionsIcon(
-                              context,
-                              icon: Icons.add_comment_outlined,
-                              tooltip: t.newConversation,
-                              onTap: _newSession,
-                            ),
-                            const Spacer(),
-                            _buildOptionsIcon(
-                              context,
-                              icon: Icons.add,
-                              tooltip: t.more,
-                              onTap: _showMoreSheet,
-                            ),
-                            const SizedBox(width: 4),
-                            _isSending
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.stop_rounded,
-                                      size: 20,
-                                    ),
-                                    tooltip: t.stopGenerating,
-                                    onPressed: () => _cancelToken?.cancel(),
-                                  )
-                                : IconButton.filled(
-                                    icon: const Icon(
-                                      Icons.arrow_upward,
-                                      size: 20,
-                                    ),
-                                    tooltip: t.sendMessage,
-                                    onPressed: _send,
-                                  ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                        )
+                      : null,
+                  leading: [
+                    _buildThinkingLevelButton(),
+                    const SizedBox(width: 6),
+                    _buildModelProviderButton(),
+                    const SizedBox(width: 6),
+                    _buildOptionsIcon(
+                      context,
+                      icon: Icons.add_comment_outlined,
+                      tooltip: t.newConversation,
+                      onTap: _newSession,
+                    ),
+                  ],
+                  trailing: [
+                    _buildOptionsIcon(
+                      context,
+                      icon: Icons.add,
+                      tooltip: t.more,
+                      onTap: _showMoreSheet,
+                    ),
+                  ],
                 ),
               ],
             ),

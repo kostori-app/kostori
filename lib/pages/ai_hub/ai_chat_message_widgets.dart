@@ -1250,3 +1250,104 @@ class ChatComposerShell extends StatelessWidget {
     );
   }
 }
+
+/// 聊天输入区（AI 聊天 / 群聊 / AI 共创共用）：
+/// 输入外壳 + 无边框多行文本框 + 底部选项行（左 leading、右 trailing、发送/停止）。
+class ChatComposer extends StatelessWidget {
+  const ChatComposer({
+    super.key,
+    required this.controller,
+    required this.hintText,
+    required this.sending,
+    required this.onSend,
+    this.focusNode,
+    this.onStop,
+    this.onKeyEvent,
+    this.top,
+    this.leading = const <Widget>[],
+    this.trailing = const <Widget>[],
+    this.minLines = 1,
+    this.maxLines = 4,
+    this.autofocus = false,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final bool sending;
+  final VoidCallback onSend;
+  final VoidCallback? onStop;
+  final FocusNode? focusNode;
+  final KeyEventResult Function(FocusNode, KeyEvent)? onKeyEvent;
+  final Widget? top;
+  final List<Widget> leading;
+  final List<Widget> trailing;
+  final int minLines;
+  final int maxLines;
+  final bool autofocus;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChatComposerShell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (top != null) top!,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Focus(
+                    onKeyEvent:
+                        onKeyEvent ?? (_, _) => KeyEventResult.ignored,
+                    child: TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      autofocus: autofocus,
+                      minLines: minLines,
+                      maxLines: maxLines,
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+            child: Row(
+              children: [
+                ...leading,
+                const Spacer(),
+                ...trailing,
+                if (trailing.isNotEmpty) const SizedBox(width: 4),
+                if (sending)
+                  IconButton(
+                    icon: const Icon(Icons.stop_rounded, size: 20),
+                    tooltip: t.stopGenerating,
+                    onPressed: onStop,
+                  )
+                else
+                  IconButton.filled(
+                    icon: const Icon(Icons.arrow_upward, size: 20),
+                    tooltip: t.sendMessage,
+                    onPressed: onSend,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -975,47 +975,14 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
                 ],
               ),
             ),
-          // 复用 AI 聊天同款输入外壳
-          ChatComposerShell(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      focusNode: _inputFocus,
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.newline,
-                      decoration: InputDecoration(
-                        hintText: t.groupChatInputHint,
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  if (_sending)
-                    IconButton(
-                      onPressed: _stop,
-                      tooltip: t.stopGenerating,
-                      icon: const Icon(Icons.stop_rounded),
-                    )
-                  else
-                    IconButton.filled(
-                      onPressed: _sendInput,
-                      tooltip: t.sendMessage,
-                      icon: const Icon(Icons.send),
-                    ),
-                ],
-              ),
-            ),
+          // 复用 AI 聊天同款输入组件
+          ChatComposer(
+            controller: _input,
+            focusNode: _inputFocus,
+            hintText: t.groupChatInputHint,
+            sending: _sending,
+            onSend: _sendInput,
+            onStop: _stop,
           ),
         ],
       ),
