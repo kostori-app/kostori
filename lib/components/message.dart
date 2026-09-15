@@ -240,7 +240,6 @@ LoadingDialogController showLoadingDialog(
   bool barrierDismissible = true,
   bool allowCancel = true,
   String? message,
-  String? cancelButtonText,
   bool withProgress = false,
 }) {
   var controller = LoadingDialogController();
@@ -272,17 +271,12 @@ LoadingDialogController showLoadingDialog(
               value: controller._progress,
               backgroundColor: context.colorScheme.surfaceContainer,
             ).paddingHorizontal(16).paddingVertical(16),
-            actions: [
-              FilledButton(
-                onPressed: allowCancel
-                    ? () {
-                        controller.close();
-                        onCancel?.call();
-                      }
-                    : null,
-                child: Text(cancelButtonText ?? t.cancel),
-              ),
-            ],
+            cancel: allowCancel
+                ? () {
+                    controller.closed = true;
+                    onCancel?.call();
+                  }
+                : null,
           );
         },
       );

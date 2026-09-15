@@ -1718,13 +1718,20 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
         '不要任何其它文字。';
 
     var updated = 0;
-    final loading = showLoadingDialog(App.rootContext);
+    final total = book.entries.length;
+    final loading = showLoadingDialog(
+      App.rootContext,
+      withProgress: true,
+      message: t.loreTriggerGenProgress(done: 0, total: total),
+    );
     try {
       const batch = 20;
-      for (var i = 0; i < book.entries.length; i += batch) {
+      for (var i = 0; i < total; i += batch) {
+        loading.setMessage(t.loreTriggerGenProgress(done: i, total: total));
+        loading.setProgress(i / total);
         final slice = book.entries.sublist(
           i,
-          (i + batch).clamp(0, book.entries.length),
+          (i + batch).clamp(0, total),
         );
         final items = [
           for (final e in slice)
@@ -1787,6 +1794,9 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
           );
           updated++;
         }
+        final done = (i + batch).clamp(0, total);
+        loading.setMessage(t.loreTriggerGenProgress(done: done, total: total));
+        loading.setProgress(done / total);
       }
     } finally {
       loading.close();

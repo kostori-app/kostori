@@ -2564,6 +2564,7 @@ loreTriggerLang: Target language
 loreTriggerLangHint: 'e.g. Chinese / English / Japanese'
 loreTriggerGenDone: Generated triggers for ${count} entries
 loreTriggerGenFailed: Failed to generate triggers
+loreTriggerGenProgress: 'Generating ${done}/${total}'
 worldBookMove: Move to world book
 worldBookSecondaryKeys: Secondary keys (one per line, all must match)
 worldBookPosition: Injection position
