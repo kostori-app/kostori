@@ -529,16 +529,18 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
       provider: aiHubProvider(),
       title: chat.name.isEmpty ? t.groupChat : chat.name,
     );
-    // 预置成员开场白（用标记包裹，渲染时能正确归属）
-    for (final c in _members) {
-      final g = _greetingOf(c);
-      if (g == null) continue;
-      await AiConversationService().insertMessage(
-        sessionId: sessionId,
-        role: 'model',
-        content: '〖角色：${c.displayName}〗$g〖/角色〗',
-        taskType: 'group',
-      );
+    // 预置开场白：只放当前轮到的成员（对齐 ST 群聊的初始问候，不一次性铺满）
+    if (_members.isNotEmpty) {
+      final first = _members[_speakerIndex % _members.length];
+      final g = _greetingOf(first);
+      if (g != null) {
+        await AiConversationService().insertMessage(
+          sessionId: sessionId,
+          role: 'model',
+          content: '〖角色：${first.displayName}〗$g〖/角色〗',
+          taskType: 'group',
+        );
+      }
     }
     final updated = chat.copyWith(sessionId: sessionId);
     await GroupChatStore.instance.upsert(updated);
@@ -877,20 +879,39 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     );
   }
 
+  /// 展示前清洗：去掉 HTML 注释，替换 {{user}}/{{char}} 等占位符
+  String _cleanGroupText(String text, {String? speaker}) {
+    var s = text.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
+    final user = currentUserNickname;
+    s = s.replaceAll('{{user}}', user).replaceAll('<user>', user);
+    final charName = _memberByName(speaker)?.displayName ?? speaker ?? '';
+    if (charName.isNotEmpty) {
+      s = s
+          .replaceAll('{{char}}', charName)
+          .replaceAll('<char>', charName)
+          .replaceAll('<bot>', charName);
+    }
+    return s.trim();
+  }
+
   List<Widget> _renderModel(String text, {bool streaming = false}) {
     final segs = parseGroupSegments(text);
     if (segs.isEmpty) {
-      if (text.trim().isEmpty) return const [];
-      return [_StoryBubble(content: text, isUser: false)];
+      final clean = _cleanGroupText(text);
+      if (clean.isEmpty) return const [];
+      return [_StoryBubble(content: clean, isUser: false)];
     }
     return [
       for (final seg in segs)
         if (seg.$1 == null)
-          _StoryBubble(content: seg.$2, isUser: false)
+          if (_cleanGroupText(seg.$2).isNotEmpty)
+            _StoryBubble(content: _cleanGroupText(seg.$2), isUser: false)
+          else
+            const SizedBox.shrink()
         else
           _NpcBubble(
             name: seg.$1!,
-            content: seg.$2,
+            content: _cleanGroupText(seg.$2, speaker: seg.$1),
             avatar: _memberByName(seg.$1)?.avatar ?? '',
           ),
     ];
