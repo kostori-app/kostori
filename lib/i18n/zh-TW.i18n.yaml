@@ -1888,6 +1888,15 @@ followUpSuggestions: 後續追問建議
 autoTitle: 自動標題
 characterNameTranslation: 角色名翻譯
 settingGeneration: 設定生成
+cardGeneration: 角色卡創作
+cardAiCreate: AI 共創角色卡
+cardAiGenerate: 生成角色卡
+cardAiRollback: 回滾
+cardAiApply: 應用到編輯
+cardAiHint: 描述你想要的角色…
+cardAiRefineHint: 直接提修改要求，會精準改動對應欄位
+cardAiGeneratedNote: 角色卡已生成，可繼續提修改要求（會精確改動對應欄位）。
+cardAiParseFailed: 未能從回覆中解析出角色卡，請重試
 connectionDisconnected: 連線已斷開
 enterServerAddress: 輸入伺服器位址
 tapToShare: 點擊分享

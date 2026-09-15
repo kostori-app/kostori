@@ -95,6 +95,11 @@ class ExtensionSettingsPage extends StatelessWidget {
                 icon: Icons.image_outlined,
                 title: t.avatarImageGenModel,
               ),
+              _AuxTaskTile(
+                taskKey: 'cardGen',
+                icon: Icons.auto_stories_outlined,
+                title: t.cardGeneration,
+              ),
             ],
           ),
         ),

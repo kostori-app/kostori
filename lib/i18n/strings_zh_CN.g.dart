@@ -1877,6 +1877,15 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get autoTitle => '自动标题';
 	@override String get characterNameTranslation => '角色名翻译';
 	@override String get settingGeneration => '设定生成';
+	@override String get cardGeneration => '角色卡创作';
+	@override String get cardAiCreate => 'AI 共创角色卡';
+	@override String get cardAiGenerate => '生成角色卡';
+	@override String get cardAiRollback => '回滚';
+	@override String get cardAiApply => '应用到编辑';
+	@override String get cardAiHint => '描述你想要的角色…';
+	@override String get cardAiRefineHint => '直接提修改要求，会精准改动对应字段';
+	@override String get cardAiGeneratedNote => '角色卡已生成，可继续提修改要求（会精确改动对应字段）。';
+	@override String get cardAiParseFailed => '未能从回复中解析出角色卡，请重试';
 	@override String get connectionDisconnected => '连接已断开';
 	@override String get enterServerAddress => '输入服务器地址';
 	@override String get tapToShare => '点击分享';
@@ -4803,6 +4812,15 @@ extension on TranslationsZhCn {
 			'autoTitle' => '自动标题',
 			'characterNameTranslation' => '角色名翻译',
 			'settingGeneration' => '设定生成',
+			'cardGeneration' => '角色卡创作',
+			'cardAiCreate' => 'AI 共创角色卡',
+			'cardAiGenerate' => '生成角色卡',
+			'cardAiRollback' => '回滚',
+			'cardAiApply' => '应用到编辑',
+			'cardAiHint' => '描述你想要的角色…',
+			'cardAiRefineHint' => '直接提修改要求，会精准改动对应字段',
+			'cardAiGeneratedNote' => '角色卡已生成，可继续提修改要求（会精确改动对应字段）。',
+			'cardAiParseFailed' => '未能从回复中解析出角色卡，请重试',
 			'connectionDisconnected' => '连接已断开',
 			'enterServerAddress' => '输入服务器地址',
 			'tapToShare' => '点击分享',
@@ -4962,6 +4980,8 @@ extension on TranslationsZhCn {
 			'exportFormat' => '导出格式',
 			'exportQuality' => '导出质量',
 			'exportSize' => '导出尺寸',
+			_ => null,
+		} ?? switch (path) {
 			'cropArea' => '裁剪区域',
 			'selectCropArea' => '选择裁剪区域',
 			'fullFrame' => '完整画面',
@@ -4971,8 +4991,6 @@ extension on TranslationsZhCn {
 			'qualityHigh' => '高质量',
 			'gifExport' => 'GIF 导出',
 			'apngExport' => 'APNG 导出',
-			_ => null,
-		} ?? switch (path) {
 			'mp4Export' => 'MP4 导出',
 			'exportSuccess' => '导出成功',
 			'exportFailed' => '导出失败',
@@ -5476,6 +5494,8 @@ extension on TranslationsZhCn {
 			'injectionPositionAfterKnowledge' => '知识之后',
 			'injectionPositionAfterMemory' => '记忆之后',
 			'injectionPositionBeforeTools' => '工具清单之前',
+			_ => null,
+		} ?? switch (path) {
 			'injectionSortOrder' => '排序号',
 			'noInjectionsYet' => '暂无提示词注入',
 			'worldBookName' => '名称',
@@ -5485,8 +5505,6 @@ extension on TranslationsZhCn {
 			'worldBookPriority' => '优先级（越大越靠前）',
 			'worldBookPriorityHint' => '优先级高的条目先注入',
 			'worldBookGroup' => '分组',
-			_ => null,
-		} ?? switch (path) {
 			'newWorldBook' => '新建世界书',
 			'newSettingBook' => '新建设定书',
 			'loreGenTriggers' => '生成触发词',

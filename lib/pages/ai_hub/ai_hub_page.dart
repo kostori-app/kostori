@@ -26,9 +26,11 @@ import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
+import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/ai_image_service.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/character_card_creator.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/ai_service/group_chat.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
@@ -77,6 +79,8 @@ part 'story/story_details_sheet.dart';
 part 'story/story_shared.dart';
 
 part 'story/group_chat_page.dart';
+
+part 'card_creator_page.dart';
 
 class AiHubEntry extends StatelessWidget {
   const AiHubEntry({super.key});

@@ -5557,6 +5557,33 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Setting Generation'
 	String get settingGeneration => 'Setting Generation';
 
+	/// en: 'Character card creation'
+	String get cardGeneration => 'Character card creation';
+
+	/// en: 'AI co-create card'
+	String get cardAiCreate => 'AI co-create card';
+
+	/// en: 'Generate card'
+	String get cardAiGenerate => 'Generate card';
+
+	/// en: 'Rollback'
+	String get cardAiRollback => 'Rollback';
+
+	/// en: 'Apply to editor'
+	String get cardAiApply => 'Apply to editor';
+
+	/// en: 'Describe the character you want…'
+	String get cardAiHint => 'Describe the character you want…';
+
+	/// en: 'Ask for changes; fields are updated precisely'
+	String get cardAiRefineHint => 'Ask for changes; fields are updated precisely';
+
+	/// en: 'Card generated. Keep asking for changes to refine it.'
+	String get cardAiGeneratedNote => 'Card generated. Keep asking for changes to refine it.';
+
+	/// en: 'Could not parse a card from the reply, please retry'
+	String get cardAiParseFailed => 'Could not parse a card from the reply, please retry';
+
 	/// en: 'Connection to server disconnected'
 	String get connectionDisconnected => 'Connection to server disconnected';
 
@@ -10503,6 +10530,15 @@ extension on Translations {
 			'autoTitle' => 'Auto Title',
 			'characterNameTranslation' => 'Character Name Translation',
 			'settingGeneration' => 'Setting Generation',
+			'cardGeneration' => 'Character card creation',
+			'cardAiCreate' => 'AI co-create card',
+			'cardAiGenerate' => 'Generate card',
+			'cardAiRollback' => 'Rollback',
+			'cardAiApply' => 'Apply to editor',
+			'cardAiHint' => 'Describe the character you want…',
+			'cardAiRefineHint' => 'Ask for changes; fields are updated precisely',
+			'cardAiGeneratedNote' => 'Card generated. Keep asking for changes to refine it.',
+			'cardAiParseFailed' => 'Could not parse a card from the reply, please retry',
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
@@ -10661,6 +10697,8 @@ extension on Translations {
 			'exportSize' => 'Export Size',
 			'cropArea' => 'Crop Area',
 			'selectCropArea' => 'Select Crop Area',
+			_ => null,
+		} ?? switch (path) {
 			'fullFrame' => 'Full Frame',
 			'customCrop' => 'Custom Crop',
 			'qualityLow' => 'Low Quality',
@@ -10670,8 +10708,6 @@ extension on Translations {
 			'apngExport' => 'APNG Export',
 			'mp4Export' => 'MP4 Export',
 			'exportSuccess' => 'Export Success',
-			_ => null,
-		} ?? switch (path) {
 			'exportFailed' => 'Export Failed',
 			'selectTimeRange' => 'Select Time Range',
 			'recordingFeature' => 'Record',
@@ -11175,6 +11211,8 @@ extension on Translations {
 			'injectionPositionAfterKnowledge' => 'After knowledge',
 			'injectionPositionAfterMemory' => 'After memory',
 			'injectionPositionBeforeTools' => 'Before tool list',
+			_ => null,
+		} ?? switch (path) {
 			'injectionSortOrder' => 'Sort order',
 			'noInjectionsYet' => 'No prompt injections yet',
 			'worldBookName' => 'Name',
@@ -11184,8 +11222,6 @@ extension on Translations {
 			'worldBookPriority' => 'Priority (higher first)',
 			'worldBookPriorityHint' => 'Higher priority entries are injected first',
 			'worldBookGroup' => 'Group',
-			_ => null,
-		} ?? switch (path) {
 			'newWorldBook' => 'New world book',
 			'newSettingBook' => 'New setting book',
 			'loreGenTriggers' => 'Generate triggers',

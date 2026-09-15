@@ -1878,6 +1878,15 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get autoTitle => '自動標題';
 	@override String get characterNameTranslation => '角色名翻譯';
 	@override String get settingGeneration => '設定生成';
+	@override String get cardGeneration => '角色卡創作';
+	@override String get cardAiCreate => 'AI 共創角色卡';
+	@override String get cardAiGenerate => '生成角色卡';
+	@override String get cardAiRollback => '回滾';
+	@override String get cardAiApply => '應用到編輯';
+	@override String get cardAiHint => '描述你想要的角色…';
+	@override String get cardAiRefineHint => '直接提修改要求，會精準改動對應欄位';
+	@override String get cardAiGeneratedNote => '角色卡已生成，可繼續提修改要求（會精確改動對應欄位）。';
+	@override String get cardAiParseFailed => '未能從回覆中解析出角色卡，請重試';
 	@override String get connectionDisconnected => '連線已斷開';
 	@override String get enterServerAddress => '輸入伺服器位址';
 	@override String get tapToShare => '點擊分享';
@@ -4803,6 +4812,15 @@ extension on TranslationsZhTw {
 			'autoTitle' => '自動標題',
 			'characterNameTranslation' => '角色名翻譯',
 			'settingGeneration' => '設定生成',
+			'cardGeneration' => '角色卡創作',
+			'cardAiCreate' => 'AI 共創角色卡',
+			'cardAiGenerate' => '生成角色卡',
+			'cardAiRollback' => '回滾',
+			'cardAiApply' => '應用到編輯',
+			'cardAiHint' => '描述你想要的角色…',
+			'cardAiRefineHint' => '直接提修改要求，會精準改動對應欄位',
+			'cardAiGeneratedNote' => '角色卡已生成，可繼續提修改要求（會精確改動對應欄位）。',
+			'cardAiParseFailed' => '未能從回覆中解析出角色卡，請重試',
 			'connectionDisconnected' => '連線已斷開',
 			'enterServerAddress' => '輸入伺服器位址',
 			'tapToShare' => '點擊分享',
@@ -4961,6 +4979,8 @@ extension on TranslationsZhTw {
 			'exportQuality' => '匯出品質',
 			'exportSize' => '匯出尺寸',
 			'cropArea' => '裁剪區域',
+			_ => null,
+		} ?? switch (path) {
 			'selectCropArea' => '選擇裁剪區域',
 			'fullFrame' => '完整畫面',
 			'customCrop' => '自定義裁剪',
@@ -4970,8 +4990,6 @@ extension on TranslationsZhTw {
 			'gifExport' => 'GIF 匯出',
 			'apngExport' => 'APNG 匯出',
 			'mp4Export' => 'MP4 匯出',
-			_ => null,
-		} ?? switch (path) {
 			'exportSuccess' => '匯出成功',
 			'exportFailed' => '匯出失敗',
 			'selectTimeRange' => '選擇時間範圍',
@@ -5475,6 +5493,8 @@ extension on TranslationsZhTw {
 			'injectionPositionAfterMemory' => '記憶之後',
 			'injectionPositionBeforeTools' => '工具清單之前',
 			'injectionSortOrder' => '排序號',
+			_ => null,
+		} ?? switch (path) {
 			'noInjectionsYet' => '暫無提示詞注入',
 			'worldBookName' => '名稱',
 			'worldBookTriggers' => '觸發詞（每行一個）',
@@ -5484,8 +5504,6 @@ extension on TranslationsZhTw {
 			'worldBookPriorityHint' => '優先級高的條目先注入',
 			'worldBookGroup' => '分組',
 			'newWorldBook' => '新增世界書',
-			_ => null,
-		} ?? switch (path) {
 			'newSettingBook' => '新增設定書',
 			'loreGenTriggers' => '生成觸發詞',
 			'loreTriggerLang' => '目標語言',

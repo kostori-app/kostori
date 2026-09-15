@@ -1888,6 +1888,15 @@ followUpSuggestions: Follow-up Suggestions
 autoTitle: Auto Title
 characterNameTranslation: Character Name Translation
 settingGeneration: Setting Generation
+cardGeneration: Character card creation
+cardAiCreate: AI co-create card
+cardAiGenerate: Generate card
+cardAiRollback: Rollback
+cardAiApply: Apply to editor
+cardAiHint: Describe the character you want…
+cardAiRefineHint: Ask for changes; fields are updated precisely
+cardAiGeneratedNote: Card generated. Keep asking for changes to refine it.
+cardAiParseFailed: Could not parse a card from the reply, please retry
 connectionDisconnected: Connection to server disconnected
 enterServerAddress: Please enter server address
 tapToShare: Tap to share

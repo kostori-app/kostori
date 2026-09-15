@@ -79,6 +79,15 @@ class _CharacterCardsSettingsPageState
     if (mounted) setState(() {});
   }
 
+  /// AI 共创：对话生成角色卡后进入表单微调
+  Future<void> _aiCreate() async {
+    final card = await context.to<CharacterCard?>(
+      () => const CharacterCardCreatorPage(),
+    );
+    if (card == null || !mounted) return;
+    await _edit(card);
+  }
+
   Future<void> _export(CharacterCard card, int spec) async {
     await exportCharacterCardPng(card, spec: spec);
   }
@@ -110,6 +119,11 @@ class _CharacterCardsSettingsPageState
               icon: const Icon(Icons.file_open_outlined),
               tooltip: t.importEntries,
               onPressed: _import,
+            ),
+            IconButton(
+              icon: const Icon(Icons.auto_awesome),
+              tooltip: t.cardAiCreate,
+              onPressed: _aiCreate,
             ),
             IconButton(
               icon: const Icon(Icons.add),
