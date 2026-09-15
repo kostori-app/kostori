@@ -2375,8 +2375,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               for (final o in part.options)
                 CapsuleChip(
                   text: o,
-                  hint: o == _customOption ? '' : (_fixedHints[o] ?? ''),
                   isSelected: selected.contains(o),
+                  onLongPress: () => _showOptionHint(o),
                   onTap: () => setState(() {
                     final set = _multiValues.putIfAbsent(part.key, () => {});
                     if (set.contains(o)) {
@@ -2411,8 +2411,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               for (final o in _partOptions(part))
                 CapsuleChip(
                   text: o,
-                  hint: o == _customOption ? '' : (_fixedHints[o] ?? ''),
                   isSelected: selected == o,
+                  onLongPress: () => _showOptionHint(o),
                   onTap: () => setState(() {
                     _singleValues[part.key] = o;
                     // 换了被依赖项 → 依赖它的选择要重来（如换主职 → 子职重选）
@@ -2457,9 +2457,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                 if (part.hint.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(left: 6),
-                    child: Tooltip(
-                      message: part.hint,
-                      triggerMode: TooltipTriggerMode.longPress,
+                    child: GestureDetector(
+                      onTap: () => _showHintDialog(part.title, part.hint),
+                      onLongPress: () => _showHintDialog(part.title, part.hint),
                       child: Icon(
                         Icons.info_outline,
                         size: 14,
@@ -2486,6 +2486,37 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           prefixIcon: const Icon(Icons.edit_outlined, size: 18),
         ),
       );
+
+  /// 长按选项：弹出该选项的说明（世界书里的固定条目）
+  void _showOptionHint(String name) {
+    if (name == _customOption) return;
+    final hint = _fixedHints[name];
+    if (hint == null || hint.isEmpty) return;
+    _showHintDialog(name, hint);
+  }
+
+  /// 只读说明弹窗（内容可能较长，用 ContentDialog 而非 tooltip）
+  Future<void> _showHintDialog(String title, String text) {
+    return ContentDialog.show<void>(
+      context: App.rootContext,
+      title: title,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 380),
+        child: SingleChildScrollView(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+      displayButton: false,
+      isDismissible: true,
+    );
+  }
 
   _ParsedReply? _lastAiReply(List<AiTask> messages) {
     for (final m in messages.reversed) {

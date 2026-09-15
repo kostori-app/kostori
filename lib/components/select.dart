@@ -359,20 +359,20 @@ class CapsuleChip extends StatelessWidget {
     required this.text,
     required this.isSelected,
     required this.onTap,
-    this.hint = '',
+    this.onLongPress,
   });
 
   final String text;
   final bool isSelected;
   final VoidCallback onTap;
 
-  /// 悬停 / 长按提示（为空则不挂 Tooltip）
-  final String hint;
+  /// 长按回调（例如查看该选项的说明）
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget chip = AnimatedContainer(
+    return AnimatedContainer(
       duration: _fastAnimationDuration,
       decoration: BoxDecoration(
         color: isSelected ? cs.surface : Colors.transparent,
@@ -392,6 +392,7 @@ class CapsuleChip extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: onTap,
+          onLongPress: onLongPress,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Text(
@@ -406,14 +407,6 @@ class CapsuleChip extends StatelessWidget {
         ),
       ),
     );
-    if (hint.trim().isNotEmpty) {
-      chip = Tooltip(
-        message: hint.trim(),
-        triggerMode: TooltipTriggerMode.longPress,
-        child: chip,
-      );
-    }
-    return chip;
   }
 }
 
