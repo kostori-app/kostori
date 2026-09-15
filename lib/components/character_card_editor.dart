@@ -384,6 +384,22 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
     return s;
   }
 
+  /// 拼一段角色设定，供翻译时判断性别 / 气质 / 译法
+  String _nameTranslateContext() {
+    String clip(String s, int max) =>
+        s.length > max ? s.substring(0, max) : s;
+    final parts = <String>[];
+    final tags = _tagsCtrl.text.trim();
+    if (tags.isNotEmpty) parts.add('标签：$tags');
+    final desc = _descCtrl.text.trim();
+    if (desc.isNotEmpty) parts.add('描述：${clip(desc, 300)}');
+    final persona = _personalityCtrl.text.trim();
+    if (persona.isNotEmpty) parts.add('性格：${clip(persona, 200)}');
+    final scenario = _scenarioCtrl.text.trim();
+    if (scenario.isNotEmpty) parts.add('场景：${clip(scenario, 200)}');
+    return parts.join('\n');
+  }
+
   /// 翻译角色名：优先用 AI 转写专名，失败再退回普通翻译
   Future<String> _translateName(String name, String lang) async {
     final label = translationSorts.labelByExtData(lang);
@@ -391,12 +407,21 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
     if (provider != null) {
       final ai = AiFactory.create(provider);
       if (ai != null) {
+        final context = _nameTranslateContext();
         final res = await ai.generate(
-          '目标语言：$label\n角色名：$name',
+          [
+            '目标语言：$label',
+            '角色名：$name',
+            if (context.isNotEmpty) '角色设定：\n$context',
+          ].join('\n'),
           systemPrompt:
-              '你是角色名本地化助手。把给定的角色名翻译成目标语言的写法，'
-              '人名、专名必须按目标语言的书写习惯转写（例如英文名译为中文汉字音译），'
-              '不要保留拉丁字母原文，不要加引号，不要解释，只输出翻译后的名字。',
+              '你是角色名本地化助手，负责把角色名翻译成目标语言里好听、地道的译名。\n'
+              '规则：\n'
+              '1. 只输出译名本身，不要解释、不要加引号、不要任何标注。\n'
+              '2. 人名按目标语言书写习惯音译/意译，选常见、顺口、符合角色性别与气质的字。\n'
+              '3. 保持原文的姓名顺序：原文「名+姓」就译成「名·姓」，用「·」连接名与姓。\n'
+              '4. 连接词（and / & / 等）译为「 & 」或目标语言对应的连接词，不要直译成句子。\n'
+              '5. 结合给定的角色设定判断性别、身份与风格来选字。',
         );
         final out = _cleanName(res.dataOrNull ?? '');
         if (out.isNotEmpty) return out;
