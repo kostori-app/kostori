@@ -276,7 +276,10 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               subtitle: Text(
-                                _entrySummary(e),
+                                [
+                                  if (e.group.trim().isNotEmpty) e.group.trim(),
+                                  _entrySummary(e),
+                                ].join(' · '),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 12),
@@ -491,6 +494,7 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
 
 Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   final nameCtrl = TextEditingController(text: entry.name);
+  final groupCtrl = TextEditingController(text: entry.group);
   var codexKind = entry.payload['kind']?.toString() ?? 'item';
   final displayCtrl = TextEditingController(
     text: entry.payload['display']?.toString() ?? '',
@@ -595,6 +599,15 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                 controller: nameCtrl,
                 decoration: InputDecoration(
                   labelText: t.storyCharacterName,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: groupCtrl,
+                decoration: InputDecoration(
+                  labelText: t.worldBookGroup,
                   isDense: true,
                   border: const OutlineInputBorder(),
                 ),
@@ -757,6 +770,7 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
       });
   }
   nameCtrl.dispose();
+  groupCtrl.dispose();
   displayCtrl.dispose();
   mechanicsCtrl.dispose();
   effectsCtrl.dispose();
@@ -764,7 +778,11 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   maxLevelCtrl.dispose();
   levelsCtrl.dispose();
   if (ok != true) return null;
-  return entry.copyWith(name: name, payload: payload);
+  return entry.copyWith(
+    name: name,
+    group: groupCtrl.text.trim(),
+    payload: payload,
+  );
 }
 
 String _injectionPositionLabel(PromptInjectionPosition position) =>

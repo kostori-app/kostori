@@ -1375,24 +1375,45 @@ class _StoryEditorState extends State<_StoryEditor>
             ),
             const SizedBox(height: 12),
             if (worldBook.isNotEmpty) ...[
-              Text(
+              _groupHeader(
                 t.worldBook,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              for (final e in worldBook)
-                CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(e.name.isEmpty ? e.content : e.name),
-                  value: _worldBookIds.contains(e.id),
-                  onChanged: (v) => setState(() {
-                    if (v == true) {
-                      _worldBookIds.add(e.id);
-                    } else {
-                      _worldBookIds.remove(e.id);
-                    }
-                  }),
+                () => setState(
+                  () => _worldBookIds.addAll([
+                    for (final e in worldBook) e.id,
+                  ]),
                 ),
+                () => setState(() => _worldBookIds.clear()),
+              ),
+              for (final group in _groupBy(worldBook, (e) => e.group).entries) ...[
+                if (group.key.isNotEmpty)
+                  _groupHeader(
+                    group.key,
+                    () => setState(
+                      () => _worldBookIds.addAll([
+                        for (final e in group.value) e.id,
+                      ]),
+                    ),
+                    () => setState(
+                      () => _worldBookIds.removeAll([
+                        for (final e in group.value) e.id,
+                      ]),
+                    ),
+                  ),
+                for (final e in group.value)
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(e.name.isEmpty ? e.content : e.name),
+                    value: _worldBookIds.contains(e.id),
+                    onChanged: (v) => setState(() {
+                      if (v == true) {
+                        _worldBookIds.add(e.id);
+                      } else {
+                        _worldBookIds.remove(e.id);
+                      }
+                    }),
+                  ),
+              ],
               const SizedBox(height: 12),
             ],
             if (injections.isNotEmpty) ...[
@@ -1463,26 +1484,75 @@ class _StoryEditorState extends State<_StoryEditor>
               style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
+            Row(
+              children: [
+                const Spacer(),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => setState(
+                    () => _settingIds.addAll([
+                      for (final e in store.items) e.id,
+                    ]),
+                  ),
+                  child: Text(t.selectAll),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => setState(() => _settingIds.clear()),
+                  child: Text(t.clear),
+                ),
+              ],
+            ),
             for (final type in SettingTypes.all)
               if (store.byType(type).isNotEmpty) ...[
-                Text(
+                _groupHeader(
                   _settingTypeLabel(type),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                for (final e in store.byType(type))
-                  CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(e.name.isEmpty ? e.id : e.name),
-                    value: _settingIds.contains(e.id),
-                    onChanged: (v) => setState(() {
-                      if (v == true) {
-                        _settingIds.add(e.id);
-                      } else {
-                        _settingIds.remove(e.id);
-                      }
-                    }),
+                  () => setState(
+                    () => _settingIds.addAll([
+                      for (final e in store.byType(type)) e.id,
+                    ]),
                   ),
+                  () => setState(
+                    () => _settingIds.removeAll([
+                      for (final e in store.byType(type)) e.id,
+                    ]),
+                  ),
+                ),
+                for (final group
+                    in _groupBy(store.byType(type), (e) => e.group).entries) ...[
+                  if (group.key.isNotEmpty)
+                    _groupHeader(
+                      group.key,
+                      () => setState(
+                        () => _settingIds.addAll([
+                          for (final e in group.value) e.id,
+                        ]),
+                      ),
+                      () => setState(
+                        () => _settingIds.removeAll([
+                          for (final e in group.value) e.id,
+                        ]),
+                      ),
+                    ),
+                  for (final e in group.value)
+                    CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(e.name.isEmpty ? e.id : e.name),
+                      value: _settingIds.contains(e.id),
+                      onChanged: (v) => setState(() {
+                        if (v == true) {
+                          _settingIds.add(e.id);
+                        } else {
+                          _settingIds.remove(e.id);
+                        }
+                      }),
+                    ),
+                ],
               ],
           ],
         );
@@ -1497,6 +1567,38 @@ class _StoryEditorState extends State<_StoryEditor>
     SettingTypes.facility => t.storyBase,
     _ => type,
   };
+
+  /// 按 key 分组（保持出现顺序）
+  Map<String, List<T>> _groupBy<T>(List<T> items, String Function(T) key) {
+    final m = <String, List<T>>{};
+    for (final e in items) {
+      m.putIfAbsent(key(e), () => []).add(e);
+    }
+    return m;
+  }
+
+  /// 分组标题行：名称 + 本组全选 / 清空
+  Widget _groupHeader(String title, VoidCallback onAll, VoidCallback onClear) =>
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+            onPressed: onAll,
+            child: Text(t.selectAll),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+            onPressed: onClear,
+            child: Text(t.clear),
+          ),
+        ],
+      );
 
   Widget _panelsTab() {
     final scheme = Theme.of(context).colorScheme;

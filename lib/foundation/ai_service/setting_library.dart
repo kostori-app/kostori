@@ -25,12 +25,16 @@ class SettingEntry {
   /// codex | title | job | facility
   final String type;
   final String name;
+
+  /// 分组（便于批量选择 / 归类，空 = 未分组）
+  final String group;
   final Map<String, dynamic> payload;
 
   const SettingEntry({
     required this.id,
     required this.type,
     required this.name,
+    this.group = '',
     this.payload = const {},
   });
 
@@ -40,6 +44,7 @@ class SettingEntry {
         'set_${DateTime.now().microsecondsSinceEpoch}',
     type: json['type']?.toString() ?? SettingTypes.codex,
     name: json['name']?.toString() ?? '',
+    group: json['group']?.toString() ?? '',
     payload: json['payload'] is Map
         ? (json['payload'] as Map).cast<String, dynamic>()
         : const {},
@@ -49,17 +54,20 @@ class SettingEntry {
     'id': id,
     'type': type,
     'name': name,
+    if (group.isNotEmpty) 'group': group,
     'payload': payload,
   };
 
   SettingEntry copyWith({
     String? type,
     String? name,
+    String? group,
     Map<String, dynamic>? payload,
   }) => SettingEntry(
     id: id,
     type: type ?? this.type,
     name: name ?? this.name,
+    group: group ?? this.group,
     payload: payload ?? this.payload,
   );
 
