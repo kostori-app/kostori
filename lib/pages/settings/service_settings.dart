@@ -337,7 +337,6 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                   ),
                 ),
                 if (_tlsEnabled) ...[
-                  const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Text(
@@ -782,8 +781,7 @@ class _HubTlsPageState extends ConsumerState<_HubTlsPage> {
                       ),
                     ),
                     if (_hub.tlsEnabled) ...[
-                      const Divider(height: 24),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(
                         t.tlsCertificate,
                         style: const TextStyle(
