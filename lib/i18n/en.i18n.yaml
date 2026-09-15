@@ -1864,6 +1864,7 @@ auxFollowSessionHint: This task will use the provider configured in the current 
 contextCompression: Context Compression
 followUpSuggestions: Follow-up Suggestions
 autoTitle: Auto Title
+characterNameTranslation: Character Name Translation
 connectionDisconnected: Connection to server disconnected
 enterServerAddress: Please enter server address
 tapToShare: Tap to share

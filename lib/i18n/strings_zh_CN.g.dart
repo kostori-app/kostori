@@ -1853,6 +1853,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get contextCompression => '上下文压缩';
 	@override String get followUpSuggestions => '后续追问建议';
 	@override String get autoTitle => '自动标题';
+	@override String get characterNameTranslation => '角色名翻译';
 	@override String get connectionDisconnected => '连接已断开';
 	@override String get enterServerAddress => '输入服务器地址';
 	@override String get tapToShare => '点击分享';
@@ -4754,6 +4755,7 @@ extension on TranslationsZhCn {
 			'contextCompression' => '上下文压缩',
 			'followUpSuggestions' => '后续追问建议',
 			'autoTitle' => '自动标题',
+			'characterNameTranslation' => '角色名翻译',
 			'connectionDisconnected' => '连接已断开',
 			'enterServerAddress' => '输入服务器地址',
 			'tapToShare' => '点击分享',
@@ -4945,9 +4947,9 @@ extension on TranslationsZhCn {
 			'lanInvalidRemoteControlLink' => '无效的远程控制链接',
 			'lanRemoteControlConnection' => '远程控制连接',
 			'lanDeviceId' => '设备 ID',
-			'lanConnect' => '连接',
 			_ => null,
 		} ?? switch (path) {
+			'lanConnect' => '连接',
 			'lanExitControl' => '退出控制',
 			'lanConnectingToRemoteDevice' => '正在连接远程设备',
 			'lanRemoteControlConnected' => '远程控制已连接',
@@ -5459,9 +5461,9 @@ extension on TranslationsZhCn {
 			'worldBookConstant' => '常驻',
 			'worldBookRecursive' => '递归触发',
 			'newWorldBookEntry' => '新建条目',
-			'worldBookHitTest' => '命中测试',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookHitTest' => '命中测试',
 			'worldBookHitTestHint' => '输入一句话，查看哪些条目会被触发',
 			'worldBookHitTestPlaceholder' => '输入一句话...',
 			'worldBookHitsResult' => '命中条目',

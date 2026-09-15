@@ -80,6 +80,11 @@ class ExtensionSettingsPage extends StatelessWidget {
                 icon: Icons.title,
                 title: t.autoTitle,
               ),
+              _AuxTaskTile(
+                taskKey: 'charTranslate',
+                icon: Icons.translate,
+                title: t.characterNameTranslation,
+              ),
             ],
           ),
         ),

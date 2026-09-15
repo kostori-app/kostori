@@ -5485,6 +5485,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Auto Title'
 	String get autoTitle => 'Auto Title';
 
+	/// en: 'Character Name Translation'
+	String get characterNameTranslation => 'Character Name Translation';
+
 	/// en: 'Connection to server disconnected'
 	String get connectionDisconnected => 'Connection to server disconnected';
 
@@ -10404,6 +10407,7 @@ extension on Translations {
 			'contextCompression' => 'Context Compression',
 			'followUpSuggestions' => 'Follow-up Suggestions',
 			'autoTitle' => 'Auto Title',
+			'characterNameTranslation' => 'Character Name Translation',
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
@@ -10594,9 +10598,9 @@ extension on Translations {
 			'lanDevice' => 'Device',
 			'lanConnectingToRemoteDevice' => 'Connecting to remote device...',
 			'lanRemoteControlConnected' => 'Remote control connected',
-			'lanRemoteControlConnectionFailed' => 'Remote control connection failed',
 			_ => null,
 		} ?? switch (path) {
+			'lanRemoteControlConnectionFailed' => 'Remote control connection failed',
 			'lanInvalidRemoteControlLink' => 'Invalid remote control link',
 			'lanRemoteControlConnection' => 'Remote Control Connection',
 			'lanAccept' => 'Accept',
@@ -11108,9 +11112,9 @@ extension on Translations {
 			'worldBookConstant' => 'Always on',
 			'worldBookRecursive' => 'Recursive scan',
 			'newWorldBookEntry' => 'New Entry',
-			'worldBookHitTest' => 'Hit Test',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookHitTest' => 'Hit Test',
 			'worldBookHitTestHint' => 'Type a sentence to see which entries will be triggered',
 			'worldBookHitTestPlaceholder' => 'Type a sentence...',
 			'worldBookHitsResult' => 'Matching entries',

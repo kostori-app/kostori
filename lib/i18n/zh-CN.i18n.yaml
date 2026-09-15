@@ -1859,6 +1859,7 @@ auxFollowSessionHint: 该任务将使用当前对话会话中配置的服务商�
 contextCompression: 上下文压缩
 followUpSuggestions: 后续追问建议
 autoTitle: 自动标题
+characterNameTranslation: 角色名翻译
 connectionDisconnected: 连接已断开
 enterServerAddress: 输入服务器地址
 tapToShare: 点击分享

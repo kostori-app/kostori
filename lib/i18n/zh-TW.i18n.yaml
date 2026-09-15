@@ -1864,6 +1864,7 @@ auxFollowSessionHint: 該任務將使用目前對話會話中配置的服務商�
 contextCompression: 上下文壓縮
 followUpSuggestions: 後續追問建議
 autoTitle: 自動標題
+characterNameTranslation: 角色名翻譯
 connectionDisconnected: 連線已斷開
 enterServerAddress: 輸入伺服器位址
 tapToShare: 點擊分享
