@@ -211,6 +211,12 @@ class _StoryPageState extends ConsumerState<StoryPage> {
                       ),
                     ),
                     IconButton(
+                      icon: const Icon(Icons.groups_outlined),
+                      tooltip: t.groupChat,
+                      onPressed: () =>
+                          context.to(() => const GroupChatPage()),
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.file_open_outlined),
                       tooltip: t.importEntries,
                       onPressed: _import,

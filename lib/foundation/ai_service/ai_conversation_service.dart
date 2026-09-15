@@ -962,6 +962,24 @@ class AiConversationService {
   /// 删除单条消息
   Future<void> deleteMessage(int taskId) => _taskDao.deleteById(taskId);
 
+  /// 直接插入一条消息（用于群聊开场白等预置内容，不经过模型调用）
+  Future<void> insertMessage({
+    required String sessionId,
+    required String role,
+    required String content,
+    String taskType = 'group',
+    String provider = '',
+  }) => _taskDao.insert(
+    AiTasksCompanion.insert(
+      sessionId: sessionId,
+      taskType: taskType,
+      role: Value(role),
+      inputContent: role == 'user' ? content : '',
+      outputContent: Value(role == 'model' ? content : null),
+      provider: provider,
+    ),
+  );
+
   /// 编辑单条消息正文（用户消息改输入，模型消息改输出）
   Future<void> editMessageInput(int taskId, String text) =>
       _taskDao.updateMessageInput(taskId, text);

@@ -30,6 +30,7 @@ import 'package:kostori/foundation/ai_service/ai_image_service.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
+import 'package:kostori/foundation/ai_service/group_chat.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/plugin_module.dart';
 import 'package:kostori/foundation/ai_service/setting_library.dart';
@@ -74,6 +75,8 @@ part 'story/story_game_page.dart';
 part 'story/story_details_sheet.dart';
 
 part 'story/story_shared.dart';
+
+part 'story/group_chat_page.dart';
 
 class AiHubEntry extends StatelessWidget {
   const AiHubEntry({super.key});
@@ -258,6 +261,14 @@ class _AiHubPageState extends State<AiHubPage> {
             subtitle: t.rolePlayDescription,
             color: const Color(0xFF7E57C2),
             onTap: () => context.to(() => const StoryPage()),
+          ),
+          const SizedBox(height: 8),
+          _HubModuleCard(
+            icon: Icons.groups_outlined,
+            title: t.groupChat,
+            subtitle: t.groupChatDescription,
+            color: const Color(0xFF5C6BC0),
+            onTap: () => context.to(() => const GroupChatPage()),
           ),
           const SizedBox(height: 16),
           // ── 插件模块 ──

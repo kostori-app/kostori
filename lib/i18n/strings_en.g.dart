@@ -4705,6 +4705,57 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Story-driven text adventure with status panels and choices'
 	String get rolePlayDescription => 'Story-driven text adventure with status panels and choices';
 
+	/// en: 'Group Chat'
+	String get groupChat => 'Group Chat';
+
+	/// en: 'Multiple character cards talking together, each role-played separately'
+	String get groupChatDescription => 'Multiple character cards talking together, each role-played separately';
+
+	/// en: 'New group chat'
+	String get newGroupChat => 'New group chat';
+
+	/// en: 'Group name'
+	String get groupChatName => 'Group name';
+
+	/// en: 'Members'
+	String get groupChatMembers => 'Members';
+
+	/// en: 'Scenario / setting (optional)'
+	String get groupChatScenario => 'Scenario / setting (optional)';
+
+	/// en: 'Extra prompt (optional)'
+	String get groupChatExtraPrompt => 'Extra prompt (optional)';
+
+	/// en: 'Speaker order'
+	String get groupChatOrder => 'Speaker order';
+
+	/// en: 'Natural'
+	String get groupChatOrderNatural => 'Natural';
+
+	/// en: 'Round-robin'
+	String get groupChatOrderList => 'Round-robin';
+
+	/// en: 'Auto mode'
+	String get groupChatAutoMode => 'Auto mode';
+
+	/// en: 'Pick at least one character'
+	String get groupChatNoMembers => 'Pick at least one character';
+
+	/// en: 'No group chats yet'
+	String get groupChatEmpty => 'No group chats yet';
+
+	/// en: 'Restarting clears this group chat's history'
+	String get groupChatRestartConfirm => 'Restarting clears this group chat\'s history';
+
+	/// en: 'Start the group chat'
+	String get groupChatStart => 'Start the group chat';
+
+	/// en: '(continue)'
+	String get groupChatContinue => '(continue)';
+
+	/// en: 'Say something…'
+	String get groupChatInputHint => 'Say something…';
+
 	/// en: 'Import character card'
 	String get importCharacter => 'Import character card';
 
@@ -10165,6 +10216,23 @@ extension on Translations {
 			'aiTagHistory' => 'History tags',
 			'rolePlay' => 'Tavern',
 			'rolePlayDescription' => 'Story-driven text adventure with status panels and choices',
+			'groupChat' => 'Group Chat',
+			'groupChatDescription' => 'Multiple character cards talking together, each role-played separately',
+			'newGroupChat' => 'New group chat',
+			'groupChatName' => 'Group name',
+			'groupChatMembers' => 'Members',
+			'groupChatScenario' => 'Scenario / setting (optional)',
+			'groupChatExtraPrompt' => 'Extra prompt (optional)',
+			'groupChatOrder' => 'Speaker order',
+			'groupChatOrderNatural' => 'Natural',
+			'groupChatOrderList' => 'Round-robin',
+			'groupChatAutoMode' => 'Auto mode',
+			'groupChatNoMembers' => 'Pick at least one character',
+			'groupChatEmpty' => 'No group chats yet',
+			'groupChatRestartConfirm' => 'Restarting clears this group chat\'s history',
+			'groupChatStart' => 'Start the group chat',
+			'groupChatContinue' => '(continue)',
+			'groupChatInputHint' => 'Say something…',
 			'importCharacter' => 'Import character card',
 			'characterImportFailed' => 'Failed to import character card',
 			'characterImported' => 'Character card imported',
@@ -10599,6 +10667,8 @@ extension on Translations {
 			'mp4Export' => 'MP4 Export',
 			'exportSuccess' => 'Export Success',
 			'exportFailed' => 'Export Failed',
+			_ => null,
+		} ?? switch (path) {
 			'selectTimeRange' => 'Select Time Range',
 			'recordingFeature' => 'Record',
 			'tapToRecord' => 'Tap to Record',
@@ -10616,8 +10686,6 @@ extension on Translations {
 			'lanQrCodeFor' => 'QR Code for',
 			'lanScanQrCodeToConnect' => 'Scan QR code to connect remote device',
 			'lanGeneratingQrCode' => 'Generating QR Code...',
-			_ => null,
-		} ?? switch (path) {
 			'lanRemoteControlDescription' => 'After scanning, you can remotely control this device',
 			'lanPairingRequestReceived' => 'Pairing Request Received',
 			'lanDevice' => 'Device',
@@ -11113,6 +11181,8 @@ extension on Translations {
 			'worldBookPriorityHint' => 'Higher priority entries are injected first',
 			'worldBookGroup' => 'Group',
 			'newWorldBook' => 'New world book',
+			_ => null,
+		} ?? switch (path) {
 			'newSettingBook' => 'New setting book',
 			'loreGenTriggers' => 'Generate triggers',
 			'loreTriggerLang' => 'Target language',
@@ -11130,8 +11200,6 @@ extension on Translations {
 			'worldBookRole' => 'Message role',
 			'worldBookBindCharacters' => 'Bound character cards (empty = any)',
 			'worldBookBindTags' => 'Bound tags (from character cards; empty = any)',
-			_ => null,
-		} ?? switch (path) {
 			'worldBookDepth' => 'Depth (smaller = closer to the end)',
 			'worldBookSticky' => 'Sticky turns',
 			'worldBookCooldown' => 'Cooldown turns',

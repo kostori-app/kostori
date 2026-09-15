@@ -1594,6 +1594,23 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiTagHistory => '歷史 Tag';
 	@override String get rolePlay => '酒館';
 	@override String get rolePlayDescription => '故事驅動的文字冒險，帶狀態面板與選項';
+	@override String get groupChat => '群聊';
+	@override String get groupChatDescription => '多張角色卡同場對話，分別扮演';
+	@override String get newGroupChat => '新增群聊';
+	@override String get groupChatName => '群聊名稱';
+	@override String get groupChatMembers => '群組成員';
+	@override String get groupChatScenario => '場景 / 設定（可選）';
+	@override String get groupChatExtraPrompt => '附加提示詞（可選）';
+	@override String get groupChatOrder => '發言順序';
+	@override String get groupChatOrderNatural => '自然';
+	@override String get groupChatOrderList => '輪流';
+	@override String get groupChatAutoMode => '自動模式';
+	@override String get groupChatNoMembers => '請至少選擇一位角色';
+	@override String get groupChatEmpty => '還沒有群聊';
+	@override String get groupChatRestartConfirm => '重新開始會清空本群聊的對話記錄';
+	@override String get groupChatStart => '請開始群聊';
+	@override String get groupChatContinue => '（繼續）';
+	@override String get groupChatInputHint => '說點什麼…';
 	@override String get importCharacter => '導入角色卡';
 	@override String get characterImportFailed => '角色卡導入失敗';
 	@override String get characterImported => '角色卡已導入';
@@ -4501,6 +4518,23 @@ extension on TranslationsZhTw {
 			'aiTagHistory' => '歷史 Tag',
 			'rolePlay' => '酒館',
 			'rolePlayDescription' => '故事驅動的文字冒險，帶狀態面板與選項',
+			'groupChat' => '群聊',
+			'groupChatDescription' => '多張角色卡同場對話，分別扮演',
+			'newGroupChat' => '新增群聊',
+			'groupChatName' => '群聊名稱',
+			'groupChatMembers' => '群組成員',
+			'groupChatScenario' => '場景 / 設定（可選）',
+			'groupChatExtraPrompt' => '附加提示詞（可選）',
+			'groupChatOrder' => '發言順序',
+			'groupChatOrderNatural' => '自然',
+			'groupChatOrderList' => '輪流',
+			'groupChatAutoMode' => '自動模式',
+			'groupChatNoMembers' => '請至少選擇一位角色',
+			'groupChatEmpty' => '還沒有群聊',
+			'groupChatRestartConfirm' => '重新開始會清空本群聊的對話記錄',
+			'groupChatStart' => '請開始群聊',
+			'groupChatContinue' => '（繼續）',
+			'groupChatInputHint' => '說點什麼…',
 			'importCharacter' => '導入角色卡',
 			'characterImportFailed' => '角色卡導入失敗',
 			'characterImported' => '角色卡已導入',
@@ -4935,6 +4969,8 @@ extension on TranslationsZhTw {
 			'apngExport' => 'APNG 匯出',
 			'mp4Export' => 'MP4 匯出',
 			'exportSuccess' => '匯出成功',
+			_ => null,
+		} ?? switch (path) {
 			'exportFailed' => '匯出失敗',
 			'selectTimeRange' => '選擇時間範圍',
 			'recordingFeature' => '錄製',
@@ -4952,8 +4988,6 @@ extension on TranslationsZhTw {
 			'lanAccept' => '接受',
 			'lanScanQrCodeToConnect' => '掃碼連接',
 			'lanGeneratingQrCode' => '正在生成二維碼',
-			_ => null,
-		} ?? switch (path) {
 			'lanRemoteControlDescription' => '手機掃碼即可遠端控制',
 			'lanInvalidRemoteControlLink' => '無效的遠端控制連結',
 			'lanRemoteControlConnection' => '遠端控制連線',
@@ -5449,6 +5483,8 @@ extension on TranslationsZhTw {
 			'worldBookGroup' => '分組',
 			'newWorldBook' => '新增世界書',
 			'newSettingBook' => '新增設定書',
+			_ => null,
+		} ?? switch (path) {
 			'loreGenTriggers' => '生成觸發詞',
 			'loreTriggerLang' => '目標語言',
 			'loreTriggerLangHint' => '如：中文 / English / 日本語',
@@ -5466,8 +5502,6 @@ extension on TranslationsZhTw {
 			'worldBookBindCharacters' => '綁定角色卡（留空不限制）',
 			'worldBookBindTags' => '綁定標籤（取自角色卡，留空不限制）',
 			'worldBookDepth' => '深度（越小越靠後）',
-			_ => null,
-		} ?? switch (path) {
 			'worldBookSticky' => '保持回合數',
 			'worldBookCooldown' => '冷卻回合數',
 			'worldBookConstant' => '常駐',

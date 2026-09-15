@@ -1604,6 +1604,23 @@ aiImageNeedTags: Generate tags first
 aiTagHistory: History tags
 rolePlay: Tavern
 rolePlayDescription: Story-driven text adventure with status panels and choices
+groupChat: Group Chat
+groupChatDescription: Multiple character cards talking together, each role-played separately
+newGroupChat: New group chat
+groupChatName: Group name
+groupChatMembers: Members
+groupChatScenario: Scenario / setting (optional)
+groupChatExtraPrompt: Extra prompt (optional)
+groupChatOrder: Speaker order
+groupChatOrderNatural: Natural
+groupChatOrderList: Round-robin
+groupChatAutoMode: Auto mode
+groupChatNoMembers: Pick at least one character
+groupChatEmpty: No group chats yet
+groupChatRestartConfirm: Restarting clears this group chat's history
+groupChatStart: Start the group chat
+groupChatContinue: (continue)
+groupChatInputHint: Say something…
 importCharacter: Import character card
 characterImportFailed: Failed to import character card
 characterImported: Character card imported

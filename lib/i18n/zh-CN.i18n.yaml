@@ -1599,6 +1599,23 @@ aiImageNeedTags: 请先生成 Tag
 aiTagHistory: 历史 Tag
 rolePlay: 酒馆
 rolePlayDescription: 故事驱动的文字冒险，带状态面板与选项
+groupChat: 群聊
+groupChatDescription: 多张角色卡同场对话，分别扮演
+newGroupChat: 新建群聊
+groupChatName: 群聊名称
+groupChatMembers: 群成员
+groupChatScenario: 场景 / 设定（可选）
+groupChatExtraPrompt: 附加提示词（可选）
+groupChatOrder: 发言顺序
+groupChatOrderNatural: 自然
+groupChatOrderList: 轮流
+groupChatAutoMode: 自动模式
+groupChatNoMembers: 请至少选择一位角色
+groupChatEmpty: 还没有群聊
+groupChatRestartConfirm: 重新开始会清空本群聊的对话记录
+groupChatStart: 请开始群聊
+groupChatContinue: （继续）
+groupChatInputHint: 说点什么…
 importCharacter: 导入角色卡
 characterImportFailed: 角色卡导入失败
 characterImported: 角色卡已导入

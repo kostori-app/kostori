@@ -1593,6 +1593,23 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiTagHistory => '历史 Tag';
 	@override String get rolePlay => '酒馆';
 	@override String get rolePlayDescription => '故事驱动的文字冒险，带状态面板与选项';
+	@override String get groupChat => '群聊';
+	@override String get groupChatDescription => '多张角色卡同场对话，分别扮演';
+	@override String get newGroupChat => '新建群聊';
+	@override String get groupChatName => '群聊名称';
+	@override String get groupChatMembers => '群成员';
+	@override String get groupChatScenario => '场景 / 设定（可选）';
+	@override String get groupChatExtraPrompt => '附加提示词（可选）';
+	@override String get groupChatOrder => '发言顺序';
+	@override String get groupChatOrderNatural => '自然';
+	@override String get groupChatOrderList => '轮流';
+	@override String get groupChatAutoMode => '自动模式';
+	@override String get groupChatNoMembers => '请至少选择一位角色';
+	@override String get groupChatEmpty => '还没有群聊';
+	@override String get groupChatRestartConfirm => '重新开始会清空本群聊的对话记录';
+	@override String get groupChatStart => '请开始群聊';
+	@override String get groupChatContinue => '（继续）';
+	@override String get groupChatInputHint => '说点什么…';
 	@override String get importCharacter => '导入角色卡';
 	@override String get characterImportFailed => '角色卡导入失败';
 	@override String get characterImported => '角色卡已导入';
@@ -4501,6 +4518,23 @@ extension on TranslationsZhCn {
 			'aiTagHistory' => '历史 Tag',
 			'rolePlay' => '酒馆',
 			'rolePlayDescription' => '故事驱动的文字冒险，带状态面板与选项',
+			'groupChat' => '群聊',
+			'groupChatDescription' => '多张角色卡同场对话，分别扮演',
+			'newGroupChat' => '新建群聊',
+			'groupChatName' => '群聊名称',
+			'groupChatMembers' => '群成员',
+			'groupChatScenario' => '场景 / 设定（可选）',
+			'groupChatExtraPrompt' => '附加提示词（可选）',
+			'groupChatOrder' => '发言顺序',
+			'groupChatOrderNatural' => '自然',
+			'groupChatOrderList' => '轮流',
+			'groupChatAutoMode' => '自动模式',
+			'groupChatNoMembers' => '请至少选择一位角色',
+			'groupChatEmpty' => '还没有群聊',
+			'groupChatRestartConfirm' => '重新开始会清空本群聊的对话记录',
+			'groupChatStart' => '请开始群聊',
+			'groupChatContinue' => '（继续）',
+			'groupChatInputHint' => '说点什么…',
 			'importCharacter' => '导入角色卡',
 			'characterImportFailed' => '角色卡导入失败',
 			'characterImported' => '角色卡已导入',
@@ -4936,6 +4970,8 @@ extension on TranslationsZhCn {
 			'gifExport' => 'GIF 导出',
 			'apngExport' => 'APNG 导出',
 			'mp4Export' => 'MP4 导出',
+			_ => null,
+		} ?? switch (path) {
 			'exportSuccess' => '导出成功',
 			'exportFailed' => '导出失败',
 			'selectTimeRange' => '选择时间范围',
@@ -4953,8 +4989,6 @@ extension on TranslationsZhCn {
 			'lanDevice' => '设备',
 			'lanAccept' => '接受',
 			'lanScanQrCodeToConnect' => '扫码连接',
-			_ => null,
-		} ?? switch (path) {
 			'lanGeneratingQrCode' => '正在生成二维码',
 			'lanRemoteControlDescription' => '手机扫码即可远程控制',
 			'lanInvalidRemoteControlLink' => '无效的远程控制链接',
@@ -5450,6 +5484,8 @@ extension on TranslationsZhCn {
 			'worldBookPriorityHint' => '优先级高的条目先注入',
 			'worldBookGroup' => '分组',
 			'newWorldBook' => '新建世界书',
+			_ => null,
+		} ?? switch (path) {
 			'newSettingBook' => '新建设定书',
 			'loreGenTriggers' => '生成触发词',
 			'loreTriggerLang' => '目标语言',
@@ -5467,8 +5503,6 @@ extension on TranslationsZhCn {
 			'worldBookRole' => '消息角色',
 			'worldBookBindCharacters' => '绑定角色卡（留空不限制）',
 			'worldBookBindTags' => '绑定标签（取自角色卡，留空不限制）',
-			_ => null,
-		} ?? switch (path) {
 			'worldBookDepth' => '深度（越小越靠后）',
 			'worldBookSticky' => '保持回合数',
 			'worldBookCooldown' => '冷却回合数',
