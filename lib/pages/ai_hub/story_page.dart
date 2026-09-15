@@ -908,6 +908,8 @@ class _StoryEditorState extends State<_StoryEditor>
       ),
   ];
   late String _titleMode = widget.story?.titleMode ?? 'all';
+  /// 高级分区：当前选中的子 tab
+  int _advIdx = 0;
   late final List<_StoryTitleDraft> _titles = [
     for (final x in widget.story?.titles ?? const <StoryTitle>[])
       _StoryTitleDraft(
@@ -2152,9 +2154,35 @@ class _StoryEditorState extends State<_StoryEditor>
       padding: const EdgeInsets.only(top: 8, bottom: 6),
       child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
     );
+    final advTabs = [
+      t.storyCodexDefs,
+      t.storyTitles,
+      t.storyJob,
+      t.storyBase,
+      t.storyCharacters,
+      t.storyVariables,
+      t.storyRegex,
+      t.storyAchievements,
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: CapsuleOptions(
+            alignment: WrapAlignment.start,
+            scrollable: true,
+            children: [
+              for (var i = 0; i < advTabs.length; i++)
+                CapsuleOption(
+                  text: advTabs[i],
+                  isSelected: _advIdx == i,
+                  onTap: () => setState(() => _advIdx = i),
+                ),
+            ],
+          ),
+        ),
+        if (_advIdx == 0) ...[
         sectionTitle(t.storyCodexDefs),
         for (var i = 0; i < _codexDefs.length; i++)
           card([
@@ -2211,6 +2239,8 @@ class _StoryEditorState extends State<_StoryEditor>
           ),
         ),
 
+        ],
+        if (_advIdx == 1) ...[
         // ── 称号 ──
         sectionTitle(t.storyTitles),
         Row(
@@ -2298,6 +2328,8 @@ class _StoryEditorState extends State<_StoryEditor>
           ),
         ),
 
+        ],
+        if (_advIdx == 2) ...[
         // ── 职业 ──
         sectionTitle(t.storyJob),
         TextFormField(
@@ -2375,6 +2407,8 @@ class _StoryEditorState extends State<_StoryEditor>
           ),
         ),
 
+        ],
+        if (_advIdx == 3) ...[
         // ── 据点 ──
         sectionTitle(t.storyBase),
         for (var i = 0; i < _facilities.length; i++)
@@ -2431,6 +2465,8 @@ class _StoryEditorState extends State<_StoryEditor>
           ),
         ),
 
+        ],
+        if (_advIdx == 4) ...[
         sectionTitle(t.storyCharacters),
         for (var i = 0; i < _characters.length; i++)
           card([
@@ -2490,6 +2526,8 @@ class _StoryEditorState extends State<_StoryEditor>
             ),
           ],
         ),
+        ],
+        if (_advIdx == 5) ...[
         sectionTitle(t.storyVariables),
         for (var i = 0; i < _variables.length; i++)
           card([
@@ -2619,6 +2657,8 @@ class _StoryEditorState extends State<_StoryEditor>
           icon: const Icon(Icons.add),
           label: Text(t.storyAddVariable),
         ),
+        ],
+        if (_advIdx == 6) ...[
         sectionTitle(t.storyRegex),
         for (var i = 0; i < _regexes.length; i++)
           card([
@@ -2732,6 +2772,8 @@ class _StoryEditorState extends State<_StoryEditor>
           icon: const Icon(Icons.add),
           label: Text(t.storyAddRegex),
         ),
+        ],
+        if (_advIdx == 7) ...[
         sectionTitle(t.storyAchievements),
         for (var i = 0; i < _achievements.length; i++)
           card([
@@ -2783,6 +2825,7 @@ class _StoryEditorState extends State<_StoryEditor>
           icon: const Icon(Icons.add),
           label: Text(t.storyAddAction),
         ),
+        ],
       ],
     );
   }
