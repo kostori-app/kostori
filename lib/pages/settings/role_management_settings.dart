@@ -1473,6 +1473,9 @@ class _WorldBookPanel extends StatefulWidget {
 class _WorldBookPanelState extends State<_WorldBookPanel> {
   bool _dragOver = false;
 
+  /// 展开的世界书（默认全部折叠）
+  final Set<String> _expandedBooks = {};
+
   @override
   void initState() {
     super.initState();
@@ -1496,43 +1499,6 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
       }
     }
     if (mounted) setState(() => _dragOver = false);
-  }
-
-  /// 新建条目：选择并入已有世界书，或新建一本
-  Future<void> _addEntry() async {
-    final store = WorldBookStore.instance;
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Sheet(
-        title: t.newWorldBookEntry,
-        icon: Icons.add,
-        initialSize: 0.4,
-        builder: (ctx, sc) => ListView(
-          controller: sc,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.note_add_outlined),
-              title: Text(t.newWorldBook),
-              onTap: () => Navigator.of(ctx).pop('__new__'),
-            ),
-            for (final b in store.books)
-              ListTile(
-                leading: const Icon(Icons.menu_book_outlined),
-                title: Text(b.name.isEmpty ? t.worldBook : b.name),
-                trailing: Text('${b.entries.length}'),
-                onTap: () => Navigator.of(ctx).pop(b.id),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (choice == null || !mounted) return;
-    final bookId = choice == '__new__'
-        ? (await store.createBook()).id
-        : choice;
-    if (!mounted) return;
-    showPopUpWidget(App.rootContext, _WorldBookEditor(bookId: bookId));
   }
 
   /// 选目标语言（默认中文，可自定义）
@@ -1683,6 +1649,99 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
     setState(() {});
   }
 
+  /// 新建一本世界书（组）
+  Future<void> _newBook() async {
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: App.rootContext,
+      builder: (ctx) => ContentDialog(
+        title: t.newWorldBook,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: t.worldBookName,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name == null || !mounted) return;
+    final book = await WorldBookStore.instance.createBook(name: name);
+    if (!mounted) return;
+    setState(() => _expandedBooks.add(book.id));
+  }
+
+  /// 重命名世界书
+  Future<void> _renameBook(WorldBookBook book) async {
+    final ctrl = TextEditingController(text: book.name);
+    final name = await showDialog<String>(
+      context: App.rootContext,
+      builder: (ctx) => ContentDialog(
+        title: t.rename,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: t.worldBookName,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name == null || !mounted) return;
+    await WorldBookStore.instance.upsertBook(
+      WorldBookBook(id: book.id, name: name, entries: book.entries),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// 把条目移动到另一本书
+  Future<void> _moveEntry(WorldBookEntry entry) async {
+    final store = WorldBookStore.instance;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.worldBookMove,
+        icon: Icons.drive_file_move_outline,
+        initialSize: 0.4,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            for (final b in store.books)
+              if (b.id != entry.bookId)
+                ListTile(
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: Text(b.name.isEmpty ? t.worldBook : b.name),
+                  trailing: Text('${b.entries.length}'),
+                  onTap: () => Navigator.of(ctx).pop(b.id),
+                ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    await store.upsert(entry, bookId: choice);
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) => DropTarget(
     onDragDone: _onDrop,
@@ -1747,8 +1806,8 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
               ),
               IconButton(
                 icon: const Icon(Icons.add),
-                tooltip: t.newWorldBookEntry,
-                onPressed: _addEntry,
+                tooltip: t.newWorldBook,
+                onPressed: _newBook,
               ),
             ],
           ),
@@ -1766,17 +1825,51 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
               }
               final children = <Widget>[];
               for (final book in books) {
+                final expanded = _expandedBooks.contains(book.id);
+                void toggle() => setState(() {
+                  if (expanded) {
+                    _expandedBooks.remove(book.id);
+                  } else {
+                    _expandedBooks.add(book.id);
+                  }
+                });
                 children.add(
                   Padding(
                     padding: const EdgeInsets.only(top: 6, bottom: 6),
                     child: Row(
                       children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(
+                            expanded
+                                ? Icons.expand_more
+                                : Icons.chevron_right,
+                            size: 20,
+                          ),
+                          onPressed: toggle,
+                        ),
+                        const SizedBox(width: 4),
                         Expanded(
-                          child: Text(
-                            book.name.isEmpty ? t.worldBook : book.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
+                          child: GestureDetector(
+                            onTap: toggle,
+                            behavior: HitTestBehavior.opaque,
+                            child: Text(
+                              book.name.isEmpty ? t.worldBook : book.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
+                          ),
+                        ),
+                        Text(
+                          '${book.entries.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         IconButton(
@@ -1794,20 +1887,23 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                             _WorldBookEditor(bookId: book.id),
                           ),
                         ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          tooltip: t.delete,
-                          icon: Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          onPressed: () => store.removeBook(book.id),
+                        PopupMenuButton<String>(
+                          tooltip: '',
+                          icon: const Icon(Icons.more_vert, size: 18),
+                          onSelected: (v) {
+                            if (v == 'rename') _renameBook(book);
+                            if (v == 'delete') store.removeBook(book.id);
+                          },
+                          itemBuilder: (_) => [
+                            PopupMenuItem(value: 'rename', child: Text(t.rename)),
+                            PopupMenuItem(value: 'delete', child: Text(t.delete)),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 );
+                if (!expanded) continue;
                 final sorted = [...book.entries]
                   ..sort((a, b) => b.priority.compareTo(a.priority));
                 for (final entry in sorted) {
@@ -1821,6 +1917,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                             entry: entry,
                             onToggle: (v) =>
                                 store.upsert(entry.copyWith(enabled: v)),
+                            onMove: () => _moveEntry(entry),
                           ),
                         ],
                       ),
@@ -1841,10 +1938,17 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
 }
 
 class _WorldBookTile extends StatelessWidget {
-  const _WorldBookTile({required this.entry, required this.onToggle});
+  const _WorldBookTile({
+    required this.entry,
+    required this.onToggle,
+    this.onMove,
+  });
 
   final WorldBookEntry entry;
   final ValueChanged<bool> onToggle;
+
+  /// 移动到其它世界书
+  final VoidCallback? onMove;
 
   @override
   Widget build(BuildContext context) {
@@ -1885,6 +1989,13 @@ class _WorldBookTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (onMove != null)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: t.worldBookMove,
+              icon: const Icon(Icons.drive_file_move_outline, size: 18),
+              onPressed: onMove,
+            ),
           CustomSwitch(value: entry.enabled, onChanged: onToggle),
           const Icon(Icons.arrow_right, size: 20),
         ],
@@ -2203,13 +2314,11 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           children: [
                             Text(t.worldBookBindCharacters),
                             const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
+                            CapsuleChipGroup(
                               children: [
                                 for (final c
                                     in CharacterCardStore.instance.cards)
-                                  OptionChip(
+                                  CapsuleChip(
                                     text: c.name,
                                     isSelected: _boundChars.contains(c.id),
                                     onTap: () => setState(() {
@@ -2223,12 +2332,10 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                             const SizedBox(height: 12),
                             Text(t.worldBookBindTags),
                             const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
+                            CapsuleChipGroup(
                               children: [
                                 for (final tag in _availableTags)
-                                  OptionChip(
+                                  CapsuleChip(
                                     text: tag,
                                     isSelected: _boundTags.contains(tag),
                                     onTap: () => setState(() {

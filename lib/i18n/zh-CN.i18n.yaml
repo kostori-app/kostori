@@ -2563,6 +2563,7 @@ loreTriggerLang: 目标语言
 loreTriggerLangHint: 如：中文 / English / 日本語
 loreTriggerGenDone: 已为 ${count} 条生成触发词
 loreTriggerGenFailed: 生成触发词失败
+worldBookMove: 移动到世界书
 worldBookSecondaryKeys: 次级键（每行一个，需全部命中）
 worldBookPosition: 注入位置
 worldBookPositionBefore: 角色定义前

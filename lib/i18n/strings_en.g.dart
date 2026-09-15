@@ -7543,6 +7543,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Failed to generate triggers'
 	String get loreTriggerGenFailed => 'Failed to generate triggers';
 
+	/// en: 'Move to world book'
+	String get worldBookMove => 'Move to world book';
+
 	/// en: 'Secondary keys (one per line, all must match)'
 	String get worldBookSecondaryKeys => 'Secondary keys (one per line, all must match)';
 
@@ -11086,6 +11089,7 @@ extension on Translations {
 			'loreTriggerLangHint' => 'e.g. Chinese / English / Japanese',
 			'loreTriggerGenDone' => ({required Object count}) => 'Generated triggers for ${count} entries',
 			'loreTriggerGenFailed' => 'Failed to generate triggers',
+			'worldBookMove' => 'Move to world book',
 			'worldBookSecondaryKeys' => 'Secondary keys (one per line, all must match)',
 			'worldBookPosition' => 'Injection position',
 			'worldBookPositionBefore' => 'Before character definitions',
@@ -11102,9 +11106,9 @@ extension on Translations {
 			'newWorldBookEntry' => 'New Entry',
 			'worldBookHitTest' => 'Hit Test',
 			'worldBookHitTestHint' => 'Type a sentence to see which entries will be triggered',
-			'worldBookHitTestPlaceholder' => 'Type a sentence...',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookHitTestPlaceholder' => 'Type a sentence...',
 			'worldBookHitsResult' => 'Matching entries',
 			'worldBookNoHits' => 'No entries matched',
 			'noWorldBookEntriesYet' => 'No world info entries yet',

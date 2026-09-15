@@ -2540,6 +2540,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get loreTriggerLangHint => '如：中文 / English / 日本語';
 	@override String loreTriggerGenDone({required Object count}) => '已为 ${count} 条生成触发词';
 	@override String get loreTriggerGenFailed => '生成触发词失败';
+	@override String get worldBookMove => '移动到世界书';
 	@override String get worldBookSecondaryKeys => '次级键（每行一个，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
 	@override String get worldBookPositionBefore => '角色定义前';
@@ -5441,6 +5442,7 @@ extension on TranslationsZhCn {
 			'loreTriggerLangHint' => '如：中文 / English / 日本語',
 			'loreTriggerGenDone' => ({required Object count}) => '已为 ${count} 条生成触发词',
 			'loreTriggerGenFailed' => '生成触发词失败',
+			'worldBookMove' => '移动到世界书',
 			'worldBookSecondaryKeys' => '次级键（每行一个，需全部命中）',
 			'worldBookPosition' => '注入位置',
 			'worldBookPositionBefore' => '角色定义前',
@@ -5457,9 +5459,9 @@ extension on TranslationsZhCn {
 			'newWorldBookEntry' => '新建条目',
 			'worldBookHitTest' => '命中测试',
 			'worldBookHitTestHint' => '输入一句话，查看哪些条目会被触发',
-			'worldBookHitTestPlaceholder' => '输入一句话...',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookHitTestPlaceholder' => '输入一句话...',
 			'worldBookHitsResult' => '命中条目',
 			'worldBookNoHits' => '没有条目命中',
 			'noWorldBookEntriesYet' => '暂无世界书条目',
