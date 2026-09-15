@@ -64,6 +64,7 @@ class AiModelCard extends StatelessWidget {
     required this.onTap,
     this.isSelected = false,
     this.showDefaultBadge = false,
+    this.showLeadingRadio = true,
     this.onLongPress,
     this.onSecondaryTap,
     this.trailing,
@@ -74,6 +75,9 @@ class AiModelCard extends StatelessWidget {
 
   /// 是否在选中时显示「默认模型」徽章
   final bool showDefaultBadge;
+
+  /// 是否显示左侧选中圆圈
+  final bool showLeadingRadio;
 
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -101,14 +105,16 @@ class AiModelCard extends StatelessWidget {
           child: Row(
             children: [
               // ── 选中标识 ────────────────────────
-              Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                size: 20,
-                color: isSelected ? scheme.primary : scheme.outlineVariant,
-              ),
-              const SizedBox(width: 10),
+              if (showLeadingRadio) ...[
+                Icon(
+                  isSelected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  size: 20,
+                  color: isSelected ? scheme.primary : scheme.outlineVariant,
+                ),
+                const SizedBox(width: 10),
+              ],
 
               // ── 信息区（名称 / ID / 类型 / 模态）────
               Expanded(

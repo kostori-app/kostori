@@ -948,8 +948,49 @@ class _ModelListSectionState extends State<_ModelListSection> {
   /// 当前类型筛选（null = 全部）
   String? _typeFilter;
 
+  /// 搜索关键字（按名称 / ID 过滤）
+  String _query = '';
+
   /// 已折叠的基名分组
   final Set<String> _collapsed = {};
+
+  /// 默认模型卡片在列表中的下标（-1 表示未找到）
+  int _defaultIndex = -1;
+
+  /// 首次打开时自动滚动到默认模型（只滚一次）
+  bool _autoScrolled = false;
+
+  final ScrollController _scrollController = ScrollController();
+  late final ListObserverController _observerController =
+      ListObserverController(controller: _scrollController);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.scrollable) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoScrollToDefault());
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// 打开后自动定位到默认模型（列表懒加载，用观察器按需跳转）
+  Future<void> _autoScrollToDefault() async {
+    if (_autoScrolled || !mounted || _defaultIndex < 0) return;
+    _autoScrolled = true;
+    // 等观察器完成首帧布局再跳转
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    if (!mounted || _defaultIndex < 0) return;
+    try {
+      await _observerController.jumpTo(index: _defaultIndex, alignment: 0);
+    } catch (_) {
+      // 列表尚未挂载时忽略
+    }
+  }
 
   /// 打开模型二级设置页（model 为 null 表示新增）
   Future<void> _openEditor(BuildContext context, {AiModel? model}) async {
@@ -973,10 +1014,14 @@ class _ModelListSectionState extends State<_ModelListSection> {
     final scheme = Theme.of(context).colorScheme;
     final rows = _buildRows(scheme);
     if (widget.scrollable) {
-      return ListView.builder(
-        padding: const EdgeInsets.only(bottom: 88),
-        itemCount: rows.length,
-        itemBuilder: (context, i) => rows[i],
+      return ListViewObserver(
+        controller: _observerController,
+        child: ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.only(bottom: 88),
+          itemCount: rows.length,
+          itemBuilder: (context, i) => rows[i],
+        ),
       );
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
@@ -1002,6 +1047,8 @@ class _ModelListSectionState extends State<_ModelListSection> {
       ),
     );
 
+    _defaultIndex = -1;
+
     if (widget.models.isEmpty) {
       return [
         header,
@@ -1020,65 +1067,86 @@ class _ModelListSectionState extends State<_ModelListSection> {
       ];
     }
 
-    // ── 类型筛选 chips ─────────────────────────
+    // ── 类型筛选（分段胶囊）────────────────────
     final types = <String>[];
     for (final m in widget.models) {
-      final t = m.modelType.isEmpty ? 'chat' : m.modelType;
-      if (!types.contains(t)) types.add(t);
+      final tp = m.modelType.isEmpty ? 'chat' : m.modelType;
+      if (!types.contains(tp)) types.add(tp);
     }
     final filterRow = Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            ChoiceChip(
-              label: Text(t.all),
-              selected: _typeFilter == null,
-              visualDensity: VisualDensity.compact,
-              onSelected: (_) => setState(() => _typeFilter = null),
-            ),
-            const SizedBox(width: 6),
-            for (final type in types) ...[
-              ChoiceChip(
-                label: Text(_modelTypeLabel(type)),
-                selected: _typeFilter == type,
-                visualDensity: VisualDensity.compact,
-                onSelected: (_) => setState(
-                  () => _typeFilter = _typeFilter == type ? null : type,
-                ),
+      child: CapsuleOptions(
+        scrollable: true,
+        alignment: WrapAlignment.start,
+        children: [
+          CapsuleOption(
+            text: t.all,
+            isSelected: _typeFilter == null,
+            onTap: () => setState(() => _typeFilter = null),
+          ),
+          for (final type in types)
+            CapsuleOption(
+              text: _modelTypeLabel(type),
+              isSelected: _typeFilter == type,
+              onTap: () => setState(
+                () => _typeFilter = _typeFilter == type ? null : type,
               ),
-              const SizedBox(width: 6),
-            ],
-          ],
+            ),
+        ],
+      ),
+    );
+
+    // ── 搜索框 ─────────────────────────────────
+    final searchRow = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: TextField(
+        onChanged: (v) => setState(() => _query = v),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: t.search,
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  tooltip: t.clear,
+                  onPressed: () => setState(() => _query = ''),
+                ),
+          border: const OutlineInputBorder(),
         ),
       ),
     );
 
-    // ── 按基名分组（同基名不同后缀折叠为一组）──
-    final filtered = _typeFilter == null
-        ? widget.models
-        : widget.models
-              .where(
-                (m) =>
-                    (m.modelType.isEmpty ? 'chat' : m.modelType) == _typeFilter,
-              )
-              .toList();
+    // ── 过滤（类型 + 关键字）再按基名分组 ────────
+    final q = _query.trim().toLowerCase();
+    final filtered = widget.models.where((m) {
+      final tp = m.modelType.isEmpty ? 'chat' : m.modelType;
+      if (_typeFilter != null && tp != _typeFilter) return false;
+      if (q.isNotEmpty &&
+          !m.label.toLowerCase().contains(q) &&
+          !m.modelId.toLowerCase().contains(q)) {
+        return false;
+      }
+      return true;
+    }).toList();
     final groups = <String, List<AiModel>>{};
     for (final m in filtered) {
       groups.putIfAbsent(_baseModelName(m.modelId), () => []).add(m);
     }
     final bases = groups.keys.toList()..sort();
 
-    return [
-      header,
-      filterRow,
-      for (final base in bases) ...[
-        _groupHeader(base, groups[base]!),
-        if (!_collapsed.contains(base))
-          for (final m in groups[base]!) _modelCard(m),
-      ],
-    ];
+    final rows = <Widget>[header, filterRow, searchRow];
+    for (final base in bases) {
+      rows.add(_groupHeader(base, groups[base]!));
+      if (_collapsed.contains(base)) continue;
+      for (final m in groups[base]!) {
+        if (!_autoScrolled && m.modelId == widget.selectedModelId) {
+          _defaultIndex = rows.length;
+        }
+        rows.add(_modelCard(m));
+      }
+    }
+    return rows;
   }
 
   Widget _groupHeader(String base, List<AiModel> group) {
@@ -1165,6 +1233,7 @@ class _ModelCard extends StatelessWidget {
       model: model,
       isSelected: isSelected,
       showDefaultBadge: true,
+      showLeadingRadio: false,
       onTap: onOpen,
       onLongPress: () => _showActions(context),
       onSecondaryTap: () => _showActions(context),
