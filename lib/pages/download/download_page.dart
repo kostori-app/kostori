@@ -1039,14 +1039,7 @@ class _DownloadTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colorScheme.primary,
-              ),
-            ),
+            const PolygonRefreshIndicator(size: 16),
             const SizedBox(width: 10),
             Text(
               t.downloadMerging,

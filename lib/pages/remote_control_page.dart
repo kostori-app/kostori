@@ -373,7 +373,10 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
                 ),
 
                 if (_isSending)
-                  const LinearProgressIndicator()
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: PolygonRefreshIndicator(size: 18),
+                  )
                 else
                   const SizedBox(height: 4),
 

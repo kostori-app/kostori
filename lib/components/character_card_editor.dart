@@ -486,11 +486,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
           tooltip: t.translate,
           onPressed: _translating ? null : _translateNameToNickname,
           icon: _translating
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const PolygonRefreshIndicator(size: 16)
               : const Icon(Icons.translate, size: 18),
         ),
       ),

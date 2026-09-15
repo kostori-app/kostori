@@ -267,10 +267,14 @@ LoadingDialogController showLoadingDialog(
           };
           return ContentDialog(
             title: controller._message ?? 'Loading',
-            content: LinearProgressIndicator(
-              value: controller._progress,
-              backgroundColor: context.colorScheme.surfaceContainer,
-            ).paddingHorizontal(16).paddingVertical(16),
+            content: (controller._progress == null
+                    ? const Center(child: PolygonRefreshIndicator(size: 28))
+                    : LinearProgressIndicator(
+                        value: controller._progress,
+                        backgroundColor: context.colorScheme.surfaceContainer,
+                      ))
+                .paddingHorizontal(16)
+                .paddingVertical(16),
             cancel: allowCancel
                 ? () {
                     controller.closed = true;

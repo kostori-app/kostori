@@ -1690,7 +1690,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
         ),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: PolygonRefreshIndicator())
               : _buildList(_kinds[_tab]),
         ),
       ],

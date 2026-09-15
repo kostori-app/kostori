@@ -2070,13 +2070,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                             if (_registering)
                               const Padding(
                                 padding: EdgeInsets.all(12),
-                                child: SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
+                                child: PolygonRefreshIndicator(size: 16),
                               )
                             else
                               TextButton(
