@@ -604,6 +604,8 @@ class AiConversationService {
     //    会话关联助手档案时按其 enabledSkillIds 限定启用集合）
     var tools = <AiToolDefinition>[];
     AiToolHandler? toolHandler;
+    // 渐进式工具加载：每轮把「已加载」的工具补进 tools
+    void Function()? refreshTools;
     if (useTools && ai.supportsStreamingTools) {
       final keyRow = await ai.getKeyRow();
       if (await ai.modelSupportsTools(keyRow?.model)) {
@@ -621,6 +623,43 @@ class AiConversationService {
             if (!toolNames.contains(name)) {
               throw Exception('未允许的工具: $name');
             }
+            return inner(name, args);
+          };
+        } else if (built.tools.length > kProgressiveToolThreshold) {
+          // 工具较多：先只暴露 load_tools，按需加载，避免每轮发送全部 schema
+          final allTools = built.tools;
+          final byName = {for (final t in allTools) t.name: t};
+          final loaded = <String>{};
+          final inner = built.handler;
+          final meta = loadToolsDefinition(allTools);
+          tools = [meta];
+          refreshTools = () {
+            tools = [
+              meta,
+              ...allTools.where((t) => loaded.contains(t.name)),
+            ];
+          };
+          toolHandler = (name, args) async {
+            if (name == kLoadToolsName) {
+              final raw = args['tools'];
+              final wanted = raw is List
+                  ? raw.map((e) => e.toString()).toList()
+                  : <String>[];
+              final matched = <String>[];
+              for (final w in wanted) {
+                final key = w.trim();
+                if (byName.containsKey(key) && !matched.contains(key)) {
+                  loaded.add(key);
+                  matched.add(key);
+                }
+              }
+              if (matched.isEmpty) {
+                return '未找到匹配的工具。可用工具：'
+                    '${allTools.map((t) => t.name).join('、')}';
+              }
+              return '已加载工具：${matched.join('、')}。现在可以调用它们。';
+            }
+            if (byName.containsKey(name)) loaded.add(name);
             return inner(name, args);
           };
         } else {
@@ -654,7 +693,8 @@ class AiConversationService {
     DateTime? thinkingLastSeenAt;
     var prevReasoningLen = 0;
 
-    for (var round = 0; round < 3 && !finished; round++) {
+    // 渐进式加载会多花一轮（load_tools → 真正调用），故放宽轮次上限
+    for (var round = 0; round < 5 && !finished; round++) {
       var currentText = '';
       var currentReasoning = '';
       var roundToolCalls = <AiToolCall>[];
@@ -712,7 +752,9 @@ class AiConversationService {
             reasoning: currentReasoning,
             toolStatus: roundToolCalls.isEmpty
                 ? null
-                : roundToolCalls.last.name,
+                : (roundToolCalls.last.name == kLoadToolsName
+                      ? '加载工具'
+                      : roundToolCalls.last.name),
             steps: List.unmodifiable(steps),
           );
           if (chunk.done) break;
@@ -770,7 +812,10 @@ class AiConversationService {
           executedTools.add(tc.name);
         }
         final toolStepIndex = steps.length;
-        final toolNames = roundToolCalls.map((tc) => tc.name).join('、');
+        String displayName(String n) => n == kLoadToolsName ? '加载工具' : n;
+        final toolNames = roundToolCalls
+            .map((tc) => displayName(tc.name))
+            .join('、');
         steps.add(
           AiStep(
             type: AiStepType.toolCall,
@@ -785,7 +830,7 @@ class AiConversationService {
           text: currentText,
           reasoning: currentReasoning,
           toolStatus: roundToolCalls.length == 1
-              ? roundToolCalls.first.name
+              ? displayName(roundToolCalls.first.name)
               : '${roundToolCalls.length} 个工具',
           steps: List.unmodifiable(steps),
         );
@@ -828,6 +873,8 @@ class AiConversationService {
               : '${roundToolCalls.length} 个工具',
           steps: List.unmodifiable(steps),
         );
+        // 渐进式：把本轮加载的工具补进下一轮可用列表
+        refreshTools?.call();
         continue;
       }
 

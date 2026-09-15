@@ -154,6 +154,42 @@ class AiToolDefinition {
 typedef AiToolHandler =
     Future<String> Function(String name, Map<String, dynamic> arguments);
 
+/// 渐进式工具加载的元工具名
+const kLoadToolsName = 'load_tools';
+
+/// 可用工具数超过该值时启用渐进式加载（先只暴露 [kLoadToolsName]）
+const kProgressiveToolThreshold = 8;
+
+/// 构造「按需加载工具」的元工具定义：把可用工具的名称 + 一句话说明列进描述，
+/// 但不发送它们的参数 schema；模型需要时用本工具加载后再调用。
+AiToolDefinition loadToolsDefinition(List<AiToolDefinition> all) {
+  String oneLine(String s) {
+    final line = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final cut = line.indexOf('。');
+    final head = cut > 0 ? line.substring(0, cut) : line;
+    return head.length > 40 ? '${head.substring(0, 40)}…' : head;
+  }
+
+  return AiToolDefinition(
+    name: kLoadToolsName,
+    description:
+        '按需加载工具。可用工具（名称：说明）：\n'
+        '${all.map((t) => '- ${t.name}：${oneLine(t.description)}').join('\n')}\n'
+        '调用某个工具前，先用本工具把它的名字放进 tools 数组加载它。',
+    parameters: const {
+      'type': 'object',
+      'properties': {
+        'tools': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'description': '要加载的工具名列表',
+        },
+      },
+      'required': ['tools'],
+    },
+  );
+}
+
 /// 生成参数（可空字段表示跟随服务商默认值）
 class AiGenerationParams {
   final double? temperature;
