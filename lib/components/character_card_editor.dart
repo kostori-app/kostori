@@ -12,7 +12,6 @@ import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
@@ -318,35 +317,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
       .where((e) => e.isNotEmpty)
       .toList();
 
-  /// 必填字段：页签下标 + 标签 + 控制器
-  List<(int, String, TextEditingController)> _requiredFields() => [
-    (0, t.storyCharacterName, _nameCtrl),
-    (1, t.characterDescription, _descCtrl),
-    (1, t.characterPersonality, _personalityCtrl),
-    (1, t.characterScenario, _scenarioCtrl),
-    (2, t.characterFirstMessage, _firstCtrl),
-    (2, t.characterExampleDialogue, _exampleCtrl),
-    (3, t.characterSystemPrompt, _systemCtrl),
-    (3, t.characterPostHistory, _postCtrl),
-  ];
-
   void _save() {
-    // 必填项可能在别的页签（TabBarView 不会构建屏幕外的页，Form.validate 查不到），
-    // 所以先自己查一遍：切到缺内容的页签并提示缺了哪些，避免"点了没反应"
-    final missing = [
-      for (final f in _requiredFields())
-        if (f.$3.text.trim().isEmpty) f,
-    ];
-    if (missing.isNotEmpty) {
-      _tabCtrl.animateTo(missing.first.$1);
-      App.rootContext.showMessage(
-        message:
-            '${t.characterRequiredFields}: '
-            '${missing.map((e) => e.$2).join('、')}',
-        level: LogLevel.warning,
-      );
-      return;
-    }
     if (!_formKey.currentState!.validate()) return;
     final card = CharacterCard(
       id: widget.card?.id ?? 'card_${DateTime.now().microsecondsSinceEpoch}',
@@ -451,9 +422,9 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
         avatar: _avatar,
         onChanged: (v) => setState(() => _avatar = v),
       ),
-      _field(t.characterNickname, _nicknameCtrl, required: false),
-      _field(t.characterTags, _tagsCtrl, required: false),
-      _field(t.characterCreator, _creatorCtrl, required: false),
+      _field(t.characterNickname, _nicknameCtrl),
+      _field(t.characterTags, _tagsCtrl),
+      _field(t.characterCreator, _creatorCtrl),
     ],
   );
 
@@ -473,7 +444,6 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
         t.characterGroupGreetings,
         _groupGreetingsCtrl,
         multiline: true,
-        required: false,
       ),
     ],
   );
@@ -486,9 +456,8 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
         t.characterCreatorNotes,
         _creatorNotesCtrl,
         multiline: true,
-        required: false,
       ),
-      _field(t.characterSource, _sourceCtrl, multiline: true, required: false),
+      _field(t.characterSource, _sourceCtrl, multiline: true),
     ],
   );
 
@@ -700,7 +669,6 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
   Widget _field(
     String label,
     TextEditingController ctrl, {
-    bool required = true,
     bool multiline = false,
   }) {
     return Padding(
@@ -714,9 +682,6 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
           alignLabelWithHint: true,
           border: const OutlineInputBorder(),
         ),
-        validator: required
-            ? (v) => (v == null || v.trim().isEmpty) ? t.required : null
-            : null,
       ),
     );
   }
