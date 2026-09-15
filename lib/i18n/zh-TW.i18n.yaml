@@ -2558,6 +2558,8 @@ worldBookContent: 內容
 worldBookPriority: 優先級（越大越靠前）
 worldBookPriorityHint: 優先級高的條目先注入
 worldBookGroup: 分組
+newWorldBook: 新增世界書
+newSettingBook: 新增設定書
 worldBookSecondaryKeys: 次級鍵（每行一個，需全部命中）
 worldBookPosition: 注入位置
 worldBookPositionBefore: 角色定義前

@@ -268,6 +268,9 @@ class WorldBookEntry {
 
   /// 分组名（用于分类展示）
   final String group;
+
+  /// 所属世界书（文件）id
+  final String bookId;
   final List<String> triggers;
 
   /// 次级键：全部命中才算触发（AND，留空则忽略）
@@ -308,6 +311,7 @@ class WorldBookEntry {
     required this.id,
     required this.name,
     this.group = '',
+    this.bookId = '',
     this.triggers = const [],
     this.secondaryKeys = const [],
     this.content = '',
@@ -327,6 +331,7 @@ class WorldBookEntry {
   WorldBookEntry copyWith({
     String? name,
     String? group,
+    String? bookId,
     List<String>? triggers,
     List<String>? secondaryKeys,
     String? content,
@@ -345,6 +350,7 @@ class WorldBookEntry {
     id: id,
     name: name ?? this.name,
     group: group ?? this.group,
+    bookId: bookId ?? this.bookId,
     triggers: triggers ?? this.triggers,
     secondaryKeys: secondaryKeys ?? this.secondaryKeys,
     content: content ?? this.content,
@@ -370,6 +376,7 @@ class WorldBookEntry {
           'wb_${DateTime.now().millisecondsSinceEpoch}',
       name: (json['name'] as String?) ?? '',
       group: (json['group'] as String?) ?? '',
+      bookId: (json['bookId'] as String?) ?? '',
       triggers: strList(json['triggers']),
       secondaryKeys: strList(json['secondaryKeys']),
       content: (json['content'] as String?) ?? '',
@@ -396,6 +403,7 @@ class WorldBookEntry {
     'id': id,
     'name': name,
     'group': group,
+    if (bookId.isNotEmpty) 'bookId': bookId,
     'triggers': triggers,
     'secondaryKeys': secondaryKeys,
     'content': content,
@@ -448,7 +456,37 @@ class WorldBookEntry {
   }
 }
 
-/// 世界书存储：存放于 `dataPath/world_book/` 的独立文件
+/// 一本书（文件）：包含多条世界书条目
+class WorldBookBook {
+  final String id;
+  final String name;
+  final List<WorldBookEntry> entries;
+
+  const WorldBookBook({
+    required this.id,
+    this.name = '',
+    this.entries = const [],
+  });
+
+  factory WorldBookBook.fromJson(Map<String, dynamic> json) => WorldBookBook(
+    id:
+        json['id']?.toString() ??
+        'book_${DateTime.now().millisecondsSinceEpoch}',
+    name: json['name']?.toString() ?? '',
+    entries: [
+      for (final e in (json['entries'] as List? ?? const []))
+        if (e is Map) WorldBookEntry.fromJson(e.cast<String, dynamic>()),
+    ],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'entries': [for (final e in entries) e.toJson()],
+  };
+}
+
+/// 世界书存储：`dataPath/world_book/<bookId>.json`（一本书一个文件、内含多条条目）
 class WorldBookStore extends ChangeNotifier {
   static final WorldBookStore instance = WorldBookStore._();
 
@@ -458,64 +496,134 @@ class WorldBookStore extends ChangeNotifier {
   static const _legacyKey = 'world_book_entries';
   static const _dirName = 'world_book';
 
-  List<WorldBookEntry> _entries = [];
+  List<WorldBookBook> _books = [];
   bool _loaded = false;
 
-  List<WorldBookEntry> get entries => List.unmodifiable(_entries);
+  /// 所有条目（跨书展平），保持向后兼容
+  List<WorldBookEntry> get entries => [for (final b in _books) ...b.entries];
+
+  /// 全部世界书
+  List<WorldBookBook> get books => List.unmodifiable(_books);
+
+  WorldBookBook? bookById(String id) {
+    for (final b in _books) {
+      if (b.id == id) return b;
+    }
+    return null;
+  }
 
   /// 目录（供选择性 WebDAV 同步）
   String get dirPath => '${App.dataPath}/$_dirName';
 
   Future<void> init() async {
-    _entries = [];
+    _books = [];
+    final legacy = <WorldBookEntry>[];
     try {
       final dir = Directory(dirPath);
       await dir.create(recursive: true);
       for (final entity in dir.listSync()) {
         if (entity is! File || !entity.path.endsWith('.json')) continue;
         try {
-          final json = jsonDecode(await entity.readAsString());
-          if (json is Map) {
-            _entries.add(WorldBookEntry.fromJson(json.cast<String, dynamic>()));
+          final decoded = jsonDecode(await entity.readAsString());
+          if (decoded is! Map) continue;
+          final map = decoded.cast<String, dynamic>();
+          final fileName = entity.uri.pathSegments.last;
+          final fileId = fileName.substring(0, fileName.length - 5);
+          if (map['entries'] is List) {
+            // 新格式：一本书
+            final book = WorldBookBook.fromJson(map);
+            _books.add(
+              WorldBookBook(
+                id: fileId,
+                name: book.name,
+                entries: [
+                  for (final e in book.entries) e.copyWith(bookId: fileId),
+                ],
+              ),
+            );
+          } else {
+            // 旧格式：一条一个文件
+            legacy.add(WorldBookEntry.fromJson(map));
           }
         } catch (_) {}
       }
     } catch (_) {}
-    await _migrateLegacy();
+    if (legacy.isNotEmpty) await _migrateLegacyEntries(legacy);
+    await _migratePrefs();
     _loaded = true;
     notifyListeners();
   }
 
-  Future<void> _migrateLegacy() async {
+  /// 旧版「一条目一文件」→ 按分组合并成一本书
+  Future<void> _migrateLegacyEntries(List<WorldBookEntry> legacy) async {
+    final grouped = <String, List<WorldBookEntry>>{};
+    for (final e in legacy) {
+      grouped.putIfAbsent(e.group.trim(), () => []).add(e);
+    }
+    var i = 0;
+    for (final group in grouped.entries) {
+      final bookId = 'book_${DateTime.now().millisecondsSinceEpoch}_${i++}';
+      final book = WorldBookBook(
+        id: bookId,
+        name: group.key.isEmpty ? '世界书' : group.key,
+        entries: [for (final e in group.value) e.copyWith(bookId: bookId)],
+      );
+      _books.add(book);
+      await _writeBook(book);
+    }
+    for (final e in legacy) {
+      final f = File('$dirPath/${e.id}.json');
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// 旧版 shared_preferences 数据迁移
+  Future<void> _migratePrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_legacyKey);
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          for (final e in decoded) {
-            if (e is! Map) continue;
-            final entry = WorldBookEntry.fromJson(e.cast<String, dynamic>());
-            if (_entries.any((x) => x.id == entry.id)) continue;
-            _entries.add(entry);
-            await _writeEntry(entry);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        final bookId = 'book_${DateTime.now().millisecondsSinceEpoch}';
+        final entries = <WorldBookEntry>[];
+        for (final e in decoded) {
+          if (e is Map) {
+            entries.add(
+              WorldBookEntry.fromJson(
+                e.cast<String, dynamic>(),
+              ).copyWith(bookId: bookId),
+            );
           }
         }
-      } catch (_) {}
-    }
+        if (entries.isNotEmpty) {
+          final book = WorldBookBook(
+            id: bookId,
+            name: '世界书',
+            entries: entries,
+          );
+          _books.add(book);
+          await _writeBook(book);
+        }
+      }
+    } catch (_) {}
     await prefs.remove(_legacyKey);
   }
 
-  Future<void> _writeEntry(WorldBookEntry entry) async {
+  Future<void> _writeBook(WorldBookBook book) async {
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
     await File(
-      '$dirPath/${entry.id}.json',
-    ).writeAsString(jsonEncode(entry.toJson()));
+      '$dirPath/${book.id}.json',
+    ).writeAsString(jsonEncode(book.toJson()));
   }
 
-  void _deleteFile(String id) {
-    final f = File('$dirPath/$id.json');
+  void _deleteBookFile(String bookId) {
+    final f = File('$dirPath/$bookId.json');
     if (f.existsSync()) {
       try {
         f.deleteSync();
@@ -605,7 +713,7 @@ class WorldBookStore extends ChangeNotifier {
   /// 命中用户消息的启用条目，按位置/深度/优先级排序
   Future<List<WorldBookEntry>> hits(String text, {int turn = 0}) async {
     await ensureLoaded();
-    return _resolve(_entries.where((e) => e.enabled), text, turn: turn);
+    return _resolve(entries.where((e) => e.enabled), text, turn: turn);
   }
 
   /// 按选择集命中用户消息的条目：ids 为空表示沿用全局启用项（向后兼容）
@@ -616,8 +724,8 @@ class WorldBookStore extends ChangeNotifier {
   }) async {
     await ensureLoaded();
     final pool = ids.isEmpty
-        ? _entries.where((e) => e.enabled)
-        : _entries.where((e) => ids.contains(e.id));
+        ? entries.where((e) => e.enabled)
+        : entries.where((e) => ids.contains(e.id));
     return _resolve(pool, text, turn: turn);
   }
 
@@ -629,29 +737,104 @@ class WorldBookStore extends ChangeNotifier {
     if (ids.isEmpty) return const [];
     await ensureLoaded();
     return _resolve(
-      _entries.where((e) => ids.contains(e.id)),
+      entries.where((e) => ids.contains(e.id)),
       '',
       turn: turn,
       useTriggers: false,
     );
   }
 
-  Future<void> upsert(WorldBookEntry entry) async {
+  /// 新增 / 更新一条条目：默认并入其所属书，未指定则用最后一本 / 新建一本
+  Future<void> upsert(WorldBookEntry entry, {String? bookId}) async {
     await ensureLoaded();
-    final idx = _entries.indexWhere((e) => e.id == entry.id);
-    if (idx >= 0) {
-      _entries[idx] = entry;
-    } else {
-      _entries.add(entry);
+    final targetId = bookId ?? entry.bookId;
+    var book = targetId.isEmpty ? null : bookById(targetId);
+    if (book == null) {
+      if (_books.isNotEmpty && (targetId.isEmpty && bookId == null)) {
+        book = _books.last;
+      } else {
+        book = await createBook(name: '世界书');
+      }
     }
-    await _writeEntry(entry);
+    final target = book.id;
+    final e = entry.copyWith(bookId: target);
+    // 从其它书中移除同名条目，避免重复
+    for (var i = 0; i < _books.length; i++) {
+      final b = _books[i];
+      if (b.id == target) continue;
+      final filtered = b.entries.where((x) => x.id != e.id).toList();
+      if (filtered.length != b.entries.length) {
+        _books[i] = WorldBookBook(id: b.id, name: b.name, entries: filtered);
+        await _writeBook(_books[i]);
+      }
+    }
+    final idx = _books.indexWhere((b) => b.id == target);
+    final list = [..._books[idx].entries];
+    final at = list.indexWhere((x) => x.id == e.id);
+    if (at >= 0) {
+      list[at] = e;
+    } else {
+      list.add(e);
+    }
+    _books[idx] = WorldBookBook(
+      id: _books[idx].id,
+      name: _books[idx].name,
+      entries: list,
+    );
+    await _writeBook(_books[idx]);
     notifyListeners();
+  }
+
+  /// 整本书写入（新建 / 覆盖）
+  Future<void> upsertBook(WorldBookBook book) async {
+    await ensureLoaded();
+    final normalized = WorldBookBook(
+      id: book.id,
+      name: book.name,
+      entries: [for (final e in book.entries) e.copyWith(bookId: book.id)],
+    );
+    final idx = _books.indexWhere((b) => b.id == book.id);
+    if (idx >= 0) {
+      _books[idx] = normalized;
+    } else {
+      _books.add(normalized);
+    }
+    await _writeBook(normalized);
+    notifyListeners();
+  }
+
+  /// 新建一本空书
+  Future<WorldBookBook> createBook({String name = ''}) async {
+    await ensureLoaded();
+    final book = WorldBookBook(
+      id: 'book_${DateTime.now().microsecondsSinceEpoch}',
+      name: name,
+    );
+    _books.add(book);
+    await _writeBook(book);
+    notifyListeners();
+    return book;
   }
 
   Future<void> remove(String id) async {
     await ensureLoaded();
-    _entries.removeWhere((e) => e.id == id);
-    _deleteFile(id);
+    var changed = false;
+    for (var i = 0; i < _books.length; i++) {
+      final b = _books[i];
+      final filtered = b.entries.where((e) => e.id != id).toList();
+      if (filtered.length == b.entries.length) continue;
+      _books[i] = WorldBookBook(id: b.id, name: b.name, entries: filtered);
+      await _writeBook(_books[i]);
+      changed = true;
+    }
+    if (changed) notifyListeners();
+  }
+
+  Future<void> removeBook(String bookId) async {
+    await ensureLoaded();
+    _books.removeWhere((b) => b.id == bookId);
+    _deleteBookFile(bookId);
     notifyListeners();
   }
 }
+

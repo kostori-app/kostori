@@ -1322,8 +1322,8 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'stories' => {for (final s in StoryStore.instance.stories) s.id},
     'sessions' => {...StorySessionStore.instance.storyIds},
     'prompts' => {for (final i in PromptInjectionStore.instance.items) i.id},
-    'worldbook' => {for (final e in WorldBookStore.instance.entries) e.id},
-    'library' => {for (final e in SettingLibraryStore.instance.items) e.id},
+    'worldbook' => {for (final b in WorldBookStore.instance.books) b.id},
+    'library' => {for (final b in SettingLibraryStore.instance.books) b.id},
     'story_chars' => {...StoryCharacterStore.instance.storyIds},
     'skills' => {for (final s in AiSkillStore.instance.items) s.key},
     _ => <String>{},
@@ -1335,16 +1335,15 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     'sessions' => StoryStore.instance.find(id)?.name ?? id,
     'prompts' => PromptInjectionStore.instance.findById(id)?.name ?? id,
     'worldbook' => _worldBookName(id),
-    'library' => SettingLibraryStore.instance.find(id)?.name ?? id,
+    'library' => SettingLibraryStore.instance.bookById(id)?.name ?? id,
     'story_chars' => StoryStore.instance.find(id)?.name ?? id,
     'skills' => AiSkillStore.instance.find(id)?.name ?? id,
     _ => id,
   };
 
   String _worldBookName(String id) {
-    for (final e in WorldBookStore.instance.entries) {
-      if (e.id == id) return e.name.isEmpty ? id : e.name;
-    }
+    final book = WorldBookStore.instance.bookById(id);
+    if (book != null) return book.name.isEmpty ? id : book.name;
     return id;
   }
 

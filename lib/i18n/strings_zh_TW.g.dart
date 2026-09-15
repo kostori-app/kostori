@@ -2532,6 +2532,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookPriority => '優先級（越大越靠前）';
 	@override String get worldBookPriorityHint => '優先級高的條目先注入';
 	@override String get worldBookGroup => '分組';
+	@override String get newWorldBook => '新增世界書';
+	@override String get newSettingBook => '新增設定書';
 	@override String get worldBookSecondaryKeys => '次級鍵（每行一個，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
 	@override String get worldBookPositionBefore => '角色定義前';
@@ -5425,6 +5427,8 @@ extension on TranslationsZhTw {
 			'worldBookPriority' => '優先級（越大越靠前）',
 			'worldBookPriorityHint' => '優先級高的條目先注入',
 			'worldBookGroup' => '分組',
+			'newWorldBook' => '新增世界書',
+			'newSettingBook' => '新增設定書',
 			'worldBookSecondaryKeys' => '次級鍵（每行一個，需全部命中）',
 			'worldBookPosition' => '注入位置',
 			'worldBookPositionBefore' => '角色定義前',
@@ -5448,10 +5452,10 @@ extension on TranslationsZhTw {
 			'noPromptInjectionsYet' => '暫無提示詞注入',
 			'auxTemperature' => 'Temperature',
 			'selectAssistantProfile' => '選擇助手檔案',
-			'selectModel' => '選擇模型',
-			'profilePersonalityTags' => '性格標籤',
 			_ => null,
 		} ?? switch (path) {
+			'selectModel' => '選擇模型',
+			'profilePersonalityTags' => '性格標籤',
 			'profilePersonalityTagsHint' => '多選標籤，如 理性/幽默/毒舌/溫柔',
 			'profileCatchphrases' => '口頭禪',
 			'profileCatchphrasesHint' => '每行一個',

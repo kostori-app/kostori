@@ -76,7 +76,42 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     _ => Icons.category_outlined,
   };
 
-  Future<void> _add() async {
+  Future<void> _add({String? bookId}) async {
+    final store = SettingLibraryStore.instance;
+    if (bookId == null) {
+      final choice = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        builder: (ctx) => Sheet(
+          title: t.storyAddEntry,
+          icon: Icons.add,
+          initialSize: 0.4,
+          builder: (ctx, sc) => ListView(
+            controller: sc,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.note_add_outlined),
+                title: Text(t.newSettingBook),
+                onTap: () => Navigator.of(ctx).pop('__new__'),
+              ),
+              for (final b in store.books)
+                ListTile(
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: Text(
+                    b.name.isEmpty ? t.storySettingLibrary : b.name,
+                  ),
+                  trailing: Text('${b.entries.length}'),
+                  onTap: () => Navigator.of(ctx).pop(b.id),
+                ),
+            ],
+          ),
+        ),
+      );
+      if (choice == null || !mounted) return;
+      bookId = choice == '__new__'
+          ? (await store.createBook()).id
+          : choice;
+    }
     final type = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -103,6 +138,7 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
         id: 'set_${DateTime.now().microsecondsSinceEpoch}',
         type: type,
         name: '',
+        bookId: bookId,
       ),
     );
   }
@@ -120,8 +156,13 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
       allowedExtensions: ['json'],
     );
     if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bookName = file.name.replaceAll(
+      RegExp(r'\.json$', caseSensitive: false),
+      '',
+    );
     try {
-      await _importBytes(await result.files.first.readAsBytes());
+      await _importBytes(await file.readAsBytes(), name: bookName);
     } catch (e) {
       Log.error('importSettingLibrary', e.toString());
       App.rootContext.showMessage(
@@ -131,29 +172,35 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     }
   }
 
-  /// 从 JSON（List）字节导入设定（拖拽 / 选择文件共用）
-  Future<void> _importBytes(List<int> bytes) async {
+  /// 从 JSON（List）字节导入设定（拖拽 / 选择文件共用）：每次生成一本新书
+  Future<void> _importBytes(List<int> bytes, {String name = ''}) async {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! List) throw 'invalid';
-    var count = 0;
+    final entries = <SettingEntry>[];
     for (final e in decoded) {
-      if (e is Map) {
-        final entry = SettingEntry.fromJson(e.cast<String, dynamic>());
-        await SettingLibraryStore.instance.upsert(
-          SettingEntry(
-            id: _stableImportId(
-              'set_',
-              '${entry.type}\u0000${entry.name}\u0000${jsonEncode(entry.payload)}',
-            ),
-            type: entry.type,
-            name: entry.name,
-            payload: entry.payload,
+      if (e is! Map) continue;
+      final raw = SettingEntry.fromJson(e.cast<String, dynamic>());
+      entries.add(
+        SettingEntry(
+          id: _stableImportId(
+            'set_',
+            '${raw.type}\u0000${raw.name}\u0000${jsonEncode(raw.payload)}',
           ),
-        );
-        count++;
-      }
+          type: raw.type,
+          name: raw.name,
+          group: raw.group,
+          payload: raw.payload,
+        ),
+      );
     }
-    App.rootContext.showMessage(message: t.importedEntries(count: count));
+    if (entries.isEmpty) throw 'empty';
+    final book = await SettingLibraryStore.instance.createBook(name: name);
+    await SettingLibraryStore.instance.upsertBook(
+      SettingBook(id: book.id, name: book.name, entries: entries),
+    );
+    App.rootContext.showMessage(
+      message: t.importedEntries(count: entries.length),
+    );
   }
 
   /// 拖入 JSON 文件导入
@@ -161,7 +208,13 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     for (final f in detail.files) {
       if (!f.name.toLowerCase().endsWith('.json')) continue;
       try {
-        await _importBytes(await f.readAsBytes());
+        await _importBytes(
+          await f.readAsBytes(),
+          name: f.name.replaceAll(
+            RegExp(r'\.json$', caseSensitive: false),
+            '',
+          ),
+        );
       } catch (e) {
         Log.error('dropSettingLibrary', e.toString());
       }
@@ -243,79 +296,97 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 children: [
-                  for (final type in SettingTypes.all)
-                    if (store.byType(type).isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _typeIcon(type),
-                              size: 16,
-                              color: scheme.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _typeLabel(type),
+                  for (final book in store.books) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              book.name.isEmpty
+                                  ? t.storySettingLibrary
+                                  : book.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      for (final e in store.byType(type))
-                        _SettingCard(
-                          children: [
-                            ListTile(
-                              dense: true,
-                              leading: Icon(_typeIcon(type), size: 20),
-                              title: Text(
-                                e.name.isEmpty ? e.id : e.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                [
-                                  if (e.group.trim().isNotEmpty) e.group.trim(),
-                                  _entrySummary(e),
-                                ].join(' · '),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    visualDensity: VisualDensity.compact,
-                                    iconSize: 18,
-                                    tooltip: t.edit,
-                                    icon: const Icon(Icons.edit_note, size: 18),
-                                    onPressed: () => _edit(e),
-                                  ),
-                                  IconButton(
-                                    visualDensity: VisualDensity.compact,
-                                    iconSize: 18,
-                                    tooltip: t.delete,
-                                    icon: Icon(
-                                      Icons.delete_outline,
-                                      size: 18,
-                                      color: scheme.error,
-                                    ),
-                                    onPressed: () async {
-                                      await SettingLibraryStore.instance.remove(
-                                        e.id,
-                                      );
-                                      if (mounted) setState(() {});
-                                    },
-                                  ),
-                                ],
-                              ),
+                          ),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            tooltip: t.storyAddEntry,
+                            icon: const Icon(Icons.add, size: 18),
+                            onPressed: () => _add(bookId: book.id),
+                          ),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            tooltip: t.delete,
+                            icon: Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: scheme.error,
                             ),
-                          ],
-                        ),
-                    ],
+                            onPressed: () async {
+                              await SettingLibraryStore.instance.removeBook(
+                                book.id,
+                              );
+                              if (mounted) setState(() {});
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    for (final e in book.entries)
+                      _SettingCard(
+                        children: [
+                          ListTile(
+                            dense: true,
+                            leading: Icon(_typeIcon(e.type), size: 20),
+                            title: Text(
+                              e.name.isEmpty ? e.id : e.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              [
+                                if (e.group.trim().isNotEmpty) e.group.trim(),
+                                _entrySummary(e),
+                              ].join(' · '),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  iconSize: 18,
+                                  tooltip: t.edit,
+                                  icon: const Icon(Icons.edit_note, size: 18),
+                                  onPressed: () => _edit(e),
+                                ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  iconSize: 18,
+                                  tooltip: t.delete,
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    size: 18,
+                                    color: scheme.error,
+                                  ),
+                                  onPressed: () async {
+                                    await SettingLibraryStore.instance.remove(
+                                      e.id,
+                                    );
+                                    if (mounted) setState(() {});
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ],
               );
             },
@@ -926,21 +997,27 @@ Future<void> _importWorldBook() async {
     allowedExtensions: ['json'],
   );
   if (result == null || result.files.isEmpty) return;
+  final file = result.files.first;
+  final bookName = file.name.replaceAll(
+    RegExp(r'\.json$', caseSensitive: false),
+    '',
+  );
   try {
-    await importWorldBookBytes(await result.files.first.readAsBytes());
+    await importWorldBookBytes(await file.readAsBytes(), name: bookName);
   } catch (e) {
     Log.error('importWorldBook', e.toString());
     App.rootContext.showMessage(message: t.importFailed, level: LogLevel.error);
   }
 }
 
-/// 从 JSON 字节导入世界书（拖拽 / 选择文件共用）
-Future<void> importWorldBookBytes(List<int> bytes) async {
+/// 从 JSON 字节导入世界书（拖拽 / 选择文件共用）：每次生成一本新书（内含全部条目）
+Future<void> importWorldBookBytes(List<int> bytes, {String name = ''}) async {
   final entries = _parseWorldBookEntries(jsonDecode(utf8.decode(bytes)));
   if (entries.isEmpty) throw 'empty';
-  for (final e in entries) {
-    await WorldBookStore.instance.upsert(e);
-  }
+  final book = await WorldBookStore.instance.createBook(name: name);
+  await WorldBookStore.instance.upsertBook(
+    WorldBookBook(id: book.id, name: book.name, entries: entries),
+  );
   App.rootContext.showMessage(
     message: t.importedEntries(count: entries.length),
   );
@@ -1407,12 +1484,55 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
     for (final f in detail.files) {
       if (!f.name.toLowerCase().endsWith('.json')) continue;
       try {
-        await importWorldBookBytes(await f.readAsBytes());
+        await importWorldBookBytes(
+          await f.readAsBytes(),
+          name: f.name.replaceAll(
+            RegExp(r'\.json$', caseSensitive: false),
+            '',
+          ),
+        );
       } catch (e) {
         Log.error('dropWorldBook', e.toString());
       }
     }
     if (mounted) setState(() => _dragOver = false);
+  }
+
+  /// 新建条目：选择并入已有世界书，或新建一本
+  Future<void> _addEntry() async {
+    final store = WorldBookStore.instance;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.newWorldBookEntry,
+        icon: Icons.add,
+        initialSize: 0.4,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.note_add_outlined),
+              title: Text(t.newWorldBook),
+              onTap: () => Navigator.of(ctx).pop('__new__'),
+            ),
+            for (final b in store.books)
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined),
+                title: Text(b.name.isEmpty ? t.worldBook : b.name),
+                trailing: Text('${b.entries.length}'),
+                onTap: () => Navigator.of(ctx).pop(b.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    final bookId = choice == '__new__'
+        ? (await store.createBook()).id
+        : choice;
+    if (!mounted) return;
+    showPopUpWidget(App.rootContext, _WorldBookEditor(bookId: bookId));
   }
 
   @override
@@ -1480,8 +1600,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
               IconButton(
                 icon: const Icon(Icons.add),
                 tooltip: t.newWorldBookEntry,
-                onPressed: () =>
-                    showPopUpWidget(App.rootContext, const _WorldBookEditor()),
+                onPressed: _addEntry,
               ),
             ],
           ),
@@ -1490,48 +1609,70 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
           child: ListenableBuilder(
             listenable: store,
             builder: (context, _) {
-              final entries = [...store.entries]
-                ..sort((a, b) {
-                  final byGroup = a.group.compareTo(b.group);
-                  if (byGroup != 0) return byGroup;
-                  return b.priority.compareTo(a.priority);
-                });
-              if (entries.isEmpty) {
+              final books = store.books;
+              if (books.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(t.noWorldBookEntriesYet, style: ts.s12),
                 );
               }
               final children = <Widget>[];
-              String? currentGroup;
-              for (final entry in entries) {
-                if (entry.group != currentGroup) {
-                  currentGroup = entry.group;
-                  children.add(
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6, bottom: 6),
-                      child: Text(
-                        entry.group.isEmpty ? t.worldBook : entry.group,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  );
-                }
+              for (final book in books) {
                 children.add(
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _SettingCard(
-                      padding: EdgeInsets.zero,
+                    padding: const EdgeInsets.only(top: 6, bottom: 6),
+                    child: Row(
                       children: [
-                        _WorldBookTile(
-                          entry: entry,
-                          onToggle: (v) =>
-                              store.upsert(entry.copyWith(enabled: v)),
+                        Expanded(
+                          child: Text(
+                            book.name.isEmpty ? t.worldBook : book.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: t.newWorldBookEntry,
+                          icon: const Icon(Icons.add, size: 18),
+                          onPressed: () => showPopUpWidget(
+                            App.rootContext,
+                            _WorldBookEditor(bookId: book.id),
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: t.delete,
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          onPressed: () => store.removeBook(book.id),
                         ),
                       ],
                     ),
                   ),
                 );
+                final sorted = [...book.entries]
+                  ..sort((a, b) => b.priority.compareTo(a.priority));
+                for (final entry in sorted) {
+                  children.add(
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _SettingCard(
+                        padding: EdgeInsets.zero,
+                        children: [
+                          _WorldBookTile(
+                            entry: entry,
+                            onToggle: (v) =>
+                                store.upsert(entry.copyWith(enabled: v)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
               }
               return ListView(
                 padding: const EdgeInsets.all(16),
@@ -1601,9 +1742,12 @@ class _WorldBookTile extends StatelessWidget {
 }
 
 class _WorldBookEditor extends StatefulWidget {
-  const _WorldBookEditor({this.entry});
+  const _WorldBookEditor({this.entry, this.bookId});
 
   final WorldBookEntry? entry;
+
+  /// 新建条目时并入的世界书 id（空 = 并入最后一本 / 新建一本）
+  final String? bookId;
 
   @override
   State<_WorldBookEditor> createState() => _WorldBookEditorState();
@@ -1729,7 +1873,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       sticky: int.tryParse(_stickyCtrl.text.trim()) ?? 0,
       cooldown: int.tryParse(_cooldownCtrl.text.trim()) ?? 0,
     );
-    await WorldBookStore.instance.upsert(entry);
+    await WorldBookStore.instance.upsert(entry, bookId: widget.bookId);
     if (mounted) {
       App.rootContext.showMessage(message: t.saved);
       App.rootContext.pop();

@@ -2557,6 +2557,8 @@ worldBookContent: Content
 worldBookPriority: Priority (higher first)
 worldBookPriorityHint: Higher priority entries are injected first
 worldBookGroup: Group
+newWorldBook: New world book
+newSettingBook: New setting book
 worldBookSecondaryKeys: Secondary keys (one per line, all must match)
 worldBookPosition: Injection position
 worldBookPositionBefore: Before character definitions

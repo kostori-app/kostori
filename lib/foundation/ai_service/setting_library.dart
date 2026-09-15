@@ -28,6 +28,9 @@ class SettingEntry {
 
   /// 分组（便于批量选择 / 归类，空 = 未分组）
   final String group;
+
+  /// 所属设定书（文件）id
+  final String bookId;
   final Map<String, dynamic> payload;
 
   const SettingEntry({
@@ -35,6 +38,7 @@ class SettingEntry {
     required this.type,
     required this.name,
     this.group = '',
+    this.bookId = '',
     this.payload = const {},
   });
 
@@ -45,6 +49,7 @@ class SettingEntry {
     type: json['type']?.toString() ?? SettingTypes.codex,
     name: json['name']?.toString() ?? '',
     group: json['group']?.toString() ?? '',
+    bookId: json['bookId']?.toString() ?? '',
     payload: json['payload'] is Map
         ? (json['payload'] as Map).cast<String, dynamic>()
         : const {},
@@ -55,6 +60,7 @@ class SettingEntry {
     'type': type,
     'name': name,
     if (group.isNotEmpty) 'group': group,
+    if (bookId.isNotEmpty) 'bookId': bookId,
     'payload': payload,
   };
 
@@ -62,12 +68,14 @@ class SettingEntry {
     String? type,
     String? name,
     String? group,
+    String? bookId,
     Map<String, dynamic>? payload,
   }) => SettingEntry(
     id: id,
     type: type ?? this.type,
     name: name ?? this.name,
     group: group ?? this.group,
+    bookId: bookId ?? this.bookId,
     payload: payload ?? this.payload,
   );
 
@@ -89,7 +97,37 @@ class SettingEntry {
       type == SettingTypes.facility ? StoryFacility.fromJson(payload) : null;
 }
 
-/// 设定库存储：`dataPath/setting_library/<id>.json`
+/// 一本设定书（文件）：包含多条设定条目
+class SettingBook {
+  final String id;
+  final String name;
+  final List<SettingEntry> entries;
+
+  const SettingBook({
+    required this.id,
+    this.name = '',
+    this.entries = const [],
+  });
+
+  factory SettingBook.fromJson(Map<String, dynamic> json) => SettingBook(
+    id:
+        json['id']?.toString() ??
+        'book_${DateTime.now().millisecondsSinceEpoch}',
+    name: json['name']?.toString() ?? '',
+    entries: [
+      for (final e in (json['entries'] as List? ?? const []))
+        if (e is Map) SettingEntry.fromJson(e.cast<String, dynamic>()),
+    ],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'entries': [for (final e in entries) e.toJson()],
+  };
+}
+
+/// 设定库存储：`dataPath/setting_library/<bookId>.json`（一本书一个文件、内含多条条目）
 class SettingLibraryStore extends ChangeNotifier {
   static final SettingLibraryStore instance = SettingLibraryStore._();
 
@@ -97,20 +135,31 @@ class SettingLibraryStore extends ChangeNotifier {
 
   static const _dirName = 'setting_library';
 
-  List<SettingEntry> _items = [];
+  List<SettingBook> _books = [];
   bool _loaded = false;
 
-  List<SettingEntry> get items => List.unmodifiable(_items);
+  /// 所有条目（跨书展平），保持向后兼容
+  List<SettingEntry> get items => [for (final b in _books) ...b.entries];
+
+  /// 全部设定书
+  List<SettingBook> get books => List.unmodifiable(_books);
+
+  SettingBook? bookById(String id) {
+    for (final b in _books) {
+      if (b.id == id) return b;
+    }
+    return null;
+  }
 
   bool get isInitialized => _loaded;
 
   List<SettingEntry> byType(String type) => [
-    for (final e in _items)
+    for (final e in items)
       if (e.type == type) e,
   ];
 
   SettingEntry? find(String id) {
-    for (final e in _items) {
+    for (final e in items) {
       if (e.id == id) return e;
     }
     return null;
@@ -119,7 +168,8 @@ class SettingLibraryStore extends ChangeNotifier {
   String get dirPath => '${App.dataPath}/$_dirName';
 
   Future<void> init() async {
-    _items = [];
+    _books = [];
+    final legacy = <SettingEntry>[];
     try {
       final dir = Directory(dirPath);
       await dir.create(recursive: true);
@@ -127,14 +177,76 @@ class SettingLibraryStore extends ChangeNotifier {
         if (entity is! File || !entity.path.endsWith('.json')) continue;
         try {
           final json = jsonDecode(await entity.readAsString());
-          if (json is Map) {
-            _items.add(SettingEntry.fromJson(json.cast<String, dynamic>()));
+          if (json is! Map) continue;
+          final map = json.cast<String, dynamic>();
+          final fileName = entity.uri.pathSegments.last;
+          final fileId = fileName.substring(0, fileName.length - 5);
+          if (map['entries'] is List) {
+            // 新格式：一本书
+            final book = SettingBook.fromJson(map);
+            _books.add(
+              SettingBook(
+                id: fileId,
+                name: book.name,
+                entries: [
+                  for (final e in book.entries) e.copyWith(bookId: fileId),
+                ],
+              ),
+            );
+          } else {
+            // 旧格式：一条一个文件
+            legacy.add(SettingEntry.fromJson(map));
           }
         } catch (_) {}
       }
     } catch (_) {}
+    if (legacy.isNotEmpty) await _migrateLegacyEntries(legacy);
     _loaded = true;
     notifyListeners();
+  }
+
+  /// 旧版「一条目一文件」→ 按分组合并成一本书
+  Future<void> _migrateLegacyEntries(List<SettingEntry> legacy) async {
+    final grouped = <String, List<SettingEntry>>{};
+    for (final e in legacy) {
+      grouped.putIfAbsent(e.group.trim(), () => []).add(e);
+    }
+    var i = 0;
+    for (final group in grouped.entries) {
+      final bookId = 'book_${DateTime.now().millisecondsSinceEpoch}_${i++}';
+      final book = SettingBook(
+        id: bookId,
+        name: group.key.isEmpty ? '设定库' : group.key,
+        entries: [for (final e in group.value) e.copyWith(bookId: bookId)],
+      );
+      _books.add(book);
+      await _writeBook(book);
+    }
+    for (final e in legacy) {
+      final f = File('$dirPath/${e.id}.json');
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (_) {}
+      }
+    }
+  }
+
+  Future<void> _writeBook(SettingBook book) async {
+    final dir = Directory(dirPath);
+    await dir.create(recursive: true);
+    await File(
+      '$dirPath/${book.id}.json',
+    ).writeAsString(jsonEncode(book.toJson()));
+  }
+
+  void _deleteBookFile(String bookId) {
+    final f = File('$dirPath/$bookId.json');
+    if (f.existsSync()) {
+      try {
+        f.deleteSync();
+      } catch (_) {}
+    }
   }
 
   Future<void> ensureLoaded() async {
@@ -146,34 +258,100 @@ class SettingLibraryStore extends ChangeNotifier {
     await init();
   }
 
-  Future<void> upsert(SettingEntry entry) async {
-    final dir = Directory(dirPath);
-    await dir.create(recursive: true);
-    await File(
-      '$dirPath/${entry.id}.json',
-    ).writeAsString(jsonEncode(entry.toJson()));
-    final idx = _items.indexWhere((e) => e.id == entry.id);
-    if (idx >= 0) {
-      _items[idx] = entry;
-    } else {
-      _items.add(entry);
+  /// 新增 / 更新一条条目：默认并入其所属书，未指定则用最后一本 / 新建一本
+  Future<void> upsert(SettingEntry entry, {String? bookId}) async {
+    await ensureLoaded();
+    final targetId = bookId ?? entry.bookId;
+    var book = targetId.isEmpty ? null : bookById(targetId);
+    if (book == null) {
+      if (_books.isNotEmpty && targetId.isEmpty && bookId == null) {
+        book = _books.last;
+      } else {
+        book = await createBook(name: '设定库');
+      }
     }
+    final target = book.id;
+    final e = entry.copyWith(bookId: target);
+    for (var i = 0; i < _books.length; i++) {
+      final b = _books[i];
+      if (b.id == target) continue;
+      final filtered = b.entries.where((x) => x.id != e.id).toList();
+      if (filtered.length != b.entries.length) {
+        _books[i] = SettingBook(id: b.id, name: b.name, entries: filtered);
+        await _writeBook(_books[i]);
+      }
+    }
+    final idx = _books.indexWhere((b) => b.id == target);
+    final list = [..._books[idx].entries];
+    final at = list.indexWhere((x) => x.id == e.id);
+    if (at >= 0) {
+      list[at] = e;
+    } else {
+      list.add(e);
+    }
+    _books[idx] = SettingBook(
+      id: _books[idx].id,
+      name: _books[idx].name,
+      entries: list,
+    );
+    await _writeBook(_books[idx]);
     notifyListeners();
   }
 
-  Future<bool> remove(String id) async {
-    final file = File('$dirPath/$id.json');
-    if (file.existsSync()) {
-      try {
-        file.deleteSync();
-      } catch (_) {}
+  /// 整本书写入（新建 / 覆盖）
+  Future<void> upsertBook(SettingBook book) async {
+    await ensureLoaded();
+    final normalized = SettingBook(
+      id: book.id,
+      name: book.name,
+      entries: [for (final e in book.entries) e.copyWith(bookId: book.id)],
+    );
+    final idx = _books.indexWhere((b) => b.id == book.id);
+    if (idx >= 0) {
+      _books[idx] = normalized;
+    } else {
+      _books.add(normalized);
     }
-    final before = _items.length;
-    _items.removeWhere((e) => e.id == id);
+    await _writeBook(normalized);
     notifyListeners();
-    return _items.length != before;
+  }
+
+  /// 新建一本空书
+  Future<SettingBook> createBook({String name = ''}) async {
+    await ensureLoaded();
+    final book = SettingBook(
+      id: 'book_${DateTime.now().microsecondsSinceEpoch}',
+      name: name,
+    );
+    _books.add(book);
+    await _writeBook(book);
+    notifyListeners();
+    return book;
+  }
+
+  Future<bool> remove(String id) async {
+    await ensureLoaded();
+    var changed = false;
+    for (var i = 0; i < _books.length; i++) {
+      final b = _books[i];
+      final filtered = b.entries.where((e) => e.id != id).toList();
+      if (filtered.length == b.entries.length) continue;
+      _books[i] = SettingBook(id: b.id, name: b.name, entries: filtered);
+      await _writeBook(_books[i]);
+      changed = true;
+    }
+    if (changed) notifyListeners();
+    return changed;
+  }
+
+  Future<void> removeBook(String bookId) async {
+    await ensureLoaded();
+    _books.removeWhere((b) => b.id == bookId);
+    _deleteBookFile(bookId);
+    notifyListeners();
   }
 }
+
 
 /// 把设定库中选中的条目并入故事（词条 / 称号 / 职业 / 据点）
 Story mergeSettingLibrary(Story story, Iterable<SettingEntry> entries) {

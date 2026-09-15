@@ -7522,6 +7522,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Group'
 	String get worldBookGroup => 'Group';
 
+	/// en: 'New world book'
+	String get newWorldBook => 'New world book';
+
+	/// en: 'New setting book'
+	String get newSettingBook => 'New setting book';
+
 	/// en: 'Secondary keys (one per line, all must match)'
 	String get worldBookSecondaryKeys => 'Secondary keys (one per line, all must match)';
 
@@ -11058,6 +11064,8 @@ extension on Translations {
 			'worldBookPriority' => 'Priority (higher first)',
 			'worldBookPriorityHint' => 'Higher priority entries are injected first',
 			'worldBookGroup' => 'Group',
+			'newWorldBook' => 'New world book',
+			'newSettingBook' => 'New setting book',
 			'worldBookSecondaryKeys' => 'Secondary keys (one per line, all must match)',
 			'worldBookPosition' => 'Injection position',
 			'worldBookPositionBefore' => 'Before character definitions',
@@ -11080,10 +11088,10 @@ extension on Translations {
 			'noWorldBookEntriesYet' => 'No world info entries yet',
 			'noPromptInjectionsYet' => 'No prompt injections yet',
 			'auxTemperature' => 'Temperature',
-			'selectAssistantProfile' => 'Select an assistant',
-			'selectModel' => 'Select model',
 			_ => null,
 		} ?? switch (path) {
+			'selectAssistantProfile' => 'Select an assistant',
+			'selectModel' => 'Select model',
 			'profilePersonalityTags' => 'Personality tags',
 			'profilePersonalityTagsHint' => 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle',
 			'profileCatchphrases' => 'Catchphrases',

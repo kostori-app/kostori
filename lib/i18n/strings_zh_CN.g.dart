@@ -2533,6 +2533,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookPriority => '优先级（越大越靠前）';
 	@override String get worldBookPriorityHint => '优先级高的条目先注入';
 	@override String get worldBookGroup => '分组';
+	@override String get newWorldBook => '新建世界书';
+	@override String get newSettingBook => '新建设定书';
 	@override String get worldBookSecondaryKeys => '次级键（每行一个，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
 	@override String get worldBookPositionBefore => '角色定义前';
@@ -5427,6 +5429,8 @@ extension on TranslationsZhCn {
 			'worldBookPriority' => '优先级（越大越靠前）',
 			'worldBookPriorityHint' => '优先级高的条目先注入',
 			'worldBookGroup' => '分组',
+			'newWorldBook' => '新建世界书',
+			'newSettingBook' => '新建设定书',
 			'worldBookSecondaryKeys' => '次级键（每行一个，需全部命中）',
 			'worldBookPosition' => '注入位置',
 			'worldBookPositionBefore' => '角色定义前',
@@ -5449,10 +5453,10 @@ extension on TranslationsZhCn {
 			'noWorldBookEntriesYet' => '暂无世界书条目',
 			'noPromptInjectionsYet' => '暂无提示词注入',
 			'auxTemperature' => 'Temperature',
-			'selectAssistantProfile' => '选择助手档案',
-			'selectModel' => '选择模型',
 			_ => null,
 		} ?? switch (path) {
+			'selectAssistantProfile' => '选择助手档案',
+			'selectModel' => '选择模型',
 			'profilePersonalityTags' => '性格标签',
 			'profilePersonalityTagsHint' => '多选标签，如 理性/幽默/毒舌/温柔',
 			'profileCatchphrases' => '口头禅',
