@@ -2070,6 +2070,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                             onToggle: (v) =>
                                 store.upsert(entry.copyWith(enabled: v)),
                             onMove: () => _moveEntry(entry),
+                            onDelete: () => store.remove(entry.id),
                           ),
                         ],
                       ),
@@ -2094,6 +2095,7 @@ class _WorldBookTile extends StatelessWidget {
     required this.entry,
     required this.onToggle,
     this.onMove,
+    this.onDelete,
   });
 
   final WorldBookEntry entry;
@@ -2101,6 +2103,9 @@ class _WorldBookTile extends StatelessWidget {
 
   /// 移动到其它世界书
   final VoidCallback? onMove;
+
+  /// 删除该条目
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -2147,6 +2152,17 @@ class _WorldBookTile extends StatelessWidget {
               tooltip: t.worldBookMove,
               icon: const Icon(Icons.drive_file_move_outline, size: 18),
               onPressed: onMove,
+            ),
+          if (onDelete != null)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: t.delete,
+              icon: Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: onDelete,
             ),
           CustomSwitch(value: entry.enabled, onChanged: onToggle),
           const Icon(Icons.arrow_right, size: 20),
@@ -2299,7 +2315,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return PopUpWidgetScaffold(
       title: _isNew ? t.newWorldBookEntry : entryName,
       tailing: [
@@ -2570,29 +2585,6 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           (v) => setState(() => _enabled = v),
                         ),
                       ),
-                      if (!_isNew)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: () async {
-                                await WorldBookStore.instance.remove(
-                                  widget.entry!.id,
-                                );
-                                if (mounted) App.rootContext.pop();
-                              },
-                              icon: Icon(
-                                Icons.delete_outline,
-                                color: scheme.error,
-                              ),
-                              label: Text(
-                                t.delete,
-                                style: TextStyle(color: scheme.error),
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
