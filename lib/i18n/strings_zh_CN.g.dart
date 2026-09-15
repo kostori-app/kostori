@@ -1612,6 +1612,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyWorldBook => '世界书';
 	@override String get storyChoicesPrompt => '后续建议提示词';
 	@override String get storyStart => '开始游戏';
+	@override String get storyCustomize => '自定义内容';
 	@override String get storyRoll => '掷骰';
 	@override String get storySpecialCheck => '特殊判定';
 	@override String get storyCheckPending => '下一条消息将进行动作判定';
@@ -4500,6 +4501,7 @@ extension on TranslationsZhCn {
 			'storyWorldBook' => '世界书',
 			'storyChoicesPrompt' => '后续建议提示词',
 			'storyStart' => '开始游戏',
+			'storyCustomize' => '自定义内容',
 			'storyRoll' => '掷骰',
 			'storySpecialCheck' => '特殊判定',
 			'storyCheckPending' => '下一条消息将进行动作判定',
@@ -4932,9 +4934,9 @@ extension on TranslationsZhCn {
 			'lanExitControl' => '退出控制',
 			'lanConnectingToRemoteDevice' => '正在连接远程设备',
 			'lanRemoteControlConnected' => '远程控制已连接',
-			'lanRemoteControlConnectionFailed' => '远程控制连接失败',
 			_ => null,
 		} ?? switch (path) {
+			'lanRemoteControlConnectionFailed' => '远程控制连接失败',
 			'lanConnectedDevices' => '已连接设备',
 			'lanNoDeviceConnected' => '无设备连接',
 			'lanPlayerControl' => '播放器控制',
@@ -5446,9 +5448,9 @@ extension on TranslationsZhCn {
 			'profilePersonalityTags' => '性格标签',
 			'profilePersonalityTagsHint' => '多选标签，如 理性/幽默/毒舌/温柔',
 			'profileCatchphrases' => '口头禅',
-			'profileCatchphrasesHint' => '每行一个',
 			_ => null,
 		} ?? switch (path) {
+			'profileCatchphrasesHint' => '每行一个',
 			'profileExamples' => '对话示例（few-shot）',
 			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
 			'profileReplyStyle' => '回复风格',

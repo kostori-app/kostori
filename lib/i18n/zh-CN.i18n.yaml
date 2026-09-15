@@ -1618,6 +1618,7 @@ storySystemPrompt: 系统提示词
 storyWorldBook: 世界书
 storyChoicesPrompt: 后续建议提示词
 storyStart: 开始游戏
+storyCustomize: 自定义内容
 storyRoll: 掷骰
 storySpecialCheck: 特殊判定
 storyCheckPending: 下一条消息将进行动作判定

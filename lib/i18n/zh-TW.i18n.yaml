@@ -1623,6 +1623,7 @@ storySystemPrompt: 系統提示詞
 storyWorldBook: 世界書
 storyChoicesPrompt: 後續建議提示詞
 storyStart: 開始遊戲
+storyCustomize: 自訂內容
 storyRoll: 擲骰
 storySpecialCheck: 特殊判定
 storyCheckPending: 下一條訊息將進行動作判定

@@ -4762,6 +4762,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Start game'
 	String get storyStart => 'Start game';
 
+	/// en: 'Custom content'
+	String get storyCustomize => 'Custom content';
+
 	/// en: 'Roll'
 	String get storyRoll => 'Roll';
 
@@ -10124,6 +10127,7 @@ extension on Translations {
 			'storyWorldBook' => 'World Info',
 			'storyChoicesPrompt' => 'Follow-up prompt',
 			'storyStart' => 'Start game',
+			'storyCustomize' => 'Custom content',
 			'storyRoll' => 'Roll',
 			'storySpecialCheck' => 'Special check',
 			'storyCheckPending' => 'The next message will be an action check',
@@ -10555,9 +10559,9 @@ extension on Translations {
 			'lanInvalidRemoteControlLink' => 'Invalid remote control link',
 			'lanRemoteControlConnection' => 'Remote Control Connection',
 			'lanAccept' => 'Accept',
-			'lanDeviceId' => 'Device ID',
 			_ => null,
 		} ?? switch (path) {
+			'lanDeviceId' => 'Device ID',
 			'lanConnect' => 'Connect',
 			'lanExitControl' => 'Exit Control',
 			'lanConnectedDevices' => 'Connected Devices',
@@ -11069,9 +11073,9 @@ extension on Translations {
 			'profilePersonalityTags' => 'Personality tags',
 			'profilePersonalityTagsHint' => 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle',
 			'profileCatchphrases' => 'Catchphrases',
-			'profileCatchphrasesHint' => 'One per line',
 			_ => null,
 		} ?? switch (path) {
+			'profileCatchphrasesHint' => 'One per line',
 			'profileExamples' => 'Example dialogs (few-shot)',
 			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
 			'profileReplyStyle' => 'Reply style',

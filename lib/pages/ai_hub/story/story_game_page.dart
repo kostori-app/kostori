@@ -130,6 +130,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   final Map<String, TextEditingController> _textValues = {};
   final Map<String, int> _numberValues = {};
 
+  /// 选了「自定义」选项后，玩家补充输入的内容
+  final Map<String, TextEditingController> _customValues = {};
+
+  /// 「自定义」是约定选项：选中它要额外给出输入框
+  static const _customOption = '自定义';
+
+  /// 世界书里固定条目（种族/职业/天赋/事件/MOD…）的说明，用作选项 tooltip
+  late final Map<String, String> _fixedHints = parseStoryFixedHints(
+    widget.story.worldBook,
+  );
+
   /// 开局档案里填的玩家名（供提示词里的 `{{user}}` 使用）
   String _setupName = '';
 
@@ -207,6 +218,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _inputFocus.dispose();
     _scrollController.dispose();
     for (final c in _textValues.values) {
+      c.dispose();
+    }
+    for (final c in _customValues.values) {
       c.dispose();
     }
     super.dispose();
@@ -315,10 +329,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     for (final part in story.setup) {
       if (personaName.isNotEmpty && part.key == 'name') continue;
       final value = switch (part.type) {
-        'multi' => (_multiValues[part.key] ?? const <String>{}).join('、'),
+        'multi' => _multiValueText(part),
         'text' => (_textValues[part.key]?.text.trim() ?? ''),
         'number' => '${_partNumber(part)}',
-        _ => (_singleValues[part.key] ?? ''),
+        _ => _singleValueText(part),
       };
       if (part.required && value.isEmpty) {
         App.rootContext.showMessage(
@@ -2071,6 +2085,40 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return p.optionsBy[owner] ?? const [];
   }
 
+  /// 依赖字段还没选 / 无可选项时，整个字段先不显示（避免出现空白项）
+  bool _partVisible(StorySetupPart p) {
+    if (p.dependsOn.isEmpty) return true;
+    if ((_singleValues[p.dependsOn] ?? '').isEmpty) return false;
+    return _partOptions(p).isNotEmpty;
+  }
+
+  /// 「自定义」选项补充输入的内容
+  String _customText(StorySetupPart p) =>
+      _customValues[p.key]?.text.trim() ?? '';
+
+  /// 单选的最终值：选「自定义」且有补充输入时用补充内容
+  String _singleValueText(StorySetupPart p) {
+    final sel = _singleValues[p.key] ?? '';
+    if (sel != _customOption) return sel;
+    final custom = _customText(p);
+    return custom.isEmpty ? _customOption : custom;
+  }
+
+  /// 多选的最终值：「自定义」项用补充输入替换
+  String _multiValueText(StorySetupPart p) {
+    final selected = _multiValues[p.key] ?? const <String>{};
+    final out = <String>[];
+    for (final o in selected) {
+      if (o == _customOption) {
+        final custom = _customText(p);
+        out.add(custom.isEmpty ? _customOption : custom);
+      } else {
+        out.add(o);
+      }
+    }
+    return out.join('、');
+  }
+
   int? _groupPool(List<StorySetupPart> parts) {
     for (final p in parts) {
       if (p.pool != null) return p.pool;
@@ -2150,61 +2198,130 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return Scaffold(
       appBar: Appbar(title: Text(story.name)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
-          if (story.description.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                story.description,
-                style: TextStyle(color: scheme.onSurfaceVariant),
+          if (story.description.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.toOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-          for (final entry in groups.entries) ...[
-            if (entry.key.isNotEmpty) ...[
-              Row(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    entry.key,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                  Icon(
+                    Icons.auto_stories_outlined,
+                    size: 18,
+                    color: scheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      story.description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.5,
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  if (_groupPool(entry.value) != null)
-                    Text(
-                      '${t.storyPointsLeft}: '
-                      '${_groupPool(entry.value)! - _groupAllocated(entry.value)}',
-                      style: TextStyle(fontSize: 12, color: scheme.primary),
-                    ),
                 ],
               ),
-              const SizedBox(height: 8),
-            ],
-            for (final part in entry.value)
-              _buildPart(context, part, entry.value),
-            if (entry.value.any((p) => p.type == 'number'))
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => _rollGroup(entry.value),
-                  icon: const Icon(Icons.casino_outlined, size: 18),
-                  label: Text(t.storyRoll),
-                ),
-              ),
-            const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 14),
           ],
-          const SizedBox(height: 8),
+          for (final entry in groups.entries)
+            _setupSection(context, entry.key, entry.value),
+          const SizedBox(height: 4),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: _startWithSetup,
-              icon: const Icon(Icons.play_arrow),
-              label: Text(t.storyStart),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  t.storyStart,
+                  style: const TextStyle(fontSize: 15),
+                ),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 一个分组：卡片式容器（标题 + 剩余点数 + 掷骰 + 字段）
+  Widget _setupSection(
+    BuildContext context,
+    String title,
+    List<StorySetupPart> parts,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final visible = [for (final p in parts) if (_partVisible(p)) p];
+    if (visible.isEmpty) return const SizedBox.shrink();
+    final pool = _groupPool(parts);
+    final hasNumber = parts.any((p) => p.type == 'number');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: scheme.outlineVariant, width: 0.6),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title.isNotEmpty || pool != null || hasNumber)
+              Row(
+                children: [
+                  if (title.isNotEmpty)
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  if (pool != null)
+                    Container(
+                      margin: const EdgeInsets.only(right: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${t.storyPointsLeft} ${pool - _groupAllocated(parts)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  if (hasNumber)
+                    IconButton(
+                      icon: const Icon(Icons.casino_outlined, size: 18),
+                      tooltip: t.storyRoll,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _rollGroup(parts),
+                    ),
+                ],
+              ),
+            for (final part in visible) _buildPart(context, part, parts),
+          ],
+        ),
       ),
     );
   }
@@ -2216,98 +2333,164 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   ) {
     // points 仅用于定义分组点数池，不渲染控件
     if (part.type == 'points') return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
     final title = part.required ? '${part.title} *' : part.title;
-    if (part.type == 'number') {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            Expanded(child: Text(title, style: const TextStyle(fontSize: 14))),
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
-              onPressed: () => _bumpNumber(part, -1, group),
-            ),
-            Text(
-              '${_partNumber(part)}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: () => _bumpNumber(part, 1, group),
-            ),
-          ],
-        ),
-      );
-    }
 
     final Widget content;
-    if (part.type == 'multi') {
-      content = Wrap(
-        spacing: 8,
-        runSpacing: 8,
+    if (part.type == 'number') {
+      content = Row(
         children: [
-          for (final o in part.options)
-            OptionChip(
-              text: o,
-              isSelected: _multiValues[part.key]?.contains(o) ?? false,
-              onTap: () => setState(() {
-                final set = _multiValues.putIfAbsent(part.key, () => {});
-                if (set.contains(o)) {
-                  set.remove(o);
-                } else {
-                  set.add(o);
-                }
-              }),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _bumpNumber(part, -1, group),
+          ),
+          Container(
+            constraints: const BoxConstraints(minWidth: 42),
+            alignment: Alignment.center,
+            child: Text(
+              '${_partNumber(part)}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _bumpNumber(part, 1, group),
+          ),
         ],
       );
     } else if (part.type == 'text') {
-      content = TextField(
-        controller: _textValues.putIfAbsent(
-          part.key,
-          () => TextEditingController(),
-        ),
-        decoration: InputDecoration(
-          hintText: part.hint,
-          isDense: true,
-          border: const OutlineInputBorder(),
-        ),
+      content = _setupTextField(
+        _textValues.putIfAbsent(part.key, () => TextEditingController()),
+        part.hint,
+      );
+    } else if (part.type == 'multi') {
+      final selected = _multiValues[part.key] ?? const <String>{};
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final o in part.options)
+                OptionChip(
+                  text: o,
+                  hint: o == _customOption ? '' : (_fixedHints[o] ?? ''),
+                  showCheck: true,
+                  isSelected: selected.contains(o),
+                  onTap: () => setState(() {
+                    final set = _multiValues.putIfAbsent(part.key, () => {});
+                    if (set.contains(o)) {
+                      set.remove(o);
+                    } else {
+                      set.add(o);
+                    }
+                  }),
+                ),
+            ],
+          ),
+          if (selected.contains(_customOption))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _setupTextField(
+                _customValues.putIfAbsent(
+                  part.key,
+                  () => TextEditingController(),
+                ),
+                t.storyCustomize,
+              ),
+            ),
+        ],
       );
     } else {
-      content = Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      final selected = _singleValues[part.key] ?? '';
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final o in _partOptions(part))
-            OptionChip(
-              text: o,
-              isSelected: _singleValues[part.key] == o,
-              onTap: () => setState(() {
-                _singleValues[part.key] = o;
-                // 换了被依赖项 → 依赖它的选择要重来（如换主职 → 子职重选）
-                for (final q in story.setup) {
-                  if (q.dependsOn == part.key) _singleValues.remove(q.key);
-                }
-              }),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final o in _partOptions(part))
+                OptionChip(
+                  text: o,
+                  hint: o == _customOption ? '' : (_fixedHints[o] ?? ''),
+                  showCheck: true,
+                  isSelected: selected == o,
+                  onTap: () => setState(() {
+                    _singleValues[part.key] = o;
+                    // 换了被依赖项 → 依赖它的选择要重来（如换主职 → 子职重选）
+                    for (final q in story.setup) {
+                      if (q.dependsOn == part.key) _singleValues.remove(q.key);
+                    }
+                  }),
+                ),
+            ],
+          ),
+          if (selected == _customOption)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _setupTextField(
+                _customValues.putIfAbsent(
+                  part.key,
+                  () => TextEditingController(),
+                ),
+                t.storyCustomize,
+              ),
             ),
         ],
       );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6, top: 4),
+            child: Row(
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (part.hint.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Tooltip(
+                      message: part.hint,
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        content,
-        const SizedBox(height: 14),
-      ],
+          content,
+        ],
+      ),
     );
   }
+
+  Widget _setupTextField(TextEditingController controller, String? hint) =>
+      TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: hint,
+          isDense: true,
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.edit_outlined, size: 18),
+        ),
+      );
 
   _ParsedReply? _lastAiReply(List<AiTask> messages) {
     for (final m in messages.reversed) {

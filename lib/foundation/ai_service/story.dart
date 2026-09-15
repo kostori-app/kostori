@@ -1545,6 +1545,38 @@ class StorySetupPart {
   };
 }
 
+/// 从世界书里提取「固定条目」的说明（种族 / 职业 / 天赋 / 事件 / MOD 等），
+/// 供开局设置里的选项做 tooltip：`- **名称**：说明` 与
+/// `- **事件名**（推荐等阶：X）` + 下一行简介 两种写法都会收录。
+Map<String, String> parseStoryFixedHints(String worldBook) {
+  final out = <String, String>{};
+  if (worldBook.trim().isEmpty) return out;
+  final lines = worldBook.split('\n');
+  final eventRe = RegExp(r'^\s*-\s*\*\*(.+?)\*\*（推荐等阶：(.+?)）\s*$');
+  final simpleRe = RegExp(r'^\s*-\s*\*\*(.+?)\*\*(?:（[^）]*）)?：\s*(.+)$');
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final ev = eventRe.firstMatch(line);
+    if (ev != null) {
+      String? desc;
+      for (var j = i + 1; j < lines.length; j++) {
+        final n = lines[j];
+        if (n.trim().isEmpty || !n.startsWith('  ')) break;
+        if (!n.trim().startsWith('主要人物')) {
+          desc = n.trim();
+          break;
+        }
+      }
+      final tier = ev.group(2)!;
+      out[ev.group(1)!] = desc == null ? '推荐等阶：$tier' : '推荐等阶：$tier\n$desc';
+      continue;
+    }
+    final sm = simpleRe.firstMatch(line);
+    if (sm != null) out.putIfAbsent(sm.group(1)!, () => sm.group(2)!.trim());
+  }
+  return out;
+}
+
 /// 故事：整合好的世界书 + 设定 + 提示词 + 开局 + 后续建议提示词
 class Story {
   final String id;

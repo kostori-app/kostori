@@ -255,6 +255,8 @@ class OptionChip extends StatelessWidget {
     required this.text,
     required this.isSelected,
     required this.onTap,
+    this.hint = '',
+    this.showCheck = false,
   });
 
   final String text;
@@ -263,17 +265,22 @@ class OptionChip extends StatelessWidget {
 
   final void Function() onTap;
 
+  /// 悬停 / 长按提示（为空则不挂 Tooltip）
+  final String hint;
+
+  /// 选中时在文字前显示对勾
+  final bool showCheck;
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
+    final cs = context.colorScheme;
+    Widget chip = AnimatedContainer(
       duration: _fastAnimationDuration,
       decoration: BoxDecoration(
-        color: isSelected
-            ? context.colorScheme.secondaryContainer
-            : context.colorScheme.surface,
+        color: isSelected ? cs.secondaryContainer : cs.surface,
         border: isSelected
-            ? Border.all(color: context.colorScheme.secondaryContainer)
-            : Border.all(color: context.colorScheme.outline),
+            ? Border.all(color: cs.secondaryContainer)
+            : Border.all(color: cs.outline),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Material(
@@ -283,11 +290,24 @@ class OptionChip extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Text(text),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showCheck && isSelected) ...[
+                  Icon(Icons.check_rounded, size: 15, color: cs.primary),
+                  const SizedBox(width: 4),
+                ],
+                Text(text),
+              ],
+            ),
           ),
         ),
       ),
     );
+    if (hint.trim().isNotEmpty) {
+      chip = Tooltip(message: hint.trim(), child: chip);
+    }
+    return chip;
   }
 }
 

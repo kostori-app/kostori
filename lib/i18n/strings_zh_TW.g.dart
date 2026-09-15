@@ -1613,6 +1613,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyWorldBook => '世界書';
 	@override String get storyChoicesPrompt => '後續建議提示詞';
 	@override String get storyStart => '開始遊戲';
+	@override String get storyCustomize => '自訂內容';
 	@override String get storyRoll => '擲骰';
 	@override String get storySpecialCheck => '特殊判定';
 	@override String get storyCheckPending => '下一條訊息將進行動作判定';
@@ -4500,6 +4501,7 @@ extension on TranslationsZhTw {
 			'storyWorldBook' => '世界書',
 			'storyChoicesPrompt' => '後續建議提示詞',
 			'storyStart' => '開始遊戲',
+			'storyCustomize' => '自訂內容',
 			'storyRoll' => '擲骰',
 			'storySpecialCheck' => '特殊判定',
 			'storyCheckPending' => '下一條訊息將進行動作判定',
@@ -4931,9 +4933,9 @@ extension on TranslationsZhTw {
 			'lanConnectingToRemoteDevice' => '正在連線遠端設備',
 			'lanRemoteControlConnected' => '遠端控制已連線',
 			'lanRemoteControlConnectionFailed' => '遠端控制連線失敗',
-			'lanConnectedDevices' => '已連線設備',
 			_ => null,
 		} ?? switch (path) {
+			'lanConnectedDevices' => '已連線設備',
 			'lanNoDeviceConnected' => '無設備連線',
 			'lanPlayerControl' => '播放器控制',
 			'lanNavigationControl' => '導航控制',
@@ -5445,9 +5447,9 @@ extension on TranslationsZhTw {
 			'profilePersonalityTagsHint' => '多選標籤，如 理性/幽默/毒舌/溫柔',
 			'profileCatchphrases' => '口頭禪',
 			'profileCatchphrasesHint' => '每行一個',
-			'profileExamples' => '對話示例（few-shot）',
 			_ => null,
 		} ?? switch (path) {
+			'profileExamples' => '對話示例（few-shot）',
 			'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
 			'profileReplyStyle' => '回覆風格',
 			'replyLength' => '回覆長度',

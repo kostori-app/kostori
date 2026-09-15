@@ -1623,6 +1623,7 @@ storySystemPrompt: System prompt
 storyWorldBook: World Info
 storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
+storyCustomize: Custom content
 storyRoll: Roll
 storySpecialCheck: Special check
 storyCheckPending: The next message will be an action check
