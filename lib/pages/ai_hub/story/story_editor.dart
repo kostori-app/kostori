@@ -1510,18 +1510,16 @@ class _StoryEditorState extends State<_StoryEditor>
         color: selected ? cs.primaryContainer : cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
-        child: CheckboxListTile(
+        child: ListTile(
           dense: true,
-          value: selected,
-          onChanged: (v) => onChanged(v ?? false),
-          controlAffinity: ListTileControlAffinity.leading,
+          onTap: () => onChanged(!selected),
           title: Text(
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          secondary: Text(
+          trailing: Text(
             '$count',
             style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
