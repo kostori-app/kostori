@@ -54,6 +54,9 @@ class _SettingLibraryPanel extends StatefulWidget {
 class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
   bool _dragOver = false;
 
+  /// 展开的设定书（默认全部折叠）
+  final Set<String> _expandedBooks = {};
+
   @override
   void initState() {
     super.initState();
@@ -222,6 +225,99 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     if (mounted) setState(() => _dragOver = false);
   }
 
+  /// 新建一本设定书（组）
+  Future<void> _newBook() async {
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: App.rootContext,
+      builder: (ctx) => ContentDialog(
+        title: t.newSettingBook,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: t.storyCharacterName,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name == null || !mounted) return;
+    final book = await SettingLibraryStore.instance.createBook(name: name);
+    if (!mounted) return;
+    setState(() => _expandedBooks.add(book.id));
+  }
+
+  /// 重命名设定书
+  Future<void> _renameBook(SettingBook book) async {
+    final ctrl = TextEditingController(text: book.name);
+    final name = await showDialog<String>(
+      context: App.rootContext,
+      builder: (ctx) => ContentDialog(
+        title: t.rename,
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: t.storyCharacterName,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name == null || !mounted) return;
+    await SettingLibraryStore.instance.upsertBook(
+      SettingBook(id: book.id, name: name, entries: book.entries),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// 把条目移动到另一本设定书
+  Future<void> _moveEntry(SettingEntry entry) async {
+    final store = SettingLibraryStore.instance;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.worldBookMove,
+        icon: Icons.drive_file_move_outline,
+        initialSize: 0.4,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            for (final b in store.books)
+              if (b.id != entry.bookId)
+                ListTile(
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: Text(b.name.isEmpty ? t.storySettingLibrary : b.name),
+                  trailing: Text('${b.entries.length}'),
+                  onTap: () => Navigator.of(ctx).pop(b.id),
+                ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    await store.upsert(entry, bookId: choice);
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) => DropTarget(
     onDragDone: _onDrop,
@@ -276,8 +372,8 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
               ),
               IconButton(
                 icon: const Icon(Icons.add),
-                tooltip: t.storyAddEntry,
-                onPressed: _add,
+                tooltip: t.newSettingBook,
+                onPressed: _newBook,
               ),
             ],
           ),
@@ -301,14 +397,50 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
                       padding: const EdgeInsets.only(top: 8, bottom: 4),
                       child: Row(
                         children: [
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: Icon(
+                              _expandedBooks.contains(book.id)
+                                  ? Icons.expand_more
+                                  : Icons.chevron_right,
+                              size: 20,
+                            ),
+                            onPressed: () => setState(() {
+                              if (_expandedBooks.contains(book.id)) {
+                                _expandedBooks.remove(book.id);
+                              } else {
+                                _expandedBooks.add(book.id);
+                              }
+                            }),
+                          ),
+                          const SizedBox(width: 4),
                           Expanded(
-                            child: Text(
-                              book.name.isEmpty
-                                  ? t.storySettingLibrary
-                                  : book.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                if (_expandedBooks.contains(book.id)) {
+                                  _expandedBooks.remove(book.id);
+                                } else {
+                                  _expandedBooks.add(book.id);
+                                }
+                              }),
+                              behavior: HitTestBehavior.opaque,
+                              child: Text(
+                                book.name.isEmpty
+                                    ? t.storySettingLibrary
+                                    : book.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
+                            ),
+                          ),
+                          Text(
+                            '${book.entries.length}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
                           IconButton(
@@ -317,25 +449,35 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
                             icon: const Icon(Icons.add, size: 18),
                             onPressed: () => _add(bookId: book.id),
                           ),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.delete,
-                            icon: Icon(
-                              Icons.delete_outline,
-                              size: 18,
-                              color: scheme.error,
-                            ),
-                            onPressed: () async {
-                              await SettingLibraryStore.instance.removeBook(
-                                book.id,
-                              );
-                              if (mounted) setState(() {});
+                          PopupMenuButton<String>(
+                            tooltip: '',
+                            icon: const Icon(Icons.more_vert, size: 18),
+                            onSelected: (v) {
+                              if (v == 'rename') _renameBook(book);
+                              if (v == 'delete') {
+                                SettingLibraryStore.instance
+                                    .removeBook(book.id)
+                                    .then((_) {
+                                      if (mounted) setState(() {});
+                                    });
+                              }
                             },
+                            itemBuilder: (_) => [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Text(t.rename),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(t.delete),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                    for (final e in book.entries)
+                    if (_expandedBooks.contains(book.id))
+                      for (final e in book.entries)
                       _SettingCard(
                         children: [
                           ListTile(
@@ -358,6 +500,16 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  iconSize: 18,
+                                  tooltip: t.worldBookMove,
+                                  icon: const Icon(
+                                    Icons.drive_file_move_outline,
+                                    size: 18,
+                                  ),
+                                  onPressed: () => _moveEntry(e),
+                                ),
                                 IconButton(
                                   visualDensity: VisualDensity.compact,
                                   iconSize: 18,
