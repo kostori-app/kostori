@@ -1587,6 +1587,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageBaseUrl => '介面位址（可選）';
 	@override String get aiImageGenerate => '生成圖片';
 	@override String get aiImageGenerating => '生成中';
+	@override String get aiImageGenerateFailed => '生成圖片失敗';
+	@override String get avatarAiGenerate => 'AI 生成';
+	@override String get avatarImageGenModel => '頭像生成';
 	@override String get aiImageNeedTags => '請先生成 Tag';
 	@override String get aiTagHistory => '歷史 Tag';
 	@override String get rolePlay => '酒館';
@@ -4490,6 +4493,9 @@ extension on TranslationsZhTw {
 			'aiImageBaseUrl' => '介面位址（可選）',
 			'aiImageGenerate' => '生成圖片',
 			'aiImageGenerating' => '生成中',
+			'aiImageGenerateFailed' => '生成圖片失敗',
+			'avatarAiGenerate' => 'AI 生成',
+			'avatarImageGenModel' => '頭像生成',
 			'aiImageNeedTags' => '請先生成 Tag',
 			'aiTagHistory' => '歷史 Tag',
 			'rolePlay' => '酒館',
@@ -4945,11 +4951,11 @@ extension on TranslationsZhTw {
 			'lanScanQrCodeToConnect' => '掃碼連接',
 			'lanGeneratingQrCode' => '正在生成二維碼',
 			'lanRemoteControlDescription' => '手機掃碼即可遠端控制',
+			_ => null,
+		} ?? switch (path) {
 			'lanInvalidRemoteControlLink' => '無效的遠端控制連結',
 			'lanRemoteControlConnection' => '遠端控制連線',
 			'lanDeviceId' => '設備 ID',
-			_ => null,
-		} ?? switch (path) {
 			'lanConnect' => '連接',
 			'lanExitControl' => '退出控制',
 			'lanConnectingToRemoteDevice' => '正在連線遠端設備',
@@ -5459,11 +5465,11 @@ extension on TranslationsZhTw {
 			'worldBookBindTags' => '綁定標籤（取自角色卡，留空不限制）',
 			'worldBookDepth' => '深度（越小越靠後）',
 			'worldBookSticky' => '保持回合數',
+			_ => null,
+		} ?? switch (path) {
 			'worldBookCooldown' => '冷卻回合數',
 			'worldBookConstant' => '常駐',
 			'worldBookRecursive' => '遞迴觸發',
-			_ => null,
-		} ?? switch (path) {
 			'newWorldBookEntry' => '新增條目',
 			'worldBookHitTest' => '命中測試',
 			'worldBookHitTestHint' => '輸入一句話，查看哪些條目會被觸發',

@@ -1597,6 +1597,9 @@ aiImageSteps: 步數
 aiImageBaseUrl: 介面位址（可選）
 aiImageGenerate: 生成圖片
 aiImageGenerating: 生成中
+aiImageGenerateFailed: 生成圖片失敗
+avatarAiGenerate: AI 生成
+avatarImageGenModel: 頭像生成
 aiImageNeedTags: 請先生成 Tag
 aiTagHistory: 歷史 Tag
 rolePlay: 酒館

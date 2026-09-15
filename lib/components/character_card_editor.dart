@@ -13,6 +13,7 @@ import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
+import 'package:kostori/foundation/ai_service/ai_image_service.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
@@ -148,18 +149,29 @@ class _CharacterAvatarState extends State<CharacterAvatar> {
   }
 }
 
-/// 头像选择器：预览 + 选图 / 清除
-class AvatarPicker extends StatelessWidget {
+/// 头像选择器：预览 + 选图 / AI 生成 / 清除
+class AvatarPicker extends StatefulWidget {
   const AvatarPicker({
     super.key,
     required this.name,
     required this.avatar,
     required this.onChanged,
+    this.onGenerate,
   });
 
   final String name;
   final String avatar;
   final ValueChanged<String> onChanged;
+
+  /// AI 生成头像；为空则不显示「AI 生成」按钮
+  final Future<void> Function()? onGenerate;
+
+  @override
+  State<AvatarPicker> createState() => _AvatarPickerState();
+}
+
+class _AvatarPickerState extends State<AvatarPicker> {
+  bool _generating = false;
 
   Future<void> _pick() async {
     final picker = ImagePicker();
@@ -171,25 +183,53 @@ class AvatarPicker extends StatelessWidget {
     if (x == null) return;
     final bytes = await x.readAsBytes();
     final mime = x.mimeType ?? 'image/png';
-    onChanged('data:$mime;base64,${base64Encode(bytes)}');
+    widget.onChanged('data:$mime;base64,${base64Encode(bytes)}');
+  }
+
+  Future<void> _generate() async {
+    final onGenerate = widget.onGenerate;
+    if (onGenerate == null || _generating) return;
+    setState(() => _generating = true);
+    try {
+      await onGenerate();
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: Row(
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          CharacterAvatar(name: name, avatar: avatar, radius: 24),
-          const SizedBox(width: 12),
+          CharacterAvatar(name: widget.name, avatar: widget.avatar, radius: 24),
+          const SizedBox(width: 8),
           TextButton.icon(
-            onPressed: _pick,
+            onPressed: _generating ? null : _pick,
             icon: const Icon(Icons.image_outlined, size: 18),
             label: Text(t.characterPickAvatar),
           ),
-          if (avatar.trim().isNotEmpty)
+          if (widget.onGenerate != null)
             TextButton.icon(
-              onPressed: () => onChanged(''),
+              onPressed: _generating ? null : _generate,
+              icon: _generating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: PolygonRefreshIndicator(size: 18),
+                    )
+                  : const Icon(Icons.auto_awesome, size: 18),
+              label: Text(
+                _generating ? t.aiImageGenerating : t.avatarAiGenerate,
+              ),
+            ),
+          if (widget.avatar.trim().isNotEmpty)
+            TextButton.icon(
+              onPressed: _generating ? null : () => widget.onChanged(''),
               icon: const Icon(Icons.clear, size: 18),
               label: Text(t.clear),
             ),
@@ -269,6 +309,47 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
 
   /// 正在把角色名翻译成昵称
   bool _translating = false;
+
+  /// 拼头像出图用的提示词（基于名称 / 描述 / 性格 / 场景）
+  String _avatarPrompt() {
+    final parts = <String>[];
+    final name = _nameCtrl.text.trim();
+    if (name.isNotEmpty) parts.add(name);
+    final desc = _descCtrl.text.trim();
+    if (desc.isNotEmpty) parts.add(desc);
+    final persona = _personalityCtrl.text.trim();
+    if (persona.isNotEmpty) parts.add(persona);
+    final scenario = _scenarioCtrl.text.trim();
+    if (scenario.isNotEmpty) parts.add(scenario);
+    if (parts.isEmpty) return '';
+    return '${parts.join('，')}，'
+        'role-play character portrait, head and shoulders, front view, '
+        'high quality, square avatar';
+  }
+
+  /// AI 生成角色头像：优先用「辅助任务模型 → 头像生成」的服务商/模型
+  Future<void> _generateAvatar() async {
+    final prompt = _avatarPrompt();
+    if (prompt.isEmpty) return;
+    final aux = await AiConversationService().loadAuxConfig('avatarImage');
+    final base = AiImageGenConfig.load();
+    final config = aux.provider.isEmpty
+        ? base
+        : base.copyWith(provider: aux.provider, model: aux.model ?? '');
+    final res = await AiImageService.generate(prompt: prompt, config: config);
+    final bytes = res.dataOrNull;
+    if (!mounted) return;
+    if (bytes == null || bytes.isEmpty) {
+      App.rootContext.showMessage(
+        message: res.errorMessage ?? t.aiImageGenerateFailed,
+        level: LogLevel.warning,
+      );
+      return;
+    }
+    setState(() {
+      _avatar = 'data:image/png;base64,${base64Encode(bytes)}';
+    });
+  }
 
   /// 翻译目标语言：跟随应用当前语言，兜底简体中文
   String get _translationTarget {
@@ -632,6 +713,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
         name: _nameCtrl.text,
         avatar: _avatar,
         onChanged: (v) => setState(() => _avatar = v),
+        onGenerate: _generateAvatar,
       ),
       _field(
         t.characterNickname,

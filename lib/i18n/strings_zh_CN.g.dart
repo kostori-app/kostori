@@ -1586,6 +1586,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get aiImageBaseUrl => '接口地址（可选）';
 	@override String get aiImageGenerate => '生成图片';
 	@override String get aiImageGenerating => '生成中';
+	@override String get aiImageGenerateFailed => '生成图片失败';
+	@override String get avatarAiGenerate => 'AI 生成';
+	@override String get avatarImageGenModel => '头像生成';
 	@override String get aiImageNeedTags => '请先生成 Tag';
 	@override String get aiTagHistory => '历史 Tag';
 	@override String get rolePlay => '酒馆';
@@ -4490,6 +4493,9 @@ extension on TranslationsZhCn {
 			'aiImageBaseUrl' => '接口地址（可选）',
 			'aiImageGenerate' => '生成图片',
 			'aiImageGenerating' => '生成中',
+			'aiImageGenerateFailed' => '生成图片失败',
+			'avatarAiGenerate' => 'AI 生成',
+			'avatarImageGenModel' => '头像生成',
 			'aiImageNeedTags' => '请先生成 Tag',
 			'aiTagHistory' => '历史 Tag',
 			'rolePlay' => '酒馆',
@@ -4946,11 +4952,11 @@ extension on TranslationsZhCn {
 			'lanAccept' => '接受',
 			'lanScanQrCodeToConnect' => '扫码连接',
 			'lanGeneratingQrCode' => '正在生成二维码',
+			_ => null,
+		} ?? switch (path) {
 			'lanRemoteControlDescription' => '手机扫码即可远程控制',
 			'lanInvalidRemoteControlLink' => '无效的远程控制链接',
 			'lanRemoteControlConnection' => '远程控制连接',
-			_ => null,
-		} ?? switch (path) {
 			'lanDeviceId' => '设备 ID',
 			'lanConnect' => '连接',
 			'lanExitControl' => '退出控制',
@@ -5460,11 +5466,11 @@ extension on TranslationsZhCn {
 			'worldBookBindCharacters' => '绑定角色卡（留空不限制）',
 			'worldBookBindTags' => '绑定标签（取自角色卡，留空不限制）',
 			'worldBookDepth' => '深度（越小越靠后）',
+			_ => null,
+		} ?? switch (path) {
 			'worldBookSticky' => '保持回合数',
 			'worldBookCooldown' => '冷却回合数',
 			'worldBookConstant' => '常驻',
-			_ => null,
-		} ?? switch (path) {
 			'worldBookRecursive' => '递归触发',
 			'newWorldBookEntry' => '新建条目',
 			'worldBookHitTest' => '命中测试',

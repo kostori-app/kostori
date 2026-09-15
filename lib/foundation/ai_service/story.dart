@@ -554,18 +554,21 @@ class StoryPersona {
 
   const StoryPersona({
     this.name = '',
-    this.avatar = '🧑',
+    this.avatar = '',
     this.description = '',
   });
 
   bool get isEmpty =>
       name.trim().isEmpty && description.trim().isEmpty;
 
-  factory StoryPersona.fromJson(Map<String, dynamic> json) => StoryPersona(
-    name: json['name']?.toString() ?? '',
-    avatar: json['avatar']?.toString() ?? '🧑',
-    description: json['description']?.toString() ?? '',
-  );
+  factory StoryPersona.fromJson(Map<String, dynamic> json) {
+    final avatar = json['avatar']?.toString() ?? '';
+    return StoryPersona(
+      name: json['name']?.toString() ?? '',
+      avatar: avatar == '🧑' ? '' : avatar,
+      description: json['description']?.toString() ?? '',
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'name': name,

@@ -90,6 +90,11 @@ class ExtensionSettingsPage extends StatelessWidget {
                 icon: Icons.auto_fix_high_outlined,
                 title: t.settingGeneration,
               ),
+              _AuxTaskTile(
+                taskKey: 'avatarImage',
+                icon: Icons.image_outlined,
+                title: t.avatarImageGenModel,
+              ),
             ],
           ),
         ),

@@ -8,6 +8,12 @@ import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// 头像清洗：旧的 emoji 占位（🧑）视为空，由界面用角色名首字代替
+String _cleanAvatar(Object? v) {
+  final s = v?.toString() ?? '';
+  return s == '🧑' ? '' : s;
+}
+
 /// 角色卡数据（兼容 SillyTavern V1 / V2 / V3 字段）
 class CharacterCard {
   final String id;
@@ -19,7 +25,7 @@ class CharacterCard {
     return n.isEmpty ? name : n;
   }
 
-  /// 头像：emoji 或图片 data URL
+  /// 头像：图片 data URL / http URL（空则界面用角色名首字）
   final String avatar;
   final String description;
   final String personality;
@@ -66,7 +72,7 @@ class CharacterCard {
   const CharacterCard({
     required this.id,
     required this.name,
-    this.avatar = '🧑',
+    this.avatar = '',
     this.description = '',
     this.personality = '',
     this.scenario = '',
@@ -163,7 +169,7 @@ class CharacterCard {
       id: (json['id'] as String?) ??
           'card_${DateTime.now().microsecondsSinceEpoch}',
       name: (json['name'] as String?) ?? '',
-      avatar: (json['avatar'] as String?) ?? '🧑',
+      avatar: _cleanAvatar(json['avatar']),
       description: (json['description'] as String?) ?? '',
       personality:
           (json['personality'] ??

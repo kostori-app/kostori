@@ -1142,7 +1142,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         CharacterCard(
           id: 'npc_${name.hashCode.toRadixString(16)}',
           name: name,
-          avatar: '🧑',
+          avatar: '',
           description: _npcAutoDescription(name, npc, state),
           tags: [t.storyAutoNpc],
           creator: 'auto',

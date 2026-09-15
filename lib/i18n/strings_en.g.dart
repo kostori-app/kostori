@@ -4684,6 +4684,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Generating'
 	String get aiImageGenerating => 'Generating';
 
+	/// en: 'Failed to generate image'
+	String get aiImageGenerateFailed => 'Failed to generate image';
+
+	/// en: 'AI Generate'
+	String get avatarAiGenerate => 'AI Generate';
+
+	/// en: 'Avatar generation'
+	String get avatarImageGenModel => 'Avatar generation';
+
 	/// en: 'Generate tags first'
 	String get aiImageNeedTags => 'Generate tags first';
 
@@ -10146,6 +10155,9 @@ extension on Translations {
 			'aiImageBaseUrl' => 'Endpoint (optional)',
 			'aiImageGenerate' => 'Generate image',
 			'aiImageGenerating' => 'Generating',
+			'aiImageGenerateFailed' => 'Failed to generate image',
+			'avatarAiGenerate' => 'AI Generate',
+			'avatarImageGenModel' => 'Avatar generation',
 			'aiImageNeedTags' => 'Generate tags first',
 			'aiTagHistory' => 'History tags',
 			'rolePlay' => 'Tavern',
@@ -10601,11 +10613,11 @@ extension on Translations {
 			'lanScanQrCodeToConnect' => 'Scan QR code to connect remote device',
 			'lanGeneratingQrCode' => 'Generating QR Code...',
 			'lanRemoteControlDescription' => 'After scanning, you can remotely control this device',
+			_ => null,
+		} ?? switch (path) {
 			'lanPairingRequestReceived' => 'Pairing Request Received',
 			'lanDevice' => 'Device',
 			'lanConnectingToRemoteDevice' => 'Connecting to remote device...',
-			_ => null,
-		} ?? switch (path) {
 			'lanRemoteControlConnected' => 'Remote control connected',
 			'lanRemoteControlConnectionFailed' => 'Remote control connection failed',
 			'lanInvalidRemoteControlLink' => 'Invalid remote control link',
@@ -11115,11 +11127,11 @@ extension on Translations {
 			'worldBookBindCharacters' => 'Bound character cards (empty = any)',
 			'worldBookBindTags' => 'Bound tags (from character cards; empty = any)',
 			'worldBookDepth' => 'Depth (smaller = closer to the end)',
+			_ => null,
+		} ?? switch (path) {
 			'worldBookSticky' => 'Sticky turns',
 			'worldBookCooldown' => 'Cooldown turns',
 			'worldBookConstant' => 'Always on',
-			_ => null,
-		} ?? switch (path) {
 			'worldBookRecursive' => 'Recursive scan',
 			'newWorldBookEntry' => 'New Entry',
 			'worldBookHitTest' => 'Hit Test',
