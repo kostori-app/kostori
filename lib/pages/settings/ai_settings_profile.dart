@@ -991,21 +991,26 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                 child: Text(t.noWorldBookEntriesYet, style: ts.s12),
               )
             else
-              for (final e in worldBook)
-                CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(e.name.isEmpty ? e.content : e.name),
-                  value: _worldBookIds.contains(e.id),
-                  onChanged: (v) => setState(() {
-                    if (v == true) {
-                      _worldBookIds.add(e.id);
-                    } else {
-                      _worldBookIds.remove(e.id);
-                    }
-                  }),
-                ),
+              for (final book in WorldBookStore.instance.books)
+                if (book.entries.isNotEmpty)
+                  _bookSelectCard(
+                    name: book.name.isEmpty ? t.worldBook : book.name,
+                    count: book.entries.length,
+                    selected: book.entries.every(
+                      (e) => _worldBookIds.contains(e.id),
+                    ),
+                    onChanged: (v) => setState(() {
+                      if (v) {
+                        _worldBookIds.addAll([
+                          for (final e in book.entries) e.id,
+                        ]);
+                      } else {
+                        _worldBookIds.removeAll([
+                          for (final e in book.entries) e.id,
+                        ]);
+                      }
+                    }),
+                  ),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -1075,6 +1080,38 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
           ],
         );
       },
+    );
+  }
+
+  /// 世界书分组卡片：点击整组勾选，选中时高亮（与故事编辑一致）
+  Widget _bookSelectCard({
+    required String name,
+    required int count,
+    required bool selected,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: selected ? cs.primaryContainer : cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          dense: true,
+          onTap: () => onChanged(!selected),
+          title: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          trailing: Text(
+            '$count',
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
+        ),
+      ),
     );
   }
 
