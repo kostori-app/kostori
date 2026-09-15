@@ -65,7 +65,15 @@ part 'summary_page.dart';
 
 part 'taste_radar_page.dart';
 
-part 'story_page.dart';
+part 'story/story_page.dart';
+
+part 'story/story_editor.dart';
+
+part 'story/story_game_page.dart';
+
+part 'story/story_details_sheet.dart';
+
+part 'story/story_shared.dart';
 
 class AiHubEntry extends StatelessWidget {
   const AiHubEntry({super.key});
