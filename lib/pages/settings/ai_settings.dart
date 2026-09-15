@@ -2479,61 +2479,65 @@ class _GlobalContextBudgetCard extends StatefulWidget {
 }
 
 class _GlobalContextBudgetCardState extends State<_GlobalContextBudgetCard> {
-  late final TextEditingController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(text: aiGlobalContextBudgetChars.toString());
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _save() {
-    final v = int.tryParse(_ctrl.text.trim());
-    if (v == null || v < 0) return;
-    aiGlobalContextBudgetChars = v;
-    setState(() {});
+  Future<void> _openEditor() async {
+    final ctrl = TextEditingController(
+      text: aiGlobalContextBudgetChars.toString(),
+    );
+    final value = await showDialog<int>(
+      context: context,
+      barrierColor: Colors.black.toOpacity(0.36),
+      builder: (ctx) => ContentDialog(
+        title: t.aiContextBudget,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t.aiContextBudgetHint,
+              style: TextStyle(
+                fontSize: 12,
+                color: ctx.colorScheme.onSurface.toOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: t.profileMemoryContextBudget,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+              onSubmitted: (v) => Navigator.pop(ctx, int.tryParse(v.trim())),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
+            child: Text(t.apply),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (value != null && value >= 0) {
+      aiGlobalContextBudgetChars = value;
+      if (mounted) setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return _SettingCard(
       children: [
-        _SettingPartTitle(
+        _CallbackSetting(
           title: t.aiContextBudget,
-          icon: Icons.data_usage_outlined,
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Text(
-            t.aiContextBudgetHint,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _ctrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: t.profileMemoryContextBudget,
-                    isDense: true,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton(onPressed: _save, child: Text(t.apply)),
-            ],
-          ),
+          subtitle: '$aiGlobalContextBudgetChars',
+          actionTitle: t.set,
+          callback: _openEditor,
         ),
       ],
     );
