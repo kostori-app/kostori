@@ -1102,17 +1102,33 @@ class _ModelListSectionState extends State<_ModelListSection> {
       child: TextField(
         onChanged: (v) => setState(() => _query = v),
         decoration: InputDecoration(
-          isDense: true,
           hintText: t.search,
           prefixIcon: const Icon(Icons.search, size: 20),
           suffixIcon: _query.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  tooltip: t.clear,
+                  icon: const Icon(Icons.clear, size: 18),
                   onPressed: () => setState(() => _query = ''),
                 ),
-          border: const OutlineInputBorder(),
+          isDense: true,
+          filled: true,
+          fillColor: scheme.surfaceContainerHigh,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: scheme.primary, width: 1.5),
+          ),
         ),
       ),
     );
