@@ -2560,6 +2560,11 @@ worldBookPriorityHint: 優先級高的條目先注入
 worldBookGroup: 分組
 newWorldBook: 新增世界書
 newSettingBook: 新增設定書
+loreGenTriggers: 生成觸發詞
+loreTriggerLang: 目標語言
+loreTriggerLangHint: 如：中文 / English / 日本語
+loreTriggerGenDone: 已為 ${count} 條生成觸發詞
+loreTriggerGenFailed: 生成觸發詞失敗
 worldBookSecondaryKeys: 次級鍵（每行一個，需全部命中）
 worldBookPosition: 注入位置
 worldBookPositionBefore: 角色定義前

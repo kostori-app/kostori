@@ -2534,6 +2534,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookGroup => '分組';
 	@override String get newWorldBook => '新增世界書';
 	@override String get newSettingBook => '新增設定書';
+	@override String get loreGenTriggers => '生成觸發詞';
+	@override String get loreTriggerLang => '目標語言';
+	@override String get loreTriggerLangHint => '如：中文 / English / 日本語';
+	@override String loreTriggerGenDone({required Object count}) => '已為 ${count} 條生成觸發詞';
+	@override String get loreTriggerGenFailed => '生成觸發詞失敗';
 	@override String get worldBookSecondaryKeys => '次級鍵（每行一個，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
 	@override String get worldBookPositionBefore => '角色定義前';
@@ -5429,6 +5434,11 @@ extension on TranslationsZhTw {
 			'worldBookGroup' => '分組',
 			'newWorldBook' => '新增世界書',
 			'newSettingBook' => '新增設定書',
+			'loreGenTriggers' => '生成觸發詞',
+			'loreTriggerLang' => '目標語言',
+			'loreTriggerLangHint' => '如：中文 / English / 日本語',
+			'loreTriggerGenDone' => ({required Object count}) => '已為 ${count} 條生成觸發詞',
+			'loreTriggerGenFailed' => '生成觸發詞失敗',
 			'worldBookSecondaryKeys' => '次級鍵（每行一個，需全部命中）',
 			'worldBookPosition' => '注入位置',
 			'worldBookPositionBefore' => '角色定義前',
@@ -5447,13 +5457,13 @@ extension on TranslationsZhTw {
 			'worldBookHitTestHint' => '輸入一句話，查看哪些條目會被觸發',
 			'worldBookHitTestPlaceholder' => '輸入一句話...',
 			'worldBookHitsResult' => '命中條目',
+			_ => null,
+		} ?? switch (path) {
 			'worldBookNoHits' => '沒有條目命中',
 			'noWorldBookEntriesYet' => '暫無世界書條目',
 			'noPromptInjectionsYet' => '暫無提示詞注入',
 			'auxTemperature' => 'Temperature',
 			'selectAssistantProfile' => '選擇助手檔案',
-			_ => null,
-		} ?? switch (path) {
 			'selectModel' => '選擇模型',
 			'profilePersonalityTags' => '性格標籤',
 			'profilePersonalityTagsHint' => '多選標籤，如 理性/幽默/毒舌/溫柔',

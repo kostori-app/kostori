@@ -2535,6 +2535,11 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookGroup => '分组';
 	@override String get newWorldBook => '新建世界书';
 	@override String get newSettingBook => '新建设定书';
+	@override String get loreGenTriggers => '生成触发词';
+	@override String get loreTriggerLang => '目标语言';
+	@override String get loreTriggerLangHint => '如：中文 / English / 日本語';
+	@override String loreTriggerGenDone({required Object count}) => '已为 ${count} 条生成触发词';
+	@override String get loreTriggerGenFailed => '生成触发词失败';
 	@override String get worldBookSecondaryKeys => '次级键（每行一个，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
 	@override String get worldBookPositionBefore => '角色定义前';
@@ -5431,6 +5436,11 @@ extension on TranslationsZhCn {
 			'worldBookGroup' => '分组',
 			'newWorldBook' => '新建世界书',
 			'newSettingBook' => '新建设定书',
+			'loreGenTriggers' => '生成触发词',
+			'loreTriggerLang' => '目标语言',
+			'loreTriggerLangHint' => '如：中文 / English / 日本語',
+			'loreTriggerGenDone' => ({required Object count}) => '已为 ${count} 条生成触发词',
+			'loreTriggerGenFailed' => '生成触发词失败',
 			'worldBookSecondaryKeys' => '次级键（每行一个，需全部命中）',
 			'worldBookPosition' => '注入位置',
 			'worldBookPositionBefore' => '角色定义前',
@@ -5448,13 +5458,13 @@ extension on TranslationsZhCn {
 			'worldBookHitTest' => '命中测试',
 			'worldBookHitTestHint' => '输入一句话，查看哪些条目会被触发',
 			'worldBookHitTestPlaceholder' => '输入一句话...',
+			_ => null,
+		} ?? switch (path) {
 			'worldBookHitsResult' => '命中条目',
 			'worldBookNoHits' => '没有条目命中',
 			'noWorldBookEntriesYet' => '暂无世界书条目',
 			'noPromptInjectionsYet' => '暂无提示词注入',
 			'auxTemperature' => 'Temperature',
-			_ => null,
-		} ?? switch (path) {
 			'selectAssistantProfile' => '选择助手档案',
 			'selectModel' => '选择模型',
 			'profilePersonalityTags' => '性格标签',

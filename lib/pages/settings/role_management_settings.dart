@@ -1535,6 +1535,154 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
     showPopUpWidget(App.rootContext, _WorldBookEditor(bookId: bookId));
   }
 
+  /// 选目标语言（默认中文，可自定义）
+  Future<String?> _pickLang() async {
+    final ctrl = TextEditingController(text: '中文');
+    final result = await showDialog<String>(
+      context: App.rootContext,
+      builder: (ctx) => ContentDialog(
+        title: t.loreTriggerLang,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final l in ['中文', 'English', '日本語', '한국어'])
+                  ActionChip(
+                    label: Text(l),
+                    onPressed: () => ctrl.text = l,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: t.loreTriggerLangHint,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    return (result == null || result.isEmpty) ? null : result;
+  }
+
+  /// 为整本书的条目批量生成目标语言的触发词（AI，分批）
+  Future<void> _genTriggers(WorldBookBook book) async {
+    if (book.entries.isEmpty) return;
+    final lang = await _pickLang();
+    if (lang == null || !mounted) return;
+    final providers = OpenAiProviderRegistry.allProviders;
+    final storedProvider = appdata.implicitData['settingGenProvider'];
+    final provider =
+        (storedProvider is String && providers.containsKey(storedProvider))
+        ? storedProvider
+        : providers.keys.firstWhere((_) => true, orElse: () => 'siliconFlow');
+    final storedModel = appdata.implicitData['settingGenModel'];
+    final model = storedModel is String ? storedModel : '';
+    const system =
+        '你是世界书关键词生成助手。为给定的每条条目生成“目标语言”的触发关键词'
+        '（2~5 个短词或短语，能代表该条目主题，供在聊天中命中触发）。'
+        '只输出 JSON 数组，形如 [{"id":"条目id","triggers":["词1","词2"]}]，'
+        '不要任何其它文字。';
+
+    var updated = 0;
+    final loading = showLoadingDialog(App.rootContext);
+    try {
+      const batch = 20;
+      for (var i = 0; i < book.entries.length; i += batch) {
+        final slice = book.entries.sublist(
+          i,
+          (i + batch).clamp(0, book.entries.length),
+        );
+        final items = [
+          for (final e in slice)
+            {
+              'id': e.id,
+              'name': e.name,
+              'content': e.content.length > 300
+                  ? e.content.substring(0, 300)
+                  : e.content,
+            },
+        ];
+        final res = await AiConversationService().runTask(
+          provider: provider,
+          taskType: 'wb_triggers',
+          sessionTitle: t.loreGenTriggers,
+          systemPrompt: system,
+          prompt:
+              '目标语言：$lang\n\n条目：\n${jsonEncode(items)}\n\n'
+              '请为每个条目生成 $lang 触发关键词，输出 JSON 数组。',
+          modelOverride: model.isEmpty ? null : model,
+        );
+        if (!res.success) continue;
+        final text = res.dataOrNull ?? '';
+        final m = RegExp(r'\[[\s\S]*\]').firstMatch(text);
+        if (m == null) continue;
+        Object? decoded;
+        try {
+          decoded = jsonDecode(m.group(0)!);
+        } catch (_) {
+          decoded = null;
+        }
+        if (decoded is! List) continue;
+        for (final item in decoded) {
+          if (item is! Map) continue;
+          final id = item['id']?.toString() ?? '';
+          final raw = item['triggers'];
+          final triggers = raw is List
+              ? raw
+                    .map((e) => e.toString().trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList()
+              : <String>[];
+          if (id.isEmpty || triggers.isEmpty) continue;
+          WorldBookEntry? entry;
+          for (final e in book.entries) {
+            if (e.id == id) {
+              entry = e;
+              break;
+            }
+          }
+          if (entry == null) continue;
+          final merged = <String>[...entry.triggers];
+          for (final tg in triggers) {
+            if (!merged.contains(tg)) merged.add(tg);
+          }
+          if (merged.length == entry.triggers.length) continue;
+          await WorldBookStore.instance.upsert(
+            entry.copyWith(triggers: merged),
+            bookId: book.id,
+          );
+          updated++;
+        }
+      }
+    } finally {
+      loading.close();
+    }
+    if (!mounted) return;
+    App.rootContext.showMessage(
+      message: updated > 0
+          ? t.loreTriggerGenDone(count: updated)
+          : t.loreTriggerGenFailed,
+      level: updated > 0 ? LogLevel.info : LogLevel.error,
+    );
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) => DropTarget(
     onDragDone: _onDrop,
@@ -1630,6 +1778,12 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: t.loreGenTriggers,
+                          icon: const Icon(Icons.translate, size: 18),
+                          onPressed: () => _genTriggers(book),
                         ),
                         IconButton(
                           visualDensity: VisualDensity.compact,

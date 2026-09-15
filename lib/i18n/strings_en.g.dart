@@ -7528,6 +7528,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'New setting book'
 	String get newSettingBook => 'New setting book';
 
+	/// en: 'Generate triggers'
+	String get loreGenTriggers => 'Generate triggers';
+
+	/// en: 'Target language'
+	String get loreTriggerLang => 'Target language';
+
+	/// en: 'e.g. Chinese / English / Japanese'
+	String get loreTriggerLangHint => 'e.g. Chinese / English / Japanese';
+
+	/// en: 'Generated triggers for ${count} entries'
+	String loreTriggerGenDone({required Object count}) => 'Generated triggers for ${count} entries';
+
+	/// en: 'Failed to generate triggers'
+	String get loreTriggerGenFailed => 'Failed to generate triggers';
+
 	/// en: 'Secondary keys (one per line, all must match)'
 	String get worldBookSecondaryKeys => 'Secondary keys (one per line, all must match)';
 
@@ -11066,6 +11081,11 @@ extension on Translations {
 			'worldBookGroup' => 'Group',
 			'newWorldBook' => 'New world book',
 			'newSettingBook' => 'New setting book',
+			'loreGenTriggers' => 'Generate triggers',
+			'loreTriggerLang' => 'Target language',
+			'loreTriggerLangHint' => 'e.g. Chinese / English / Japanese',
+			'loreTriggerGenDone' => ({required Object count}) => 'Generated triggers for ${count} entries',
+			'loreTriggerGenFailed' => 'Failed to generate triggers',
 			'worldBookSecondaryKeys' => 'Secondary keys (one per line, all must match)',
 			'worldBookPosition' => 'Injection position',
 			'worldBookPositionBefore' => 'Before character definitions',
@@ -11083,13 +11103,13 @@ extension on Translations {
 			'worldBookHitTest' => 'Hit Test',
 			'worldBookHitTestHint' => 'Type a sentence to see which entries will be triggered',
 			'worldBookHitTestPlaceholder' => 'Type a sentence...',
+			_ => null,
+		} ?? switch (path) {
 			'worldBookHitsResult' => 'Matching entries',
 			'worldBookNoHits' => 'No entries matched',
 			'noWorldBookEntriesYet' => 'No world info entries yet',
 			'noPromptInjectionsYet' => 'No prompt injections yet',
 			'auxTemperature' => 'Temperature',
-			_ => null,
-		} ?? switch (path) {
 			'selectAssistantProfile' => 'Select an assistant',
 			'selectModel' => 'Select model',
 			'profilePersonalityTags' => 'Personality tags',

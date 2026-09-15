@@ -2559,6 +2559,11 @@ worldBookPriorityHint: Higher priority entries are injected first
 worldBookGroup: Group
 newWorldBook: New world book
 newSettingBook: New setting book
+loreGenTriggers: Generate triggers
+loreTriggerLang: Target language
+loreTriggerLangHint: 'e.g. Chinese / English / Japanese'
+loreTriggerGenDone: Generated triggers for ${count} entries
+loreTriggerGenFailed: Failed to generate triggers
 worldBookSecondaryKeys: Secondary keys (one per line, all must match)
 worldBookPosition: Injection position
 worldBookPositionBefore: Before character definitions
