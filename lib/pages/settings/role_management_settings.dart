@@ -52,6 +52,8 @@ class _SettingLibraryPanel extends StatefulWidget {
 }
 
 class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
+  bool _dragOver = false;
+
   @override
   void initState() {
     super.initState();
@@ -119,19 +121,7 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     );
     if (result == null || result.files.isEmpty) return;
     try {
-      final text = utf8.decode(await result.files.first.readAsBytes());
-      final decoded = jsonDecode(text);
-      if (decoded is! List) throw 'invalid';
-      var count = 0;
-      for (final e in decoded) {
-        if (e is Map) {
-          await SettingLibraryStore.instance.upsert(
-            SettingEntry.fromJson(e.cast<String, dynamic>()),
-          );
-          count++;
-        }
-      }
-      App.rootContext.showMessage(message: t.importedEntries(count: count));
+      await _importBytes(await result.files.first.readAsBytes());
     } catch (e) {
       Log.error('importSettingLibrary', e.toString());
       App.rootContext.showMessage(
@@ -141,8 +131,67 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     }
   }
 
+  /// 从 JSON（List）字节导入设定（拖拽 / 选择文件共用）
+  Future<void> _importBytes(List<int> bytes) async {
+    final decoded = jsonDecode(utf8.decode(bytes));
+    if (decoded is! List) throw 'invalid';
+    var count = 0;
+    for (final e in decoded) {
+      if (e is Map) {
+        final entry = SettingEntry.fromJson(e.cast<String, dynamic>());
+        await SettingLibraryStore.instance.upsert(
+          SettingEntry(
+            id: _stableImportId(
+              'set_',
+              '${entry.type}\u0000${entry.name}\u0000${jsonEncode(entry.payload)}',
+            ),
+            type: entry.type,
+            name: entry.name,
+            payload: entry.payload,
+          ),
+        );
+        count++;
+      }
+    }
+    App.rootContext.showMessage(message: t.importedEntries(count: count));
+  }
+
+  /// 拖入 JSON 文件导入
+  Future<void> _onDrop(DropDoneDetails detail) async {
+    for (final f in detail.files) {
+      if (!f.name.toLowerCase().endsWith('.json')) continue;
+      try {
+        await _importBytes(await f.readAsBytes());
+      } catch (e) {
+        Log.error('dropSettingLibrary', e.toString());
+      }
+    }
+    if (mounted) setState(() => _dragOver = false);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => DropTarget(
+    onDragDone: _onDrop,
+    onDragEntered: (_) {
+      if (mounted) setState(() => _dragOver = true);
+    },
+    onDragExited: (_) {
+      if (mounted) setState(() => _dragOver = false);
+    },
+    child: Container(
+      decoration: _dragOver
+          ? BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            )
+          : null,
+      child: _buildBody(context),
+    ),
+  );
+
+  Widget _buildBody(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final store = SettingLibraryStore.instance;
     return Column(
@@ -738,11 +787,14 @@ Future<void> _exportJson(List<Map<String, dynamic>> items, String filename) asyn
   await saveFile(data: utf8.encode(jsonEncode(items)), filename: filename);
 }
 
+/// 导入时生成稳定 id（基于内容哈希）：避免沿用源文件里的 1/2/3 数字 id
+/// 导致不同文件互相覆盖；同一份文件重复导入会落到同一 id（自动去重）。
+String _stableImportId(String prefix, String seed) =>
+    '$prefix${sha1.convert(utf8.encode(seed)).toString().substring(0, 16)}';
+
 /// 解析世界书：兼容本应用格式（List）与 SillyTavern 世界书（{entries:{...}}）
 List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
   final out = <WorldBookEntry>[];
-  final now = DateTime.now().millisecondsSinceEpoch;
-  var seq = 0;
 
   List<String> triggersOf(dynamic raw) {
     if (raw is List) {
@@ -801,7 +853,11 @@ List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
     };
     out.add(
       WorldBookEntry(
-        id: m['id']?.toString() ?? 'wb_${now}_${seq++}',
+        id: _stableImportId(
+          'wb_',
+          '${m['name'] ?? m['comment'] ?? 'Entry'}\u0000$content\u0000'
+          '${triggers.join(',')}\u0000${m['group'] ?? ''}',
+        ),
         name: (m['name'] ?? m['comment'] ?? 'Entry').toString(),
         group: (m['group'] as String?) ?? '',
         triggers: triggers,
@@ -853,19 +909,23 @@ Future<void> _importWorldBook() async {
   );
   if (result == null || result.files.isEmpty) return;
   try {
-    final text = utf8.decode(await result.files.first.readAsBytes());
-    final entries = _parseWorldBookEntries(jsonDecode(text));
-    if (entries.isEmpty) throw 'empty';
-    for (final e in entries) {
-      await WorldBookStore.instance.upsert(e);
-    }
-    App.rootContext.showMessage(
-      message: t.importedEntries(count: entries.length),
-    );
+    await importWorldBookBytes(await result.files.first.readAsBytes());
   } catch (e) {
     Log.error('importWorldBook', e.toString());
     App.rootContext.showMessage(message: t.importFailed, level: LogLevel.error);
   }
+}
+
+/// 从 JSON 字节导入世界书（拖拽 / 选择文件共用）
+Future<void> importWorldBookBytes(List<int> bytes) async {
+  final entries = _parseWorldBookEntries(jsonDecode(utf8.decode(bytes)));
+  if (entries.isEmpty) throw 'empty';
+  for (final e in entries) {
+    await WorldBookStore.instance.upsert(e);
+  }
+  App.rootContext.showMessage(
+    message: t.importedEntries(count: entries.length),
+  );
 }
 
 Future<void> _importPromptInjections() async {
@@ -1316,14 +1376,50 @@ class _WorldBookPanel extends StatefulWidget {
 }
 
 class _WorldBookPanelState extends State<_WorldBookPanel> {
+  bool _dragOver = false;
+
   @override
   void initState() {
     super.initState();
     WorldBookStore.instance.init();
   }
 
+  /// 拖入 JSON 文件导入世界书
+  Future<void> _onDrop(DropDoneDetails detail) async {
+    for (final f in detail.files) {
+      if (!f.name.toLowerCase().endsWith('.json')) continue;
+      try {
+        await importWorldBookBytes(await f.readAsBytes());
+      } catch (e) {
+        Log.error('dropWorldBook', e.toString());
+      }
+    }
+    if (mounted) setState(() => _dragOver = false);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => DropTarget(
+    onDragDone: _onDrop,
+    onDragEntered: (_) {
+      if (mounted) setState(() => _dragOver = true);
+    },
+    onDragExited: (_) {
+      if (mounted) setState(() => _dragOver = false);
+    },
+    child: Container(
+      decoration: _dragOver
+          ? BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            )
+          : null,
+      child: _buildBody(context),
+    ),
+  );
+
+  Widget _buildBody(BuildContext context) {
     final store = WorldBookStore.instance;
     return Column(
       children: [
