@@ -411,6 +411,33 @@ void main() {
     });
   });
 
+  group('parseStoryFixedHints', () {
+    test('extracts race / talent / mod / event entries', () {
+      const wb = '''
+【通用天赋（固定机制，必须照此执行）】
+- **武器大师**：你擅长使用各种武器。智力检定 +4。
+【MOD（改变世界规则）】
+- **自定义**：设定你的游戏模组。
+- **硬核生存**：硬核模式：所有属性检定时额外 -10。
+- **界域之痕**：改变世界观：世界的外壳日益脆弱。
+- **如影随形**：改变叙事：你被某个势力持续追踪。
+- **低魔世界**：改变世界观：魔法变得极其稀有。
+【世界大事件（固定内容，必须照此执行）】
+- **旧日回响**（推荐等阶：凡铁 1 级）
+  一封来自失落先祖的信函。
+  主要人物（世界书关联角色）：寒·德雷克。
+''';
+      final h = parseStoryFixedHints(wb);
+      expect(h['武器大师'], contains('智力检定 +4'));
+      for (final m in ['硬核生存', '界域之痕', '如影随形', '低魔世界']) {
+        expect(h[m], isNotNull, reason: m);
+        expect(h[m]!.isNotEmpty, isTrue, reason: m);
+      }
+      expect(h['旧日回响'], contains('推荐等阶：凡铁 1 级'));
+      expect(h['旧日回响'], contains('一封来自失落先祖的信函'));
+    });
+  });
+
   group('story markdown round trip', () {
     test('titles / job / facilities survive export and import', () {
       const story = Story(

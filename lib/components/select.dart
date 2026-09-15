@@ -337,7 +337,6 @@ class CapsuleChipGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.toOpacity(0.5),
