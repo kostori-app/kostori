@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/json_actions.dart';
 import 'package:kostori/foundation/app.dart';
 
 /// 目标语言（跟随应用界面语言）
@@ -121,54 +122,6 @@ String? extractCardSummary(String text) {
   return m?.group(1)?.trim();
 }
 
-/// 精修差分指令
-class CardAction {
-  final String type;
-  final String path;
-  final Object? value;
-  final int? index;
-
-  const CardAction({
-    required this.type,
-    required this.path,
-    this.value,
-    this.index,
-  });
-}
-
-List<CardAction> parseCardActions(String text) {
-  final m = RegExp(r'<actions>([\s\S]*?)</actions>').firstMatch(text);
-  if (m == null) return const [];
-  final raw = m.group(1)!.trim();
-  Object? decoded;
-  try {
-    decoded = jsonDecode(raw);
-  } catch (_) {
-    decoded = null;
-  }
-  if (decoded is! List) {
-    // 兜底：逐个 `{...}` 提取
-    final objs = <Object?>[];
-    final re = RegExp(r'\{(?:[^{}]|(?:\{[^{}]*\}))*?\}');
-    for (final om in re.allMatches(raw)) {
-      try {
-        objs.add(jsonDecode(om.group(0)!));
-      } catch (_) {}
-    }
-    decoded = objs;
-  }
-  return [
-    for (final e in decoded)
-      if (e is Map && e['type'] != null && e['path'] != null)
-        CardAction(
-          type: e['type'].toString(),
-          path: e['path'].toString(),
-          value: e['value'],
-          index: (e['index'] as num?)?.toInt(),
-        ),
-  ];
-}
-
 /// 把 `data.first_mes` 之类的路径归一化为本项目的字段名
 String _normalizeCardPath(String path) {
   var p = path.trim();
@@ -206,7 +159,7 @@ List<String> _asStrList(Object? v) =>
     v is List ? v.map((e) => e.toString()).toList() : const [];
 
 /// 应用精修差分，返回新的角色卡
-CharacterCard applyCardActions(CharacterCard card, List<CardAction> actions) {
+CharacterCard applyCardActions(CharacterCard card, List<JsonAction> actions) {
   var c = card;
   for (final a in actions) {
     final key = _normalizeCardPath(a.path);
@@ -225,7 +178,7 @@ CharacterCard applyCardActions(CharacterCard card, List<CardAction> actions) {
   return c;
 }
 
-CharacterCard _applyScalarField(CharacterCard c, String key, CardAction a) {
+CharacterCard _applyScalarField(CharacterCard c, String key, JsonAction a) {
   if (a.type == 'remove') return c;
   final v = a.value?.toString() ?? '';
   return switch (key) {
@@ -245,7 +198,7 @@ CharacterCard _applyScalarField(CharacterCard c, String key, CardAction a) {
   };
 }
 
-CharacterCard _applyListField(CharacterCard c, String key, CardAction a) {
+CharacterCard _applyListField(CharacterCard c, String key, JsonAction a) {
   final current = switch (key) {
     'tags' => c.tags,
     'alternateGreetings' => c.alternateGreetings,
@@ -277,7 +230,7 @@ CharacterCard _applyListField(CharacterCard c, String key, CardAction a) {
   };
 }
 
-CharacterCard _applyBookEntries(CharacterCard c, CardAction a) {
+CharacterCard _applyBookEntries(CharacterCard c, JsonAction a) {
   final book = <String, dynamic>{...?c.characterBook};
   final entries = [
     for (final e in (book['entries'] as List? ?? const []))

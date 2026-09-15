@@ -207,7 +207,7 @@ class _CharacterCardCreatorPageState extends State<CharacterCardCreatorPage> {
 
   /// 应用精修差分（带回滚快照）
   void _applyRefine(String reply) {
-    final actions = parseCardActions(reply);
+    final actions = parseJsonActions(reply);
     if (actions.isEmpty || _card == null) return;
     final snapshot = _card!;
     final next = applyCardActions(_card!, actions);
