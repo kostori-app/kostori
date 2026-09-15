@@ -2536,7 +2536,6 @@ class _GlobalContextBudgetCardState extends State<_GlobalContextBudgetCard> {
         _SettingPartTitle(
           title: t.aiContextBudget,
           icon: Icons.data_usage_outlined,
-          subtitle: t.aiContextBudgetHint,
         ),
         _CallbackSetting(
           title: t.profileMemoryContextBudget,
