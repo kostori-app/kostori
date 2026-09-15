@@ -847,32 +847,38 @@ class _SettingCard extends StatelessWidget {
     // "ListTile wrapped in DecoratedBox with background color" 警告
     // （背景/水波纹被非 Material 背景容器盖住）
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: Material(
-        // 半透明卡片：让设置页的背景渐变透出来
-        color: cs.surfaceContainerLow.withValues(alpha: 0.6),
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.6),
-            width: 0.6,
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.22),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        elevation: 1,
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: padding,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  // padding 为 0 时（整卡 ListTile）不再留底部间隙，
-                  // 否则水波纹盖不满整卡
-                  children: [
-                    ...children,
-                    if (padding != EdgeInsets.zero) const SizedBox(height: 8),
-                  ],
-                ),
+        child: Material(
+          // 半透明卡片：让设置页的背景渐变透出来
+          color: cs.surfaceContainerLow.withValues(alpha: 0.55),
+          surfaceTintColor: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: padding,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              // padding 为 0 时（整卡 ListTile）不再留底部间隙，
+              // 否则水波纹盖不满整卡
+              children: [
+                ...children,
+                if (padding != EdgeInsets.zero) const SizedBox(height: 8),
+              ],
+            ),
+          ),
         ),
       ),
     );
