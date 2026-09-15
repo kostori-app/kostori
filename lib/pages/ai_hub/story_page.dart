@@ -6969,9 +6969,16 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     if (widget.story.situation.trim().isNotEmpty) {
       if (blocks.isNotEmpty) blocks.add(const SizedBox(height: 16));
       blocks.add(_sectionTitle(t.storyBackground));
+      // 背景里的 {{user}} / {{persona}} 也要替换（否则会原样显示）
       blocks.add(
         Text(
-          widget.story.situation.trim(),
+          widget.story.situation
+              .replaceAll(
+                '{{user}}',
+                persona.name.trim().isNotEmpty ? persona.name.trim() : '玩家',
+              )
+              .replaceAll('{{persona}}', persona.description.trim())
+              .trim(),
           style: TextStyle(height: 1.5, color: scheme.onSurface),
         ),
       );
