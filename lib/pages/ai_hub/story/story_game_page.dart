@@ -396,6 +396,20 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         .replaceAll('{{user}}', userName)
         .replaceAll('{{persona}}', persona.description.trim());
 
+    // 命中扫描文本：最近对话 + 本条输入（供世界书按触发词命中，避免整本注入）
+    final scanParts = <String>[];
+    final sid = _sessionId;
+    if (sid != null) {
+      final msgs = await AiConversationService().watchMessages(sid).first;
+      for (final m in msgs) {
+        scanParts.add(
+          m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
+        );
+      }
+    }
+    if (scanText.isNotEmpty) scanParts.add(scanText);
+    final scanBlob = scanParts.where((s) => s.trim().isNotEmpty).join('\n');
+
     // 世界书按开局选择裁剪：只注入选中的种族/职业/天赋/事件/MOD 详情
     final buf = StringBuffer(
       sub(
@@ -499,12 +513,22 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
     }
     if (state.codex.isNotEmpty) {
-      buf.write('\n\n【已知设定（必须严格遵守，不得矛盾）】');
-      for (final d in state.codex) {
-        buf.write(
-          '\n- ${d.name}（${d.kind}）：'
-          '${d.mechanics.isEmpty ? d.display : d.mechanics}',
-        );
+      // 故事预设词条已在 buildSystemPrompt 的【预置词条】里列出，避免重复注入
+      final presetKeys = {
+        for (final d in story.codex) '${d.kind}\u0000${d.key}',
+      };
+      final runtimeCodex = [
+        for (final d in state.codex)
+          if (!presetKeys.contains('${d.kind}\u0000${d.key}')) d,
+      ];
+      if (runtimeCodex.isNotEmpty) {
+        buf.write('\n\n【已知设定（必须严格遵守，不得矛盾）】');
+        for (final d in runtimeCodex) {
+          buf.write(
+            '\n- ${d.name}（${d.kind}）：'
+            '${d.mechanics.isEmpty ? d.display : d.mechanics}',
+          );
+        }
       }
     }
     if (state.situation.trim().isNotEmpty) {
@@ -534,9 +558,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final boundTags = <String>{
       for (final c in story.characters) ...c.tags,
     };
-    final allWorldBook = await WorldBookStore.instance.selectAll(
-      story.worldBookIds.toSet(),
-    );
+    // 世界书按触发词命中注入（对齐 ST）：常驻条目始终注入，未显式选择则不注入
+    final allWorldBook = story.worldBookIds.isEmpty
+        ? const <WorldBookEntry>[]
+        : await WorldBookStore.instance.select(
+            story.worldBookIds.toSet(),
+            scanBlob,
+            turn: _lastMessageCount ~/ 2,
+          );
     _storyDepthHits = allWorldBook
         .where(
           (e) =>
@@ -566,25 +595,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               if (state.present.any((n) => _isNameFor(c, n))) c,
           ];
     if (activeCards.isNotEmpty) {
-      final scanMessages = <String>[];
-      final sessionId = _sessionId;
-      if (sessionId != null) {
-        final msgs = await AiConversationService()
-            .watchMessages(sessionId)
-            .first;
-        for (final m in msgs) {
-          scanMessages.add(
-            m.role == 'user' ? m.inputContent : (m.outputContent ?? ''),
-          );
-        }
-      }
-      if (scanText.isNotEmpty) scanMessages.add(scanText);
       for (final c in activeCards) {
         final book = CharacterLoreBook.fromMap(c.characterBook);
         if (book == null) continue;
         final hits = CharacterLorebookResolver.instance.resolve(
           book,
-          scanMessages,
+          scanParts,
           cardId: c.id,
           turn: _lastMessageCount ~/ 2,
         );
@@ -598,6 +614,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         }
       }
     }
+    Log.info(
+      'StoryPrompt',
+      'system≈${buf.length} 字符 · 世界书命中 ${worldBook.length + _storyDepthHits.length} 条',
+    );
     return buf.toString();
   }
 
