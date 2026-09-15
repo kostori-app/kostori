@@ -2533,8 +2533,13 @@ class _GlobalContextBudgetCardState extends State<_GlobalContextBudgetCard> {
   Widget build(BuildContext context) {
     return _SettingCard(
       children: [
-        _CallbackSetting(
+        _SettingPartTitle(
           title: t.aiContextBudget,
+          icon: Icons.data_usage_outlined,
+          subtitle: t.aiContextBudgetHint,
+        ),
+        _CallbackSetting(
+          title: t.profileMemoryContextBudget,
           subtitle: '$aiGlobalContextBudgetChars',
           actionTitle: t.set,
           callback: _openEditor,
