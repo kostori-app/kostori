@@ -11,6 +11,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
+import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
@@ -401,25 +402,12 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
     return parts.join('\n');
   }
 
-  /// 辅助任务「角色名翻译」配置：provider / model / temperature
-  Future<(String, String?, double?)> _nameTranslateAux() async {
-    final dao = AiDatabase.instance.aiAuxSettingsDao;
-    final p = await dao.get('charTranslateProvider');
-    final m = await dao.get('charTranslateModel');
-    final t = await dao.get('charTranslateTemperature');
-    return (
-      p ?? '',
-      (m == null || m.isEmpty) ? null : m,
-      t == null ? null : double.tryParse(t),
-    );
-  }
-
   /// 翻译角色名：优先用 AI 转写专名，失败再退回普通翻译
   Future<String> _translateName(String name, String lang) async {
     final label = translationSorts.labelByExtData(lang);
-    final aux = await _nameTranslateAux();
-    final provider = aux.$1.isNotEmpty
-        ? aux.$1
+    final aux = await AiConversationService().loadAuxConfig('charTranslate');
+    final provider = aux.provider.isNotEmpty
+        ? aux.provider
         : await _resolveNameTranslateProvider();
     if (provider != null) {
       final ai = AiFactory.create(provider);
@@ -439,10 +427,10 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
               '3. 保持原文的姓名顺序：原文「名+姓」就译成「名·姓」，用「·」连接名与姓。\n'
               '4. 连接词（and / & / 等）译为「 & 」或目标语言对应的连接词，不要直译成句子。\n'
               '5. 结合给定的角色设定判断性别、身份与风格来选字。',
-          modelOverride: aux.$2,
-          params: aux.$3 == null
+          modelOverride: aux.model,
+          params: aux.temperature == null
               ? null
-              : AiGenerationParams(temperature: aux.$3),
+              : AiGenerationParams(temperature: aux.temperature),
         );
         final out = _cleanName(res.dataOrNull ?? '');
         if (out.isNotEmpty) return out;

@@ -1865,6 +1865,7 @@ contextCompression: Context Compression
 followUpSuggestions: Follow-up Suggestions
 autoTitle: Auto Title
 characterNameTranslation: Character Name Translation
+settingGeneration: Setting Generation
 connectionDisconnected: Connection to server disconnected
 enterServerAddress: Please enter server address
 tapToShare: Tap to share

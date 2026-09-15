@@ -1855,6 +1855,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get followUpSuggestions => '後續追問建議';
 	@override String get autoTitle => '自動標題';
 	@override String get characterNameTranslation => '角色名翻譯';
+	@override String get settingGeneration => '設定生成';
 	@override String get connectionDisconnected => '連線已斷開';
 	@override String get enterServerAddress => '輸入伺服器位址';
 	@override String get tapToShare => '點擊分享';
@@ -4756,6 +4757,7 @@ extension on TranslationsZhTw {
 			'followUpSuggestions' => '後續追問建議',
 			'autoTitle' => '自動標題',
 			'characterNameTranslation' => '角色名翻譯',
+			'settingGeneration' => '設定生成',
 			'connectionDisconnected' => '連線已斷開',
 			'enterServerAddress' => '輸入伺服器位址',
 			'tapToShare' => '點擊分享',
@@ -4945,9 +4947,9 @@ extension on TranslationsZhTw {
 			'lanInvalidRemoteControlLink' => '無效的遠端控制連結',
 			'lanRemoteControlConnection' => '遠端控制連線',
 			'lanDeviceId' => '設備 ID',
-			'lanConnect' => '連接',
 			_ => null,
 		} ?? switch (path) {
+			'lanConnect' => '連接',
 			'lanExitControl' => '退出控制',
 			'lanConnectingToRemoteDevice' => '正在連線遠端設備',
 			'lanRemoteControlConnected' => '遠端控制已連線',
@@ -5459,9 +5461,9 @@ extension on TranslationsZhTw {
 			'worldBookConstant' => '常駐',
 			'worldBookRecursive' => '遞迴觸發',
 			'newWorldBookEntry' => '新增條目',
-			'worldBookHitTest' => '命中測試',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookHitTest' => '命中測試',
 			'worldBookHitTestHint' => '輸入一句話，查看哪些條目會被觸發',
 			'worldBookHitTestPlaceholder' => '輸入一句話...',
 			'worldBookHitsResult' => '命中條目',

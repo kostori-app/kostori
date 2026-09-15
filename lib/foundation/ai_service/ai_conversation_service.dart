@@ -1021,7 +1021,7 @@ class AiConversationService {
   }) async {
     final session = await _sessionDao.getSession(sessionId);
     if (session == null) return Res.error(t.sessionNotFound(id: sessionId));
-    final aux = await _loadAuxConfig('compress');
+    final aux = await loadAuxConfig('compress');
     final provider = aux.provider.isEmpty ? session.provider : aux.provider;
     final ai = AiFactory.create(provider);
     if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
@@ -1140,6 +1140,7 @@ class AiConversationService {
     String? systemPrompt,
     String? sessionTitle,
     String? modelOverride,
+    AiGenerationParams? params,
   }) async {
     final sessionId = await createSession(
       type: taskType,
@@ -1155,6 +1156,7 @@ class AiConversationService {
       maxContextMessages: 0,
       systemPromptOverride: systemPrompt,
       modelOverride: modelOverride,
+      paramsOverride: params,
     );
   }
 
@@ -1185,7 +1187,7 @@ class AiConversationService {
     final content = lastModel.outputContent?.trim() ?? '';
     if (content.isEmpty) return const [];
 
-    final aux = await _loadAuxConfig('followUps');
+    final aux = await loadAuxConfig('followUps');
     final provider = aux.provider.isEmpty ? session.provider : aux.provider;
     final ai = AiFactory.create(provider);
     if (ai == null) return const [];
@@ -1236,7 +1238,7 @@ class AiConversationService {
 
   /// 读取辅助任务的模型配置；未配置时返回空 provider（表示跟随会话）
   Future<({String provider, String? model, double? temperature})>
-  _loadAuxConfig(String taskKey) async {
+  loadAuxConfig(String taskKey) async {
     final (providerKey, modelKey, tempKey) = switch (taskKey) {
       'compress' => (
         _kAuxCompressProvider,
@@ -1268,7 +1270,7 @@ class AiConversationService {
     String provider,
     String userMessage,
   ) async {
-    final aux = await _loadAuxConfig('title');
+    final aux = await loadAuxConfig('title');
     final p = aux.provider.isEmpty ? provider : aux.provider;
     final ai = AiFactory.create(p);
     if (ai == null) return;

@@ -562,6 +562,27 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
   };
 }
 
+/// 设定生成用的服务商 / 模型 / 参数：
+/// 优先「辅助任务模型 → 设定生成」，未配置时回退旧的 settingGen* 设置，
+/// 再回退到第一个可用服务商。
+Future<({String provider, String? model, AiGenerationParams? params})>
+resolveSettingGenConfig() async {
+  final providers = OpenAiProviderRegistry.allProviders;
+  final aux = await AiConversationService().loadAuxConfig('settingGen');
+  final storedProvider = appdata.implicitData['settingGenProvider'];
+  final provider = aux.provider.isNotEmpty
+      ? aux.provider
+      : (storedProvider is String && providers.containsKey(storedProvider))
+      ? storedProvider
+      : providers.keys.firstWhere((_) => true, orElse: () => 'siliconFlow');
+  final storedModel = appdata.implicitData['settingGenModel'];
+  final model = aux.model ?? (storedModel is String ? storedModel : '');
+  final params = aux.temperature == null
+      ? null
+      : AiGenerationParams(temperature: aux.temperature);
+  return (provider: provider, model: model, params: params);
+}
+
 /// 编辑设定库条目（按类型显示不同字段）
 /// 用 AI 按用户描述生成设定 JSON（返回的键名由 [promptTemplate] 指定）。
 /// 支持多轮迭代：生成后可继续输入修改意见，AI 在上一版基础上改进，直到点「完成」。
@@ -576,16 +597,12 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
   final refineCtrl = TextEditingController();
   // 传入已有条目 → 直接在它基础上迭代优化
   Map<String, dynamic>? current = previous;
-  // 单独指定生成用的厂商（模型取该厂商已保存的模型）
+  // 生成用厂商/模型：优先「辅助任务模型 → 设定生成」，再回退旧设置
   final providers = OpenAiProviderRegistry.allProviders;
-  final storedProvider = appdata.implicitData['settingGenProvider'];
-  var genProvider = (storedProvider is String &&
-          providers.containsKey(storedProvider))
-      ? storedProvider
-      : providers.keys.firstWhere((_) => true, orElse: () => 'siliconFlow');
-  // 生成专用的模型（为空则用该厂商已保存的模型）
-  final storedModel = appdata.implicitData['settingGenModel'];
-  var genModel = storedModel is String ? storedModel : '';
+  final base = await resolveSettingGenConfig();
+  var genProvider = base.provider;
+  var genModel = base.model ?? '';
+  final genParams = base.params;
   try {
     while (true) {
       final isFirst = current == null;
@@ -622,6 +639,10 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
                           setLocal(() => genProvider = p);
                           appdata.implicitData['settingGenProvider'] = p;
                           appdata.writeImplicitData();
+                          AiDatabase.instance.aiAuxSettingsDao.set(
+                            'settingGenProvider',
+                            p,
+                          );
                         },
                         currentModel: genModel.isEmpty ? null : genModel,
                         // 生成专用模型：不写回该厂商的聊天模型
@@ -629,6 +650,10 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
                           setLocal(() => genModel = m);
                           appdata.implicitData['settingGenModel'] = m;
                           appdata.writeImplicitData();
+                          AiDatabase.instance.aiAuxSettingsDao.set(
+                            'settingGenModel',
+                            m,
+                          );
                         },
                       ),
                     ),
@@ -699,6 +724,7 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
             systemPrompt: systemPrompt,
             prompt: prompt,
             modelOverride: genModel.isEmpty ? null : genModel,
+            params: genParams,
           )
           .whenComplete(() => loading.close());
       if (!res.success) continue;
@@ -1703,14 +1729,9 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
     if (book.entries.isEmpty) return;
     final lang = await _pickLang();
     if (lang == null || !mounted) return;
-    final providers = OpenAiProviderRegistry.allProviders;
-    final storedProvider = appdata.implicitData['settingGenProvider'];
-    final provider =
-        (storedProvider is String && providers.containsKey(storedProvider))
-        ? storedProvider
-        : providers.keys.firstWhere((_) => true, orElse: () => 'siliconFlow');
-    final storedModel = appdata.implicitData['settingGenModel'];
-    final model = storedModel is String ? storedModel : '';
+    final gen = await resolveSettingGenConfig();
+    final provider = gen.provider;
+    final model = gen.model ?? '';
     const system =
         '你是世界书关键词生成助手。为给定的每条条目生成“目标语言”的触发关键词'
         '（2~5 个短词或短语，能代表该条目主题，供在聊天中命中触发）。'
@@ -1752,6 +1773,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
               '目标语言：$lang\n\n条目：\n${jsonEncode(items)}\n\n'
               '请为每个条目生成 $lang 触发关键词，输出 JSON 数组。',
           modelOverride: model.isEmpty ? null : model,
+          params: gen.params,
         );
         if (!res.success) continue;
         final text = res.dataOrNull ?? '';

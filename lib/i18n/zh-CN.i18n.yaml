@@ -1860,6 +1860,7 @@ contextCompression: 上下文压缩
 followUpSuggestions: 后续追问建议
 autoTitle: 自动标题
 characterNameTranslation: 角色名翻译
+settingGeneration: 设定生成
 connectionDisconnected: 连接已断开
 enterServerAddress: 输入服务器地址
 tapToShare: 点击分享
