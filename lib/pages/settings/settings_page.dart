@@ -471,86 +471,62 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       final isDark = context.isDarkMode;
       final primary = colors.primary;
 
-      Widget content = ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          key: ValueKey(id),
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
-          width: double.infinity,
-          height: 46,
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: selected
-                ? LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      primary.toOpacity(isDark ? 0.20 : 0.12),
-                      primary.toOpacity(isDark ? 0.04 : 0.02),
-                    ],
-                  )
-                : null,
-            border: Border.all(
+      Widget content = AnimatedContainer(
+        key: ValueKey(id),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: double.infinity,
+        height: 46,
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: selected
+              ? colors.primaryContainer.toOpacity(isDark ? 0.28 : 0.5)
+              : null,
+          border: Border.all(
+            color: selected ? primary.toOpacity(0.16) : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icons[id],
+              size: 26,
               color: selected
-                  ? primary.toOpacity(isDark ? 0.34 : 0.26)
-                  : Colors.transparent,
+                  ? primary
+                  : Color.lerp(
+                      primary,
+                      isDark
+                          ? Colors.white.toOpacity(0.72)
+                          : Colors.black.toOpacity(0.72),
+                      0.4,
+                    ),
             ),
-          ),
-          child: Row(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? primary.toOpacity(isDark ? 0.14 : 0.09)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(
-                  icons[id],
-                  size: 24,
-                  color: selected
-                      ? primary
-                      : Color.lerp(
-                          primary,
-                          isDark
-                              ? Colors.white.toOpacity(0.72)
-                              : Colors.black.toOpacity(0.72),
-                          0.4,
-                        ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: ts.s16.copyWith(
+                  fontWeight: selected ? FontWeight.w600 : null,
+                  color: selected ? primary : null,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: ts.s16.copyWith(
-                    fontWeight: selected ? FontWeight.w700 : null,
-                    color: selected ? primary : null,
-                  ),
-                ),
-              ),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, animation) =>
-                    FadeTransition(opacity: animation, child: child),
-                child: selected
-                    ? Icon(
-                        Icons.chevron_right_rounded,
-                        key: const ValueKey('selected'),
-                        color: primary,
-                      )
-                    : const SizedBox.shrink(key: ValueKey('empty')),
-              ),
-            ],
-          ),
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: selected
+                  ? Icon(
+                      Icons.chevron_right_rounded,
+                      key: const ValueKey('selected'),
+                      color: primary.toOpacity(0.8),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('empty')),
+            ),
+          ],
         ),
       );
 
@@ -558,17 +534,17 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
         padding: EdgeInsets.fromLTRB(24, 0, selected ? 12 : 24, 0),
         duration: const Duration(milliseconds: 200),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
+          duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: primary.toOpacity(isDark ? 0.16 : 0.10),
-                      blurRadius: 14,
-                      spreadRadius: -2,
-                      offset: const Offset(0, 4),
+                      color: colors.shadow.toOpacity(0.22),
+                      spreadRadius: 1,
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
                     ),
                   ]
                 : null,
