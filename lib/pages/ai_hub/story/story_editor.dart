@@ -1375,45 +1375,31 @@ class _StoryEditorState extends State<_StoryEditor>
             ),
             const SizedBox(height: 12),
             if (worldBook.isNotEmpty) ...[
-              _groupHeader(
+              Text(
                 t.worldBook,
-                () => setState(
-                  () => _worldBookIds.addAll([
-                    for (final e in worldBook) e.id,
-                  ]),
-                ),
-                () => setState(() => _worldBookIds.clear()),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
+              const SizedBox(height: 6),
               for (final book in WorldBookStore.instance.books)
-                if (book.entries.isNotEmpty) ...[
-                  _groupHeader(
-                    book.name.isEmpty ? t.worldBook : book.name,
-                    () => setState(
-                      () => _worldBookIds.addAll([
-                        for (final e in book.entries) e.id,
-                      ]),
+                if (book.entries.isNotEmpty)
+                  _bookSelectCard(
+                    name: book.name.isEmpty ? t.worldBook : book.name,
+                    count: book.entries.length,
+                    selected: book.entries.every(
+                      (e) => _worldBookIds.contains(e.id),
                     ),
-                    () => setState(
-                      () => _worldBookIds.removeAll([
-                        for (final e in book.entries) e.id,
-                      ]),
-                    ),
+                    onChanged: (v) => setState(() {
+                      if (v) {
+                        _worldBookIds.addAll([
+                          for (final e in book.entries) e.id,
+                        ]);
+                      } else {
+                        _worldBookIds.removeAll([
+                          for (final e in book.entries) e.id,
+                        ]);
+                      }
+                    }),
                   ),
-                  for (final e in book.entries)
-                    CheckboxListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(e.name.isEmpty ? e.content : e.name),
-                      value: _worldBookIds.contains(e.id),
-                      onChanged: (v) => setState(() {
-                        if (v == true) {
-                          _worldBookIds.add(e.id);
-                        } else {
-                          _worldBookIds.remove(e.id);
-                        }
-                      }),
-                    ),
-                ],
               const SizedBox(height: 12),
             ],
             if (injections.isNotEmpty) ...[
@@ -1484,87 +1470,65 @@ class _StoryEditorState extends State<_StoryEditor>
               style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                const Spacer(),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  onPressed: () => setState(
-                    () => _settingIds.addAll([
-                      for (final e in store.items) e.id,
-                    ]),
-                  ),
-                  child: Text(t.selectAll),
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  onPressed: () => setState(() => _settingIds.clear()),
-                  child: Text(t.clear),
-                ),
-              ],
-            ),
             for (final book in store.books)
-              if (book.entries.isNotEmpty) ...[
-                _groupHeader(
-                  book.name.isEmpty ? t.storySettingLibrary : book.name,
-                  () => setState(
-                    () => _settingIds.addAll([
-                      for (final e in book.entries) e.id,
-                    ]),
+              if (book.entries.isNotEmpty)
+                _bookSelectCard(
+                  name: book.name.isEmpty ? t.storySettingLibrary : book.name,
+                  count: book.entries.length,
+                  selected: book.entries.every(
+                    (e) => _settingIds.contains(e.id),
                   ),
-                  () => setState(
-                    () => _settingIds.removeAll([
-                      for (final e in book.entries) e.id,
-                    ]),
-                  ),
+                  onChanged: (v) => setState(() {
+                    if (v) {
+                      _settingIds.addAll([
+                        for (final e in book.entries) e.id,
+                      ]);
+                    } else {
+                      _settingIds.removeAll([
+                        for (final e in book.entries) e.id,
+                      ]);
+                    }
+                  }),
                 ),
-                for (final e in book.entries)
-                  CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(e.name.isEmpty ? e.id : e.name),
-                    value: _settingIds.contains(e.id),
-                    onChanged: (v) => setState(() {
-                      if (v == true) {
-                        _settingIds.add(e.id);
-                      } else {
-                        _settingIds.remove(e.id);
-                      }
-                    }),
-                  ),
-              ],
           ],
         );
       },
     );
   }
 
-  /// 分组标题行：名称 + 本组全选 / 清空
-  Widget _groupHeader(String title, VoidCallback onAll, VoidCallback onClear) =>
-      Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+  /// 组（书）选择卡片：左侧打勾，选中整组高亮，勾选即整组生效
+  Widget _bookSelectCard({
+    required String name,
+    required int count,
+    required bool selected,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: selected ? cs.primaryContainer : cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: CheckboxListTile(
+          dense: true,
+          value: selected,
+          onChanged: (v) => onChanged(v ?? false),
+          controlAffinity: ListTileControlAffinity.leading,
+          title: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          TextButton(
-            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-            onPressed: onAll,
-            child: Text(t.selectAll),
+          secondary: Text(
+            '$count',
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
-          TextButton(
-            style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-            onPressed: onClear,
-            child: Text(t.clear),
-          ),
-        ],
-      );
+        ),
+      ),
+    );
+  }
 
   Widget _panelsTab() {
     final scheme = Theme.of(context).colorScheme;
