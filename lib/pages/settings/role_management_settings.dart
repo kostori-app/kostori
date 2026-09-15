@@ -2025,7 +2025,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                 tooltip: t.exportEntries,
                 onPressed: () => _exportJson(
                   [for (final e in store.entries) e.toJson()],
-                  'world_book.json',
+                  'world_info.json',
                 ),
               ),
               IconButton(

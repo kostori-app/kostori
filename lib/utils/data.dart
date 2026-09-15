@@ -206,7 +206,7 @@ Future<File> exportAppData() async {
       'stories',
       'story_sessions',
       'prompt_injections',
-      'world_book',
+      'world_info',
       'setting_library',
       'story_characters',
       'ai_skills',
@@ -656,7 +656,7 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       'stories',
       'story_sessions',
       'prompt_injections',
-      'world_book',
+      'world_info',
       'setting_library',
       'story_characters',
       'ai_skills',
@@ -666,6 +666,17 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       final dest = FilePath.join(App.dataPath, dirName);
       Directory(dest).createSync(recursive: true);
       for (var file in Directory(src).listSync()) {
+        if (file is File) {
+          await file.copy(FilePath.join(dest, file.name));
+        }
+      }
+    }
+    // 旧备份中的 world_book 目录名兼容：并入 world_info
+    final legacyWorldDir = FilePath.join(cacheDirPath, 'world_book');
+    if (Directory(legacyWorldDir).existsSync()) {
+      final dest = FilePath.join(App.dataPath, 'world_info');
+      Directory(dest).createSync(recursive: true);
+      for (var file in Directory(legacyWorldDir).listSync()) {
         if (file is File) {
           await file.copy(FilePath.join(dest, file.name));
         }

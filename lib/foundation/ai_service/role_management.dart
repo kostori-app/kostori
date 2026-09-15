@@ -495,7 +495,7 @@ class WorldBookBook {
   };
 }
 
-/// 世界书存储：`dataPath/world_book/<bookId>.json`（一本书一个文件、内含多条条目）
+/// 世界书存储：`dataPath/world_info/<bookId>.json`（一本书一个文件、内含多条条目）
 class WorldBookStore extends ChangeNotifier {
   static final WorldBookStore instance = WorldBookStore._();
 
@@ -503,7 +503,12 @@ class WorldBookStore extends ChangeNotifier {
 
   /// 旧版 shared_preferences key（用于一次性迁移）
   static const _legacyKey = 'world_book_entries';
-  static const _dirName = 'world_book';
+
+  /// 存储目录名（对齐 SillyTavern 的 world_info 叫法）
+  static const _dirName = 'world_info';
+
+  /// 旧目录名（一次性迁移来源）
+  static const _legacyDirName = 'world_book';
 
   List<WorldBookBook> _books = [];
   bool _loaded = false;
@@ -531,7 +536,26 @@ class WorldBookStore extends ChangeNotifier {
   /// 目录（供选择性 WebDAV 同步）
   String get dirPath => '${App.dataPath}/$_dirName';
 
+  /// 旧目录 world_book → world_info 一次性迁移
+  Future<void> _migrateLegacyDir() async {
+    try {
+      final oldDir = Directory('${App.dataPath}/$_legacyDirName');
+      if (!oldDir.existsSync()) return;
+      final newDir = Directory(dirPath);
+      await newDir.create(recursive: true);
+      for (final entity in oldDir.listSync()) {
+        if (entity is! File) continue;
+        final dest = File('${newDir.path}/${entity.uri.pathSegments.last}');
+        if (!dest.existsSync()) await entity.copy(dest.path);
+      }
+      try {
+        await oldDir.delete(recursive: true);
+      } catch (_) {}
+    } catch (_) {}
+  }
+
   Future<void> init() async {
+    await _migrateLegacyDir();
     _books = [];
     final rawBooks = <WorldBookBook>[];
     final legacy = <WorldBookEntry>[];
