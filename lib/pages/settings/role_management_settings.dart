@@ -141,7 +141,7 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
         id: 'set_${DateTime.now().microsecondsSinceEpoch}',
         type: type,
         name: '',
-        bookId: bookId,
+        bookIds: [bookId],
       ),
     );
   }
@@ -288,33 +288,40 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     if (mounted) setState(() {});
   }
 
-  /// 把条目移动到另一本设定书
+  /// 管理条目的所属分组（可多选，同一条目可被多本设定书共用）
   Future<void> _moveEntry(SettingEntry entry) async {
     final store = SettingLibraryStore.instance;
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Sheet(
-        title: t.worldBookMove,
-        icon: Icons.drive_file_move_outline,
-        initialSize: 0.4,
-        builder: (ctx, sc) => ListView(
-          controller: sc,
-          children: [
-            for (final b in store.books)
-              if (b.id != entry.bookId)
-                ListTile(
-                  leading: const Icon(Icons.menu_book_outlined),
-                  title: Text(b.name.isEmpty ? t.storySettingLibrary : b.name),
-                  trailing: Text('${b.entries.length}'),
-                  onTap: () => Navigator.of(ctx).pop(b.id),
-                ),
+    final selected = <String>{...entry.bookIds};
+    final ok = await showDialog<bool>(
+      context: App.rootContext,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => ContentDialog(
+          title: t.worldBookGroups,
+          content: SingleChildScrollView(
+            child: CapsuleChipGroup(
+              children: [
+                for (final b in store.books)
+                  CapsuleChip(
+                    text: b.name.isEmpty ? t.storySettingLibrary : b.name,
+                    isSelected: selected.contains(b.id),
+                    onTap: () => setLocal(() {
+                      if (!selected.remove(b.id)) selected.add(b.id);
+                    }),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(t.confirm),
+            ),
           ],
         ),
       ),
     );
-    if (choice == null || !mounted) return;
-    await store.upsert(entry, bookId: choice);
+    if (ok != true || !mounted) return;
+    await store.setBookIds(entry.id, selected.toList());
     if (mounted) setState(() {});
   }
 
@@ -503,9 +510,9 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
                                 IconButton(
                                   visualDensity: VisualDensity.compact,
                                   iconSize: 18,
-                                  tooltip: t.worldBookMove,
+                                  tooltip: t.worldBookGroups,
                                   icon: const Icon(
-                                    Icons.drive_file_move_outline,
+                                    Icons.folder_outlined,
                                     size: 18,
                                   ),
                                   onPressed: () => _moveEntry(e),
@@ -744,6 +751,7 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
 Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   final nameCtrl = TextEditingController(text: entry.name);
   final groupCtrl = TextEditingController(text: entry.group);
+  final bookIds = <String>{...entry.bookIds};
   var codexKind = entry.payload['kind']?.toString() ?? 'item';
   final displayCtrl = TextEditingController(
     text: entry.payload['display']?.toString() ?? '',
@@ -859,6 +867,27 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                   labelText: t.worldBookGroup,
                   isDense: true,
                   border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(t.worldBookGroups),
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: CapsuleChipGroup(
+                  children: [
+                    for (final b in SettingLibraryStore.instance.books)
+                      CapsuleChip(
+                        text: b.name.isEmpty ? t.storySettingLibrary : b.name,
+                        isSelected: bookIds.contains(b.id),
+                        onTap: () => setLocal(() {
+                          if (!bookIds.remove(b.id)) bookIds.add(b.id);
+                        }),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -1030,6 +1059,7 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   return entry.copyWith(
     name: name,
     group: groupCtrl.text.trim(),
+    bookIds: bookIds.toList(),
     payload: payload,
   );
 }
