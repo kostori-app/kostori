@@ -1577,6 +1577,82 @@ Map<String, String> parseStoryFixedHints(String worldBook) {
   return out;
 }
 
+/// 按开局选择裁剪世界书：只保留「固定清单」里被选中条目的完整详情，
+/// 未选中的压缩成一行「未启用，仅备查」名单；不参与裁剪的章节原样保留。
+/// `selected` 为空时（旧存档 / 无设置）原样返回，保证向后兼容。
+String filterWorldBook(String worldBook, Map<String, List<String>> selected) {
+  if (worldBook.trim().isEmpty || selected.isEmpty) return worldBook;
+
+  String? fieldOf(String header) {
+    if (header.contains('通用天赋')) return 'talents';
+    if (header.contains('职业子职')) return 'subjob';
+    if (header.contains('职业')) return 'job';
+    if (header.contains('种族')) return 'race';
+    if (header.contains('世界大事件')) return 'events';
+    if (header.contains('MOD')) return 'mods';
+    return null;
+  }
+
+  final bulletRe = RegExp(r'^-\s*\*\*(.+?)\*\*');
+  final out = StringBuffer();
+  for (final part in worldBook.split(RegExp(r'(?=【)'))) {
+    if (part.trim().isEmpty) continue;
+    final nl = part.indexOf('\n');
+    final header = nl < 0 ? part : part.substring(0, nl);
+    final field = header.startsWith('【') ? fieldOf(header) : null;
+    final sel = field == null ? null : selected[field];
+    if (sel == null) {
+      // 不受选择影响的章节：原样保留
+      out.write(part.trimRight());
+      out.writeln();
+      continue;
+    }
+    out.writeln(header);
+    if (sel.isEmpty) continue;
+    final keep = sel.toSet();
+    final lines = part.split('\n');
+    final skipped = <String>[];
+    String? curName;
+    final block = <String>[];
+    void flush() {
+      if (block.isEmpty) return;
+      final name = curName;
+      if (name == null || keep.contains(name)) {
+        for (final b in block) {
+          out.writeln(b);
+        }
+      } else {
+        skipped.add(name);
+      }
+      curName = null;
+      block.clear();
+    }
+
+    var i = 1;
+    // 标题下的前置说明（直到第一条 bullet）
+    while (i < lines.length && !lines[i].startsWith('- ')) {
+      out.writeln(lines[i]);
+      i++;
+    }
+    for (; i < lines.length; i++) {
+      final l = lines[i];
+      if (l.startsWith('- ')) {
+        flush();
+        curName = bulletRe.firstMatch(l)?.group(1)?.trim();
+        block.add(l);
+      } else {
+        block.add(l);
+      }
+    }
+    flush();
+    if (skipped.isNotEmpty) {
+      out.writeln('- （未启用，仅备查）：${skipped.join('、')}');
+    }
+    out.writeln();
+  }
+  return out.toString().trim();
+}
+
 /// 故事：整合好的世界书 + 设定 + 提示词 + 开局 + 后续建议提示词
 class Story {
   final String id;
@@ -1951,11 +2027,12 @@ class Story {
   };
 
   /// 拼出完整 GM 系统提示词（世界书 + 提示词 + 输出格式 + 建议提示词）
-  String buildSystemPrompt() {
+  String buildSystemPrompt({String? worldBookOverride}) {
     final buf = StringBuffer();
-    if (worldBook.trim().isNotEmpty) {
+    final wb = worldBookOverride ?? worldBook;
+    if (wb.trim().isNotEmpty) {
       buf.writeln('【世界书 / 设定】');
-      buf.writeln(worldBook.trim());
+      buf.writeln(wb.trim());
       buf.writeln();
     }
     if (systemPrompt.trim().isNotEmpty) {
@@ -2715,18 +2792,34 @@ class StorySession {
   final String sessionId;
   final GameState state;
 
-  const StorySession({required this.sessionId, required this.state});
+  /// 开局档案的实际选择（字段 key → 选中的选项名），用于世界书按需注入
+  final Map<String, List<String>> setup;
+
+  const StorySession({
+    required this.sessionId,
+    required this.state,
+    this.setup = const {},
+  });
 
   factory StorySession.fromJson(Map<String, dynamic> json) => StorySession(
     sessionId: json['sessionId']?.toString() ?? '',
     state: json['state'] is Map
         ? GameState.fromJson((json['state'] as Map).cast<String, dynamic>())
         : GameState.empty,
+    setup: json['setup'] is Map
+        ? {
+            for (final e in (json['setup'] as Map).entries)
+              e.key.toString():
+                  (e.value as List?)?.map((x) => x.toString()).toList() ??
+                  const <String>[],
+          }
+        : const {},
   );
 
   Map<String, dynamic> toJson() => {
     'sessionId': sessionId,
     'state': state.toJson(),
+    if (setup.isNotEmpty) 'setup': setup,
   };
 }
 

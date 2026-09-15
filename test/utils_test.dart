@@ -438,6 +438,56 @@ void main() {
     });
   });
 
+  group('filterWorldBook', () {
+    test('keeps selected entries and compresses the rest', () {
+      const wb = '''
+【种族（固定机制，必须照此执行）】
+- **人类**：任选一项属性 +1。
+- **精灵**：感知 +2。
+- **矮人**：体质 +2。
+【世界大事件（固定内容，必须照此执行）】
+- **旧日回响**（推荐等阶：凡铁 1 级）
+  一封来自失落先祖的信函。
+- **七山矿乱**（推荐等阶：凡铁 5 级）
+  七峰山脉的矿乱。
+【常见势力】
+- **树冠议会**：长寿种族的联合议事机构。
+''';
+      final f = filterWorldBook(wb, {
+        'race': ['精灵'],
+        'events': ['旧日回响'],
+      });
+      expect(f, contains('**精灵**'));
+      expect(f, isNot(contains('**人类**：')));
+      expect(f, contains('未启用，仅备查'));
+      expect(f, contains('**旧日回响**'));
+      expect(f, contains('一封来自失落先祖的信函'));
+      expect(f, isNot(contains('七峰山脉的矿乱')));
+      // 不受选择影响的章节原样保留
+      expect(f, contains('**树冠议会**'));
+    });
+
+    test('empty selection returns the world book unchanged', () {
+      const wb = '【种族】\n- **人类**：x\n';
+      expect(filterWorldBook(wb, const {}), wb);
+    });
+
+    test('session setup survives json round trip', () {
+      const s = StorySession(
+        sessionId: 'x',
+        state: GameState.empty,
+        setup: {
+          'race': ['精灵'],
+          'talents': ['武器大师', '百炼之躯'],
+        },
+      );
+      final back = StorySession.fromJson(s.toJson());
+      expect(back.sessionId, 'x');
+      expect(back.setup['race'], ['精灵']);
+      expect(back.setup['talents'], ['武器大师', '百炼之躯']);
+    });
+  });
+
   group('story markdown round trip', () {
     test('titles / job / facilities survive export and import', () {
       const story = Story(

@@ -144,6 +144,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 开局档案里填的玩家名（供提示词里的 `{{user}}` 使用）
   String _setupName = '';
 
+  /// 开局档案的选择（字段 key → 选中的选项名），供世界书按需注入
+  Map<String, List<String>> _setupSelections = {};
+
   /// 运行时故事：角色卡来自独立存储，再并入从设定库选择的条目
   late Story _effective = widget.story;
 
@@ -251,6 +254,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _effective = _computeEffective();
     final saved = StorySessionStore.instance.get(story.id);
     if (saved != null && saved.sessionId.isNotEmpty) {
+      _setupSelections = Map<String, List<String>>.from(saved.setup);
       if (!mounted) return;
       setState(() {
         _sessionId = saved.sessionId;
@@ -314,8 +318,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     });
     await StorySessionStore.instance.put(
       story.id,
-      StorySession(sessionId: sessionId, state: initial),
+      StorySession(
+        sessionId: sessionId,
+        state: initial,
+        setup: _setupSelections,
+      ),
     );
+  }
+
+  /// 收集开局选择（字段 key → 选项名），供世界书按选择注入
+  Map<String, List<String>> _collectSetupSelections() {
+    final out = <String, List<String>>{};
+    for (final p in story.setup) {
+      if (p.type == 'multi') {
+        final set = _multiValues[p.key];
+        if (set != null && set.isNotEmpty) out[p.key] = set.toList();
+      } else if (p.type == 'single') {
+        final v = _singleValues[p.key];
+        if (v != null && v.isNotEmpty) out[p.key] = [v];
+      }
+    }
+    return out;
   }
 
   /// 校验并生成开局档案文本，然后开局（数值项并入初始状态属性）
@@ -346,6 +369,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       if (part.type == 'number') attrs[part.title] = _partNumber(part);
     }
     _setupName = _textValues['name']?.text.trim() ?? '';
+    _setupSelections = _collectSetupSelections();
     final initial = story.initialState.copyWith(attributes: attrs);
     setState(() => _needsSetup = false);
     await _newSession(initialState: initial);
@@ -368,7 +392,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         .replaceAll('{{user}}', userName)
         .replaceAll('{{persona}}', persona.description.trim());
 
-    final buf = StringBuffer(sub(story.buildSystemPrompt()));
+    // 世界书按开局选择裁剪：只注入选中的种族/职业/天赋/事件/MOD 详情
+    final buf = StringBuffer(
+      sub(
+        story.buildSystemPrompt(
+          worldBookOverride: filterWorldBook(story.worldBook, _setupSelections),
+        ),
+      ),
+    );
     if (check) {
       buf.write(
         '\n\n【特殊判定】玩家本条消息要求进行一次动作判定：'
