@@ -1190,7 +1190,10 @@ Future<void> _importWorldBook() async {
 
 /// 从 JSON 字节导入世界书（拖拽 / 选择文件共用）：每次生成一本新书（内含全部条目）
 Future<void> importWorldBookBytes(List<int> bytes, {String name = ''}) async {
-  final entries = _parseWorldBookEntries(jsonDecode(utf8.decode(bytes)));
+  final entries =
+      _parseWorldBookEntries(jsonDecode(utf8.decode(bytes)))
+          .map((e) => e.copyWith(bookIds: const []))
+          .toList();
   if (entries.isEmpty) throw 'empty';
   final book = await WorldBookStore.instance.createBook(name: name);
   await WorldBookStore.instance.upsertBook(
@@ -1896,33 +1899,40 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
     if (mounted) setState(() {});
   }
 
-  /// 把条目移动到另一本书
+  /// 管理条目的所属分组（可多选，同一条目可被多本书共用）
   Future<void> _moveEntry(WorldBookEntry entry) async {
     final store = WorldBookStore.instance;
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Sheet(
-        title: t.worldBookMove,
-        icon: Icons.drive_file_move_outline,
-        initialSize: 0.4,
-        builder: (ctx, sc) => ListView(
-          controller: sc,
-          children: [
-            for (final b in store.books)
-              if (b.id != entry.bookId)
-                ListTile(
-                  leading: const Icon(Icons.menu_book_outlined),
-                  title: Text(b.name.isEmpty ? t.worldBook : b.name),
-                  trailing: Text('${b.entries.length}'),
-                  onTap: () => Navigator.of(ctx).pop(b.id),
-                ),
+    final selected = <String>{...entry.bookIds};
+    final ok = await showDialog<bool>(
+      context: App.rootContext,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => ContentDialog(
+          title: t.worldBookGroups,
+          content: SingleChildScrollView(
+            child: CapsuleChipGroup(
+              children: [
+                for (final b in store.books)
+                  CapsuleChip(
+                    text: b.name.isEmpty ? t.worldBook : b.name,
+                    isSelected: selected.contains(b.id),
+                    onTap: () => setLocal(() {
+                      if (!selected.remove(b.id)) selected.add(b.id);
+                    }),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(t.confirm),
+            ),
           ],
         ),
       ),
     );
-    if (choice == null || !mounted) return;
-    await store.upsert(entry, bookId: choice);
+    if (ok != true || !mounted) return;
+    await store.setBookIds(entry.id, selected.toList());
     if (mounted) setState(() {});
   }
 
@@ -2181,8 +2191,8 @@ class _WorldBookTile extends StatelessWidget {
           if (onMove != null)
             IconButton(
               visualDensity: VisualDensity.compact,
-              tooltip: t.worldBookMove,
-              icon: const Icon(Icons.drive_file_move_outline, size: 18),
+              tooltip: t.worldBookGroups,
+              icon: const Icon(Icons.folder_outlined, size: 18),
               onPressed: onMove,
             ),
           if (onDelete != null)
@@ -2253,6 +2263,15 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
   late String _role = widget.entry?.role ?? 'system';
   late final List<String> _boundChars = [...?widget.entry?.characterIds];
   late final List<String> _boundTags = [...?widget.entry?.tags];
+
+  /// 所属分组（可多选）
+  late final List<String> _bookIds = [
+    ...?widget.entry?.bookIds,
+    if ((widget.entry?.bookIds ?? const []).isEmpty &&
+        widget.bookId != null &&
+        widget.bookId!.isNotEmpty)
+      widget.bookId!,
+  ];
 
   bool get _isNew => widget.entry == null;
 
@@ -2334,11 +2353,12 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       role: _role,
       characterIds: _boundChars,
       tags: _boundTags,
+      bookIds: _bookIds,
       depth: int.tryParse(_depthCtrl.text.trim()) ?? 4,
       sticky: int.tryParse(_stickyCtrl.text.trim()) ?? 0,
       cooldown: int.tryParse(_cooldownCtrl.text.trim()) ?? 0,
     );
-    await WorldBookStore.instance.upsert(entry, bookId: widget.bookId);
+    await WorldBookStore.instance.upsert(entry);
     if (mounted) {
       App.rootContext.showMessage(message: t.saved);
       App.rootContext.pop();
@@ -2381,6 +2401,31 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? t.required
                               : null,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(t.worldBookGroups),
+                            const SizedBox(height: 6),
+                            CapsuleChipGroup(
+                              children: [
+                                for (final b
+                                    in WorldBookStore.instance.books)
+                                  CapsuleChip(
+                                    text: b.name.isEmpty ? t.worldBook : b.name,
+                                    isSelected: _bookIds.contains(b.id),
+                                    onTap: () => setState(() {
+                                      if (!_bookIds.remove(b.id)) {
+                                        _bookIds.add(b.id);
+                                      }
+                                    }),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                       Padding(

@@ -7555,6 +7555,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Move to world book'
 	String get worldBookMove => 'Move to world book';
 
+	/// en: 'Groups'
+	String get worldBookGroups => 'Groups';
+
 	/// en: 'Secondary keys (one per line, all must match)'
 	String get worldBookSecondaryKeys => 'Secondary keys (one per line, all must match)';
 
@@ -11102,6 +11105,7 @@ extension on Translations {
 			'loreTriggerGenFailed' => 'Failed to generate triggers',
 			'loreTriggerGenProgress' => ({required Object done, required Object total}) => 'Generating ${done}/${total}',
 			'worldBookMove' => 'Move to world book',
+			'worldBookGroups' => 'Groups',
 			'worldBookSecondaryKeys' => 'Secondary keys (one per line, all must match)',
 			'worldBookPosition' => 'Injection position',
 			'worldBookPositionBefore' => 'Before character definitions',
@@ -11114,9 +11118,9 @@ extension on Translations {
 			'worldBookSticky' => 'Sticky turns',
 			'worldBookCooldown' => 'Cooldown turns',
 			'worldBookConstant' => 'Always on',
-			'worldBookRecursive' => 'Recursive scan',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookRecursive' => 'Recursive scan',
 			'newWorldBookEntry' => 'New Entry',
 			'worldBookHitTest' => 'Hit Test',
 			'worldBookHitTestHint' => 'Type a sentence to see which entries will be triggered',

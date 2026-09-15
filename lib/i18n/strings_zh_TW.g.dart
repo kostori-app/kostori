@@ -2543,6 +2543,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get loreTriggerGenFailed => '生成觸發詞失敗';
 	@override String loreTriggerGenProgress({required Object done, required Object total}) => '生成中 ${done}/${total}';
 	@override String get worldBookMove => '移動到世界書';
+	@override String get worldBookGroups => '所屬分組';
 	@override String get worldBookSecondaryKeys => '次級鍵（每行一個，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
 	@override String get worldBookPositionBefore => '角色定義前';
@@ -5447,6 +5448,7 @@ extension on TranslationsZhTw {
 			'loreTriggerGenFailed' => '生成觸發詞失敗',
 			'loreTriggerGenProgress' => ({required Object done, required Object total}) => '生成中 ${done}/${total}',
 			'worldBookMove' => '移動到世界書',
+			'worldBookGroups' => '所屬分組',
 			'worldBookSecondaryKeys' => '次級鍵（每行一個，需全部命中）',
 			'worldBookPosition' => '注入位置',
 			'worldBookPositionBefore' => '角色定義前',
@@ -5460,9 +5462,9 @@ extension on TranslationsZhTw {
 			'worldBookCooldown' => '冷卻回合數',
 			'worldBookConstant' => '常駐',
 			'worldBookRecursive' => '遞迴觸發',
-			'newWorldBookEntry' => '新增條目',
 			_ => null,
 		} ?? switch (path) {
+			'newWorldBookEntry' => '新增條目',
 			'worldBookHitTest' => '命中測試',
 			'worldBookHitTestHint' => '輸入一句話，查看哪些條目會被觸發',
 			'worldBookHitTestPlaceholder' => '輸入一句話...',

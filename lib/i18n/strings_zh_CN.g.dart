@@ -2544,6 +2544,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get loreTriggerGenFailed => '生成触发词失败';
 	@override String loreTriggerGenProgress({required Object done, required Object total}) => '生成中 ${done}/${total}';
 	@override String get worldBookMove => '移动到世界书';
+	@override String get worldBookGroups => '所属分组';
 	@override String get worldBookSecondaryKeys => '次级键（每行一个，需全部命中）';
 	@override String get worldBookPosition => '注入位置';
 	@override String get worldBookPositionBefore => '角色定义前';
@@ -5449,6 +5450,7 @@ extension on TranslationsZhCn {
 			'loreTriggerGenFailed' => '生成触发词失败',
 			'loreTriggerGenProgress' => ({required Object done, required Object total}) => '生成中 ${done}/${total}',
 			'worldBookMove' => '移动到世界书',
+			'worldBookGroups' => '所属分组',
 			'worldBookSecondaryKeys' => '次级键（每行一个，需全部命中）',
 			'worldBookPosition' => '注入位置',
 			'worldBookPositionBefore' => '角色定义前',
@@ -5461,9 +5463,9 @@ extension on TranslationsZhCn {
 			'worldBookSticky' => '保持回合数',
 			'worldBookCooldown' => '冷却回合数',
 			'worldBookConstant' => '常驻',
-			'worldBookRecursive' => '递归触发',
 			_ => null,
 		} ?? switch (path) {
+			'worldBookRecursive' => '递归触发',
 			'newWorldBookEntry' => '新建条目',
 			'worldBookHitTest' => '命中测试',
 			'worldBookHitTestHint' => '输入一句话，查看哪些条目会被触发',

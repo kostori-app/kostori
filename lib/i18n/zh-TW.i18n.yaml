@@ -2569,6 +2569,7 @@ loreTriggerGenDone: 已為 ${count} 條生成觸發詞
 loreTriggerGenFailed: 生成觸發詞失敗
 loreTriggerGenProgress: 生成中 ${done}/${total}
 worldBookMove: 移動到世界書
+worldBookGroups: 所屬分組
 worldBookSecondaryKeys: 次級鍵（每行一個，需全部命中）
 worldBookPosition: 注入位置
 worldBookPositionBefore: 角色定義前
