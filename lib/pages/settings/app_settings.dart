@@ -1444,10 +1444,18 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     if (ids.isEmpty || _busy) return;
     setState(() => _busy = true);
     final sync = DataSync();
-    var ok = 0;
+    var attempted = 0;
+    var failed = 0;
     for (final id in ids) {
       final files = _entryFiles(kind, id);
-      var mainOk = false;
+      // 本地没有主文件的条目（例如只存在于云端的条目）无法上传：
+      // 静默跳过即可，不能算作失败，否则会把整批上传误报为「同步失败」。
+      if (!files.first.existsSync()) {
+        Log.info('SelectiveSync', 'upload skip (no local main): $kind/$id');
+        continue;
+      }
+      attempted++;
+      var mainFailed = false;
       for (var i = 0; i < files.length; i++) {
         final f = files[i];
         if (!f.existsSync()) continue;
@@ -1456,21 +1464,23 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
           remoteName: f.uri.pathSegments.last,
           remoteDir: kind,
         );
-        if (r.success) {
-          // 主文件成功才算这个条目成功（附属文件失败不掩盖）
-          if (i == 0) mainOk = true;
-        } else {
-          Log.error('SelectiveSync', 'upload failed: $kind/${f.uri.pathSegments.last}');
+        if (!r.success) {
+          // 主文件失败才算这个条目失败（附属文件失败不掩盖）
+          if (i == 0) mainFailed = true;
+          Log.error(
+            'SelectiveSync',
+            'upload failed: $kind/${f.uri.pathSegments.last}',
+          );
         }
       }
-      if (mainOk) ok++;
+      if (mainFailed) failed++;
     }
     if (!mounted) return;
     setState(() {
       _busy = false;
       _sel(kind).clear();
     });
-    _toast(ok > 0 && ok == ids.length);
+    _toast(failed == 0 && attempted > 0);
     await _load();
   }
 
@@ -1585,10 +1595,22 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       'SelectiveSync',
       'download $kind: remote=[${res.dataOrNull?.map((e) => '${e.name}(${e.size})').join(', ') ?? names.join(', ')}]',
     );
-    var ok = 0;
+    var attempted = 0;
+    var failed = 0;
     for (final id in ids) {
       final files = _entryFiles(kind, id);
-      var mainOk = false;
+      // 远端没有该条目主文件（例如只在本地存在的条目）无法下载：
+      // 跳过即可，不能算作失败，否则会把整批下载误报为「同步失败」。
+      final mainName = files.first.uri.pathSegments.last;
+      if (!names.contains(mainName)) {
+        Log.info(
+          'SelectiveSync',
+          'download skip (not on remote): $kind/$mainName',
+        );
+        continue;
+      }
+      attempted++;
+      var mainFailed = false;
       for (var i = 0; i < files.length; i++) {
         final f = files[i];
         final name = f.uri.pathSegments.last;
@@ -1609,14 +1631,13 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
             remoteDir: '/',
           );
         }
-        if (r.success) {
-          // 主文件成功才算这个条目成功
-          if (i == 0) mainOk = true;
-        } else {
+        if (!r.success) {
+          // 主文件失败才算这个条目失败
+          if (i == 0) mainFailed = true;
           Log.error('SelectiveSync', 'download failed: $kind/$name');
         }
       }
-      if (mainOk) ok++;
+      if (mainFailed) failed++;
     }
     await CharacterCardStore.instance.reload();
     await StoryStore.instance.reload();
@@ -1631,7 +1652,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
       _busy = false;
       _sel(kind).clear();
     });
-    _toast(ok > 0 && ok == ids.length);
+    _toast(failed == 0 && attempted > 0);
     await _load();
   }
 
