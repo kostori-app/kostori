@@ -201,39 +201,47 @@ class _AvatarPickerState extends State<AvatarPicker> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          CharacterAvatar(name: widget.name, avatar: widget.avatar, radius: 24),
-          const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: _generating ? null : _pick,
-            icon: const Icon(Icons.image_outlined, size: 18),
-            label: Text(t.characterPickAvatar),
-          ),
-          if (widget.onGenerate != null)
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.start,
+          spacing: 4,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            CharacterAvatar(
+              name: widget.name,
+              avatar: widget.avatar,
+              radius: 24,
+            ),
+            const SizedBox(width: 8),
             TextButton.icon(
-              onPressed: _generating ? null : _generate,
-              icon: _generating
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: PolygonRefreshIndicator(size: 18),
-                    )
-                  : const Icon(Icons.auto_awesome, size: 18),
-              label: Text(
-                _generating ? t.aiImageGenerating : t.avatarAiGenerate,
+              onPressed: _generating ? null : _pick,
+              icon: const Icon(Icons.image_outlined, size: 18),
+              label: Text(t.characterPickAvatar),
+            ),
+            if (widget.onGenerate != null)
+              TextButton.icon(
+                onPressed: _generating ? null : _generate,
+                icon: _generating
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: PolygonRefreshIndicator(size: 18),
+                      )
+                    : const Icon(Icons.auto_awesome, size: 18),
+                label: Text(
+                  _generating ? t.aiImageGenerating : t.avatarAiGenerate,
+                ),
               ),
-            ),
-          if (widget.avatar.trim().isNotEmpty)
-            TextButton.icon(
-              onPressed: _generating ? null : () => widget.onChanged(''),
-              icon: const Icon(Icons.clear, size: 18),
-              label: Text(t.clear),
-            ),
-        ],
+            if (widget.avatar.trim().isNotEmpty)
+              TextButton.icon(
+                onPressed: _generating ? null : () => widget.onChanged(''),
+                icon: const Icon(Icons.clear, size: 18),
+                label: Text(t.clear),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -708,13 +716,13 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
 
   Widget _basicSection() => Column(
     children: [
-      _field(t.storyCharacterName, _nameCtrl),
       AvatarPicker(
         name: _nameCtrl.text,
         avatar: _avatar,
         onChanged: (v) => setState(() => _avatar = v),
         onGenerate: _generateAvatar,
       ),
+      _field(t.storyCharacterName, _nameCtrl),
       _field(
         t.characterNickname,
         _nicknameCtrl,
