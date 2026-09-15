@@ -834,7 +834,7 @@ class _SettingCard extends StatelessWidget {
   const _SettingCard({
     super.key,
     required this.children,
-    this.padding = const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+    this.padding = EdgeInsets.zero,
   });
 
   final List<Widget> children;
@@ -871,12 +871,7 @@ class _SettingCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              // padding 为 0 时（整卡 ListTile）不再留底部间隙，
-              // 否则水波纹盖不满整卡
-              children: [
-                ...children,
-                if (padding != EdgeInsets.zero) const SizedBox(height: 8),
-              ],
+              children: [...children],
             ),
           ),
         ),
