@@ -1615,6 +1615,7 @@ groupChatEmpty: 还没有群聊
 groupChatRestartConfirm: 重新开始会清空本群聊的对话记录
 groupChatStart: 请开始群聊
 groupChatContinue: （继续）
+groupChatTurn: 轮到 ${name}
 groupChatInputHint: 说点什么…
 importCharacter: 导入角色卡
 characterImportFailed: 角色卡导入失败

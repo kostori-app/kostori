@@ -1620,6 +1620,7 @@ groupChatEmpty: No group chats yet
 groupChatRestartConfirm: Restarting clears this group chat's history
 groupChatStart: Start the group chat
 groupChatContinue: (continue)
+groupChatTurn: 'Turn: ${name}'
 groupChatInputHint: Say something…
 importCharacter: Import character card
 characterImportFailed: Failed to import character card

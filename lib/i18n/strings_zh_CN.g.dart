@@ -1609,6 +1609,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get groupChatRestartConfirm => '重新开始会清空本群聊的对话记录';
 	@override String get groupChatStart => '请开始群聊';
 	@override String get groupChatContinue => '（继续）';
+	@override String groupChatTurn({required Object name}) => '轮到 ${name}';
 	@override String get groupChatInputHint => '说点什么…';
 	@override String get importCharacter => '导入角色卡';
 	@override String get characterImportFailed => '角色卡导入失败';
@@ -4534,6 +4535,7 @@ extension on TranslationsZhCn {
 			'groupChatRestartConfirm' => '重新开始会清空本群聊的对话记录',
 			'groupChatStart' => '请开始群聊',
 			'groupChatContinue' => '（继续）',
+			'groupChatTurn' => ({required Object name}) => '轮到 ${name}',
 			'groupChatInputHint' => '说点什么…',
 			'importCharacter' => '导入角色卡',
 			'characterImportFailed' => '角色卡导入失败',
@@ -4969,9 +4971,9 @@ extension on TranslationsZhCn {
 			'qualityHigh' => '高质量',
 			'gifExport' => 'GIF 导出',
 			'apngExport' => 'APNG 导出',
-			'mp4Export' => 'MP4 导出',
 			_ => null,
 		} ?? switch (path) {
+			'mp4Export' => 'MP4 导出',
 			'exportSuccess' => '导出成功',
 			'exportFailed' => '导出失败',
 			'selectTimeRange' => '选择时间范围',
@@ -5483,9 +5485,9 @@ extension on TranslationsZhCn {
 			'worldBookPriority' => '优先级（越大越靠前）',
 			'worldBookPriorityHint' => '优先级高的条目先注入',
 			'worldBookGroup' => '分组',
-			'newWorldBook' => '新建世界书',
 			_ => null,
 		} ?? switch (path) {
+			'newWorldBook' => '新建世界书',
 			'newSettingBook' => '新建设定书',
 			'loreGenTriggers' => '生成触发词',
 			'loreTriggerLang' => '目标语言',

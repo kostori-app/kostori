@@ -1620,6 +1620,7 @@ groupChatEmpty: 還沒有群聊
 groupChatRestartConfirm: 重新開始會清空本群聊的對話記錄
 groupChatStart: 請開始群聊
 groupChatContinue: （繼續）
+groupChatTurn: 輪到 ${name}
 groupChatInputHint: 說點什麼…
 importCharacter: 導入角色卡
 characterImportFailed: 角色卡導入失敗

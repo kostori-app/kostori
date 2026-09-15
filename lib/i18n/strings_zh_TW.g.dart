@@ -1610,6 +1610,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get groupChatRestartConfirm => '重新開始會清空本群聊的對話記錄';
 	@override String get groupChatStart => '請開始群聊';
 	@override String get groupChatContinue => '（繼續）';
+	@override String groupChatTurn({required Object name}) => '輪到 ${name}';
 	@override String get groupChatInputHint => '說點什麼…';
 	@override String get importCharacter => '導入角色卡';
 	@override String get characterImportFailed => '角色卡導入失敗';
@@ -4534,6 +4535,7 @@ extension on TranslationsZhTw {
 			'groupChatRestartConfirm' => '重新開始會清空本群聊的對話記錄',
 			'groupChatStart' => '請開始群聊',
 			'groupChatContinue' => '（繼續）',
+			'groupChatTurn' => ({required Object name}) => '輪到 ${name}',
 			'groupChatInputHint' => '說點什麼…',
 			'importCharacter' => '導入角色卡',
 			'characterImportFailed' => '角色卡導入失敗',
@@ -4968,9 +4970,9 @@ extension on TranslationsZhTw {
 			'gifExport' => 'GIF 匯出',
 			'apngExport' => 'APNG 匯出',
 			'mp4Export' => 'MP4 匯出',
-			'exportSuccess' => '匯出成功',
 			_ => null,
 		} ?? switch (path) {
+			'exportSuccess' => '匯出成功',
 			'exportFailed' => '匯出失敗',
 			'selectTimeRange' => '選擇時間範圍',
 			'recordingFeature' => '錄製',
@@ -5482,9 +5484,9 @@ extension on TranslationsZhTw {
 			'worldBookPriorityHint' => '優先級高的條目先注入',
 			'worldBookGroup' => '分組',
 			'newWorldBook' => '新增世界書',
-			'newSettingBook' => '新增設定書',
 			_ => null,
 		} ?? switch (path) {
+			'newSettingBook' => '新增設定書',
 			'loreGenTriggers' => '生成觸發詞',
 			'loreTriggerLang' => '目標語言',
 			'loreTriggerLangHint' => '如：中文 / English / 日本語',

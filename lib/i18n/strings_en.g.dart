@@ -4753,6 +4753,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '(continue)'
 	String get groupChatContinue => '(continue)';
 
+	/// en: 'Turn: ${name}'
+	String groupChatTurn({required Object name}) => 'Turn: ${name}';
+
 	/// en: 'Say something…'
 	String get groupChatInputHint => 'Say something…';
 
@@ -10232,6 +10235,7 @@ extension on Translations {
 			'groupChatRestartConfirm' => 'Restarting clears this group chat\'s history',
 			'groupChatStart' => 'Start the group chat',
 			'groupChatContinue' => '(continue)',
+			'groupChatTurn' => ({required Object name}) => 'Turn: ${name}',
 			'groupChatInputHint' => 'Say something…',
 			'importCharacter' => 'Import character card',
 			'characterImportFailed' => 'Failed to import character card',
@@ -10666,9 +10670,9 @@ extension on Translations {
 			'apngExport' => 'APNG Export',
 			'mp4Export' => 'MP4 Export',
 			'exportSuccess' => 'Export Success',
-			'exportFailed' => 'Export Failed',
 			_ => null,
 		} ?? switch (path) {
+			'exportFailed' => 'Export Failed',
 			'selectTimeRange' => 'Select Time Range',
 			'recordingFeature' => 'Record',
 			'tapToRecord' => 'Tap to Record',
@@ -11180,9 +11184,9 @@ extension on Translations {
 			'worldBookPriority' => 'Priority (higher first)',
 			'worldBookPriorityHint' => 'Higher priority entries are injected first',
 			'worldBookGroup' => 'Group',
-			'newWorldBook' => 'New world book',
 			_ => null,
 		} ?? switch (path) {
+			'newWorldBook' => 'New world book',
 			'newSettingBook' => 'New setting book',
 			'loreGenTriggers' => 'Generate triggers',
 			'loreTriggerLang' => 'Target language',

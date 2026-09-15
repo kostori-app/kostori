@@ -31,6 +31,9 @@ class GroupChat {
   /// 当前会话 id（空 = 未开始）
   final String sessionId;
 
+  /// 轮流模式下的下一位发言者下标（持久化，随会话滚动）
+  final int speakerIndex;
+
   const GroupChat({
     required this.id,
     this.name = '',
@@ -40,6 +43,7 @@ class GroupChat {
     this.order = 'natural',
     this.autoMode = false,
     this.sessionId = '',
+    this.speakerIndex = 0,
   });
 
   factory GroupChat.fromJson(Map<String, dynamic> json) {
@@ -54,6 +58,7 @@ class GroupChat {
       order: json['order']?.toString() ?? 'natural',
       autoMode: json['autoMode'] == true,
       sessionId: json['sessionId']?.toString() ?? '',
+      speakerIndex: (json['speakerIndex'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -66,6 +71,7 @@ class GroupChat {
     'order': order,
     'autoMode': autoMode,
     'sessionId': sessionId,
+    'speakerIndex': speakerIndex,
   };
 
   GroupChat copyWith({
@@ -76,6 +82,7 @@ class GroupChat {
     String? order,
     bool? autoMode,
     String? sessionId,
+    int? speakerIndex,
   }) => GroupChat(
     id: id,
     name: name ?? this.name,
@@ -85,6 +92,7 @@ class GroupChat {
     order: order ?? this.order,
     autoMode: autoMode ?? this.autoMode,
     sessionId: sessionId ?? this.sessionId,
+    speakerIndex: speakerIndex ?? this.speakerIndex,
   );
 }
 

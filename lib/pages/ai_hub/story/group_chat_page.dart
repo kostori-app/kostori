@@ -451,6 +451,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
   Stream<List<AiTask>>? _messagesStream;
   List<CharacterCard> _members = const [];
   String? _nextSpeaker;
+  int _speakerIndex = 0;
   bool _auto = false;
   bool _sending = false;
   bool _booting = true;
@@ -491,6 +492,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     if (chat == null || !mounted) return;
     _chat = chat;
     _auto = chat.autoMode;
+    _speakerIndex = chat.speakerIndex;
     _members = [
       for (final id in chat.memberIds)
         if (CharacterCardStore.instance.find(id) case final c?) c,
@@ -567,8 +569,11 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     if (ok != true || !mounted) return;
     final chat = _chat;
     if (chat == null) return;
-    setState(() => _booting = true);
-    await _newSession(chat);
+    setState(() {
+      _booting = true;
+      _speakerIndex = 0;
+    });
+    await _newSession(chat.copyWith(speakerIndex: 0));
     await _send(t.groupChatStart);
   }
 
@@ -589,13 +594,34 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     return _members.length == 1 ? _members.first : null;
   }
 
-  String _nameForNextSpeaker() {
-    if (_nextSpeaker != null) return _nextSpeaker!;
+  /// 本轮实际发言人：手动指定优先；轮流模式取指针指向的成员；自然模式为空
+  String? get _effectiveNext {
+    if (_nextSpeaker != null) return _nextSpeaker;
     if (_chat?.order == 'list' && _members.isNotEmpty) {
-      // 简化：轮流模式下没有上一条发言者信息时，默认第一位
-      return _members.first.displayName;
+      return _members[_speakerIndex % _members.length].displayName;
     }
-    return '';
+    return null;
+  }
+
+  /// 一轮结束后推进轮流指针（手动指定则跳到该成员的下一位）
+  Future<void> _advanceSpeaker() async {
+    final chat = _chat;
+    if (chat == null || _members.isEmpty) return;
+    var next = _speakerIndex;
+    final manual = _nextSpeaker;
+    if (manual != null) {
+      final at = _members.indexWhere((c) => c.displayName == manual);
+      next = at < 0 ? _speakerIndex : at + 1;
+    } else if (chat.order == 'list') {
+      next = _speakerIndex + 1;
+    } else {
+      return;
+    }
+    next = next % _members.length;
+    if (next == _speakerIndex) return;
+    setState(() => _speakerIndex = next);
+    await GroupChatStore.instance.upsert(chat.copyWith(speakerIndex: next));
+    _chat = chat.copyWith(speakerIndex: next);
   }
 
   Future<void> _send(String text) async {
@@ -605,7 +631,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     if (outgoing.isEmpty) return;
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
-    final next = _nextSpeaker;
+    final next = _effectiveNext;
     setState(() {
       _sending = true;
       _streamText = '';
@@ -621,7 +647,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
         systemPromptOverride: buildGroupSystemPrompt(
           chat: _chat!,
           members: _members,
-          nextSpeaker: next ?? (_chat!.order == 'list' ? _nameForNextSpeaker() : null),
+          nextSpeaker: next,
         ),
         cancelToken: cancelToken,
       )) {
@@ -647,6 +673,9 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     } finally {
       _cancelToken = null;
     }
+    if (!mounted) return;
+    // 推进轮流指针（手动指定则跳到该成员的下一位）
+    await _advanceSpeaker();
     if (!mounted) return;
     setState(() {
       _sending = false;
@@ -683,6 +712,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
       orElse: () => messages.last,
     );
     if (lastModel.role != 'model') return;
+    // 保持同一位发言者：优先取该条现有候选里的说话人
     String? speaker;
     for (final seg in parseGroupSegments(lastModel.outputContent ?? '')) {
       if (seg.$1 != null) {
@@ -690,16 +720,33 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
         break;
       }
     }
-    await AiConversationService().deleteMessage(lastModel.id);
-    final lastUser = messages.lastWhere(
-      (m) => m.role == 'user',
-      orElse: () => lastModel,
+    final next = speaker ?? _effectiveNext;
+    setState(() => _sending = true);
+    final res = await AiConversationService().regenerateMessage(
+      sessionId: sessionId,
+      taskId: lastModel.id,
+      providerOverride: aiHubProvider(),
+      systemPromptOverride: buildGroupSystemPrompt(
+        chat: _chat!,
+        members: _members,
+        nextSpeaker: next,
+      ),
     );
-    final text = lastUser.role == 'user'
-        ? lastUser.inputContent
-        : t.groupChatContinue;
-    if (speaker != null) setState(() => _nextSpeaker = speaker);
-    await _send(text);
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (!res.success) {
+      App.rootContext.showMessage(
+        message: res.errorMessage ?? '',
+        level: LogLevel.error,
+      );
+    }
+    _scrollToBottom(force: true);
+  }
+
+  /// 切换某条消息的候选（swipe）
+  Future<void> _swipe(AiTask m, List<String> variants, int index) async {
+    if (index < 0 || index >= variants.length) return;
+    await AiConversationService().selectVariant(m.id, variants, index);
   }
 
   void _stop() {
@@ -746,6 +793,10 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
                           stream: _messagesStream,
                           builder: (context, snap) {
                             final messages = snap.data ?? const <AiTask>[];
+                            int lastModelId = -1;
+                            for (final m in messages) {
+                              if (m.role == 'model') lastModelId = m.id;
+                            }
                             return ListView(
                               controller: _scrollController,
                               reverse: true,
@@ -754,7 +805,10 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
                                 if (_streamText.trim().isNotEmpty)
                                   ..._renderModel(_streamText, streaming: true),
                                 for (final m in messages.reversed)
-                                  ..._renderMessage(m),
+                                  ..._renderMessage(
+                                    m,
+                                    isLastModel: m.id == lastModelId,
+                                  ),
                               ],
                             );
                           },
@@ -766,11 +820,61 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     );
   }
 
-  List<Widget> _renderMessage(AiTask m) {
+  List<Widget> _renderMessage(AiTask m, {required bool isLastModel}) {
     if (m.role == 'user') {
       return [_StoryBubble(content: m.inputContent, isUser: true)];
     }
-    return _renderModel(m.outputContent ?? '');
+    return [
+      ..._renderModel(m.outputContent ?? ''),
+      _modelFooter(m, isLastModel: isLastModel),
+    ];
+  }
+
+  /// 模型消息底栏：多候选 swipe（‹ i/n ›）+ 重新生成
+  Widget _modelFooter(AiTask m, {required bool isLastModel}) {
+    final variants = AiConversationService.variantsOf(m);
+    final idx = m.variantIndex.clamp(
+      0,
+      variants.isEmpty ? 0 : variants.length - 1,
+    );
+    final scheme = Theme.of(context).colorScheme;
+    Widget action(IconData icon, VoidCallback? onTap) => IconButton(
+      visualDensity: VisualDensity.compact,
+      iconSize: 16,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      onPressed: onTap,
+      icon: Icon(icon),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(left: 40, bottom: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (variants.length > 1) ...[
+            action(
+              Icons.chevron_left,
+              idx > 0 ? () => _swipe(m, variants, idx - 1) : null,
+            ),
+            Text(
+              '${idx + 1}/${variants.length}',
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+            ),
+            action(
+              Icons.chevron_right,
+              idx < variants.length - 1
+                  ? () => _swipe(m, variants, idx + 1)
+                  : null,
+            ),
+          ],
+          if (isLastModel)
+            action(
+              Icons.replay_outlined,
+              _sending ? null : _regenerate,
+            ),
+        ],
+      ),
+    );
   }
 
   List<Widget> _renderModel(String text, {bool streaming = false}) {
@@ -799,6 +903,27 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_members.isNotEmpty && _effectiveNext != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.record_voice_over_outlined,
+                    size: 14,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    t.groupChatTurn(name: _effectiveNext!),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (_members.isNotEmpty)
             SizedBox(
               height: 40,
@@ -817,7 +942,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
                           enablePreview: false,
                         ),
                         label: Text(c.displayName),
-                        selected: _nextSpeaker == c.displayName,
+                        selected: _effectiveNext == c.displayName,
                         visualDensity: VisualDensity.compact,
                         onSelected: (_) => setState(() {
                           _nextSpeaker = _nextSpeaker == c.displayName
