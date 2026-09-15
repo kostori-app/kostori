@@ -199,6 +199,17 @@ String buildGroupSystemPrompt({
     '- 不要在同一轮里替多名成员发言，也不要替用户发言。\n'
     '- 保持各成员的口吻、称呼与关系。',
   );
+  // 回复语言：跟随应用界面语言，避免角色卡是英文时整段用英文
+  final locale = App.locale;
+  final language = switch (locale.languageCode) {
+    'zh' => locale.countryCode == 'TW' ? '繁體中文' : '中文',
+    'en' => 'English',
+    'ja' => '日本語',
+    'ko' => '한국어',
+    _ => '中文',
+  };
+  buf.write('\n- 一律用$language回复（除用户明确要求其它语言）。');
+
   final n = nextSpeaker?.trim() ?? '';
   if (n.isNotEmpty) {
     buf.write('\n- 本轮请由「$n」发言。');

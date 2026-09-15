@@ -1325,17 +1325,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     ),
                   ),
 
-                // ── 输入框 ────────────────────────────
-                Container(
-                  margin: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+                // ── 输入框（与群聊共用 ChatComposerShell）──
+                ChatComposerShell(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

@@ -1225,3 +1225,28 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────
+// 聊天输入区外壳（AI 聊天 / 群聊共用）
+// ─────────────────────────────────────────────
+
+/// 统一输入区外观：圆角 24 + 边框 + 表面色，内部由各页面自行填充。
+class ChatComposerShell extends StatelessWidget {
+  const ChatComposerShell({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border.all(color: scheme.outlineVariant, width: 1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: child,
+    );
+  }
+}
