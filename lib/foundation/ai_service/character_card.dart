@@ -13,6 +13,12 @@ class CharacterCard {
   final String id;
   final String name;
 
+  /// 提示词 / 界面中优先使用的称呼（CCv3：昵称优先，未设置回退角色名）
+  String get displayName {
+    final n = nickname.trim();
+    return n.isEmpty ? name : n;
+  }
+
   /// 头像：emoji 或图片 data URL
   final String avatar;
   final String description;
@@ -388,7 +394,7 @@ class CharacterCard {
 
   /// 供系统提示词注入的文本
   String toPrompt() {
-    final buf = StringBuffer('【角色：$name】');
+    final buf = StringBuffer('【角色：$displayName】');
     if (description.trim().isNotEmpty) {
       buf.write('\n描述：${description.trim()}');
     }

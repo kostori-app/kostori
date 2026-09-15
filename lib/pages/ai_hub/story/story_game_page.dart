@@ -437,7 +437,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (story.characters.isNotEmpty) {
       buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
       for (final c in story.characters) {
-        buf.write('\n- ${c.name}');
+        buf.write('\n- ${c.displayName}');
         if (c.personality.trim().isNotEmpty) {
           buf.write('（${c.personality.trim()}）');
         }
@@ -559,7 +559,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         ? story.characters
         : [
             for (final c in story.characters)
-              if (state.present.contains(c.name)) c,
+              if (state.present.any((n) => _isNameFor(c, n))) c,
           ];
     if (activeCards.isNotEmpty) {
       final scanMessages = <String>[];
@@ -585,7 +585,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           turn: _lastMessageCount ~/ 2,
         );
         if (hits.isEmpty) continue;
-        buf.write('\n\n【角色世界书 · ${c.name}】');
+        buf.write('\n\n【角色世界书 · ${c.displayName}】');
         var seq = 0;
         for (final e in hits) {
           if (e.content.trim().isEmpty) continue;
@@ -826,7 +826,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Sheet(
-        title: c.name,
+        title: c.displayName,
         icon: Icons.person_outline,
         initialSize: 0.36,
         builder: (ctx, sc) => ListView(
@@ -845,7 +845,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               title: Text(t.storyNpcStatus),
               subtitle: Text(
                 t.storyNpcAffinity(
-                  value: '${_npcState(c.name)?.affinity ?? 0}',
+                  value: '${_npcState(c)?.affinity ?? 0}',
                 ),
               ),
               onTap: () {
@@ -876,17 +876,21 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
+  /// 模型可能用昵称或角色名报在场，两者都认
+  bool _isNameFor(CharacterCard c, String n) =>
+      n == c.name || n == c.displayName;
+
   /// 按角色名取该角色的运行状态
-  NpcState? _npcState(String name) {
+  NpcState? _npcState(CharacterCard c) {
     for (final n in _state.npcs) {
-      if (n.name == name) return n;
+      if (n.name == c.name || n.name == c.displayName) return n;
     }
     return null;
   }
 
   /// 角色状态面板：好感度 / 姿态 / 数值条 / 属性 / 技能 / 携带
   Future<void> _showNpcStatus(CharacterCard c) async {
-    final npc = _npcState(c.name);
+    final npc = _npcState(c);
     if (npc == null) {
       App.rootContext.showMessage(
         message: t.storyNpcNoStatus,
@@ -898,7 +902,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Sheet(
-        title: c.name,
+        title: c.displayName,
         icon: Icons.monitor_heart_outlined,
         initialSize: 0.72,
         builder: (ctx, sc) => ListView(
@@ -1049,14 +1053,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 按角色名取头像（找不到时用默认）
   String _avatarForName(String name) {
     for (final c in story.characters) {
-      if (c.name == name) return c.avatar;
+      if (c.name == name || c.displayName == name) return c.avatar;
     }
     return '';
   }
 
   /// 对某个角色说话：在输入框前缀「对XX：」并聚焦
   void _addressCharacter(CharacterCard c) {
-    final prefix = t.storyCmdAddress(name: c.name);
+    final prefix = t.storyCmdAddress(name: c.displayName);
     if (!_input.text.startsWith(prefix)) {
       _input.text = '$prefix${_input.text}';
     }
@@ -1124,8 +1128,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     };
     if (names.isEmpty) return;
     final existing = {
-      for (final c in StoryCharacterStore.instance.get(story.id)) c.name,
-      for (final c in story.characters) c.name,
+      for (final c in StoryCharacterStore.instance.get(story.id)) ...[
+        c.name,
+        c.displayName,
+      ],
+      for (final c in story.characters) ...[c.name, c.displayName],
     };
     final added = <CharacterCard>[];
     for (final name in names) {
@@ -1992,7 +1999,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                         builder: (context) {
                           final presentChars = [
                             for (final c in story.characters)
-                              if (_state.present.contains(c.name)) c,
+                              if (_state.present.any((n) => _isNameFor(c, n)))
+                                c,
                           ];
                           final showSuggest =
                               choices.isNotEmpty && !_state.gameOver;
@@ -2014,12 +2022,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                           final c = presentChars[i];
                                           return ActionChip(
                                             avatar: CharacterAvatar(
-                                              name: c.name,
+                                              name: c.displayName,
                                               avatar: c.avatar,
                                               radius: 10,
                                               enablePreview: false,
                                             ),
-                                            label: Text(c.name),
+                                            label: Text(c.displayName),
                                             backgroundColor: Theme.of(
                                               context,
                                             ).colorScheme.primaryContainer,

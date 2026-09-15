@@ -1435,7 +1435,7 @@ class AiConversationService {
           turn: turn,
         );
         if (hits.isEmpty) continue;
-        final buf = StringBuffer('【角色世界书 · ${card.name}】');
+        final buf = StringBuffer('【角色世界书 · ${card.displayName}】');
         var n = 0;
         for (final e in hits) {
           if (e.content.trim().isEmpty) continue;

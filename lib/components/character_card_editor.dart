@@ -12,6 +12,7 @@ import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
 import 'package:kostori/foundation/ai_service/character_lorebook.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
@@ -258,6 +259,62 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
 
   bool get _isNew => widget.card == null;
 
+  /// 正在把角色名翻译成昵称
+  bool _translating = false;
+
+  /// 翻译目标语言：跟随应用当前语言，兜底简体中文
+  String get _translationTarget {
+    final locale = App.locale;
+    final country = locale.countryCode;
+    final full = (country == null || country.isEmpty)
+        ? locale.languageCode
+        : '${locale.languageCode}-$country';
+    const supported = {
+      'zh-CN',
+      'zh-TW',
+      'en-US',
+      'en-GB',
+      'ja',
+      'ko',
+      'fr',
+      'de',
+      'es',
+      'it',
+      'pt',
+      'ru',
+    };
+    if (supported.contains(full)) return full;
+    if (supported.contains(locale.languageCode)) return locale.languageCode;
+    return 'zh-CN';
+  }
+
+  /// 把角色名翻译后填入昵称（英文名 → 中文名等）
+  Future<void> _translateNameToNickname() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _translating = true);
+    try {
+      final res = await TranslationService().translate(
+        name,
+        targetLanguage: _translationTarget,
+      );
+      final text = res.dataOrNull?.trim() ?? '';
+      if (!mounted) return;
+      if (text.isEmpty) {
+        App.rootContext.showMessage(
+          message: res.errorMessage ?? t.translationFailed,
+          level: LogLevel.warning,
+        );
+        return;
+      }
+      setState(() {
+        _nicknameCtrl.text = text;
+      });
+    } finally {
+      if (mounted) setState(() => _translating = false);
+    }
+  }
+
   /// 世界书条目（可编辑副本）
   late List<Map<String, dynamic>> _bookEntries;
 
@@ -422,7 +479,21 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
         avatar: _avatar,
         onChanged: (v) => setState(() => _avatar = v),
       ),
-      _field(t.characterNickname, _nicknameCtrl),
+      _field(
+        t.characterNickname,
+        _nicknameCtrl,
+        suffixIcon: IconButton(
+          tooltip: t.translate,
+          onPressed: _translating ? null : _translateNameToNickname,
+          icon: _translating
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.translate, size: 18),
+        ),
+      ),
       _field(t.characterTags, _tagsCtrl),
       _field(t.characterCreator, _creatorCtrl),
     ],
@@ -670,6 +741,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
     String label,
     TextEditingController ctrl, {
     bool multiline = false,
+    Widget? suffixIcon,
   }) {
     return Padding(
       padding: const EdgeInsets.all(8),
@@ -681,6 +753,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
           labelText: label,
           alignLabelWithHint: true,
           border: const OutlineInputBorder(),
+          suffixIcon: suffixIcon,
         ),
       ),
     );
