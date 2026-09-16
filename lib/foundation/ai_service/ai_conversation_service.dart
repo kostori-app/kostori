@@ -215,6 +215,53 @@ class AiConversationService {
       ? _sessionDao.watchSessionsByType(type)
       : _sessionDao.watchAllSessions();
 
+  /// 恢复会话（导入故事存档到新设备时用）：
+  /// 确保会话行存在；若本地还没有该会话的消息，则把存档里的消息写回本地库。
+  Future<void> restoreSession({
+    required String sessionId,
+    required List<Map<String, dynamic>> messages,
+    String type = 'story',
+    String provider = '',
+    String title = '',
+  }) async {
+    if (await _sessionDao.getSession(sessionId) == null) {
+      await _sessionDao.upsertSession(
+        AiSessionsCompanion.insert(
+          sessionId: sessionId,
+          type: type,
+          provider: provider,
+          title: Value(title),
+        ),
+      );
+    }
+    if (messages.isEmpty) return;
+    final existing = await _taskDao.getMessages(sessionId);
+    if (existing.isNotEmpty) return;
+    for (final raw in messages) {
+      try {
+        final t = AiTask.fromJson(raw);
+        await _taskDao.insert(
+          AiTasksCompanion.insert(
+            id: Value(t.id),
+            sessionId: sessionId,
+            taskType: t.taskType,
+            role: Value(t.role),
+            inputContent: t.inputContent,
+            inputImages: Value(t.inputImages),
+            outputContent: Value(t.outputContent),
+            outputVariants: Value(t.outputVariants),
+            variantIndex: Value(t.variantIndex),
+            thought: Value(t.thought),
+            provider: t.provider,
+            modelName: Value(t.modelName),
+            tokenConsumed: Value(t.tokenConsumed),
+            createdAt: Value(t.createdAt),
+          ),
+        );
+      } catch (_) {}
+    }
+  }
+
   Stream<List<AiTask>> watchMessages(String sessionId) =>
       _taskDao.watchMessages(sessionId);
 

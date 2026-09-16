@@ -350,6 +350,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         _state = _mergeResources(saved.state);
         _booting = false;
       });
+      // 存档里带了消息而本地没有（导入到新设备）→ 还原对话历史
+      if (saved.messages.isNotEmpty) {
+        await AiConversationService().restoreSession(
+          sessionId: saved.sessionId,
+          provider: aiHubProvider(),
+          title: story.name,
+          messages: saved.messages,
+        );
+      }
       // 按消息折叠变量，恢复分支正确的最新值
       await _applyFoldedVariables();
       return;
@@ -405,14 +414,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       _state = initial;
       _booting = false;
     });
-    await StorySessionStore.instance.put(
-      story.id,
-      StorySession(
-        sessionId: sessionId,
-        state: initial,
-        setup: _setupSelections,
-      ),
-    );
+    await _persistStorySession(initial);
   }
 
   /// 收集开局选择（字段 key → 选项名），供世界书按选择注入
@@ -1028,6 +1030,28 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 重新折叠变量并持久化（swipe / 删除 / 启动时调用）
+  /// 存档写入：把消息也快照进会话文件，这样导入到其它设备时能还原对话历史
+  Future<void> _persistStorySession(GameState state) async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    var messages = const <Map<String, dynamic>>[];
+    try {
+      final msgs = await AiConversationService()
+          .watchMessages(sessionId)
+          .first;
+      messages = [for (final m in msgs) m.toJson()];
+    } catch (_) {}
+    await StorySessionStore.instance.put(
+      story.id,
+      StorySession(
+        sessionId: sessionId,
+        state: state,
+        setup: _setupSelections,
+        messages: messages,
+      ),
+    );
+  }
+
   Future<void> _applyFoldedVariables() async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
@@ -1037,10 +1061,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (!mounted) return;
     final next = _state.copyWith(variables: _foldVariables(messages));
     setState(() => _state = next);
-    await StorySessionStore.instance.put(
-      story.id,
-      StorySession(sessionId: sessionId, state: next),
-    );
+    await _persistStorySession(next);
   }
 
   /// 找出背包里未在 codex 登记的道具（按基础名归一，宽松包含匹配）
@@ -1749,10 +1770,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         message: '${t.storyAchievementUnlocked}: ${names.join('、')}',
       );
     }
-    await StorySessionStore.instance.put(
-      story.id,
-      StorySession(sessionId: sessionId, state: next),
-    );
+    await _persistStorySession(next);
     // 有新道具未登记则自动后台补全（无需手动）
     if (unregistered.isNotEmpty && !_registering) {
       unawaited(_registerUnregistered());
