@@ -45,6 +45,7 @@ import 'package:kostori/pages/bangumi/bottom_info.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/download/download_filter.dart';
 import 'package:kostori/pages/download/download_page.dart';
+import 'package:kostori/pages/download/local_player_page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
@@ -1127,7 +1128,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     ];
     await _openDownloadPicker(
       items: items,
-      downloaded: await DownloadManager.downloadedKeysFor(_sourceKey),
+      downloadedFiles: await DownloadManager.downloadedFilesFor(_sourceKey),
     );
   }
 
@@ -1188,7 +1189,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     ];
     await _openDownloadPicker(
       items: items,
-      downloaded: await DownloadManager.downloadedKeysFor(_sourceKey),
+      downloadedFiles: await DownloadManager.downloadedFilesFor(_sourceKey),
       // 系列条目逐个访问详情取自身标题用于命名
       resolveAnimeTitle: (id) async {
         final load = source.loadAnimeInfo;
@@ -1206,7 +1207,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   /// 弹出卡片化下载选择框，确认后逐项加入下载队列
   Future<void> _openDownloadPicker({
     required List<_DownloadItem> items,
-    required Set<String> downloaded,
+    required Map<String, String> downloadedFiles,
     Future<String?> Function(String id)? resolveAnimeTitle,
   }) async {
     final result = await showModalBottomSheet<List<_DownloadPick>>(
@@ -1214,7 +1215,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       isScrollControlled: true,
       builder: (_) => _EpisodeDownloadPicker(
         items: items,
-        downloaded: downloaded,
+        downloadedFiles: downloadedFiles,
         resolvePlay: _resolvePlayResult,
         animeTitle: data!.title,
         sourceKey: _sourceKey,

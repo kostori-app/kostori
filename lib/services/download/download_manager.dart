@@ -1221,26 +1221,33 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
-  /// 已下载的 `animeId|episode` 集合（同源；供下载面板标记"已下载"，
-  /// 系列里同名条目靠 animeId 区分）
-  static Future<Set<String>> downloadedKeysFor(String sourceKey) async {
+  /// 已下载且文件仍存在的 `animeId|episode` → 本地文件路径（同源）。
+  /// 供下载面板标记"已下载"并直接播放本地文件；文件已删除的记录不返回，
+  /// 此时按未下载处理（系列里同名条目靠 animeId 区分）。
+  static Future<Map<String, String>> downloadedFilesFor(
+    String sourceKey,
+  ) async {
     final file = File(p.join(App.dataPath, 'download_records.json'));
     if (!await file.exists()) return {};
     try {
       final list = jsonDecode(await file.readAsString()) as List;
-      final out = <String>{};
+      final out = <String, String>{};
       for (final e in list.whereType<Map>()) {
         if (e['sourceKey'] != sourceKey) continue;
         final fp = e['filePath'] as String?;
         if (fp == null || fp.isEmpty) continue;
         if (!await File(fp).exists()) continue;
-        out.add('${e['animeId']}|${e['episode']}');
+        out['${e['animeId']}|${e['episode']}'] = fp;
       }
       return out;
     } catch (_) {
       return {};
     }
   }
+
+  /// 已下载的 `animeId|episode` 集合（同源；供下载面板标记"已下载"）
+  static Future<Set<String>> downloadedKeysFor(String sourceKey) async =>
+      (await downloadedFilesFor(sourceKey)).keys.toSet();
 
   /// 查询全部下载记录（含文件已丢失的，供"下载记录"页标记"已删除"）
   static Future<List<Map<String, dynamic>>> allRecords() async {

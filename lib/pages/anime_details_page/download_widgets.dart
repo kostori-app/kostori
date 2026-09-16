@@ -196,7 +196,7 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
 class _EpisodeDownloadPicker extends StatefulWidget {
   const _EpisodeDownloadPicker({
     required this.items,
-    required this.downloaded,
+    required this.downloadedFiles,
     required this.resolvePlay,
     required this.animeTitle,
     required this.sourceKey,
@@ -205,8 +205,8 @@ class _EpisodeDownloadPicker extends StatefulWidget {
 
   final List<_DownloadItem> items;
 
-  /// 已下载的 episodeName 集合
-  final Set<String> downloaded;
+  /// `animeId|episodeName` → 本地文件路径（仅文件仍存在的已下载项）
+  final Map<String, String> downloadedFiles;
 
   /// 解析单集/系列条目的播放结果（获取多分辨率）
   final Future<AnimePlayResult?> Function(String key) resolvePlay;
@@ -253,8 +253,22 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   /// 当前筛选：全部 / 未下载 / 已下载
   _DownloadFilter _filter = _DownloadFilter.all;
 
-  bool _isDownloaded(_DownloadItem item) =>
-      widget.downloaded.contains('${item.animeId}|${item.episodeName}');
+  bool _isDownloaded(_DownloadItem item) => widget.downloadedFiles.containsKey(
+    '${item.animeId}|${item.episodeName}',
+  );
+
+  String? _downloadedPath(_DownloadItem item) =>
+      widget.downloadedFiles['${item.animeId}|${item.episodeName}'];
+
+  /// 已下载且文件仍在：直接打开本地播放器播放
+  void _playDownloaded(_DownloadItem item) {
+    final path = _downloadedPath(item);
+    if (path == null) return;
+    Navigator.of(context).pop();
+    App.mainNavigatorKey?.currentContext?.to(
+      () => LocalPlayerPage(filePath: path),
+    );
+  }
 
   /// 按当前开关计算标题
   String _computedTitle() {
@@ -610,9 +624,11 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                 item: item,
                 displayTitle: _nameOverrides[item.key] ?? item.title,
                 isDownloaded: _isDownloaded(item),
+                downloadedFilePath: _downloadedPath(item),
                 isSelected: selected.contains(item.key),
                 resolutionLabel: _resolutionLabelByKey[item.key],
                 onToggle: () => _toggle(item.key),
+                onPlayDownloaded: () => _playDownloaded(item),
                 onEditName: () => _editItemName(item),
                 onResolution: (url, label) => setState(() {
                   _resolutionByKey[item.key] = url;
@@ -636,9 +652,11 @@ class _DownloadItemCard extends StatefulWidget {
     required this.item,
     required this.displayTitle,
     required this.isDownloaded,
+    this.downloadedFilePath,
     required this.isSelected,
     required this.resolutionLabel,
     required this.onToggle,
+    required this.onPlayDownloaded,
     required this.onEditName,
     required this.onResolution,
     required this.resolvePlay,
@@ -652,11 +670,17 @@ class _DownloadItemCard extends StatefulWidget {
 
   final bool isDownloaded;
 
+  /// 已下载且文件仍在时的本地路径；点击卡片直接播放
+  final String? downloadedFilePath;
+
   final bool isSelected;
 
   final String? resolutionLabel;
 
   final VoidCallback onToggle;
+
+  /// 点击已下载卡片：播放本地文件
+  final VoidCallback onPlayDownloaded;
 
   /// 编辑标题（改文件名用）
   final VoidCallback onEditName;
@@ -728,23 +752,30 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Material(
+        // 已下载（且文件仍在）：绿色调高亮，点击播放本地文件
         color: widget.isDownloaded
-            ? colorScheme.surfaceContainerHigh
+            ? Colors.green.withValues(alpha: 0.12)
             : (widget.isSelected
                   ? colorScheme.primaryContainer.withValues(alpha: 0.3)
                   : colorScheme.surfaceContainerLow),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: widget.isSelected
-                ? colorScheme.primary
-                : colorScheme.outlineVariant,
-            width: widget.isSelected ? 1.5 : 0.6,
+            color: widget.isDownloaded
+                ? Colors.green.withValues(alpha: 0.6)
+                : (widget.isSelected
+                      ? colorScheme.primary
+                      : colorScheme.outlineVariant),
+            width: widget.isSelected ? 1.5 : (widget.isDownloaded ? 1.0 : 0.6),
           ),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: widget.isDownloaded ? null : widget.onToggle,
+          onTap: widget.isDownloaded
+              ? (widget.downloadedFilePath == null
+                    ? null
+                    : widget.onPlayDownloaded)
+              : widget.onToggle,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(8),
