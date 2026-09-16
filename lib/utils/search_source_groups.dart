@@ -25,24 +25,35 @@ void saveSelectedSearchGroup(String group) {
   appdata.writeImplicitData();
 }
 
+Map<String, List<String>> _normalizeGroups(dynamic raw) {
+  if (raw is! Map) return {};
+  final result = <String, List<String>>{};
+  raw.forEach((k, v) {
+    if (v is List) {
+      result[k.toString()] = v.whereType<String>().toList();
+    }
+  });
+  return result;
+}
+
 /// 用户自定义分组：{组名: [源 key...]}
+///
+/// 存于 `settings['searchSourceGroups']`（appdata.json），随 WebDAV 同步；
+/// 旧版本存于 implicitData，这里读取时做一次迁移。
 Map<String, List<String>> customSearchGroups() {
-  final raw = appdata.implicitData[customSearchGroupsKey];
-  if (raw is Map) {
-    final result = <String, List<String>>{};
-    raw.forEach((k, v) {
-      if (v is List) {
-        result[k.toString()] = v.whereType<String>().toList();
-      }
-    });
-    return result;
+  final current = _normalizeGroups(appdata.settings['searchSourceGroups']);
+  if (current.isNotEmpty) return current;
+  final legacy = _normalizeGroups(appdata.implicitData[customSearchGroupsKey]);
+  if (legacy.isNotEmpty) {
+    appdata.settings['searchSourceGroups'] = legacy;
+    appdata.saveData();
   }
-  return {};
+  return legacy;
 }
 
 void saveCustomSearchGroups(Map<String, List<String>> groups) {
-  appdata.implicitData[customSearchGroupsKey] = groups;
-  appdata.writeImplicitData();
+  appdata.settings['searchSourceGroups'] = groups;
+  appdata.saveData();
 }
 
 /// 全部启用搜索源（未分组过滤）

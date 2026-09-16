@@ -26,6 +26,9 @@ _SettingsData _$SettingsDataFromJson(
   showFavoriteStatusOnTile: json['showFavoriteStatusOnTile'] as bool? ?? true,
   showHistoryStatusOnTile: json['showHistoryStatusOnTile'] as bool? ?? false,
   blockedWords: json['blockedWords'] as List<dynamic>? ?? const [],
+  searchSourceGroups:
+      json['searchSourceGroups'] as Map<String, dynamic>? ??
+      const <String, dynamic>{},
   defaultSearchTarget: json['defaultSearchTarget'] as String?,
   enableTapToTurnPages: json['enableTapToTurnPages'] as bool? ?? true,
   enablePageAnimation: json['enablePageAnimation'] as bool? ?? true,
@@ -116,6 +119,7 @@ Map<String, dynamic> _$SettingsDataToJson(_SettingsData instance) =>
       'showFavoriteStatusOnTile': instance.showFavoriteStatusOnTile,
       'showHistoryStatusOnTile': instance.showHistoryStatusOnTile,
       'blockedWords': instance.blockedWords,
+      'searchSourceGroups': instance.searchSourceGroups,
       'defaultSearchTarget': instance.defaultSearchTarget,
       'enableTapToTurnPages': instance.enableTapToTurnPages,
       'enablePageAnimation': instance.enablePageAnimation,

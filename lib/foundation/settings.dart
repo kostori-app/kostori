@@ -20,6 +20,7 @@ abstract class SettingsData with _$SettingsData {
     @Default(true) bool showFavoriteStatusOnTile,
     @Default(false) bool showHistoryStatusOnTile,
     @Default([]) List<dynamic> blockedWords,
+    @Default(<String, dynamic>{}) Map<String, dynamic> searchSourceGroups,
     String? defaultSearchTarget,
     @Default(true) bool enableTapToTurnPages,
     @Default(true) bool enablePageAnimation,
