@@ -1658,11 +1658,41 @@ Map<String, String> parseStoryFixedHints(String worldBook) {
   return out;
 }
 
-/// 按开局选择裁剪世界书：只保留「固定清单」里被选中条目的完整详情，
-/// 未选中的压缩成一行「未启用，仅备查」名单；不参与裁剪的章节原样保留。
-/// `selected` 为空时（旧存档 / 无设置）原样返回，保证向后兼容。
-String filterWorldBook(String worldBook, Map<String, List<String>> selected) {
-  if (worldBook.trim().isEmpty || selected.isEmpty) return worldBook;
+/// 从一行里解析触发词：`触发：a、b` / `触发:a/b` / `关键词:a,b`
+List<String> _worldBookTriggers(String line) {
+  final m = RegExp(
+    r'(?:触发|关键词|keys?)\s*[:：]\s*([^\n）)】]*)',
+  ).firstMatch(line);
+  if (m == null) return const [];
+  return m
+      .group(1)!
+      .split(RegExp(r'[、,，/／|]+'))
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+}
+
+/// 触发是否命中：无触发词视为常驻（始终保留）；无扫描文本时不裁剪
+bool _worldBookTriggersHit(List<String> triggers, String scanText) {
+  if (triggers.isEmpty) return true;
+  if (scanText.trim().isEmpty) return true;
+  final lower = scanText.toLowerCase();
+  return triggers.any((t) => lower.contains(t.toLowerCase()));
+}
+
+/// 裁剪世界书：
+/// 1) 按开局选择（`selected`）只保留被选中条目的详情，未选中压缩为备查名单；
+/// 2) 渐进式：章节标题或条目标题里写 `触发：词1、词2` 的，只有命中 [scanText]
+///    才注入（未写触发词的条目不裁剪，保证向后兼容）。
+/// `selected` 为空且无扫描文本时原样返回。
+String filterWorldBook(
+  String worldBook,
+  Map<String, List<String>> selected, {
+  String scanText = '',
+}) {
+  if (worldBook.trim().isEmpty) return worldBook;
+  final progressive = scanText.trim().isNotEmpty;
+  if (selected.isEmpty && !progressive) return worldBook;
 
   String? fieldOf(String header) {
     if (header.contains('通用天赋')) return 'talents';
@@ -1680,32 +1710,42 @@ String filterWorldBook(String worldBook, Map<String, List<String>> selected) {
     if (part.trim().isEmpty) continue;
     final nl = part.indexOf('\n');
     final header = nl < 0 ? part : part.substring(0, nl);
+    // 章节级触发：未命中则整段跳过
+    if (header.startsWith('【') &&
+        !_worldBookTriggersHit(_worldBookTriggers(header), scanText)) {
+      continue;
+    }
     final field = header.startsWith('【') ? fieldOf(header) : null;
     final sel = field == null ? null : selected[field];
-    if (sel == null) {
-      // 不受选择影响的章节：原样保留
+    if (sel == null && !progressive) {
+      // 不受选择影响、且不裁剪的章节：原样保留
       out.write(part.trimRight());
       out.writeln();
       continue;
     }
     out.writeln(header);
-    if (sel.isEmpty) continue;
-    final keep = sel.toSet();
+    if (sel != null && sel.isEmpty) continue;
+    final keep = sel?.toSet();
     final lines = part.split('\n');
     final skipped = <String>[];
     String? curName;
+    var curTriggers = const <String>[];
     final block = <String>[];
     void flush() {
       if (block.isEmpty) return;
       final name = curName;
-      if (name == null || keep.contains(name)) {
-        for (final b in block) {
-          out.writeln(b);
+      final chosen = keep == null || name == null || keep.contains(name);
+      if (_worldBookTriggersHit(curTriggers, scanText)) {
+        if (chosen) {
+          for (final b in block) {
+            out.writeln(b);
+          }
+        } else {
+          skipped.add(name);
         }
-      } else {
-        skipped.add(name);
       }
       curName = null;
+      curTriggers = const <String>[];
       block.clear();
     }
 
@@ -1720,6 +1760,7 @@ String filterWorldBook(String worldBook, Map<String, List<String>> selected) {
       if (l.startsWith('- ')) {
         flush();
         curName = bulletRe.firstMatch(l)?.group(1)?.trim();
+        curTriggers = _worldBookTriggers(l);
         block.add(l);
       } else {
         block.add(l);

@@ -657,6 +657,20 @@ void main() {
       expect(plain.contains('critFailure'), isFalse);
     });
 
+    test('filterWorldBook supports 触发 annotations (progressive)', () {
+      const wb =
+          '【种族】\n'
+          '- **精灵**（触发：精灵、elf）：精灵介绍\n'
+          '- **兽人**（触发：兽人）：兽人介绍\n';
+      final hit = filterWorldBook(wb, const {}, scanText: '我遇到一个 elf 斥候');
+      expect(hit.contains('精灵介绍'), isTrue);
+      expect(hit.contains('兽人介绍'), isFalse);
+      // 无扫描文本时不裁剪（向后兼容）
+      final all = filterWorldBook(wb, const {});
+      expect(all.contains('精灵介绍'), isTrue);
+      expect(all.contains('兽人介绍'), isTrue);
+    });
+
     test('rollDice supports keep-high / keep-low notation', () {
       // 取高：总和只由最高的一颗决定
       final high = rollDice('2d20kh1', crits: false);

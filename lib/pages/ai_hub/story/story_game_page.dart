@@ -414,7 +414,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final buf = StringBuffer(
       sub(
         story.buildSystemPrompt(
-          worldBookOverride: filterWorldBook(story.worldBook, _setupSelections),
+          worldBookOverride: filterWorldBook(
+            story.worldBook,
+            _setupSelections,
+            scanText: scanBlob,
+          ),
         ),
       ),
     );
