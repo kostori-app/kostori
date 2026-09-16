@@ -452,6 +452,36 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'AI request log'
 	String get aiRequestLog => 'AI request log';
 
+	/// en: 'AI messages'
+	String get aiTaskRecords => 'AI messages';
+
+	/// en: 'All'
+	String get aiTaskAll => 'All';
+
+	/// en: 'Story'
+	String get aiTaskStory => 'Story';
+
+	/// en: 'Chat'
+	String get aiTaskChat => 'Chat';
+
+	/// en: 'Group'
+	String get aiTaskGroup => 'Group';
+
+	/// en: 'Auxiliary'
+	String get aiTaskAux => 'Auxiliary';
+
+	/// en: 'Orphans'
+	String get aiTaskOrphan => 'Orphans';
+
+	/// en: 'Its session was deleted; only the message remains'
+	String get aiTaskOrphanHint => 'Its session was deleted; only the message remains';
+
+	/// en: 'No records'
+	String get aiTaskEmpty => 'No records';
+
+	/// en: 'Delete filtered'
+	String get aiTaskDeleteFiltered => 'Delete filtered';
+
 	/// en: 'Request'
 	String get aiLogRequest => 'Request';
 
@@ -8816,6 +8846,16 @@ extension on Translations {
 			'dark' => 'Dark',
 			'dataSync' => 'Data Sync',
 			'aiRequestLog' => 'AI request log',
+			'aiTaskRecords' => 'AI messages',
+			'aiTaskAll' => 'All',
+			'aiTaskStory' => 'Story',
+			'aiTaskChat' => 'Chat',
+			'aiTaskGroup' => 'Group',
+			'aiTaskAux' => 'Auxiliary',
+			'aiTaskOrphan' => 'Orphans',
+			'aiTaskOrphanHint' => 'Its session was deleted; only the message remains',
+			'aiTaskEmpty' => 'No records',
+			'aiTaskDeleteFiltered' => 'Delete filtered',
 			'aiLogRequest' => 'Request',
 			'aiLogResponse' => 'Response',
 			'selectiveSync' => 'Selective sync',
@@ -9181,6 +9221,8 @@ extension on Translations {
 			'save' => 'Save',
 			'mirror' => 'Mirror',
 			'result' => 'Result',
+			_ => null,
+		} ?? switch (path) {
 			'all' => 'All',
 			'cloudflareVerificationRequired' => 'Cloudflare verification required',
 			'reloadConfigs' => 'Reload Configs',
@@ -9191,8 +9233,6 @@ extension on Translations {
 			'downloadFailed' => 'Download failed',
 			'failedToCheckTheHashValuePleaseTryAgain' => 'Failed to check the hash value. Please try again',
 			'english' => 'English',
-			_ => null,
-		} ?? switch (path) {
 			'dynamicColor' => 'Dynamic color',
 			'mondaySchedule' => 'Monday Schedule',
 			'tuesdaySchedule' => 'Tuesday Schedule',
@@ -9695,6 +9735,8 @@ extension on Translations {
 			'last7Days' => 'Last 7 Days',
 			'last30Days' => 'Last 30 Days',
 			'last3Months' => 'Last 3 Months',
+			_ => null,
+		} ?? switch (path) {
 			'last6Months' => 'Last 6 Months',
 			'thisYear' => 'This Year',
 			'older' => 'Older',
@@ -9705,8 +9747,6 @@ extension on Translations {
 			'collectStatus' => 'Collect',
 			'onHoldStatus' => 'On Hold',
 			'droppedStatus' => 'Dropped',
-			_ => null,
-		} ?? switch (path) {
 			'player' => 'Player',
 			'audioOption' => 'Low-latency audio',
 			'hardwareDecoding' => 'Hardware Decoding',
@@ -10209,6 +10249,8 @@ extension on Translations {
 			'optionalField' => 'Optional',
 			'model' => 'Model',
 			'tokens' => 'tokens',
+			_ => null,
+		} ?? switch (path) {
 			'addModel' => 'Add Model',
 			'modelId' => 'Model ID',
 			'displayName' => 'Display Name',
@@ -10219,8 +10261,6 @@ extension on Translations {
 			'enterYear' => 'Enter Year',
 			'selectDay' => 'Select Day',
 			'fullYear' => 'Full Year',
-			_ => null,
-		} ?? switch (path) {
 			'quickSelect' => 'Quick Select',
 			'selectDateRange' => 'Select Date Range',
 			'subject' => 'Subject',
@@ -10723,6 +10763,8 @@ extension on Translations {
 			'keywordHint' => 'Substring, e.g. advert or adservice',
 			'commonAdKeyword' => 'Common Ad Keyword',
 			'videoDetails' => 'Video Details',
+			_ => null,
+		} ?? switch (path) {
 			'synopsis' => 'Synopsis',
 			'currentEpisode' => 'Current Episode',
 			'playbackRoute' => 'Playback Route',
@@ -10733,8 +10775,6 @@ extension on Translations {
 			'audioCompatibility' => 'Audio: Compatibility',
 			'videoClipEditor' => 'Video Clip Editor',
 			'clipStartTime' => 'Start Time',
-			_ => null,
-		} ?? switch (path) {
 			'clipEndTime' => 'End Time',
 			'clipDuration' => 'Duration',
 			'previewClip' => 'Preview',
@@ -11237,6 +11277,8 @@ extension on Translations {
 			'profileExport' => 'Export',
 			'profileImport' => 'Import',
 			'profileExported' => 'Exported to clipboard',
+			_ => null,
+		} ?? switch (path) {
 			'profileImportFailed' => 'Import failed',
 			'extensionManagement' => 'Extension Management',
 			'extensionManagementHint' => 'Auxiliary task models, role management, MCP servers and skills',
@@ -11247,8 +11289,6 @@ extension on Translations {
 			'worldBook' => 'World Info',
 			'worldBookEntries' => 'World Info entries',
 			'newPromptInjection' => 'New Injection',
-			_ => null,
-		} ?? switch (path) {
 			'editPromptInjection' => 'Edit Injection',
 			'injectionName' => 'Name',
 			'injectionContent' => 'Content',

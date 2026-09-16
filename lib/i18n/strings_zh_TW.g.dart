@@ -168,6 +168,16 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dark => '深色';
 	@override String get dataSync => '數據同步';
 	@override String get aiRequestLog => 'AI 請求日誌';
+	@override String get aiTaskRecords => 'AI 會話紀錄';
+	@override String get aiTaskAll => '全部';
+	@override String get aiTaskStory => '故事';
+	@override String get aiTaskChat => '對話';
+	@override String get aiTaskGroup => '群聊';
+	@override String get aiTaskAux => '輔助';
+	@override String get aiTaskOrphan => '孤兒紀錄';
+	@override String get aiTaskOrphanHint => '所屬會話已刪除，僅剩訊息';
+	@override String get aiTaskEmpty => '暫無紀錄';
+	@override String get aiTaskDeleteFiltered => '刪除當前篩選';
 	@override String get aiLogRequest => '請求';
 	@override String get aiLogResponse => '回應';
 	@override String get selectiveSync => '選擇性同步';
@@ -3066,6 +3076,16 @@ extension on TranslationsZhTw {
 			'dark' => '深色',
 			'dataSync' => '數據同步',
 			'aiRequestLog' => 'AI 請求日誌',
+			'aiTaskRecords' => 'AI 會話紀錄',
+			'aiTaskAll' => '全部',
+			'aiTaskStory' => '故事',
+			'aiTaskChat' => '對話',
+			'aiTaskGroup' => '群聊',
+			'aiTaskAux' => '輔助',
+			'aiTaskOrphan' => '孤兒紀錄',
+			'aiTaskOrphanHint' => '所屬會話已刪除，僅剩訊息',
+			'aiTaskEmpty' => '暫無紀錄',
+			'aiTaskDeleteFiltered' => '刪除當前篩選',
 			'aiLogRequest' => '請求',
 			'aiLogResponse' => '回應',
 			'selectiveSync' => '選擇性同步',
@@ -3439,6 +3459,8 @@ extension on TranslationsZhTw {
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
 			'checkUpdateFailed' => '檢查更新失敗...',
 			'downloadFailed' => '下載失敗',
+			_ => null,
+		} ?? switch (path) {
 			'failedToCheckTheHashValuePleaseTryAgain' => '檢查雜湊值失敗，請重試',
 			'english' => '英語',
 			'dynamicColor' => '動態顏色',
@@ -3449,8 +3471,6 @@ extension on TranslationsZhTw {
 			'fridaySchedule' => '週五放送',
 			'saturdaySchedule' => '週六放送',
 			'sundaySchedule' => '週日放送',
-			_ => null,
-		} ?? switch (path) {
 			'popularityRanking' => '人氣排行',
 			'imageOperations' => '圖片操作',
 			'saveToAlbum' => '儲存到相簿',
@@ -3953,6 +3973,8 @@ extension on TranslationsZhTw {
 			'last7Days' => '最近 7 天',
 			'last30Days' => '最近 30 天',
 			'last3Months' => '最近 3 個月',
+			_ => null,
+		} ?? switch (path) {
 			'last6Months' => '最近 6 個月',
 			'thisYear' => '今年',
 			'older' => '更早',
@@ -3963,8 +3985,6 @@ extension on TranslationsZhTw {
 			'collectStatus' => '看過',
 			'onHoldStatus' => '擱置',
 			'droppedStatus' => '拋棄',
-			_ => null,
-		} ?? switch (path) {
 			'player' => '播放器',
 			'audioOption' => '低延遲音訊',
 			'hardwareDecoding' => '硬體解碼',
@@ -4467,6 +4487,8 @@ extension on TranslationsZhTw {
 			'optionalField' => '選填',
 			'model' => '模型',
 			'tokens' => 'tokens',
+			_ => null,
+		} ?? switch (path) {
 			'addModel' => '添加模型',
 			'modelId' => '模型 ID',
 			'displayName' => '顯示名稱',
@@ -4477,8 +4499,6 @@ extension on TranslationsZhTw {
 			'enterYear' => '輸入年份',
 			'selectDay' => '選擇日期',
 			'fullYear' => '全年',
-			_ => null,
-		} ?? switch (path) {
 			'quickSelect' => '快速選擇',
 			'selectDateRange' => '選擇日期範圍',
 			'subject' => '条目',
@@ -4981,6 +5001,8 @@ extension on TranslationsZhTw {
 			'keywordMatch' => '關鍵字比對',
 			'keywordHint' => '子字串，如 advert 或 adservice',
 			'commonAdKeyword' => '常見廣告關鍵字',
+			_ => null,
+		} ?? switch (path) {
 			'videoDetails' => '影片詳情',
 			'synopsis' => '簡介',
 			'currentEpisode' => '目前集數',
@@ -4991,8 +5013,6 @@ extension on TranslationsZhTw {
 			'audioLowLatency' => '音訊: 低延遲',
 			'audioCompatibility' => '音訊: 相容模式',
 			'videoClipEditor' => '影片剪輯',
-			_ => null,
-		} ?? switch (path) {
 			'clipStartTime' => '開始時間',
 			'clipEndTime' => '結束時間',
 			'clipDuration' => '時長',
@@ -5495,6 +5515,8 @@ extension on TranslationsZhTw {
 			'profileImport' => '匯入',
 			'profileExported' => '已匯出到剪貼簿',
 			'profileImportFailed' => '匯入失敗',
+			_ => null,
+		} ?? switch (path) {
 			'extensionManagement' => '擴充管理設定',
 			'extensionManagementHint' => '輔助任務模型、角色管理、MCP 伺服器與技能的統一入口',
 			'roleManagement' => '角色管理',
@@ -5505,8 +5527,6 @@ extension on TranslationsZhTw {
 			'worldBookEntries' => '世界書條目',
 			'newPromptInjection' => '新增注入',
 			'editPromptInjection' => '編輯注入',
-			_ => null,
-		} ?? switch (path) {
 			'injectionName' => '名稱',
 			'injectionContent' => '內容',
 			'injectionPosition' => '注入位置',

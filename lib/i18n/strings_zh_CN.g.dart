@@ -169,6 +169,16 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get dark => '深色';
 	@override String get dataSync => '数据同步';
 	@override String get aiRequestLog => 'AI 请求日志';
+	@override String get aiTaskRecords => 'AI 会话记录';
+	@override String get aiTaskAll => '全部';
+	@override String get aiTaskStory => '故事';
+	@override String get aiTaskChat => '对话';
+	@override String get aiTaskGroup => '群聊';
+	@override String get aiTaskAux => '辅助';
+	@override String get aiTaskOrphan => '孤儿记录';
+	@override String get aiTaskOrphanHint => '所属会话已删除，仅剩消息';
+	@override String get aiTaskEmpty => '暂无记录';
+	@override String get aiTaskDeleteFiltered => '删除当前筛选';
 	@override String get aiLogRequest => '请求';
 	@override String get aiLogResponse => '响应';
 	@override String get selectiveSync => '选择性同步';
@@ -3068,6 +3078,16 @@ extension on TranslationsZhCn {
 			'dark' => '深色',
 			'dataSync' => '数据同步',
 			'aiRequestLog' => 'AI 请求日志',
+			'aiTaskRecords' => 'AI 会话记录',
+			'aiTaskAll' => '全部',
+			'aiTaskStory' => '故事',
+			'aiTaskChat' => '对话',
+			'aiTaskGroup' => '群聊',
+			'aiTaskAux' => '辅助',
+			'aiTaskOrphan' => '孤儿记录',
+			'aiTaskOrphanHint' => '所属会话已删除，仅剩消息',
+			'aiTaskEmpty' => '暂无记录',
+			'aiTaskDeleteFiltered' => '删除当前筛选',
 			'aiLogRequest' => '请求',
 			'aiLogResponse' => '响应',
 			'selectiveSync' => '选择性同步',
@@ -3440,6 +3460,8 @@ extension on TranslationsZhCn {
 			'inconsistentVersions' => '版本不一致',
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
 			'checkUpdateFailed' => '检查更新失败...',
+			_ => null,
+		} ?? switch (path) {
 			'downloadFailed' => '下载失败',
 			'failedToCheckTheHashValuePleaseTryAgain' => '哈希值检查失败，请重试',
 			'english' => '英语',
@@ -3450,8 +3472,6 @@ extension on TranslationsZhCn {
 			'thursdaySchedule' => '周四时间表',
 			'fridaySchedule' => '周五时间表',
 			'saturdaySchedule' => '周六时间表',
-			_ => null,
-		} ?? switch (path) {
 			'sundaySchedule' => '周日时间表',
 			'popularityRanking' => '人气排行',
 			'imageOperations' => '图片操作',
@@ -3954,6 +3974,8 @@ extension on TranslationsZhCn {
 			'last30Days' => '最近 30 天',
 			'last3Months' => '最近 3 个月',
 			'last6Months' => '最近 6 个月',
+			_ => null,
+		} ?? switch (path) {
 			'thisYear' => '今年',
 			'older' => '更久以前',
 			'markTheSelectedFavoritesAs' => '将选中的收藏标记为',
@@ -3964,8 +3986,6 @@ extension on TranslationsZhCn {
 			'onHoldStatus' => '搁置',
 			'droppedStatus' => '抛弃',
 			'player' => '播放器',
-			_ => null,
-		} ?? switch (path) {
 			'audioOption' => '低延迟音频',
 			'hardwareDecoding' => '硬件解码',
 			'hardwareDecoder' => '硬件解码器',
@@ -4468,6 +4488,8 @@ extension on TranslationsZhCn {
 			'model' => '模型',
 			'tokens' => 'tokens',
 			'addModel' => '添加模型',
+			_ => null,
+		} ?? switch (path) {
 			'modelId' => '模型 ID',
 			'displayName' => '显示名称',
 			'noModelsAddOneAbove' => '暂无模型，请在上方添加。',
@@ -4478,8 +4500,6 @@ extension on TranslationsZhCn {
 			'selectDay' => '选择日期',
 			'fullYear' => '全年',
 			'quickSelect' => '快速选择',
-			_ => null,
-		} ?? switch (path) {
 			'selectDateRange' => '选择日期范围',
 			'subject' => '条目',
 			'character' => '角色',
@@ -4982,6 +5002,8 @@ extension on TranslationsZhCn {
 			'commonAdUrlPattern' => '常见广告 URL 特征',
 			'keywordMatch' => '关键字匹配',
 			'keywordHint' => '子串，如 advert 或 adservice',
+			_ => null,
+		} ?? switch (path) {
 			'commonAdKeyword' => '常见广告关键字',
 			'videoDetails' => '视频详情',
 			'synopsis' => '简介',
@@ -4992,8 +5014,6 @@ extension on TranslationsZhCn {
 			'otherSettings' => '其他设置',
 			'audioLowLatency' => '音频: 低延迟',
 			'audioCompatibility' => '音频: 兼容模式',
-			_ => null,
-		} ?? switch (path) {
 			'videoClipEditor' => '视频剪辑',
 			'clipStartTime' => '开始时间',
 			'clipEndTime' => '结束时间',
@@ -5496,6 +5516,8 @@ extension on TranslationsZhCn {
 			'profileExport' => '导出',
 			'profileImport' => '导入',
 			'profileExported' => '已导出到剪贴板',
+			_ => null,
+		} ?? switch (path) {
 			'profileImportFailed' => '导入失败',
 			'extensionManagement' => '扩展管理设置',
 			'extensionManagementHint' => '辅助任务模型、角色管理、MCP 服务器与技能的统一入口',
@@ -5506,8 +5528,6 @@ extension on TranslationsZhCn {
 			'worldBook' => '世界书',
 			'worldBookEntries' => '世界书条目',
 			'newPromptInjection' => '新建注入',
-			_ => null,
-		} ?? switch (path) {
 			'editPromptInjection' => '编辑注入',
 			'injectionName' => '名称',
 			'injectionContent' => '内容',

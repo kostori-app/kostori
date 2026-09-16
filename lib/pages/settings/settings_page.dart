@@ -29,6 +29,7 @@ import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/database/ai_task_database.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/ai_request_log.dart';
@@ -142,6 +143,7 @@ part 'extension_settings.dart';
 part 'role_management_settings.dart';
 part 'character_cards_settings.dart';
 part 'ai_request_log_page.dart';
+part 'ai_tasks_manager_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});

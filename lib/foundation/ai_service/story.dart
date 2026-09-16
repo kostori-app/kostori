@@ -3081,11 +3081,7 @@ class StorySession {
     required this.sessionId,
     required this.state,
     this.setup = const {},
-    this.messages = const [],
   });
-
-  /// 会话消息快照（导入到其它设备时用于还原对话历史）
-  final List<Map<String, dynamic>> messages;
 
   factory StorySession.fromJson(Map<String, dynamic> json) => StorySession(
     sessionId: json['sessionId']?.toString() ?? '',
@@ -3100,18 +3096,13 @@ class StorySession {
                   const <String>[],
           }
         : const {},
-    messages: (json['messages'] as List?)
-            ?.whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList() ??
-        const [],
   );
 
+  // 消息不再写入存档（体积过大）：对话记录在 ai_tasks 库里单独同步/管理
   Map<String, dynamic> toJson() => {
     'sessionId': sessionId,
     'state': state.toJson(),
     if (setup.isNotEmpty) 'setup': setup,
-    if (messages.isNotEmpty) 'messages': messages,
   };
 }
 

@@ -357,15 +357,6 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         _state = _mergeResources(saved.state);
         _booting = false;
       });
-      // 存档里带了消息而本地没有（导入到新设备）→ 还原对话历史
-      if (saved.messages.isNotEmpty) {
-        await AiConversationService().restoreSession(
-          sessionId: saved.sessionId,
-          provider: aiHubProvider(),
-          title: story.name,
-          messages: saved.messages,
-        );
-      }
       // 按消息折叠变量，恢复分支正确的最新值
       await _applyFoldedVariables();
       return;
@@ -1037,24 +1028,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 重新折叠变量并持久化（swipe / 删除 / 启动时调用）
-  /// 存档写入：把消息也快照进会话文件，这样导入到其它设备时能还原对话历史
+  /// 存档写入：只存会话 id + 状态（消息在 ai_tasks 库，单独同步/管理）
   Future<void> _persistStorySession(GameState state) async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
-    var messages = const <Map<String, dynamic>>[];
-    try {
-      final msgs = await AiConversationService()
-          .watchMessages(sessionId)
-          .first;
-      messages = [for (final m in msgs) m.toJson()];
-    } catch (_) {}
     await StorySessionStore.instance.put(
       story.id,
       StorySession(
         sessionId: sessionId,
         state: state,
         setup: _setupSelections,
-        messages: messages,
       ),
     );
   }

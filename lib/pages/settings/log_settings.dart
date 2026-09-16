@@ -93,6 +93,12 @@ class _LogSettingsState extends State<LogSettings> {
                   callback: () =>
                       showPopUpWidget(context, const AiRequestLogPage()),
                 ),
+                _CallbackSetting(
+                  title: t.aiTaskRecords,
+                  actionTitle: t.open,
+                  callback: () =>
+                      showPopUpWidget(context, const AiTasksManagerPage()),
+                ),
               ],
             ),
           ),

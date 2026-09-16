@@ -139,6 +139,16 @@ dnsOverrides: DNS Overrides
 dark: Dark
 dataSync: Data Sync
 aiRequestLog: AI request log
+aiTaskRecords: AI messages
+aiTaskAll: All
+aiTaskStory: Story
+aiTaskChat: Chat
+aiTaskGroup: Group
+aiTaskAux: Auxiliary
+aiTaskOrphan: Orphans
+aiTaskOrphanHint: Its session was deleted; only the message remains
+aiTaskEmpty: No records
+aiTaskDeleteFiltered: Delete filtered
 aiLogRequest: Request
 aiLogResponse: Response
 selectiveSync: Selective sync

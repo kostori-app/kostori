@@ -128,6 +128,16 @@ dnsOverrides: DNS 覆写
 dark: 深色
 dataSync: 数据同步
 aiRequestLog: AI 请求日志
+aiTaskRecords: AI 会话记录
+aiTaskAll: 全部
+aiTaskStory: 故事
+aiTaskChat: 对话
+aiTaskGroup: 群聊
+aiTaskAux: 辅助
+aiTaskOrphan: 孤儿记录
+aiTaskOrphanHint: 所属会话已删除，仅剩消息
+aiTaskEmpty: 暂无记录
+aiTaskDeleteFiltered: 删除当前筛选
 aiLogRequest: 请求
 aiLogResponse: 响应
 selectiveSync: 选择性同步
