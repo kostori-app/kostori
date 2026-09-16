@@ -457,6 +457,94 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         buf.write('\n- ${r.name} ${r.cur}/${r.max}');
       }
     }
+    // 当前状态（本地权威副本）：增量式回传下，模型据此才知道当前值，
+    // 不会因为自己某回合省略字段而“忘记”。
+    final stateBuf = StringBuffer();
+    if (state.attributes.isNotEmpty) {
+      stateBuf.write(
+        '\n属性：${state.attributes.entries.map((e) => '${e.key} ${e.value}').join('、')}',
+      );
+    }
+    if (state.skills.isNotEmpty) {
+      stateBuf.write('\n技能：${state.skills.join('、')}');
+    }
+    if (state.inventory.isNotEmpty) {
+      stateBuf.write('\n背包：${state.inventory.join('、')}');
+    }
+    if (state.quests.isNotEmpty) {
+      stateBuf.write('\n任务：');
+      for (final q in state.quests) {
+        final chain = q.chain.trim().isEmpty ? '' : '［${q.chain}］';
+        final stage = q.totalStages > 0 ? ' ${q.stage}/${q.totalStages}' : '';
+        stateBuf.write(
+          '\n- $chain${q.title}（${q.status}$stage ${q.progress}%）'
+          '${q.desc.trim().isEmpty ? '' : '：${q.desc.trim()}'}',
+        );
+      }
+    }
+    if (state.titles.isNotEmpty) {
+      stateBuf.write(
+        '\n称号：${state.titles.map((x) => '${x.key}×${x.stacks}${x.equipped ? '(已佩戴)' : ''}').join('、')}',
+      );
+    }
+    if (state.effects.isNotEmpty) {
+      stateBuf.write(
+        '\n状态效果：${state.effects.map((e) => '${e.name}(${e.kind}×${e.stacks}${e.remaining > 0 ? '，剩${e.remaining}' : ''})').join('、')}',
+      );
+    }
+    if (!state.job.isEmpty) {
+      stateBuf.write(
+        '\n职业：${state.job.name} Lv.${state.job.level}（经验 ${state.job.exp}）',
+      );
+    }
+    if (!state.base.isEmpty) {
+      if (state.base.facilities.isNotEmpty) {
+        stateBuf.write(
+          '\n据点设施：${state.base.facilities.map((f) => '${f.key} Lv.${f.level}${f.status.isEmpty ? '' : '(${f.status})'}').join('、')}',
+        );
+      }
+      if (state.base.materials.isNotEmpty) {
+        stateBuf.write(
+          '\n物质：${state.base.materials.entries.map((e) => '${e.key} ${e.value}').join('、')}',
+        );
+      }
+      if (state.base.storage.isNotEmpty) {
+        stateBuf.write(
+          '\n储备：${state.base.storage.entries.map((e) => '${e.key} ${e.value}').join('、')}',
+        );
+      }
+    }
+    if (state.time.isNotEmpty || state.location.isNotEmpty) {
+      stateBuf.write(
+        '\n时间/地点：${state.time}${state.location.isEmpty ? '' : ' · ${state.location}'}',
+      );
+    }
+    if (state.npcs.isNotEmpty) {
+      stateBuf.write('\n在场角色状态：');
+      for (final n in state.npcs) {
+        final res = n.resources
+            .map((r) => '${r.name} ${r.cur}/${r.max}')
+            .join('、');
+        final attrs = n.attributes.entries
+            .map((e) => '${e.key} ${e.value}')
+            .join('、');
+        final parts = <String>[
+          if (res.isNotEmpty) res,
+          if (attrs.isNotEmpty) attrs,
+          if (n.skills.isNotEmpty) '技能 ${n.skills.join('、')}',
+          if (n.inventory.isNotEmpty) '携带 ${n.inventory.join('、')}',
+          if (n.status.trim().isNotEmpty) n.status.trim(),
+        ];
+        stateBuf.write(
+          '\n- ${n.name}（好感 ${n.affinity}）'
+          '${parts.isEmpty ? '' : '：${parts.join('；')}'}',
+        );
+      }
+    }
+    if (stateBuf.isNotEmpty) {
+      buf.write('\n\n【当前状态（本地权威副本，只有变化时再在 state 里回传）】');
+      buf.write(stateBuf.toString());
+    }
     if (story.characters.isNotEmpty) {
       buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
       for (final c in story.characters) {
