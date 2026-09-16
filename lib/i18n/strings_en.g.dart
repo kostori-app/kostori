@@ -7504,20 +7504,20 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Memory entry limit'
 	String get profileMemoryMaxEntries => 'Memory entry limit';
 
-	/// en: 'Context budget (chars)'
-	String get profileMemoryContextBudget => 'Context budget (chars)';
+	/// en: 'Context budget (tokens)'
+	String get profileMemoryContextBudget => 'Context budget (tokens)';
 
 	/// en: 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited'
 	String get profileMemoryContextBudgetHint => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited';
 
-	/// en: 'Context budget (chars)'
-	String get aiContextBudget => 'Context budget (chars)';
+	/// en: 'Context budget (tokens)'
+	String get aiContextBudget => 'Context budget (tokens)';
 
 	/// en: 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited'
 	String get aiContextBudgetHint => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited';
 
-	/// en: 'Context budget (chars)'
-	String get contextBudget => 'Context budget (chars)';
+	/// en: 'Context budget (tokens)'
+	String get contextBudget => 'Context budget (tokens)';
 
 	/// en: 'Leave empty to follow the profile / global setting; 0 = unlimited'
 	String get contextBudgetHint => 'Leave empty to follow the profile / global setting; 0 = unlimited';
@@ -11199,11 +11199,11 @@ extension on Translations {
 			'profileMemoryEnabled' => 'Enable long-term memory',
 			'profileMemoryHint' => 'Records preferences, frequent topics and key conclusions; switches with the assistant',
 			'profileMemoryMaxEntries' => 'Memory entry limit',
-			'profileMemoryContextBudget' => 'Context budget (chars)',
+			'profileMemoryContextBudget' => 'Context budget (tokens)',
 			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited',
-			'aiContextBudget' => 'Context budget (chars)',
+			'aiContextBudget' => 'Context budget (tokens)',
 			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',
-			'contextBudget' => 'Context budget (chars)',
+			'contextBudget' => 'Context budget (tokens)',
 			'contextBudgetHint' => 'Leave empty to follow the profile / global setting; 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',

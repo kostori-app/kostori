@@ -2548,11 +2548,11 @@ profileExtensionsHint: 应用级可选模块开关
 profileMemoryEnabled: 启用长期记忆
 profileMemoryHint: 记录用户偏好/常问话题/关键结论，随助手切换
 profileMemoryMaxEntries: 记忆条目上限
-profileMemoryContextBudget: 上下文预算（字符）
+profileMemoryContextBudget: 上下文预算（token）
 profileMemoryContextBudgetHint: 按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制
-aiContextBudget: 上下文预算（字符）
+aiContextBudget: 上下文预算（token）
 aiContextBudgetHint: 所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制
-contextBudget: 上下文预算（字符）
+contextBudget: 上下文预算（token）
 contextBudgetHint: 留空跟随助手档案 / 全局设置，0 表示不限制
 profileMemoryEntries: 记忆条目
 profileMemoryClear: 清空
