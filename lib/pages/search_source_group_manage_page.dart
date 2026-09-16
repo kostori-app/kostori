@@ -348,17 +348,16 @@ class _GroupSourcesPickerState extends State<_GroupSourcesPicker> {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       itemCount: sources.length,
                       itemBuilder: (context, i) {
                         final s = sources[i];
-                        return CheckboxListTile(
-                          dense: true,
-                          // 只显示 name（很多源的 name 与 key 相同，两个都显示太重复）
-                          title: Text(s.name),
-                          value: _selected.contains(s.key),
+                        // 只显示 name（很多源的 name 与 key 相同，两个都显示太重复）
+                        return SelectCard(
+                          title: s.name,
+                          selected: _selected.contains(s.key),
                           onChanged: (v) => setState(() {
-                            if (v == true) {
+                            if (v) {
                               _selected.add(s.key);
                             } else {
                               _selected.remove(s.key);

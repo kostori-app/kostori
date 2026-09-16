@@ -150,22 +150,20 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
       headerTrailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SegmentedButton<bool>(
-            segments: [
-              ButtonSegment(
-                value: false,
-                label: Text(t.singleSourceSearch),
+          CapsuleOptions(
+            alignment: WrapAlignment.end,
+            children: [
+              CapsuleOption(
+                text: t.singleSourceSearch,
+                isSelected: !_aggregated,
+                onTap: () => setState(() => _aggregated = false),
               ),
-              ButtonSegment(value: true, label: Text(t.aggregatedSearch)),
+              CapsuleOption(
+                text: t.aggregatedSearch,
+                isSelected: _aggregated,
+                onTap: () => setState(() => _aggregated = true),
+              ),
             ],
-            selected: {_aggregated},
-            onSelectionChanged: (s) =>
-                setState(() => _aggregated = s.first),
-            showSelectedIcon: false,
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
           ),
           const SizedBox(width: 4),
           IconButton(
@@ -237,41 +235,32 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
                     ),
                   )
                 : ListView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     children: [
                       for (final source in sources)
-                        _aggregated
-                            ? CheckboxListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                title: Text(source.name),
-                                value: _selected.contains(source.key),
-                                onChanged: (v) => setState(() {
-                                  if (v == true) {
-                                    _selected.add(source.key);
-                                  } else {
-                                    _selected.remove(source.key);
-                                  }
-                                }),
-                              )
-                            : ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                leading: Icon(
-                                  _singleKey == source.key
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_unchecked,
-                                  color: _singleKey == source.key
-                                      ? cs.primary
-                                      : cs.onSurfaceVariant,
-                                ),
-                                title: Text(source.name),
-                                onTap: () {
-                                  setState(() => _singleKey = source.key);
-                                  _confirm();
-                                },
-                              ),
+                        SelectCard(
+                          title: source.name,
+                          selected: _aggregated
+                              ? _selected.contains(source.key)
+                              : _singleKey == source.key,
+                          onChanged: (v) {
+                            if (_aggregated) {
+                              setState(() {
+                                if (v) {
+                                  _selected.add(source.key);
+                                } else {
+                                  _selected.remove(source.key);
+                                }
+                              });
+                            } else {
+                              setState(() => _singleKey = source.key);
+                              _confirm();
+                            }
+                          },
+                        ),
                     ],
                   ),
           ),

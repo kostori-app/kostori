@@ -426,11 +426,10 @@ class SearchOptionWidget extends StatelessWidget {
           title: Text(option.label.ts(sourceKey)),
         ),
         if (option.type == 'select')
-          Wrap(
-            runSpacing: 8,
-            spacing: 8,
+          CapsuleOptions(
+            alignment: WrapAlignment.start,
             children: option.options.entries.map((e) {
-              return OptionChip(
+              return CapsuleOption(
                 text: e.value.ts(sourceKey),
                 isSelected: value == e.key,
                 onTap: () {
@@ -440,11 +439,10 @@ class SearchOptionWidget extends StatelessWidget {
             }).toList(),
           ),
         if (option.type == 'multi-select')
-          Wrap(
-            runSpacing: 8,
-            spacing: 8,
+          CapsuleChipGroup(
+            alignment: WrapAlignment.start,
             children: option.options.entries.map((e) {
-              return OptionChip(
+              return CapsuleChip(
                 text: e.value.ts(sourceKey),
                 isSelected: (jsonDecode(value) as List).contains(e.key),
                 onTap: () {

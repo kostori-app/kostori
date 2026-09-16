@@ -209,15 +209,13 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
                 title: Text(t.searchIn),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Column(
                   children: sources.map((e) {
-                    return OptionChip(
-                      text: e.name.tl,
-                      isSelected: searchTarget == e.key,
-                      onTap: () {
+                    return SelectCard(
+                      title: e.name.tl,
+                      selected: searchTarget == e.key,
+                      onChanged: (_) {
                         setState(() {
                           searchTarget = e.key;
                           options.clear();
