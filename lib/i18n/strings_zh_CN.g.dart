@@ -2563,6 +2563,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noInjectionsYet => '暂无提示词注入';
 	@override String get worldBookName => '名称';
 	@override String get worldBookTriggers => '触发词（每行一个）';
+	@override String get storyTriggersHint => '命中这些词才注入；留空 = 常驻';
 	@override String get worldBookTriggersHint => '用户消息命中任一触发词时才注入；留空表示常驻';
 	@override String get worldBookContent => '内容';
 	@override String get worldBookPriority => '优先级（越大越靠前）';
@@ -5504,6 +5505,7 @@ extension on TranslationsZhCn {
 			'noInjectionsYet' => '暂无提示词注入',
 			'worldBookName' => '名称',
 			'worldBookTriggers' => '触发词（每行一个）',
+			'storyTriggersHint' => '命中这些词才注入；留空 = 常驻',
 			'worldBookTriggersHint' => '用户消息命中任一触发词时才注入；留空表示常驻',
 			'worldBookContent' => '内容',
 			'worldBookPriority' => '优先级（越大越靠前）',

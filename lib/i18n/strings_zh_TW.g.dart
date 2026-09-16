@@ -2562,6 +2562,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noInjectionsYet => '暫無提示詞注入';
 	@override String get worldBookName => '名稱';
 	@override String get worldBookTriggers => '觸發詞（每行一個）';
+	@override String get storyTriggersHint => '命中這些詞才注入；留空 = 常駐';
 	@override String get worldBookTriggersHint => '使用者訊息命中任一觸發詞時才注入；留空表示常駐';
 	@override String get worldBookContent => '內容';
 	@override String get worldBookPriority => '優先級（越大越靠前）';
@@ -5502,6 +5503,7 @@ extension on TranslationsZhTw {
 			'noInjectionsYet' => '暫無提示詞注入',
 			'worldBookName' => '名稱',
 			'worldBookTriggers' => '觸發詞（每行一個）',
+			'storyTriggersHint' => '命中這些詞才注入；留空 = 常駐',
 			'worldBookTriggersHint' => '使用者訊息命中任一觸發詞時才注入；留空表示常駐',
 			'worldBookContent' => '內容',
 			'worldBookPriority' => '優先級（越大越靠前）',

@@ -419,6 +419,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             _setupSelections,
             scanText: scanBlob,
           ),
+          scanText: scanBlob,
         ),
       ),
     );

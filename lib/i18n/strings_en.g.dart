@@ -7612,6 +7612,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Trigger words (one per line)'
 	String get worldBookTriggers => 'Trigger words (one per line)';
 
+	/// en: 'Inject only when these match; empty = always'
+	String get storyTriggersHint => 'Inject only when these match; empty = always';
+
 	/// en: 'Injected when the user message contains any trigger word; leave empty to always inject'
 	String get worldBookTriggersHint => 'Injected when the user message contains any trigger word; leave empty to always inject';
 
@@ -11225,6 +11228,7 @@ extension on Translations {
 			'noInjectionsYet' => 'No prompt injections yet',
 			'worldBookName' => 'Name',
 			'worldBookTriggers' => 'Trigger words (one per line)',
+			'storyTriggersHint' => 'Inject only when these match; empty = always',
 			'worldBookTriggersHint' => 'Injected when the user message contains any trigger word; leave empty to always inject',
 			'worldBookContent' => 'Content',
 			'worldBookPriority' => 'Priority (higher first)',

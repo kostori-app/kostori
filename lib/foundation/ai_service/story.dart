@@ -887,6 +887,25 @@ class StoryBlock {
 }
 
 /// 设定条目（道具 / 种族 / 特质 / 天赋等）：一层给玩家看，一层给 AI 看
+/// 解析词条 / 称号 / 据点的触发词（兼容数组或「、,，/／|」分隔字符串）
+List<String> storyTriggersFromJson(Map<String, dynamic> json) {
+  final raw = json['triggers'] ?? json['关键词'] ?? json['keys'];
+  if (raw is List) {
+    return raw
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+  if (raw is String && raw.trim().isNotEmpty) {
+    return raw
+        .split(RegExp(r'[、,，/／|\n]+'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+  return const [];
+}
+
 class StoryDefinition {
   final String kind; // item | race | trait | talent | skill | ...
   final String key;
@@ -898,12 +917,16 @@ class StoryDefinition {
   /// 给 AI 看的机制说明（注入 system prompt，避免模型自相矛盾）
   final String mechanics;
 
+  /// 触发词：非空时，只有命中当前对话才注入（为空=常驻，始终注入）
+  final List<String> triggers;
+
   const StoryDefinition({
     required this.kind,
     required this.key,
     required this.name,
     this.display = '',
     this.mechanics = '',
+    this.triggers = const [],
   });
 
   factory StoryDefinition.fromJson(Map<String, dynamic> json) =>
@@ -913,6 +936,7 @@ class StoryDefinition {
         name: json['name']?.toString() ?? json['key']?.toString() ?? '',
         display: json['display']?.toString() ?? '',
         mechanics: json['mechanics']?.toString() ?? '',
+        triggers: storyTriggersFromJson(json),
       );
 
   Map<String, dynamic> toJson() => {
@@ -921,6 +945,7 @@ class StoryDefinition {
     'name': name,
     'display': display,
     'mechanics': mechanics,
+    if (triggers.isNotEmpty) 'triggers': triggers,
   };
 }
 
@@ -1025,6 +1050,9 @@ class StoryTitle {
   /// 被动：获得即永久生效，不需要佩戴（不受「仅已佩戴生效」模式影响）
   final bool passive;
 
+  /// 触发词：非空时只有命中当前对话才注入（为空=常驻）
+  final List<String> triggers;
+
   const StoryTitle({
     required this.key,
     required this.name,
@@ -1032,6 +1060,7 @@ class StoryTitle {
     this.effects = '',
     this.stackable = false,
     this.passive = false,
+    this.triggers = const [],
   });
 
   factory StoryTitle.fromJson(Map<String, dynamic> json) => StoryTitle(
@@ -1041,6 +1070,7 @@ class StoryTitle {
     effects: json['effects']?.toString() ?? '',
     stackable: json['stackable'] as bool? ?? false,
     passive: json['passive'] as bool? ?? false,
+    triggers: storyTriggersFromJson(json),
   );
 
   Map<String, dynamic> toJson() => {
@@ -1050,6 +1080,7 @@ class StoryTitle {
     'effects': effects,
     'stackable': stackable,
     if (passive) 'passive': true,
+    if (triggers.isNotEmpty) 'triggers': triggers,
   };
 }
 
@@ -1113,11 +1144,15 @@ class StoryFacility {
   final String description;
   final int maxLevel;
 
+  /// 触发词：非空时只有命中当前对话才注入（为空=常驻）
+  final List<String> triggers;
+
   const StoryFacility({
     required this.key,
     required this.name,
     this.description = '',
     this.maxLevel = 1,
+    this.triggers = const [],
   });
 
   factory StoryFacility.fromJson(Map<String, dynamic> json) => StoryFacility(
@@ -1128,6 +1163,7 @@ class StoryFacility {
         (json['maxLevel'] as num?)?.toInt() ??
         (json['max_level'] as num?)?.toInt() ??
         1,
+    triggers: storyTriggersFromJson(json),
   );
 
   Map<String, dynamic> toJson() => {
@@ -1135,6 +1171,7 @@ class StoryFacility {
     'name': name,
     'description': description,
     'maxLevel': maxLevel,
+    if (triggers.isNotEmpty) 'triggers': triggers,
   };
 }
 
@@ -2168,9 +2205,22 @@ class Story {
   };
 
   /// 拼出完整 GM 系统提示词（世界书 + 提示词 + 输出格式 + 建议提示词）
-  String buildSystemPrompt({String? worldBookOverride}) {
+  String buildSystemPrompt({String? worldBookOverride, String scanText = ''}) {
     final buf = StringBuffer();
     final wb = worldBookOverride ?? worldBook;
+    // 带触发词的词条/称号/据点：只有命中当前对话才注入（无触发词=常驻）
+    final activeTitles = [
+      for (final x in titles)
+        if (_worldBookTriggersHit(x.triggers, scanText)) x,
+    ];
+    final activeCodex = [
+      for (final d in codex)
+        if (_worldBookTriggersHit(d.triggers, scanText)) d,
+    ];
+    final activeFacilities = [
+      for (final f in facilities)
+        if (_worldBookTriggersHit(f.triggers, scanText)) f,
+    ];
     if (wb.trim().isNotEmpty) {
       buf.writeln('【世界书 / 设定】');
       buf.writeln(wb.trim());
@@ -2180,9 +2230,9 @@ class Story {
       buf.writeln(systemPrompt.trim());
       buf.writeln();
     }
-    if (titles.isNotEmpty) {
+    if (activeTitles.isNotEmpty) {
       buf.writeln('【称号（只能授予下列 key，获得时把 key 加入 state.titles）】');
-      for (final x in titles) {
+      for (final x in activeTitles) {
         buf.write('- ${x.key}：${x.name}');
         if (x.effects.trim().isNotEmpty) buf.write('（效果：${x.effects.trim()}）');
         if (x.stackable) buf.write('（可叠加）');
@@ -2194,9 +2244,9 @@ class Story {
       );
       buf.writeln();
     }
-    if (codex.isNotEmpty) {
+    if (activeCodex.isNotEmpty) {
       buf.writeln('【预置词条（已知设定，可直接引用；玩家已拥有则相应出现在 inventory/skills 中）】');
-      for (final d in codex) {
+      for (final d in activeCodex) {
         buf.write('- [${d.kind}] ${d.name}');
         final desc = d.mechanics.isNotEmpty ? d.mechanics : d.display;
         if (desc.trim().isNotEmpty) buf.write('：${desc.trim()}');
@@ -2212,9 +2262,9 @@ class Story {
       }
       buf.writeln();
     }
-    if (facilities.isNotEmpty) {
+    if (activeFacilities.isNotEmpty) {
       buf.writeln('【据点设施（只能使用下列 key）】');
-      for (final f in facilities) {
+      for (final f in activeFacilities) {
         buf.writeln(
           '- ${f.key}：${f.name}（最高 ${f.maxLevel} 级）'
           '${f.description.trim().isEmpty ? '' : ' ${f.description.trim()}'}',

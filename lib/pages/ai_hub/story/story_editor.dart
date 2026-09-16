@@ -160,11 +160,19 @@ class _StoryAchievementDraft {
   }
 }
 
+/// 触发词输入（「、,，/／|」分隔）→ 列表
+List<String> _splitTriggers(String s) => s
+    .split(RegExp(r'[、,，/／|\n]+'))
+    .map((e) => e.trim())
+    .where((e) => e.isNotEmpty)
+    .toList();
+
 class _StoryCodexDraft {
   final TextEditingController key;
   final TextEditingController name;
   final TextEditingController display;
   final TextEditingController mechanics;
+  final TextEditingController triggers;
   String kind;
 
   _StoryCodexDraft({
@@ -172,17 +180,20 @@ class _StoryCodexDraft {
     String nameText = '',
     String displayText = '',
     String mechanicsText = '',
+    String triggersText = '',
     this.kind = 'item',
   }) : key = TextEditingController(text: keyText),
        name = TextEditingController(text: nameText),
        display = TextEditingController(text: displayText),
-       mechanics = TextEditingController(text: mechanicsText);
+       mechanics = TextEditingController(text: mechanicsText),
+       triggers = TextEditingController(text: triggersText);
 
   void dispose() {
     key.dispose();
     name.dispose();
     display.dispose();
     mechanics.dispose();
+    triggers.dispose();
   }
 }
 
@@ -190,6 +201,7 @@ class _StoryTitleDraft {
   final TextEditingController key = TextEditingController();
   final TextEditingController name = TextEditingController();
   final TextEditingController effects = TextEditingController();
+  final TextEditingController triggers = TextEditingController();
   bool stackable;
   bool passive;
 
@@ -197,18 +209,21 @@ class _StoryTitleDraft {
     String keyText = '',
     String nameText = '',
     String effectsText = '',
+    String triggersText = '',
     this.stackable = false,
     this.passive = false,
   }) {
     key.text = keyText;
     name.text = nameText;
     effects.text = effectsText;
+    triggers.text = triggersText;
   }
 
   void dispose() {
     key.dispose();
     name.dispose();
     effects.dispose();
+    triggers.dispose();
   }
 }
 
@@ -239,17 +254,20 @@ class _StoryFacilityDraft {
   final TextEditingController name = TextEditingController();
   final TextEditingController description = TextEditingController();
   final TextEditingController maxLevel = TextEditingController();
+  final TextEditingController triggers = TextEditingController();
 
   _StoryFacilityDraft({
     String keyText = '',
     String nameText = '',
     String descriptionText = '',
     String maxLevelText = '1',
+    String triggersText = '',
   }) {
     key.text = keyText;
     name.text = nameText;
     description.text = descriptionText;
     maxLevel.text = maxLevelText;
+    triggers.text = triggersText;
   }
 
   void dispose() {
@@ -257,6 +275,7 @@ class _StoryFacilityDraft {
     name.dispose();
     description.dispose();
     maxLevel.dispose();
+    triggers.dispose();
   }
 }
 
@@ -380,6 +399,7 @@ class _StoryEditorState extends State<_StoryEditor>
         nameText: d.name,
         displayText: d.display,
         mechanicsText: d.mechanics,
+        triggersText: d.triggers.join('、'),
         kind: d.kind,
       ),
   ];
@@ -392,6 +412,7 @@ class _StoryEditorState extends State<_StoryEditor>
         keyText: x.key,
         nameText: x.name,
         effectsText: x.effects,
+        triggersText: x.triggers.join('、'),
         stackable: x.stackable,
         passive: x.passive,
       ),
@@ -417,6 +438,7 @@ class _StoryEditorState extends State<_StoryEditor>
         nameText: f.name,
         descriptionText: f.description,
         maxLevelText: '${f.maxLevel}',
+        triggersText: f.triggers.join('、'),
       ),
   ];
   late final Set<String> _worldBookIds = {
@@ -642,6 +664,7 @@ class _StoryEditorState extends State<_StoryEditor>
               name: d.name.text.trim(),
               display: d.display.text.trim(),
               mechanics: d.mechanics.text.trim(),
+              triggers: _splitTriggers(d.triggers.text),
             ),
       ],
       titleMode: _titleMode,
@@ -654,6 +677,7 @@ class _StoryEditorState extends State<_StoryEditor>
                   : x.key.text.trim(),
               name: x.name.text.trim(),
               effects: x.effects.text.trim(),
+              triggers: _splitTriggers(x.triggers.text),
               stackable: x.stackable,
               passive: x.passive,
             ),
@@ -684,6 +708,7 @@ class _StoryEditorState extends State<_StoryEditor>
               name: f.name.text.trim(),
               description: f.description.text.trim(),
               maxLevel: int.tryParse(f.maxLevel.text.trim()) ?? 1,
+              triggers: _splitTriggers(f.triggers.text),
             ),
       ],
       variables: [
@@ -1744,6 +1769,16 @@ class _StoryEditorState extends State<_StoryEditor>
                 border: const OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _codexDefs[i].triggers,
+              decoration: InputDecoration(
+                labelText: t.worldBookTriggers,
+                helperText: t.storyTriggersHint,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
           ]),
         Align(
           alignment: Alignment.centerLeft,
@@ -1801,6 +1836,16 @@ class _StoryEditorState extends State<_StoryEditor>
               controller: _titles[i].effects,
               decoration: InputDecoration(
                 labelText: t.storyCodexMechanics,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _titles[i].triggers,
+              decoration: InputDecoration(
+                labelText: t.worldBookTriggers,
+                helperText: t.storyTriggersHint,
                 isDense: true,
                 border: const OutlineInputBorder(),
               ),
@@ -1965,6 +2010,16 @@ class _StoryEditorState extends State<_StoryEditor>
               controller: _facilities[i].description,
               decoration: InputDecoration(
                 labelText: t.storyCodexDisplay,
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _facilities[i].triggers,
+              decoration: InputDecoration(
+                labelText: t.worldBookTriggers,
+                helperText: t.storyTriggersHint,
                 isDense: true,
                 border: const OutlineInputBorder(),
               ),
