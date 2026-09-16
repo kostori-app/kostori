@@ -257,6 +257,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                     title: Text(displayName),
                     automaticallyImplyLeading: false,
                     scrolledUnderElevation: 0.0,
+                    backgroundColor: Colors.transparent,
                     leading: IconButton(
                       onPressed: () {
                         Navigator.maybePop(context);
@@ -358,6 +359,30 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                     ),
                                   ),
                                 ),
+                              // 工具栏 + Tab 区域磨砂玻璃（模糊其下滚动的内容）
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height:
+                                    MediaQuery.paddingOf(context).top +
+                                    kToolbarHeight +
+                                    kTextTabBarHeight,
+                                child: ClipRect(
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 16,
+                                      sigmaY: 16,
+                                    ),
+                                    child: Container(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surface
+                                          .withValues(alpha: 0.55),
+                                    ),
+                                  ),
+                                ),
+                              ),
                               SafeArea(
                                 bottom: false,
                                 child: Align(
