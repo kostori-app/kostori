@@ -302,9 +302,24 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                         kTextTabBarHeight +
                         kToolbarHeight +
                         MediaQuery.paddingOf(context).top,
-                    flexibleSpace: FlexibleSpaceBar(
-                      collapseMode: CollapseMode.pin,
-                      background: Consumer(
+                    flexibleSpace: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // 磨砂玻璃底：模糊其下滚动的正文（收起时可见）
+                        ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                            child: Container(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surface
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
+                        FlexibleSpaceBar(
+                          collapseMode: CollapseMode.pin,
+                          background: Consumer(
                         builder: (context, ref, _) {
                           return Stack(
                             children: [
@@ -359,24 +374,6 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                     ),
                                   ),
                                 ),
-                              // 磨砂玻璃层：盖住整个 AppBar 区域，
-                              // 收起时模糊其下滚动的正文
-                              Positioned.fill(
-                                child: ClipRect(
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 16,
-                                      sigmaY: 16,
-                                    ),
-                                    child: Container(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surface
-                                          .withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                ),
-                              ),
                               SafeArea(
                                 bottom: false,
                                 child: Align(
@@ -401,6 +398,8 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                           );
                         },
                       ),
+                        ),
+                      ],
                     ),
                     forceElevated: innerBoxIsScrolled,
             bottom: CapsuleTabBar(
