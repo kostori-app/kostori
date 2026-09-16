@@ -60,8 +60,6 @@ class DownloadRecordsSheet extends StatelessWidget {
                         ? '$title · $episode'
                               '${resolution.isNotEmpty ? ' · $resolution' : ''}'
                         : title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(
                     (r['time'] as String? ?? '').replaceAll('T', ' ').substring(0, 16),

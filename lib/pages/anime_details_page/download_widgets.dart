@@ -706,8 +706,6 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                     children: [
                       Text(
                         widget.displayTitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
