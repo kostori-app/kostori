@@ -1097,6 +1097,42 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
+  /// 输入框上方：单个 NPC 的独立胶囊按钮（互相分开，不连成分段条）
+  Widget _npcCapsule(CharacterCard c) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _characterMenu(c),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CharacterAvatar(
+                name: c.displayName,
+                avatar: c.avatar,
+                radius: 10,
+                enablePreview: false,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                c.displayName,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 模型可能用昵称或角色名报在场，两者都认
   bool _isNameFor(CharacterCard c, String n) =>
       n == c.name || n == c.displayName;
@@ -2454,28 +2490,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   // NPC 卡片：多了就横向滑动
                                   if (presentChars.isNotEmpty)
                                     Expanded(
-                                      child: CapsuleOptions(
-                                        alignment: WrapAlignment.start,
-                                        children: [
-                                          for (final c in presentChars)
-                                            CapsuleOption(
-                                              isSelected: false,
-                                              onTap: () => _characterMenu(c),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  CharacterAvatar(
-                                                    name: c.displayName,
-                                                    avatar: c.avatar,
-                                                    radius: 10,
-                                                    enablePreview: false,
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(c.displayName),
-                                                ],
-                                              ),
-                                            ),
-                                        ],
+                                      child: ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: presentChars.length,
+                                        separatorBuilder: (_, _) =>
+                                            const SizedBox(width: 8),
+                                        itemBuilder: (_, i) =>
+                                            _npcCapsule(presentChars[i]),
                                       ),
                                     )
                                   else
@@ -3684,10 +3705,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _showDetailsSheet() async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
-    final messages = await AiConversationService()
-        .watchMessages(sessionId)
-        .first;
-    final state = _lastAiReply(messages)?.state ?? _state;
+    // 详情必须用合并后的权威状态：最后一条回复只是本回合的增量 JSON，
+    // 直接拿它会漏掉未变化的字段（装备/属性/技能/物品等）
+    final state = _state;
     if (!mounted) return;
     // 打开详情前先失焦：否则关闭 sheet 后焦点回到输入框会重新唤起输入法
     _inputFocus.unfocus();

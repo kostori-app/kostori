@@ -358,9 +358,16 @@ class _StoryEditorState extends State<_StoryEditor>
         groupText: p.group,
       ),
   ];
-  // 角色卡来自独立存储（不再写进故事文件）
+  // 角色卡来自独立存储（不再写进故事文件）。
+  // GM 自动生成的角色卡（creator == 'auto'）只在游戏内使用，不进编辑器列表，
+  // 但保存时要原样保留（见 _save），否则会被这次保存清掉。
+  late final List<CharacterCard> _autoCharacters = [
+    for (final c in StoryCharacterStore.instance.get(widget.story?.id ?? ''))
+      if (c.creator == 'auto') c,
+  ];
   late final List<CharacterCard> _characters = [
-    ...StoryCharacterStore.instance.get(widget.story?.id ?? ''),
+    for (final c in StoryCharacterStore.instance.get(widget.story?.id ?? ''))
+      if (c.creator != 'auto') c,
   ];
   late final List<_StoryVariableDraft> _variables = [
     for (final v in widget.story?.variables ?? const <StoryVariable>[])
@@ -766,6 +773,8 @@ class _StoryEditorState extends State<_StoryEditor>
     await StoryCharacterStore.instance.put(id, [
       for (final c in _characters)
         if (c.name.trim().isNotEmpty) c,
+      // 保留 GM 自动生成的角色卡
+      ..._autoCharacters,
     ]);
     await StoryCharacterStore.instance.putPersona(
       id,
