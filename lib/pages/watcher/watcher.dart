@@ -486,6 +486,9 @@ class _WatcherState extends State<Watcher>
   /// 打开媒体并等待缓冲就绪，然后启动历史/进度定时上报
   Future<void> _play(String res, int currentPlaybackTime) async {
     playerController.loadFailed = false;
+    // 进入时自动播放设置（默认开）；关闭时打开媒体后保持暂停
+    final autoPlayOnEnter =
+        appdata.implicitData['playerAutoPlayOnEnter'] != false;
     try {
       if (!mounted) return;
       final actualPlayUrl = await _resolvePlayUrl(res);
@@ -513,8 +516,6 @@ class _WatcherState extends State<Watcher>
       // 步骤2：加载媒体数据
       playerController.loadingStep = 2;
 
-      final autoPlayOnEnter =
-          appdata.implicitData['playerAutoPlayOnEnter'] != false;
       await playerController.player.open(
         Media(
           actualPlayUrl,
@@ -540,6 +541,13 @@ class _WatcherState extends State<Watcher>
     }
 
     await _waitForBuffer(currentPlaybackTime);
+    // open(play:false) 在部分平台/解码器上会因缓冲或 seek 恢复播放，
+    // 关闭「进入时自动播放」时这里再收口一次，确保进入页面为暂停态
+    if (!autoPlayOnEnter) {
+      try {
+        await playerController.player.pause();
+      } catch (_) {}
+    }
     _startHistoryTimer();
   }
 
