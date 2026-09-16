@@ -671,7 +671,7 @@ Future<List<Map<String, dynamic>>?> showAiEntryStudio({
   bool multiple = true,
 }) async {
   final base = await resolveSettingGenConfig();
-  return showPopUpWidget<List<Map<String, dynamic>>>(
+  return showPopUpWidget<List<Map<String, dynamic>>?>(
     App.rootContext,
     _AiEntryStudio(
       title: title,
