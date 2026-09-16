@@ -261,34 +261,44 @@ class _SearchPageState extends State<SearchPage> {
         : '${sources.length} ${t.sources}';
 
     return SliverToBoxAdapter(
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.search),
-              title: Text(
-                aggregatedSearch
-                    ? '${t.aggregatedSearch} · ${searchGroupLabel(selectedGroup)}'
-                    : (currentSource?.name ?? t.noSearchSources),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                aggregatedSearch
-                    ? countText
-                    : '${searchGroupLabel(selectedGroup)} · ${sources.length} ${t.sources}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: cs.onSurface.toOpacity(0.55),
-                ),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+        child: Material(
+          color: cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(14),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: _openSourceSelect,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+              child: Row(
                 children: [
+                  const Icon(Icons.search),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          aggregatedSearch
+                              ? '${t.aggregatedSearch} · ${searchGroupLabel(selectedGroup)}'
+                              : (currentSource?.name ?? t.noSearchSources),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          aggregatedSearch
+                              ? countText
+                              : '${searchGroupLabel(selectedGroup)} · ${sources.length} ${t.sources}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurface.toOpacity(0.55),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   IconButton(
                     tooltip: t.aggregatedSearch,
                     icon: Icon(
@@ -306,16 +316,10 @@ class _SearchPageState extends State<SearchPage> {
                       });
                     },
                   ),
-                  IconButton(
-                    tooltip: t.searchSources,
-                    icon: Icon(Icons.settings, color: cs.primary),
-                    onPressed: manageSearchSources,
-                  ),
                 ],
               ),
-              onTap: _openSourceSelect,
             ),
-          ],
+          ),
         ),
       ),
     );
