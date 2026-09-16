@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/app.dart';
@@ -50,6 +51,10 @@ class AiTasks extends Table {
 class AiTaskDatabase extends _$AiTaskDatabase {
   static AiTaskDatabase? _instance;
 
+  /// 库被重新打开（如导入 ai_tasks 分片后）时自增，
+  /// 供页面重建消息流，避免仍订阅旧实例导致列表空白
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
   static AiTaskDatabase get instance => _instance ??= AiTaskDatabase._();
 
   AiTaskDatabase._() : super(_openConnection());
@@ -67,7 +72,10 @@ class AiTaskDatabase extends _$AiTaskDatabase {
     _instance = null;
   }
 
-  static void init() => _instance = AiTaskDatabase._();
+  static void init() {
+    _instance = AiTaskDatabase._();
+    revision.value++;
+  }
 }
 
 LazyDatabase _openConnection() => LazyDatabase(() async {

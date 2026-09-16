@@ -207,7 +207,13 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     StoryTextStyleStore.instance.ensureLoaded();
     // 故事被重新导入 / 编辑后，页面无需重开也能立即用上新定义
     StoryStore.instance.addListener(_onStoryStoreChanged);
+    // 消息库被重新打开（如导入 ai_tasks 分片）后刷新列表
+    AiTaskDatabase.revision.addListener(_onDbRevisionChanged);
     _boot();
+  }
+
+  void _onDbRevisionChanged() {
+    if (mounted) setState(() {});
   }
 
   /// 故事库变化：重算有效故事，并把新声明的变量（如声望/善恶）补进当前状态
@@ -257,6 +263,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   @override
   void dispose() {
     StoryStore.instance.removeListener(_onStoryStoreChanged);
+    AiTaskDatabase.revision.removeListener(_onDbRevisionChanged);
     _stallTimer?.cancel();
     _input.dispose();
     _inputFocus.dispose();
@@ -2193,6 +2200,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       body: sessionId == null
           ? const Center(child: PolygonRefreshIndicator())
           : StreamBuilder<List<AiTask>>(
+              // 库被重新打开（导入 ai_tasks 分片）时换 key 重新订阅
+              key: ValueKey('story-msgs-${AiTaskDatabase.revision.value}'),
               stream: AiConversationService().watchMessages(sessionId),
               builder: (context, snap) {
                 final messages = snap.data ?? [];
