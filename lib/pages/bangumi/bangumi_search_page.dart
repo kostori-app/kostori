@@ -1543,52 +1543,75 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         final item = history[index];
-        return ListTile(
-          leading: const Icon(Icons.history),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.keyword,
-                style: ts.s14.copyWith(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.repeat,
-                    size: 14,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    t.searchUseCount(n: item.useCount),
-                    style: ts.s12.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
+        final cs = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+          child: Material(
+            color: cs.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _performSearch(item.keyword),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.history),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.keyword,
+                            style: ts.s14.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.repeat,
+                                size: 14,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                t.searchUseCount(n: item.useCount),
+                                style: ts.s12.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.schedule,
+                                size: 14,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                Utils.formatTime(item.lastUsedAt),
+                                style: ts.s12.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.schedule,
-                    size: 14,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    Utils.formatTime(item.lastUsedAt),
-                    style: ts.s12.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => ref
+                          .read(searchHistoryProvider.notifier)
+                          .delete(item.keyword),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ],
-          ),
-          onTap: () => _performSearch(item.keyword),
-          trailing: IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () =>
-                ref.read(searchHistoryProvider.notifier).delete(item.keyword),
+            ),
           ),
         );
       }, childCount: history.length),
@@ -1721,10 +1744,12 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               );
             },
           ),
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: _searchCategoryCapsule(),
-        ),
+        // 搜索（历史/联想）状态：隐藏分类胶囊，避免与输入/列表抢位置
+        if (!_showSearchHistory && !_showSearchSuggestions)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _searchCategoryCapsule(),
+          ),
       ],
       title: PreferredSize(
         preferredSize: const Size.fromHeight(60),
