@@ -770,6 +770,8 @@ class _RecordsTabState extends State<_RecordsTab> {
                         ? '$subtitleText · $episode'
                             '${resolution.isNotEmpty ? ' · $resolution' : ''}'
                         : subtitleText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
