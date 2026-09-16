@@ -257,7 +257,11 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                     title: Text(displayName),
                     automaticallyImplyLeading: false,
                     scrolledUnderElevation: 0.0,
-                    backgroundColor: Colors.transparent,
+                    // 半透明底：即使磨砂层在静止/触底时采不到背景，
+                    // 头部也不会变成完全透明
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.55),
                     leading: IconButton(
                       onPressed: () {
                         Navigator.maybePop(context);
@@ -313,7 +317,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                               color: Theme.of(context)
                                   .colorScheme
                                   .surface
-                                  .withValues(alpha: 0.4),
+                                  .withValues(alpha: 0.15),
                             ),
                           ),
                         ),
