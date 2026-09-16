@@ -1640,6 +1640,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyExportToLibrary => '匯出到角色卡庫';
 	@override String get storyExported => '已匯出到角色卡庫';
 	@override String get storyRoll => '擲骰';
+	@override String get storyRollAdvantage => '優勢（取高）';
+	@override String get storyRollDisadvantage => '劣勢（取低）';
 	@override String get storySpecialCheck => '特殊判定';
 	@override String get storyCheckPending => '下一條訊息將進行動作判定';
 	@override String get storyManualRoll => '立即擲骰';
@@ -4574,6 +4576,8 @@ extension on TranslationsZhTw {
 			'storyExportToLibrary' => '匯出到角色卡庫',
 			'storyExported' => '已匯出到角色卡庫',
 			'storyRoll' => '擲骰',
+			'storyRollAdvantage' => '優勢（取高）',
+			'storyRollDisadvantage' => '劣勢（取低）',
 			'storySpecialCheck' => '特殊判定',
 			'storyCheckPending' => '下一條訊息將進行動作判定',
 			'storyManualRoll' => '立即擲骰',
@@ -4977,10 +4981,10 @@ extension on TranslationsZhTw {
 			'exportClip' => '匯出',
 			'exportFormat' => '匯出格式',
 			'exportQuality' => '匯出品質',
-			'exportSize' => '匯出尺寸',
-			'cropArea' => '裁剪區域',
 			_ => null,
 		} ?? switch (path) {
+			'exportSize' => '匯出尺寸',
+			'cropArea' => '裁剪區域',
 			'selectCropArea' => '選擇裁剪區域',
 			'fullFrame' => '完整畫面',
 			'customCrop' => '自定義裁剪',
@@ -5491,10 +5495,10 @@ extension on TranslationsZhTw {
 			'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',
 			'injectionPositionAfterKnowledge' => '知識之後',
 			'injectionPositionAfterMemory' => '記憶之後',
-			'injectionPositionBeforeTools' => '工具清單之前',
-			'injectionSortOrder' => '排序號',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionBeforeTools' => '工具清單之前',
+			'injectionSortOrder' => '排序號',
 			'noInjectionsYet' => '暫無提示詞注入',
 			'worldBookName' => '名稱',
 			'worldBookTriggers' => '觸發詞（每行一個）',

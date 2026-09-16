@@ -643,27 +643,44 @@ class StoryCheck {
   final int? dc;
   final String reason;
 
+  /// 优势 / 劣势：high=取高（优势），low=取低（劣势），null=正常
+  final String? advantage;
+
   const StoryCheck({
     required this.label,
     this.dice = '1d20',
     this.modifier = 0,
     this.dc,
     this.reason = '',
+    this.advantage,
   });
 
-  factory StoryCheck.fromJson(Map<String, dynamic> json) => StoryCheck(
-    label: (json['label'] ?? json['skill'] ?? json['name'] ?? '').toString(),
-    dice: json['dice']?.toString() ?? '1d20',
-    modifier: (json['modifier'] as num?)?.toInt() ?? 0,
-    dc: (json['dc'] as num?)?.toInt(),
-    reason: json['reason']?.toString() ?? '',
-  );
+  factory StoryCheck.fromJson(Map<String, dynamic> json) {
+    final rawAdv =
+        (json['advantage'] ?? json['take'] ?? json['rollMode'])
+            ?.toString()
+            .toLowerCase();
+    final advantage = switch (rawAdv) {
+      'high' || 'adv' || 'advantage' || '高' || '优势' => 'high',
+      'low' || 'dis' || 'disadvantage' || '低' || '劣势' => 'low',
+      _ => null,
+    };
+    return StoryCheck(
+      label: (json['label'] ?? json['skill'] ?? json['name'] ?? '').toString(),
+      dice: json['dice']?.toString() ?? '1d20',
+      modifier: (json['modifier'] as num?)?.toInt() ?? 0,
+      dc: (json['dc'] as num?)?.toInt(),
+      reason: json['reason']?.toString() ?? '',
+      advantage: advantage,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'label': label,
     'dice': dice,
     'modifier': modifier,
     if (dc != null) 'dc': dc,
+    if (advantage != null) 'advantage': advantage,
     'reason': reason,
   };
 
@@ -674,7 +691,12 @@ class StoryCheck {
         : modifier < 0
         ? '$modifier'
         : '';
-    return '$dice$mod${dc != null ? ' vs DC $dc' : ''}';
+    final adv = switch (advantage) {
+      'high' => ' · ${t.storyRollAdvantage}',
+      'low' => ' · ${t.storyRollDisadvantage}',
+      _ => '',
+    };
+    return '$dice$mod$adv${dc != null ? ' vs DC $dc' : ''}';
   }
 }
 
@@ -688,6 +710,9 @@ class DiceRoll {
   final int? dc;
   final bool? success;
 
+  /// 判定方向：high（数值越高越好）| low（越低越好）
+  final String direction;
+
   /// 判定档位：critSuccess / success / failure / critFailure（无 dc 时为 null）
   final String? outcome;
 
@@ -700,6 +725,7 @@ class DiceRoll {
     this.dc,
     this.success,
     this.outcome,
+    this.direction = 'high',
   });
 
   bool get isCrit => outcome == 'critSuccess' || outcome == 'critFailure';
@@ -721,38 +747,82 @@ class DiceRoll {
     }
     buf.write(' = $total');
     if (dc != null) {
-      buf.write(' ${success == true ? '≥' : '<'} $dc');
+      final ge = success == true;
+      final cmp = direction == 'low'
+          ? (ge ? '≤' : '>')
+          : (ge ? '≥' : '<');
+      buf.write(' $cmp $dc');
       buf.write(' → $outcomeLabel');
     }
     return buf.toString();
   }
 }
 
-/// 解析并掷骰（记法形如 NdM；不合法时回退为 1d20）。
-/// [crits] 为真且是单骰时：掷出最大点 = 大成功、掷出 1 = 大失败（房规）。
+/// 解析并掷骰（记法形如 NdM，支持取高/取低：`2d20kh1`/`2d20kl1` 或 `2d20取高`；
+/// 不合法时回退为 1d20）。
+///
+/// [direction]：high = 数值越高越好，low = 越低越好（roll-under）。
+/// [crits] 为真且「最终只有一颗骰子计入」时：high 掷最大点=大成功、掷 1=大失败；
+/// low 则相反（掷 1=大成功、掷最大点=大失败）。
 DiceRoll rollDice(
   String notation, {
   int modifier = 0,
   int? dc,
   bool crits = true,
+  String direction = 'high',
 }) {
-  final m = RegExp(r'(\d*)\s*[dD]\s*(\d+)').firstMatch(notation);
-  final count = (m == null ? 1 : (int.tryParse(m.group(1) ?? '') ?? 1)).clamp(1, 100);
-  final sides = (m == null ? 20 : (int.tryParse(m.group(2) ?? '') ?? 20)).clamp(2, 1000);
+  final base = RegExp(r'(\d*)\s*[dD]\s*(\d+)').firstMatch(notation);
+  final count = (base == null
+          ? 1
+          : (int.tryParse(base.group(1) ?? '') ?? 1))
+      .clamp(1, 100);
+  final sides = (base == null
+          ? 20
+          : (int.tryParse(base.group(2) ?? '') ?? 20))
+      .clamp(2, 1000);
+
+  // 取高/取低：k h/l N 或 取高/取低 N（默认取 1 颗）
+  final keepMatch = RegExp(
+    r'(?:k\s*([hHlL])\s*(\d*)|取\s*([高低])\s*(\d*))',
+  ).firstMatch(notation);
+  String? keepMode;
+  var keepCount = 1;
+  if (keepMatch != null) {
+    final letter = keepMatch.group(1)?.toLowerCase();
+    final cn = keepMatch.group(3);
+    keepMode = (letter == 'h' || cn == '高') ? 'high' : 'low';
+    keepCount = int.tryParse(
+          (letter != null ? keepMatch.group(2) : keepMatch.group(4)) ?? '',
+        ) ??
+        1;
+    keepCount = keepCount.clamp(1, count);
+  }
+
   final rng = math.Random();
   final dice = [for (var i = 0; i < count; i++) 1 + rng.nextInt(sides)];
-  final total = dice.fold(0, (a, b) => a + b) + modifier;
+  List<int> kept = dice;
+  if (keepMode != null) {
+    final sorted = [...dice]..sort();
+    kept = keepMode == 'high'
+        ? sorted.reversed.take(keepCount).toList()
+        : sorted.take(keepCount).toList();
+  }
+  final total = kept.fold(0, (a, b) => a + b) + modifier;
+
+  // 只有一颗骰子计入时才判大成功/大失败
+  final singleNat = kept.length == 1;
+  final natMax = singleNat && kept.first == sides;
+  final natMin = singleNat && kept.first == 1;
 
   String? outcome;
   if (dc != null) {
-    final natMax = count == 1 && dice.first == sides;
-    final natMin = count == 1 && dice.first == 1;
+    final ge = direction == 'low' ? total <= dc : total >= dc;
     if (crits && natMax) {
-      outcome = 'critSuccess';
+      outcome = direction == 'low' ? 'critFailure' : 'critSuccess';
     } else if (crits && natMin) {
-      outcome = 'critFailure';
+      outcome = direction == 'low' ? 'critSuccess' : 'critFailure';
     } else {
-      outcome = total >= dc ? 'success' : 'failure';
+      outcome = ge ? 'success' : 'failure';
     }
   }
   return DiceRoll(
@@ -762,6 +832,7 @@ DiceRoll rollDice(
     modifier: modifier,
     total: total,
     dc: dc,
+    direction: direction,
     success: dc == null
         ? null
         : (outcome == 'success' || outcome == 'critSuccess'),
@@ -1725,6 +1796,9 @@ class Story {
   /// 是否启用大成功/大失败（单骰掷出最大点/1，房规）
   final bool crits;
 
+  /// 判定方向：high（数值越高越好，默认）| low（越低越好，roll-under）
+  final String checkDirection;
+
   /// 称号定义（AI 授予）
   final List<StoryTitle> titles;
 
@@ -1792,6 +1866,7 @@ class Story {
     this.codex = const [],
     this.dice = const [],
     this.crits = true,
+    this.checkDirection = 'high',
     this.titles = const [],
     this.titleMode = 'all',
     this.job,
@@ -1832,6 +1907,7 @@ class Story {
     List<StoryDefinition>? codex,
     List<StoryDice>? dice,
     bool? crits,
+    String? checkDirection,
     List<StoryTitle>? titles,
     String? titleMode,
     StoryJob? job,
@@ -1869,6 +1945,7 @@ class Story {
     codex: codex ?? this.codex,
     dice: dice ?? this.dice,
     crits: crits ?? this.crits,
+    checkDirection: checkDirection ?? this.checkDirection,
     titles: titles ?? this.titles,
     titleMode: titleMode ?? this.titleMode,
     job: job ?? this.job,
@@ -1959,6 +2036,7 @@ class Story {
           ]
         : const [],
     crits: (json['crits'] as bool?) ?? true,
+    checkDirection: json['checkDirection'] == 'low' ? 'low' : 'high',
     titles: json['titles'] is List
         ? [
             for (final e in json['titles'] as List)
@@ -2015,6 +2093,7 @@ class Story {
     'codex': [for (final d in codex) d.toJson()],
     'dice': [for (final d in dice) d.toJson()],
     'crits': crits,
+    'checkDirection': checkDirection,
     'titles': [for (final x in titles) x.toJson()],
     'titleMode': titleMode,
     if (job != null) 'job': job!.toJson(),
@@ -2126,7 +2205,7 @@ class Story {
   },
   "events": [{"type":"location|damage|heal|item|quest|dice|info","title":"标题","text":"内容","value":0,"success":true}],
   "choices": ["选项A", "选项B", "选项C"],
-  "check": {"label":"检定名","dice":"1d20","modifier":0,"dc":12,"reason":"原因"}
+  "check": {"label":"检定名","dice":"1d20","modifier":0,"dc":12,"advantage":"high|low（可选，优势/劣势）","reason":"原因"}
 }
 ```
 规则：
@@ -2151,6 +2230,8 @@ class Story {
 - **任务链**：同一 chain 的任务构成任务链，用 stage/totalStages 标记阶段。status 只能取 active / done / failed 三者之一（不要写 completed 等其它写法）；标记为 done 时必须同时把 stage 设为 totalStages、progress 设为 100，避免出现「1/2 却已完成」这种矛盾。
 - **成就**：解锁成就时把其 key 加入 achievements；只能使用故事预定义的成就 key，不要自创。
 - **需要判定成败时不要自己编点数**：正文写到行动尝试为止，输出 check 声明检定（骰子记法 / 修正 / 难度 DC），由系统掷骰后玩家会告知结果，你再据此描述结果。不需要检定时省略 check。
+- **判定方向**：本故事为${checkDirection == 'low' ? '取低——总值 ≤ DC 为成功（越高越容易失败）' : '取高——总值 ≥ DC 为成功（越低越容易失败）'}；请按此设置 DC。
+- **优势 / 劣势**：check 可加 `advantage:"high"`（优势，取高）或 `"low"`（劣势，取低），系统会掷两次取对应值；不加则正常掷一次。骰子记法也支持 `2d20kh1`（取高）/`2d20kl1`（取低）。
 - **骰子工具**：也可以直接调用 `roll_dice` 工具（参数 label / dice / modifier / dc）让系统掷骰，NPC 或剧情需要判定时同样用它；除 `roll_dice` 外不要调用其它工具。''');
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
@@ -2534,9 +2615,10 @@ class StoryStore extends ChangeNotifier {
         }
       } catch (_) {}
     }
-    // 骰子：列表（只定义骰型）或对象 {crits, dice:[...]}
+    // 骰子：列表（只定义骰型）或对象 {crits, direction, dice:[...]}
     var diceDefs = <StoryDice>[];
     var crits = true;
+    var checkDirection = 'high';
     final diceText = _section(text, '骰子');
     if (diceText != null && diceText.trim().isNotEmpty) {
       try {
@@ -2548,6 +2630,7 @@ class StoryStore extends ChangeNotifier {
           ];
         } else if (decoded is Map) {
           crits = decoded['crits'] as bool? ?? true;
+          checkDirection = decoded['direction'] == 'low' ? 'low' : 'high';
           final list = decoded['dice'];
           if (list is List) {
             diceDefs = [
@@ -2620,6 +2703,7 @@ class StoryStore extends ChangeNotifier {
       codex: mapList('词条', StoryDefinition.fromJson),
       dice: diceDefs,
       crits: crits,
+      checkDirection: checkDirection,
       titles: titleDefs,
       titleMode: titleMode,
       job: jobDef,
@@ -2699,14 +2783,15 @@ class StoryStore extends ChangeNotifier {
     if (s.codex.isNotEmpty) {
       section('词条', jsonEncode([for (final d in s.codex) d.toJson()]));
     }
-    if (s.dice.isNotEmpty || !s.crits) {
-      // crits 为真时沿用旧的纯列表格式（向后兼容）
+    if (s.dice.isNotEmpty || !s.crits || s.checkDirection != 'high') {
+      // crits 为真且方向为 high 时沿用旧的纯列表格式（向后兼容）
       section(
         '骰子',
-        s.crits
+        (s.crits && s.checkDirection == 'high')
             ? jsonEncode([for (final d in s.dice) d.toJson()])
             : jsonEncode({
-                'crits': false,
+                'crits': s.crits,
+                'direction': s.checkDirection,
                 'dice': [for (final d in s.dice) d.toJson()],
               }),
       );

@@ -4843,6 +4843,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Roll'
 	String get storyRoll => 'Roll';
 
+	/// en: 'Advantage (keep high)'
+	String get storyRollAdvantage => 'Advantage (keep high)';
+
+	/// en: 'Disadvantage (keep low)'
+	String get storyRollDisadvantage => 'Disadvantage (keep low)';
+
 	/// en: 'Special check'
 	String get storySpecialCheck => 'Special check';
 
@@ -10292,6 +10298,8 @@ extension on Translations {
 			'storyExportToLibrary' => 'Export to card library',
 			'storyExported' => 'Exported to card library',
 			'storyRoll' => 'Roll',
+			'storyRollAdvantage' => 'Advantage (keep high)',
+			'storyRollDisadvantage' => 'Disadvantage (keep low)',
 			'storySpecialCheck' => 'Special check',
 			'storyCheckPending' => 'The next message will be an action check',
 			'storyManualRoll' => 'Roll now',
@@ -10695,10 +10703,10 @@ extension on Translations {
 			'exportFormat' => 'Export Format',
 			'exportQuality' => 'Export Quality',
 			'exportSize' => 'Export Size',
-			'cropArea' => 'Crop Area',
-			'selectCropArea' => 'Select Crop Area',
 			_ => null,
 		} ?? switch (path) {
+			'cropArea' => 'Crop Area',
+			'selectCropArea' => 'Select Crop Area',
 			'fullFrame' => 'Full Frame',
 			'customCrop' => 'Custom Crop',
 			'qualityLow' => 'Low Quality',
@@ -11209,10 +11217,10 @@ extension on Translations {
 			'injectionPositionAfterPersonality' => 'After personality',
 			'injectionPositionAfterSystemPrompt' => 'After custom system prompt',
 			'injectionPositionAfterKnowledge' => 'After knowledge',
-			'injectionPositionAfterMemory' => 'After memory',
-			'injectionPositionBeforeTools' => 'Before tool list',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterMemory' => 'After memory',
+			'injectionPositionBeforeTools' => 'Before tool list',
 			'injectionSortOrder' => 'Sort order',
 			'noInjectionsYet' => 'No prompt injections yet',
 			'worldBookName' => 'Name',

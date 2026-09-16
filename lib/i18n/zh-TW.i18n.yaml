@@ -1650,6 +1650,8 @@ storyAutoNpc: 自動生成
 storyExportToLibrary: 匯出到角色卡庫
 storyExported: 已匯出到角色卡庫
 storyRoll: 擲骰
+storyRollAdvantage: 優勢（取高）
+storyRollDisadvantage: 劣勢（取低）
 storySpecialCheck: 特殊判定
 storyCheckPending: 下一條訊息將進行動作判定
 storyManualRoll: 立即擲骰

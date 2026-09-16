@@ -625,6 +625,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final sessionId = _sessionId;
     if (sessionId == null || _sending) return;
     final outgoing = applyStoryRegex(text, story.regexes, 'send');
+    // 让 roll_dice 工具与页面用同一套暴击/方向规则
+    SkillRegistry.instance.diceCrits = story.crits;
+    SkillRegistry.instance.diceDirection = story.checkDirection;
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
     _lastOutgoing = text;
@@ -3372,14 +3375,27 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     );
   }
 
+  /// 优势/劣势：单骰记法改成 2dMkh1 / 2dMkl1（取高 / 取低）
+  String _withAdvantage(String dice, String mode) {
+    final m = RegExp(r'^\s*(\d*)\s*[dD]\s*(\d+)\s*$').firstMatch(dice);
+    if (m == null) return dice;
+    final count = int.tryParse(m.group(1) ?? '') ?? 1;
+    if (count != 1) return dice;
+    return '2d${m.group(2)}${mode == 'high' ? 'kh1' : 'kl1'}';
+  }
+
   /// 执行 AI 声明的检定：项目掷骰，再把结果回传给 GM
   Future<void> _rollCheck(StoryCheck check) async {
     if (_sending) return;
+    final dice = check.advantage == null
+        ? check.dice
+        : _withAdvantage(check.dice, check.advantage!);
     final roll = rollDice(
-      check.dice,
+      dice,
       modifier: check.modifier,
       dc: check.dc,
       crits: story.crits,
+      direction: story.checkDirection,
     );
     await _showRollResult(roll, check.label.isEmpty ? t.storyRoll : check.label);
     if (!mounted) return;
@@ -3516,6 +3532,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       modifier: entry.value,
       dc: dc,
       crits: story.crits,
+      direction: story.checkDirection,
     );
     await _showRollResult(roll, '${entry.key} ${entry.value}');
     if (!mounted) return;

@@ -1639,6 +1639,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyExportToLibrary => '导出到角色卡库';
 	@override String get storyExported => '已导出到角色卡库';
 	@override String get storyRoll => '掷骰';
+	@override String get storyRollAdvantage => '优势（取高）';
+	@override String get storyRollDisadvantage => '劣势（取低）';
 	@override String get storySpecialCheck => '特殊判定';
 	@override String get storyCheckPending => '下一条消息将进行动作判定';
 	@override String get storyManualRoll => '立即掷骰';
@@ -4574,6 +4576,8 @@ extension on TranslationsZhCn {
 			'storyExportToLibrary' => '导出到角色卡库',
 			'storyExported' => '已导出到角色卡库',
 			'storyRoll' => '掷骰',
+			'storyRollAdvantage' => '优势（取高）',
+			'storyRollDisadvantage' => '劣势（取低）',
 			'storySpecialCheck' => '特殊判定',
 			'storyCheckPending' => '下一条消息将进行动作判定',
 			'storyManualRoll' => '立即掷骰',
@@ -4978,10 +4982,10 @@ extension on TranslationsZhCn {
 			'previewClip' => '预览',
 			'exportClip' => '导出',
 			'exportFormat' => '导出格式',
-			'exportQuality' => '导出质量',
-			'exportSize' => '导出尺寸',
 			_ => null,
 		} ?? switch (path) {
+			'exportQuality' => '导出质量',
+			'exportSize' => '导出尺寸',
 			'cropArea' => '裁剪区域',
 			'selectCropArea' => '选择裁剪区域',
 			'fullFrame' => '完整画面',
@@ -5492,10 +5496,10 @@ extension on TranslationsZhCn {
 			'injectionPositionAfterPersonality' => '人格之后',
 			'injectionPositionAfterSystemPrompt' => '自定义提示词之后',
 			'injectionPositionAfterKnowledge' => '知识之后',
-			'injectionPositionAfterMemory' => '记忆之后',
-			'injectionPositionBeforeTools' => '工具清单之前',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterMemory' => '记忆之后',
+			'injectionPositionBeforeTools' => '工具清单之前',
 			'injectionSortOrder' => '排序号',
 			'noInjectionsYet' => '暂无提示词注入',
 			'worldBookName' => '名称',

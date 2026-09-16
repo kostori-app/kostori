@@ -657,6 +657,42 @@ void main() {
       expect(plain.contains('critFailure'), isFalse);
     });
 
+    test('rollDice supports keep-high / keep-low notation', () {
+      // 取高：总和只由最高的一颗决定
+      final high = rollDice('2d20kh1', crits: false);
+      expect(high.total, high.dice.reduce((a, b) => a > b ? a : b));
+      // 取低：总和只由最低的一颗决定
+      final low = rollDice('2d20kl1', crits: false);
+      expect(low.total, low.dice.reduce((a, b) => a < b ? a : b));
+      // 中文写法等价
+      final cn = rollDice('2d20取低1', crits: false);
+      expect(cn.total, cn.dice.reduce((a, b) => a < b ? a : b));
+    });
+
+    test('rollDice honours low-is-better direction', () {
+      // 取低：总值 ≤ DC 为成功；掷 1 为大成功、掷最大点为大失败
+      expect(
+        rollDice(
+          '1d20',
+          modifier: -100,
+          dc: 10,
+          direction: 'low',
+          crits: false,
+        ).success,
+        isTrue,
+      );
+      expect(
+        rollDice(
+          '1d20',
+          modifier: 100,
+          dc: 10,
+          direction: 'low',
+          crits: false,
+        ).success,
+        isFalse,
+      );
+    });
+
     test('mergeSettingLibrary merges codex/title/job/facility', () {
       const story = Story(id: 's', name: 'S');
       final merged = mergeSettingLibrary(story, const [

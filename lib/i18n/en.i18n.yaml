@@ -1650,6 +1650,8 @@ storyAutoNpc: Auto-generated
 storyExportToLibrary: Export to card library
 storyExported: Exported to card library
 storyRoll: Roll
+storyRollAdvantage: Advantage (keep high)
+storyRollDisadvantage: Disadvantage (keep low)
 storySpecialCheck: Special check
 storyCheckPending: The next message will be an action check
 storyManualRoll: Roll now

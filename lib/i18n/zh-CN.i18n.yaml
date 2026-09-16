@@ -1645,6 +1645,8 @@ storyAutoNpc: 自动生成
 storyExportToLibrary: 导出到角色卡库
 storyExported: 已导出到角色卡库
 storyRoll: 掷骰
+storyRollAdvantage: 优势（取高）
+storyRollDisadvantage: 劣势（取低）
 storySpecialCheck: 特殊判定
 storyCheckPending: 下一条消息将进行动作判定
 storyManualRoll: 立即掷骰

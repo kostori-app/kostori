@@ -1,5 +1,6 @@
 import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/skills/skill.dart';
+import 'package:kostori/skills/skill_registry.dart';
 
 /// 掷骰技能：让模型（NPC 判定 / 剧情判定）自己发起骰子判定，
 /// 由项目负责掷骰并回传结果，避免模型自编点数。
@@ -38,7 +39,14 @@ class DiceSkill extends Skill {
     final dice = arguments['dice']?.toString().trim() ?? '1d20';
     final modifier = (arguments['modifier'] as num?)?.toInt() ?? 0;
     final dc = (arguments['dc'] as num?)?.toInt();
-    final roll = rollDice(dice, modifier: modifier, dc: dc);
+    // 与故事页面保持一致：使用当前故事的暴击/方向设置
+    final roll = rollDice(
+      dice,
+      modifier: modifier,
+      dc: dc,
+      crits: SkillRegistry.instance.diceCrits,
+      direction: SkillRegistry.instance.diceDirection,
+    );
     return '${label.isEmpty ? '判定' : label}：${roll.detail}';
   }
 }

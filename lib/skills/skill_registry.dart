@@ -25,6 +25,10 @@ class SkillRegistry {
 
   Uint8List? get contextImage => _contextImage;
 
+  /// 当前故事的掷骰规则（供 roll_dice 技能与页面保持一致）
+  bool diceCrits = true;
+  String diceDirection = 'high';
+
   /// 默认单技能执行超时
   static const Duration kDefaultTimeout = Duration(seconds: 10);
 
