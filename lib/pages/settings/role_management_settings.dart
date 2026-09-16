@@ -671,8 +671,9 @@ Future<List<Map<String, dynamic>>?> showAiEntryStudio({
   bool multiple = true,
 }) async {
   final base = await resolveSettingGenConfig();
-  return App.rootContext.to<List<Map<String, dynamic>>>(
-    () => _AiEntryStudio(
+  return showPopUpWidget<List<Map<String, dynamic>>?>(
+    App.rootContext,
+    _AiEntryStudio(
       title: title,
       systemPrompt: systemPrompt,
       schemaHint: schemaHint,
@@ -960,22 +961,18 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: Appbar(
-        title: Text(widget.title),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          tooltip: t.back,
-          onPressed: () => context.pop(),
+    return PopUpWidgetScaffold(
+      title: widget.title,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.check),
+          tooltip: t.confirm,
+          onPressed: _items.isEmpty
+              ? null
+              : () =>
+                    Navigator.of(App.rootContext, rootNavigator: true).pop(_items),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            tooltip: t.confirm,
-            onPressed: _items.isEmpty ? null : () => context.pop(_items),
-          ),
-        ],
-      ),
+      ],
       body: Column(
         children: [
           // 条目预览改为按钮，避免占满内容区
