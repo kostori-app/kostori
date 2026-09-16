@@ -246,8 +246,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
       child: DefaultTabController(
         length: infoController.tabs.length,
         child: Scaffold(
-          body: BackdropGroup(
-            child: NestedScrollView(
+          body: NestedScrollView(
             headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
               return <Widget>[
                 SliverOverlapAbsorber(
@@ -258,9 +257,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                     title: Text(displayName),
                     automaticallyImplyLeading: false,
                     scrolledUnderElevation: 0.0,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.surface.withValues(alpha: 0.6),
+                    backgroundColor: Colors.transparent,
                     leading: IconButton(
                       onPressed: () {
                         Navigator.maybePop(context);
@@ -366,7 +363,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                               // 收起时模糊其下滚动的正文
                               Positioned.fill(
                                 child: ClipRect(
-                                  child: BackdropFilter.grouped(
+                                  child: BackdropFilter(
                                     filter: ImageFilter.blur(
                                       sigmaX: 16,
                                       sigmaY: 16,
@@ -375,7 +372,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                       color: Theme.of(context)
                                           .colorScheme
                                           .surface
-                                          .withValues(alpha: 0.35),
+                                          .withValues(alpha: 0.4),
                                     ),
                                   ),
                                 ),
@@ -442,7 +439,6 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                 );
               },
             ),
-          ),
           ),
         ),
       ),
