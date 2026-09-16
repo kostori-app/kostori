@@ -554,14 +554,26 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.write(stateBuf.toString());
     }
     if (story.characters.isNotEmpty) {
+      // 在场角色给完整人设；未登场的只给一行（名字+性格），登场后再补全，省 token
+      final presentNames = state.present;
+      bool onStage(CharacterCard c) =>
+          presentNames.isEmpty ||
+          presentNames.any((n) => _isNameFor(c, n));
       buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
       for (final c in story.characters) {
-        buf.write('\n- ${c.displayName}');
-        if (c.personality.trim().isNotEmpty) {
-          buf.write('（${c.personality.trim()}）');
-        }
-        if (c.description.trim().isNotEmpty) {
-          buf.write('：${sub(c.description.trim())}');
+        if (onStage(c)) {
+          buf.write('\n- ${c.displayName}');
+          if (c.personality.trim().isNotEmpty) {
+            buf.write('（${c.personality.trim()}）');
+          }
+          if (c.description.trim().isNotEmpty) {
+            buf.write('：${sub(c.description.trim())}');
+          }
+        } else {
+          buf.write('\n- ${c.displayName}（未登场）');
+          if (c.personality.trim().isNotEmpty) {
+            buf.write('：${sub(c.personality.trim())}');
+          }
         }
       }
       buf.write(
