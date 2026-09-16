@@ -16,7 +16,7 @@ abstract class AiProviderConfig {
       case 'gemini':
         return GeminiConfig.fromJson(json);
       default:
-        // SF / Doubao / DeepSeek 等 OpenAI 兼容格式统一走这里
+        // SF / 火山引擎 / DeepSeek 等 OpenAI 兼容格式统一走这里
         if (json['source'] != null) {
           return OpenAiCompatibleConfig.fromJson(json);
         }

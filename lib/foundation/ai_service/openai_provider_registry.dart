@@ -33,7 +33,7 @@ class OpenAiProviderRegistry {
           baseUrl: 'https://api.siliconflow.cn/v1',
         ),
         'doubao': (
-          name: 'Doubao',
+          name: '火山引擎',
           defaultModel: 'doubao-1-5-lite-32k-250115',
           baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
         ),

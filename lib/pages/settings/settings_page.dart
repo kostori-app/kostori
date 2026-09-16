@@ -781,9 +781,12 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                         translationSourceDisplayMap[entry.key] ?? '',
                         style: const TextStyle(fontSize: 12),
                       ),
-                      trailing: Radio<String>(value: entry.key),
+                      trailing: Radio<String>(
+                        value: translationSourceDisplayMap[entry.key] ?? entry.key,
+                      ),
                       onTap: () {
-                        final source = entry.key;
+                        final source =
+                            translationSourceDisplayMap[entry.key] ?? entry.key;
                         final isAi = [
                           'siliconFlow',
                           'doubao',

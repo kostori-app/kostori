@@ -89,7 +89,7 @@ class TranslationService {
       TranslationSource.google => 'Google',
       TranslationSource.deepl => 'Deepl',
       TranslationSource.siliconFlow => 'SiliconFlow',
-      TranslationSource.doubao => 'Doubao',
+      TranslationSource.doubao => '火山引擎',
       TranslationSource.gemini => 'Gemini',
       TranslationSource.deepseek => 'Deepseek',
       TranslationSource.qiniu => 'qiniu',
