@@ -4834,6 +4834,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Auto-generated'
 	String get storyAutoNpc => 'Auto-generated';
 
+	/// en: 'A character that appeared in the story; edit their profile in the card library'
+	String get storyAutoNpcDescription => 'A character that appeared in the story; edit their profile in the card library';
+
 	/// en: 'Export to card library'
 	String get storyExportToLibrary => 'Export to card library';
 
@@ -7615,6 +7618,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Inject only when these match; empty = always'
 	String get storyTriggersHint => 'Inject only when these match; empty = always';
 
+	/// en: 'Narration style (optional; overrides default prose / length / pacing)'
+	String get storyNarrationStyle => 'Narration style (optional; overrides default prose / length / pacing)';
+
 	/// en: 'Injected when the user message contains any trigger word; leave empty to always inject'
 	String get worldBookTriggersHint => 'Injected when the user message contains any trigger word; leave empty to always inject';
 
@@ -10298,6 +10304,7 @@ extension on Translations {
 			'storyStart' => 'Start game',
 			'storyCustomize' => 'Custom content',
 			'storyAutoNpc' => 'Auto-generated',
+			'storyAutoNpcDescription' => 'A character that appeared in the story; edit their profile in the card library',
 			'storyExportToLibrary' => 'Export to card library',
 			'storyExported' => 'Exported to card library',
 			'storyRoll' => 'Roll',
@@ -10705,9 +10712,9 @@ extension on Translations {
 			'exportClip' => 'Export',
 			'exportFormat' => 'Export Format',
 			'exportQuality' => 'Export Quality',
-			'exportSize' => 'Export Size',
 			_ => null,
 		} ?? switch (path) {
+			'exportSize' => 'Export Size',
 			'cropArea' => 'Crop Area',
 			'selectCropArea' => 'Select Crop Area',
 			'fullFrame' => 'Full Frame',
@@ -11219,9 +11226,9 @@ extension on Translations {
 			'injectionPosition' => 'Injection position',
 			'injectionPositionAfterPersonality' => 'After personality',
 			'injectionPositionAfterSystemPrompt' => 'After custom system prompt',
-			'injectionPositionAfterKnowledge' => 'After knowledge',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterKnowledge' => 'After knowledge',
 			'injectionPositionAfterMemory' => 'After memory',
 			'injectionPositionBeforeTools' => 'Before tool list',
 			'injectionSortOrder' => 'Sort order',
@@ -11229,6 +11236,7 @@ extension on Translations {
 			'worldBookName' => 'Name',
 			'worldBookTriggers' => 'Trigger words (one per line)',
 			'storyTriggersHint' => 'Inject only when these match; empty = always',
+			'storyNarrationStyle' => 'Narration style (optional; overrides default prose / length / pacing)',
 			'worldBookTriggersHint' => 'Injected when the user message contains any trigger word; leave empty to always inject',
 			'worldBookContent' => 'Content',
 			'worldBookPriority' => 'Priority (higher first)',

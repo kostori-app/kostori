@@ -420,6 +420,14 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             scanText: scanBlob,
           ),
           scanText: scanBlob,
+          // 玩家已拥有的物品/技能/称号/效果：对应词条始终注入，避免机制丢失
+          ownedKeys: {
+            ...state.inventory,
+            ...state.skills,
+            ...state.equipped,
+            for (final x in state.titles) x.key,
+            for (final e in state.effects) e.name,
+          },
         ),
       ),
     );
@@ -1323,12 +1331,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   }
 
   /// 自动角色卡描述：姿态 / 好感度 / 同名词条
+  /// 自动建 NPC 卡的描述：只写“人设/来路”，不写好感度等运行状态
   String _npcAutoDescription(String name, NpcState? npc, GameState state) {
     final parts = <String>[];
-    if (npc != null && npc.status.trim().isNotEmpty) {
-      parts.add(npc.status.trim());
-    }
-    if (npc != null) parts.add(t.storyNpcAffinity(value: '${npc.affinity}'));
     for (final d in state.codex) {
       if (d.name == name || d.key == name) {
         final text = d.display.trim().isNotEmpty
@@ -1337,6 +1342,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         if (text.isNotEmpty) parts.add(text);
         break;
       }
+    }
+    if (npc != null && npc.status.trim().isNotEmpty) {
+      parts.add('当前状态：${npc.status.trim()}');
+    }
+    if (parts.isEmpty) {
+      parts.add(t.storyAutoNpcDescription);
     }
     return parts.join('；');
   }

@@ -1887,6 +1887,9 @@ class Story {
   /// 属性上限：属性名 → 上限（缺省/<=0 表示不限）；用于 clamp 玩家与 NPC 属性
   final Map<String, int> attributeCaps;
 
+  /// 叙事风格要求（`## 叙事风格`）：覆盖默认的正文风格/字数/节奏
+  final String narrationStyle;
+
   /// 称号定义（AI 授予）
   final List<StoryTitle> titles;
 
@@ -1956,6 +1959,7 @@ class Story {
     this.crits = true,
     this.checkDirection = 'high',
     this.attributeCaps = const {},
+    this.narrationStyle = '',
     this.titles = const [],
     this.titleMode = 'all',
     this.job,
@@ -1998,6 +2002,7 @@ class Story {
     bool? crits,
     String? checkDirection,
     Map<String, int>? attributeCaps,
+    String? narrationStyle,
     List<StoryTitle>? titles,
     String? titleMode,
     StoryJob? job,
@@ -2037,6 +2042,7 @@ class Story {
     crits: crits ?? this.crits,
     checkDirection: checkDirection ?? this.checkDirection,
     attributeCaps: attributeCaps ?? this.attributeCaps,
+    narrationStyle: narrationStyle ?? this.narrationStyle,
     titles: titles ?? this.titles,
     titleMode: titleMode ?? this.titleMode,
     job: job ?? this.job,
@@ -2132,6 +2138,7 @@ class Story {
       for (final e in (json['attributeCaps'] as Map? ?? const {}).entries)
         e.key.toString(): (e.value as num?)?.toInt() ?? 0,
     },
+    narrationStyle: json['narrationStyle']?.toString() ?? '',
     titles: json['titles'] is List
         ? [
             for (final e in json['titles'] as List)
@@ -2190,6 +2197,7 @@ class Story {
     'crits': crits,
     'checkDirection': checkDirection,
     'attributeCaps': attributeCaps,
+    'narrationStyle': narrationStyle,
     'titles': [for (final x in titles) x.toJson()],
     'titleMode': titleMode,
     if (job != null) 'job': job!.toJson(),
@@ -2205,21 +2213,36 @@ class Story {
   };
 
   /// 拼出完整 GM 系统提示词（世界书 + 提示词 + 输出格式 + 建议提示词）
-  String buildSystemPrompt({String? worldBookOverride, String scanText = ''}) {
+  String buildSystemPrompt({
+    String? worldBookOverride,
+    String scanText = '',
+    Set<String> ownedKeys = const {},
+  }) {
     final buf = StringBuffer();
     final wb = worldBookOverride ?? worldBook;
-    // 带触发词的词条/称号/据点：只有命中当前对话才注入（无触发词=常驻）
+    // 带触发词的词条/称号/据点：只有命中当前对话才注入（无触发词=常驻）。
+    // 玩家已拥有（背包/技能/称号/效果等）的条目始终注入，避免机制丢失。
+    bool keepMine(List<String> triggers, Iterable<String> names) {
+      if (!_worldBookTriggersHit(triggers, scanText)) {
+        for (final n in names) {
+          if (n.trim().isNotEmpty && ownedKeys.contains(n.trim())) return true;
+        }
+        return false;
+      }
+      return true;
+    }
+
     final activeTitles = [
       for (final x in titles)
-        if (_worldBookTriggersHit(x.triggers, scanText)) x,
+        if (keepMine(x.triggers, [x.key, x.name])) x,
     ];
     final activeCodex = [
       for (final d in codex)
-        if (_worldBookTriggersHit(d.triggers, scanText)) d,
+        if (keepMine(d.triggers, [d.key, d.name])) d,
     ];
     final activeFacilities = [
       for (final f in facilities)
-        if (_worldBookTriggersHit(f.triggers, scanText)) f,
+        if (keepMine(f.triggers, [f.key, f.name])) f,
     ];
     if (wb.trim().isNotEmpty) {
       buf.writeln('【世界书 / 设定】');
@@ -2342,6 +2365,23 @@ class Story {
 - **判定方向**：本故事为${checkDirection == 'low' ? '取低——总值 ≤ DC 为成功（越高越容易失败）' : '取高——总值 ≥ DC 为成功（越低越容易失败）'}；请按此设置 DC。
 - **优势 / 劣势**：check 可加 `advantage:"high"`（优势，取高）或 `"low"`（劣势，取低），系统会掷两次取对应值；不加则正常掷一次。骰子记法也支持 `2d20kh1`（取高）/`2d20kl1`（取低）。
 - **骰子工具**：也可以直接调用 `roll_dice` 工具（参数 label / dice / modifier / dc）让系统掷骰，NPC 或剧情需要判定时同样用它；除 `roll_dice` 外不要调用其它工具。''');
+    // 叙事风格：默认沉浸式小说笔法；故事可用 `## 叙事风格` 覆盖
+    if (narrationStyle.trim().isNotEmpty) {
+      buf.writeln();
+      buf.writeln('【叙事风格要求（优先遵循）】');
+      buf.writeln(narrationStyle.trim());
+    } else {
+      buf.writeln('''
+
+【叙事风格】
+- 以**小说笔法**写作，正文约 **600–800 字**；重在沉浸感与代入感，不要写成流水账或事件清单。
+- 充分调用**五感**（视觉 / 听觉 / 嗅觉 / 触觉 / 味觉）与环境氛围（光影、天气、气味、声音），善用**比喻**与细节，但不堆砌辞藻。
+- NPC 要有鲜明的**语气、微表情、肢体语言与心理活动**（可穿插少量内心独白），让角色“活”起来。
+- 细腻地写**情绪与关系**：角色的犹豫、试探、戒备、信任、亲近、紧张等，随剧情自然递进。
+- **节奏从容**：不要每回合都强行推进一个关键事件；允许铺垫、日常、留白与缓冲，用悬念、伏笔与钩子让我期待接下来会发生什么。事件是载体，重点是与角色的互动、氛围与情绪。
+- 尽量把信息融进叙事，少用 `> ` 系统块；`> ` 只承载必要的系统提示 / 须知。
+- 收尾留一个自然的**悬念或选择点**，让人忍不住想继续。''');
+    }
     if (attributeCaps.isNotEmpty) {
       final caps = attributeCaps.entries
           .where((e) => e.value > 0)
@@ -2817,6 +2857,7 @@ class StoryStore extends ChangeNotifier {
       description: description,
       opening: _section(text, '开局') ?? '',
       systemPrompt: _section(text, '系统提示词') ?? '',
+      narrationStyle: _section(text, '叙事风格') ?? '',
       worldBook: _section(text, '世界书') ?? '',
       choicesPrompt: _section(text, '后续建议提示词') ?? '',
       setup: setup,
@@ -2931,6 +2972,9 @@ class StoryStore extends ChangeNotifier {
     }
     if (s.attributeCaps.isNotEmpty) {
       section('属性上限', jsonEncode(s.attributeCaps));
+    }
+    if (s.narrationStyle.trim().isNotEmpty) {
+      section('叙事风格', s.narrationStyle);
     }
     if (s.titles.isNotEmpty) {
       section(

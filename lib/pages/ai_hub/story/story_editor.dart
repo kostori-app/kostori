@@ -310,6 +310,9 @@ class _StoryEditorState extends State<_StoryEditor>
   late final _systemCtrl = TextEditingController(
     text: widget.story?.systemPrompt ?? '',
   );
+  late final _narrationCtrl = TextEditingController(
+    text: widget.story?.narrationStyle ?? '',
+  );
   late final _situationCtrl = TextEditingController(
     text: widget.story?.situation ?? '',
   );
@@ -529,6 +532,7 @@ class _StoryEditorState extends State<_StoryEditor>
     _deathCtrl.dispose();
     _openingCtrl.dispose();
     _systemCtrl.dispose();
+    _narrationCtrl.dispose();
     _situationCtrl.dispose();
     _personaNameCtrl.dispose();
     _personaDescCtrl.dispose();
@@ -613,6 +617,7 @@ class _StoryEditorState extends State<_StoryEditor>
       description: _descCtrl.text.trim(),
       opening: _openingCtrl.text.trim(),
       systemPrompt: _systemCtrl.text.trim(),
+      narrationStyle: _narrationCtrl.text.trim(),
       worldBook: _serializeWorldBook(),
       situation: _situationCtrl.text.trim(),
       deathResources: _deathCtrl.text
@@ -1148,6 +1153,15 @@ class _StoryEditorState extends State<_StoryEditor>
           ),
         ),
         _textTab(_systemCtrl),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            t.storyNarrationStyle,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        _textTab(_narrationCtrl),
       ],
     );
   }

@@ -1637,6 +1637,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyStart => '開始遊戲';
 	@override String get storyCustomize => '自訂內容';
 	@override String get storyAutoNpc => '自動生成';
+	@override String get storyAutoNpcDescription => '劇情中自動登場的角色，可在角色卡庫補充人設';
 	@override String get storyExportToLibrary => '匯出到角色卡庫';
 	@override String get storyExported => '已匯出到角色卡庫';
 	@override String get storyRoll => '擲骰';
@@ -2563,6 +2564,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookName => '名稱';
 	@override String get worldBookTriggers => '觸發詞（每行一個）';
 	@override String get storyTriggersHint => '命中這些詞才注入；留空 = 常駐';
+	@override String get storyNarrationStyle => '敘事風格（可選，覆蓋預設小說筆法 / 字數 / 節奏）';
 	@override String get worldBookTriggersHint => '使用者訊息命中任一觸發詞時才注入；留空表示常駐';
 	@override String get worldBookContent => '內容';
 	@override String get worldBookPriority => '優先級（越大越靠前）';
@@ -4574,6 +4576,7 @@ extension on TranslationsZhTw {
 			'storyStart' => '開始遊戲',
 			'storyCustomize' => '自訂內容',
 			'storyAutoNpc' => '自動生成',
+			'storyAutoNpcDescription' => '劇情中自動登場的角色，可在角色卡庫補充人設',
 			'storyExportToLibrary' => '匯出到角色卡庫',
 			'storyExported' => '已匯出到角色卡庫',
 			'storyRoll' => '擲骰',
@@ -4981,9 +4984,9 @@ extension on TranslationsZhTw {
 			'previewClip' => '預覽',
 			'exportClip' => '匯出',
 			'exportFormat' => '匯出格式',
-			'exportQuality' => '匯出品質',
 			_ => null,
 		} ?? switch (path) {
+			'exportQuality' => '匯出品質',
 			'exportSize' => '匯出尺寸',
 			'cropArea' => '裁剪區域',
 			'selectCropArea' => '選擇裁剪區域',
@@ -5495,15 +5498,16 @@ extension on TranslationsZhTw {
 			'injectionPositionAfterPersonality' => '人格之後',
 			'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',
 			'injectionPositionAfterKnowledge' => '知識之後',
-			'injectionPositionAfterMemory' => '記憶之後',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterMemory' => '記憶之後',
 			'injectionPositionBeforeTools' => '工具清單之前',
 			'injectionSortOrder' => '排序號',
 			'noInjectionsYet' => '暫無提示詞注入',
 			'worldBookName' => '名稱',
 			'worldBookTriggers' => '觸發詞（每行一個）',
 			'storyTriggersHint' => '命中這些詞才注入；留空 = 常駐',
+			'storyNarrationStyle' => '敘事風格（可選，覆蓋預設小說筆法 / 字數 / 節奏）',
 			'worldBookTriggersHint' => '使用者訊息命中任一觸發詞時才注入；留空表示常駐',
 			'worldBookContent' => '內容',
 			'worldBookPriority' => '優先級（越大越靠前）',

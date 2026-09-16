@@ -1647,6 +1647,7 @@ storyChoicesPrompt: Follow-up prompt
 storyStart: Start game
 storyCustomize: Custom content
 storyAutoNpc: Auto-generated
+storyAutoNpcDescription: A character that appeared in the story; edit their profile in the card library
 storyExportToLibrary: Export to card library
 storyExported: Exported to card library
 storyRoll: Roll
@@ -2588,6 +2589,7 @@ noInjectionsYet: No prompt injections yet
 worldBookName: Name
 worldBookTriggers: Trigger words (one per line)
 storyTriggersHint: Inject only when these match; empty = always
+storyNarrationStyle: Narration style (optional; overrides default prose / length / pacing)
 worldBookTriggersHint: "Injected when the user message contains any trigger word; leave empty to always inject"
 worldBookContent: Content
 worldBookPriority: Priority (higher first)

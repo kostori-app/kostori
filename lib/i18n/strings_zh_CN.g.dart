@@ -1636,6 +1636,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyStart => '开始游戏';
 	@override String get storyCustomize => '自定义内容';
 	@override String get storyAutoNpc => '自动生成';
+	@override String get storyAutoNpcDescription => '剧情中自动登场的角色，可在角色卡库补充人设';
 	@override String get storyExportToLibrary => '导出到角色卡库';
 	@override String get storyExported => '已导出到角色卡库';
 	@override String get storyRoll => '掷骰';
@@ -2564,6 +2565,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookName => '名称';
 	@override String get worldBookTriggers => '触发词（每行一个）';
 	@override String get storyTriggersHint => '命中这些词才注入；留空 = 常驻';
+	@override String get storyNarrationStyle => '叙事风格（可选，覆盖默认小说笔法 / 字数 / 节奏）';
 	@override String get worldBookTriggersHint => '用户消息命中任一触发词时才注入；留空表示常驻';
 	@override String get worldBookContent => '内容';
 	@override String get worldBookPriority => '优先级（越大越靠前）';
@@ -4574,6 +4576,7 @@ extension on TranslationsZhCn {
 			'storyStart' => '开始游戏',
 			'storyCustomize' => '自定义内容',
 			'storyAutoNpc' => '自动生成',
+			'storyAutoNpcDescription' => '剧情中自动登场的角色，可在角色卡库补充人设',
 			'storyExportToLibrary' => '导出到角色卡库',
 			'storyExported' => '已导出到角色卡库',
 			'storyRoll' => '掷骰',
@@ -4982,9 +4985,9 @@ extension on TranslationsZhCn {
 			'clipDuration' => '时长',
 			'previewClip' => '预览',
 			'exportClip' => '导出',
-			'exportFormat' => '导出格式',
 			_ => null,
 		} ?? switch (path) {
+			'exportFormat' => '导出格式',
 			'exportQuality' => '导出质量',
 			'exportSize' => '导出尺寸',
 			'cropArea' => '裁剪区域',
@@ -5496,9 +5499,9 @@ extension on TranslationsZhCn {
 			'injectionPosition' => '注入位置',
 			'injectionPositionAfterPersonality' => '人格之后',
 			'injectionPositionAfterSystemPrompt' => '自定义提示词之后',
-			'injectionPositionAfterKnowledge' => '知识之后',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterKnowledge' => '知识之后',
 			'injectionPositionAfterMemory' => '记忆之后',
 			'injectionPositionBeforeTools' => '工具清单之前',
 			'injectionSortOrder' => '排序号',
@@ -5506,6 +5509,7 @@ extension on TranslationsZhCn {
 			'worldBookName' => '名称',
 			'worldBookTriggers' => '触发词（每行一个）',
 			'storyTriggersHint' => '命中这些词才注入；留空 = 常驻',
+			'storyNarrationStyle' => '叙事风格（可选，覆盖默认小说笔法 / 字数 / 节奏）',
 			'worldBookTriggersHint' => '用户消息命中任一触发词时才注入；留空表示常驻',
 			'worldBookContent' => '内容',
 			'worldBookPriority' => '优先级（越大越靠前）',

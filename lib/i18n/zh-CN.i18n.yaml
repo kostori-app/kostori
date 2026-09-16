@@ -1642,6 +1642,7 @@ storyChoicesPrompt: 后续建议提示词
 storyStart: 开始游戏
 storyCustomize: 自定义内容
 storyAutoNpc: 自动生成
+storyAutoNpcDescription: 剧情中自动登场的角色，可在角色卡库补充人设
 storyExportToLibrary: 导出到角色卡库
 storyExported: 已导出到角色卡库
 storyRoll: 掷骰
@@ -2587,6 +2588,7 @@ noInjectionsYet: 暂无提示词注入
 worldBookName: 名称
 worldBookTriggers: 触发词（每行一个）
 storyTriggersHint: 命中这些词才注入；留空 = 常驻
+storyNarrationStyle: 叙事风格（可选，覆盖默认小说笔法 / 字数 / 节奏）
 worldBookTriggersHint: 用户消息命中任一触发词时才注入；留空表示常驻
 worldBookContent: 内容
 worldBookPriority: 优先级（越大越靠前）
