@@ -789,9 +789,95 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
       return null;
     } finally {
       _cancel = null;
-      if (mounted) setState(() => _streaming = false);
+      if (mounted) {
+        setState(() {
+          _streaming = false;
+          _streamText = ''; // 结束后由消息气泡展示，避免重复显示
+        });
+      }
     }
     return buf.toString();
+  }
+
+  /// 展示用文本：去掉 JSON 代码块与 actions 段，只留解说
+  String _displayText(String text) {
+    var s = text.replaceAll(RegExp(r'<actions>[\s\S]*?</actions>'), '');
+    final fence = s.indexOf('```');
+    if (fence >= 0) s = s.substring(0, fence);
+    return s.trim();
+  }
+
+  /// 查看条目：底部弹窗渲染（名称 + 触发词 + 内容）
+  Future<void> _showEntries() async {
+    await showModalBottomSheet<void>(
+      context: App.rootContext,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: '${t.storyCodex} · ${_items.length}',
+        icon: Icons.list_alt,
+        initialSize: 0.7,
+        builder: (ctx, sc) => ListView.builder(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          itemCount: _items.length,
+          itemBuilder: (_, i) {
+            final m = _items[i];
+            final name =
+                (m['name'] ?? m['key'] ?? m['title'] ?? '条目 ${i + 1}')
+                    .toString();
+            final triggers = (m['triggers'] as List?)?.map((e) => e.toString()).toList() ?? const <String>[];
+            final content =
+                (m['content'] ?? m['mechanics'] ?? m['display'] ?? m['effects'] ?? m['description'] ?? '')
+                    .toString();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  if (triggers.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final tg in triggers)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                ctx,
+                              ).colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              tg,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                  if (content.trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    SelectableText(
+                      content.trim(),
+                      style: const TextStyle(fontSize: 13, height: 1.5),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   String _generatePrompt(String desc) =>
@@ -875,7 +961,6 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return PopUpWidgetScaffold(
       title: widget.title,
       tailing: [
@@ -890,41 +975,34 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
       ],
       body: Column(
         children: [
-          if (_items.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                border: Border(
-                  bottom: BorderSide(color: scheme.outlineVariant, width: 0.6),
+          // 条目预览改为按钮，避免占满内容区
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _items.isEmpty ? null : _showEntries,
+                  icon: const Icon(Icons.list_alt, size: 18),
+                  label: Text('${t.storyCodex} · ${_items.length}'),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${t.storyCodex} × ${_items.length}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                const Spacer(),
+                if (_streaming)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 4),
+                    child: PolygonRefreshIndicator(size: 16),
                   ),
-                  const SizedBox(height: 4),
-                  for (var i = 0; i < _items.length; i++)
-                    Text(
-                      '- ${_items[i]['name'] ?? _items[i]['key'] ?? _items[i]['title'] ?? '条目 ${i + 1}'}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                ],
-              ),
+              ],
             ),
+          ),
           Expanded(
             child: ListView(
               reverse: true,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
               children: [
-                if (_streamText.isNotEmpty) _bubble(_streamText, false),
-                for (final m in _messages.reversed) _bubble(m.$2, m.$1),
+                if (_streamText.isNotEmpty)
+                  _bubble(_displayText(_streamText), false, streaming: true),
+                for (final m in _messages.reversed)
+                  _bubble(m.$1 ? m.$2 : _displayText(m.$2), m.$1),
               ],
             ),
           ),
@@ -940,8 +1018,13 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
     );
   }
 
-  Widget _bubble(String text, bool isUser) {
+  Widget _bubble(String text, bool isUser, {bool streaming = false}) {
     final scheme = Theme.of(context).colorScheme;
+    final body = text.isEmpty
+        ? (streaming
+              ? t.generatingReply
+              : t.aiEntriesUpdated(count: _items.length))
+        : text;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -955,13 +1038,21 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: SelectableText(
-          text,
-          style: const TextStyle(fontSize: 13, height: 1.4),
+          body,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.4,
+            color: text.isEmpty && !streaming
+                ? scheme.onSurfaceVariant
+                : null,
+          ),
         ),
       ),
     );
   }
 }
+
+
 /// 设定库触发词输入（「、,，/／|」或换行分隔）→ 列表
 List<String> _splitSettingTriggers(String s) => s
     .split(RegExp(r'[、,，/／|\n]+'))

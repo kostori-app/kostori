@@ -2566,6 +2566,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get worldBookTriggers => '触发词（每行一个）';
 	@override String get storyTriggersHint => '命中这些词才注入；留空 = 常驻';
 	@override String get storyNarrationStyle => '叙事风格（可选，覆盖默认小说笔法 / 字数 / 节奏）';
+	@override String aiEntriesUpdated({required Object count}) => '已更新 ${count} 条，点上方「查看」查看';
 	@override String get worldBookTriggersHint => '用户消息命中任一触发词时才注入；留空表示常驻';
 	@override String get worldBookContent => '内容';
 	@override String get worldBookPriority => '优先级（越大越靠前）';
@@ -5510,6 +5511,7 @@ extension on TranslationsZhCn {
 			'worldBookTriggers' => '触发词（每行一个）',
 			'storyTriggersHint' => '命中这些词才注入；留空 = 常驻',
 			'storyNarrationStyle' => '叙事风格（可选，覆盖默认小说笔法 / 字数 / 节奏）',
+			'aiEntriesUpdated' => ({required Object count}) => '已更新 ${count} 条，点上方「查看」查看',
 			'worldBookTriggersHint' => '用户消息命中任一触发词时才注入；留空表示常驻',
 			'worldBookContent' => '内容',
 			'worldBookPriority' => '优先级（越大越靠前）',

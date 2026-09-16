@@ -2590,6 +2590,7 @@ worldBookName: Name
 worldBookTriggers: Trigger words (one per line)
 storyTriggersHint: Inject only when these match; empty = always
 storyNarrationStyle: Narration style (optional; overrides default prose / length / pacing)
+aiEntriesUpdated: Updated ${count} entries — tap "View" above
 worldBookTriggersHint: "Injected when the user message contains any trigger word; leave empty to always inject"
 worldBookContent: Content
 worldBookPriority: Priority (higher first)

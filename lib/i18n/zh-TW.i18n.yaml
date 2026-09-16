@@ -2591,6 +2591,7 @@ worldBookName: 名稱
 worldBookTriggers: 觸發詞（每行一個）
 storyTriggersHint: 命中這些詞才注入；留空 = 常駐
 storyNarrationStyle: 敘事風格（可選，覆蓋預設小說筆法 / 字數 / 節奏）
+aiEntriesUpdated: 已更新 ${count} 條，點上方「查看」查看
 worldBookTriggersHint: 使用者訊息命中任一觸發詞時才注入；留空表示常駐
 worldBookContent: 內容
 worldBookPriority: 優先級（越大越靠前）

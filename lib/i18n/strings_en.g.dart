@@ -7621,6 +7621,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Narration style (optional; overrides default prose / length / pacing)'
 	String get storyNarrationStyle => 'Narration style (optional; overrides default prose / length / pacing)';
 
+	/// en: 'Updated ${count} entries — tap "View" above'
+	String aiEntriesUpdated({required Object count}) => 'Updated ${count} entries — tap "View" above';
+
 	/// en: 'Injected when the user message contains any trigger word; leave empty to always inject'
 	String get worldBookTriggersHint => 'Injected when the user message contains any trigger word; leave empty to always inject';
 
@@ -11237,6 +11240,7 @@ extension on Translations {
 			'worldBookTriggers' => 'Trigger words (one per line)',
 			'storyTriggersHint' => 'Inject only when these match; empty = always',
 			'storyNarrationStyle' => 'Narration style (optional; overrides default prose / length / pacing)',
+			'aiEntriesUpdated' => ({required Object count}) => 'Updated ${count} entries — tap "View" above',
 			'worldBookTriggersHint' => 'Injected when the user message contains any trigger word; leave empty to always inject',
 			'worldBookContent' => 'Content',
 			'worldBookPriority' => 'Priority (higher first)',
