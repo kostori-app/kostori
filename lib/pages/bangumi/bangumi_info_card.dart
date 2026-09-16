@@ -49,97 +49,80 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
       BangumiBarChartPage(bangumiItem: widget.bangumiItem);
 
   void showBangumiHistoryPagePickerDialog(BuildContext context) {
-    final scrollController = ScrollController();
-
-    showDialog(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) {
-        return ContentDialog(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final cs = Theme.of(sheetContext).colorScheme;
+        return Sheet(
           title: t.historySource,
-          displayButton: false,
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 600),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.transparent,
-                      child: ListView.builder(
-                        controller: scrollController,
-                        shrinkWrap: true,
-                        itemCount: infoController.bangumiHistory.length,
-                        itemBuilder: (context, index) {
-                          final history = infoController.bangumiHistory[index];
-
-                          return InkWell(
-                            onTap: () {
-                              Navigator.pop(context);
-                              App.mainNavigatorKey?.currentContext?.to(
-                                () => AnimePage(
-                                  id: history.id,
-                                  sourceKey: history.sourceKey,
-                                ),
-                              );
-                              LocalFavoritesManager().updateRecentlyWatched(
-                                history.id,
-                                AnimeType(history.sourceKey.hashCode),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 16,
+          icon: Icons.history,
+          initialSize: 0.7,
+          builder: (context, sc) => ListView(
+            controller: sc,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            children: [
+              for (final history in infoController.bangumiHistory)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: cs.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        App.mainNavigatorKey?.currentContext?.to(
+                          () => AnimePage(
+                            id: history.id,
+                            sourceKey: history.sourceKey,
+                          ),
+                        );
+                        LocalFavoritesManager().updateRecentlyWatched(
+                          history.id,
+                          AnimeType(history.sourceKey.hashCode),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: BangumiWidget.kostoriImage(
+                                context,
+                                history.cover,
+                                width: 200 * 0.72,
+                                height: 200,
                               ),
-                              child: Row(
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: BangumiWidget.kostoriImage(
-                                      context,
-                                      history.cover,
-                                      width: 200 * 0.72,
-                                      height: 200,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: [
-                                        Text(history.title),
-                                        const SizedBox(height: 4),
-                                        Text(history.sourceKey),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          t.bangumiLastSeen(
-                                            episode:
-                                                history.lastWatchEpisode ?? 0,
-                                          ),
-                                        ),
-                                      ],
+                                  Text(history.title),
+                                  const SizedBox(height: 4),
+                                  Text(history.sourceKey),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    t.bangumiLastSeen(
+                                      episode: history.lastWatchEpisode ?? 0,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+            ],
           ),
         );
       },
@@ -230,11 +213,40 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
     if (mounted) setState(() {});
   }
 
+  /// 胶囊样式的独立按钮（与项目的分段胶囊同一视觉语言，但不连在一起）
+  Widget _capsuleButton({
+    required String text,
+    required VoidCallback onTap,
+    bool primary = false,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: primary ? cs.primary : cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: primary ? cs.onPrimary : cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _button() {
     return Row(
       children: [
-        FilledButton.tonal(
-          onPressed: () {
+        _capsuleButton(
+          text: t.search,
+          onTap: () {
             final context = App.mainNavigatorKey!.currentContext!;
             context.to(
               () => AggregatedSearchPage(
@@ -246,31 +258,16 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
               ),
             );
           },
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(80, 40),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-          ),
-          child: Text(t.search),
         ),
 
         const SizedBox(width: 8),
 
         // 开始观看按钮（仅在历史记录存在时显示）
         if (infoController.bangumiHistory.isNotEmpty)
-          FilledButton(
-            onPressed: () async {
-              showBangumiHistoryPagePickerDialog(context);
-            },
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(120, 40),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(t.bangumiStartWatch),
+          _capsuleButton(
+            text: t.bangumiStartWatch,
+            primary: true,
+            onTap: () => showBangumiHistoryPagePickerDialog(context),
           ),
       ],
     );
