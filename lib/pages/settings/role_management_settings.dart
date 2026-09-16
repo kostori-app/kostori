@@ -939,9 +939,19 @@ class _SettingGenDialogState extends State<_SettingGenDialog> {
   }
 }
 
+/// 设定库触发词输入（「、,，/／|」或换行分隔）→ 列表
+List<String> _splitSettingTriggers(String s) => s
+    .split(RegExp(r'[、,，/／|\n]+'))
+    .map((e) => e.trim())
+    .where((e) => e.isNotEmpty)
+    .toList();
+
 Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   final nameCtrl = TextEditingController(text: entry.name);
   final groupCtrl = TextEditingController(text: entry.group);
+  final triggersCtrl = TextEditingController(
+    text: (entry.payload['triggers'] as List?)?.join('、') ?? '',
+  );
   final bookIds = <String>{...entry.bookIds};
   var codexKind = entry.payload['kind']?.toString() ?? 'item';
   final displayCtrl = TextEditingController(
@@ -1082,6 +1092,18 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                 ),
               ),
               const SizedBox(height: 8),
+              if (entry.type != SettingTypes.job) ...[
+                TextField(
+                  controller: triggersCtrl,
+                  decoration: InputDecoration(
+                    labelText: t.worldBookTriggers,
+                    helperText: t.storyTriggersHint,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (entry.type == SettingTypes.codex) ...[
                 Row(
                   children: [
@@ -1196,6 +1218,7 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   );
 
   final name = nameCtrl.text.trim();
+  final triggers = _splitSettingTriggers(triggersCtrl.text);
   final payload = <String, dynamic>{};
   switch (entry.type) {
     case SettingTypes.codex:
@@ -1205,6 +1228,7 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
         'name': name,
         'display': displayCtrl.text.trim(),
         'mechanics': mechanicsCtrl.text.trim(),
+        if (triggers.isNotEmpty) 'triggers': triggers,
       });
     case SettingTypes.title:
       payload.addAll({
@@ -1212,6 +1236,7 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
         'name': name,
         'effects': effectsCtrl.text.trim(),
         'stackable': stackable,
+        if (triggers.isNotEmpty) 'triggers': triggers,
       });
     case SettingTypes.job:
       payload.addAll({
@@ -1236,10 +1261,12 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
         'name': name,
         'description': descCtrl.text.trim(),
         'maxLevel': int.tryParse(maxLevelCtrl.text.trim()) ?? 1,
+        if (triggers.isNotEmpty) 'triggers': triggers,
       });
   }
   nameCtrl.dispose();
   groupCtrl.dispose();
+  triggersCtrl.dispose();
   displayCtrl.dispose();
   mechanicsCtrl.dispose();
   effectsCtrl.dispose();
