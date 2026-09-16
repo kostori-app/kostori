@@ -205,7 +205,21 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   void initState() {
     super.initState();
     StoryTextStyleStore.instance.ensureLoaded();
+    // 故事被重新导入 / 编辑后，页面无需重开也能立即用上新定义
+    StoryStore.instance.addListener(_onStoryStoreChanged);
     _boot();
+  }
+
+  /// 故事库变化：重算有效故事，并把新声明的变量（如声望/善恶）补进当前状态
+  void _onStoryStoreChanged() {
+    if (!mounted) return;
+    if (StoryStore.instance.find(widget.story.id) == null) return;
+    _effective = _computeEffective();
+    setState(() {
+      _state = _state.copyWith(
+        variables: normalizeVariables(_state.variables, story.variables),
+      );
+    });
   }
 
   /// 是否已贴近底部（列表 reverse，底部即 offset 0）
@@ -242,6 +256,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   @override
   void dispose() {
+    StoryStore.instance.removeListener(_onStoryStoreChanged);
     _stallTimer?.cancel();
     _input.dispose();
     _inputFocus.dispose();
