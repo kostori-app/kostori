@@ -669,39 +669,28 @@ Future<List<Map<String, dynamic>>?> showAiEntryStudio({
   required String schemaHint,
   List<Map<String, dynamic>> previous = const [],
   bool multiple = true,
+  // 非空：在当前导航器内以整块填充方式打开（用于本身就是弹窗的编辑器内部，
+  // 避免再叠一层弹窗导致背景不对）。
+  BuildContext? hostContext,
 }) async {
   final base = await resolveSettingGenConfig();
-  return showPopUpWidget<List<Map<String, dynamic>>?>(
-    App.rootContext,
-    _AiEntryStudio(
-      title: title,
-      systemPrompt: systemPrompt,
-      schemaHint: schemaHint,
-      previous: previous,
-      multiple: multiple,
-      provider: base.provider,
-      model: base.model ?? '',
-      params: base.params,
-    ),
-  );
-}
-
-/// 兼容旧调用：单条生成 / 精修，返回第一条
-Future<Map<String, dynamic>?> aiGenerateEntry({
-  required String title,
-  required String systemPrompt,
-  required String promptTemplate,
-  Map<String, dynamic>? previous,
-}) async {
-  final items = await showAiEntryStudio(
+  final page = _AiEntryStudio(
     title: title,
     systemPrompt: systemPrompt,
-    schemaHint: promptTemplate,
-    previous: previous == null ? const <Map<String, dynamic>>[] : [previous],
-    multiple: false,
+    schemaHint: schemaHint,
+    previous: previous,
+    multiple: multiple,
+    provider: base.provider,
+    model: base.model ?? '',
+    params: base.params,
+    rootPop: hostContext == null,
   );
-  if (items == null || items.isEmpty) return null;
-  return items.first;
+  if (hostContext != null) {
+    return Navigator.of(
+      hostContext,
+    ).push<List<Map<String, dynamic>>?>(MaterialPageRoute(builder: (_) => page));
+  }
+  return showPopUpWidget<List<Map<String, dynamic>>?>(App.rootContext, page);
 }
 
 class _AiEntryStudio extends StatefulWidget {
@@ -714,6 +703,7 @@ class _AiEntryStudio extends StatefulWidget {
     required this.params,
     required this.previous,
     required this.multiple,
+    this.rootPop = true,
   });
 
   final String title;
@@ -724,6 +714,9 @@ class _AiEntryStudio extends StatefulWidget {
   final AiGenerationParams? params;
   final List<Map<String, dynamic>> previous;
   final bool multiple;
+
+  /// true：敲版时 pop 根 Navigator（PopUpWidget）；false：pop 当前 Navigator
+  final bool rootPop;
 
   @override
   State<_AiEntryStudio> createState() => _AiEntryStudioState();
@@ -969,8 +962,16 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
           tooltip: t.confirm,
           onPressed: _items.isEmpty
               ? null
-              : () =>
-                    Navigator.of(App.rootContext, rootNavigator: true).pop(_items),
+              : () {
+                  if (widget.rootPop) {
+                    Navigator.of(
+                      App.rootContext,
+                      rootNavigator: true,
+                    ).pop(_items);
+                  } else {
+                    context.pop(_items);
+                  }
+                },
         ),
       ],
       body: Column(
@@ -1060,7 +1061,42 @@ List<String> _splitSettingTriggers(String s) => s
     .where((e) => e.isNotEmpty)
     .toList();
 
+/// AI 精修请求：编辑器内点「精修」时返回，由外层关闭编辑器后再开工作室
+class _AiRefineRequest {
+  final Map<String, dynamic> payload;
+  const _AiRefineRequest(this.payload);
+}
+
+/// 编辑设定库条目。AI 精修会先关掉本编辑器 → 开工作室 → 带着结果重开，
+/// 避免在弹窗上再叠一层弹窗（那样背景/层级会不对）。
 Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
+  var current = entry;
+  while (true) {
+    final result = await _showSettingEntryDialog(current);
+    if (result is _AiRefineRequest) {
+      final refined = await showAiEntryStudio(
+        title: '${t.edit} · ${t.aiRefine}',
+        systemPrompt: t.settingAiSystem,
+        schemaHint: _SettingLibraryPanelState._settingSchema(current.type),
+        previous: [result.payload],
+        multiple: false,
+      );
+      if (refined != null && refined.isNotEmpty) {
+        final item = refined.first;
+        final n = item['name']?.toString().trim() ?? '';
+        current = current.copyWith(
+          name: n.isNotEmpty ? n : current.name,
+          payload: item,
+        );
+      }
+      continue;
+    }
+    if (result is SettingEntry) return result;
+    return null;
+  }
+}
+
+Future<Object?> _showSettingEntryDialog(SettingEntry entry) async {
   final nameCtrl = TextEditingController(text: entry.name);
   final groupCtrl = TextEditingController(text: entry.group);
   final triggersCtrl = TextEditingController(
@@ -1103,7 +1139,61 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
     _ => k,
   };
 
-  final ok = await showDialog<bool>(
+  /// 收集当前字段为一个条目 JSON（供 AI 精修与保存共用）
+  Map<String, dynamic> buildPayload() {
+    final name = nameCtrl.text.trim();
+    final triggers = _splitSettingTriggers(triggersCtrl.text);
+    final payload = <String, dynamic>{};
+    switch (entry.type) {
+      case SettingTypes.codex:
+        payload.addAll({
+          'kind': codexKind,
+          'key': name,
+          'name': name,
+          'display': displayCtrl.text.trim(),
+          'mechanics': mechanicsCtrl.text.trim(),
+          if (triggers.isNotEmpty) 'triggers': triggers,
+        });
+      case SettingTypes.title:
+        payload.addAll({
+          'key': name,
+          'name': name,
+          'effects': effectsCtrl.text.trim(),
+          'stackable': stackable,
+          if (triggers.isNotEmpty) 'triggers': triggers,
+        });
+      case SettingTypes.job:
+        payload.addAll({
+          'name': name,
+          'description': descCtrl.text.trim(),
+          'levels': [
+            for (final line in levelsCtrl.text.split('\n'))
+              if (line.trim().isNotEmpty)
+                () {
+                  final parts = line.split('|');
+                  return {
+                    'level':
+                        int.tryParse(parts.isNotEmpty ? parts[0].trim() : '') ??
+                        0,
+                    'name': parts.length > 1 ? parts[1].trim() : '',
+                    'bonus': parts.length > 2 ? parts[2].trim() : '',
+                  };
+                }(),
+          ],
+        });
+      case SettingTypes.facility:
+        payload.addAll({
+          'key': name,
+          'name': name,
+          'description': descCtrl.text.trim(),
+          'maxLevel': int.tryParse(maxLevelCtrl.text.trim()) ?? 1,
+          if (triggers.isNotEmpty) 'triggers': triggers,
+        });
+    }
+    return payload;
+  }
+
+  final ok = await showDialog<Object?>(
     context: App.rootContext,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setLocal) => ContentDialog(
@@ -1113,63 +1203,19 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () async {
-                    final keys = switch (entry.type) {
-                      SettingTypes.codex =>
-                        '{"name":"名称","kind":"item|trait|race|skill|talent|body",'
-                            '"display":"玩家可见描述","mechanics":"机制/数值"}',
-                      SettingTypes.title => '{"name":"称号名","effects":"效果（数值/机制）"}',
-                      SettingTypes.job =>
-                        '{"name":"职业名","description":"简介",'
-                            '"levels":[{"level":1,"name":"阶段名","bonus":"加成"}]}',
-                      SettingTypes.facility =>
-                        '{"name":"设施名","description":"说明","maxLevel":3}',
-                      _ => '{"name":"名称","description":"说明"}',
-                    };
-                    final data = await aiGenerateEntry(
-                      title: entry.payload.isEmpty
-                          ? t.aiGenerate
-                          : '${t.edit} · ${t.aiRefine}',
-                      systemPrompt: t.settingAiSystem,
-                      promptTemplate: keys,
-                      // 已有内容 → 多轮精修现有条目
-                      previous: entry.payload.isEmpty ? null : entry.payload,
-                    );
-                    if (data == null || !ctx.mounted) return;
-                    setLocal(() {
-                      final n = data['name']?.toString() ?? '';
-                      if (n.isNotEmpty) nameCtrl.text = n;
-                      final k = data['kind']?.toString() ?? '';
-                      if (codexKinds.contains(k)) codexKind = k;
-                      final d = data['display']?.toString() ?? '';
-                      if (d.isNotEmpty) displayCtrl.text = d;
-                      final me = data['mechanics']?.toString() ?? '';
-                      if (me.isNotEmpty) mechanicsCtrl.text = me;
-                      final ef = data['effects']?.toString() ?? '';
-                      if (ef.isNotEmpty) effectsCtrl.text = ef;
-                      final de = data['description']?.toString() ?? '';
-                      if (de.isNotEmpty) descCtrl.text = de;
-                      final ml = data['maxLevel'];
-                      if (ml is num) maxLevelCtrl.text = '${ml.toInt()}';
-                      final lv = data['levels'];
-                      if (lv is List) {
-                        levelsCtrl.text = [
-                          for (final l in lv)
-                            if (l is Map)
-                              '${l['level'] ?? ''}|${l['name'] ?? ''}|${l['bonus'] ?? ''}',
-                        ].join('\n');
-                      }
-                    });
-                  },
-                  icon: const Icon(Icons.auto_awesome, size: 16),
-                  label: Text(
-                    entry.payload.isEmpty ? t.aiGenerate : t.aiRefine,
+              // 仅对已有条目提供 AI 精修（新建请用组上的「AI 生成」）
+              if (entry.payload.isNotEmpty)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    // 先关掉本编辑器，由外层打开工作室，再带结果重开：
+                    // 避免在弹窗上再叠弹窗导致背景不对
+                    onPressed: () =>
+                        Navigator.of(ctx).pop(_AiRefineRequest(buildPayload())),
+                    icon: const Icon(Icons.auto_awesome, size: 16),
+                    label: Text(t.aiRefine),
                   ),
                 ),
-              ),
               const SizedBox(height: 4),
               TextField(
                 controller: nameCtrl,
@@ -1336,52 +1382,8 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   );
 
   final name = nameCtrl.text.trim();
-  final triggers = _splitSettingTriggers(triggersCtrl.text);
-  final payload = <String, dynamic>{};
-  switch (entry.type) {
-    case SettingTypes.codex:
-      payload.addAll({
-        'kind': codexKind,
-        'key': name,
-        'name': name,
-        'display': displayCtrl.text.trim(),
-        'mechanics': mechanicsCtrl.text.trim(),
-        if (triggers.isNotEmpty) 'triggers': triggers,
-      });
-    case SettingTypes.title:
-      payload.addAll({
-        'key': name,
-        'name': name,
-        'effects': effectsCtrl.text.trim(),
-        'stackable': stackable,
-        if (triggers.isNotEmpty) 'triggers': triggers,
-      });
-    case SettingTypes.job:
-      payload.addAll({
-        'name': name,
-        'description': descCtrl.text.trim(),
-        'levels': [
-          for (final line in levelsCtrl.text.split('\n'))
-            if (line.trim().isNotEmpty)
-              () {
-                final parts = line.split('|');
-                return {
-                  'level': int.tryParse(parts.isNotEmpty ? parts[0].trim() : '') ?? 0,
-                  'name': parts.length > 1 ? parts[1].trim() : '',
-                  'bonus': parts.length > 2 ? parts[2].trim() : '',
-                };
-              }(),
-        ],
-      });
-    case SettingTypes.facility:
-      payload.addAll({
-        'key': name,
-        'name': name,
-        'description': descCtrl.text.trim(),
-        'maxLevel': int.tryParse(maxLevelCtrl.text.trim()) ?? 1,
-        if (triggers.isNotEmpty) 'triggers': triggers,
-      });
-  }
+  final group = groupCtrl.text.trim();
+  final payload = buildPayload();
   nameCtrl.dispose();
   groupCtrl.dispose();
   triggersCtrl.dispose();
@@ -1394,7 +1396,7 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
   if (ok != true) return null;
   return entry.copyWith(
     name: name,
-    group: groupCtrl.text.trim(),
+    group: group,
     bookIds: bookIds.toList(),
     payload: payload,
   );
@@ -2717,15 +2719,18 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       if (_triggerCtrl.text.trim().isNotEmpty)
         'triggers': _lines(_triggerCtrl),
     };
-    final data = await aiGenerateEntry(
+    final items = await showAiEntryStudio(
+      // 在当前弹窗导航器内打开，避免叠一层弹窗
+      hostContext: context,
       title: existing.isEmpty ? t.aiGenerate : t.aiRefine,
       systemPrompt: t.worldBookAiSystem,
-      promptTemplate:
+      schemaHint:
           '{"name":"条目名","triggers":["触发词1","触发词2"],"content":"条目内容"}',
-      // 已有内容 → 多轮精修现有条目
-      previous: existing.isEmpty ? null : existing,
+      previous: existing.isEmpty ? const [] : [existing],
+      multiple: false,
     );
-    if (data == null || !mounted) return;
+    if (items == null || items.isEmpty || !mounted) return;
+    final data = items.first;
     setState(() {
       final n = data['name']?.toString() ?? '';
       if (n.isNotEmpty) _nameCtrl.text = n;
