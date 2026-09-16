@@ -258,7 +258,9 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                     title: Text(displayName),
                     automaticallyImplyLeading: false,
                     scrolledUnderElevation: 0.0,
-                    backgroundColor: Colors.transparent,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.6),
                     leading: IconButton(
                       onPressed: () {
                         Navigator.maybePop(context);
@@ -360,31 +362,24 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                     ),
                                   ),
                                 ),
-                              // 收起时工具栏/Tab 区域磨砂玻璃（模糊其下滚动的内容）
-                              if (innerBoxIsScrolled)
-                                Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  height:
-                                      MediaQuery.paddingOf(context).top +
-                                      kToolbarHeight +
-                                      kTextTabBarHeight,
-                                  child: ClipRect(
-                                    child: BackdropFilter.grouped(
-                                      filter: ImageFilter.blur(
-                                        sigmaX: 16,
-                                        sigmaY: 16,
-                                      ),
-                                      child: Container(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surface
-                                            .withValues(alpha: 0.7),
-                                      ),
+                              // 磨砂玻璃层：盖住整个 AppBar 区域，
+                              // 收起时模糊其下滚动的正文
+                              Positioned.fill(
+                                child: ClipRect(
+                                  child: BackdropFilter.grouped(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 16,
+                                      sigmaY: 16,
+                                    ),
+                                    child: Container(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surface
+                                          .withValues(alpha: 0.35),
                                     ),
                                   ),
                                 ),
+                              ),
                               SafeArea(
                                 bottom: false,
                                 child: Align(
