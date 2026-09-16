@@ -222,7 +222,13 @@ class _WatcherState extends State<Watcher>
       if (_isSeries) {
         await _ensureSeries();
       }
-      if (!_isWatchMember && history.lastWatchEpisode != 0) {
+      // 「进入时自动播放」关闭：进入页面不自动解析/加载上次集数，
+      // 等用户手动选集数再播放
+      final autoPlayOnEnter =
+          appdata.implicitData['playerAutoPlayOnEnter'] != false;
+      if (!_isWatchMember &&
+          autoPlayOnEnter &&
+          history.lastWatchEpisode != 0) {
         loadInfo(history.lastWatchEpisode!, history.lastRoad!.toInt());
       } else if (_isWatchMember) {
         // 一起看成员：先加载默认集数（临时解锁，否则初始加载会被 syncLocked 拦截），
@@ -486,9 +492,6 @@ class _WatcherState extends State<Watcher>
   /// 打开媒体并等待缓冲就绪，然后启动历史/进度定时上报
   Future<void> _play(String res, int currentPlaybackTime) async {
     playerController.loadFailed = false;
-    // 进入时自动播放设置（默认开）；关闭时打开媒体后保持暂停
-    final autoPlayOnEnter =
-        appdata.implicitData['playerAutoPlayOnEnter'] != false;
     try {
       if (!mounted) return;
       final actualPlayUrl = await _resolvePlayUrl(res);
@@ -521,7 +524,6 @@ class _WatcherState extends State<Watcher>
           actualPlayUrl,
           httpHeaders: actualPlayUrl == res ? playHeaders : const {},
         ),
-        play: autoPlayOnEnter,
       );
     } catch (e, s) {
       PlayLog.error("openMedia", "$e\n$s");
@@ -541,13 +543,6 @@ class _WatcherState extends State<Watcher>
     }
 
     await _waitForBuffer(currentPlaybackTime);
-    // open(play:false) 在部分平台/解码器上会因缓冲或 seek 恢复播放，
-    // 关闭「进入时自动播放」时这里再收口一次，确保进入页面为暂停态
-    if (!autoPlayOnEnter) {
-      try {
-        await playerController.player.pause();
-      } catch (_) {}
-    }
     _startHistoryTimer();
   }
 
