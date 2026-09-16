@@ -256,6 +256,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog>
                   ),
                   SingleChildScrollView(
                     controller: sc,
+                    padding: const EdgeInsets.only(bottom: 32),
                     child: buildSearchOptions(),
                   ),
                 ],

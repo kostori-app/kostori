@@ -372,6 +372,7 @@ class _SearchPageState extends State<SearchPage> {
               builder: (context, sc) {
                 return SingleChildScrollView(
                   controller: sc,
+                  padding: const EdgeInsets.only(bottom: 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
