@@ -554,70 +554,72 @@ class SearchHistory extends ConsumerWidget {
 
     return Builder(
       builder: (context) {
-        return InkWell(
-          onTap: () => search(item.keyword),
-          onLongPress: () {
-            var renderBox = context.findRenderObject() as RenderBox;
-            var offset = renderBox.localToGlobal(Offset.zero);
-            showMenu(
-              Offset(
-                offset.dx + renderBox.size.width / 2 - 121,
-                offset.dy + renderBox.size.height - 8,
+        final cs = Theme.of(context).colorScheme;
+        return Material(
+          color: cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => search(item.keyword),
+            onLongPress: () {
+              var renderBox = context.findRenderObject() as RenderBox;
+              var offset = renderBox.localToGlobal(Offset.zero);
+              showMenu(
+                Offset(
+                  offset.dx + renderBox.size.width / 2 - 121,
+                  offset.dy + renderBox.size.height - 8,
+                ),
+              );
+            },
+            onSecondaryTapUp: (details) => showMenu(details.globalPosition),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
               ),
-            );
-          },
-          onSecondaryTapUp: (details) => showMenu(details.globalPosition),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: context.colorScheme.outlineVariant,
-                  width: 2,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.keyword,
+                    style: ts.s14.copyWith(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.repeat,
+                        size: 14,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        t.searchUseCount(n: item.useCount),
+                        style: ts.s12.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        Utils.formatTime(item.lastUsedAt),
+                        style: ts.s12.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.keyword,
-                  style: ts.s14.copyWith(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.repeat,
-                      size: 14,
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      t.searchUseCount(n: item.useCount),
-                      style: ts.s12.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.schedule,
-                      size: 14,
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      Utils.formatTime(item.lastUsedAt),
-                      style: ts.s12.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ),
           ),
-        ).paddingBottom(8).paddingHorizontal(4);
+        ).paddingBottom(8);
       },
     );
   }
