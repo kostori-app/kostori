@@ -158,6 +158,9 @@ class AiChatUpdate {
 
   final String? modelName;
 
+  /// 因达到 token 上限被截断（finish_reason=length）
+  final bool truncated;
+
   const AiChatUpdate({
     this.text = '',
     this.reasoning = '',
@@ -167,6 +170,7 @@ class AiChatUpdate {
     this.errorMessage,
     this.usage,
     this.modelName,
+    this.truncated = false,
   });
 }
 
@@ -693,6 +697,9 @@ class AiConversationService {
     DateTime? thinkingLastSeenAt;
     var prevReasoningLen = 0;
 
+    // 是否因达到 token 上限被截断（供调用方决定是否提示重试）
+    var truncated = false;
+
     // 渐进式加载会多花一轮（load_tools → 真正调用），故放宽轮次上限
     for (var round = 0; round < 5 && !finished; round++) {
       var currentText = '';
@@ -723,6 +730,7 @@ class AiConversationService {
           currentReasoning = chunk.reasoning;
           roundToolCalls = chunk.toolCalls;
           if (chunk.usage != null) usage = chunk.usage;
+          if (chunk.finishReason == 'length') truncated = true;
           roundDone = chunk.done;
           if (chunk.reasoning.length > prevReasoningLen) {
             prevReasoningLen = chunk.reasoning.length;
@@ -942,6 +950,7 @@ class AiConversationService {
       done: true,
       usage: usage,
       modelName: modelName,
+      truncated: truncated,
     );
   }
 

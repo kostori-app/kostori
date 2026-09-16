@@ -1721,6 +1721,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNoEntry => '暂无设定';
 	@override String get storyResponseFailed => '上次回复中断了';
 	@override String get storyResponseStalled => '回复超时，已中断，可重试';
+	@override String get storyResponseTruncated => '回复达到 token 上限被截断，可重试';
 	@override String get unnamedStory => '未命名故事';
 	@override String get diceSuccess => '成功';
 	@override String get diceFailure => '失败';
@@ -4665,6 +4666,7 @@ extension on TranslationsZhCn {
 			'storyNoEntry' => '暂无设定',
 			'storyResponseFailed' => '上次回复中断了',
 			'storyResponseStalled' => '回复超时，已中断，可重试',
+			'storyResponseTruncated' => '回复达到 token 上限被截断，可重试',
 			'unnamedStory' => '未命名故事',
 			'diceSuccess' => '成功',
 			'diceFailure' => '失败',
@@ -4988,9 +4990,9 @@ extension on TranslationsZhCn {
 			'audioCompatibility' => '音频: 兼容模式',
 			'videoClipEditor' => '视频剪辑',
 			'clipStartTime' => '开始时间',
-			'clipEndTime' => '结束时间',
 			_ => null,
 		} ?? switch (path) {
+			'clipEndTime' => '结束时间',
 			'clipDuration' => '时长',
 			'previewClip' => '预览',
 			'exportClip' => '导出',
@@ -5502,9 +5504,9 @@ extension on TranslationsZhCn {
 			'newPromptInjection' => '新建注入',
 			'editPromptInjection' => '编辑注入',
 			'injectionName' => '名称',
-			'injectionContent' => '内容',
 			_ => null,
 		} ?? switch (path) {
+			'injectionContent' => '内容',
 			'injectionPosition' => '注入位置',
 			'injectionPositionAfterPersonality' => '人格之后',
 			'injectionPositionAfterSystemPrompt' => '自定义提示词之后',

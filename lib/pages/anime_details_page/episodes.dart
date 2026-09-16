@@ -33,6 +33,13 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     if (mounted) setState(() => _downloaded = loaded);
   }
 
+  /// 播放已下载的本地文件
+  void _playLocal(String path) {
+    App.mainNavigatorKey?.currentContext?.to(
+      () => LocalPlayerPage(filePath: path),
+    );
+  }
+
   /// 系列模式：源无分集，加载与剧集平行的系列列表（复用 Anime 结构）
   List<Anime>? _series;
 
@@ -156,6 +163,13 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                   '${items[i].id}|${items[i].title}',
                 ),
                 onTap: () async {
+                  // 已下载且文件仍在：优先播放本地文件
+                  final localPath =
+                      _downloaded['${items[i].id}|${items[i].title}'];
+                  if (localPath != null) {
+                    _playLocal(localPath);
+                    return;
+                  }
                   // 播放用原始列表索引，排序不影响播放逻辑
                   final originalIndex = series.indexOf(items[i]);
                   await state.playerController.playEpisode(
@@ -177,7 +191,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   /// 当前条目（系列模式单集）卡片：标题 + 播放按钮，点击直接播放该条目
   Widget _buildCurrentEpisodeCard(BuildContext context, Anime entry) {
     final colorScheme = Theme.of(context).colorScheme;
-    final downloaded = _downloaded.containsKey('${entry.id}|${entry.title}');
+    final localPath = _downloaded['${entry.id}|${entry.title}'];
+    final downloaded = localPath != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Material(
@@ -197,6 +212,11 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
+            // 已下载且文件仍在：优先播放本地文件
+            if (localPath != null) {
+              _playLocal(localPath);
+              return;
+            }
             final idx = _series!.indexWhere((a) => a.id == entry.id);
             if (idx >= 0) {
               state.playerController.playEpisode(idx + 1, 0);
@@ -487,9 +507,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                         final epName = epTitle.isEmpty
                             ? t.episodeN(n: key)
                             : epTitle;
-                        final downloaded = _downloaded.containsKey(
-                          '${state.anime.id}|$epName',
-                        );
+                        final localPath =
+                            _downloaded['${state.anime.id}|$epName'];
 
                         return SizedBox(
                           // 只有一集时占满整行，避免显示成 1/3 宽的小格子
@@ -501,8 +520,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                               vertical: 8,
                             ),
                             child: Material(
-                              // 已下载（文件仍在）：绿色调高亮
-                              color: downloaded
+                              // 已下载（文件仍在）：绿色调高亮，点击播放本地
+                              color: localPath != null
                                   ? Colors.green.withValues(alpha: 0.15)
                                   : (!visited
                                         ? context.colorScheme.surfaceContainer
@@ -514,6 +533,11 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                               ),
                               child: InkWell(
                                 onTap: () async {
+                                  // 已下载且文件仍在：优先播放本地文件
+                                  if (localPath != null) {
+                                    _playLocal(localPath);
+                                    return;
+                                  }
                                   await state.playerController.playEpisode(
                                     index + 1,
                                     playList,
@@ -601,7 +625,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                           ),
                                         ),
                                       ),
-                                      if (downloaded)
+                                      if (localPath != null)
                                         const Padding(
                                           padding: EdgeInsets.only(left: 4),
                                           child: Icon(

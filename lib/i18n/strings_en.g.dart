@@ -5089,6 +5089,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'The reply timed out and was stopped. You can retry.'
 	String get storyResponseStalled => 'The reply timed out and was stopped. You can retry.';
 
+	/// en: 'The reply hit the token limit and was cut off. You can retry.'
+	String get storyResponseTruncated => 'The reply hit the token limit and was cut off. You can retry.';
+
 	/// en: 'Untitled story'
 	String get unnamedStory => 'Untitled story';
 
@@ -10401,6 +10404,7 @@ extension on Translations {
 			'storyNoEntry' => 'No entry yet',
 			'storyResponseFailed' => 'The last reply was interrupted',
 			'storyResponseStalled' => 'The reply timed out and was stopped. You can retry.',
+			'storyResponseTruncated' => 'The reply hit the token limit and was cut off. You can retry.',
 			'unnamedStory' => 'Untitled story',
 			'diceSuccess' => 'Success',
 			'diceFailure' => 'Failure',
@@ -10723,9 +10727,9 @@ extension on Translations {
 			'clipStartTime' => 'Start Time',
 			'clipEndTime' => 'End Time',
 			'clipDuration' => 'Duration',
-			'previewClip' => 'Preview',
 			_ => null,
 		} ?? switch (path) {
+			'previewClip' => 'Preview',
 			'exportClip' => 'Export',
 			'exportFormat' => 'Export Format',
 			'exportQuality' => 'Export Quality',
@@ -11237,9 +11241,9 @@ extension on Translations {
 			'newPromptInjection' => 'New Injection',
 			'editPromptInjection' => 'Edit Injection',
 			'injectionName' => 'Name',
-			'injectionContent' => 'Content',
 			_ => null,
 		} ?? switch (path) {
+			'injectionContent' => 'Content',
 			'injectionPosition' => 'Injection position',
 			'injectionPositionAfterPersonality' => 'After personality',
 			'injectionPositionAfterSystemPrompt' => 'After custom system prompt',

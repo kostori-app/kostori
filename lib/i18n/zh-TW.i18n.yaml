@@ -1732,6 +1732,7 @@ storyNoSituation: 暫無局勢資訊
 storyNoEntry: 暫無設定
 storyResponseFailed: 上次回覆中斷了
 storyResponseStalled: 回覆逾時，已中斷，可重試
+storyResponseTruncated: 回覆達到 token 上限被截斷，可重試
 unnamedStory: 未命名故事
 diceSuccess: 成功
 diceFailure: 失敗

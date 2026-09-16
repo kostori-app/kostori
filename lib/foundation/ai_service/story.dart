@@ -2347,7 +2347,9 @@ class Story {
 - choices 提供 3-5 个可供玩家选择的行动：每条不超过 15 个字，动词开头，只写行动本身，不要解释、后果或括号补充。
 - **道具/技能/能力必须登记**：任何新出现的物品、技能或能力，都要在本回合的 codex 里给出对应条目（kind 用 item/skill/race/trait/talent/body），并提供 display（玩家可见）与 mechanics（机制数值）。未登记却出现在 inventory/skills 里的内容视为不合理，系统会提示补全。
 - **inventory/equipped/skills 只写名称**：这些数组里每一项都必须是简短的条目名（可带「x数量」，如「瓶盖 x23」），**不要写动作、句子或叙述**（例如「穿上雨披」「取得号码牌，与钥匙吻合。」都是错误写法）；物品的说明写进对应 codex 的 display/mechanics。
-- **身体/状态词条**：损伤、体温、感染、疲劳等生理状态用 codex 的 kind=body 登记，会归入「身体」栏。
+- **身体/状态词条**：损伤、体温、感染、疲劳等生理状态用 codex 的 kind=body 登记，会归入「身体」栏。**该词条默认属于玩家**；NPC 的伤势 / 生理状态写进该角色的 npcs[].status 与 npcs[].resources，不要登记到玩家 codex 里。
+- **同名物品要区分 key**：不同归属 / 来源的同名物品（如「短刀」与「老车夫的短刀」）必须使用不同的 key，否则两件物品会共用同一套机制。
+- **重复登记必须给全字段**：再次输出已有 codex 词条时，display 与 mechanics 都要给（若本回合没有变化，直接省略该词条即可），避免只给其一导致机制丢失。
 - **称号**：获得称号时把其 key 加入 titles（可带 stacks 层数、equipped 是否佩戴）；只能使用故事预定义的称号 key。
 - **状态效果**：用 effects 记录当前 buff/debuff（name、kind=buff|debuff、stacks 层数、remaining 剩余回合、description）；remaining 减到 0 即移除。
 - **职业/等级**：用 job 记录职业 name、等级 level、经验 exp；升级规则按故事设定。

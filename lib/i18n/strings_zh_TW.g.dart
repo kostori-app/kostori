@@ -1722,6 +1722,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNoEntry => '暫無設定';
 	@override String get storyResponseFailed => '上次回覆中斷了';
 	@override String get storyResponseStalled => '回覆逾時，已中斷，可重試';
+	@override String get storyResponseTruncated => '回覆達到 token 上限被截斷，可重試';
 	@override String get unnamedStory => '未命名故事';
 	@override String get diceSuccess => '成功';
 	@override String get diceFailure => '失敗';
@@ -4665,6 +4666,7 @@ extension on TranslationsZhTw {
 			'storyNoEntry' => '暫無設定',
 			'storyResponseFailed' => '上次回覆中斷了',
 			'storyResponseStalled' => '回覆逾時，已中斷，可重試',
+			'storyResponseTruncated' => '回覆達到 token 上限被截斷，可重試',
 			'unnamedStory' => '未命名故事',
 			'diceSuccess' => '成功',
 			'diceFailure' => '失敗',
@@ -4987,9 +4989,9 @@ extension on TranslationsZhTw {
 			'videoClipEditor' => '影片剪輯',
 			'clipStartTime' => '開始時間',
 			'clipEndTime' => '結束時間',
-			'clipDuration' => '時長',
 			_ => null,
 		} ?? switch (path) {
+			'clipDuration' => '時長',
 			'previewClip' => '預覽',
 			'exportClip' => '匯出',
 			'exportFormat' => '匯出格式',
@@ -5501,9 +5503,9 @@ extension on TranslationsZhTw {
 			'editPromptInjection' => '編輯注入',
 			'injectionName' => '名稱',
 			'injectionContent' => '內容',
-			'injectionPosition' => '注入位置',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPosition' => '注入位置',
 			'injectionPositionAfterPersonality' => '人格之後',
 			'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',
 			'injectionPositionAfterKnowledge' => '知識之後',

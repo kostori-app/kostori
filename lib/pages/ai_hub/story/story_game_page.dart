@@ -781,6 +781,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _startGenTimer();
     _scrollToBottom(force: true);
     _armStallWatchdog();
+    var truncated = false;
     try {
       await for (final u in AiConversationService().sendMessageStream(
         sessionId: sessionId,
@@ -818,6 +819,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           );
           return;
         }
+        if (u.truncated) truncated = true;
         setState(() {
           _pendingUserText = null;
           _streamText = u.text;
@@ -844,6 +846,26 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           message: t.storyResponseStalled,
           level: LogLevel.warning,
         );
+      }
+      // 达到 token 上限被截断：丢弃截断的回复，保留用户消息，
+      // 重试入口在退出重进后依然存在
+      if (truncated && !cancelled) {
+        try {
+          final msgs = await AiConversationService()
+              .watchMessages(sessionId)
+              .first;
+          if (msgs.isNotEmpty && msgs.last.role == 'model') {
+            await AiConversationService().deleteMessage(msgs.last.id);
+          }
+        } catch (_) {}
+        if (mounted) {
+          setState(() => _lastFailed = true);
+          App.rootContext.showMessage(
+            message: t.storyResponseTruncated,
+            level: LogLevel.warning,
+          );
+        }
+        return;
       }
       // 取消时服务端不落库，忽略本次结果
       if (cancelled || finalText.trim().isEmpty) return;
@@ -1334,14 +1356,31 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         if (n.name.trim().isNotEmpty) n.name.trim(),
     };
     if (names.isEmpty) return;
+    final stored = StoryCharacterStore.instance.get(story.id);
     final existing = {
-      for (final c in StoryCharacterStore.instance.get(story.id)) ...[
-        c.name,
-        c.displayName,
-      ],
+      for (final c in stored) ...[c.name, c.displayName],
       for (final c in story.characters) ...[c.name, c.displayName],
     };
     final added = <CharacterCard>[];
+    var changed = false;
+    // 已有自动卡：把本回合新出现的设定追加进描述（累加，不清空）
+    final updated = <CharacterCard>[
+      for (final c in stored)
+        if (c.creator == 'auto' && names.contains(c.name))
+          () {
+            final fresh = _npcAutoDescription(
+              c.name,
+              _npcIn(state, c.name),
+              state,
+            );
+            final merged = _mergeDescription(c.description, fresh);
+            if (merged == c.description) return c;
+            changed = true;
+            return c.copyWith(description: merged);
+          }()
+        else
+          c,
+    ];
     for (final name in names) {
       if (existing.contains(name)) continue;
       final npc = _npcIn(state, name);
@@ -1357,12 +1396,21 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       );
       existing.add(name);
     }
-    if (added.isEmpty) return;
-    await StoryCharacterStore.instance.put(story.id, [
-      ...StoryCharacterStore.instance.get(story.id),
-      ...added,
-    ]);
+    if (added.isEmpty && !changed) return;
+    await StoryCharacterStore.instance.put(story.id, [...updated, ...added]);
     _effective = _computeEffective();
+  }
+
+  /// 描述累加：按「；」拆分去重后拼接，保留历史设定
+  String _mergeDescription(String old, String fresh) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final s in [...old.split('；'), ...fresh.split('；')]) {
+      final v = s.trim();
+      if (v.isEmpty || !seen.add(v)) continue;
+      out.add(v);
+    }
+    return out.join('；');
   }
 
   NpcState? _npcIn(GameState state, String name) {
@@ -1372,21 +1420,25 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return null;
   }
 
-  /// 自动角色卡描述：姿态 / 好感度 / 同名词条
-  /// 自动建 NPC 卡的描述：只写“人设/来路”，不写好感度等运行状态
+  /// 自动角色卡描述：只写“人设 / 来路 / 设定”，
+  /// 不包含心理活动、当前动作、姿态或好感度等运行状态
   String _npcAutoDescription(String name, NpcState? npc, GameState state) {
     final parts = <String>[];
-    for (final d in state.codex) {
-      if (d.name == name || d.key == name) {
-        final text = d.display.trim().isNotEmpty
-            ? d.display.trim()
-            : d.mechanics.trim();
-        if (text.isNotEmpty) parts.add(text);
-        break;
-      }
+    // 故事里已定义的人设优先
+    for (final c in story.characters) {
+      if (c.name != name && c.displayName != name) continue;
+      final text = c.description.trim();
+      if (text.isNotEmpty) parts.add(text);
+      break;
     }
-    if (npc != null && npc.status.trim().isNotEmpty) {
-      parts.add('当前状态：${npc.status.trim()}');
+    // codex 里名下的设定（排除 body 等运行状态条目）
+    for (final d in state.codex) {
+      if (d.name != name && d.key != name) continue;
+      if (d.kind == 'body') continue;
+      final text = d.display.trim().isNotEmpty
+          ? d.display.trim()
+          : d.mechanics.trim();
+      if (text.isNotEmpty && !parts.contains(text)) parts.add(text);
     }
     if (parts.isEmpty) {
       parts.add(t.storyAutoNpcDescription);
@@ -1430,20 +1482,43 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           ? {..._state.attributes, ...state.attributes}
           : _state.attributes,
     );
-    if (!provided.contains('skills')) {
-      next = next.copyWith(skills: _state.skills);
+    // 列表类字段：模型经常漏报或给空数组误清空 —— 与上一回合取并集，
+    // 保证已获得的技能 / 物品 / 装备 / 成就不会莫名丢失
+    List<String> mergeList(String key, List<String> incoming) {
+      final current = switch (key) {
+        'skills' => _state.skills,
+        'inventory' => _state.inventory,
+        'equipped' => _state.equipped,
+        'achievements' => _state.achievements,
+        _ => const <String>[],
+      };
+      if (!provided.contains(key) || incoming.isEmpty) return current;
+      final out = [...current];
+      for (final v in incoming) {
+        if (!out.contains(v)) out.add(v);
+      }
+      return out;
     }
-    if (!provided.contains('inventory')) {
-      next = next.copyWith(inventory: _state.inventory);
-    }
-    if (!provided.contains('quests')) {
+
+    next = next.copyWith(
+      skills: mergeList('skills', state.skills),
+      inventory: mergeList('inventory', state.inventory),
+      equipped: mergeList('equipped', state.equipped),
+      achievements: mergeList('achievements', state.achievements),
+    );
+    // 任务：按 title 合并（新回合的进度 / 状态覆盖旧值，新任务追加）
+    if (provided.contains('quests') && state.quests.isNotEmpty) {
+      final byTitle = <String, QuestItem>{
+        for (final q in _state.quests)
+          if (q.title.isNotEmpty) q.title: q,
+      };
+      for (final q in state.quests) {
+        if (q.title.isEmpty) continue;
+        byTitle[q.title] = q;
+      }
+      next = next.copyWith(quests: byTitle.values.toList());
+    } else {
       next = next.copyWith(quests: _state.quests);
-    }
-    if (!provided.contains('achievements')) {
-      next = next.copyWith(achievements: _state.achievements);
-    }
-    if (!provided.contains('equipped')) {
-      next = next.copyWith(equipped: _state.equipped);
     }
     if (!provided.contains('time')) next = next.copyWith(time: _state.time);
     if (!provided.contains('location')) {
@@ -1458,15 +1533,35 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (!provided.contains('combat')) {
       next = next.copyWith(combat: _state.combat);
     }
-    // 词条一旦登记就保留（模型偶尔会漏报），合并而非覆盖
-    final mergedCodex = [...next.codex];
-    final seenDefs = {
-      for (final d in mergedCodex) '${d.kind}\u0000${d.key}': true,
-    };
+    // 词条一旦登记就保留，并按 (kind, key) 做「非空字段」合并：
+    // 模型重复登记时若只给了 display（漏了 mechanics），保留旧的机制说明，
+    // 避免已存在的物品 / 天赋设定被空值覆盖丢失
+    final mergedCodex = <StoryDefinition>[];
+    final codexIndex = <String, int>{};
+    void addDef(StoryDefinition d) {
+      final k = '${d.kind}\u0000${d.key}';
+      final i = codexIndex[k];
+      if (i == null) {
+        codexIndex[k] = mergedCodex.length;
+        mergedCodex.add(d);
+        return;
+      }
+      final old = mergedCodex[i];
+      mergedCodex[i] = StoryDefinition(
+        kind: old.kind,
+        key: old.key,
+        name: d.name.isNotEmpty ? d.name : old.name,
+        display: d.display.isNotEmpty ? d.display : old.display,
+        mechanics: d.mechanics.isNotEmpty ? d.mechanics : old.mechanics,
+        triggers: d.triggers.isNotEmpty ? d.triggers : old.triggers,
+      );
+    }
+
     for (final d in _state.codex) {
-      if (seenDefs['${d.kind}\u0000${d.key}'] == true) continue;
-      mergedCodex.add(d);
-      seenDefs['${d.kind}\u0000${d.key}'] = true;
+      addDef(d);
+    }
+    for (final d in next.codex) {
+      addDef(d);
     }
     next = next.copyWith(codex: mergedCodex);
     // 资源合并：模型偶尔漏报部分数值条（如体力/进食），按初始状态顺序补齐

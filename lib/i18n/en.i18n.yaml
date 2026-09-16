@@ -1732,6 +1732,7 @@ storyNoSituation: No situation info yet
 storyNoEntry: No entry yet
 storyResponseFailed: The last reply was interrupted
 storyResponseStalled: The reply timed out and was stopped. You can retry.
+storyResponseTruncated: The reply hit the token limit and was cut off. You can retry.
 unnamedStory: Untitled story
 diceSuccess: Success
 diceFailure: Failure
