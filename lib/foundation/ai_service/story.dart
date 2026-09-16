@@ -1799,6 +1799,9 @@ class Story {
   /// 判定方向：high（数值越高越好，默认）| low（越低越好，roll-under）
   final String checkDirection;
 
+  /// 属性上限：属性名 → 上限（缺省/<=0 表示不限）；用于 clamp 玩家与 NPC 属性
+  final Map<String, int> attributeCaps;
+
   /// 称号定义（AI 授予）
   final List<StoryTitle> titles;
 
@@ -1867,6 +1870,7 @@ class Story {
     this.dice = const [],
     this.crits = true,
     this.checkDirection = 'high',
+    this.attributeCaps = const {},
     this.titles = const [],
     this.titleMode = 'all',
     this.job,
@@ -1908,6 +1912,7 @@ class Story {
     List<StoryDice>? dice,
     bool? crits,
     String? checkDirection,
+    Map<String, int>? attributeCaps,
     List<StoryTitle>? titles,
     String? titleMode,
     StoryJob? job,
@@ -1946,6 +1951,7 @@ class Story {
     dice: dice ?? this.dice,
     crits: crits ?? this.crits,
     checkDirection: checkDirection ?? this.checkDirection,
+    attributeCaps: attributeCaps ?? this.attributeCaps,
     titles: titles ?? this.titles,
     titleMode: titleMode ?? this.titleMode,
     job: job ?? this.job,
@@ -2037,6 +2043,10 @@ class Story {
         : const [],
     crits: (json['crits'] as bool?) ?? true,
     checkDirection: json['checkDirection'] == 'low' ? 'low' : 'high',
+    attributeCaps: {
+      for (final e in (json['attributeCaps'] as Map? ?? const {}).entries)
+        e.key.toString(): (e.value as num?)?.toInt() ?? 0,
+    },
     titles: json['titles'] is List
         ? [
             for (final e in json['titles'] as List)
@@ -2094,6 +2104,7 @@ class Story {
     'dice': [for (final d in dice) d.toJson()],
     'crits': crits,
     'checkDirection': checkDirection,
+    'attributeCaps': attributeCaps,
     'titles': [for (final x in titles) x.toJson()],
     'titleMode': titleMode,
     if (job != null) 'job': job!.toJson(),
@@ -2233,6 +2244,16 @@ class Story {
 - **判定方向**：本故事为${checkDirection == 'low' ? '取低——总值 ≤ DC 为成功（越高越容易失败）' : '取高——总值 ≥ DC 为成功（越低越容易失败）'}；请按此设置 DC。
 - **优势 / 劣势**：check 可加 `advantage:"high"`（优势，取高）或 `"low"`（劣势，取低），系统会掷两次取对应值；不加则正常掷一次。骰子记法也支持 `2d20kh1`（取高）/`2d20kl1`（取低）。
 - **骰子工具**：也可以直接调用 `roll_dice` 工具（参数 label / dice / modifier / dc）让系统掷骰，NPC 或剧情需要判定时同样用它；除 `roll_dice` 外不要调用其它工具。''');
+    if (attributeCaps.isNotEmpty) {
+      final caps = attributeCaps.entries
+          .where((e) => e.value > 0)
+          .map((e) => '${e.key} ≤ ${e.value}')
+          .join('、');
+      if (caps.isNotEmpty) {
+        buf.writeln();
+        buf.writeln('【属性上限】$caps（玩家与 NPC 的属性都不得超过各自的这一上限）。');
+      }
+    }
     if (choicesPrompt.trim().isNotEmpty) {
       buf.writeln();
       buf.writeln('【后续建议要求】');
@@ -2657,6 +2678,19 @@ class StoryStore extends ChangeNotifier {
         }
       } catch (_) {}
     }
+    var attributeCaps = <String, int>{};
+    final capText = _section(text, '属性上限');
+    if (capText != null && capText.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(capText.trim());
+        if (decoded is Map) {
+          attributeCaps = {
+            for (final e in decoded.entries)
+              e.key.toString(): (e.value as num?)?.toInt() ?? 0,
+          };
+        }
+      } catch (_) {}
+    }
     StoryJob? jobDef;
     final jobText = _section(text, '职业');
     if (jobText != null && jobText.trim().isNotEmpty) {
@@ -2704,6 +2738,7 @@ class StoryStore extends ChangeNotifier {
       dice: diceDefs,
       crits: crits,
       checkDirection: checkDirection,
+      attributeCaps: attributeCaps,
       titles: titleDefs,
       titleMode: titleMode,
       job: jobDef,
@@ -2795,6 +2830,9 @@ class StoryStore extends ChangeNotifier {
                 'dice': [for (final d in s.dice) d.toJson()],
               }),
       );
+    }
+    if (s.attributeCaps.isNotEmpty) {
+      section('属性上限', jsonEncode(s.attributeCaps));
     }
     if (s.titles.isNotEmpty) {
       section(

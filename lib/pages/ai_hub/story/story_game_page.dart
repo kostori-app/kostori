@@ -1133,6 +1133,41 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     return state.copyWith(resources: merged);
   }
 
+  /// 属性上限：故事声明了 attributeCaps 时，对玩家与 NPC 属性做 clamp
+  GameState _clampAttributes(GameState s) {
+    final caps = story.attributeCaps;
+    if (caps.isEmpty) return s;
+    Map<String, int> clamp(Map<String, int> attrs) {
+      if (attrs.isEmpty) return attrs;
+      var changed = false;
+      final out = <String, int>{};
+      for (final e in attrs.entries) {
+        final cap = caps[e.key];
+        if (cap != null && cap > 0 && e.value > cap) {
+          out[e.key] = cap;
+          changed = true;
+        } else {
+          out[e.key] = e.value;
+        }
+      }
+      return changed ? out : attrs;
+    }
+
+    final attrs = clamp(s.attributes);
+    var npcChanged = false;
+    final npcs = [
+      for (final n in s.npcs)
+        () {
+          final a = clamp(n.attributes);
+          if (identical(a, n.attributes)) return n;
+          npcChanged = true;
+          return n.copyWith(attributes: a);
+        }(),
+    ];
+    if (identical(attrs, s.attributes) && !npcChanged) return s;
+    return s.copyWith(attributes: attrs, npcs: npcs);
+  }
+
   /// 合并在场角色状态：模型给出的优先，之前已有但本次漏报的保留
   GameState _mergeNpcs(GameState state) {
     if (state.npcs.isEmpty && _state.npcs.isEmpty) return state;
@@ -1260,6 +1295,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     // 称号 / 状态效果合并；职业 / 据点漏报时保留
     next = _mergeTitles(next);
     next = _mergeEffects(next);
+    next = _clampAttributes(next);
     if (next.job.isEmpty && !_state.job.isEmpty) {
       next = next.copyWith(job: _state.job);
     }
