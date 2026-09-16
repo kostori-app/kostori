@@ -257,19 +257,6 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     '${item.animeId}|${item.episodeName}',
   );
 
-  String? _downloadedPath(_DownloadItem item) =>
-      widget.downloadedFiles['${item.animeId}|${item.episodeName}'];
-
-  /// 已下载且文件仍在：直接打开本地播放器播放
-  void _playDownloaded(_DownloadItem item) {
-    final path = _downloadedPath(item);
-    if (path == null) return;
-    Navigator.of(context).pop();
-    App.mainNavigatorKey?.currentContext?.to(
-      () => LocalPlayerPage(filePath: path),
-    );
-  }
-
   /// 按当前开关计算标题
   String _computedTitle() {
     if (_useRules && _rules.isNotEmpty) {
@@ -624,11 +611,9 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                 item: item,
                 displayTitle: _nameOverrides[item.key] ?? item.title,
                 isDownloaded: _isDownloaded(item),
-                downloadedFilePath: _downloadedPath(item),
                 isSelected: selected.contains(item.key),
                 resolutionLabel: _resolutionLabelByKey[item.key],
                 onToggle: () => _toggle(item.key),
-                onPlayDownloaded: () => _playDownloaded(item),
                 onEditName: () => _editItemName(item),
                 onResolution: (url, label) => setState(() {
                   _resolutionByKey[item.key] = url;
@@ -652,11 +637,9 @@ class _DownloadItemCard extends StatefulWidget {
     required this.item,
     required this.displayTitle,
     required this.isDownloaded,
-    this.downloadedFilePath,
     required this.isSelected,
     required this.resolutionLabel,
     required this.onToggle,
-    required this.onPlayDownloaded,
     required this.onEditName,
     required this.onResolution,
     required this.resolvePlay,
@@ -670,17 +653,11 @@ class _DownloadItemCard extends StatefulWidget {
 
   final bool isDownloaded;
 
-  /// 已下载且文件仍在时的本地路径；点击卡片直接播放
-  final String? downloadedFilePath;
-
   final bool isSelected;
 
   final String? resolutionLabel;
 
   final VoidCallback onToggle;
-
-  /// 点击已下载卡片：播放本地文件
-  final VoidCallback onPlayDownloaded;
 
   /// 编辑标题（改文件名用）
   final VoidCallback onEditName;
@@ -771,28 +748,12 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: widget.isDownloaded
-              ? (widget.downloadedFilePath == null
-                    ? null
-                    : widget.onPlayDownloaded)
-              : widget.onToggle,
+          onTap: widget.isDownloaded ? null : widget.onToggle,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Row(
               children: [
-                Icon(
-                  widget.isSelected
-                      ? Icons.check_circle
-                      : Icons.circle_outlined,
-                  size: 20,
-                  color: widget.isDownloaded
-                      ? colorScheme.outline
-                      : (widget.isSelected
-                            ? colorScheme.primary
-                            : colorScheme.outlineVariant),
-                ),
-                const SizedBox(width: 8),
                 // 标题 + 副标题
                 Expanded(
                   child: Column(
