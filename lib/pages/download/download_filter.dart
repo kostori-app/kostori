@@ -56,7 +56,7 @@ class DownloadFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 6, 2),
+      padding: const EdgeInsets.fromLTRB(12, 0, 6, 2),
       child: Row(
         children: [
           Expanded(

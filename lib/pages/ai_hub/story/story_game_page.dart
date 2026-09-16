@@ -2285,28 +2285,28 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   // NPC 卡片：多了就横向滑动
                                   if (presentChars.isNotEmpty)
                                     Expanded(
-                                      child: ListView.separated(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: presentChars.length,
-                                        separatorBuilder: (_, _) =>
-                                            const SizedBox(width: 8),
-                                        itemBuilder: (_, i) {
-                                          final c = presentChars[i];
-                                          return ActionChip(
-                                            avatar: CharacterAvatar(
-                                              name: c.displayName,
-                                              avatar: c.avatar,
-                                              radius: 10,
-                                              enablePreview: false,
+                                      child: CapsuleOptions(
+                                        alignment: WrapAlignment.start,
+                                        children: [
+                                          for (final c in presentChars)
+                                            CapsuleOption(
+                                              isSelected: false,
+                                              onTap: () => _characterMenu(c),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  CharacterAvatar(
+                                                    name: c.displayName,
+                                                    avatar: c.avatar,
+                                                    radius: 10,
+                                                    enablePreview: false,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(c.displayName),
+                                                ],
+                                              ),
                                             ),
-                                            label: Text(c.displayName),
-                                            backgroundColor: Theme.of(
-                                              context,
-                                            ).colorScheme.primaryContainer,
-                                            onPressed: () =>
-                                                _characterMenu(c),
-                                          );
-                                        },
+                                        ],
                                       ),
                                     )
                                   else

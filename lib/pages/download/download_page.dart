@@ -231,6 +231,8 @@ class _DownloadPageState extends State<DownloadPage> {
           ],
           bottom: CapsuleTabBar(
             labels: [t.downloadActive, t.downloadRecords],
+            height: 42,
+            padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
           ),
         ),
         body: TabBarView(
