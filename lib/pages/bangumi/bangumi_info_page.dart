@@ -246,7 +246,8 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
       child: DefaultTabController(
         length: infoController.tabs.length,
         child: Scaffold(
-          body: NestedScrollView(
+          body: BackdropGroup(
+            child: NestedScrollView(
             headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
               return <Widget>[
                 SliverOverlapAbsorber(
@@ -359,30 +360,31 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                     ),
                                   ),
                                 ),
-                              // 工具栏 + Tab 区域磨砂玻璃（模糊其下滚动的内容）
-                              Positioned(
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height:
-                                    MediaQuery.paddingOf(context).top +
-                                    kToolbarHeight +
-                                    kTextTabBarHeight,
-                                child: ClipRect(
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 16,
-                                      sigmaY: 16,
-                                    ),
-                                    child: Container(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surface
-                                          .withValues(alpha: 0.55),
+                              // 收起时工具栏/Tab 区域磨砂玻璃（模糊其下滚动的内容）
+                              if (innerBoxIsScrolled)
+                                Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height:
+                                      MediaQuery.paddingOf(context).top +
+                                      kToolbarHeight +
+                                      kTextTabBarHeight,
+                                  child: ClipRect(
+                                    child: BackdropFilter.grouped(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 16,
+                                        sigmaY: 16,
+                                      ),
+                                      child: Container(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surface
+                                            .withValues(alpha: 0.7),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
                               SafeArea(
                                 bottom: false,
                                 child: Align(
@@ -445,6 +447,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                 );
               },
             ),
+          ),
           ),
         ),
       ),
