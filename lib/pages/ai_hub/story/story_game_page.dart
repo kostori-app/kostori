@@ -255,6 +255,37 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     super.dispose();
   }
 
+  /// 流式文本更新：跟随状态下自动贴底；
+  /// 用户上滑查看历史时，补偿新增文本撑开的高度，避免视图被不断往下拽
+  void _updateStreamText(String text) {
+    if (_isFollowing) {
+      setState(() {
+        _pendingUserText = null;
+        _streamText = text;
+      });
+      _scrollToBottom(animate: false);
+      return;
+    }
+    final before = _scrollController.hasClients
+        ? _scrollController.position.maxScrollExtent
+        : null;
+    setState(() {
+      _pendingUserText = null;
+      _streamText = text;
+    });
+    if (before == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _isFollowing || !_scrollController.hasClients) return;
+      final after = _scrollController.position.maxScrollExtent;
+      final delta = after - before;
+      if (delta == 0) return;
+      // reverse 列表：增长量加回 offset，保持当前阅读位置不动
+      _scrollController.jumpTo(
+        (_scrollController.offset + delta).clamp(0.0, after),
+      );
+    });
+  }
+
   /// 滚到底部（列表 reverse，底部即 offset 0）；非跟随状态不强制
   void _scrollToBottom({bool animate = true, bool force = false}) {
     if (!force && !_isFollowing) return;
@@ -820,11 +851,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           return;
         }
         if (u.truncated) truncated = true;
-        setState(() {
-          _pendingUserText = null;
-          _streamText = u.text;
-        });
-        _scrollToBottom(animate: false);
+        _updateStreamText(u.text);
         if (u.done) break;
       }
       if (!mounted) return;
