@@ -52,7 +52,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   bool _pendingCheck = false;
 
   Widget _suggestToggle() => TextButton.icon(
-    onPressed: () => setState(() => _suggestExpanded = true),
+    onPressed: () => setState(() => _suggestExpanded = !_suggestExpanded),
     icon: const Icon(Icons.auto_awesome, size: 16),
     label: Text(t.suggestions),
   );
