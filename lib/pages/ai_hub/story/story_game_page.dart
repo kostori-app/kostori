@@ -1339,12 +1339,48 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final merged = <NpcState>[];
     final seen = <String>{};
     for (final n in state.npcs) {
-      if (seen.add(n.name)) merged.add(n);
+      if (!seen.add(n.name)) continue;
+      final prev = _npcIn(_state, n.name);
+      merged.add(prev == null ? n : _mergeNpc(prev, n));
     }
     for (final n in _state.npcs) {
       if (seen.add(n.name)) merged.add(n);
     }
     return state.copyWith(npcs: merged);
+  }
+
+  /// NPC 逐字段合并：本回合漏报的数值条 / 属性 / 技能 / 携带 / 好感保留旧值
+  NpcState _mergeNpc(NpcState prev, NpcState next) {
+    List<String> union(List<String> a, List<String> b) {
+      final out = [...a];
+      for (final v in b) {
+        if (!out.contains(v)) out.add(v);
+      }
+      return out;
+    }
+
+    final resByName = <String, StatBar>{
+      for (final r in prev.resources) r.name: r,
+    };
+    for (final r in next.resources) {
+      resByName[r.name] = r;
+    }
+    return next.copyWith(
+      resources: next.resources.isEmpty
+          ? prev.resources
+          : resByName.values.toList(),
+      attributes: next.attributes.isEmpty
+          ? prev.attributes
+          : {...prev.attributes, ...next.attributes},
+      skills: next.skills.isEmpty
+          ? prev.skills
+          : union(prev.skills, next.skills),
+      inventory: next.inventory.isEmpty
+          ? prev.inventory
+          : union(prev.inventory, next.inventory),
+      affinity: next.affinity == 0 ? prev.affinity : next.affinity,
+      status: next.status.trim().isEmpty ? prev.status : next.status,
+    );
   }
 
   /// 为新登场、还没有角色卡的 NPC 自动生成一张角色卡（按名字去重）
@@ -2095,6 +2131,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                   raw;
                               if (showPendingUser && i == messages.length) {
                                 final persona = story.persona;
+                                // 骰子/检定结果：乐观显示时就直接用专用组件，
+                                // 不用等消息落库后才变成卡片
+                                if (_pendingUserText!.startsWith(
+                                  kStoryDiceMarker,
+                                )) {
+                                  return _DiceResultCard(
+                                    text: _pendingUserText!.substring(
+                                      kStoryDiceMarker.length,
+                                    ),
+                                  );
+                                }
                                 return _StoryBubble(
                                   content: _pendingUserText!,
                                   isUser: true,
