@@ -153,6 +153,67 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     if (mounted) setState(() {});
   }
 
+  /// 设定条目的 JSON 结构（供 AI 生成/精修）
+  static String _settingSchema(String type) => switch (type) {
+    SettingTypes.codex =>
+      '{"name":"名称","kind":"item|trait|race|skill|talent|body",'
+          '"display":"玩家可见描述","mechanics":"机制/数值"}',
+    SettingTypes.title => '{"name":"称号名","effects":"效果（数值/机制）"}',
+    SettingTypes.job =>
+      '{"name":"职业名","description":"简介",'
+          '"levels":[{"level":1,"name":"阶段名","bonus":"加成"}]}',
+    SettingTypes.facility =>
+      '{"name":"设施名","description":"说明","maxLevel":3}',
+    _ => '{"name":"名称","description":"说明"}',
+  };
+
+  /// 组的「AI 生成条目」：先选类型，再一次性生成多条并写入本书
+  Future<void> _aiAddEntries(SettingBook book) async {
+    final type = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: t.aiGenerate,
+        icon: Icons.auto_awesome,
+        initialSize: 0.42,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            for (final type in SettingTypes.all)
+              ListTile(
+                leading: Icon(_typeIcon(type)),
+                title: Text(_typeLabel(type)),
+                onTap: () => Navigator.of(ctx).pop(type),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (type == null || !mounted) return;
+    final items = await showAiEntryStudio(
+      title: '${t.aiGenerate} · ${_typeLabel(type)}',
+      systemPrompt: t.settingAiSystem,
+      schemaHint: _settingSchema(type),
+      multiple: true,
+    );
+    if (items == null || !mounted) return;
+    var i = 0;
+    for (final m in items) {
+      final name = (m['name'] ?? m['key'] ?? '').toString();
+      if (name.trim().isEmpty) continue;
+      await SettingLibraryStore.instance.upsert(
+        SettingEntry(
+          id: 'set_${DateTime.now().microsecondsSinceEpoch}_${i++}',
+          type: type,
+          name: name,
+          payload: m,
+        ),
+        bookId: book.id,
+      );
+    }
+    if (mounted) setState(() {});
+  }
+
   Future<void> _import() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
@@ -452,6 +513,12 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
                           ),
                           IconButton(
                             visualDensity: VisualDensity.compact,
+                            tooltip: t.aiGenerate,
+                            icon: const Icon(Icons.auto_awesome, size: 18),
+                            onPressed: () => _aiAddEntries(book),
+                          ),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
                             tooltip: t.storyAddEntry,
                             icon: const Icon(Icons.add, size: 18),
                             onPressed: () => _add(bookId: book.id),
@@ -593,21 +660,25 @@ resolveSettingGenConfig() async {
 /// 编辑设定库条目（按类型显示不同字段）
 /// 用 AI 按用户描述生成设定 JSON（返回的键名由 [promptTemplate] 指定）。
 /// 支持多轮迭代：生成后可继续输入修改意见，AI 在上一版基础上改进，直到点「完成」。
-Future<Map<String, dynamic>?> aiGenerateEntry({
+/// AI 条目工作室：多轮对话生成 / 精修条目，最终敲版返回条目列表。
+/// [multiple]=true 时可一次产出多条（整组批量生成）；否则针对 [previous] 单条精修。
+/// 模型统一走「辅助任务模型 → 设定生成」，不再在弹窗里选厂商。
+Future<List<Map<String, dynamic>>?> showAiEntryStudio({
   required String title,
   required String systemPrompt,
-  required String promptTemplate,
-  Map<String, dynamic>? previous,
+  required String schemaHint,
+  List<Map<String, dynamic>> previous = const [],
+  bool multiple = true,
 }) async {
-  // 生成用厂商/模型：优先「辅助任务模型 → 设定生成」，再回退旧设置
   final base = await resolveSettingGenConfig();
-  return showDialog<Map<String, dynamic>>(
-    context: App.rootContext,
-    builder: (_) => _SettingGenDialog(
+  return showPopUpWidget<List<Map<String, dynamic>>>(
+    App.rootContext,
+    _AiEntryStudio(
       title: title,
       systemPrompt: systemPrompt,
-      promptTemplate: promptTemplate,
+      schemaHint: schemaHint,
       previous: previous,
+      multiple: multiple,
       provider: base.provider,
       model: base.model ?? '',
       params: base.params,
@@ -615,40 +686,56 @@ Future<Map<String, dynamic>?> aiGenerateEntry({
   );
 }
 
-/// AI 生成 / 精修设定条目的对话框（流式 + actions 差分精修）
-class _SettingGenDialog extends StatefulWidget {
-  const _SettingGenDialog({
+/// 兼容旧调用：单条生成 / 精修，返回第一条
+Future<Map<String, dynamic>?> aiGenerateEntry({
+  required String title,
+  required String systemPrompt,
+  required String promptTemplate,
+  Map<String, dynamic>? previous,
+}) async {
+  final items = await showAiEntryStudio(
+    title: title,
+    systemPrompt: systemPrompt,
+    schemaHint: promptTemplate,
+    previous: previous == null ? const <Map<String, dynamic>>[] : [previous],
+    multiple: false,
+  );
+  if (items == null || items.isEmpty) return null;
+  return items.first;
+}
+
+class _AiEntryStudio extends StatefulWidget {
+  const _AiEntryStudio({
     required this.title,
     required this.systemPrompt,
-    required this.promptTemplate,
+    required this.schemaHint,
     required this.provider,
     required this.model,
     required this.params,
-    this.previous,
+    required this.previous,
+    required this.multiple,
   });
 
   final String title;
   final String systemPrompt;
-  final String promptTemplate;
+  final String schemaHint;
   final String provider;
   final String model;
   final AiGenerationParams? params;
-  final Map<String, dynamic>? previous;
+  final List<Map<String, dynamic>> previous;
+  final bool multiple;
 
   @override
-  State<_SettingGenDialog> createState() => _SettingGenDialogState();
+  State<_AiEntryStudio> createState() => _AiEntryStudioState();
 }
 
-class _SettingGenDialogState extends State<_SettingGenDialog> {
-  late Map<String, dynamic>? _current = widget.previous;
-  late String _provider = widget.provider;
-  late String _model = widget.model;
+class _AiEntryStudioState extends State<_AiEntryStudio> {
+  late List<Map<String, dynamic>> _items = [...widget.previous];
   final _inputCtrl = TextEditingController();
+  final _messages = <(bool isUser, String text)>[];
   bool _streaming = false;
   String _streamText = '';
   CancelToken? _cancel;
-
-  bool get _isFirst => _current == null;
 
   @override
   void dispose() {
@@ -658,10 +745,10 @@ class _SettingGenDialogState extends State<_SettingGenDialog> {
   }
 
   Future<String?> _run(String prompt) async {
-    final ai = AiFactory.create(_provider);
+    final ai = AiFactory.create(widget.provider);
     if (ai == null) {
       App.rootContext.showMessage(
-        message: t.unknownServiceProvider(provider: _provider),
+        message: t.unknownServiceProvider(provider: widget.provider),
         level: LogLevel.error,
       );
       return null;
@@ -677,7 +764,7 @@ class _SettingGenDialogState extends State<_SettingGenDialog> {
       await for (final chunk in ai.chatStream(
         [AiUserMessage(content: prompt)],
         systemPrompt: widget.systemPrompt,
-        modelOverride: _model.isEmpty ? null : _model,
+        modelOverride: widget.model.isEmpty ? null : widget.model,
         params: widget.params,
         cancelToken: cancel,
       )) {
@@ -697,10 +784,7 @@ class _SettingGenDialogState extends State<_SettingGenDialog> {
       }
     } catch (e) {
       if (mounted && !cancel.isCancelled) {
-        App.rootContext.showMessage(
-          message: e.toString(),
-          level: LogLevel.error,
-        );
+        App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
       }
       return null;
     } finally {
@@ -710,235 +794,174 @@ class _SettingGenDialogState extends State<_SettingGenDialog> {
     return buf.toString();
   }
 
-  Future<void> _generate(String text) async {
-    final reply = await _run(widget.promptTemplate.replaceAll('{input}', text));
-    if (!mounted || reply == null) return;
-    final parsed = _parseObject(reply);
-    setState(() {
-      _streamText = '';
-      if (parsed != null) _current = parsed;
-    });
-    if (parsed == null) {
-      App.rootContext.showMessage(
-        message: t.cardAiParseFailed,
-        level: LogLevel.warning,
-      );
-    }
-  }
+  String _generatePrompt(String desc) =>
+      '根据下面的需求生成${widget.multiple ? '若干' : '一条'}条目。\n'
+      '每个条目的 JSON 结构：\n${widget.schemaHint}\n'
+      '只输出 JSON 数组（用 ```json 围栏包裹），不要任何解释。\n\n'
+      '需求：$desc';
 
-  /// 精修：优先按 actions 差分改字段，失败再退回整段 JSON
-  Future<void> _refine(String text) async {
-    final current = _current;
-    if (current == null) return;
-    final keys = current.keys.join('、');
-    final prompt =
-        '${widget.promptTemplate.replaceAll('{input}', text)}\n\n'
-        '当前条目 JSON：${jsonEncode(current)}\n'
-        '可用字段：$keys\n'
-        '用户的修改要求：$text\n\n'
-        '请只输出需要变更的部分，用 <actions> 标签包裹 JSON 数组，'
-        'path 使用条目 JSON 的字段名，例如 '
-        '{"type":"set","path":"name","value":"新值"}；'
-        '向数组追加用 add（path 指向该数组），删除数组元素用 remove 并给出 index。';
-    final reply = await _run(prompt);
-    if (!mounted || reply == null) return;
-    final actions = parseJsonActions(reply);
-    final next = actions.isNotEmpty
-        ? applyJsonActions(current, actions)
-        : _parseObject(reply);
-    setState(() {
-      _streamText = '';
-      if (next != null) _current = next;
-    });
-    if (next == null) {
-      App.rootContext.showMessage(
-        message: t.cardAiParseFailed,
-        level: LogLevel.warning,
-      );
-    }
-  }
+  String _refinePrompt(String feedback) =>
+      '当前条目（JSON 数组）：\n${jsonEncode(_items)}\n\n'
+      '用户的修改要求：$feedback\n\n'
+      '优先只输出需要变更的部分：用 <actions> 标签包裹 JSON 数组，'
+      'path 形如 items[0].name、items[1].content（支持 set/add/remove）；'
+      '若需要整体重写，也可直接输出更新后的 JSON 数组。';
 
-  Map<String, dynamic>? _parseObject(String text) {
+  List<Map<String, dynamic>>? _parseItems(String text) {
     final candidates = <String>[];
     final fenced = RegExp(r'```(?:json)?\s*([\s\S]*?)```').firstMatch(text);
     if (fenced != null) candidates.add(fenced.group(1)!);
-    final first = text.indexOf('{');
-    final last = text.lastIndexOf('}');
-    if (first >= 0 && last > first) {
-      candidates.add(text.substring(first, last + 1));
-    }
+    final lb = text.indexOf('[');
+    final rb = text.lastIndexOf(']');
+    if (lb >= 0 && rb > lb) candidates.add(text.substring(lb, rb + 1));
+    final lo = text.indexOf('{');
+    final ro = text.lastIndexOf('}');
+    if (lo >= 0 && ro > lo) candidates.add(text.substring(lo, ro + 1));
     for (final raw in candidates) {
       try {
         final decoded = jsonDecode(raw.trim());
-        if (decoded is Map) return decoded.cast<String, dynamic>();
+        if (decoded is List) {
+          final list = [
+            for (final e in decoded)
+              if (e is Map) e.cast<String, dynamic>(),
+          ];
+          if (list.isNotEmpty) return list;
+        } else if (decoded is Map) {
+          return [decoded.cast<String, dynamic>()];
+        }
       } catch (_) {}
     }
     return null;
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_streaming) return;
     final text = _inputCtrl.text.trim();
     if (text.isEmpty) return;
     _inputCtrl.clear();
-    if (_isFirst) {
-      _generate(text);
-    } else {
-      _refine(text);
+    final generating = _items.isEmpty;
+    setState(() => _messages.add((true, text)));
+    final reply = await _run(
+      generating ? _generatePrompt(text) : _refinePrompt(text),
+    );
+    if (!mounted || reply == null) return;
+    setState(() => _messages.add((false, reply)));
+    if (generating) {
+      final parsed = _parseItems(reply);
+      if (parsed == null) {
+        App.rootContext.showMessage(
+          message: t.cardAiParseFailed,
+          level: LogLevel.warning,
+        );
+        return;
+      }
+      setState(() => _items = parsed);
+      return;
     }
+    final actions = parseJsonActions(reply);
+    if (actions.isNotEmpty) {
+      final root = <String, dynamic>{'items': _items};
+      final updated = applyJsonActions(root, actions);
+      final list = [
+        for (final e in (updated['items'] as List? ?? const []))
+          if (e is Map) e.cast<String, dynamic>(),
+      ];
+      if (list.isNotEmpty) setState(() => _items = list);
+      return;
+    }
+    final parsed = _parseItems(reply);
+    if (parsed != null) setState(() => _items = parsed);
   }
 
   @override
   Widget build(BuildContext context) {
-    final providers = OpenAiProviderRegistry.allProviders;
     final scheme = Theme.of(context).colorScheme;
-    return ContentDialog(
-      title: _isFirst ? widget.title : '${widget.title} · ${t.aiRefine}',
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 生成用的厂商 / 模型（复用 AI 工坊的模型选择组件）
-            StreamBuilder<AiApiKey?>(
-              stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(_provider),
-              builder: (_, snap) {
-                final model = _model.isNotEmpty
-                    ? _model
-                    : (snap.data?.model ?? '');
-                final label =
-                    '${providers[_provider]?.name ?? _provider} · '
-                    '${model.isEmpty ? t.set : model}';
-                return InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: _streaming
-                      ? null
-                      : () => showModalBottomSheet<void>(
-                          context: App.rootContext,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => ProviderModelSheet(
-                            provider: _provider,
-                            onProviderChanged: (p) {
-                              setState(() => _provider = p);
-                              appdata.implicitData['settingGenProvider'] = p;
-                              appdata.writeImplicitData();
-                              AiDatabase.instance.aiAuxSettingsDao.set(
-                                'settingGenProvider',
-                                p,
-                              );
-                            },
-                            currentModel: _model.isEmpty ? null : _model,
-                            // 生成专用模型：不写回该厂商的聊天模型
-                            onModelSelected: (m) {
-                              setState(() => _model = m);
-                              appdata.implicitData['settingGenModel'] = m;
-                              appdata.writeImplicitData();
-                              AiDatabase.instance.aiAuxSettingsDao.set(
-                                'settingGenModel',
-                                m,
-                              );
-                            },
-                          ),
-                        ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.model_training, size: 16),
-                        const SizedBox(width: 6),
-                        Expanded(child: Text(label)),
-                        const Icon(Icons.arrow_drop_down, size: 18),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 4),
-            // 预览：流式文本 / 当前 JSON
-            if (_streaming || _streamText.isNotEmpty)
-              _previewBox(
-                SelectableText(
-                  _streamText,
-                  style: const TextStyle(fontSize: 12, height: 1.4),
-                ),
-              )
-            else if (_current != null)
-              _previewBox(
-                SelectableText(
-                  const JsonEncoder.withIndent('  ').convert(_current),
-                  style: const TextStyle(fontSize: 12, height: 1.4),
+    return PopUpWidgetScaffold(
+      title: widget.title,
+      tailing: [
+        IconButton(
+          icon: const Icon(Icons.check),
+          tooltip: t.confirm,
+          onPressed: _items.isEmpty
+              ? null
+              : () =>
+                    Navigator.of(App.rootContext, rootNavigator: true).pop(_items),
+        ),
+      ],
+      body: Column(
+        children: [
+          if (_items.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                border: Border(
+                  bottom: BorderSide(color: scheme.outlineVariant, width: 0.6),
                 ),
               ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _inputCtrl,
-              enabled: !_streaming,
-              autofocus: true,
-              minLines: 2,
-              maxLines: 5,
-              onSubmitted: (_) => _submit(),
-              decoration: InputDecoration(
-                hintText: _isFirst ? t.aiGenerateHint : t.aiRefineHint,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            if (_streaming) ...[
-              const SizedBox(height: 8),
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const PolygonRefreshIndicator(size: 16),
-                  const SizedBox(width: 8),
                   Text(
-                    t.generatingReply,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurfaceVariant,
-                    ),
+                    '${t.storyCodex} × ${_items.length}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
+                  const SizedBox(height: 4),
+                  for (var i = 0; i < _items.length; i++)
+                    Text(
+                      '- ${_items[i]['name'] ?? _items[i]['key'] ?? _items[i]['title'] ?? '条目 ${i + 1}'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
                 ],
               ),
-            ],
-          ],
-        ),
+            ),
+          Expanded(
+            child: ListView(
+              reverse: true,
+              padding: const EdgeInsets.all(12),
+              children: [
+                if (_streamText.isNotEmpty) _bubble(_streamText, false),
+                for (final m in _messages.reversed) _bubble(m.$2, m.$1),
+              ],
+            ),
+          ),
+          ChatComposer(
+            controller: _inputCtrl,
+            hintText: _items.isEmpty ? t.aiGenerateHint : t.aiRefineHint,
+            sending: _streaming,
+            onSend: _submit,
+            onStop: () => _cancel?.cancel(),
+          ),
+        ],
       ),
-      actions: [
-        if (_current != null && !_streaming)
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(_current),
-            child: Text(t.confirm),
-          ),
-        if (_streaming)
-          FilledButton(
-            onPressed: () => _cancel?.cancel(),
-            child: Text(t.stopGenerating),
-          )
-        else
-          FilledButton(
-            onPressed: _submit,
-            child: Text(_isFirst ? t.aiGenerate : t.aiRefine),
-          ),
-      ],
     );
   }
 
-  Widget _previewBox(Widget child) {
+  Widget _bubble(String text, bool isUser) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 260),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(10),
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: const BoxConstraints(maxWidth: 520),
+        decoration: BoxDecoration(
+          color: isUser
+              ? scheme.primaryContainer
+              : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: SelectableText(
+          text,
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
       ),
-      child: SingleChildScrollView(child: child),
     );
   }
 }
-
 /// 设定库触发词输入（「、,，/／|」或换行分隔）→ 列表
 List<String> _splitSettingTriggers(String s) => s
     .split(RegExp(r'[、,，/／|\n]+'))
@@ -1016,10 +1039,12 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                       _ => '{"name":"名称","description":"说明"}',
                     };
                     final data = await aiGenerateEntry(
-                      title: t.aiGenerate,
+                      title: entry.payload.isEmpty
+                          ? t.aiGenerate
+                          : '${t.edit} · ${t.aiRefine}',
                       systemPrompt: t.settingAiSystem,
-                      promptTemplate: '$keys\n{input}',
-                      // 已有内容 → 在现有基础上优化
+                      promptTemplate: keys,
+                      // 已有内容 → 多轮精修现有条目
                       previous: entry.payload.isEmpty ? null : entry.payload,
                     );
                     if (data == null || !ctx.mounted) return;
@@ -1049,7 +1074,9 @@ Future<SettingEntry?> showSettingEntryEditor(SettingEntry entry) async {
                     });
                   },
                   icon: const Icon(Icons.auto_awesome, size: 16),
-                  label: Text(t.aiGenerate),
+                  label: Text(
+                    entry.payload.isEmpty ? t.aiGenerate : t.aiRefine,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -2084,6 +2111,36 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
     setState(() {});
   }
 
+  /// 组的「AI 生成条目」：一次性生成多条世界书条目并写入本书
+  Future<void> _aiAddEntries(WorldBookBook book) async {
+    final items = await showAiEntryStudio(
+      title: t.aiGenerate,
+      systemPrompt: t.worldBookAiSystem,
+      schemaHint:
+          '{"name":"条目名","triggers":["触发词1","触发词2"],"content":"条目内容"}',
+      multiple: true,
+    );
+    if (items == null || !mounted) return;
+    var i = 0;
+    for (final m in items) {
+      final name = (m['name'] ?? '').toString();
+      final content = (m['content'] ?? '').toString();
+      if (name.trim().isEmpty && content.trim().isEmpty) continue;
+      await WorldBookStore.instance.upsert(
+        WorldBookEntry(
+          id: 'wb_${DateTime.now().microsecondsSinceEpoch}_${i++}',
+          name: name,
+          triggers:
+              (m['triggers'] as List?)?.map((e) => e.toString()).toList() ??
+              const [],
+          content: content,
+        ),
+        bookId: book.id,
+      );
+    }
+    if (mounted) setState(() {});
+  }
+
   /// 新建一本世界书（组）
   Future<void> _newBook() async {
     final ctrl = TextEditingController();
@@ -2319,6 +2376,12 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                           tooltip: t.loreGenTriggers,
                           icon: const Icon(Icons.translate, size: 18),
                           onPressed: () => _genTriggers(book),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: t.aiGenerate,
+                          icon: const Icon(Icons.auto_awesome, size: 18),
+                          onPressed: () => _aiAddEntries(book),
                         ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
@@ -2564,10 +2627,11 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
         'triggers': _lines(_triggerCtrl),
     };
     final data = await aiGenerateEntry(
-      title: t.aiGenerate,
+      title: existing.isEmpty ? t.aiGenerate : t.aiRefine,
       systemPrompt: t.worldBookAiSystem,
-      promptTemplate: t.worldBookAiPrompt,
-      // 已有内容 → 在现有基础上优化
+      promptTemplate:
+          '{"name":"条目名","triggers":["触发词1","触发词2"],"content":"条目内容"}',
+      // 已有内容 → 多轮精修现有条目
       previous: existing.isEmpty ? null : existing,
     );
     if (data == null || !mounted) return;
