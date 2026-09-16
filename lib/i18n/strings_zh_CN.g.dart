@@ -176,6 +176,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storySessions => '存档';
 	@override String get storyGameOver => '游戏结束';
 	@override String get storyThinking => '思考中…';
+	@override String get storyRegenerating => '正在重新生成中…';
 	@override String get storyAssemblingData => '正在拼凑数据…';
 	@override String get storyDeathResources => '致命资源（归零即游戏结束）';
 	@override String get syncStateSynced => '已同步';
@@ -3071,6 +3072,7 @@ extension on TranslationsZhCn {
 			'storySessions' => '存档',
 			'storyGameOver' => '游戏结束',
 			'storyThinking' => '思考中…',
+			'storyRegenerating' => '正在重新生成中…',
 			'storyAssemblingData' => '正在拼凑数据…',
 			'storyDeathResources' => '致命资源（归零即游戏结束）',
 			'syncStateSynced' => '已同步',
@@ -3445,9 +3447,9 @@ extension on TranslationsZhCn {
 			'thursdaySchedule' => '周四时间表',
 			'fridaySchedule' => '周五时间表',
 			'saturdaySchedule' => '周六时间表',
-			'sundaySchedule' => '周日时间表',
 			_ => null,
 		} ?? switch (path) {
+			'sundaySchedule' => '周日时间表',
 			'popularityRanking' => '人气排行',
 			'imageOperations' => '图片操作',
 			'saveToAlbum' => '保存到相册',
@@ -3959,9 +3961,9 @@ extension on TranslationsZhCn {
 			'onHoldStatus' => '搁置',
 			'droppedStatus' => '抛弃',
 			'player' => '播放器',
-			'audioOption' => '低延迟音频',
 			_ => null,
 		} ?? switch (path) {
+			'audioOption' => '低延迟音频',
 			'hardwareDecoding' => '硬件解码',
 			'hardwareDecoder' => '硬件解码器',
 			'videoRenderer' => '视频渲染器',
@@ -4473,9 +4475,9 @@ extension on TranslationsZhCn {
 			'selectDay' => '选择日期',
 			'fullYear' => '全年',
 			'quickSelect' => '快速选择',
-			'selectDateRange' => '选择日期范围',
 			_ => null,
 		} ?? switch (path) {
+			'selectDateRange' => '选择日期范围',
 			'subject' => '条目',
 			'character' => '角色',
 			'person' => '人物',
@@ -4987,9 +4989,9 @@ extension on TranslationsZhCn {
 			'videoClipEditor' => '视频剪辑',
 			'clipStartTime' => '开始时间',
 			'clipEndTime' => '结束时间',
-			'clipDuration' => '时长',
 			_ => null,
 		} ?? switch (path) {
+			'clipDuration' => '时长',
 			'previewClip' => '预览',
 			'exportClip' => '导出',
 			'exportFormat' => '导出格式',
@@ -5501,9 +5503,9 @@ extension on TranslationsZhCn {
 			'editPromptInjection' => '编辑注入',
 			'injectionName' => '名称',
 			'injectionContent' => '内容',
-			'injectionPosition' => '注入位置',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPosition' => '注入位置',
 			'injectionPositionAfterPersonality' => '人格之后',
 			'injectionPositionAfterSystemPrompt' => '自定义提示词之后',
 			'injectionPositionAfterKnowledge' => '知识之后',

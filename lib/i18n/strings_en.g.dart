@@ -473,6 +473,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Thinking…'
 	String get storyThinking => 'Thinking…';
 
+	/// en: 'Regenerating…'
+	String get storyRegenerating => 'Regenerating…';
+
 	/// en: 'Assembling data…'
 	String get storyAssemblingData => 'Assembling data…';
 
@@ -8811,6 +8814,7 @@ extension on Translations {
 			'storySessions' => 'Saves',
 			'storyGameOver' => 'Game over',
 			'storyThinking' => 'Thinking…',
+			'storyRegenerating' => 'Regenerating…',
 			'storyAssemblingData' => 'Assembling data…',
 			'storyDeathResources' => 'Fatal resources (game over at zero)',
 			'syncStateSynced' => 'Synced',
@@ -9178,9 +9182,9 @@ extension on Translations {
 			'downloadFailed' => 'Download failed',
 			'failedToCheckTheHashValuePleaseTryAgain' => 'Failed to check the hash value. Please try again',
 			'english' => 'English',
-			'dynamicColor' => 'Dynamic color',
 			_ => null,
 		} ?? switch (path) {
+			'dynamicColor' => 'Dynamic color',
 			'mondaySchedule' => 'Monday Schedule',
 			'tuesdaySchedule' => 'Tuesday Schedule',
 			'wednesdaySchedule' => 'Wednesday Schedule',
@@ -9692,9 +9696,9 @@ extension on Translations {
 			'collectStatus' => 'Collect',
 			'onHoldStatus' => 'On Hold',
 			'droppedStatus' => 'Dropped',
-			'player' => 'Player',
 			_ => null,
 		} ?? switch (path) {
+			'player' => 'Player',
 			'audioOption' => 'Low-latency audio',
 			'hardwareDecoding' => 'Hardware Decoding',
 			'hardwareDecoder' => 'Hardware decoder',
@@ -10206,9 +10210,9 @@ extension on Translations {
 			'enterYear' => 'Enter Year',
 			'selectDay' => 'Select Day',
 			'fullYear' => 'Full Year',
-			'quickSelect' => 'Quick Select',
 			_ => null,
 		} ?? switch (path) {
+			'quickSelect' => 'Quick Select',
 			'selectDateRange' => 'Select Date Range',
 			'subject' => 'Subject',
 			'character' => 'Character',
@@ -10720,9 +10724,9 @@ extension on Translations {
 			'clipEndTime' => 'End Time',
 			'clipDuration' => 'Duration',
 			'previewClip' => 'Preview',
-			'exportClip' => 'Export',
 			_ => null,
 		} ?? switch (path) {
+			'exportClip' => 'Export',
 			'exportFormat' => 'Export Format',
 			'exportQuality' => 'Export Quality',
 			'exportSize' => 'Export Size',
@@ -11234,9 +11238,9 @@ extension on Translations {
 			'editPromptInjection' => 'Edit Injection',
 			'injectionName' => 'Name',
 			'injectionContent' => 'Content',
-			'injectionPosition' => 'Injection position',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPosition' => 'Injection position',
 			'injectionPositionAfterPersonality' => 'After personality',
 			'injectionPositionAfterSystemPrompt' => 'After custom system prompt',
 			'injectionPositionAfterKnowledge' => 'After knowledge',

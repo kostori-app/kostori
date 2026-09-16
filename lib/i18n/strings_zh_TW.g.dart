@@ -175,6 +175,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storySessions => '存檔';
 	@override String get storyGameOver => '遊戲結束';
 	@override String get storyThinking => '思考中…';
+	@override String get storyRegenerating => '正在重新生成中…';
 	@override String get storyAssemblingData => '正在拼湊資料…';
 	@override String get storyDeathResources => '致命資源（歸零即遊戲結束）';
 	@override String get syncStateSynced => '已同步';
@@ -3069,6 +3070,7 @@ extension on TranslationsZhTw {
 			'storySessions' => '存檔',
 			'storyGameOver' => '遊戲結束',
 			'storyThinking' => '思考中…',
+			'storyRegenerating' => '正在重新生成中…',
 			'storyAssemblingData' => '正在拼湊資料…',
 			'storyDeathResources' => '致命資源（歸零即遊戲結束）',
 			'syncStateSynced' => '已同步',
@@ -3444,9 +3446,9 @@ extension on TranslationsZhTw {
 			'fridaySchedule' => '週五放送',
 			'saturdaySchedule' => '週六放送',
 			'sundaySchedule' => '週日放送',
-			'popularityRanking' => '人氣排行',
 			_ => null,
 		} ?? switch (path) {
+			'popularityRanking' => '人氣排行',
 			'imageOperations' => '圖片操作',
 			'saveToAlbum' => '儲存到相簿',
 			'stitchLongImage' => '拼長圖',
@@ -3958,9 +3960,9 @@ extension on TranslationsZhTw {
 			'collectStatus' => '看過',
 			'onHoldStatus' => '擱置',
 			'droppedStatus' => '拋棄',
-			'player' => '播放器',
 			_ => null,
 		} ?? switch (path) {
+			'player' => '播放器',
 			'audioOption' => '低延遲音訊',
 			'hardwareDecoding' => '硬體解碼',
 			'hardwareDecoder' => '硬體解碼器',
@@ -4472,9 +4474,9 @@ extension on TranslationsZhTw {
 			'enterYear' => '輸入年份',
 			'selectDay' => '選擇日期',
 			'fullYear' => '全年',
-			'quickSelect' => '快速選擇',
 			_ => null,
 		} ?? switch (path) {
+			'quickSelect' => '快速選擇',
 			'selectDateRange' => '選擇日期範圍',
 			'subject' => '条目',
 			'character' => '角色',
@@ -4986,9 +4988,9 @@ extension on TranslationsZhTw {
 			'clipStartTime' => '開始時間',
 			'clipEndTime' => '結束時間',
 			'clipDuration' => '時長',
-			'previewClip' => '預覽',
 			_ => null,
 		} ?? switch (path) {
+			'previewClip' => '預覽',
 			'exportClip' => '匯出',
 			'exportFormat' => '匯出格式',
 			'exportQuality' => '匯出品質',
@@ -5500,9 +5502,9 @@ extension on TranslationsZhTw {
 			'injectionName' => '名稱',
 			'injectionContent' => '內容',
 			'injectionPosition' => '注入位置',
-			'injectionPositionAfterPersonality' => '人格之後',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterPersonality' => '人格之後',
 			'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',
 			'injectionPositionAfterKnowledge' => '知識之後',
 			'injectionPositionAfterMemory' => '記憶之後',

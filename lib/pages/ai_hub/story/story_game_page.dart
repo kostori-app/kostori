@@ -23,6 +23,26 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   bool _booting = true;
   bool _showStreamBubble = false;
   String _streamText = '';
+
+  /// 生成中提示文案（默认「正在思考」，重新生成时「正在重新生成中」）
+  String? _streamLabel;
+
+  /// 生成计时（秒，保留一位小数）
+  Timer? _genTimer;
+  double _genElapsed = 0;
+
+  void _startGenTimer() {
+    _genTimer?.cancel();
+    _genElapsed = 0;
+    _genTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (mounted) setState(() => _genElapsed += 0.1);
+    });
+  }
+
+  void _stopGenTimer() {
+    _genTimer?.cancel();
+    _genTimer = null;
+  }
   CancelToken? _cancelToken;
   int _lastMessageCount = 0;
 
@@ -155,7 +175,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   late Story _effective = widget.story;
 
   Story _computeEffective() {
-    var s = widget.story;
+    // 始终取故事库里的最新版本：故事编辑页改过的 token 上限/参数等
+    // 能在重发 / 重新生成时立即生效（widget.story 只是进入时的快照）
+    var s = StoryStore.instance.find(widget.story.id) ?? widget.story;
     final cards = StoryCharacterStore.instance.get(s.id);
     final persona = StoryCharacterStore.instance.persona(s.id);
     if (cards.isNotEmpty || persona != null) {
@@ -737,6 +759,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   Future<void> _send(String text, {bool check = false}) async {
     final sessionId = _sessionId;
     if (sessionId == null || _sending) return;
+    // 刷新故事设置（可能在编辑页改过生成参数）
+    _effective = _computeEffective();
     final outgoing = applyStoryRegex(text, story.regexes, 'send');
     // 让 roll_dice 工具与页面用同一套暴击/方向规则
     SkillRegistry.instance.diceCrits = story.crits;
@@ -749,10 +773,12 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       _sending = true;
       _showStreamBubble = true;
       _streamText = '';
+      _streamLabel = null;
       _pendingUserText = outgoing;
       _isFollowing = true;
       _lastFailed = false;
     });
+    _startGenTimer();
     _scrollToBottom(force: true);
     _armStallWatchdog();
     try {
@@ -782,6 +808,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             _sending = false;
             _showStreamBubble = false;
             _streamText = '';
+            _streamLabel = null;
             _pendingUserText = null;
             _lastFailed = true;
           });
@@ -806,6 +833,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         _sending = false;
         _showStreamBubble = false;
         _streamText = '';
+        _streamLabel = null;
         _pendingUserText = null;
         // 空回复视为失败，可重试；用户主动停止且有内容时不提示重试
         _lastFailed = finalText.trim().isEmpty;
@@ -849,6 +877,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           _sending = false;
           _showStreamBubble = false;
           _streamText = '';
+          _streamLabel = null;
           _pendingUserText = null;
           _lastFailed = true;
         });
@@ -856,6 +885,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
     } finally {
       _stallTimer?.cancel();
+      _stopGenTimer();
       _cancelToken = null;
     }
   }
@@ -1668,7 +1698,16 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       ),
     );
     if (ok != true || !mounted) return;
-    setState(() => _sending = true);
+    // 刷新故事设置（可能在编辑页改过 token 上限等生成参数）
+    _effective = _computeEffective();
+    setState(() {
+      _sending = true;
+      _showStreamBubble = true;
+      _streamText = '';
+      _streamLabel = t.storyRegenerating;
+    });
+    _startGenTimer();
+    _scrollToBottom(force: true);
     try {
       final res = await AiConversationService().regenerateMessage(
         sessionId: sessionId,
@@ -1693,7 +1732,15 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       await _applyState(_parseReply(res.data).state);
       await _applyFoldedVariables();
     } finally {
-      if (mounted) setState(() => _sending = false);
+      _stopGenTimer();
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _showStreamBubble = false;
+          _streamText = '';
+          _streamLabel = null;
+        });
+      }
     }
   }
 
@@ -1988,7 +2035,17 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            t.storyThinking,
+                                            '${_genElapsed.toStringAsFixed(1)}s',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _streamLabel ?? t.storyThinking,
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: Theme.of(context)
