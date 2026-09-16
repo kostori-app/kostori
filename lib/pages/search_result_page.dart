@@ -6,7 +6,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/search_page.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/pages/search_source_select_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class SearchResultPage extends StatefulWidget {
@@ -168,9 +168,14 @@ class _SearchSettingsDialog extends StatefulWidget {
 }
 
 class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
+  static const _tabSources = 0;
+  static const _tabOptions = 1;
+
   late String searchTarget;
 
   late List<String> options;
+
+  int _tab = _tabSources;
 
   @override
   void initState() {
@@ -187,58 +192,64 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
     widget.state.setState(() {});
   }
 
+  void _applySource(String key) {
+    if (key == searchTarget) return;
+    setState(() {
+      searchTarget = key;
+      options.clear();
+      final searchOptions =
+          AnimeSource.find(searchTarget)!.searchPageData!.searchOptions ??
+          <SearchOptions>[];
+      options = searchOptions.map((e) => e.defaultValue).toList();
+      onChanged();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    var sources = AnimeSource.all();
-    var enabled = appdata.settings['searchSources'] as List;
-    sources.removeWhere((e) {
-      return !enabled.contains(e.key);
-    });
     return Sheet(
       title: t.settings,
       icon: Icons.tune,
       builder: (context, sc) {
-        return SingleChildScrollView(
-          controller: sc,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                title: Text(t.searchIn),
+        return Column(
+          children: [
+            // 分段胶囊切换：搜索源 / 搜索选项
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+              child: CapsuleOptions(
+                alignment: WrapAlignment.center,
+                children: [
+                  CapsuleOption(
+                    text: t.searchSources,
+                    isSelected: _tab == _tabSources,
+                    onTap: () => setState(() => _tab = _tabSources),
+                  ),
+                  CapsuleOption(
+                    text: t.searchOptions,
+                    isSelected: _tab == _tabOptions,
+                    onTap: () => setState(() => _tab = _tabOptions),
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Column(
-                  children: sources.map((e) {
-                    return SelectCard(
-                      title: e.name.tl,
-                      selected: searchTarget == e.key,
-                      onChanged: (_) {
-                        setState(() {
-                          searchTarget = e.key;
-                          options.clear();
-                          final searchOptions =
-                              AnimeSource.find(
-                                searchTarget,
-                              )!
-                                  .searchPageData!
-                                  .searchOptions ??
-                                  <SearchOptions>[];
-                          options = searchOptions
-                              .map((e) => e.defaultValue)
-                              .toList();
-                          onChanged();
-                        });
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: _tab == _tabSources
+                  ? SearchSourcePicker(
+                      multiSelect: false,
+                      selected: {searchTarget},
+                      onChanged: (selected, _) {
+                        if (selected.isNotEmpty) {
+                          _applySource(selected.first);
+                        }
                       },
-                    );
-                  }).toList(),
-                ),
-              ),
-              buildSearchOptions(),
-            ],
-          ),
+                    )
+                  : SingleChildScrollView(
+                      controller: sc,
+                      child: buildSearchOptions(),
+                    ),
+            ),
+          ],
         );
       },
     );

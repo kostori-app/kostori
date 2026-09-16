@@ -425,34 +425,28 @@ class SearchOptionWidget extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(option.label.ts(sourceKey)),
         ),
-        if (option.type == 'select')
-          CapsuleOptions(
-            alignment: WrapAlignment.start,
-            children: option.options.entries.map((e) {
-              return CapsuleOption(
-                text: e.value.ts(sourceKey),
-                isSelected: value == e.key,
-                onTap: () {
-                  onChanged(e.key);
-                },
-              );
-            }).toList(),
-          ),
-        if (option.type == 'multi-select')
+        if (option.type == 'select' || option.type == 'multi-select')
           CapsuleChipGroup(
             alignment: WrapAlignment.start,
             children: option.options.entries.map((e) {
+              final isMulti = option.type == 'multi-select';
               return CapsuleChip(
                 text: e.value.ts(sourceKey),
-                isSelected: (jsonDecode(value) as List).contains(e.key),
+                isSelected: isMulti
+                    ? (jsonDecode(value) as List).contains(e.key)
+                    : value == e.key,
                 onTap: () {
-                  var list = jsonDecode(value) as List;
-                  if (list.contains(e.key)) {
-                    list.remove(e.key);
+                  if (isMulti) {
+                    var list = jsonDecode(value) as List;
+                    if (list.contains(e.key)) {
+                      list.remove(e.key);
+                    } else {
+                      list.add(e.key);
+                    }
+                    onChanged(jsonEncode(list));
                   } else {
-                    list.add(e.key);
+                    onChanged(e.key);
                   }
-                  onChanged(jsonEncode(list));
                 },
               );
             }).toList(),

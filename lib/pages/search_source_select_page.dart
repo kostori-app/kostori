@@ -69,8 +69,6 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
   late bool _aggregated;
   late String _singleKey;
   late Set<String> _selected;
-  final _searchCtrl = TextEditingController();
-  String _keyword = '';
 
   @override
   void initState() {
@@ -79,46 +77,6 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
     _aggregated = widget.aggregated;
     _singleKey = widget.singleKey ?? '';
     _selected = Set.of(widget.aggregatedKeys ?? {});
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  /// 当前分组全部源（未过滤，供切换分组等逻辑用）
-  List<AnimeSource> get _groupSources => enabledSearchSources(_group);
-
-  /// 按关键词过滤后的源列表（显示用）
-  List<AnimeSource> get _sources {
-    final k = _keyword.trim().toLowerCase();
-    final list = _groupSources;
-    if (k.isEmpty) return list;
-    return list
-        .where(
-          (s) =>
-              s.name.toLowerCase().contains(k) ||
-              s.key.toLowerCase().contains(k),
-        )
-        .toList();
-  }
-
-  void _switchGroup(String group) {
-    if (group == _group) return;
-    setState(() {
-      _group = group;
-      _keyword = '';
-      _searchCtrl.clear();
-      final keys = _groupSources.map((e) => e.key).toSet();
-      _selected.removeWhere((k) => !keys.contains(k));
-      if (!_aggregated) {
-        final sources = _groupSources;
-        if (sources.isNotEmpty && !sources.any((e) => e.key == _singleKey)) {
-          _singleKey = sources.first.key;
-        }
-      }
-    });
   }
 
   void _confirm() {
@@ -142,7 +100,6 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final sources = _sources;
     return Sheet(
       title: t.chooseSearchSource,
       icon: Icons.travel_explore,
@@ -182,7 +139,7 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: sources.isEmpty ? null : _confirm,
+                    onPressed: _selected.isEmpty ? null : _confirm,
                     icon: const Icon(Icons.check),
                     label: Text('${t.apply} (${_selected.length})'),
                   ),
@@ -190,82 +147,183 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
               ),
             )
           : null,
-      builder: (context, sc) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: CapsuleOptions(
-                children: [
-                  for (final group in searchGroups())
-                    CapsuleOption(
-                      text: searchGroupLabel(group),
-                      isSelected: _group == group,
-                      onTap: () => _switchGroup(group),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          // 源搜索筛选
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) => setState(() => _keyword = v),
-              decoration: InputDecoration(
-                hintText: t.search,
-                isDense: true,
-                prefixIcon: const Icon(Icons.search, size: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-              ),
-            ),
-          ),
-          Expanded(
-            child: sources.isEmpty
-                ? Center(
-                    child: Text(
-                      t.noSearchSources,
-                      style: TextStyle(color: cs.onSurface.toOpacity(0.5)),
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    children: [
-                      for (final source in sources)
-                        SelectCard(
-                          title: source.name,
-                          selected: _aggregated
-                              ? _selected.contains(source.key)
-                              : _singleKey == source.key,
-                          onChanged: (v) {
-                            if (_aggregated) {
-                              setState(() {
-                                if (v) {
-                                  _selected.add(source.key);
-                                } else {
-                                  _selected.remove(source.key);
-                                }
-                              });
-                            } else {
-                              setState(() => _singleKey = source.key);
-                              _confirm();
-                            }
-                          },
-                        ),
-                    ],
-                  ),
-          ),
-        ],
+      builder: (context, sc) => SearchSourcePicker(
+        multiSelect: _aggregated,
+        selected: _aggregated
+            ? _selected
+            : {if (_singleKey.isNotEmpty) _singleKey},
+        initialGroup: _group,
+        onChanged: (selected, group) {
+          setState(() {
+            _selected = selected;
+            _group = group;
+            if (!_aggregated && selected.isNotEmpty) {
+              _singleKey = selected.first;
+            }
+          });
+          // 单源模式点选即生效
+          if (!_aggregated) _confirm();
+        },
       ),
+    );
+  }
+}
+
+/// 可复用的搜索源选择器：分组胶囊筛选 + 搜索框 + 条目卡片列表。
+/// 单选点选即回调；多选（聚合搜索）切换勾选。
+class SearchSourcePicker extends StatefulWidget {
+  const SearchSourcePicker({
+    super.key,
+    required this.multiSelect,
+    required this.selected,
+    required this.onChanged,
+    this.initialGroup = 'all',
+  });
+
+  /// 是否多选（聚合搜索）
+  final bool multiSelect;
+
+  /// 当前选中的源 key（单选时只有一个）
+  final Set<String> selected;
+
+  /// 选中变化 / 切换分组时回调 (selected, group)
+  final void Function(Set<String> selected, String group) onChanged;
+
+  final String initialGroup;
+
+  @override
+  State<SearchSourcePicker> createState() => _SearchSourcePickerState();
+}
+
+class _SearchSourcePickerState extends State<SearchSourcePicker> {
+  late String _group;
+  late Set<String> _selected;
+  final _searchCtrl = TextEditingController();
+  String _keyword = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _group = widget.initialGroup;
+    _selected = Set.of(widget.selected);
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<AnimeSource> get _groupSources => enabledSearchSources(_group);
+
+  List<AnimeSource> get _sources {
+    final k = _keyword.trim().toLowerCase();
+    final list = _groupSources;
+    if (k.isEmpty) return list;
+    return list
+        .where(
+          (s) =>
+              s.name.toLowerCase().contains(k) ||
+              s.key.toLowerCase().contains(k),
+        )
+        .toList();
+  }
+
+  void _switchGroup(String group) {
+    if (group == _group) return;
+    setState(() {
+      _group = group;
+      _keyword = '';
+      _searchCtrl.clear();
+      final keys = _groupSources.map((e) => e.key).toSet();
+      _selected.removeWhere((k) => !keys.contains(k));
+      if (!widget.multiSelect && _selected.isEmpty) {
+        final sources = _groupSources;
+        if (sources.isNotEmpty) _selected = {sources.first.key};
+      }
+      widget.onChanged(Set.of(_selected), _group);
+    });
+  }
+
+  void _toggle(AnimeSource source, bool selected) {
+    setState(() {
+      if (widget.multiSelect) {
+        if (selected) {
+          _selected.add(source.key);
+        } else {
+          _selected.remove(source.key);
+        }
+      } else {
+        _selected = {source.key};
+      }
+      widget.onChanged(Set.of(_selected), _group);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sources = _sources;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: CapsuleOptions(
+              children: [
+                for (final group in searchGroups())
+                  CapsuleOption(
+                    text: searchGroupLabel(group),
+                    isSelected: _group == group,
+                    onTap: () => _switchGroup(group),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        // 源搜索筛选
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: TextField(
+            controller: _searchCtrl,
+            onChanged: (v) => setState(() => _keyword = v),
+            decoration: InputDecoration(
+              hintText: t.search,
+              isDense: true,
+              prefixIcon: const Icon(Icons.search, size: 20),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+          ),
+        ),
+        Expanded(
+          child: sources.isEmpty
+              ? Center(
+                  child: Text(
+                    t.noSearchSources,
+                    style: TextStyle(color: cs.onSurface.toOpacity(0.5)),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  children: [
+                    for (final source in sources)
+                      SelectCard(
+                        title: source.name,
+                        selected: _selected.contains(source.key),
+                        onChanged: (v) => _toggle(source, v),
+                      ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 }
