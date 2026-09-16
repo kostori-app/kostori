@@ -167,21 +167,28 @@ class _SearchSettingsDialog extends StatefulWidget {
   State<_SearchSettingsDialog> createState() => _SearchSettingsDialogState();
 }
 
-class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
-  static const _tabSources = 0;
-  static const _tabOptions = 1;
+class _SearchSettingsDialogState extends State<_SearchSettingsDialog>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController = TabController(
+    length: 2,
+    vsync: this,
+  );
 
   late String searchTarget;
 
   late List<String> options;
-
-  int _tab = _tabSources;
 
   @override
   void initState() {
     searchTarget = widget.state.sourceKey;
     options = widget.state.options;
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void onChanged() {
@@ -213,41 +220,46 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
       builder: (context, sc) {
         return Column(
           children: [
-            // 分段胶囊切换：搜索源 / 搜索选项
+            // 分段胶囊切换：搜索源 / 搜索选项（可左右滑动切换）
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
               child: CapsuleOptions(
                 alignment: WrapAlignment.center,
+                progress: _tabController.animation,
                 children: [
                   CapsuleOption(
                     text: t.searchSources,
-                    isSelected: _tab == _tabSources,
-                    onTap: () => setState(() => _tab = _tabSources),
+                    isSelected: false,
+                    onTap: () => _tabController.animateTo(0),
                   ),
                   CapsuleOption(
                     text: t.searchOptions,
-                    isSelected: _tab == _tabOptions,
-                    onTap: () => setState(() => _tab = _tabOptions),
+                    isSelected: false,
+                    onTap: () => _tabController.animateTo(1),
                   ),
                 ],
               ),
             ),
             const Divider(height: 1),
             Expanded(
-              child: _tab == _tabSources
-                  ? SearchSourcePicker(
-                      multiSelect: false,
-                      selected: {searchTarget},
-                      onChanged: (selected, _) {
-                        if (selected.isNotEmpty) {
-                          _applySource(selected.first);
-                        }
-                      },
-                    )
-                  : SingleChildScrollView(
-                      controller: sc,
-                      child: buildSearchOptions(),
-                    ),
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  SearchSourcePicker(
+                    multiSelect: false,
+                    selected: {searchTarget},
+                    onChanged: (selected, _) {
+                      if (selected.isNotEmpty) {
+                        _applySource(selected.first);
+                      }
+                    },
+                  ),
+                  SingleChildScrollView(
+                    controller: sc,
+                    child: buildSearchOptions(),
+                  ),
+                ],
+              ),
             ),
           ],
         );
