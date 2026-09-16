@@ -5182,6 +5182,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Use'
 	String get storyUse => 'Use';
 
+	/// en: 'Cast'
+	String get storySkillCast => 'Cast';
+
+	/// en: 'Use skill "${skill}"'
+	String storyCmdCastSkill({required Object skill}) => 'Use skill "${skill}"';
+
 	/// en: 'Drop'
 	String get storyDrop => 'Drop';
 
@@ -10435,6 +10441,8 @@ extension on Translations {
 			'storyNoActions' => 'This story has no actions defined',
 			'storyInspect' => 'Inspect',
 			'storyUse' => 'Use',
+			'storySkillCast' => 'Cast',
+			'storyCmdCastSkill' => ({required Object skill}) => 'Use skill "${skill}"',
 			'storyDrop' => 'Drop',
 			'storyDefinition' => 'Definition',
 			'storyInitialState' => 'Initial state',
@@ -10725,10 +10733,10 @@ extension on Translations {
 			'audioCompatibility' => 'Audio: Compatibility',
 			'videoClipEditor' => 'Video Clip Editor',
 			'clipStartTime' => 'Start Time',
-			'clipEndTime' => 'End Time',
-			'clipDuration' => 'Duration',
 			_ => null,
 		} ?? switch (path) {
+			'clipEndTime' => 'End Time',
+			'clipDuration' => 'Duration',
 			'previewClip' => 'Preview',
 			'exportClip' => 'Export',
 			'exportFormat' => 'Export Format',
@@ -11239,10 +11247,10 @@ extension on Translations {
 			'worldBook' => 'World Info',
 			'worldBookEntries' => 'World Info entries',
 			'newPromptInjection' => 'New Injection',
-			'editPromptInjection' => 'Edit Injection',
-			'injectionName' => 'Name',
 			_ => null,
 		} ?? switch (path) {
+			'editPromptInjection' => 'Edit Injection',
+			'injectionName' => 'Name',
 			'injectionContent' => 'Content',
 			'injectionPosition' => 'Injection position',
 			'injectionPositionAfterPersonality' => 'After personality',

@@ -1752,6 +1752,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNoActions => '该故事未定义操作';
 	@override String get storyInspect => '检查';
 	@override String get storyUse => '使用';
+	@override String get storySkillCast => '施放';
+	@override String storyCmdCastSkill({required Object skill}) => '使用技能「${skill}」';
 	@override String get storyDrop => '丢弃';
 	@override String get storyDefinition => '设定';
 	@override String get storyInitialState => '初始状态';
@@ -4697,6 +4699,8 @@ extension on TranslationsZhCn {
 			'storyNoActions' => '该故事未定义操作',
 			'storyInspect' => '检查',
 			'storyUse' => '使用',
+			'storySkillCast' => '施放',
+			'storyCmdCastSkill' => ({required Object skill}) => '使用技能「${skill}」',
 			'storyDrop' => '丢弃',
 			'storyDefinition' => '设定',
 			'storyInitialState' => '初始状态',
@@ -4988,10 +4992,10 @@ extension on TranslationsZhCn {
 			'otherSettings' => '其他设置',
 			'audioLowLatency' => '音频: 低延迟',
 			'audioCompatibility' => '音频: 兼容模式',
-			'videoClipEditor' => '视频剪辑',
-			'clipStartTime' => '开始时间',
 			_ => null,
 		} ?? switch (path) {
+			'videoClipEditor' => '视频剪辑',
+			'clipStartTime' => '开始时间',
 			'clipEndTime' => '结束时间',
 			'clipDuration' => '时长',
 			'previewClip' => '预览',
@@ -5502,10 +5506,10 @@ extension on TranslationsZhCn {
 			'worldBook' => '世界书',
 			'worldBookEntries' => '世界书条目',
 			'newPromptInjection' => '新建注入',
-			'editPromptInjection' => '编辑注入',
-			'injectionName' => '名称',
 			_ => null,
 		} ?? switch (path) {
+			'editPromptInjection' => '编辑注入',
+			'injectionName' => '名称',
 			'injectionContent' => '内容',
 			'injectionPosition' => '注入位置',
 			'injectionPositionAfterPersonality' => '人格之后',

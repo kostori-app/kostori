@@ -1753,6 +1753,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get storyNoActions => '該故事未定義操作';
 	@override String get storyInspect => '檢查';
 	@override String get storyUse => '使用';
+	@override String get storySkillCast => '施放';
+	@override String storyCmdCastSkill({required Object skill}) => '使用技能「${skill}」';
 	@override String get storyDrop => '丟棄';
 	@override String get storyDefinition => '設定';
 	@override String get storyInitialState => '初始狀態';
@@ -4697,6 +4699,8 @@ extension on TranslationsZhTw {
 			'storyNoActions' => '該故事未定義操作',
 			'storyInspect' => '檢查',
 			'storyUse' => '使用',
+			'storySkillCast' => '施放',
+			'storyCmdCastSkill' => ({required Object skill}) => '使用技能「${skill}」',
 			'storyDrop' => '丟棄',
 			'storyDefinition' => '設定',
 			'storyInitialState' => '初始狀態',
@@ -4987,10 +4991,10 @@ extension on TranslationsZhTw {
 			'audioLowLatency' => '音訊: 低延遲',
 			'audioCompatibility' => '音訊: 相容模式',
 			'videoClipEditor' => '影片剪輯',
-			'clipStartTime' => '開始時間',
-			'clipEndTime' => '結束時間',
 			_ => null,
 		} ?? switch (path) {
+			'clipStartTime' => '開始時間',
+			'clipEndTime' => '結束時間',
 			'clipDuration' => '時長',
 			'previewClip' => '預覽',
 			'exportClip' => '匯出',
@@ -5501,10 +5505,10 @@ extension on TranslationsZhTw {
 			'worldBookEntries' => '世界書條目',
 			'newPromptInjection' => '新增注入',
 			'editPromptInjection' => '編輯注入',
-			'injectionName' => '名稱',
-			'injectionContent' => '內容',
 			_ => null,
 		} ?? switch (path) {
+			'injectionName' => '名稱',
+			'injectionContent' => '內容',
 			'injectionPosition' => '注入位置',
 			'injectionPositionAfterPersonality' => '人格之後',
 			'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',

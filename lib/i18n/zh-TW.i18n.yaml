@@ -1763,6 +1763,8 @@ storyMore: 更多
 storyNoActions: 該故事未定義操作
 storyInspect: 檢查
 storyUse: 使用
+storySkillCast: 施放
+storyCmdCastSkill: 使用技能「${skill}」
 storyDrop: 丟棄
 storyDefinition: 設定
 storyInitialState: 初始狀態

@@ -163,6 +163,40 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     );
   }
 
+  /// 技能菜单：查看 / 施放（让玩家能主动使用技能、法术）
+  Future<void> _skillMenu(String skill) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Sheet(
+        title: skill,
+        icon: Icons.auto_awesome_outlined,
+        initialSize: 0.34,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.search),
+              title: Text(t.storyInspect),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _inspect(skill, 'skill');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.auto_awesome),
+              title: Text(t.storySkillCast),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                widget.onCommand(t.storyCmdCastSkill(skill: skill));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 物品菜单：检查 / 使用 / 装备 / 丢弃
   Future<void> _itemMenu(String item) async {
     final equipped = _isEquipped(item);
@@ -341,7 +375,8 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               : null,
         ),
       ),
-      onTap: () => _inspect(d.name, d.kind),
+      onTap: () =>
+          d.kind == 'skill' ? _skillMenu(d.name) : _inspect(d.name, d.kind),
       ),
     );
   }
@@ -522,7 +557,13 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final s in state.skills) _entry(label: s, kind: 'skill'),
+              for (final s in state.skills)
+                _entry(
+                  label: s,
+                  kind: 'skill',
+                  onTap: () => _skillMenu(s),
+                  onLongPress: () => _skillMenu(s),
+                ),
             ],
           ),
         ];
