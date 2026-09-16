@@ -1348,7 +1348,11 @@ class GameState {
   /// 已解锁的成就 key
   final List<String> achievements;
 
+  /// 本回合 JSON 中实际出现的顶层字段（增量语义：省略 = 保持上一回合不变）
+  final Set<String> provided;
+
   const GameState({
+    this.provided = const {},
     this.resources = const [],
     this.attributes = const {},
     this.skills = const [],
@@ -1374,6 +1378,7 @@ class GameState {
   static const empty = GameState();
 
   GameState copyWith({
+    Set<String>? provided,
     List<StatBar>? resources,
     Map<String, int>? attributes,
     List<String>? skills,
@@ -1395,6 +1400,7 @@ class GameState {
     CombatState? combat,
     List<String>? achievements,
   }) => GameState(
+    provided: provided ?? this.provided,
     resources: resources ?? this.resources,
     attributes: attributes ?? this.attributes,
     skills: skills ?? this.skills,
@@ -1446,6 +1452,7 @@ class GameState {
     }
 
     return GameState(
+      provided: json.keys.toSet(),
       resources: resources,
       attributes: attributes,
       skills: strs(json['skills']),
@@ -2220,7 +2227,7 @@ class Story {
 }
 ```
 规则：
-- state 需给出当前完整状态；codex 记录出现或已有的道具/种族/特质/天赋等设定，display 面向玩家，mechanics 供你后续严格遵守，避免自相矛盾。
+- **state 采用增量式**：只需给出本回合发生变化的字段，未列出的字段会自动保持上一回合的值（省略 ≠ 清空；要清空某字段请显式给空数组 / 空对象）。数组字段（skills / inventory / quests / equipped / achievements）一旦变化就给**更新后的完整列表**；attributes 可只给变化的键。codex 记录出现或已有的道具/种族/特质/天赋等设定，display 面向玩家，mechanics 供你后续严格遵守，避免自相矛盾。
 - **JSON 块位置固定**：状态 JSON 必须是整条回复的**最后一段**，且只用 ```json 围栏包裹这一个代码块；正文（旁白 / 对白）**绝不能**放进代码块，代码块里也不要写任何正文或说明，JSON 前后不要加解释文字。
 - events 列出本回合的关键事件（进入地区 / 受伤掉血 / 获得道具 / 完成任务等），会单独高亮展示。
 - choices 提供 3-5 个可供玩家选择的行动：每条不超过 15 个字，动词开头，只写行动本身，不要解释、后果或括号补充。

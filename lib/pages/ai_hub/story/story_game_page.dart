@@ -1277,6 +1277,41 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     var next = state.copyWith(
       variables: normalizeVariables(state.variables, story.variables),
     );
+    // 增量式：本回合未提供的顶层字段保持上一回合的值（省略 ≠ 清空）
+    final provided = state.provided;
+    next = next.copyWith(
+      attributes: provided.contains('attributes')
+          ? {..._state.attributes, ...state.attributes}
+          : _state.attributes,
+    );
+    if (!provided.contains('skills')) {
+      next = next.copyWith(skills: _state.skills);
+    }
+    if (!provided.contains('inventory')) {
+      next = next.copyWith(inventory: _state.inventory);
+    }
+    if (!provided.contains('quests')) {
+      next = next.copyWith(quests: _state.quests);
+    }
+    if (!provided.contains('achievements')) {
+      next = next.copyWith(achievements: _state.achievements);
+    }
+    if (!provided.contains('equipped')) {
+      next = next.copyWith(equipped: _state.equipped);
+    }
+    if (!provided.contains('time')) next = next.copyWith(time: _state.time);
+    if (!provided.contains('location')) {
+      next = next.copyWith(location: _state.location);
+    }
+    if (!provided.contains('situation')) {
+      next = next.copyWith(situation: _state.situation);
+    }
+    if (!provided.contains('present')) {
+      next = next.copyWith(present: _state.present);
+    }
+    if (!provided.contains('combat')) {
+      next = next.copyWith(combat: _state.combat);
+    }
     // 词条一旦登记就保留（模型偶尔会漏报），合并而非覆盖
     final mergedCodex = [...next.codex];
     final seenDefs = {
