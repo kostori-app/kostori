@@ -1146,8 +1146,36 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       return;
     }
     if (!mounted) return;
+    // 当前 anime page 对应条目置顶并标记，避免系列重名时无法分辨
+    final ordered = List<Anime>.from(series);
+    final currentIndex = ordered.indexWhere((a) => a.id == _animeId);
+    Anime? currentEntry;
+    if (currentIndex >= 0) {
+      currentEntry = ordered.removeAt(currentIndex);
+    }
     final items = <_DownloadItem>[
-      for (final a in series)
+      if (currentEntry != null)
+        _DownloadItem(
+          key: currentEntry.id,
+          animeId: currentEntry.id,
+          title: currentEntry.title,
+          subtitle: currentEntry.subtitle ?? '',
+          episodeName: currentEntry.title,
+          sourceKey: _sourceKey,
+          isCurrent: true,
+        )
+      else
+        // 系列列表不含当前条目时，把当前页作为首个条目
+        _DownloadItem(
+          key: _animeId,
+          animeId: _animeId,
+          title: data!.title,
+          subtitle: data!.subTitle ?? '',
+          episodeName: data!.title,
+          sourceKey: _sourceKey,
+          isCurrent: true,
+        ),
+      for (final a in ordered)
         _DownloadItem(
           key: a.id,
           // 系列每条都是独立番剧条目：记录/已下载标记都按自身 id

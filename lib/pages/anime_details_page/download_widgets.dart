@@ -22,6 +22,9 @@ class _DownloadItem {
   /// 封面所属源 key
   final String sourceKey;
 
+  /// 是否为当前 anime page 对应的条目（系列下载时用于置顶/标记）
+  final bool isCurrent;
+
   const _DownloadItem({
     required this.key,
     required this.animeId,
@@ -30,8 +33,12 @@ class _DownloadItem {
     required this.episodeName,
     this.episodeNo,
     required this.sourceKey,
+    this.isCurrent = false,
   });
 }
+
+/// 下载选择弹窗的筛选：全部 / 未下载 / 已下载
+enum _DownloadFilter { all, notDownloaded, downloaded }
 
 /// 下载选择结果
 class _DownloadPick {
@@ -243,6 +250,12 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   /// 选定的下载分组（= 下载目录子目录），持久化上次选择
   late String _group;
 
+  /// 当前筛选：全部 / 未下载 / 已下载
+  _DownloadFilter _filter = _DownloadFilter.all;
+
+  bool _isDownloaded(_DownloadItem item) =>
+      widget.downloaded.contains('${item.animeId}|${item.episodeName}');
+
   /// 按当前开关计算标题
   String _computedTitle() {
     if (_useRules && _rules.isNotEmpty) {
@@ -448,19 +461,34 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final allSelected = selected.length == widget.items.length;
+    final visibleItems = widget.items.where((item) {
+      return switch (_filter) {
+        _DownloadFilter.all => true,
+        _DownloadFilter.notDownloaded => !_isDownloaded(item),
+        _DownloadFilter.downloaded => _isDownloaded(item),
+      };
+    }).toList();
+    // 已下载项不可勾选（只能重下），全选只作用于当前筛选下可下载项
+    final selectable = visibleItems
+        .where((item) => !_isDownloaded(item))
+        .toList();
+    final allSelected =
+        selectable.isNotEmpty &&
+        selectable.every((item) => selected.contains(item.key));
     return Sheet(
       title: t.downloadEpisode,
       icon: Icons.download_outlined,
       initialSize: 0.7,
       headerTrailing: TextButton(
-        onPressed: () => setState(() {
-          if (allSelected) {
-            selected.clear();
-          } else {
-            selected.addAll(widget.items.map((e) => e.key));
-          }
-        }),
+        onPressed: selectable.isEmpty
+            ? null
+            : () => setState(() {
+                if (allSelected) {
+                  selected.removeAll(selectable.map((e) => e.key));
+                } else {
+                  selected.addAll(selectable.map((e) => e.key));
+                }
+              }),
         child: Text(allSelected ? t.selectNone : t.selectAll),
       ),
       footer: SafeArea(
@@ -540,27 +568,62 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
               ),
             ),
           ),
-          for (final item in widget.items)
-            _DownloadItemCard(
-              item: item,
-              displayTitle: _nameOverrides[item.key] ?? item.title,
-                      isDownloaded: widget.downloaded.contains(
-                        '${item.animeId}|${item.episodeName}',
-                      ),
-              isSelected: selected.contains(item.key),
-              resolutionLabel: _resolutionLabelByKey[item.key],
-              onToggle: () => _toggle(item.key),
-              onEditName: () => _editItemName(item),
-              onResolution: (url, label) => setState(() {
-                _resolutionByKey[item.key] = url;
-                _resolutionLabelByKey[item.key] = label;
-              }),
-              resolvePlay: widget.resolvePlay,
-              // 已下载条目：重下 = 重新勾选（再次下载会覆盖）
-              onRedownload: () => setState(() {
-                if (!selected.add(item.key)) selected.remove(item.key);
-              }),
+          // 筛选：全部 / 未下载 / 已下载
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SegmentedButton<_DownloadFilter>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: _DownloadFilter.all,
+                  label: Text(t.all),
+                ),
+                ButtonSegment(
+                  value: _DownloadFilter.notDownloaded,
+                  label: Text(t.downloadNotDownloaded),
+                ),
+                ButtonSegment(
+                  value: _DownloadFilter.downloaded,
+                  label: Text(t.downloadDownloaded),
+                ),
+              ],
+              selected: {_filter},
+              onSelectionChanged: (value) =>
+                  setState(() => _filter = value.first),
             ),
+          ),
+          if (visibleItems.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text(
+                  t.noData,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            )
+          else
+            for (final item in visibleItems)
+              _DownloadItemCard(
+                item: item,
+                displayTitle: _nameOverrides[item.key] ?? item.title,
+                isDownloaded: _isDownloaded(item),
+                isSelected: selected.contains(item.key),
+                resolutionLabel: _resolutionLabelByKey[item.key],
+                onToggle: () => _toggle(item.key),
+                onEditName: () => _editItemName(item),
+                onResolution: (url, label) => setState(() {
+                  _resolutionByKey[item.key] = url;
+                  _resolutionLabelByKey[item.key] = label;
+                }),
+                resolvePlay: widget.resolvePlay,
+                // 已下载条目：重下 = 重新勾选（再次下载会覆盖）
+                onRedownload: () => setState(() {
+                  if (!selected.add(item.key)) selected.remove(item.key);
+                }),
+              ),
         ],
       ),
     );
@@ -704,12 +767,39 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.displayTitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.displayTitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (item.isCurrent) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                t.current,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       if (item.subtitle.isNotEmpty) ...[
                         const SizedBox(height: 2),

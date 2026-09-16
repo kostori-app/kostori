@@ -219,6 +219,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get displayTimeAndBatteryInfoInReader => '閱讀器內顯示時間及電量';
 	@override String get doNotReportAnyIssuesRelatedToSourcesToAppRepo => '請勿向主儲存庫報告任何與源有關的問題。';
 	@override String get downloadAll => '下載全部';
+	@override String get downloadNotDownloaded => '未下載';
+	@override String get downloadDownloaded => '已下載';
 	@override String get downloadSelected => '下載選中';
 	@override String get download => '下載';
 	@override String get downloading => '下載中';
@@ -3111,6 +3113,8 @@ extension on TranslationsZhTw {
 			'displayTimeAndBatteryInfoInReader' => '閱讀器內顯示時間及電量',
 			'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => '請勿向主儲存庫報告任何與源有關的問題。',
 			'downloadAll' => '下載全部',
+			'downloadNotDownloaded' => '未下載',
+			'downloadDownloaded' => '已下載',
 			'downloadSelected' => '下載選中',
 			'download' => '下載',
 			'downloading' => '下載中',
@@ -3441,10 +3445,10 @@ extension on TranslationsZhTw {
 			'saturdaySchedule' => '週六放送',
 			'sundaySchedule' => '週日放送',
 			'popularityRanking' => '人氣排行',
-			'imageOperations' => '圖片操作',
-			'saveToAlbum' => '儲存到相簿',
 			_ => null,
 		} ?? switch (path) {
+			'imageOperations' => '圖片操作',
+			'saveToAlbum' => '儲存到相簿',
 			'stitchLongImage' => '拼長圖',
 			'stitchHorizontalImage' => '橫向拼圖',
 			'stitchSubtitles' => '台詞拼接',
@@ -3955,10 +3959,10 @@ extension on TranslationsZhTw {
 			'onHoldStatus' => '擱置',
 			'droppedStatus' => '拋棄',
 			'player' => '播放器',
-			'audioOption' => '低延遲音訊',
-			'hardwareDecoding' => '硬體解碼',
 			_ => null,
 		} ?? switch (path) {
+			'audioOption' => '低延遲音訊',
+			'hardwareDecoding' => '硬體解碼',
 			'hardwareDecoder' => '硬體解碼器',
 			'videoRenderer' => '影片渲染器',
 			'videoSynchronizationMode' => '影片同步模式',
@@ -4469,10 +4473,10 @@ extension on TranslationsZhTw {
 			'selectDay' => '選擇日期',
 			'fullYear' => '全年',
 			'quickSelect' => '快速選擇',
-			'selectDateRange' => '選擇日期範圍',
-			'subject' => '条目',
 			_ => null,
 		} ?? switch (path) {
+			'selectDateRange' => '選擇日期範圍',
+			'subject' => '条目',
 			'character' => '角色',
 			'person' => '人物',
 			'manualSelect' => '手動選擇',
@@ -4983,10 +4987,10 @@ extension on TranslationsZhTw {
 			'clipEndTime' => '結束時間',
 			'clipDuration' => '時長',
 			'previewClip' => '預覽',
-			'exportClip' => '匯出',
-			'exportFormat' => '匯出格式',
 			_ => null,
 		} ?? switch (path) {
+			'exportClip' => '匯出',
+			'exportFormat' => '匯出格式',
 			'exportQuality' => '匯出品質',
 			'exportSize' => '匯出尺寸',
 			'cropArea' => '裁剪區域',
@@ -5497,10 +5501,10 @@ extension on TranslationsZhTw {
 			'injectionContent' => '內容',
 			'injectionPosition' => '注入位置',
 			'injectionPositionAfterPersonality' => '人格之後',
-			'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',
-			'injectionPositionAfterKnowledge' => '知識之後',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',
+			'injectionPositionAfterKnowledge' => '知識之後',
 			'injectionPositionAfterMemory' => '記憶之後',
 			'injectionPositionBeforeTools' => '工具清單之前',
 			'injectionSortOrder' => '排序號',

@@ -605,6 +605,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Download All'
 	String get downloadAll => 'Download All';
 
+	/// en: 'Not downloaded'
+	String get downloadNotDownloaded => 'Not downloaded';
+
+	/// en: 'Downloaded'
+	String get downloadDownloaded => 'Downloaded';
+
 	/// en: 'Download Selected'
 	String get downloadSelected => 'Download Selected';
 
@@ -8849,6 +8855,8 @@ extension on Translations {
 			'displayTimeAndBatteryInfoInReader' => 'Display time & battery info in reader',
 			'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => 'Do not report any issues related to sources to App repo.',
 			'downloadAll' => 'Download All',
+			'downloadNotDownloaded' => 'Not downloaded',
+			'downloadDownloaded' => 'Downloaded',
 			'downloadSelected' => 'Download Selected',
 			'download' => 'Download',
 			'downloading' => 'Downloading',
@@ -9171,10 +9179,10 @@ extension on Translations {
 			'failedToCheckTheHashValuePleaseTryAgain' => 'Failed to check the hash value. Please try again',
 			'english' => 'English',
 			'dynamicColor' => 'Dynamic color',
-			'mondaySchedule' => 'Monday Schedule',
-			'tuesdaySchedule' => 'Tuesday Schedule',
 			_ => null,
 		} ?? switch (path) {
+			'mondaySchedule' => 'Monday Schedule',
+			'tuesdaySchedule' => 'Tuesday Schedule',
 			'wednesdaySchedule' => 'Wednesday Schedule',
 			'thursdaySchedule' => 'Thursday Schedule',
 			'fridaySchedule' => 'Friday Schedule',
@@ -9685,10 +9693,10 @@ extension on Translations {
 			'onHoldStatus' => 'On Hold',
 			'droppedStatus' => 'Dropped',
 			'player' => 'Player',
-			'audioOption' => 'Low-latency audio',
-			'hardwareDecoding' => 'Hardware Decoding',
 			_ => null,
 		} ?? switch (path) {
+			'audioOption' => 'Low-latency audio',
+			'hardwareDecoding' => 'Hardware Decoding',
 			'hardwareDecoder' => 'Hardware decoder',
 			'videoRenderer' => 'Video renderer',
 			'videoSynchronizationMode' => 'Video synchronization mode',
@@ -10199,10 +10207,10 @@ extension on Translations {
 			'selectDay' => 'Select Day',
 			'fullYear' => 'Full Year',
 			'quickSelect' => 'Quick Select',
-			'selectDateRange' => 'Select Date Range',
-			'subject' => 'Subject',
 			_ => null,
 		} ?? switch (path) {
+			'selectDateRange' => 'Select Date Range',
+			'subject' => 'Subject',
 			'character' => 'Character',
 			'person' => 'Person',
 			'manualSelect' => 'Manual Select',
@@ -10713,10 +10721,10 @@ extension on Translations {
 			'clipDuration' => 'Duration',
 			'previewClip' => 'Preview',
 			'exportClip' => 'Export',
-			'exportFormat' => 'Export Format',
-			'exportQuality' => 'Export Quality',
 			_ => null,
 		} ?? switch (path) {
+			'exportFormat' => 'Export Format',
+			'exportQuality' => 'Export Quality',
 			'exportSize' => 'Export Size',
 			'cropArea' => 'Crop Area',
 			'selectCropArea' => 'Select Crop Area',
@@ -11227,10 +11235,10 @@ extension on Translations {
 			'injectionName' => 'Name',
 			'injectionContent' => 'Content',
 			'injectionPosition' => 'Injection position',
-			'injectionPositionAfterPersonality' => 'After personality',
-			'injectionPositionAfterSystemPrompt' => 'After custom system prompt',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterPersonality' => 'After personality',
+			'injectionPositionAfterSystemPrompt' => 'After custom system prompt',
 			'injectionPositionAfterKnowledge' => 'After knowledge',
 			'injectionPositionAfterMemory' => 'After memory',
 			'injectionPositionBeforeTools' => 'Before tool list',

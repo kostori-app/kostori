@@ -178,6 +178,8 @@ displayModeOfAnimeTile: 動漫卡片顯示模式
 displayTimeAndBatteryInfoInReader: 閱讀器內顯示時間及電量
 doNotReportAnyIssuesRelatedToSourcesToAppRepo: 請勿向主儲存庫報告任何與源有關的問題。
 downloadAll: 下載全部
+downloadNotDownloaded: 未下載
+downloadDownloaded: 已下載
 downloadSelected: 下載選中
 download: 下載
 downloading: 下載中

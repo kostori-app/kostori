@@ -179,6 +179,8 @@ displayModeOfAnimeTile: 番剧卡片显示模式
 displayTimeAndBatteryInfoInReader: 在阅读器中显示时间与电池信息
 doNotReportAnyIssuesRelatedToSourcesToAppRepo: 请勿将与源相关的问题反馈至本应用的仓库。
 downloadAll: 下载全部
+downloadNotDownloaded: 未下载
+downloadDownloaded: 已下载
 downloadSelected: 下载选中项
 download: 下载
 downloading: 下载中

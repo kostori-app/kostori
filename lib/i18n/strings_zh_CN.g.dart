@@ -220,6 +220,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get displayTimeAndBatteryInfoInReader => '在阅读器中显示时间与电池信息';
 	@override String get doNotReportAnyIssuesRelatedToSourcesToAppRepo => '请勿将与源相关的问题反馈至本应用的仓库。';
 	@override String get downloadAll => '下载全部';
+	@override String get downloadNotDownloaded => '未下载';
+	@override String get downloadDownloaded => '已下载';
 	@override String get downloadSelected => '下载选中项';
 	@override String get download => '下载';
 	@override String get downloading => '下载中';
@@ -3113,6 +3115,8 @@ extension on TranslationsZhCn {
 			'displayTimeAndBatteryInfoInReader' => '在阅读器中显示时间与电池信息',
 			'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => '请勿将与源相关的问题反馈至本应用的仓库。',
 			'downloadAll' => '下载全部',
+			'downloadNotDownloaded' => '未下载',
+			'downloadDownloaded' => '已下载',
 			'downloadSelected' => '下载选中项',
 			'download' => '下载',
 			'downloading' => '下载中',
@@ -3442,10 +3446,10 @@ extension on TranslationsZhCn {
 			'fridaySchedule' => '周五时间表',
 			'saturdaySchedule' => '周六时间表',
 			'sundaySchedule' => '周日时间表',
-			'popularityRanking' => '人气排行',
-			'imageOperations' => '图片操作',
 			_ => null,
 		} ?? switch (path) {
+			'popularityRanking' => '人气排行',
+			'imageOperations' => '图片操作',
 			'saveToAlbum' => '保存到相册',
 			'stitchLongImage' => '拼接长图',
 			'stitchHorizontalImage' => '横向拼接',
@@ -3956,10 +3960,10 @@ extension on TranslationsZhCn {
 			'droppedStatus' => '抛弃',
 			'player' => '播放器',
 			'audioOption' => '低延迟音频',
-			'hardwareDecoding' => '硬件解码',
-			'hardwareDecoder' => '硬件解码器',
 			_ => null,
 		} ?? switch (path) {
+			'hardwareDecoding' => '硬件解码',
+			'hardwareDecoder' => '硬件解码器',
 			'videoRenderer' => '视频渲染器',
 			'videoSynchronizationMode' => '视频同步模式',
 			'enableNoProxyOverrides' => '启用无代理覆写',
@@ -4470,10 +4474,10 @@ extension on TranslationsZhCn {
 			'fullYear' => '全年',
 			'quickSelect' => '快速选择',
 			'selectDateRange' => '选择日期范围',
-			'subject' => '条目',
-			'character' => '角色',
 			_ => null,
 		} ?? switch (path) {
+			'subject' => '条目',
+			'character' => '角色',
 			'person' => '人物',
 			'manualSelect' => '手动选择',
 			'qrAndClipboard' => '二维码与剪贴板',
@@ -4984,10 +4988,10 @@ extension on TranslationsZhCn {
 			'clipStartTime' => '开始时间',
 			'clipEndTime' => '结束时间',
 			'clipDuration' => '时长',
-			'previewClip' => '预览',
-			'exportClip' => '导出',
 			_ => null,
 		} ?? switch (path) {
+			'previewClip' => '预览',
+			'exportClip' => '导出',
 			'exportFormat' => '导出格式',
 			'exportQuality' => '导出质量',
 			'exportSize' => '导出尺寸',
@@ -5498,10 +5502,10 @@ extension on TranslationsZhCn {
 			'injectionName' => '名称',
 			'injectionContent' => '内容',
 			'injectionPosition' => '注入位置',
-			'injectionPositionAfterPersonality' => '人格之后',
-			'injectionPositionAfterSystemPrompt' => '自定义提示词之后',
 			_ => null,
 		} ?? switch (path) {
+			'injectionPositionAfterPersonality' => '人格之后',
+			'injectionPositionAfterSystemPrompt' => '自定义提示词之后',
 			'injectionPositionAfterKnowledge' => '知识之后',
 			'injectionPositionAfterMemory' => '记忆之后',
 			'injectionPositionBeforeTools' => '工具清单之前',

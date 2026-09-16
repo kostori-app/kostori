@@ -190,6 +190,8 @@ displayModeOfAnimeTile: Display mode of anime tile
 displayTimeAndBatteryInfoInReader: Display time & battery info in reader
 doNotReportAnyIssuesRelatedToSourcesToAppRepo: Do not report any issues related to sources to App repo.
 downloadAll: Download All
+downloadNotDownloaded: Not downloaded
+downloadDownloaded: Downloaded
 downloadSelected: Download Selected
 download: Download
 downloading: Downloading
