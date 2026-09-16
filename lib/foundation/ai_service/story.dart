@@ -358,10 +358,16 @@ Map<String, String> normalizeVariables(
 ) {
   if (declared.isEmpty) return values;
   final byName = {for (final v in declared) v.name: v};
-  return {
+  final out = <String, String>{
     for (final e in values.entries)
       e.key: byName[e.key]?.normalize(e.value) ?? e.value,
   };
+  // 补上故事新声明、但当前状态里还没有的变量（用默认值），
+  // 这样新增设定（如「声望」「善恶」）无需重开新档就能生效
+  for (final v in declared) {
+    out.putIfAbsent(v.name, () => v.value);
+  }
+  return out;
 }
 
 /// 变量增量：set 直接赋值，delta 数值增减（事件溯源用）
