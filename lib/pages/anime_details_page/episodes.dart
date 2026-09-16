@@ -22,6 +22,24 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   bool _seriesAsc = false;
   bool showAll = false;
 
+  /// 已下载且文件仍存在的条目：`animeId|episodeName` → 本地文件路径
+  Map<String, String> _downloaded = {};
+  bool _downloadedLoaded = false;
+
+  Future<void> _loadDownloaded() async {
+    final loaded = await DownloadManager.downloadedFilesFor(
+      state.anime.sourceKey,
+    );
+    if (mounted) setState(() => _downloaded = loaded);
+  }
+
+  /// 播放本地已下载文件
+  void _playLocal(String path) {
+    App.mainNavigatorKey?.currentContext?.to(
+      () => LocalPlayerPage(filePath: path),
+    );
+  }
+
   /// 系列模式：源无分集，加载与剧集平行的系列列表（复用 Anime 结构）
   List<Anime>? _series;
 
@@ -47,6 +65,10 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   @override
   void didChangeDependencies() {
     state = context.findAncestorStateOfType<_AnimePageState>()!;
+    if (!_downloadedLoaded) {
+      _downloadedLoaded = true;
+      _loadDownloaded();
+    }
     if (_isSeries && _series == null) {
       _loadSeries();
     }
@@ -137,7 +159,17 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                     playingId != null &&
                     items[i].id == playingId,
                 isPlayingNow: state.playerController.playing,
+                isDownloaded: _downloaded.containsKey(
+                  '${items[i].id}|${items[i].title}',
+                ),
                 onTap: () async {
+                  // 已下载且文件仍在：优先播放本地文件
+                  final localPath =
+                      _downloaded['${items[i].id}|${items[i].title}'];
+                  if (localPath != null) {
+                    _playLocal(localPath);
+                    return;
+                  }
                   // 播放用原始列表索引，排序不影响播放逻辑
                   final originalIndex = series.indexOf(items[i]);
                   await state.playerController.playEpisode(
@@ -159,18 +191,32 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   /// 当前条目（系列模式单集）卡片：标题 + 播放按钮，点击直接播放该条目
   Widget _buildCurrentEpisodeCard(BuildContext context, Anime entry) {
     final colorScheme = Theme.of(context).colorScheme;
+    final localPath = _downloaded['${entry.id}|${entry.title}'];
+    final downloaded = localPath != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Material(
-        color: colorScheme.primary.withValues(alpha: 0.12),
+        color: downloaded
+            ? Colors.green.withValues(alpha: 0.12)
+            : colorScheme.primary.withValues(alpha: 0.12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: colorScheme.primary, width: 1.5),
+          side: downloaded
+              ? BorderSide(
+                  color: Colors.green.withValues(alpha: 0.6),
+                  width: 1.0,
+                )
+              : BorderSide(color: colorScheme.primary, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
+            // 已下载且文件仍在：优先播放本地文件
+            if (localPath != null) {
+              _playLocal(localPath);
+              return;
+            }
             final idx = _series!.indexWhere((a) => a.id == entry.id);
             if (idx >= 0) {
               state.playerController.playEpisode(idx + 1, 0);
@@ -242,9 +288,11 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                   ),
                 ),
                 Icon(
-                  Icons.play_circle_fill,
+                  downloaded
+                      ? Icons.download_done
+                      : Icons.play_circle_fill,
                   size: 44,
-                  color: colorScheme.primary,
+                  color: downloaded ? Colors.green : colorScheme.primary,
                 ),
               ],
             ),
@@ -454,6 +502,13 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                         var value = currentEps[key]!;
                         bool visited = (history?.watchEpisode ?? const {})
                             .contains(index + 1);
+                        // 下载记录里的 episodeName 与下载面板保持一致
+                        final epTitle = AnimeDetails.episodeTitleOf(value);
+                        final epName = epTitle.isEmpty
+                            ? t.episodeN(n: key)
+                            : epTitle;
+                        final localPath =
+                            _downloaded['${state.anime.id}|$epName'];
 
                         return SizedBox(
                           // 只有一集时占满整行，避免显示成 1/3 宽的小格子
@@ -465,16 +520,24 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                               vertical: 8,
                             ),
                             child: Material(
-                              color: !visited
-                                  ? context.colorScheme.surfaceContainer
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.primary.toOpacity(0.3),
+                              // 已下载（文件仍在）：绿色调高亮，点击播放本地
+                              color: localPath != null
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : (!visited
+                                        ? context.colorScheme.surfaceContainer
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.primary.toOpacity(0.3)),
                               borderRadius: const BorderRadius.all(
                                 Radius.circular(12),
                               ),
                               child: InkWell(
                                 onTap: () async {
+                                  // 已下载且文件仍在：优先播放本地文件
+                                  if (localPath != null) {
+                                    _playLocal(localPath);
+                                    return;
+                                  }
                                   await state.playerController.playEpisode(
                                     index + 1,
                                     playList,
@@ -558,10 +621,19 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                                       : context
                                                             .colorScheme
                                                             .outline
-                                                : null,
+                                                  : null,
                                           ),
                                         ),
                                       ),
+                                      if (localPath != null)
+                                        const Padding(
+                                          padding: EdgeInsets.only(left: 4),
+                                          child: Icon(
+                                            Icons.download_done,
+                                            size: 14,
+                                            color: Colors.green,
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -629,6 +701,7 @@ class _SeriesCard extends StatelessWidget {
     required this.entry,
     required this.isPlaying,
     required this.isPlayingNow,
+    required this.isDownloaded,
     required this.onTap,
   });
 
@@ -638,6 +711,9 @@ class _SeriesCard extends StatelessWidget {
 
   /// 是否正在播放中（区别于 isPlaying：当前集但已暂停）
   final bool isPlayingNow;
+
+  /// 已下载且文件仍在：绿色高亮，点击播放本地文件
+  final bool isDownloaded;
 
   final VoidCallback onTap;
 
@@ -649,12 +725,22 @@ class _SeriesCard extends StatelessWidget {
       child: Material(
         color: isPlaying
             ? colorScheme.primary.withValues(alpha: 0.12)
-            : colorScheme.surfaceContainerLow,
+            : (isDownloaded
+                  ? Colors.green.withValues(alpha: 0.12)
+                  : colorScheme.surfaceContainerLow),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: isPlaying
               ? BorderSide(color: colorScheme.primary, width: 1.5)
-              : BorderSide(color: colorScheme.outlineVariant, width: 0.6),
+              : (isDownloaded
+                    ? BorderSide(
+                        color: Colors.green.withValues(alpha: 0.6),
+                        width: 1.0,
+                      )
+                    : BorderSide(
+                        color: colorScheme.outlineVariant,
+                        width: 0.6,
+                      )),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -761,8 +847,14 @@ class _SeriesCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Icon(
-                  isPlaying ? Icons.graphic_eq : Icons.play_circle_outline,
-                  color: isPlaying ? colorScheme.primary : colorScheme.outline,
+                  isPlaying
+                      ? Icons.graphic_eq
+                      : (isDownloaded
+                            ? Icons.download_done
+                            : Icons.play_circle_outline),
+                  color: isPlaying
+                      ? colorScheme.primary
+                      : (isDownloaded ? Colors.green : colorScheme.outline),
                 ),
               ],
             ),
