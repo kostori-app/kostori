@@ -255,6 +255,32 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     super.dispose();
   }
 
+  /// 每帧最多一次的补偿调度：一帧内可能多次流式更新，
+  /// 若每次都排队回调会重复叠加增量，导致视图乱飘
+  double? _compensateBeforeExtent;
+  bool _compensateScheduled = false;
+
+  void _scheduleCompensation(double before) {
+    _compensateBeforeExtent ??= before;
+    if (_compensateScheduled) return;
+    _compensateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _compensateScheduled = false;
+      final beforeExtent = _compensateBeforeExtent;
+      _compensateBeforeExtent = null;
+      if (!mounted || _isFollowing || beforeExtent == null) return;
+      if (!_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      final after = position.maxScrollExtent;
+      final delta = after - beforeExtent;
+      if (delta == 0) return;
+      // reverse 列表：把这一帧的增长量加回 offset，保持阅读位置不动
+      _scrollController.jumpTo(
+        (position.pixels + delta).clamp(0.0, after),
+      );
+    });
+  }
+
   /// 流式文本更新：跟随状态下自动贴底；
   /// 用户上滑查看历史时，补偿新增文本撑开的高度，避免视图被不断往下拽
   void _updateStreamText(String text) {
@@ -274,16 +300,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       _streamText = text;
     });
     if (before == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _isFollowing || !_scrollController.hasClients) return;
-      final after = _scrollController.position.maxScrollExtent;
-      final delta = after - before;
-      if (delta == 0) return;
-      // reverse 列表：增长量加回 offset，保持当前阅读位置不动
-      _scrollController.jumpTo(
-        (_scrollController.offset + delta).clamp(0.0, after),
-      );
-    });
+    _scheduleCompensation(before);
   }
 
   /// 滚到底部（列表 reverse，底部即 offset 0）；非跟随状态不强制
