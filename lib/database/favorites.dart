@@ -133,7 +133,7 @@ class FavoriteItem implements Anime {
 
   static FavoriteItem fromJson(Map<String, dynamic> json) {
     var type = json["type"] as int;
-    return FavoriteItem(
+    final item = FavoriteItem(
       id: json["id"] ?? json['target'],
       name: json["name"],
       author: json["author"],
@@ -144,6 +144,10 @@ class FavoriteItem implements Anime {
           ? PageJumpTarget.fromJsonString(json["viewMore"] as String)
           : null,
     );
+    // 保留原收藏时间（旧数据没有该字段时用当前时间）
+    final time = json['time']?.toString();
+    if (time != null && time.isNotEmpty) item.time = time;
+    return item;
   }
 }
 
@@ -485,6 +489,8 @@ class LocalFavoritesManager with ChangeNotifier {
         if (entry == null) {
           entry = item.toMergeJson();
           entry['folders'] = <String>[];
+          // 最近观看时间也要同步，否则各端按各自的观看记录排序，顺序对不上
+          entry['recentlyWatched'] = e.recentlyWatched;
           seen[key] = entry;
           out.add(entry);
         }
@@ -510,6 +516,24 @@ class LocalFavoritesManager with ChangeNotifier {
       final item = FavoriteItem.fromJson(map);
       final rawFolders = map['folders'];
       final hasFolderInfo = rawFolders is List && rawFolders.isNotEmpty;
+      final remoteRecent = map['recentlyWatched']?.toString();
+
+      /// 最近观看时间按「谁更新用谁」合并（字符串即时间序，可直接比较）
+      void mergeRecentlyWatched() {
+        if (remoteRecent == null || remoteRecent.isEmpty) return;
+        for (final folder in _folderOrder) {
+          final e = _findEntry(folder, item.id, item.type);
+          if (e == null) continue;
+          final local = e.recentlyWatched;
+          if (local == null ||
+              local.isEmpty ||
+              local.compareTo(remoteRecent) < 0) {
+            e.recentlyWatched = remoteRecent;
+            changed = true;
+          }
+        }
+      }
+
       if (!hasFolderInfo) {
         // 旧版 merge 无文件夹信息：保持原“只补不删”行为
         if (!findWithModelSync(item)) {
@@ -523,6 +547,7 @@ class LocalFavoritesManager with ChangeNotifier {
             DebugLog.error('mergeFavoriteMaps', '添加收藏 ${item.id} 失败：$e');
           }
         }
+        mergeRecentlyWatched();
         continue;
       }
       final desired = <String>[];
@@ -537,7 +562,14 @@ class LocalFavoritesManager with ChangeNotifier {
         if (_findEntry(d, item.id, item.type) == null) {
           final list = _byFolder[_resolveFolder(d)];
           if (list != null) {
-            list.add(_FavEntry(_cloneItem(item)));
+            list.add(
+              _FavEntry(
+                _cloneItem(item),
+                (remoteRecent != null && remoteRecent.isNotEmpty)
+                    ? remoteRecent
+                    : null,
+              ),
+            );
             changed = true;
           }
         }
@@ -552,6 +584,7 @@ class LocalFavoritesManager with ChangeNotifier {
           changed = true;
         }
       }
+      mergeRecentlyWatched();
     }
     if (changed) {
       _rebuildHashedIds();
@@ -883,7 +916,7 @@ class LocalFavoritesManager with ChangeNotifier {
     type: src.type,
     tags: List<String>.from(src.tags),
     viewMore: src.viewMore,
-  );
+  )..time = src.time;
 
   void batchMoveFavorites(
     String sourceFolder,
