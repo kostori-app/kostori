@@ -297,6 +297,11 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
         itemCount: gallery.length,
         pageController: widget.pageController,
         backgroundDecoration: const BoxDecoration(color: Colors.transparent),
+        // 项目统一的多边形加载动画
+        loadingBuilder: (context, event) => _stateView(
+          index: ref.read(currentIndexProvider),
+          child: const PolygonRefreshIndicator(size: 28),
+        ),
         onPageChanged: (i) => ref.read(currentIndexProvider.notifier).state = i,
         builder: (context, i) {
           return PhotoViewGalleryPageOptions(
@@ -310,6 +315,8 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
             minScale: PhotoViewComputedScale.contained / 3,
             maxScale: PhotoViewComputedScale.covered * 100,
             onTapUp: (ctx, details, _) => _handleTap(i, details),
+            errorBuilder: (ctx, error, stack, retry) =>
+                _errorView(index: i, retry: retry),
           );
         },
       );
@@ -328,6 +335,10 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
         itemCount: imageList.length,
         pageController: widget.pageController,
         backgroundDecoration: const BoxDecoration(color: Colors.transparent),
+        loadingBuilder: (context, event) => _stateView(
+          index: ref.read(currentIndexProvider),
+          child: const PolygonRefreshIndicator(size: 28),
+        ),
         onPageChanged: (i) => ref.read(currentIndexProvider.notifier).state = i,
         builder: (context, i) {
           final file = imageList[i];
@@ -346,6 +357,8 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
             minScale: PhotoViewComputedScale.contained / 3,
             maxScale: PhotoViewComputedScale.covered * 100,
             onTapUp: (ctx, details, _) => _handleTap(i, details),
+            errorBuilder: (ctx, error, stack, retry) =>
+                _errorView(index: i, retry: retry),
           );
         },
       );
@@ -365,19 +378,46 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       backgroundDecoration: const BoxDecoration(color: Colors.transparent),
       onTapUp: (ctx, details, _) => _handleTap(0, details),
       filterQuality: FilterQuality.medium,
-      loadingBuilder: (context, event) => const ColoredBox(
+      loadingBuilder: (context, event) =>
+          _stateView(index: 0, child: const PolygonRefreshIndicator(size: 28)),
+      errorBuilder: (context, error, stackTrace, retry) =>
+          _errorView(index: 0, retry: retry),
+    );
+  }
+
+  /// 加载 / 失败状态包装：photo_view 在这两种状态不会套手势层，
+  /// 这里自己补上「点击」手势（关闭预览 / 本地图左右翻页），失败时给重试按钮。
+  Widget _stateView({required int index, required Widget child}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapUp: (details) => _handleTap(index, details),
+      child: ColoredBox(
         color: Colors.black26,
-        child: Center(child: PolygonRefreshIndicator(size: 28)),
+        child: Center(child: child),
       ),
-      errorBuilder: (context, error, stackTrace, retry) => ColoredBox(
-        color: Colors.black26,
-        child: Center(
-          child: Icon(
+    );
+  }
+
+  Widget _errorView({required int index, VoidCallback? retry}) {
+    return _stateView(
+      index: index,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
             Icons.broken_image_outlined,
             size: 48,
             color: Colors.white54,
           ),
-        ),
+          const SizedBox(height: 12),
+          if (retry != null)
+            CapsuleButton(
+              primary: true,
+              leading: const Icon(Icons.refresh, size: 16),
+              text: t.retry,
+              onTap: retry,
+            ),
+        ],
       ),
     );
   }
