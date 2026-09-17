@@ -213,38 +213,10 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
     if (mounted) setState(() {});
   }
 
-  /// 胶囊样式的独立按钮（与项目的分段胶囊同一视觉语言，但不连在一起）
-  Widget _capsuleButton({
-    required String text,
-    required VoidCallback onTap,
-    bool primary = false,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: primary ? cs.primary : cs.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(10),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: primary ? cs.onPrimary : cs.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _button() {
     return Row(
       children: [
-        _capsuleButton(
+        CapsuleButton(
           text: t.search,
           onTap: () {
             final context = App.mainNavigatorKey!.currentContext!;
@@ -264,7 +236,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
 
         // 开始观看按钮（仅在历史记录存在时显示）
         if (infoController.bangumiHistory.isNotEmpty)
-          _capsuleButton(
+          CapsuleButton(
             text: t.bangumiStartWatch,
             primary: true,
             onTap: () => showBangumiHistoryPagePickerDialog(context),

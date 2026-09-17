@@ -1147,37 +1147,19 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
 
   /// 输入框上方：单个 NPC 的独立胶囊按钮（互相分开，不连成分段条）
   Widget _npcCapsule(CharacterCard c) {
-    final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-      borderRadius: BorderRadius.circular(10),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: () => _characterMenu(c),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CharacterAvatar(
-                name: c.displayName,
-                avatar: c.avatar,
-                radius: 10,
-                enablePreview: false,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                c.displayName,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return CapsuleButton(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      leading: CharacterAvatar(
+        name: c.displayName,
+        avatar: c.avatar,
+        radius: 10,
+        enablePreview: false,
       ),
+      child: Text(
+        c.displayName,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+      ),
+      onTap: () => _characterMenu(c),
     );
   }
 

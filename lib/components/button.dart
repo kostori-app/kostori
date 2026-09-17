@@ -380,3 +380,291 @@ class _MenuButtonState extends State<MenuButton> {
     );
   }
 }
+
+/// 竖向图标按钮：上面图标，下面文字。
+/// 用于详情页操作栏、番源设置页操作按钮等（统一复用）。
+class IconTileButton extends StatelessWidget {
+  const IconTileButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.onLongPress,
+    this.activeIcon,
+    this.isActive,
+    this.isLoading,
+    this.color,
+    this.activeColor,
+  });
+
+  /// 图标（可为 Icon / Row / SvgPicture 等任意 Widget）
+  final Widget icon;
+
+  /// 激活态图标（配合 [isActive]）
+  final Widget? activeIcon;
+
+  /// 是否激活（激活时用主题色高亮）
+  final bool? isActive;
+
+  final String label;
+
+  final VoidCallback? onTap;
+
+  final VoidCallback? onLongPress;
+
+  /// 是否显示加载中指示（替换图标）
+  final bool? isLoading;
+
+  /// 图标颜色
+  final Color? color;
+
+  /// 激活态颜色（默认主题色）
+  final Color? activeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final enabled = onTap != null;
+    final active = isActive ?? false;
+    final loading = isLoading ?? false;
+    final iconColor =
+        color ??
+        (active
+            ? (activeColor ?? cs.primary)
+            : (enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.3)));
+    final textColor = active
+        ? (activeColor ?? cs.primary)
+        : (enabled
+              ? (color ?? cs.onSurface.withValues(alpha: 0.75))
+              : cs.onSurface.withValues(alpha: 0.3));
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 56, maxWidth: 96),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        onLongPress: enabled ? onLongPress : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 24,
+                child: loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: PolygonRefreshIndicator(),
+                      )
+                    : IconTheme.merge(
+                        data: IconThemeData(color: iconColor, size: 22),
+                        child: active ? (activeIcon ?? icon) : icon,
+                      ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: textColor),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 分段胶囊风格的独立按钮（与 CapsuleOptions 同一视觉语言，但彼此分开、不连成一段）。
+/// 用来统一项目里零散的按钮画风，避免每处各写一份。
+class CapsuleButton extends StatefulWidget {
+  const CapsuleButton({
+    super.key,
+    this.text,
+    this.child,
+    required this.onTap,
+    this.primary = false,
+    this.leading,
+    this.trailing,
+    this.enabled = true,
+    this.isLoading = false,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+  }) : assert(text != null || child != null);
+
+  final String? text;
+  final Widget? child;
+  final VoidCallback onTap;
+
+  /// 主要动作：主题色填充；否则为浅色胶囊
+  final bool primary;
+
+  final Widget? leading;
+  final Widget? trailing;
+  final bool enabled;
+  final bool isLoading;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  State<CapsuleButton> createState() => _CapsuleButtonState();
+}
+
+class _CapsuleButtonState extends State<CapsuleButton> {
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final bg = widget.primary
+        ? cs.primary
+        : cs.surfaceContainerHighest.withValues(alpha: 0.6);
+    final fg = widget.primary ? cs.onPrimary : cs.onSurfaceVariant;
+    final enabled = widget.enabled && !widget.isLoading;
+    return Material(
+      color: enabled ? bg : bg.withValues(alpha: 0.4),
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: enabled ? widget.onTap : null,
+        child: Padding(
+          padding: widget.padding,
+          child: DefaultTextStyle.merge(
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: fg,
+            ),
+            child: IconTheme.merge(
+              data: IconThemeData(size: 16, color: fg),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.isLoading) ...[
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: PolygonRefreshIndicator(),
+                    ),
+                    const SizedBox(width: 6),
+                  ] else if (widget.leading != null) ...[
+                    widget.leading!,
+                    const SizedBox(width: 6),
+                  ],
+                  widget.child ?? Text(widget.text!),
+                  if (widget.trailing != null) ...[
+                    const SizedBox(width: 6),
+                    widget.trailing!,
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FlyoutTextButton extends StatefulWidget {
+  const FlyoutTextButton(
+      {super.key,
+      required this.child,
+      required this.flyoutBuilder,
+      this.navigator});
+
+  final Widget child;
+
+  final WidgetBuilder flyoutBuilder;
+
+  final NavigatorState? navigator;
+
+  @override
+  State<FlyoutTextButton> createState() => _FlyoutTextButtonState();
+}
+
+class _FlyoutTextButtonState extends State<FlyoutTextButton> {
+  final FlyoutController _controller = FlyoutController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Flyout(
+        controller: _controller,
+        flyoutBuilder: widget.flyoutBuilder,
+        navigator: widget.navigator,
+        child: TextButton(
+          onPressed: () {
+            _controller.show();
+          },
+          child: widget.child,
+        ));
+  }
+}
+
+class FlyoutIconButton extends StatefulWidget {
+  const FlyoutIconButton(
+      {super.key,
+      required this.icon,
+      required this.flyoutBuilder,
+      this.navigator});
+
+  final Widget icon;
+
+  final WidgetBuilder flyoutBuilder;
+
+  final NavigatorState? navigator;
+
+  @override
+  State<FlyoutIconButton> createState() => _FlyoutIconButtonState();
+}
+
+class _FlyoutIconButtonState extends State<FlyoutIconButton> {
+  final FlyoutController _controller = FlyoutController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Flyout(
+        controller: _controller,
+        flyoutBuilder: widget.flyoutBuilder,
+        navigator: widget.navigator,
+        child: IconButton(
+          onPressed: () {
+            _controller.show();
+          },
+          icon: widget.icon,
+        ));
+  }
+}
+
+class FlyoutFilledButton extends StatefulWidget {
+  const FlyoutFilledButton(
+      {super.key,
+      required this.child,
+      required this.flyoutBuilder,
+      this.navigator});
+
+  final Widget child;
+
+  final WidgetBuilder flyoutBuilder;
+
+  final NavigatorState? navigator;
+
+  @override
+  State<FlyoutFilledButton> createState() => _FlyoutFilledButtonState();
+}
+
+class _FlyoutFilledButtonState extends State<FlyoutFilledButton> {
+  final FlyoutController _controller = FlyoutController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Flyout(
+        controller: _controller,
+        flyoutBuilder: widget.flyoutBuilder,
+        navigator: widget.navigator,
+        child: ElevatedButton(
+          onPressed: () {
+            _controller.show();
+          },
+          child: widget.child,
+        ));
+  }
+}
