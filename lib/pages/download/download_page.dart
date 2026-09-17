@@ -753,6 +753,19 @@ class _RecordsTabState extends State<_RecordsTab> {
     return counts;
   }
 
+  /// 某个分组下「直接属于它」（不含子组）的条目数（按当前 存在的/已删除 筛选）
+  int _directGroupCount(String group) {
+    var n = 0;
+    for (final r in _records) {
+      if ((r['group']?.toString() ?? '') != group) continue;
+      final exists = _exists[r['filePath']] == true;
+      if (widget.existsFilter == 'exists' && !exists) continue;
+      if (widget.existsFilter == 'deleted' && exists) continue;
+      n++;
+    }
+    return n;
+  }
+
   /// 当前选中的自定义分组（完整名）；未选中自定义分组时为 null
   String? get _selectedGroup {
     if (!_groupFilter.startsWith(kDownloadGroupPrefix)) return null;
@@ -841,14 +854,21 @@ class _RecordsTabState extends State<_RecordsTab> {
           selected: _groupFilter,
           onSelected: _setGroupFilter,
         ),
-        // 有子组的分组：额外一行子组胶囊
+        // 有子组的分组：全部 / 父组（只在本组的条目） + 各子组
         if (_selectedGroup != null &&
             DownloadManager.hasSubGroups(_selectedGroup!))
           DownloadFilterBar(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 2),
             builtins: [(key: 'all', label: t.all)],
-            groups: DownloadManager.subGroupsOf(_selectedGroup!),
-            groupCounts: groupCounts,
+            groups: [
+              _selectedGroup!,
+              ...DownloadManager.subGroupsOf(_selectedGroup!),
+            ],
+            groupCounts: {
+              ...groupCounts,
+              // 父组这一项只统计「直接在本组」的条目
+              _selectedGroup!: _directGroupCount(_selectedGroup!),
+            },
             selected: _subFilter.isEmpty
                 ? 'all'
                 : '$kDownloadGroupPrefix$_subFilter',
