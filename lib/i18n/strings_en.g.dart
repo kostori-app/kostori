@@ -8239,6 +8239,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Collapse'
 	String get collapse => 'Collapse';
 
+	/// en: 'Expand'
+	String get expand => 'Expand';
+
 	/// en: 'Expand (${total})'
 	String expandCount({required Object total}) => 'Expand (${total})';
 
@@ -11500,6 +11503,7 @@ extension on Translations {
 			'floorOwner' => 'OP',
 			'postOwner' => 'OP',
 			'collapse' => 'Collapse',
+			'expand' => 'Expand',
 			'expandCount' => ({required Object total}) => 'Expand (${total})',
 			'deletedReply' => 'Reply deleted',
 			'author' => 'Author',

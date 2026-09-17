@@ -2771,6 +2771,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get floorOwner => '層主';
 	@override String get postOwner => '貼主';
 	@override String get collapse => '收起';
+	@override String get expand => '展開';
 	@override String expandCount({required Object total}) => '展開 (${total})';
 	@override String get deletedReply => '刪除了回覆';
 	@override String get author => '作者';
@@ -5733,6 +5734,7 @@ extension on TranslationsZhTw {
 			'floorOwner' => '層主',
 			'postOwner' => '貼主',
 			'collapse' => '收起',
+			'expand' => '展開',
 			'expandCount' => ({required Object total}) => '展開 (${total})',
 			'deletedReply' => '刪除了回覆',
 			'author' => '作者',

@@ -322,7 +322,7 @@ class _StepCard extends StatelessWidget {
             child: expanded
                 ? Padding(
                     padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                    child: _StepContent(step: step),
+                    child: _StepContent(step: step, running: isRunning),
                   )
                 : const SizedBox.shrink(),
           ),
@@ -334,17 +334,18 @@ class _StepCard extends StatelessWidget {
 
 /// 步骤展开内容：思考正文 / 工具名+参数+结果
 class _StepContent extends StatelessWidget {
-  const _StepContent({required this.step});
+  const _StepContent({required this.step, required this.running});
 
   final AiStep step;
+  final bool running;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     if (step.type == AiStepType.thinking) {
-      return SelectableText(
-        step.content.isEmpty ? t.thinkingInProgress : step.content,
-        style: const TextStyle(fontSize: 12, height: 1.5),
+      return _ThinkingContent(
+        text: step.content.isEmpty ? t.thinkingInProgress : step.content,
+        running: running,
       );
     }
     return Column(
@@ -381,6 +382,119 @@ class _StepContent extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// 思考正文：默认限制高度并在内部滚动（不撑开外层列表）；
+/// 流式输出时自动滚到思考末尾；完整输出后用户点「展开」才完整显示。
+class _ThinkingContent extends StatefulWidget {
+  const _ThinkingContent({required this.text, required this.running});
+
+  final String text;
+  final bool running;
+
+  @override
+  State<_ThinkingContent> createState() => _ThinkingContentState();
+}
+
+class _ThinkingContentState extends State<_ThinkingContent> {
+  static const double _maxHeight = 150;
+
+  bool _full = false;
+  final _ctrl = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _autoScroll();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ThinkingContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.running && !_full && widget.text != oldWidget.text) {
+      _autoScroll();
+    }
+  }
+
+  void _autoScroll() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_ctrl.hasClients) return;
+      _ctrl.jumpTo(_ctrl.position.maxScrollExtent);
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = SelectableText(
+      widget.text,
+      style: const TextStyle(fontSize: 12, height: 1.5),
+    );
+
+    if (_full) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          text,
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+              ),
+              onPressed: () => setState(() => _full = false),
+              child: Text(t.collapse, style: const TextStyle(fontSize: 11)),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 高度受限：思考内容在框内滚动，不撑开外层消息列表
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: _maxHeight),
+          child: ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Colors.white,
+                Colors.white.withValues(alpha: 0.1),
+              ],
+              stops: const [0, 0.85, 1],
+            ).createShader(bounds),
+            blendMode: BlendMode.dstIn,
+            child: SingleChildScrollView(controller: _ctrl, child: text),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+            ),
+            onPressed: () => setState(() => _full = true),
+            child: Text(
+              t.expand,
+              style: TextStyle(fontSize: 11, color: scheme.primary),
+            ),
+          ),
+        ),
       ],
     );
   }

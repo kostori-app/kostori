@@ -372,18 +372,29 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     return '${(ms / 1000).toStringAsFixed(1)}s';
   }
 
-  /// 跟随模式下的平滑滚动到底；非跟随（用户正在看历史）时忽略。
+  /// 用户最近一次手势滚动的时间：短时间内不自动贴底，避免"抢滚动"
+  DateTime? _lastUserScrollAt;
+
+  /// 每帧最多调度一次贴底，避免流式期间重复排队动画导致抖动
+  bool _scrollScheduled = false;
+
+  /// 跟随模式下的贴底；非跟随、或用户刚滚动过时忽略。
   void _scrollToBottom() {
-    if (!_isFollowing) return;
+    if (!_isFollowing || _scrollScheduled) return;
+    _scrollScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollCtrl.hasClients) return;
+      _scrollScheduled = false;
+      if (!mounted || !_isFollowing || !_scrollCtrl.hasClients) return;
+      // 用户刚滑动过：把控制权交给用户，避免内容一边生成一边把视图拽走
+      final last = _lastUserScrollAt;
+      if (last != null &&
+          DateTime.now().difference(last) < const Duration(milliseconds: 800)) {
+        return;
+      }
       final pos = _scrollCtrl.position;
       if (pos.maxScrollExtent <= 0) return;
-      _scrollCtrl.animateTo(
-        pos.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+      // 直接跳到最新，不用动画（动画会被高频流式更新打断，观感更差）
+      _scrollCtrl.jumpTo(pos.maxScrollExtent);
     });
   }
 
@@ -397,6 +408,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     // 忽略子级横向列表（候选卡片横向滑动）的滚动通知，
     // 否则卡片滑到最右端会被误判为"贴近底部"而自动滚动到底
     if (notification.metrics.axis == Axis.horizontal) return false;
+    if (notification is UserScrollNotification ||
+        (notification is ScrollStartNotification &&
+            notification.dragDetails != null)) {
+      // 记录用户滚动时间：短时间内不自动贴底
+      _lastUserScrollAt = DateTime.now();
+    }
     if (notification is UserScrollNotification) {
       if (notification.direction == ScrollDirection.reverse &&
           !_isNearBottom(notification.metrics) &&
@@ -610,75 +627,76 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   }
 
   /// 右上角统一入口：选择助手档案 / 助手设置 / 话题列表
-  Widget _buildTopRightButton() {
-    final scheme = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: t.more,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: _showTopRightSheet,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(
-            Icons.more_horiz,
-            size: 18,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  Future<void> _showTopRightSheet() async {
+  /// 侧边栏：原右上角"更多"里的入口移到这里，宽度按屏幕自适应
+  Widget _buildSideDrawer(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    // 窄屏占比大一些、宽屏别覆盖太多
+    final width = (screenWidth * 0.8).clamp(240.0, 320.0);
     final profile = _profileId == null
         ? null
         : AssistantProfileStore.instance.find(_profileId!);
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => Sheet(
-        title: t.aiChat,
-        icon: Icons.more_horiz,
-        initialSize: 0.4,
-        builder: (sheetCtx, sc) => ListView(
-          controller: sc,
-          shrinkWrap: true,
+
+    void closeThen(VoidCallback action) {
+      Navigator.of(context).pop();
+      action();
+    }
+
+    return Drawer(
+      width: width,
+      backgroundColor: scheme.surface,
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.aiChat,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    profile?.name ?? t.noPersonality,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.badge_outlined),
               title: Text(t.selectAssistantProfile),
               subtitle: Text(
                 profile?.name ?? t.noPersonality,
                 style: const TextStyle(fontSize: 12),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showAssistantPicker();
-              },
+              onTap: () => closeThen(_showAssistantPicker),
             ),
             ListTile(
               leading: const Icon(Icons.settings_outlined),
               title: Text(t.assistantSettings),
-              onTap: () {
-                Navigator.pop(ctx);
-                showAssistantProfileEditor(profile: profile);
-              },
+              onTap: () =>
+                  closeThen(() => showAssistantProfileEditor(profile: profile)),
             ),
             ListTile(
               leading: const Icon(Icons.forum_outlined),
               title: Text(t.topicList),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showSessionDrawer();
-              },
+              onTap: () => closeThen(_showSessionDrawer),
             ),
           ],
         ),
@@ -1083,7 +1101,23 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: _buildSideDrawer(context),
+      drawerEnableOpenDragGesture: true,
       appBar: Appbar(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BackButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+            IconButton(
+              tooltip: t.more,
+              icon: const Icon(Icons.menu),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+          ],
+        ),
         title: _sessionId == null
             ? Text(t.aiConversation)
             : StreamBuilder<List<AiSession>>(
@@ -1114,12 +1148,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   );
                 },
               ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Center(child: _buildTopRightButton()),
-          ),
-        ],
       ),
       body: DropTarget(
         onDragDone: _onDragDone,
