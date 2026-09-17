@@ -1878,10 +1878,10 @@ class _SessionHistorySheet extends StatelessWidget {
       title: t.history,
       icon: Icons.history,
       initialSize: 0.7,
-      headerTrailing: TextButton.icon(
-        icon: const Icon(Icons.delete_sweep, size: 18),
-        label: Text(t.clearAll),
-        onPressed: () async {
+      headerTrailing: CapsuleButton(
+        leading: const Icon(Icons.delete_sweep, size: 18),
+        text: t.clearAll,
+        onTap: () async {
           final sessions = await AiConversationService()
               .watchSessions(type: taskType)
               .first;

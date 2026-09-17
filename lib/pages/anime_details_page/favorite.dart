@@ -262,8 +262,10 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
     return SizedBox(
       height: 36,
       child: Center(
-        child: TextButton(
-          onPressed: () async {
+        child: CapsuleButton(
+          leading: const Icon(Icons.add, size: 20),
+          text: t.newFolder,
+          onTap: () async {
             await newFolder().then((_) {
               if (mounted) {
                 setState(() {
@@ -272,14 +274,6 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
               }
             });
           },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.add, size: 20),
-              const SizedBox(width: 4),
-              Text(t.newFolder),
-            ],
-          ),
         ),
       ),
     );

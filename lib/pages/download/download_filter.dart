@@ -329,13 +329,13 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: SizedBox(
+          child: CapsuleButton(
+            primary: true,
             width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _create,
-              icon: const Icon(Icons.add),
-              label: Text(t.newGroup),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            leading: const Icon(Icons.add),
+            text: t.newGroup,
+            onTap: _create,
           ),
         ),
       ),
@@ -450,13 +450,13 @@ class _DownloadGroupItemPickerState extends State<_DownloadGroupItemPicker> {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: SizedBox(
+          child: CapsuleButton(
+            primary: true,
             width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(_selected),
-              icon: const Icon(Icons.check),
-              label: Text('${t.confirm} (${_selected.length})'),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            leading: const Icon(Icons.check),
+            text: '${t.confirm} (${_selected.length})',
+            onTap: () => Navigator.of(context).pop(_selected),
           ),
         ),
       ),

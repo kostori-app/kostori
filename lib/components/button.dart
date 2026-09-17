@@ -491,6 +491,9 @@ class CapsuleButton extends StatefulWidget {
     this.enabled = true,
     this.isLoading = false,
     this.flat = false,
+    this.color,
+    this.fgColor,
+    this.width,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   }) : assert(text != null || child != null || leading != null);
 
@@ -503,6 +506,15 @@ class CapsuleButton extends StatefulWidget {
 
   /// 透明底（用于 [CapsuleButtonBar]：整条轨道连贯，按钮各自独立）
   final bool flat;
+
+  /// 自定义底色（优先级高于 [primary]）
+  final Color? color;
+
+  /// 自定义前景色（图标与文字）
+  final Color? fgColor;
+
+  /// 固定宽度（如 `double.infinity` 做整行按钮，内容居中）
+  final double? width;
 
   final Widget? leading;
   final Widget? trailing;
@@ -520,10 +532,13 @@ class _CapsuleButtonState extends State<CapsuleButton> {
     final cs = Theme.of(context).colorScheme;
     final bg = widget.flat
         ? Colors.transparent
-        : widget.primary
-        ? cs.primary
-        : cs.surfaceContainerHighest.withValues(alpha: 0.6);
-    final fg = widget.primary ? cs.onPrimary : cs.onSurfaceVariant;
+        : widget.color ??
+              (widget.primary
+                  ? cs.primary
+                  : cs.surfaceContainerHighest.withValues(alpha: 0.6));
+    final fg =
+        widget.fgColor ??
+        (widget.primary ? cs.onPrimary : cs.onSurfaceVariant);
     final enabled = widget.enabled && !widget.isLoading;
     return Material(
       color: enabled ? bg : bg.withValues(alpha: 0.4),
@@ -541,30 +556,34 @@ class _CapsuleButtonState extends State<CapsuleButton> {
             ),
             child: IconTheme.merge(
               data: IconThemeData(size: 16, color: fg),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.isLoading) ...[
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: PolygonRefreshIndicator(),
-                    ),
-                    const SizedBox(width: 6),
-                  ] else if (widget.leading != null) ...[
-                    widget.leading!,
-                    if (widget.child != null || widget.text != null)
+              child: SizedBox(
+                width: widget.width,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.isLoading) ...[
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: PolygonRefreshIndicator(),
+                      ),
                       const SizedBox(width: 6),
+                    ] else if (widget.leading != null) ...[
+                      widget.leading!,
+                      if (widget.child != null || widget.text != null)
+                        const SizedBox(width: 6),
+                    ],
+                    if (widget.child != null)
+                      widget.child!
+                    else if (widget.text != null)
+                      Text(widget.text!),
+                    if (widget.trailing != null) ...[
+                      const SizedBox(width: 6),
+                      widget.trailing!,
+                    ],
                   ],
-                  if (widget.child != null)
-                    widget.child!
-                  else if (widget.text != null)
-                    Text(widget.text!),
-                  if (widget.trailing != null) ...[
-                    const SizedBox(width: 6),
-                    widget.trailing!,
-                  ],
-                ],
+                ),
               ),
             ),
           ),

@@ -50,17 +50,19 @@ class NetworkError extends StatelessWidget {
           if (retry != null) const SizedBox(height: 12),
           if (retry != null)
             if (cfe != null)
-              FilledButton(
-                onPressed: () => passCloudflare(
+              CapsuleButton(
+                primary: true,
+                onTap: () => passCloudflare(
                   CloudflareException.fromString(message)!,
                   retry!,
                 ),
-                child: Text(t.check),
+                text: t.check,
               )
             else
-              FilledButton(
-                onPressed: retry,
-                child: Text(buttonText ?? t.retry),
+              CapsuleButton(
+                primary: true,
+                onTap: () => retry!(),
+                text: buttonText ?? t.retry,
               ),
         ],
       ),

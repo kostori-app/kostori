@@ -296,16 +296,13 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
               ),
             ],
             const Spacer(),
-            FilledButton.icon(
-              onPressed: _isExporting ? null : _share,
-              icon: _isExporting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: PolygonRefreshIndicator(),
-                    )
-                  : const Icon(Icons.share_outlined, size: 16),
-              label: Text(_isExporting ? t.exporting : t.share),
+            CapsuleButton(
+              primary: true,
+              isLoading: _isExporting,
+              enabled: !_isExporting,
+              leading: const Icon(Icons.share_outlined, size: 16),
+              text: _isExporting ? t.exporting : t.share,
+              onTap: _share,
             ),
           ],
         ),

@@ -1858,16 +1858,10 @@ class _ChatSessionSheet extends StatelessWidget {
       title: t.topicList,
       icon: Icons.forum_outlined,
       initialSize: 0.6,
-      headerTrailing: FilledButton.tonal(
-        onPressed: onNewSession,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add, size: 16),
-            const SizedBox(width: 4),
-            Text(t.newConversation),
-          ],
-        ),
+      headerTrailing: CapsuleButton(
+        leading: const Icon(Icons.add, size: 16),
+        text: t.newConversation,
+        onTap: onNewSession,
       ),
       builder: (context, sc) => StreamBuilder<List<AiSession>>(
         stream: AiConversationService().watchSessions(type: 'chat'),

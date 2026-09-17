@@ -392,25 +392,18 @@ class ContentDialog extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Row(
               children: [
-                TextButton(
-                  onPressed: () {
+                CapsuleButton(
+                  text: t.cancel,
+                  onTap: () {
                     cancel?.call();
                     context.pop();
                   },
-                  style: TextButton.styleFrom(
-                    foregroundColor: cs.onSurface.toOpacity(0.55),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(t.cancel, style: const TextStyle(fontSize: 14)),
                 ),
                 const Spacer(),
-                ...actions.separated(const SizedBox(width: 8)),
+                ...actions
+                    .map(_asCapsuleAction)
+                    .toList()
+                    .separated(const SizedBox(width: 8)),
               ],
             ),
           )
@@ -470,6 +463,39 @@ class ContentDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 把弹窗里的常见按钮统一成分段式胶囊外观（保留回调、可用态与自定义颜色）。
+Widget _asCapsuleAction(Widget action) {
+  if (action is CapsuleButton) return action;
+
+  if (action is Button) {
+    return CapsuleButton(
+      primary: action.type == ButtonType.filled,
+      isLoading: action.isLoading,
+      color: action.type == ButtonType.filled ? action.color : null,
+      fgColor: action.type == ButtonType.filled ? null : action.color,
+      onTap: action.onPressed,
+      child: action.child,
+    );
+  }
+
+  if (action is ButtonStyleButton) {
+    final primary = action is FilledButton || action is ElevatedButton;
+    return CapsuleButton(
+      primary: primary,
+      flat: action is TextButton,
+      enabled: action.onPressed != null,
+      color: primary ? action.style?.backgroundColor?.resolve(const {}) : null,
+      fgColor: primary
+          ? null
+          : action.style?.foregroundColor?.resolve(const {}),
+      onTap: () => action.onPressed?.call(),
+      child: action.child,
+    );
+  }
+
+  return action;
 }
 
 extension _WidgetListSep on List<Widget> {

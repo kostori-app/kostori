@@ -413,13 +413,11 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
         if (_isOwner && !_isGlobal) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: OutlinedButton.icon(
-              icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
-              label: Text(t.deleteRoom, style: TextStyle(color: cs.error)),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: cs.error.toOpacity(0.4)),
-              ),
-              onPressed: () {
+            child: CapsuleButton(
+              fgColor: cs.error,
+              leading: const Icon(Icons.delete_outline, size: 16),
+              text: t.deleteRoom,
+              onTap: () {
                 _client.deleteRoom(_room.roomId);
                 Navigator.pop(context);
               },
@@ -1116,9 +1114,13 @@ class _InlineEditFieldState extends State<_InlineEditField> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(onPressed: widget.onCancel, child: Text(t.cancel)),
+              CapsuleButton(text: t.cancel, onTap: widget.onCancel),
               const SizedBox(width: 8),
-              FilledButton.tonal(onPressed: widget.onSave, child: Text(t.save)),
+              CapsuleButton(
+                primary: true,
+                text: t.save,
+                onTap: widget.onSave,
+              ),
             ],
           ),
         ],

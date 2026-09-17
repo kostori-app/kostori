@@ -157,13 +157,13 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: SizedBox(
+          child: CapsuleButton(
+            primary: true,
             width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _create,
-              icon: const Icon(Icons.add),
-              label: Text(t.newGroup),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            leading: const Icon(Icons.add),
+            text: t.newGroup,
+            onTap: _create,
           ),
         ),
       ),
@@ -480,28 +480,28 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
       title: t.downloadEpisode,
       icon: Icons.download_outlined,
       initialSize: 0.7,
-      headerTrailing: TextButton(
-        onPressed: selectable.isEmpty
-            ? null
-            : () => setState(() {
-                if (allSelected) {
-                  selected.removeAll(selectable.map((e) => e.key));
-                } else {
-                  selected.addAll(selectable.map((e) => e.key));
-                }
-              }),
-        child: Text(allSelected ? t.selectNone : t.selectAll),
+      headerTrailing: CapsuleButton(
+        text: allSelected ? t.selectNone : t.selectAll,
+        enabled: selectable.isNotEmpty,
+        onTap: () => setState(() {
+          if (allSelected) {
+            selected.removeAll(selectable.map((e) => e.key));
+          } else {
+            selected.addAll(selectable.map((e) => e.key));
+          }
+        }),
       ),
       footer: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: SizedBox(
+          child: CapsuleButton(
+            primary: true,
             width: double.infinity,
-            child: FilledButton(
-              onPressed: selected.isEmpty ? null : _confirm,
-              child: Text(t.downloadSelectedCount(n: selected.length)),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            enabled: selected.isNotEmpty,
+            text: t.downloadSelectedCount(n: selected.length),
+            onTap: _confirm,
           ),
         ),
       ),

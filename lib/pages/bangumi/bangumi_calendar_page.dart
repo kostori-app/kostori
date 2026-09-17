@@ -1101,10 +1101,11 @@ Future<void> captureBangumiCalendarScreenshot(
         title: t.calScreenshotPreview,
         icon: Icons.screenshot_outlined,
         initialSize: 0.6,
-        headerTrailing: FilledButton.icon(
-          onPressed: () => previewKey.currentState?.popWithValue(),
-          icon: const Icon(Icons.save_alt, size: 18),
-          label: Text(t.save),
+        headerTrailing: CapsuleButton(
+          primary: true,
+          leading: const Icon(Icons.save_alt, size: 18),
+          text: t.save,
+          onTap: () => previewKey.currentState?.popWithValue(),
         ),
         builder: (ctx, sc) => _ScreenshotPreviewSheet(
           key: previewKey,
