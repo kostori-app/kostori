@@ -1027,7 +1027,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       children: [
         // ── 仓库管理区 ──────────────────────────────
         _SettingPartTitle(title: t.repo, icon: Icons.folder_open),
@@ -1453,7 +1453,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
     // 返回 box（非 sliver）：该卡片由 SliverList 惰性构建
     return Padding(
       // 垂直间距尽量小，减少番源卡片之间的空隙
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: _SettingCard(
         children: [
           // 标题行：源名 + 版本（右侧更新图标）+ 右侧删除/开关

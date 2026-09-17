@@ -587,7 +587,7 @@ class _PluginSliverCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final logged = plugin.isLogged;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: _SettingCard(
         children: [
           ListTile(
@@ -937,7 +937,7 @@ class _PluginSourceListState extends State<_PluginSourceList> {
         ),
       ],
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         children: [
           _SettingPartTitle(title: t.repo, icon: Icons.folder_open),
           if (_repos.isEmpty)
