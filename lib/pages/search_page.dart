@@ -20,7 +20,10 @@ import 'package:kostori/utils/utils.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({super.key, this.keyword});
+
+  /// 进入时预填的搜索关键词（不自动发起搜索）
+  final String? keyword;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -150,7 +153,10 @@ class _SearchPageState extends State<SearchPage> {
     } else {
       searchTarget = AnimeSource.all().first.key;
     }
-    controller = SearchBarController(onSearch: search);
+    controller = SearchBarController(
+      onSearch: search,
+      currentText: widget.keyword ?? '',
+    );
     appdata.settings.addListener(updateSearchSourcesIfNeeded);
     super.initState();
   }

@@ -215,6 +215,16 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         overflow: TextOverflow.ellipsis,
       ),
       actions: [
+        // 搜索：带上当前标题作为关键词进入搜索页
+        Tooltip(
+          message: t.search,
+          child: IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => context.to(
+              () => SearchPage(keyword: _title.isEmpty ? null : _title),
+            ),
+          ),
+        ),
         Tooltip(
           message: t.openInBrowser,
           child: IconButton(

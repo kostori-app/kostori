@@ -86,6 +86,16 @@ class _PluginSubPageState extends State<PluginSubPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          // 搜索：带上当前页标题作为关键词进入搜索页
+          Tooltip(
+            message: t.search,
+            child: IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => context.to(
+                () => SearchPage(keyword: paramTitle.isEmpty ? null : paramTitle),
+              ),
+            ),
+          ),
           if (pageUrl.isNotEmpty)
             Tooltip(
               message: t.openInBrowser,
