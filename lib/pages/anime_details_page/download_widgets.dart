@@ -87,8 +87,6 @@ class _DownloadGroupSelectSheet extends StatefulWidget {
 }
 
 class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
-  late List<String> _groups = DownloadManager.groups();
-
   Future<void> _create() async {
     final ctrl = TextEditingController();
     final name = await showDialog<String>(
@@ -114,8 +112,7 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
     if (n.isEmpty) return;
     await DownloadManager.createGroup(n);
     if (!mounted) return;
-    setState(() => _groups = DownloadManager.groups());
-    if (mounted) Navigator.of(context).pop(n);
+    Navigator.of(context).pop(n);
   }
 
   Future<void> _delete(String name) async {
@@ -126,7 +123,7 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
       btnColor: Theme.of(context).colorScheme.error,
       onConfirm: () async {
         await DownloadManager.instance.deleteGroup(name);
-        if (mounted) setState(() => _groups = DownloadManager.groups());
+        if (mounted) setState(() {});
       },
     );
   }
@@ -134,25 +131,10 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget tile({
-      required String label,
-      required bool selected,
-      required VoidCallback onTap,
-      Widget? trailing,
-    }) => ListTile(
-      leading: Icon(
-        selected ? Icons.radio_button_checked : Icons.folder_outlined,
-        color: selected ? cs.primary : cs.onSurfaceVariant,
-      ),
-      title: Text(label),
-      selected: selected,
-      onTap: onTap,
-      trailing: trailing,
-    );
     return Sheet(
       title: t.downloadDir,
       icon: Icons.folder_outlined,
-      initialSize: 0.55,
+      initialSize: 0.6,
       footer: SafeArea(
         top: false,
         child: Padding(
@@ -167,26 +149,17 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
           ),
         ),
       ),
-      builder: (context, sc) => ListView(
-        controller: sc,
-        children: [
-          tile(
-            label: t.ungrouped,
-            selected: widget.initial.isEmpty,
-            onTap: () => Navigator.of(context).pop(''),
-          ),
-          for (final g in _groups)
-            tile(
-              label: g,
-              selected: widget.initial == g,
-              onTap: () => Navigator.of(context).pop(g),
-              trailing: IconButton(
-                tooltip: t.delete,
-                icon: Icon(Icons.delete_outline, size: 20, color: cs.error),
-                onPressed: () => _delete(g),
-              ),
-            ),
-        ],
+      // 与「移动到文件夹」同一套：搜索 + 全部/未分组/顶层/子组 + 层级列表
+      builder: (context, sc) => DownloadGroupPickerBody(
+        current: widget.initial,
+        scrollController: sc,
+        onSelected: (g) => Navigator.of(context).pop(g),
+        trailingBuilder: (g) => IconButton(
+          tooltip: t.delete,
+          visualDensity: VisualDensity.compact,
+          icon: Icon(Icons.delete_outline, size: 18, color: cs.error),
+          onPressed: () => _delete(g),
+        ),
       ),
     );
   }

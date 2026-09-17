@@ -1098,6 +1098,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get searchGroupCustom => '我的分組';
 	@override String get manageGroups => '管理分組';
 	@override String get downloadSubGroup => '子組';
+	@override String get downloadPauseBeforeMove => '下載中，請先暫停再移動分組';
 	@override String get downloadGroupRoot => '頂層組';
 	@override String get downloadNewSubGroup => '新建子組';
 	@override String get downloadMigrateGroup => '遷移到…';
@@ -4109,6 +4110,7 @@ extension on TranslationsZhTw {
 			'searchGroupCustom' => '我的分組',
 			'manageGroups' => '管理分組',
 			'downloadSubGroup' => '子組',
+			'downloadPauseBeforeMove' => '下載中，請先暫停再移動分組',
 			'downloadGroupRoot' => '頂層組',
 			'downloadNewSubGroup' => '新建子組',
 			'downloadMigrateGroup' => '遷移到…',
@@ -4543,9 +4545,9 @@ extension on TranslationsZhTw {
 			'letAllMembersInviteOthers' => '允許所有成員邀請其他人加入房間',
 			'declineAndBlock' => '拒絕並封鎖',
 			'memes' => '表情包',
-			'memeSaved' => '已儲存到表情包',
 			_ => null,
 		} ?? switch (path) {
+			'memeSaved' => '已儲存到表情包',
 			'networkInfo' => '網路資訊',
 			'netLogMeta' => '僅概要',
 			'netLogFull' => '完整',
@@ -5057,9 +5059,9 @@ extension on TranslationsZhTw {
 			'noRecordForMonth' => ({required Object month}) => '${month}暫無記錄',
 			'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
 			'shareFailed' => '分享失敗',
-			'connectionFailed' => '連線失敗',
 			_ => null,
 		} ?? switch (path) {
+			'connectionFailed' => '連線失敗',
 			'copySuccess' => '複製成功',
 			'addToFavoritesSuccess' => '添加收藏成功',
 			'deleteFailed' => '刪除失敗',
@@ -5571,9 +5573,9 @@ extension on TranslationsZhTw {
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
 			'apiFormat' => '介面格式',
-			'apiFormatOpenai' => 'OpenAI（chat）',
 			_ => null,
 		} ?? switch (path) {
+			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google（Gemini）',
 			'apiFormatClaude' => 'Claude（Anthropic）',

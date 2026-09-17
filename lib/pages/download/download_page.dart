@@ -6,6 +6,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/download_filter.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
@@ -71,8 +72,18 @@ class _DownloadPageState extends State<DownloadPage>
     saveDownloadFilter(_recordFilterKey, value);
   }
 
-  /// 长按下载中卡片：选择移动到哪个分组（= 下载目录子目录）
+  /// 长按卡片：选择移动到哪个分组（= 下载目录子目录）
+  ///
+  /// 正在下载的任务会被移动到别的目录，导致写入中的分片/临时文件路径失效，
+  /// 因此要求先暂停（暂停或排队中移动是安全的）。
   Future<void> _moveTaskToGroup(DownloadTask task) async {
+    if (task.status == DownloadStatus.downloading) {
+      App.rootContext.showMessage(
+        message: t.downloadPauseBeforeMove,
+        level: LogLevel.warning,
+      );
+      return;
+    }
     await showDownloadGroupPicker(
       context,
       current: task.group,
@@ -1303,10 +1314,12 @@ class _DownloadTile extends StatelessWidget {
         buf.write('${e.key}: ${e.value}\n');
       }
     }
+    // 只读请求头：不显示按钮（点遮罩关闭）
     showDialog<void>(
       context: context,
       builder: (ctx) => ContentDialog(
         title: '${t.downloadViewHeaders} · ${task.title}',
+        displayButton: false,
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 360),
           child: SingleChildScrollView(
@@ -1316,12 +1329,6 @@ class _DownloadTile extends StatelessWidget {
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(t.close),
-          ),
-        ],
       ),
     );
   }

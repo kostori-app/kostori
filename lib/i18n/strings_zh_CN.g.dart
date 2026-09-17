@@ -1097,6 +1097,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get searchGroupCustom => '我的分组';
 	@override String get manageGroups => '管理分组';
 	@override String get downloadSubGroup => '子组';
+	@override String get downloadPauseBeforeMove => '下载中，请先暂停再移动分组';
 	@override String get downloadGroupRoot => '顶层组';
 	@override String get downloadNewSubGroup => '新建子组';
 	@override String get downloadMigrateGroup => '迁移到…';
@@ -4109,6 +4110,7 @@ extension on TranslationsZhCn {
 			'searchGroupCustom' => '我的分组',
 			'manageGroups' => '管理分组',
 			'downloadSubGroup' => '子组',
+			'downloadPauseBeforeMove' => '下载中，请先暂停再移动分组',
 			'downloadGroupRoot' => '顶层组',
 			'downloadNewSubGroup' => '新建子组',
 			'downloadMigrateGroup' => '迁移到…',
@@ -4544,9 +4546,9 @@ extension on TranslationsZhCn {
 			'declineAndBlock' => '拒绝并屏蔽',
 			'memes' => '表情包',
 			'memeSaved' => '已保存到表情包',
-			'networkInfo' => '网络信息',
 			_ => null,
 		} ?? switch (path) {
+			'networkInfo' => '网络信息',
 			'netLogMeta' => '仅概要',
 			'netLogFull' => '完整',
 			'netLogHint' => '概要只记方法/地址/状态/大小/耗时；完整包含请求头与响应正文（超长会截断）',
@@ -5058,9 +5060,9 @@ extension on TranslationsZhCn {
 			'noRecordForMonth' => ({required Object month}) => '${month}暂无记录',
 			'screenshotFailedPleaseRetry' => '截图失败，请重试',
 			'shareFailed' => '分享失败',
-			'connectionFailed' => '连接失败',
 			_ => null,
 		} ?? switch (path) {
+			'connectionFailed' => '连接失败',
 			'copySuccess' => '复制成功',
 			'addToFavoritesSuccess' => '添加收藏成功',
 			'deleteFailed' => '删除失败',
@@ -5572,9 +5574,9 @@ extension on TranslationsZhCn {
 			'modalityVideo' => '视频',
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
-			'apiFormat' => '接口格式',
 			_ => null,
 		} ?? switch (path) {
+			'apiFormat' => '接口格式',
 			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google（Gemini）',

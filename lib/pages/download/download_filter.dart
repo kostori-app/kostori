@@ -135,17 +135,54 @@ Future<void> showDownloadGroupPicker(
   );
 }
 
-class _DownloadGroupPicker extends StatefulWidget {
+class _DownloadGroupPicker extends StatelessWidget {
   const _DownloadGroupPicker({required this.current, required this.onSelected});
 
   final String current;
   final Future<void> Function(String group) onSelected;
 
   @override
-  State<_DownloadGroupPicker> createState() => _DownloadGroupPickerState();
+  Widget build(BuildContext context) {
+    return Sheet(
+      title: t.moveToFolder,
+      icon: Icons.drive_file_move_outline,
+      initialSize: 0.65,
+      builder: (context, sc) => DownloadGroupPickerBody(
+        current: current,
+        scrollController: sc,
+        onSelected: (group) {
+          Navigator.pop(context);
+          onSelected(group);
+        },
+      ),
+    );
+  }
 }
 
-class _DownloadGroupPickerState extends State<_DownloadGroupPicker> {
+/// 分组选择内容：搜索 + 全部/未分组/顶层/子组筛选 + 层级列表。
+/// 供「移动到文件夹」和下载面板的「下载分组」共用（功能对齐）。
+class DownloadGroupPickerBody extends StatefulWidget {
+  const DownloadGroupPickerBody({
+    super.key,
+    required this.current,
+    required this.onSelected,
+    this.scrollController,
+    this.trailingBuilder,
+  });
+
+  final String current;
+  final ValueChanged<String> onSelected;
+  final ScrollController? scrollController;
+
+  /// 每个分组尾部的自定义控件（如删除按钮）
+  final Widget Function(String group)? trailingBuilder;
+
+  @override
+  State<DownloadGroupPickerBody> createState() =>
+      _DownloadGroupPickerBodyState();
+}
+
+class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
   final _searchCtrl = TextEditingController();
   String _keyword = '';
 
@@ -177,67 +214,53 @@ class _DownloadGroupPickerState extends State<_DownloadGroupPicker> {
             '${group.substring(0, group.lastIndexOf(DownloadManager.groupSeparator))}'
       : group;
 
-  void _choose(String group) {
-    Navigator.pop(context);
-    widget.onSelected(group);
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final groups = _groups;
-    return Sheet(
-      title: t.moveToFolder,
-      icon: Icons.drive_file_move_outline,
-      initialSize: 0.65,
-      builder: (context, sc) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) => setState(() => _keyword = v),
-              decoration: InputDecoration(
-                hintText: t.search,
-                isDense: true,
-                prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: _keyword.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() => _keyword = '');
-                        },
-                      ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          child: TextField(
+            controller: _searchCtrl,
+            onChanged: (v) => setState(() => _keyword = v),
+            decoration: InputDecoration(
+              hintText: t.search,
+              isDense: true,
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _keyword.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        _searchCtrl.clear();
+                        setState(() => _keyword = '');
+                      },
+                    ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
-          DownloadFilterBar(
-            builtins: [
-              (key: 'all', label: t.all),
-              (key: 'ungrouped', label: t.ungrouped),
-              (key: 'root', label: t.downloadGroupRoot),
-              (key: 'sub', label: t.downloadSubGroup),
-            ],
-            selected: _filter,
-            onSelected: (v) => setState(() => _filter = v),
-          ),
-          const Divider(height: 1),
-          Expanded(child: _buildList(sc, cs, groups)),
-        ],
-      ),
+        ),
+        DownloadFilterBar(
+          builtins: [
+            (key: 'all', label: t.all),
+            (key: 'ungrouped', label: t.ungrouped),
+            (key: 'root', label: t.downloadGroupRoot),
+            (key: 'sub', label: t.downloadSubGroup),
+          ],
+          selected: _filter,
+          onSelected: (v) => setState(() => _filter = v),
+        ),
+        const Divider(height: 1),
+        Expanded(child: _buildList(cs, groups)),
+      ],
     );
   }
 
-  Widget _buildList(
-    ScrollController sc,
-    ColorScheme cs,
-    List<String> groups,
-  ) {
+  Widget _buildList(ColorScheme cs, List<String> groups) {
     final showUngrouped = _filter == 'all' || _filter == 'ungrouped';
     if (!showUngrouped && groups.isEmpty) {
       return Center(
@@ -245,21 +268,22 @@ class _DownloadGroupPickerState extends State<_DownloadGroupPicker> {
       );
     }
     return ListView(
-      controller: sc,
+      controller: widget.scrollController,
       padding: const EdgeInsets.only(bottom: 12),
       children: [
         if (showUngrouped)
           _GroupChoiceTile(
             label: t.ungrouped,
             selected: widget.current.isEmpty,
-            onTap: () => _choose(''),
+            onTap: () => widget.onSelected(''),
           ),
         for (final g in groups)
           _GroupChoiceTile(
             label: _label(g),
             selected: widget.current == g,
             isSub: DownloadManager.isSubGroup(g),
-            onTap: () => _choose(g),
+            trailing: widget.trailingBuilder?.call(g),
+            onTap: () => widget.onSelected(g),
           ),
       ],
     );
@@ -272,6 +296,7 @@ class _GroupChoiceTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.isSub = false,
+    this.trailing,
   });
 
   final String label;
@@ -281,12 +306,14 @@ class _GroupChoiceTile extends StatelessWidget {
   /// 子组：缩进 + 子目录图标，体现层级
   final bool isSub;
 
+  final Widget? trailing;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ListTile(
       dense: true,
-      contentPadding: EdgeInsets.only(left: isSub ? 32 : 16, right: 16),
+      contentPadding: EdgeInsets.only(left: isSub ? 32 : 16, right: 8),
       leading: Icon(
         isSub
             ? Icons.subdirectory_arrow_right
@@ -294,6 +321,7 @@ class _GroupChoiceTile extends StatelessWidget {
         color: selected ? cs.primary : cs.onSurfaceVariant,
       ),
       title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: trailing,
       selected: selected,
       onTap: onTap,
     );

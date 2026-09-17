@@ -3217,6 +3217,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Sub-groups'
 	String get downloadSubGroup => 'Sub-groups';
 
+	/// en: 'Pause the download before moving it to another group'
+	String get downloadPauseBeforeMove => 'Pause the download before moving it to another group';
+
 	/// en: 'Top-level'
 	String get downloadGroupRoot => 'Top-level';
 
@@ -9985,6 +9988,7 @@ extension on Translations {
 			'searchGroupCustom' => 'My groups',
 			'manageGroups' => 'Manage Groups',
 			'downloadSubGroup' => 'Sub-groups',
+			'downloadPauseBeforeMove' => 'Pause the download before moving it to another group',
 			'downloadGroupRoot' => 'Top-level',
 			'downloadNewSubGroup' => 'New sub-group',
 			'downloadMigrateGroup' => 'Move to…',
@@ -10419,9 +10423,9 @@ extension on Translations {
 			'letAllMembersInviteOthers' => 'Let all members invite others',
 			'declineAndBlock' => 'Decline & Block',
 			'memes' => 'Memes',
-			'memeSaved' => 'Meme saved',
 			_ => null,
 		} ?? switch (path) {
+			'memeSaved' => 'Meme saved',
 			'networkInfo' => 'Network Info',
 			'netLogMeta' => 'Summary only',
 			'netLogFull' => 'Full',
@@ -10933,9 +10937,9 @@ extension on Translations {
 			'shareFailed' => 'Share failed',
 			'connectionFailed' => 'Connection failed',
 			'copySuccess' => 'Copy success',
-			'addToFavoritesSuccess' => 'Add to favorites success',
 			_ => null,
 		} ?? switch (path) {
+			'addToFavoritesSuccess' => 'Add to favorites success',
 			'deleteFailed' => 'Delete failed',
 			'deleteSuccessful' => 'Deleted',
 			'confirmDeleteImageHint' => 'This cannot be undone',
@@ -11447,9 +11451,9 @@ extension on Translations {
 			'modalityVideo' => 'Video',
 			'capabilityTools' => 'Tools',
 			'capabilityReasoning' => 'Reasoning',
-			'apiFormat' => 'API format',
 			_ => null,
 		} ?? switch (path) {
+			'apiFormat' => 'API format',
 			'apiFormatOpenai' => 'OpenAI (chat)',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google (Gemini)',
