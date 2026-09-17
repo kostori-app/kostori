@@ -458,7 +458,9 @@ class AnimeTile extends ConsumerWidget {
               // 只监听集数（稳定字符串）；lastWatchTime 每秒变但无需每秒刷新卡片
               final h = HistoryManager().find(anime.id, _animeType);
               if (h == null) return null;
-              return '${h.lastWatchEpisode} / ${h.allEpisode}';
+              // 同一部番的其它来源进度更高时，角标也显示那个集数
+              final aligned = HistoryManager().alignedHistory(h);
+              return '${aligned.displayEpisode} / ${aligned.allEpisode}';
             }),
           )
         : null;

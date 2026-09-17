@@ -68,13 +68,6 @@ abstract mixin class _AnimePageActions {
 
   bool isFavorite = false;
 
-  bool _betterHistory(History a, History b) {
-    final ea = a.lastWatchEpisode ?? 0;
-    final eb = b.lastWatchEpisode ?? 0;
-    if (ea != eb) return ea > eb;
-    return (a.lastWatchTime ?? 0) > (b.lastWatchTime ?? 0);
-  }
-
   /// 同 bangumi id 的其它来源（番本质上是同一部）进度更高时，
   /// 继承其集数与观看时间，并把该集进度复制到当前条目，
   /// 使“续看/时间”能跨来源取最大值。
@@ -82,20 +75,11 @@ abstract mixin class _AnimePageActions {
     final own = history;
     if (own == null || own.bangumiId == null) return;
     try {
-      final list = await HistoryManager().bangumiByIDFind(own.bangumiId!);
-      History? best;
-      for (final h in list) {
-        // 跳过当前条目自身
-        if (h.id == anime.animeId &&
-            h.type.value == anime.sourceKey.hashCode) {
-          continue;
-        }
-        final base = best ?? own;
-        if (_betterHistory(h, base)) best = h;
-      }
-      if (best == null) return;
-
       final manager = HistoryManager();
+      // 取同 bangumiId 分组里集数最高的一条（并列取时间更新）
+      final best = manager.bestByBangumiId(own.bangumiId);
+      if (best == null || best.id == own.id) return;
+
       final inheritedEp = best.lastWatchEpisode ?? 0;
       final ownEp = own.lastWatchEpisode ?? 0;
       final inheritedTime = best.lastWatchTime ?? 0;

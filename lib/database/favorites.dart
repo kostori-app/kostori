@@ -482,7 +482,8 @@ class LocalFavoritesManager with ChangeNotifier {
     for (final folder in _folderOrder) {
       final token = _folderToken(folder);
       final list = _byFolder[_resolveFolder(folder)] ?? const <_FavEntry>[];
-      for (final e in list) {
+      for (var i = 0; i < list.length; i++) {
+        final e = list[i];
         final item = e.item;
         final key = '${item.type.value}\u0000${item.id}';
         Map<String, dynamic>? entry = seen[key];
@@ -491,12 +492,17 @@ class LocalFavoritesManager with ChangeNotifier {
           entry['folders'] = <String>[];
           // 最近观看时间也要同步，否则各端按各自的观看记录排序，顺序对不上
           entry['recentlyWatched'] = e.recentlyWatched;
+          entry['orders'] = <String, dynamic>{};
           seen[key] = entry;
           out.add(entry);
         }
         (entry['folders'] as List).add(token);
+        // 各文件夹内的位置（默认排序用），跨端对齐条目顺序
+        (entry['orders'] as Map<String, dynamic>)[token] = i;
       }
     }
+    // 文件夹 tab 顺序：单独一项放在末尾，避免混进条目解析
+    out.add({'folderOrder': _folderOrder.map(_folderToken).toList()});
     return out;
   }
 
@@ -510,13 +516,57 @@ class LocalFavoritesManager with ChangeNotifier {
   void mergeFavoriteMaps(List<dynamic> remote) {
     if (remote.isEmpty) return;
     var changed = false;
+
+    // 远端文件夹顺序（旧数据没有该项）
+    final folderOrderRaw = remote
+        .whereType<Map>()
+        .map((m) => m['folderOrder'])
+        .firstWhere((v) => v is List, orElse: () => null);
+    if (folderOrderRaw is List && folderOrderRaw.isNotEmpty) {
+      final desired = <String>[];
+      for (final f in folderOrderRaw) {
+        final t = _folderToken(f.toString());
+        if (!desired.contains(t)) desired.add(t);
+      }
+      // 本地已有但远端未提到的文件夹保持相对顺序追加在后面
+      for (final f in _folderOrder) {
+        final t = _folderToken(f);
+        if (!desired.contains(t)) desired.add(t);
+      }
+      if (!listEquals(desired, _folderOrder.map(_folderToken).toList())) {
+        for (final t in desired) {
+          _ensureFolderExists(t);
+        }
+        _folderOrder
+          ..clear()
+          ..addAll(desired);
+        changed = true;
+      }
+    }
+
+    // 各条目在所属文件夹内的目标位置
+    final desiredOrders = <String, Map<String, int>>{};
     for (final raw in remote) {
       if (raw is! Map) continue;
       final map = raw.map((k, v) => MapEntry(k.toString(), v));
+      if (!map.containsKey('id') && !map.containsKey('target')) continue;
+      if (map['type'] is! int) continue;
       final item = FavoriteItem.fromJson(map);
       final rawFolders = map['folders'];
       final hasFolderInfo = rawFolders is List && rawFolders.isNotEmpty;
       final remoteRecent = map['recentlyWatched']?.toString();
+      final rawOrders = map['orders'];
+      if (rawOrders is Map) {
+        for (final o in rawOrders.entries) {
+          final token = _folderToken(o.key.toString());
+          final index = o.value is num
+              ? (o.value as num).toInt()
+              : int.tryParse(o.value.toString());
+          if (index == null) continue;
+          (desiredOrders[token] ??= {})['${item.type.value}\u0000${item.id}'] =
+              index;
+        }
+      }
 
       /// 最近观看时间按「谁更新用谁」合并（字符串即时间序，可直接比较）
       void mergeRecentlyWatched() {
@@ -586,6 +636,39 @@ class LocalFavoritesManager with ChangeNotifier {
       }
       mergeRecentlyWatched();
     }
+
+    // 应用条目顺序（默认排序）：按远端位置重排，未给出位置的保持相对顺序排在其后
+    for (final entry in desiredOrders.entries) {
+      final list = _byFolder[_resolveFolder(entry.key)];
+      if (list == null || list.length < 2) continue;
+      final positions = entry.value;
+      final buckets = <int, List<_FavEntry>>{};
+      final tail = <_FavEntry>[];
+      for (final e in list) {
+        final key = '${e.item.type.value}\u0000${e.item.id}';
+        final pos = positions[key];
+        if (pos == null) {
+          tail.add(e);
+        } else {
+          buckets.putIfAbsent(pos, () => []).add(e);
+        }
+      }
+      final sortedKeys = buckets.keys.toList()..sort();
+      final reordered = <_FavEntry>[
+        for (final k in sortedKeys) ...buckets[k]!,
+        ...tail,
+      ];
+      if (!listEquals(
+        reordered.map((e) => e.item.id).toList(),
+        list.map((e) => e.item.id).toList(),
+      )) {
+        list
+          ..clear()
+          ..addAll(reordered);
+        changed = true;
+      }
+    }
+
     if (changed) {
       _rebuildHashedIds();
       _notify();

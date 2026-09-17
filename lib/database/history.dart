@@ -186,6 +186,15 @@ class History implements Anime {
   bool operator ==(Object other) =>
       other is History && type == other.type && id == other.id;
 
+  /// 同 bangumiId 的其它来源进度更高时，展示其集数（同一部番跨来源对齐）
+  int get displayEpisode {
+    final aligned = HistoryManager().bestByBangumiId(bangumiId);
+    final own = lastWatchEpisode ?? 0;
+    if (aligned == null || aligned.id == id) return own;
+    final other = aligned.lastWatchEpisode ?? 0;
+    return other > own ? other : own;
+  }
+
   @override
   String get description {
     String formatMs(int ms) {
@@ -193,12 +202,13 @@ class History implements Anime {
       return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
     }
 
+    final ep = displayEpisode;
     var res = '${type.animeSource?.name ?? t.unknown} | ';
-    if ((lastWatchEpisode ?? 0) >= 1) {
-      res += t.currentlySeenEp(ep: (lastWatchEpisode ?? 0).toString());
+    if (ep >= 1) {
+      res += t.currentlySeenEp(ep: ep.toString());
     }
     if ((lastWatchTime ?? 0) >= 1) {
-      if ((lastWatchEpisode ?? 0) >= 1) res += " | ";
+      if (ep >= 1) res += " | ";
       res += t.lastWatchTimeTime(time: formatMs(lastWatchTime ?? 0));
     }
     return res;
@@ -596,6 +606,41 @@ class HistoryManager with ChangeNotifier {
   // 缓存全部历史（初始从数据库加载，之后增量更新）
   final cachedHistories = <String, History>{};
 
+  // bangumiId → 集数最高（并列取时间更新）的那条历史，
+  // 用于「同一部番不同来源」的显示与续看对齐
+  final Map<int, History> _bangumiBest = {};
+
+  /// a 是否比 b 更“新”：集数优先，其次观看时间
+  static bool _betterHistory(History a, History b) {
+    final ea = a.lastWatchEpisode ?? 0;
+    final eb = b.lastWatchEpisode ?? 0;
+    if (ea != eb) return ea > eb;
+    return (a.lastWatchTime ?? 0) > (b.lastWatchTime ?? 0);
+  }
+
+  void _rebuildBangumiBest() {
+    _bangumiBest.clear();
+    for (final h in cachedHistories.values) {
+      final id = h.bangumiId;
+      if (id == null || id <= 0) continue;
+      final best = _bangumiBest[id];
+      if (best == null || _betterHistory(h, best)) _bangumiBest[id] = h;
+    }
+  }
+
+  /// 同一 bangumiId 的条目里集数最高的那条（没有则返回 null）
+  History? bestByBangumiId(int? bangumiId) {
+    if (bangumiId == null || bangumiId <= 0) return null;
+    return _bangumiBest[bangumiId];
+  }
+
+  /// 该条目在当前 bangumi 分组里应当用于展示的历史（集数取同组最高）
+  History alignedHistory(History h) {
+    final best = bestByBangumiId(h.bangumiId);
+    if (best == null) return h;
+    return _betterHistory(best, h) ? best : h;
+  }
+
   // 上次时间变化通知的时间（时间变化每 30 秒通知一次，避免每秒重建卡顿）
   int _lastTimeNotify = 0;
 
@@ -608,6 +653,7 @@ class HistoryManager with ChangeNotifier {
     _cachedHistoryIds![item.id] = true;
     cachedHistories.remove(item.id);
     cachedHistories[item.id] = item;
+    _rebuildBangumiBest();
     if (prev == null) {
       notifyListeners();
       return;
@@ -672,6 +718,7 @@ class HistoryManager with ChangeNotifier {
       _cachedHistoryIds![h.id] = true;
       cachedHistories[h.id] = h;
     }
+    _rebuildBangumiBest();
   });
 
   void updateCache() => _updateCache();
@@ -685,6 +732,7 @@ class HistoryManager with ChangeNotifier {
     // 更新缓存条目并把它移到最新（LinkedHashMap 保持插入顺序）
     cachedHistories.remove(item.id);
     cachedHistories[item.id] = item;
+    _rebuildBangumiBest();
     notifyListeners();
   });
 
@@ -695,6 +743,7 @@ class HistoryManager with ChangeNotifier {
     )..where((t) => t.historyId.equals(id) & t.type.equals(type.value))).go();
     _cachedHistoryIds?.remove(id);
     cachedHistories.remove(id);
+    _rebuildBangumiBest();
     notifyListeners();
   });
 
@@ -703,6 +752,7 @@ class HistoryManager with ChangeNotifier {
     await _db.delete(_db.progressTable).go();
     _cachedHistoryIds = {};
     cachedHistories.clear();
+    _rebuildBangumiBest();
     notifyListeners();
   });
 
