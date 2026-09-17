@@ -492,7 +492,7 @@ class CapsuleButton extends StatefulWidget {
     this.isLoading = false,
     this.flat = false,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-  }) : assert(text != null || child != null);
+  }) : assert(text != null || child != null || leading != null);
 
   final String? text;
   final Widget? child;
@@ -553,9 +553,13 @@ class _CapsuleButtonState extends State<CapsuleButton> {
                     const SizedBox(width: 6),
                   ] else if (widget.leading != null) ...[
                     widget.leading!,
-                    const SizedBox(width: 6),
+                    if (widget.child != null || widget.text != null)
+                      const SizedBox(width: 6),
                   ],
-                  widget.child ?? Text(widget.text!),
+                  if (widget.child != null)
+                    widget.child!
+                  else if (widget.text != null)
+                    Text(widget.text!),
                   if (widget.trailing != null) ...[
                     const SizedBox(width: 6),
                     widget.trailing!,
