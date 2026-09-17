@@ -138,40 +138,43 @@ class _LogSettingsState extends State<LogSettings> {
                   settingKey: "redactSensitiveLogs",
                   dataSource: SwitchDataSource.implicit,
                 ),
-                // 网络日志：关闭 / 仅概要 / 完整
+                // 网络日志：关闭 / 仅概要 / 完整（分段胶囊，靠右）
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Row(
                     children: [
-                      Text(t.networkInfo),
-                      const SizedBox(height: 6),
-                      SegmentedButton<String>(
-                        showSelectedIcon: false,
-                        segments: [
-                          ButtonSegment(value: 'off', label: Text(t.close)),
-                          ButtonSegment(
-                            value: 'meta',
-                            label: Text(t.netLogMeta),
+                      Expanded(child: Text(t.networkInfo)),
+                      CapsuleOptions(
+                        alignment: WrapAlignment.end,
+                        children: [
+                          CapsuleOption(
+                            text: t.close,
+                            isSelected: NetLog.mode == 'off',
+                            onTap: () => setState(() => NetLog.mode = 'off'),
                           ),
-                          ButtonSegment(
-                            value: 'full',
-                            label: Text(t.netLogFull),
+                          CapsuleOption(
+                            text: t.netLogMeta,
+                            isSelected: NetLog.mode == 'meta',
+                            onTap: () => setState(() => NetLog.mode = 'meta'),
+                          ),
+                          CapsuleOption(
+                            text: t.netLogFull,
+                            isSelected: NetLog.mode == 'full',
+                            onTap: () => setState(() => NetLog.mode = 'full'),
                           ),
                         ],
-                        selected: {NetLog.mode},
-                        onSelectionChanged: (s) =>
-                            setState(() => NetLog.mode = s.first),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        t.netLogHint,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
                       ),
                     ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(
+                    t.netLogHint,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 _SwitchSetting(title: t.hubInfo, settingKey: "enableHubLog"),
