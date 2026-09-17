@@ -551,17 +551,38 @@ class DownloadManager extends ChangeNotifier {
             headers[k] = v;
           }
         });
-        final res = await dio.get<ResponseBody>(
-          task.url,
-          options: Options(
-            responseType: ResponseType.stream,
-            headers: headers,
-            followRedirects: true,
-            receiveTimeout: null,
-            extra: {'httpVersion11': true, 'streaming': true},
-          ),
-          cancelToken: dioCancel,
-        );
+        Response<ResponseBody> res;
+        try {
+          res = await dio.get<ResponseBody>(
+            task.url,
+            options: Options(
+              responseType: ResponseType.stream,
+              headers: headers,
+              followRedirects: true,
+              receiveTimeout: null,
+              extra: {'httpVersion11': true, 'streaming': true},
+            ),
+            cancelToken: dioCancel,
+          );
+        } on DioException catch (e) {
+          if (CancelToken.isCancel(e) || cancelToken.isCancelled) {
+            throw FfmpegCancelledException();
+          }
+          // 连接层错误（无 HTTP 响应）：可能是服务器只支持 HTTP/2，
+          // 去掉强制 HTTP/1.1 用 HTTP/2 再试一次；有状态码的交给外层处理
+          if (e.response?.statusCode != null) rethrow;
+          res = await dio.get<ResponseBody>(
+            task.url,
+            options: Options(
+              responseType: ResponseType.stream,
+              headers: headers,
+              followRedirects: true,
+              receiveTimeout: null,
+              extra: {'streaming': true},
+            ),
+            cancelToken: dioCancel,
+          );
+        }
         final status = res.statusCode ?? 0;
         if (status != 200 && status != 206) {
           // 4xx/5xx（含 410 链接失效）不可通过 Range 续传恢复，直接失败不重试
