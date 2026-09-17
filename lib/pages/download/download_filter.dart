@@ -258,6 +258,7 @@ class _DownloadGroupPickerState extends State<_DownloadGroupPicker> {
           _GroupChoiceTile(
             label: _label(g),
             selected: widget.current == g,
+            isSub: DownloadManager.isSubGroup(g),
             onTap: () => _choose(g),
           ),
       ],
@@ -270,19 +271,26 @@ class _GroupChoiceTile extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.isSub = false,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
+  /// 子组：缩进 + 子目录图标，体现层级
+  final bool isSub;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ListTile(
       dense: true,
+      contentPadding: EdgeInsets.only(left: isSub ? 32 : 16, right: 16),
       leading: Icon(
-        selected ? Icons.radio_button_checked : Icons.folder_outlined,
+        isSub
+            ? Icons.subdirectory_arrow_right
+            : (selected ? Icons.radio_button_checked : Icons.folder_outlined),
         color: selected ? cs.primary : cs.onSurfaceVariant,
       ),
       title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),

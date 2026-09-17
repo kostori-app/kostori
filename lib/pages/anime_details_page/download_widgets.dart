@@ -847,83 +847,98 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // 已在下载列表里：显示状态（避免重复下载）
-                if (widget.activeLabel != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.downloading,
-                          size: 14,
-                          color: colorScheme.onTertiaryContainer,
+                // 右侧控件固定宽度 + 右对齐：各卡片的控件列对齐
+                SizedBox(
+                  width: 160,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // 已在下载列表里：显示状态（避免重复下载）
+                      if (widget.activeLabel != null)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.tertiaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.downloading,
+                                  size: 14,
+                                  color: colorScheme.onTertiaryContainer,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  widget.activeLabel!,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: colorScheme.onTertiaryContainer,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      // 分辨率选择 / 已下载标记（已下载可重下）
+                      else if (widget.isDownloaded) ...[
+                        const Icon(
+                          Icons.download_done,
+                          size: 20,
+                          color: Colors.green,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.activeLabel!,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: colorScheme.onTertiaryContainer,
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: t.redownload,
+                          icon: const Icon(Icons.refresh, size: 18),
+                          color: colorScheme.primary,
+                          onPressed: widget.onRedownload,
+                        ),
+                      ] else
+                        Flexible(
+                          child: TextButton.icon(
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                            ),
+                            onPressed: _pickResolution,
+                            icon: _resolving
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: PolygonRefreshIndicator(),
+                                  )
+                                : const Icon(
+                                    Icons.high_quality_outlined,
+                                    size: 16,
+                                  ),
+                            label: Text(
+                              widget.resolutionLabel ?? t.defaultResolution,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  )
-                // 分辨率选择 / 已下载标记（已下载可重下）
-                else if (widget.isDownloaded)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.download_done,
-                        size: 20,
-                        color: Colors.green,
-                      ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        tooltip: t.redownload,
-                        icon: const Icon(Icons.refresh, size: 18),
-                        color: colorScheme.primary,
-                        onPressed: widget.onRedownload,
-                      ),
+                      // 编辑标题（超长标题影响建文件名时改短）
+                      if (!widget.isDownloaded && widget.activeLabel == null)
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: t.rename,
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          color: colorScheme.onSurfaceVariant,
+                          onPressed: widget.onEditName,
+                        ),
                     ],
-                  )
-                else
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    onPressed: _pickResolution,
-                    icon: _resolving
-                        ? SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: PolygonRefreshIndicator(),
-                          )
-                        : const Icon(Icons.high_quality_outlined, size: 16),
-                    label: Text(
-                      widget.resolutionLabel ?? t.defaultResolution,
-                      style: const TextStyle(fontSize: 12),
-                    ),
                   ),
-                // 编辑标题（超长标题影响建文件名时改短）
-                if (!widget.isDownloaded && widget.activeLabel == null)
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: t.rename,
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    color: colorScheme.onSurfaceVariant,
-                    onPressed: widget.onEditName,
-                  ),
+                ),
               ],
             ),
           ),

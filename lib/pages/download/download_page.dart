@@ -1327,10 +1327,12 @@ class _DownloadTile extends StatelessWidget {
   }
 
   void _showError(BuildContext context) {
+    // 只读错误详情：不显示任何按钮（点遮罩关闭）
     showDialog<void>(
       context: context,
       builder: (ctx) => ContentDialog(
         title: '${t.downloadFailed} · ${task.title}',
+        displayButton: false,
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 320),
           child: SingleChildScrollView(
@@ -1340,12 +1342,6 @@ class _DownloadTile extends StatelessWidget {
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(t.close),
-          ),
-        ],
       ),
     );
   }
