@@ -921,6 +921,7 @@ invalidPage: Invalid page
 unknownError: Unknown error
 loadPageAndLoadNextCantBeNull: loadPage and loadNext can't be null at the same time
 disableLengthLimitation: Disable Length Limitation
+disableLengthLimitationDesc: Raises a single log up to 20k characters; the in-memory budget and file size stay capped to keep memory in check.
 updateLog: Update log
 liked: Liked
 rating: Rating

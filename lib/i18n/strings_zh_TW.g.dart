@@ -911,6 +911,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get unknownError => '未知錯誤';
 	@override String get loadPageAndLoadNextCantBeNull => 'loadPage and loadNext can\'t be null at the same time';
 	@override String get disableLengthLimitation => '停用長度限制';
+	@override String get disableLengthLimitationDesc => '單條日誌放寬到 2 萬字元；記憶體總量與檔案大小仍有限制（避免日誌佔用大量記憶體）';
 	@override String get updateLog => '更新日誌';
 	@override String get liked => '喜歡';
 	@override String get rating => '評分';
@@ -3872,6 +3873,7 @@ extension on TranslationsZhTw {
 			'unknownError' => '未知錯誤',
 			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => '停用長度限制',
+			'disableLengthLimitationDesc' => '單條日誌放寬到 2 萬字元；記憶體總量與檔案大小仍有限制（避免日誌佔用大量記憶體）',
 			'updateLog' => '更新日誌',
 			'liked' => '喜歡',
 			'rating' => '評分',
@@ -3981,9 +3983,9 @@ extension on TranslationsZhTw {
 			'november' => '十一月',
 			'december' => '十二月',
 			'today' => '今天',
-			'yesterday' => '昨天',
 			_ => null,
 		} ?? switch (path) {
+			'yesterday' => '昨天',
 			'last3Days' => '最近 3 天',
 			'last7Days' => '最近 7 天',
 			'last30Days' => '最近 30 天',
@@ -4495,9 +4497,9 @@ extension on TranslationsZhTw {
 			'valueRange' => '數值: 0.0 - 1.0',
 			'readOnlySystemPreset' => '唯讀系統預設',
 			'deleteConfig' => '刪除設定',
-			'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
 			_ => null,
 		} ?? switch (path) {
+			'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
 			'baseUrl' => '基礎 URL',
 			'optionalField' => '選填',
 			'model' => '模型',
@@ -5009,9 +5011,9 @@ extension on TranslationsZhTw {
 			'durationHint' => '秒數，如 4.0',
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 廣告標記',
-			'ultraShortSegment' => '極短分片',
 			_ => null,
 		} ?? switch (path) {
+			'ultraShortSegment' => '極短分片',
 			'commonAdUrlPattern' => '常見廣告 URL 特徵',
 			'keywordMatch' => '關鍵字比對',
 			'keywordHint' => '子字串，如 advert 或 adservice',
@@ -5523,9 +5525,9 @@ extension on TranslationsZhTw {
 			'aiContextBudgetHint' => '所有對話與故事共用的預設上下文預算；助手檔案或故事另有設定時以它們為準，0 表示不限制',
 			'contextBudget' => '上下文預算（token）',
 			'contextBudgetHint' => '留空跟隨助手檔案 / 全域設定，0 表示不限制',
-			'profileMemoryEntries' => '記憶條目',
 			_ => null,
 		} ?? switch (path) {
+			'profileMemoryEntries' => '記憶條目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暫無記憶條目',
 			'profileMemoryAdd' => '新增記憶',

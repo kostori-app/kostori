@@ -51,7 +51,17 @@ class Log {
 
   static const maxLogLength = 3000;
 
+  /// 即使开启「禁用长度限制」，单条正文也不会超过这个硬上限。
+  /// 之前该开关会彻底取消限制，导致大响应（大 JSON/HTML/base64）整段进内存。
+  static const maxLogLengthHard = 20000;
+
   static const maxLogNumber = 500;
+
+  /// 内存日志正文总字符预算（约 2M 字符 ≈ 4MB 内存），超出按最旧淘汰，
+  /// 保证日志内存占用是常数级
+  static const maxLogCharsBudget = 2000000;
+
+  static int _logsChars = 0;
 
   /// 是否忽略内容长度限制（持久化设置：日志长度限制开关）
   static bool get ignoreLimitation =>
@@ -234,8 +244,14 @@ class Log {
       content = redact(content);
     }
 
-    if (!ignoreLimitation && content.length > maxLogLength) {
-      content = "${content.substring(0, maxLogLength)}...";
+    // 单条长度：默认 3000；关闭限制也只是放宽到硬上限，绝不无限
+    final limit = ignoreLimitation ? maxLogLengthHard : maxLogLength;
+    if (content.length > limit) {
+      final dropped = content.length - limit;
+      content = '${content.substring(0, limit)}\n…（已截断 $dropped 字符）';
+    }
+    if (title.length > 200) {
+      title = '${title.substring(0, 200)}…';
     }
 
     switch (level) {
@@ -256,7 +272,8 @@ class Log {
     }
 
     _logs.add(newLog);
-    _controller.add(List.unmodifiable(_logs));
+    _logsChars += newLog.content.length + newLog.title.length;
+    _scheduleEmit();
     if (_file != null) {
       final text = newLog.toString();
       _file!.write(text);
@@ -269,11 +286,26 @@ class Log {
         _file = null;
       }
     }
-    // 超过上限按 FIFO 清理最旧日志：不要优先移除 info，
-    // 否则日志量大时 info 会被持续清空导致"暂无 info"
-    while (_logs.length > maxLogNumber) {
-      _logs.removeAt(0);
+    // 超过条数上限 / 总字符预算按 FIFO 清理最旧日志：
+    // 不优先移除 info（否则日志量大时 info 会被持续清空），
+    // 总字符预算保证内存占用恒定，不受单条长度影响
+    while (_logs.isNotEmpty &&
+        (_logs.length > maxLogNumber || _logsChars > maxLogCharsBudget)) {
+      final removed = _logs.removeAt(0);
+      _logsChars -= removed.content.length + removed.title.length;
     }
+  }
+
+  /// 合并高频日志的推送：最多约每 120ms 通知一次监听者，
+  /// 避免流式/下载期间每个日志都触发一次界面全量重建
+  static Timer? _emitTimer;
+
+  static void _scheduleEmit() {
+    if (_emitTimer != null) return;
+    _emitTimer = Timer(const Duration(milliseconds: 120), () {
+      _emitTimer = null;
+      _controller.add(List.unmodifiable(_logs));
+    });
   }
 
   static void info(String title, String content) {
@@ -292,7 +324,13 @@ class Log {
     addLog(LogLevel.error, title, info);
   }
 
-  static void clear() => _logs.clear();
+  static void clear() {
+    _logs.clear();
+    _logsChars = 0;
+    _emitTimer?.cancel();
+    _emitTimer = null;
+    _controller.add(const []);
+  }
 
   @override
   String toString() {

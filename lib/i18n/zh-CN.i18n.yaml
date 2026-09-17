@@ -916,6 +916,7 @@ last: 末页
 invalidPage: 无效页码
 unknownError: 未知错误
 disableLengthLimitation: 禁用长度限制
+disableLengthLimitationDesc: 单条日志放宽到 2 万字符；内存总量与文件大小仍有限制（防止日志占用大量内存）
 updateLog: 更新日志
 liked: 喜欢
 rating: 评分

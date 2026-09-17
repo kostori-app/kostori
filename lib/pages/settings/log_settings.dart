@@ -115,6 +115,7 @@ class _LogSettingsState extends State<LogSettings> {
                 ),
                 _SwitchSetting(
                   title: t.disableLengthLimitation,
+                  subtitle: t.disableLengthLimitationDesc,
                   settingKey: "logIgnoreLimitation",
                   dataSource: SwitchDataSource.implicit,
                 ),
@@ -172,14 +173,26 @@ String _prettyLogContentCached(LogItem log) =>
 
 final _longCache = Expando<bool>();
 
-bool _isLongLog(LogItem log) =>
-    _longCache[log] ??=
-        log.content.split('\n').length > 10 || log.content.length > 700;
+bool _isLongLog(LogItem log) {
+  final cached = _longCache[log];
+  if (cached != null) return cached;
+  // 不 split 整段文本：大日志 split 会产生海量行对象，拖慢 UI
+  final c = log.content;
+  var lines = 0;
+  for (var i = 0; i < c.length && lines <= 10; i++) {
+    if (c.codeUnitAt(i) == 0x0A) lines++;
+  }
+  final v = lines > 10 || c.length > 700;
+  _longCache[log] = v;
+  return v;
+}
 
 /// 日志美化：识别正文里的 JSON 段并缩进格式化（保留前缀文字）
 String _prettyLogContent(String raw) {
   final s = raw;
   if (s.length < 2) return s;
+  // 大日志不做 JSON 解码/缩进：会在 UI 线程卡死，直接原样展示（列表只显示前 10 行）
+  if (s.length > 8000) return s;
   int start = -1;
   for (var i = 0; i < s.length; i++) {
     final c = s[i];

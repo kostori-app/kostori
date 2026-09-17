@@ -77,15 +77,26 @@ class MyLogInterceptor extends Interceptor {
       ),
     );
     headers.remove("cookie");
+    // 日志正文限长：大响应（大 JSON/HTML、二进制）只记长度/前缀，
+    // 避免构造并持有 MB 级字符串（内存与卡顿的主要来源）
+    const logBodyLimit = 32768;
     String content;
     if (response.data is List<int>) {
-      try {
-        content = utf8.decode(response.data, allowMalformed: false);
-      } catch (e) {
-        content = "<Bytes>\nlength:${response.data.length}";
+      final bytes = response.data as List<int>;
+      if (bytes.length > logBodyLimit) {
+        content = "<Bytes>\nlength:${bytes.length} (body omitted)";
+      } else {
+        try {
+          content = utf8.decode(bytes, allowMalformed: false);
+        } catch (e) {
+          content = "<Bytes>\nlength:${bytes.length}";
+        }
       }
     } else {
-      content = response.data.toString();
+      final s = response.data.toString();
+      content = s.length > logBodyLimit
+          ? '${s.substring(0, logBodyLimit)}…(omitted ${s.length - logBodyLimit} chars)'
+          : s;
     }
 
     NetLog.log(
@@ -102,11 +113,17 @@ class MyLogInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // 请求体同样限长（base64 图片上传等可能很大）
+    final rawData = options.data?.toString() ?? '';
+    const reqLimit = 16384;
+    final data = rawData.length > reqLimit
+        ? '${rawData.substring(0, reqLimit)}…(omitted ${rawData.length - reqLimit} chars)'
+        : rawData;
     NetLog.info(
       "Network",
       "${options.method} ${options.uri}\n"
           "headers:\n${options.headers}\n"
-          "data:\n${options.data}",
+          "data:\n$data",
     );
 
     // 流式请求不强制覆盖超时，避免长时间停顿（如推理思考）被误判为超时；

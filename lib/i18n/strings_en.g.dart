@@ -2656,6 +2656,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Disable Length Limitation'
 	String get disableLengthLimitation => 'Disable Length Limitation';
 
+	/// en: 'Raises a single log up to 20k characters; the in-memory budget and file size stay capped to keep memory in check.'
+	String get disableLengthLimitationDesc => 'Raises a single log up to 20k characters; the in-memory budget and file size stay capped to keep memory in check.';
+
 	/// en: 'Update log'
 	String get updateLog => 'Update log';
 
@@ -9652,6 +9655,7 @@ extension on Translations {
 			'unknownError' => 'Unknown error',
 			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => 'Disable Length Limitation',
+			'disableLengthLimitationDesc' => 'Raises a single log up to 20k characters; the in-memory budget and file size stay capped to keep memory in check.',
 			'updateLog' => 'Update log',
 			'liked' => 'Liked',
 			'rating' => 'Rating',
@@ -9761,9 +9765,9 @@ extension on Translations {
 			'november' => 'November',
 			'december' => 'December',
 			'today' => 'Today',
-			'yesterday' => 'Yesterday',
 			_ => null,
 		} ?? switch (path) {
+			'yesterday' => 'Yesterday',
 			'last3Days' => 'Last 3 Days',
 			'last7Days' => 'Last 7 Days',
 			'last30Days' => 'Last 30 Days',
@@ -10275,9 +10279,9 @@ extension on Translations {
 			'valueRange' => 'Value: 0.0 - 1.0',
 			'readOnlySystemPreset' => 'Read-only System Preset',
 			'deleteConfig' => 'Delete Config',
-			'areYouSureYouWantToDeleteGeneric' => 'Are you sure you want to delete',
 			_ => null,
 		} ?? switch (path) {
+			'areYouSureYouWantToDeleteGeneric' => 'Are you sure you want to delete',
 			'baseUrl' => 'Base URL',
 			'optionalField' => 'Optional',
 			'model' => 'Model',
@@ -10789,9 +10793,9 @@ extension on Translations {
 			'tagHint' => 'e.g. #EXT-X-CUE-OUT',
 			'cueAdTag' => 'CUE Ad Tag',
 			'ultraShortSegment' => 'Ultra Short Segment',
-			'commonAdUrlPattern' => 'Common Ad URL Pattern',
 			_ => null,
 		} ?? switch (path) {
+			'commonAdUrlPattern' => 'Common Ad URL Pattern',
 			'keywordMatch' => 'Keyword Match',
 			'keywordHint' => 'Substring, e.g. advert or adservice',
 			'commonAdKeyword' => 'Common Ad Keyword',
@@ -11303,9 +11307,9 @@ extension on Translations {
 			'aiContextBudget' => 'Context budget (tokens)',
 			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',
 			'contextBudget' => 'Context budget (tokens)',
-			'contextBudgetHint' => 'Leave empty to follow the profile / global setting; 0 = unlimited',
 			_ => null,
 		} ?? switch (path) {
+			'contextBudgetHint' => 'Leave empty to follow the profile / global setting; 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',
 			'profileMemoryEmpty' => 'No memory entries yet',

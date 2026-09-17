@@ -910,6 +910,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get invalidPage => '无效页码';
 	@override String get unknownError => '未知错误';
 	@override String get disableLengthLimitation => '禁用长度限制';
+	@override String get disableLengthLimitationDesc => '单条日志放宽到 2 万字符；内存总量与文件大小仍有限制（防止日志占用大量内存）';
 	@override String get updateLog => '更新日志';
 	@override String get liked => '喜欢';
 	@override String get rating => '评分';
@@ -3872,6 +3873,7 @@ extension on TranslationsZhCn {
 			'invalidPage' => '无效页码',
 			'unknownError' => '未知错误',
 			'disableLengthLimitation' => '禁用长度限制',
+			'disableLengthLimitationDesc' => '单条日志放宽到 2 万字符；内存总量与文件大小仍有限制（防止日志占用大量内存）',
 			'updateLog' => '更新日志',
 			'liked' => '喜欢',
 			'rating' => '评分',
@@ -3982,9 +3984,9 @@ extension on TranslationsZhCn {
 			'december' => '十二月',
 			'today' => '今天',
 			'yesterday' => '昨天',
-			'last3Days' => '最近 3 天',
 			_ => null,
 		} ?? switch (path) {
+			'last3Days' => '最近 3 天',
 			'last7Days' => '最近 7 天',
 			'last30Days' => '最近 30 天',
 			'last3Months' => '最近 3 个月',
@@ -4496,9 +4498,9 @@ extension on TranslationsZhCn {
 			'readOnlySystemPreset' => '只读系统预设',
 			'deleteConfig' => '删除配置',
 			'areYouSureYouWantToDeleteGeneric' => '确定要删除吗',
-			'baseUrl' => '基础 URL',
 			_ => null,
 		} ?? switch (path) {
+			'baseUrl' => '基础 URL',
 			'optionalField' => '可选',
 			'model' => '模型',
 			'tokens' => 'tokens',
@@ -5010,9 +5012,9 @@ extension on TranslationsZhCn {
 			'domainHint' => '域名，多个用逗号分隔',
 			'durationHint' => '秒数，如 4.0',
 			'tagHint' => '如',
-			'cueAdTag' => 'CUE 广告标记',
 			_ => null,
 		} ?? switch (path) {
+			'cueAdTag' => 'CUE 广告标记',
 			'ultraShortSegment' => '极短分片',
 			'commonAdUrlPattern' => '常见广告 URL 特征',
 			'keywordMatch' => '关键字匹配',
@@ -5524,9 +5526,9 @@ extension on TranslationsZhCn {
 			'aiContextBudget' => '上下文预算（token）',
 			'aiContextBudgetHint' => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制',
 			'contextBudget' => '上下文预算（token）',
-			'contextBudgetHint' => '留空跟随助手档案 / 全局设置，0 表示不限制',
 			_ => null,
 		} ?? switch (path) {
+			'contextBudgetHint' => '留空跟随助手档案 / 全局设置，0 表示不限制',
 			'profileMemoryEntries' => '记忆条目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暂无记忆条目',

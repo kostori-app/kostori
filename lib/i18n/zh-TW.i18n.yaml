@@ -921,6 +921,7 @@ invalidPage: 無效頁碼
 unknownError: 未知錯誤
 loadPageAndLoadNextCantBeNull: loadPage and loadNext can't be null at the same time
 disableLengthLimitation: 停用長度限制
+disableLengthLimitationDesc: 單條日誌放寬到 2 萬字元；記憶體總量與檔案大小仍有限制（避免日誌佔用大量記憶體）
 updateLog: 更新日誌
 liked: 喜歡
 rating: 評分
