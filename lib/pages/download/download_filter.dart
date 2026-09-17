@@ -41,6 +41,7 @@ class DownloadFilterBar extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     this.groupCounts = const {},
+    this.alignment = WrapAlignment.start,
     this.padding = const EdgeInsets.fromLTRB(12, 0, 12, 2),
   });
 
@@ -54,6 +55,9 @@ class DownloadFilterBar extends StatelessWidget {
 
   final String selected;
   final ValueChanged<String> onSelected;
+
+  /// 胶囊在轨道内的对齐（内容短于可用宽度时生效）
+  final WrapAlignment alignment;
   final EdgeInsetsGeometry padding;
 
   /// 分组显示名：子组只显示最后一段；带条目数时追加「 (n)」
@@ -72,7 +76,7 @@ class DownloadFilterBar extends StatelessWidget {
       // 交给 CapsuleOptions(scrollable) 自己滚动：轨道在滚动视图外，
       // 横向滚动时两端的圆角不会被裁成直角
       child: CapsuleOptions(
-        alignment: WrapAlignment.start,
+        alignment: alignment,
         scrollable: true,
         children: [
             for (final b in builtins)
@@ -246,17 +250,16 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
           ),
         ),
         // 中间的分段胶囊：居中
-        Center(
-          child: DownloadFilterBar(
-            builtins: [
-              (key: 'all', label: t.all),
-              (key: 'ungrouped', label: t.ungrouped),
-              (key: 'root', label: t.downloadGroupRoot),
-              (key: 'sub', label: t.downloadSubGroup),
-            ],
-            selected: _filter,
-            onSelected: (v) => setState(() => _filter = v),
-          ),
+        DownloadFilterBar(
+          alignment: WrapAlignment.center,
+          builtins: [
+            (key: 'all', label: t.all),
+            (key: 'ungrouped', label: t.ungrouped),
+            (key: 'root', label: t.downloadGroupRoot),
+            (key: 'sub', label: t.downloadSubGroup),
+          ],
+          selected: _filter,
+          onSelected: (v) => setState(() => _filter = v),
         ),
         const Divider(height: 1),
         Expanded(child: _buildList(cs, groups)),
