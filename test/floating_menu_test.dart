@@ -36,9 +36,45 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    // 紧凑尺寸（默认 FAB 为 56；mini 后视觉 40、点击区 48）
-    final size = tester.getSize(find.byType(FloatingActionButton).first);
-    expect(size.width, lessThan(56));
-    expect(size.height, lessThan(56));
+    // 磨砂玻璃（BlurEffect → BackdropFilter）+ 紧凑 40 圆形
+    expect(find.byType(BackdropFilter), findsWidgets);
+    final size = tester.getSize(find.byType(BackdropFilter).first);
+    expect(size.width, 40);
+    expect(size.height, 40);
+  });
+
+  testWidgets('展开后的子按钮同样是磨砂玻璃且不溢出', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GridSpeedDial(
+              frosted: true,
+              mini: true,
+              isOpenOnStart: true,
+              buttonSize: const Size(40, 40),
+              childrenButtonSize: const Size(40, 40),
+              icon: Icons.menu,
+              activeIcon: Icons.close,
+              childrens: [
+                [
+                  SpeedDialChild(child: const Icon(Icons.refresh)),
+                  SpeedDialChild(child: const Icon(Icons.delete_outline)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    // 根按钮 + 2 个子按钮
+    expect(find.byType(BackdropFilter), findsNWidgets(3));
+    expect(
+      tester.getSize(find.byType(BackdropFilter).last),
+      const Size(40, 40),
+    );
   });
 }

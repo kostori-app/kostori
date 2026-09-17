@@ -7,7 +7,66 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kostori/components/components.dart' show BlurEffect;
 import 'package:kostori/foundation/app.dart';
+
+/// 磨砂玻璃圆形按钮：模糊背景 + 半透明底色 + 细描边（圆角/圆形两种尺寸通用）。
+class _FrostedCircleButton extends StatelessWidget {
+  const _FrostedCircleButton({
+    super.key,
+    required this.size,
+    this.tint,
+    this.foregroundColor,
+    this.tooltip,
+    this.onTap,
+    this.onLongPress,
+    this.child,
+  });
+
+  final double size;
+  final Color? tint;
+  final Color? foregroundColor;
+  final String? tooltip;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final radius = size / 2;
+    final border = (dark ? Colors.white : Colors.black).withValues(alpha: 0.1);
+    final fg = foregroundColor ?? cs.onSurfaceVariant;
+
+    final button = SizedBox(
+      width: size,
+      height: size,
+      child: BlurEffect(
+        blur: 16,
+        borderRadius: BorderRadius.circular(radius),
+        child: Material(
+          color: (tint ?? cs.surface).withValues(alpha: dark ? 0.45 : 0.6),
+          shape: CircleBorder(side: BorderSide(color: border, width: 0.8)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            onLongPress: onLongPress,
+            child: IconTheme.merge(
+              data: IconThemeData(color: fg),
+              child: Center(child: child),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return tooltip == null || tooltip!.isEmpty
+        ? button
+        : Tooltip(message: tooltip!, child: button);
+  }
+}
 
 class AnimatedChild extends AnimatedWidget {
   final int? index;
@@ -29,6 +88,9 @@ class AnimatedChild extends AnimatedWidget {
   final bool useColumn;
   final bool switchLabelPosition;
   final EdgeInsets? margin;
+
+  /// 磨砂玻璃外观（替代 FloatingActionButton）
+  final bool frosted;
 
   final EdgeInsets childMargin;
   final EdgeInsets childPadding;
@@ -53,6 +115,7 @@ class AnimatedChild extends AnimatedWidget {
     this.toggleChildren,
     this.shape,
     this.heroTag,
+    this.frosted = false,
     required this.childMargin,
     required this.childPadding,
   }) : super(listenable: animation);
@@ -83,18 +146,28 @@ class AnimatedChild extends AnimatedWidget {
 
     Widget button = ScaleTransition(
       scale: animation,
-      child: FloatingActionButton(
-        key: btnKey,
-        heroTag: heroTag,
-        onPressed: performAction,
-        backgroundColor:
-            backgroundColor ?? (dark ? Colors.grey[800] : Colors.grey[50]),
-        foregroundColor:
-            foregroundColor ?? (dark ? Colors.white : Colors.black),
-        elevation: elevation ?? 6.0,
-        shape: shape,
-        child: child,
-      ),
+      child: frosted
+          ? _FrostedCircleButton(
+              key: btnKey,
+              size: buttonSize.height,
+              tint: backgroundColor,
+              foregroundColor:
+                  foregroundColor ?? (dark ? Colors.white : Colors.black),
+              onTap: performAction,
+              child: child,
+            )
+          : FloatingActionButton(
+              key: btnKey,
+              heroTag: heroTag,
+              onPressed: performAction,
+              backgroundColor:
+                  backgroundColor ?? (dark ? Colors.grey[800] : Colors.grey[50]),
+              foregroundColor:
+                  foregroundColor ?? (dark ? Colors.white : Colors.black),
+              elevation: elevation ?? 6.0,
+              shape: shape,
+              child: child,
+            ),
     );
 
     List<Widget> children = [
@@ -111,7 +184,8 @@ class AnimatedChild extends AnimatedWidget {
         ),
       if (child != null)
         Container(
-          padding: childPadding,
+          // 磨砂按钮本身是固定尺寸的圆形，不能再被内边距挤压
+          padding: frosted ? EdgeInsets.zero : childPadding,
           height: buttonSize.height,
           width: buttonSize.width,
           child: (onLongPress == null)
@@ -182,6 +256,9 @@ class AnimatedFloatingButton extends StatefulWidget {
   final bool useInkWell;
   final bool mini;
 
+  /// 磨砂玻璃外观（替代 FloatingActionButton）
+  final bool frosted;
+
   const AnimatedFloatingButton({
     super.key,
     this.visible = true,
@@ -200,6 +277,7 @@ class AnimatedFloatingButton extends StatefulWidget {
     this.shape = const CircleBorder(),
     this.curve = Curves.fastOutSlowIn,
     this.onLongPress,
+    this.frosted = false,
   });
 
   @override
@@ -222,7 +300,17 @@ class _AnimatedFloatingButtonState extends State<AnimatedFloatingButton>
             child: FittedBox(
               child: GestureDetector(
                 onLongPress: widget.onLongPress,
-                child: widget.label != null
+                child: widget.frosted && widget.label == null
+                    ? _FrostedCircleButton(
+                        size: widget.mini ? 40 : widget.size.height,
+                        tint: widget.backgroundColor,
+                        foregroundColor: widget.foregroundColor,
+                        tooltip: widget.tooltip,
+                        onTap: widget.callback,
+                        onLongPress: widget.onLongPress,
+                        child: widget.visible ? widget.child : null,
+                      )
+                    : widget.label != null
                     ? FloatingActionButton.extended(
                         icon: widget.visible ? widget.child : null,
                         label: widget.visible
@@ -481,6 +569,9 @@ class GridSpeedDial extends StatefulWidget {
   final Curve? animationCurve;
   final bool mini;
 
+  /// 磨砂玻璃外观（按钮与子按钮都用模糊玻璃底）
+  final bool frosted;
+
   const GridSpeedDial({
     super.key,
     this.childrens = const [],
@@ -531,6 +622,7 @@ class GridSpeedDial extends StatefulWidget {
     this.spaceBetweenChildren,
     this.spacing,
     this.animationCurve,
+    this.frosted = false,
   });
 
   @override
@@ -787,6 +879,7 @@ class _GridSpeedDialState extends State<GridSpeedDial>
           label: widget.label != null ? label : null,
           heroTag: widget.heroTag,
           shape: widget.shape,
+          frosted: widget.frosted,
           child: child,
         ),
       ),
@@ -867,6 +960,7 @@ class _ChildrensOverlay extends StatelessWidget {
           foregroundColor: child.foregroundColor,
           elevation: child.elevation,
           buttonSize: widget.childrenButtonSize,
+          frosted: widget.frosted,
           labelWidget: child.labelWidget,
           onTap: child.onTap,
           onLongPress: child.onLongPress,
@@ -920,6 +1014,7 @@ class _ChildrensOverlay extends StatelessWidget {
             foregroundColor: child.foregroundColor,
             elevation: child.elevation,
             buttonSize: widget.childrenButtonSize,
+            frosted: widget.frosted,
             labelWidget: child.labelWidget,
             onTap: child.onTap,
             onLongPress: child.onLongPress,

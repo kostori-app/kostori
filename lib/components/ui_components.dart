@@ -150,14 +150,13 @@ class FloatingMenuState extends State<FloatingMenu>
               activeIcon: Icons.close,
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              // 紧凑尺寸 + 项目风格：低阴影、圆角胶囊 + 更小的图标
+              // 紧凑圆形 + 磨砂玻璃（effects.dart 的 BlurEffect）
+              frosted: true,
               mini: true,
-              elevation: 2,
+              elevation: 0,
               buttonSize: const Size(40, 40),
               childrenButtonSize: const Size(40, 40),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: const CircleBorder(),
               iconTheme: const IconThemeData(size: 20),
               animatedIconTheme: const IconThemeData(size: 20),
               spacing: 6,
