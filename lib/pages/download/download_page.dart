@@ -1120,6 +1120,13 @@ class _DownloadTile extends StatelessWidget {
             },
           ),
         IconButton(
+          tooltip: t.downloadViewHeaders,
+          visualDensity: VisualDensity.compact,
+          iconSize: 20,
+          icon: const Icon(Icons.receipt_long_outlined),
+          onPressed: () => _showHeaders(context),
+        ),
+        IconButton(
           tooltip: t.delete,
           visualDensity: VisualDensity.compact,
           iconSize: 20,
@@ -1127,6 +1134,41 @@ class _DownloadTile extends StatelessWidget {
           onPressed: () => DownloadManager.instance.cancel(task.id),
         ),
       ],
+    );
+  }
+
+  /// 查看该下载任务的请求地址与请求头（排查 403/410、鉴权失败）
+  void _showHeaders(BuildContext context) {
+    final headers = task.headers;
+    final buf = StringBuffer('URL: ${task.url}\n');
+    if (headers.isEmpty) {
+      buf.write('\n${t.downloadNoHeaders}');
+    } else {
+      buf.write('\n');
+      for (final e in headers.entries) {
+        buf.write('${e.key}: ${e.value}\n');
+      }
+    }
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: '${t.downloadViewHeaders} · ${task.title}',
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 360),
+          child: SingleChildScrollView(
+            child: SelectableText(
+              buf.toString(),
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(t.close),
+          ),
+        ],
+      ),
     );
   }
 

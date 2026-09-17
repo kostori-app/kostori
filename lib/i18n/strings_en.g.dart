@@ -644,6 +644,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Downloaded'
 	String get downloadDownloaded => 'Downloaded';
 
+	/// en: 'View request headers'
+	String get downloadViewHeaders => 'View request headers';
+
+	/// en: '(no extra headers)'
+	String get downloadNoHeaders => '(no extra headers)';
+
 	/// en: 'Download Selected'
 	String get downloadSelected => 'Download Selected';
 
@@ -8910,6 +8916,8 @@ extension on Translations {
 			'downloadAll' => 'Download All',
 			'downloadNotDownloaded' => 'Not downloaded',
 			'downloadDownloaded' => 'Downloaded',
+			'downloadViewHeaders' => 'View request headers',
+			'downloadNoHeaders' => '(no extra headers)',
 			'downloadSelected' => 'Download Selected',
 			'download' => 'Download',
 			'downloading' => 'Downloading',
@@ -9219,10 +9227,10 @@ extension on Translations {
 			'viewOnGithub' => 'View on GitHub',
 			'noProxyOverrides' => 'No Proxy Overrides',
 			'save' => 'Save',
-			'mirror' => 'Mirror',
-			'result' => 'Result',
 			_ => null,
 		} ?? switch (path) {
+			'mirror' => 'Mirror',
+			'result' => 'Result',
 			'all' => 'All',
 			'cloudflareVerificationRequired' => 'Cloudflare verification required',
 			'reloadConfigs' => 'Reload Configs',
@@ -9733,10 +9741,10 @@ extension on Translations {
 			'yesterday' => 'Yesterday',
 			'last3Days' => 'Last 3 Days',
 			'last7Days' => 'Last 7 Days',
-			'last30Days' => 'Last 30 Days',
-			'last3Months' => 'Last 3 Months',
 			_ => null,
 		} ?? switch (path) {
+			'last30Days' => 'Last 30 Days',
+			'last3Months' => 'Last 3 Months',
 			'last6Months' => 'Last 6 Months',
 			'thisYear' => 'This Year',
 			'older' => 'Older',
@@ -10247,10 +10255,10 @@ extension on Translations {
 			'areYouSureYouWantToDeleteGeneric' => 'Are you sure you want to delete',
 			'baseUrl' => 'Base URL',
 			'optionalField' => 'Optional',
-			'model' => 'Model',
-			'tokens' => 'tokens',
 			_ => null,
 		} ?? switch (path) {
+			'model' => 'Model',
+			'tokens' => 'tokens',
 			'addModel' => 'Add Model',
 			'modelId' => 'Model ID',
 			'displayName' => 'Display Name',
@@ -10761,10 +10769,10 @@ extension on Translations {
 			'commonAdUrlPattern' => 'Common Ad URL Pattern',
 			'keywordMatch' => 'Keyword Match',
 			'keywordHint' => 'Substring, e.g. advert or adservice',
-			'commonAdKeyword' => 'Common Ad Keyword',
-			'videoDetails' => 'Video Details',
 			_ => null,
 		} ?? switch (path) {
+			'commonAdKeyword' => 'Common Ad Keyword',
+			'videoDetails' => 'Video Details',
 			'synopsis' => 'Synopsis',
 			'currentEpisode' => 'Current Episode',
 			'playbackRoute' => 'Playback Route',
@@ -11275,10 +11283,10 @@ extension on Translations {
 			'profileMemoryAdd' => 'New memory entry',
 			'profileCopy' => 'Duplicate',
 			'profileExport' => 'Export',
-			'profileImport' => 'Import',
-			'profileExported' => 'Exported to clipboard',
 			_ => null,
 		} ?? switch (path) {
+			'profileImport' => 'Import',
+			'profileExported' => 'Exported to clipboard',
 			'profileImportFailed' => 'Import failed',
 			'extensionManagement' => 'Extension Management',
 			'extensionManagementHint' => 'Auxiliary task models, role management, MCP servers and skills',

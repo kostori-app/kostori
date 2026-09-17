@@ -232,6 +232,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get downloadAll => '下載全部';
 	@override String get downloadNotDownloaded => '未下載';
 	@override String get downloadDownloaded => '已下載';
+	@override String get downloadViewHeaders => '檢視請求標頭';
+	@override String get downloadNoHeaders => '（無額外請求標頭）';
 	@override String get downloadSelected => '下載選中';
 	@override String get download => '下載';
 	@override String get downloading => '下載中';
@@ -3140,6 +3142,8 @@ extension on TranslationsZhTw {
 			'downloadAll' => '下載全部',
 			'downloadNotDownloaded' => '未下載',
 			'downloadDownloaded' => '已下載',
+			'downloadViewHeaders' => '檢視請求標頭',
+			'downloadNoHeaders' => '（無額外請求標頭）',
 			'downloadSelected' => '下載選中',
 			'download' => '下載',
 			'downloading' => '下載中',
@@ -3457,10 +3461,10 @@ extension on TranslationsZhTw {
 			'invalidUrlConfig' => '無效的 URL 設定',
 			'inconsistentVersions' => '版本不一致',
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
-			'checkUpdateFailed' => '檢查更新失敗...',
-			'downloadFailed' => '下載失敗',
 			_ => null,
 		} ?? switch (path) {
+			'checkUpdateFailed' => '檢查更新失敗...',
+			'downloadFailed' => '下載失敗',
 			'failedToCheckTheHashValuePleaseTryAgain' => '檢查雜湊值失敗，請重試',
 			'english' => '英語',
 			'dynamicColor' => '動態顏色',
@@ -3971,10 +3975,10 @@ extension on TranslationsZhTw {
 			'yesterday' => '昨天',
 			'last3Days' => '最近 3 天',
 			'last7Days' => '最近 7 天',
-			'last30Days' => '最近 30 天',
-			'last3Months' => '最近 3 個月',
 			_ => null,
 		} ?? switch (path) {
+			'last30Days' => '最近 30 天',
+			'last3Months' => '最近 3 個月',
 			'last6Months' => '最近 6 個月',
 			'thisYear' => '今年',
 			'older' => '更早',
@@ -4485,10 +4489,10 @@ extension on TranslationsZhTw {
 			'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
 			'baseUrl' => '基礎 URL',
 			'optionalField' => '選填',
-			'model' => '模型',
-			'tokens' => 'tokens',
 			_ => null,
 		} ?? switch (path) {
+			'model' => '模型',
+			'tokens' => 'tokens',
 			'addModel' => '添加模型',
 			'modelId' => '模型 ID',
 			'displayName' => '顯示名稱',
@@ -4999,10 +5003,10 @@ extension on TranslationsZhTw {
 			'ultraShortSegment' => '極短分片',
 			'commonAdUrlPattern' => '常見廣告 URL 特徵',
 			'keywordMatch' => '關鍵字比對',
-			'keywordHint' => '子字串，如 advert 或 adservice',
-			'commonAdKeyword' => '常見廣告關鍵字',
 			_ => null,
 		} ?? switch (path) {
+			'keywordHint' => '子字串，如 advert 或 adservice',
+			'commonAdKeyword' => '常見廣告關鍵字',
 			'videoDetails' => '影片詳情',
 			'synopsis' => '簡介',
 			'currentEpisode' => '目前集數',
@@ -5513,10 +5517,10 @@ extension on TranslationsZhTw {
 			'profileCopy' => '複製',
 			'profileExport' => '匯出',
 			'profileImport' => '匯入',
-			'profileExported' => '已匯出到剪貼簿',
-			'profileImportFailed' => '匯入失敗',
 			_ => null,
 		} ?? switch (path) {
+			'profileExported' => '已匯出到剪貼簿',
+			'profileImportFailed' => '匯入失敗',
 			'extensionManagement' => '擴充管理設定',
 			'extensionManagementHint' => '輔助任務模型、角色管理、MCP 伺服器與技能的統一入口',
 			'roleManagement' => '角色管理',

@@ -203,6 +203,8 @@ doNotReportAnyIssuesRelatedToSourcesToAppRepo: Do not report any issues related 
 downloadAll: Download All
 downloadNotDownloaded: Not downloaded
 downloadDownloaded: Downloaded
+downloadViewHeaders: View request headers
+downloadNoHeaders: (no extra headers)
 downloadSelected: Download Selected
 download: Download
 downloading: Downloading

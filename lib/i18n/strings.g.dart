@@ -4,9 +4,9 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 3
-/// Strings: 8636 (2878 per locale)
+/// Strings: 8642 (2880 per locale)
 ///
-/// Built on 2026-09-16 at 21:20 UTC
+/// Built on 2026-09-17 at 09:31 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint, unused_import

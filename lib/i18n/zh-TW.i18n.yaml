@@ -191,6 +191,8 @@ doNotReportAnyIssuesRelatedToSourcesToAppRepo: 請勿向主儲存庫報告任何
 downloadAll: 下載全部
 downloadNotDownloaded: 未下載
 downloadDownloaded: 已下載
+downloadViewHeaders: 檢視請求標頭
+downloadNoHeaders: （無額外請求標頭）
 downloadSelected: 下載選中
 download: 下載
 downloading: 下載中

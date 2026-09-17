@@ -233,6 +233,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get downloadAll => '下载全部';
 	@override String get downloadNotDownloaded => '未下载';
 	@override String get downloadDownloaded => '已下载';
+	@override String get downloadViewHeaders => '查看请求头';
+	@override String get downloadNoHeaders => '（无额外请求头）';
 	@override String get downloadSelected => '下载选中项';
 	@override String get download => '下载';
 	@override String get downloading => '下载中';
@@ -3142,6 +3144,8 @@ extension on TranslationsZhCn {
 			'downloadAll' => '下载全部',
 			'downloadNotDownloaded' => '未下载',
 			'downloadDownloaded' => '已下载',
+			'downloadViewHeaders' => '查看请求头',
+			'downloadNoHeaders' => '（无额外请求头）',
 			'downloadSelected' => '下载选中项',
 			'download' => '下载',
 			'downloading' => '下载中',
@@ -3458,10 +3462,10 @@ extension on TranslationsZhCn {
 			'reloadConfigs' => '重新加载配置',
 			'invalidUrlConfig' => '无效的 URL 配置',
 			'inconsistentVersions' => '版本不一致',
-			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
-			'checkUpdateFailed' => '检查更新失败...',
 			_ => null,
 		} ?? switch (path) {
+			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
+			'checkUpdateFailed' => '检查更新失败...',
 			'downloadFailed' => '下载失败',
 			'failedToCheckTheHashValuePleaseTryAgain' => '哈希值检查失败，请重试',
 			'english' => '英语',
@@ -3972,10 +3976,10 @@ extension on TranslationsZhCn {
 			'last3Days' => '最近 3 天',
 			'last7Days' => '最近 7 天',
 			'last30Days' => '最近 30 天',
-			'last3Months' => '最近 3 个月',
-			'last6Months' => '最近 6 个月',
 			_ => null,
 		} ?? switch (path) {
+			'last3Months' => '最近 3 个月',
+			'last6Months' => '最近 6 个月',
 			'thisYear' => '今年',
 			'older' => '更久以前',
 			'markTheSelectedFavoritesAs' => '将选中的收藏标记为',
@@ -4486,10 +4490,10 @@ extension on TranslationsZhCn {
 			'baseUrl' => '基础 URL',
 			'optionalField' => '可选',
 			'model' => '模型',
-			'tokens' => 'tokens',
-			'addModel' => '添加模型',
 			_ => null,
 		} ?? switch (path) {
+			'tokens' => 'tokens',
+			'addModel' => '添加模型',
 			'modelId' => '模型 ID',
 			'displayName' => '显示名称',
 			'noModelsAddOneAbove' => '暂无模型，请在上方添加。',
@@ -5000,10 +5004,10 @@ extension on TranslationsZhCn {
 			'cueAdTag' => 'CUE 广告标记',
 			'ultraShortSegment' => '极短分片',
 			'commonAdUrlPattern' => '常见广告 URL 特征',
-			'keywordMatch' => '关键字匹配',
-			'keywordHint' => '子串，如 advert 或 adservice',
 			_ => null,
 		} ?? switch (path) {
+			'keywordMatch' => '关键字匹配',
+			'keywordHint' => '子串，如 advert 或 adservice',
 			'commonAdKeyword' => '常见广告关键字',
 			'videoDetails' => '视频详情',
 			'synopsis' => '简介',
@@ -5514,10 +5518,10 @@ extension on TranslationsZhCn {
 			'profileMemoryAdd' => '新增记忆',
 			'profileCopy' => '复制',
 			'profileExport' => '导出',
-			'profileImport' => '导入',
-			'profileExported' => '已导出到剪贴板',
 			_ => null,
 		} ?? switch (path) {
+			'profileImport' => '导入',
+			'profileExported' => '已导出到剪贴板',
 			'profileImportFailed' => '导入失败',
 			'extensionManagement' => '扩展管理设置',
 			'extensionManagementHint' => '辅助任务模型、角色管理、MCP 服务器与技能的统一入口',
