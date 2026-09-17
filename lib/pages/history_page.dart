@@ -10,7 +10,6 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
@@ -442,9 +441,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
       controller: scrollController,
       slivers: [
         SliverAppbar(
-          style: context.width < changePoint
-              ? AppbarStyle.shadow
-              : AppbarStyle.blur,
+          style: AppbarStyle.blur,
           leading: multiSelectMode
               ? Tooltip(
                   message: t.cancel,
