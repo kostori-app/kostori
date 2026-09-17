@@ -81,8 +81,14 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           return end.isAfter(DateTime.now().subtract(const Duration(days: 60)));
         })
         .map((e) => e.key);
+    // 曾补全失败/脏数据（日期对不上、拿不到条目）的 id 记下来，不再反复请求
+    final skipRaw = appdata.implicitData['bangumiCalendarSkipIds'];
+    final skipIds = <int>{
+      if (skipRaw is List) ...skipRaw.whereType<num>().map((e) => e.toInt()),
+    };
+    final newSkipIds = <int>{};
     final missingIds = recentIds
-        .where((id) => !existingIds.contains(id))
+        .where((id) => !existingIds.contains(id) && !skipIds.contains(id))
         .toList();
 
     final supplementToCache = <BangumiItem>[];
@@ -101,7 +107,10 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           final basic = supplement[id]!;
           final info = fetched[j];
           // 拿不到 bgm 条目信息时不再造“占位卡”（无封面/评分，且可能是脏数据）
-          if (info == null) continue;
+          if (info == null) {
+            newSkipIds.add(id);
+            continue;
+          }
           final begin = DateTime.tryParse(basic.begin ?? '');
           // bangumi-data 的 begin 有时与实际档期不符（如把 2023 旧番标成 2026）。
           // 与 bgm 条目自身首播日相差过大时视为脏数据，跳过补全。
@@ -109,8 +118,12 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           if (begin != null &&
               infoAir != null &&
               begin.difference(infoAir).inDays.abs() > 180) {
+            // 跳过并记住：否则下次还会把它当"缺失条目"再请求一遍
+            newSkipIds.add(id);
             continue;
           }
+          // 补全成功：解除历史跳过
+          skipIds.remove(id);
           final item = begin != null
               ? info.copyWith(airTime: basic.begin, airWeekday: begin.weekday)
               : info;
@@ -124,6 +137,10 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
       } catch (e, s) {
         Log.warning('补全日历缓存', '$e\n$s');
       }
+      // 持久化跳过集合（成功解除的已从 skipIds 移除）
+      skipIds.addAll(newSkipIds);
+      appdata.implicitData['bangumiCalendarSkipIds'] = skipIds.toList();
+      appdata.writeImplicitData();
     }
 
     final allIds = allItems.map((item) => item.id.toString()).toList();

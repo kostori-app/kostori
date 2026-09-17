@@ -698,6 +698,9 @@ class Bangumi {
         NetLog.info('checkBangumiData', '${jsonData['tag_name']}');
 
         await getBangumiData();
+        // bangumi-data 更新后，之前因脏数据被跳过的补全 id 可能有救，清空重试
+        appdata.implicitData['bangumiCalendarSkipIds'] = <int>[];
+        appdata.writeImplicitData();
         App.rootContext.showMessage(
           message:
               'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}',
