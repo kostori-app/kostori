@@ -1357,6 +1357,20 @@ class DownloadManager extends ChangeNotifier {
 
   static bool hasSubGroups(String parent) => subGroupsOf(parent).isNotEmpty;
 
+  /// 层级顺序的扁平列表：每个顶层分组紧跟其直接子组（登记顺序），
+  /// 供分组列表/选择器统一展示（父组始终在子组上方）。
+  static List<String> hierarchicalGroups() {
+    final out = <String>[];
+    for (final g in rootGroups()) {
+      out.add(g);
+      out.addAll(subGroupsOf(g));
+    }
+    for (final g in groups()) {
+      if (!out.contains(g)) out.add(g);
+    }
+    return out;
+  }
+
   /// 分组名的最后一段（子组对外的显示名）
   static String leafOf(String name) {
     final i = name.lastIndexOf(groupSeparator);

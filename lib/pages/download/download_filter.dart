@@ -197,7 +197,8 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
 
   List<String> get _groups {
     if (_filter == 'ungrouped') return const [];
-    final all = DownloadManager.groups();
+    // 层级顺序：父组紧跟其子组（避免子组跑到别的父组后面）
+    final all = DownloadManager.hierarchicalGroups();
     final k = _keyword.trim().toLowerCase();
     return all.where((g) {
       final isSub = DownloadManager.isSubGroup(g);
@@ -244,15 +245,18 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
             ),
           ),
         ),
-        DownloadFilterBar(
-          builtins: [
-            (key: 'all', label: t.all),
-            (key: 'ungrouped', label: t.ungrouped),
-            (key: 'root', label: t.downloadGroupRoot),
-            (key: 'sub', label: t.downloadSubGroup),
-          ],
-          selected: _filter,
-          onSelected: (v) => setState(() => _filter = v),
+        // 中间的分段胶囊：居中
+        Center(
+          child: DownloadFilterBar(
+            builtins: [
+              (key: 'all', label: t.all),
+              (key: 'ungrouped', label: t.ungrouped),
+              (key: 'root', label: t.downloadGroupRoot),
+              (key: 'sub', label: t.downloadSubGroup),
+            ],
+            selected: _filter,
+            onSelected: (v) => setState(() => _filter = v),
+          ),
         ),
         const Divider(height: 1),
         Expanded(child: _buildList(cs, groups)),
@@ -352,18 +356,7 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
     _groups = _flatten();
   }
 
-  List<String> _flatten() {
-    final out = <String>[];
-    for (final g in DownloadManager.rootGroups()) {
-      out.add(g);
-      out.addAll(DownloadManager.subGroupsOf(g));
-    }
-    // 兜底：登记顺序异常时也把漏掉的组补上
-    for (final g in DownloadManager.groups()) {
-      if (!out.contains(g)) out.add(g);
-    }
-    return out;
-  }
+  List<String> _flatten() => DownloadManager.hierarchicalGroups();
 
   void _refresh() {
     setState(() => _groups = _flatten());
@@ -549,6 +542,7 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
             )
           : ReorderableListView.builder(
               scrollController: sc,
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
               buildDefaultDragHandles: false,
               itemCount: _groups.length,
               onReorderItem: (oldIndex, newIndex) {
@@ -567,23 +561,22 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
     final name = _groups[i];
     final isSub = DownloadManager.isSubGroup(name);
     final count = widget.items.where((e) => e.group == name).length;
-    return ListTile(
+    // 卡片样式：点击卡片 = 分配条目，右侧菜单为其它操作
+    return SelectCard(
       key: ValueKey(name),
-      dense: true,
-      contentPadding: EdgeInsets.only(left: isSub ? 36 : 12, right: 4),
+      selected: false,
+      title: DownloadManager.leafOf(name),
+      subtitle: isSub
+          ? '${t.itemsCount(n: count)} · '
+                '${name.substring(0, name.lastIndexOf(DownloadManager.groupSeparator))}'
+          : t.itemsCount(n: count),
       leading: Icon(
         isSub ? Icons.subdirectory_arrow_right : Icons.create_new_folder_outlined,
+        size: 20,
         color: cs.primary,
       ),
-      title: Text(DownloadManager.leafOf(name)),
-      subtitle: Text(
-        isSub
-            ? '${t.itemsCount(n: count)} · '
-                  '${name.substring(0, name.lastIndexOf(DownloadManager.groupSeparator))}'
-            : t.itemsCount(n: count),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      padding: EdgeInsets.only(left: isSub ? 18 : 0, bottom: 6),
+      onChanged: (_) => _assign(name),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
