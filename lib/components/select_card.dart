@@ -11,6 +11,7 @@ class SelectCard extends StatelessWidget {
     this.leading,
     this.trailing,
     this.padding = const EdgeInsets.only(bottom: 8),
+    this.subtitleMaxLines = 1,
   });
 
   final String title;
@@ -20,6 +21,9 @@ class SelectCard extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final EdgeInsetsGeometry padding;
+
+  /// 副标题最多显示行数
+  final int subtitleMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +47,7 @@ class SelectCard extends StatelessWidget {
               ? null
               : Text(
                   subtitle!,
-                  maxLines: 1,
+                  maxLines: subtitleMaxLines,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 11),
                 ),

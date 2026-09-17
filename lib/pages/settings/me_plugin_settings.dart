@@ -8,9 +8,13 @@ class PluginSettings extends StatefulWidget {
   State<PluginSettings> createState() => _PluginSettingsState();
 }
 
-class _PluginSettingsState extends State<PluginSettings> {
+class _PluginSettingsState extends State<PluginSettings> with RouteAware {
   late final TextEditingController _urlCtrl;
   final TextEditingController _searchCtrl = TextEditingController();
+
+  /// 搜索框焦点：进入子页面 / 返回本页时主动收起，避免移动端弹输入法
+  final _searchFocus = FocusNode();
+
   bool _dragOver = false;
   String _search = '';
   String _loginFilter = 'all';
@@ -129,11 +133,27 @@ class _PluginSettingsState extends State<PluginSettings> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) App.routeObserver.subscribe(this, route);
+  }
+
+  @override
   void dispose() {
+    App.routeObserver.unsubscribe(this);
+    _searchFocus.dispose();
     _urlCtrl.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
+
+  /// 进入子页面或从子页面返回时都不保留搜索框焦点
+  @override
+  void didPushNext() => _searchFocus.unfocus();
+
+  @override
+  void didPopNext() => _searchFocus.unfocus();
 
   Future<void> _reload() async {
     await MePagePluginManager().reload();
@@ -365,6 +385,7 @@ const plugin = {
                     Expanded(
                       child: TextField(
                         controller: _searchCtrl,
+                        focusNode: _searchFocus,
                         decoration: InputDecoration(
                           hintText: t.search,
                           prefixIcon: const Icon(Icons.search, size: 20),

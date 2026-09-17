@@ -171,7 +171,7 @@ class _Body extends StatefulWidget {
   State<_Body> createState() => _BodyState();
 }
 
-class _BodyState extends State<_Body> {
+class _BodyState extends State<_Body> with RouteAware {
   var url = "";
 
   bool _isDragging = false;
@@ -180,6 +180,9 @@ class _BodyState extends State<_Body> {
   static const _filterKey = 'anime_source_filter';
 
   final _searchCtrl = TextEditingController();
+
+  /// 搜索框焦点：进入子页面 / 返回本页时主动收起，避免移动端弹输入法
+  final _searchFocus = FocusNode();
 
   /// 是否番组：all / yes / no
   String _isBangumiFilter = 'all';
@@ -262,11 +265,27 @@ class _BodyState extends State<_Body> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) App.routeObserver.subscribe(this, route);
+  }
+
+  @override
   void dispose() {
+    App.routeObserver.unsubscribe(this);
+    _searchFocus.dispose();
     _searchCtrl.dispose();
     AnimeSourceManager().removeListener(updateUI);
     super.dispose();
   }
+
+  /// 进入子页面或从子页面返回时都不保留搜索框焦点
+  @override
+  void didPushNext() => _searchFocus.unfocus();
+
+  @override
+  void didPopNext() => _searchFocus.unfocus();
 
   @override
   Widget build(BuildContext context) {
@@ -331,6 +350,7 @@ class _BodyState extends State<_Body> {
               Expanded(
                 child: TextField(
                   controller: _searchCtrl,
+                  focusNode: _searchFocus,
                   decoration: InputDecoration(
                     hintText: t.search,
                     prefixIcon: const Icon(Icons.search, size: 20),

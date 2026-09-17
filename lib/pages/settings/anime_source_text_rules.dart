@@ -453,33 +453,26 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
             )
           else
             for (final rule in rules)
-              ListTile(
-                leading: Checkbox(
-                  value: _selected.contains(rule.id),
-                  onChanged: (v) {
-                    setState(() {
-                      if (v == true) {
-                        if (!_selected.contains(rule.id)) {
-                          _selected.add(rule.id);
-                        }
-                      } else {
-                        _selected.remove(rule.id);
-                      }
-                    });
-                    _save();
-                  },
-                ),
-                title: Text(rule.name.isEmpty ? t.textRuleName : rule.name),
-                subtitle: Text(
-                  rule.steps.isEmpty
-                      ? t.textRuleNone
-                      : rule.steps
-                            .map((s) => s.find)
-                            .where((s) => s.isNotEmpty)
-                            .join('  →  '),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              SelectCard(
+                selected: _selected.contains(rule.id),
+                title: rule.name.isEmpty ? t.textRuleName : rule.name,
+                subtitle: rule.steps.isEmpty
+                    ? t.textRuleNone
+                    : rule.steps
+                          .map((s) => s.find)
+                          .where((s) => s.isNotEmpty)
+                          .join('  →  '),
+                subtitleMaxLines: 2,
+                onChanged: (v) {
+                  setState(() {
+                    if (v) {
+                      _selected.add(rule.id);
+                    } else {
+                      _selected.remove(rule.id);
+                    }
+                  });
+                  _save();
+                },
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -503,16 +496,6 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
                     ),
                   ],
                 ),
-                onTap: () {
-                  setState(() {
-                    if (_selected.contains(rule.id)) {
-                      _selected.remove(rule.id);
-                    } else {
-                      _selected.add(rule.id);
-                    }
-                  });
-                  _save();
-                },
               ),
         ],
       ),
