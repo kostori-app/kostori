@@ -1271,6 +1271,13 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   );
                 },
               ),
+        actions: [
+          IconButton(
+            tooltip: t.newConversation,
+            icon: const Icon(Icons.add_comment_outlined),
+            onPressed: _newSession,
+          ),
+        ],
       ),
       body: DropTarget(
         onDragDone: _onDragDone,
@@ -1567,13 +1574,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     _buildThinkingLevelButton(),
                     const SizedBox(width: 6),
                     _buildModelProviderButton(),
-                    const SizedBox(width: 6),
-                    _buildOptionsIcon(
-                      context,
-                      icon: Icons.add_comment_outlined,
-                      tooltip: t.newConversation,
-                      onTap: _newSession,
-                    ),
                   ],
                   trailing: [
                     _buildOptionsIcon(
@@ -1647,8 +1647,8 @@ class _MoreActionTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
-        width: 72,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        width: 76,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHighest.toOpacity(0.5),
           borderRadius: BorderRadius.circular(16),
@@ -1660,8 +1660,10 @@ class _MoreActionTile extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+              // 允许两行，避免"扩展管理设置"被截断成"扩展管理…"
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ],
