@@ -735,7 +735,7 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
                         style: const TextStyle(fontSize: 13),
                       ),
                       const Spacer(),
-                      Switch(
+                      CustomSwitch(
                         value: _steps[i].caseSensitive,
                         onChanged: (v) =>
                             setState(() => _steps[i].caseSensitive = v),
