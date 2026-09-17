@@ -18,9 +18,12 @@ export 'package:dio/dio.dart';
 class MyLogInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    // 请求失败一律记录（错误日志不需要正文），概要模式下也只记一行
     NetLog.error(
       "Network",
-      "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}",
+      NetLog.metaOnly
+          ? '${err.requestOptions.method} ${err.requestOptions.uri} → ${err.response?.statusCode ?? err.type.name}'
+          : "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}",
     );
     switch (err.type) {
       case DioExceptionType.badResponse:
@@ -70,6 +73,33 @@ class MyLogInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
+    if (!NetLog.enabled) {
+      handler.next(response);
+      return;
+    }
+    final startedMs = response.requestOptions.extra['__logStartMs'];
+    final costMs = startedMs is int
+        ? DateTime.now().millisecondsSinceEpoch - startedMs
+        : null;
+    if (NetLog.metaOnly) {
+      // 概要模式：一行记录「状态/大小/耗时」，不含头与正文
+      final len =
+          response.headers.value('content-length') ??
+          (response.data is List<int>
+              ? '${(response.data as List<int>).length}'
+              : '');
+      NetLog.log(
+        (response.statusCode != null && response.statusCode! < 400)
+            ? LogLevel.info
+            : LogLevel.error,
+        '← Network',
+        '${response.statusCode} ${response.realUri}'
+        '${len.isNotEmpty ? ' · $len B' : ''}'
+        '${costMs != null ? ' · ${costMs}ms' : ''}',
+      );
+      handler.next(response);
+      return;
+    }
     var headers = response.headers.map.map(
       (key, value) => MapEntry(
         key.toLowerCase(),
@@ -113,6 +143,18 @@ class MyLogInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // 计时：概要模式用
+    options.extra['__logStartMs'] = DateTime.now().millisecondsSinceEpoch;
+    if (!NetLog.enabled) {
+      handler.next(options);
+      return;
+    }
+    if (NetLog.metaOnly) {
+      // 概要模式：只记一行，不打请求头/正文
+      NetLog.info("→ Network", '${options.method} ${options.uri}');
+      handler.next(options);
+      return;
+    }
     // 请求体同样限长（base64 图片上传等可能很大）
     final rawData = options.data?.toString() ?? '';
     const reqLimit = 16384;

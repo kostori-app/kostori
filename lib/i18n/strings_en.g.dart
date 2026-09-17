@@ -4396,6 +4396,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Network Info'
 	String get networkInfo => 'Network Info';
 
+	/// en: 'Summary only'
+	String get netLogMeta => 'Summary only';
+
+	/// en: 'Full'
+	String get netLogFull => 'Full';
+
+	/// en: 'Summary records method/URL/status/size/time only; Full adds headers and bodies (long ones are truncated).'
+	String get netLogHint => 'Summary records method/URL/status/size/time only; Full adds headers and bodies (long ones are truncated).';
+
 	/// en: 'Hub Info'
 	String get hubInfo => 'Hub Info';
 
@@ -10237,6 +10246,9 @@ extension on Translations {
 			'memes' => 'Memes',
 			'memeSaved' => 'Meme saved',
 			'networkInfo' => 'Network Info',
+			'netLogMeta' => 'Summary only',
+			'netLogFull' => 'Full',
+			'netLogHint' => 'Summary records method/URL/status/size/time only; Full adds headers and bodies (long ones are truncated).',
 			'hubInfo' => 'Hub Info',
 			'statsInfo' => 'Stats Info',
 			'ratingDetails' => 'Rating Details',
@@ -10276,11 +10288,11 @@ extension on Translations {
 			'requiredField' => 'Required',
 			'configKey' => 'Config Key',
 			'memoField' => 'Memo',
+			_ => null,
+		} ?? switch (path) {
 			'valueRange' => 'Value: 0.0 - 1.0',
 			'readOnlySystemPreset' => 'Read-only System Preset',
 			'deleteConfig' => 'Delete Config',
-			_ => null,
-		} ?? switch (path) {
 			'areYouSureYouWantToDeleteGeneric' => 'Are you sure you want to delete',
 			'baseUrl' => 'Base URL',
 			'optionalField' => 'Optional',
@@ -10790,11 +10802,11 @@ extension on Translations {
 			'regexHint' => 'Regex pattern, e.g. preroll|/ads?/',
 			'domainHint' => 'Domains, separated by commas',
 			'durationHint' => 'Seconds, e.g. 4.0',
+			_ => null,
+		} ?? switch (path) {
 			'tagHint' => 'e.g. #EXT-X-CUE-OUT',
 			'cueAdTag' => 'CUE Ad Tag',
 			'ultraShortSegment' => 'Ultra Short Segment',
-			_ => null,
-		} ?? switch (path) {
 			'commonAdUrlPattern' => 'Common Ad URL Pattern',
 			'keywordMatch' => 'Keyword Match',
 			'keywordHint' => 'Substring, e.g. advert or adservice',
@@ -11304,11 +11316,11 @@ extension on Translations {
 			'profileMemoryMaxEntries' => 'Memory entry limit',
 			'profileMemoryContextBudget' => 'Context budget (tokens)',
 			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited',
+			_ => null,
+		} ?? switch (path) {
 			'aiContextBudget' => 'Context budget (tokens)',
 			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',
 			'contextBudget' => 'Context budget (tokens)',
-			_ => null,
-		} ?? switch (path) {
 			'contextBudgetHint' => 'Leave empty to follow the profile / global setting; 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',

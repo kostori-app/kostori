@@ -347,8 +347,25 @@ class NetLog {
   NetLog._();
 
   static const _settingKey = 'enableNetLog';
+  static const _modeKey = 'netLogMode';
 
-  static bool get enabled => appdata.settings[_settingKey] as bool? ?? false;
+  /// 网络日志级别：off（关闭）/ meta（仅概要：方法/地址/状态/耗时/大小）/ full（含请求头与正文，均限长）
+  static String get mode {
+    final v = appdata.implicitData[_modeKey]?.toString();
+    if (v == 'off' || v == 'meta' || v == 'full') return v!;
+    // 兼容旧开关：开启=full，关闭=off
+    return (appdata.settings[_settingKey] as bool? ?? false) ? 'full' : 'off';
+  }
+
+  static set mode(String v) {
+    appdata.implicitData[_modeKey] = v;
+    appdata.writeImplicitData();
+  }
+
+  static bool get enabled => mode != 'off';
+
+  /// 仅记录概要（不打请求头/正文）
+  static bool get metaOnly => mode == 'meta';
 
   static void info(String title, String content) {
     if (!enabled) return;

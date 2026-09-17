@@ -1496,6 +1496,9 @@ declineAndBlock: 拒绝并屏蔽
 memes: 表情包
 memeSaved: 已保存到表情包
 networkInfo: 网络信息
+netLogMeta: 仅概要
+netLogFull: 完整
+netLogHint: 概要只记方法/地址/状态/大小/耗时；完整包含请求头与响应正文（超长会截断）
 hubInfo: Hub 信息
 statsInfo: 统计信息
 ratingDetails: 评分详情

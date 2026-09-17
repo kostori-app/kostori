@@ -1490,6 +1490,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get memes => '表情包';
 	@override String get memeSaved => '已保存到表情包';
 	@override String get networkInfo => '网络信息';
+	@override String get netLogMeta => '仅概要';
+	@override String get netLogFull => '完整';
+	@override String get netLogHint => '概要只记方法/地址/状态/大小/耗时；完整包含请求头与响应正文（超长会截断）';
 	@override String get hubInfo => 'Hub 信息';
 	@override String get statsInfo => '统计信息';
 	@override String get ratingDetails => '评分详情';
@@ -4455,6 +4458,9 @@ extension on TranslationsZhCn {
 			'memes' => '表情包',
 			'memeSaved' => '已保存到表情包',
 			'networkInfo' => '网络信息',
+			'netLogMeta' => '仅概要',
+			'netLogFull' => '完整',
+			'netLogHint' => '概要只记方法/地址/状态/大小/耗时；完整包含请求头与响应正文（超长会截断）',
 			'hubInfo' => 'Hub 信息',
 			'statsInfo' => '统计信息',
 			'ratingDetails' => '评分详情',
@@ -4495,11 +4501,11 @@ extension on TranslationsZhCn {
 			'configKey' => '配置 Key',
 			'memoField' => '备注',
 			'valueRange' => '范围：0.0 - 1.0',
+			_ => null,
+		} ?? switch (path) {
 			'readOnlySystemPreset' => '只读系统预设',
 			'deleteConfig' => '删除配置',
 			'areYouSureYouWantToDeleteGeneric' => '确定要删除吗',
-			_ => null,
-		} ?? switch (path) {
 			'baseUrl' => '基础 URL',
 			'optionalField' => '可选',
 			'model' => '模型',
@@ -5009,11 +5015,11 @@ extension on TranslationsZhCn {
 			'durationFilter' => '时长过滤',
 			'tagMark' => 'Tag 标记',
 			'regexHint' => '正则表达式，如 preroll|/ads?/',
+			_ => null,
+		} ?? switch (path) {
 			'domainHint' => '域名，多个用逗号分隔',
 			'durationHint' => '秒数，如 4.0',
 			'tagHint' => '如',
-			_ => null,
-		} ?? switch (path) {
 			'cueAdTag' => 'CUE 广告标记',
 			'ultraShortSegment' => '极短分片',
 			'commonAdUrlPattern' => '常见广告 URL 特征',
@@ -5523,11 +5529,11 @@ extension on TranslationsZhCn {
 			'profileMemoryMaxEntries' => '记忆条目上限',
 			'profileMemoryContextBudget' => '上下文预算（token）',
 			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制',
+			_ => null,
+		} ?? switch (path) {
 			'aiContextBudget' => '上下文预算（token）',
 			'aiContextBudgetHint' => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制',
 			'contextBudget' => '上下文预算（token）',
-			_ => null,
-		} ?? switch (path) {
 			'contextBudgetHint' => '留空跟随助手档案 / 全局设置，0 表示不限制',
 			'profileMemoryEntries' => '记忆条目',
 			'profileMemoryClear' => '清空',

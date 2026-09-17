@@ -1491,6 +1491,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get memes => '表情包';
 	@override String get memeSaved => '已儲存到表情包';
 	@override String get networkInfo => '網路資訊';
+	@override String get netLogMeta => '僅概要';
+	@override String get netLogFull => '完整';
+	@override String get netLogHint => '概要只記方法/位址/狀態/大小/耗時；完整包含請求標頭與回應內文（過長會截斷）';
 	@override String get hubInfo => 'Hub 資訊';
 	@override String get statsInfo => '統計資訊';
 	@override String get ratingDetails => '評分詳情';
@@ -4455,6 +4458,9 @@ extension on TranslationsZhTw {
 			'memes' => '表情包',
 			'memeSaved' => '已儲存到表情包',
 			'networkInfo' => '網路資訊',
+			'netLogMeta' => '僅概要',
+			'netLogFull' => '完整',
+			'netLogHint' => '概要只記方法/位址/狀態/大小/耗時；完整包含請求標頭與回應內文（過長會截斷）',
 			'hubInfo' => 'Hub 資訊',
 			'statsInfo' => '統計資訊',
 			'ratingDetails' => '評分詳情',
@@ -4494,11 +4500,11 @@ extension on TranslationsZhTw {
 			'requiredField' => '必填',
 			'configKey' => '設定 Key',
 			'memoField' => '備註',
+			_ => null,
+		} ?? switch (path) {
 			'valueRange' => '數值: 0.0 - 1.0',
 			'readOnlySystemPreset' => '唯讀系統預設',
 			'deleteConfig' => '刪除設定',
-			_ => null,
-		} ?? switch (path) {
 			'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
 			'baseUrl' => '基礎 URL',
 			'optionalField' => '選填',
@@ -5008,11 +5014,11 @@ extension on TranslationsZhTw {
 			'tagMark' => 'Tag 標記',
 			'regexHint' => '正則表達式，如 preroll|/ads?/',
 			'domainHint' => '網域，多個用逗號分隔',
+			_ => null,
+		} ?? switch (path) {
 			'durationHint' => '秒數，如 4.0',
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 廣告標記',
-			_ => null,
-		} ?? switch (path) {
 			'ultraShortSegment' => '極短分片',
 			'commonAdUrlPattern' => '常見廣告 URL 特徵',
 			'keywordMatch' => '關鍵字比對',
@@ -5522,11 +5528,11 @@ extension on TranslationsZhTw {
 			'profileMemoryContextBudget' => '上下文預算（token）',
 			'profileMemoryContextBudgetHint' => '由最新訊息往前累加，超出預算的較早訊息不進上下文，改由滾動摘要記憶；留空跟隨全域設定，0 表示不限制',
 			'aiContextBudget' => '上下文預算（token）',
+			_ => null,
+		} ?? switch (path) {
 			'aiContextBudgetHint' => '所有對話與故事共用的預設上下文預算；助手檔案或故事另有設定時以它們為準，0 表示不限制',
 			'contextBudget' => '上下文預算（token）',
 			'contextBudgetHint' => '留空跟隨助手檔案 / 全域設定，0 表示不限制',
-			_ => null,
-		} ?? switch (path) {
 			'profileMemoryEntries' => '記憶條目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暫無記憶條目',

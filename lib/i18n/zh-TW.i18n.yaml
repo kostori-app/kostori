@@ -1501,6 +1501,9 @@ declineAndBlock: 拒絕並封鎖
 memes: 表情包
 memeSaved: 已儲存到表情包
 networkInfo: 網路資訊
+netLogMeta: 僅概要
+netLogFull: 完整
+netLogHint: 概要只記方法/位址/狀態/大小/耗時；完整包含請求標頭與回應內文（過長會截斷）
 hubInfo: Hub 資訊
 statsInfo: 統計資訊
 ratingDetails: 評分詳情

@@ -138,9 +138,41 @@ class _LogSettingsState extends State<LogSettings> {
                   settingKey: "redactSensitiveLogs",
                   dataSource: SwitchDataSource.implicit,
                 ),
-                _SwitchSetting(
-                  title: t.networkInfo,
-                  settingKey: "enableNetLog",
+                // 网络日志：关闭 / 仅概要 / 完整
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t.networkInfo),
+                      const SizedBox(height: 6),
+                      SegmentedButton<String>(
+                        showSelectedIcon: false,
+                        segments: [
+                          ButtonSegment(value: 'off', label: Text(t.close)),
+                          ButtonSegment(
+                            value: 'meta',
+                            label: Text(t.netLogMeta),
+                          ),
+                          ButtonSegment(
+                            value: 'full',
+                            label: Text(t.netLogFull),
+                          ),
+                        ],
+                        selected: {NetLog.mode},
+                        onSelectionChanged: (s) =>
+                            setState(() => NetLog.mode = s.first),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        t.netLogHint,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 _SwitchSetting(title: t.hubInfo, settingKey: "enableHubLog"),
                 _SwitchSetting(
@@ -359,7 +391,11 @@ class _LogsPageState extends State<LogsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final labels = [for (final lvl in levelOrder) lvl.name.toUpperCase()];
+    // 多一个「全部」放最前，避免在 INFO / ERROR 之间来回找同一次请求
+    final labels = [
+      t.all,
+      for (final lvl in levelOrder) lvl.name.toUpperCase(),
+    ];
     if (!_ready) {
       return const Center(child: PolygonRefreshIndicator());
     }
@@ -414,15 +450,12 @@ class _LogsPageState extends State<LogsPage> {
           logsByLevel[log.level]!.add(log);
         }
 
-        return TabBarView(
-          children: levelOrder.map((level) {
-            final logs = logsByLevel[level]!;
+        Widget buildList(List<LogItem> logs, String emptyLabel) {
+          if (logs.isEmpty) {
+            return Center(child: Text(emptyLabel));
+          }
 
-            if (logs.isEmpty) {
-              return Center(child: Text(t.noLogsForL(l: level.name)));
-            }
-
-            return ListView.builder(
+          return ListView.builder(
               reverse: true,
               padding: const EdgeInsets.all(12),
               itemCount: logs.length,
@@ -545,7 +578,14 @@ class _LogsPageState extends State<LogsPage> {
                 );
               },
             );
-          }).toList(),
+        }
+
+        return TabBarView(
+          children: [
+            buildList(snapshot.data ?? const <LogItem>[], t.noData),
+            for (final level in levelOrder)
+              buildList(logsByLevel[level]!, t.noLogsForL(l: level.name)),
+          ],
         );
       },
     );

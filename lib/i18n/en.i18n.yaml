@@ -1501,6 +1501,9 @@ declineAndBlock: Decline & Block
 memes: Memes
 memeSaved: Meme saved
 networkInfo: Network Info
+netLogMeta: Summary only
+netLogFull: Full
+netLogHint: Summary records method/URL/status/size/time only; Full adds headers and bodies (long ones are truncated).
 hubInfo: Hub Info
 statsInfo: Stats Info
 ratingDetails: Rating Details
