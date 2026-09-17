@@ -490,6 +490,7 @@ class CapsuleButton extends StatefulWidget {
     this.trailing,
     this.enabled = true,
     this.isLoading = false,
+    this.flat = false,
     this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   }) : assert(text != null || child != null);
 
@@ -499,6 +500,9 @@ class CapsuleButton extends StatefulWidget {
 
   /// 主要动作：主题色填充；否则为浅色胶囊
   final bool primary;
+
+  /// 透明底（用于 [CapsuleButtonBar]：整条轨道连贯，按钮各自独立）
+  final bool flat;
 
   final Widget? leading;
   final Widget? trailing;
@@ -514,7 +518,9 @@ class _CapsuleButtonState extends State<CapsuleButton> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final bg = widget.primary
+    final bg = widget.flat
+        ? Colors.transparent
+        : widget.primary
         ? cs.primary
         : cs.surfaceContainerHighest.withValues(alpha: 0.6);
     final fg = widget.primary ? cs.onPrimary : cs.onSurfaceVariant;
@@ -559,6 +565,44 @@ class _CapsuleButtonState extends State<CapsuleButton> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 连贯轨道 + 独立按钮：外观像分段胶囊（同一条背景轨道），
+/// 但每一段都是可以单独点击的按钮（不是单选）。
+/// 用法：children 传 `CapsuleButton(flat: true, ...)`。
+class CapsuleButtonBar extends StatelessWidget {
+  const CapsuleButtonBar({
+    super.key,
+    required this.children,
+    this.alignment = WrapAlignment.start,
+    this.padding = const EdgeInsets.all(3),
+    this.spacing = 2,
+    this.runSpacing = 2,
+  });
+
+  final List<Widget> children;
+  final WrapAlignment alignment;
+  final EdgeInsets padding;
+  final double spacing;
+  final double runSpacing;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Wrap(
+        alignment: alignment,
+        spacing: spacing,
+        runSpacing: runSpacing,
+        children: children,
       ),
     );
   }

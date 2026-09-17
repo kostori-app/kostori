@@ -1162,27 +1162,56 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                     ].join(' · '),
                     style: const TextStyle(fontSize: 12),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.cloud_upload_outlined),
-                        tooltip: t.upload,
-                        onPressed: _busy ? null : () => _uploadPart(part),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.cloud_download_outlined),
-                        tooltip: t.download,
-                        onPressed: (_busy || !remoteParts.containsKey(part.key))
-                            ? null
-                            : () => _downloadPart(part),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.history),
-                        tooltip: t.syncHistory,
-                        onPressed: _busy ? null : () => _showPartHistory(part),
-                      ),
-                    ],
+                ),
+                // 上传 / 下载 / 历史：连贯轨道 + 独立按钮（分段胶囊外观）
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: CapsuleButtonBar(
+                      children: [
+                        CapsuleButton(
+                          flat: true,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          leading: const Icon(
+                            Icons.cloud_upload_outlined,
+                            size: 16,
+                          ),
+                          text: t.upload,
+                          enabled: !_busy,
+                          onTap: () => _uploadPart(part),
+                        ),
+                        CapsuleButton(
+                          flat: true,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          leading: const Icon(
+                            Icons.cloud_download_outlined,
+                            size: 16,
+                          ),
+                          text: t.download,
+                          enabled:
+                              !_busy && remoteParts.containsKey(part.key),
+                          onTap: () => _downloadPart(part),
+                        ),
+                        CapsuleButton(
+                          flat: true,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          leading: const Icon(Icons.history, size: 16),
+                          text: t.syncHistory,
+                          enabled: !_busy,
+                          onTap: () => _showPartHistory(part),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
