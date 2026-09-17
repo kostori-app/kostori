@@ -2466,7 +2466,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileMcpHint => '绑定本助手的 MCP 服务器（连接后自动导入工具）';
 	@override String get profileTabLocalTools => '工具技能';
 	@override String get profileTabLibrary => '知识库';
-	@override String get profileLibraryHint => '不勾选则沿用全局启用的条目；勾选后仅对当前助手生效。';
+	@override String get inheritGlobalLibrary => '沿用全局启用项';
+	@override String get inheritGlobalLibraryHint => '关闭时只使用下方勾选的世界书与提示注入；开启且未勾选时沿用全局启用项';
+	@override String get profileLibraryHint => '勾选的条目仅对当前助手生效；是否沿用全局启用项见上方开关。';
 	@override String get userNickname => '用户昵称';
 	@override String get userNicknameHint => '聊天中显示的用户名称，并注入 {{user_nickname}}';
 	@override String get animeRecognize => '动漫识别';
@@ -5430,7 +5432,9 @@ extension on TranslationsZhCn {
 			'profileMcpHint' => '绑定本助手的 MCP 服务器（连接后自动导入工具）',
 			'profileTabLocalTools' => '工具技能',
 			'profileTabLibrary' => '知识库',
-			'profileLibraryHint' => '不勾选则沿用全局启用的条目；勾选后仅对当前助手生效。',
+			'inheritGlobalLibrary' => '沿用全局启用项',
+			'inheritGlobalLibraryHint' => '关闭时只使用下方勾选的世界书与提示注入；开启且未勾选时沿用全局启用项',
+			'profileLibraryHint' => '勾选的条目仅对当前助手生效；是否沿用全局启用项见上方开关。',
 			'userNickname' => '用户昵称',
 			'userNicknameHint' => '聊天中显示的用户名称，并注入 {{user_nickname}}',
 			'animeRecognize' => '动漫识别',
@@ -5519,10 +5523,10 @@ extension on TranslationsZhCn {
 			'contextBudgetHint' => '留空跟随助手档案 / 全局设置，0 表示不限制',
 			'profileMemoryEntries' => '记忆条目',
 			'profileMemoryClear' => '清空',
-			'profileMemoryEmpty' => '暂无记忆条目',
-			'profileMemoryAdd' => '新增记忆',
 			_ => null,
 		} ?? switch (path) {
+			'profileMemoryEmpty' => '暂无记忆条目',
+			'profileMemoryAdd' => '新增记忆',
 			'profileCopy' => '复制',
 			'profileExport' => '导出',
 			'profileImport' => '导入',

@@ -1445,14 +1445,26 @@ class AiConversationService {
     int turn = 0,
     void Function(List<WorldBookEntry>)? onDepthHits,
   }) async {
-    // 档案可自定义选择库中条目；未选择时沿用全局启用项
-    final injections = await PromptInjectionStore.instance.select(
-      profile?.injectionIds.toSet() ?? const {},
-    );
+    // 档案显式选择库中条目；仅当档案开启"沿用全局"（或未绑定档案）时才用全局启用项，
+    // 避免"没勾选任何世界书/提示注入，却把全局的全部注入进来"
+    final inheritGlobal = profile == null || profile.inheritGlobalLibrary;
+    final injections = inheritGlobal
+        ? await PromptInjectionStore.instance.select(
+            profile?.injectionIds.toSet() ?? const {},
+          )
+        : await PromptInjectionStore.instance.selectExact(
+            profile.injectionIds.toSet(),
+          );
     var worldHits = (userMessage == null || userMessage.trim().isEmpty)
         ? const <WorldBookEntry>[]
-        : await WorldBookStore.instance.select(
+        : inheritGlobal
+        ? await WorldBookStore.instance.select(
             profile?.worldBookIds.toSet() ?? const {},
+            userMessage,
+            turn: turn,
+          )
+        : await WorldBookStore.instance.selectExact(
+            profile.worldBookIds.toSet(),
             userMessage,
             turn: turn,
           );

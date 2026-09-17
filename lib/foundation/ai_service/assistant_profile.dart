@@ -326,11 +326,15 @@ class AssistantProfile {
   /// 技能绑定：扩展管理（改造点 7）中导入/启用的技能 key 列表
   final List<String> skillIds;
 
-  /// 世界书库选择：为空表示沿用全局启用项（向后兼容）
+  /// 世界书库选择：为空且 [inheritGlobalLibrary] 为真时沿用全局启用项
   final List<String> worldBookIds;
 
-  /// 提示词注入库选择：为空表示沿用全局启用项（向后兼容）
+  /// 提示词注入库选择：为空且 [inheritGlobalLibrary] 为真时沿用全局启用项
   final List<String> injectionIds;
+
+  /// 是否沿用全局启用的世界书 / 提示注入。
+  /// false（默认）时只使用本档案勾选的条目，避免"没选却注入了全局内容"
+  final bool inheritGlobalLibrary;
 
   /// 绑定的角色卡 id（注入到系统提示词）
   final List<String> characterIds;
@@ -376,6 +380,7 @@ class AssistantProfile {
     this.skillIds = const [],
     this.worldBookIds = const [],
     this.injectionIds = const [],
+    this.inheritGlobalLibrary = false,
     this.characterIds = const [],
     this.extensions = const [],
     this.memory = const MemorySettings(),
@@ -403,6 +408,7 @@ class AssistantProfile {
     List<String>? skillIds,
     List<String>? worldBookIds,
     List<String>? injectionIds,
+    bool? inheritGlobalLibrary,
     List<String>? characterIds,
     List<AssistantExtension>? extensions,
     MemorySettings? memory,
@@ -427,6 +433,7 @@ class AssistantProfile {
     skillIds: skillIds ?? this.skillIds,
     worldBookIds: worldBookIds ?? this.worldBookIds,
     injectionIds: injectionIds ?? this.injectionIds,
+    inheritGlobalLibrary: inheritGlobalLibrary ?? this.inheritGlobalLibrary,
     characterIds: characterIds ?? this.characterIds,
     extensions: extensions ?? this.extensions,
     memory: memory ?? this.memory,
@@ -470,6 +477,7 @@ class AssistantProfile {
       skillIds: strList(json['skillIds']),
       worldBookIds: strList(json['worldBookIds']),
       injectionIds: strList(json['injectionIds']),
+      inheritGlobalLibrary: json['inheritGlobalLibrary'] == true,
       characterIds: strList(json['characterIds']),
       extensions: [
         for (final e in objList(json['extensions']))
@@ -519,6 +527,7 @@ class AssistantProfile {
     'skillIds': skillIds,
     'worldBookIds': worldBookIds,
     'injectionIds': injectionIds,
+    'inheritGlobalLibrary': inheritGlobalLibrary,
     'characterIds': characterIds,
     'extensions': [for (final e in extensions) e.toJson()],
     'memory': memory.toJson(),

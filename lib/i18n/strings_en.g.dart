@@ -7321,8 +7321,14 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Library'
 	String get profileTabLibrary => 'Library';
 
-	/// en: 'Leave unselected to use the globally enabled entries. Selecting entries applies only to this assistant.'
-	String get profileLibraryHint => 'Leave unselected to use the globally enabled entries. Selecting entries applies only to this assistant.';
+	/// en: 'Inherit globally enabled items'
+	String get inheritGlobalLibrary => 'Inherit globally enabled items';
+
+	/// en: 'When off, only the world books and prompt injections selected below are used; when on and nothing is selected, the globally enabled ones are used.'
+	String get inheritGlobalLibraryHint => 'When off, only the world books and prompt injections selected below are used; when on and nothing is selected, the globally enabled ones are used.';
+
+	/// en: 'Selected entries apply only to this assistant; see the switch above for inheriting the globally enabled ones.'
+	String get profileLibraryHint => 'Selected entries apply only to this assistant; see the switch above for inheriting the globally enabled ones.';
 
 	/// en: 'User nickname'
 	String get userNickname => 'User nickname';
@@ -11201,7 +11207,9 @@ extension on Translations {
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
 			'profileTabLibrary' => 'Library',
-			'profileLibraryHint' => 'Leave unselected to use the globally enabled entries. Selecting entries applies only to this assistant.',
+			'inheritGlobalLibrary' => 'Inherit globally enabled items',
+			'inheritGlobalLibraryHint' => 'When off, only the world books and prompt injections selected below are used; when on and nothing is selected, the globally enabled ones are used.',
+			'profileLibraryHint' => 'Selected entries apply only to this assistant; see the switch above for inheriting the globally enabled ones.',
 			'userNickname' => 'User nickname',
 			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
 			'animeRecognize' => 'Anime recognition',
@@ -11290,10 +11298,10 @@ extension on Translations {
 			'contextBudgetHint' => 'Leave empty to follow the profile / global setting; 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',
-			'profileMemoryEmpty' => 'No memory entries yet',
-			'profileMemoryAdd' => 'New memory entry',
 			_ => null,
 		} ?? switch (path) {
+			'profileMemoryEmpty' => 'No memory entries yet',
+			'profileMemoryAdd' => 'New memory entry',
 			'profileCopy' => 'Duplicate',
 			'profileExport' => 'Export',
 			'profileImport' => 'Import',

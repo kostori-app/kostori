@@ -786,7 +786,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               ),
             ),
             const Divider(height: 1),
-            // 底部：助手选择
+            // 底部：助手选择 + AI 设置入口
             ListTile(
               dense: true,
               leading: const Icon(Icons.smart_toy_outlined, size: 20),
@@ -796,7 +796,21 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 13),
               ),
-              trailing: const Icon(Icons.unfold_more, size: 18),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.unfold_more, size: 18),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: t.aiSettings,
+                    visualDensity: VisualDensity.compact,
+                    iconSize: 18,
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () =>
+                        closeThen(() => context.to(() => const AiSettings())),
+                  ),
+                ],
+              ),
               onTap: () => closeThen(_showAssistantPicker),
             ),
           ],

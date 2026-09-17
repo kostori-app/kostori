@@ -790,6 +790,17 @@ class WorldBookStore extends ChangeNotifier {
     return _resolve(pool, text, turn: turn);
   }
 
+  /// 只命中选择集内的条目（ids 为空则不注入任何条目），用于档案显式选择
+  Future<List<WorldBookEntry>> selectExact(
+    Set<String> ids,
+    String text, {
+    int turn = 0,
+  }) async {
+    if (ids.isEmpty) return const [];
+    await ensureLoaded();
+    return _resolve(entries.where((e) => ids.contains(e.id)), text, turn: turn);
+  }
+
   /// 只返回选择集内的条目且不做触发词匹配（供故事等显式选择场景）
   Future<List<WorldBookEntry>> selectAll(
     Set<String> ids, {

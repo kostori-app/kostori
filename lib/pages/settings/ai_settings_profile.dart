@@ -78,6 +78,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
   late List<String> _skillIds;
   late Set<String> _worldBookIds;
   late Set<String> _injectionIds;
+  late bool _inheritGlobalLibrary;
   late Set<String> _characterIds;
   late List<AssistantExtension> _extensions;
   late MemorySettings _memory;
@@ -154,6 +155,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     _skillIds = [...?p?.skillIds];
     _worldBookIds = {...?p?.worldBookIds};
     _injectionIds = {...?p?.injectionIds};
+    _inheritGlobalLibrary = p?.inheritGlobalLibrary ?? false;
     _characterIds = {...?p?.characterIds};
     _extensions = [...?p?.extensions];
     WorldBookStore.instance.ensureLoaded();
@@ -245,6 +247,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       skillIds: _skillIds,
       worldBookIds: _worldBookIds.toList(),
       injectionIds: _injectionIds.toList(),
+      inheritGlobalLibrary: _inheritGlobalLibrary,
       characterIds: _characterIds.toList(),
       extensions: _extensions,
       memory: MemorySettings(
@@ -956,7 +959,19 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
               t.profileLibraryHint,
               style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(t.inheritGlobalLibrary),
+              subtitle: Text(
+                t.inheritGlobalLibraryHint,
+                style: const TextStyle(fontSize: 12),
+              ),
+              value: _inheritGlobalLibrary,
+              onChanged: (v) => setState(() => _inheritGlobalLibrary = v),
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 const Icon(Icons.menu_book_outlined, size: 20),

@@ -2465,7 +2465,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileMcpHint => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）';
 	@override String get profileTabLocalTools => '工具技能';
 	@override String get profileTabLibrary => '知識庫';
-	@override String get profileLibraryHint => '不勾選則沿用全域啟用的條目；勾選後僅對目前助手生效。';
+	@override String get inheritGlobalLibrary => '沿用全域啟用項';
+	@override String get inheritGlobalLibraryHint => '關閉時只使用下方勾選的世界書與提示注入；開啟且未勾選時沿用全域啟用項。';
+	@override String get profileLibraryHint => '勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。';
 	@override String get userNickname => '使用者暱稱';
 	@override String get userNicknameHint => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}';
 	@override String get animeRecognize => '動漫識別';
@@ -5428,7 +5430,9 @@ extension on TranslationsZhTw {
 			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
 			'profileTabLocalTools' => '工具技能',
 			'profileTabLibrary' => '知識庫',
-			'profileLibraryHint' => '不勾選則沿用全域啟用的條目；勾選後僅對目前助手生效。',
+			'inheritGlobalLibrary' => '沿用全域啟用項',
+			'inheritGlobalLibraryHint' => '關閉時只使用下方勾選的世界書與提示注入；開啟且未勾選時沿用全域啟用項。',
+			'profileLibraryHint' => '勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。',
 			'userNickname' => '使用者暱稱',
 			'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',
 			'animeRecognize' => '動漫識別',
@@ -5518,10 +5522,10 @@ extension on TranslationsZhTw {
 			'profileMemoryEntries' => '記憶條目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暫無記憶條目',
-			'profileMemoryAdd' => '新增記憶',
-			'profileCopy' => '複製',
 			_ => null,
 		} ?? switch (path) {
+			'profileMemoryAdd' => '新增記憶',
+			'profileCopy' => '複製',
 			'profileExport' => '匯出',
 			'profileImport' => '匯入',
 			'profileExported' => '已匯出到剪貼簿',
