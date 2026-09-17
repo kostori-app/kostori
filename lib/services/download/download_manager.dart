@@ -1221,12 +1221,10 @@ class DownloadManager extends ChangeNotifier {
         records = jsonDecode(await file.readAsString()) as List;
       } catch (_) {}
     }
+    // 只按文件路径去重：同一集名（重名集/系列同名条目）下载到不同文件时
+    // 各自的记录都要保留，不能按 (animeId, episode, sourceKey) 互相覆盖
     records.removeWhere(
-      (e) =>
-          e is Map &&
-          e['animeId'] == task.animeId &&
-          e['episode'] == task.episode &&
-          e['sourceKey'] == task.sourceKey,
+      (e) => e is Map && e['filePath'] == task.filePath,
     );
     records.insert(
       0,
@@ -1290,7 +1288,8 @@ class DownloadManager extends ChangeNotifier {
         final fp = e['filePath'] as String?;
         if (fp == null || fp.isEmpty) continue;
         if (!await File(fp).exists()) continue;
-        out['${e['animeId']}|${e['episode']}'] = fp;
+        // 同名集可能有多份（不同标题/文件）：保留最新的一条（记录为倒序）
+        out.putIfAbsent('${e['animeId']}|${e['episode']}', () => fp);
       }
       return out;
     } catch (_) {

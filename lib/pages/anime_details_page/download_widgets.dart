@@ -37,8 +37,8 @@ class _DownloadItem {
   });
 }
 
-/// 下载选择弹窗的筛选：全部 / 未下载 / 已下载
-enum _DownloadFilter { all, notDownloaded, downloaded }
+/// 下载选择弹窗的筛选：全部 / 未下载 / 下载中 / 已下载
+enum _DownloadFilter { all, notDownloaded, downloading, downloaded }
 
 /// 下载选择结果
 class _DownloadPick {
@@ -197,6 +197,7 @@ class _EpisodeDownloadPicker extends StatefulWidget {
   const _EpisodeDownloadPicker({
     required this.items,
     required this.downloadedFiles,
+    required this.activeTasks,
     required this.resolvePlay,
     required this.animeTitle,
     required this.sourceKey,
@@ -207,6 +208,9 @@ class _EpisodeDownloadPicker extends StatefulWidget {
 
   /// `animeId|episodeName` → 本地文件路径（仅文件仍存在的已下载项）
   final Map<String, String> downloadedFiles;
+
+  /// `animeId|episodeName` → 已在下载列表里的任务状态（排队/下载中/暂停/失败）
+  final Map<String, DownloadStatus> activeTasks;
 
   /// 解析单集/系列条目的播放结果（获取多分辨率）
   final Future<AnimePlayResult?> Function(String key) resolvePlay;
@@ -256,6 +260,19 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   bool _isDownloaded(_DownloadItem item) => widget.downloadedFiles.containsKey(
     '${item.animeId}|${item.episodeName}',
   );
+
+  /// 该条目是否已经在下载列表里（避免重复下载）
+  DownloadStatus? _activeStatusOf(_DownloadItem item) =>
+      widget.activeTasks['${item.animeId}|${item.episodeName}'];
+
+  bool _isActive(_DownloadItem item) => _activeStatusOf(item) != null;
+
+  String _statusLabel(DownloadStatus status) => switch (status) {
+    DownloadStatus.queued => t.downloadQueued,
+    DownloadStatus.paused => t.paused,
+    DownloadStatus.failed => t.failed,
+    _ => t.downloading,
+  };
 
   /// 按当前开关计算标题
   String _computedTitle() {
@@ -463,15 +480,18 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   @override
   Widget build(BuildContext context) {
     final visibleItems = widget.items.where((item) {
+      final downloaded = _isDownloaded(item);
+      final active = _isActive(item);
       return switch (_filter) {
         _DownloadFilter.all => true,
-        _DownloadFilter.notDownloaded => !_isDownloaded(item),
-        _DownloadFilter.downloaded => _isDownloaded(item),
+        _DownloadFilter.notDownloaded => !downloaded && !active,
+        _DownloadFilter.downloading => active,
+        _DownloadFilter.downloaded => downloaded,
       };
     }).toList();
-    // 已下载项不可勾选（只能重下），全选只作用于当前筛选下可下载项
+    // 已下载 / 已在下载列表里的条目不可勾选，全选只作用于当前筛选下可下载项
     final selectable = visibleItems
-        .where((item) => !_isDownloaded(item))
+        .where((item) => !_isDownloaded(item) && !_isActive(item))
         .toList();
     final allSelected =
         selectable.isNotEmpty &&
@@ -569,7 +589,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
               ),
             ),
           ),
-          // 筛选：全部 / 未下载 / 已下载
+          // 筛选：全部 / 未下载 / 下载中 / 已下载
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: SegmentedButton<_DownloadFilter>(
@@ -582,6 +602,10 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                 ButtonSegment(
                   value: _DownloadFilter.notDownloaded,
                   label: Text(t.downloadNotDownloaded),
+                ),
+                ButtonSegment(
+                  value: _DownloadFilter.downloading,
+                  label: Text(t.downloading),
                 ),
                 ButtonSegment(
                   value: _DownloadFilter.downloaded,
@@ -611,6 +635,10 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                 item: item,
                 displayTitle: _nameOverrides[item.key] ?? item.title,
                 isDownloaded: _isDownloaded(item),
+                activeLabel: switch (_activeStatusOf(item)) {
+                  final DownloadStatus s => _statusLabel(s),
+                  null => null,
+                },
                 isSelected: selected.contains(item.key),
                 resolutionLabel: _resolutionLabelByKey[item.key],
                 onToggle: () => _toggle(item.key),
@@ -637,6 +665,7 @@ class _DownloadItemCard extends StatefulWidget {
     required this.item,
     required this.displayTitle,
     required this.isDownloaded,
+    this.activeLabel,
     required this.isSelected,
     required this.resolutionLabel,
     required this.onToggle,
@@ -652,6 +681,9 @@ class _DownloadItemCard extends StatefulWidget {
   final String displayTitle;
 
   final bool isDownloaded;
+
+  /// 已在下载列表里时的状态文案（下载中/排队/暂停/失败）
+  final String? activeLabel;
 
   final bool isSelected;
 
@@ -732,23 +764,29 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
         // 已下载（且文件仍在）：绿色调高亮，点击播放本地文件
         color: widget.isDownloaded
             ? Colors.green.withValues(alpha: 0.12)
-            : (widget.isSelected
-                  ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-                  : colorScheme.surfaceContainerLow),
+            : (widget.activeLabel != null
+                  ? colorScheme.tertiaryContainer.withValues(alpha: 0.25)
+                  : (widget.isSelected
+                        ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+                        : colorScheme.surfaceContainerLow)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
             color: widget.isDownloaded
                 ? Colors.green.withValues(alpha: 0.6)
-                : (widget.isSelected
-                      ? colorScheme.primary
-                      : colorScheme.outlineVariant),
+                : (widget.activeLabel != null
+                      ? colorScheme.tertiary
+                      : (widget.isSelected
+                            ? colorScheme.primary
+                            : colorScheme.outlineVariant)),
             width: widget.isSelected ? 1.5 : (widget.isDownloaded ? 1.0 : 0.6),
           ),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: widget.isDownloaded ? null : widget.onToggle,
+          onTap: (widget.isDownloaded || widget.activeLabel != null)
+              ? null
+              : widget.onToggle,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -809,8 +847,38 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // 已在下载列表里：显示状态（避免重复下载）
+                if (widget.activeLabel != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.tertiaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.downloading,
+                          size: 14,
+                          color: colorScheme.onTertiaryContainer,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.activeLabel!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onTertiaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 // 分辨率选择 / 已下载标记（已下载可重下）
-                if (widget.isDownloaded)
+                else if (widget.isDownloaded)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -848,7 +916,7 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
                     ),
                   ),
                 // 编辑标题（超长标题影响建文件名时改短）
-                if (!widget.isDownloaded)
+                if (!widget.isDownloaded && widget.activeLabel == null)
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     tooltip: t.rename,

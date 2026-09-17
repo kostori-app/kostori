@@ -1131,6 +1131,21 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     );
   }
 
+  /// `animeId|episode` → 未完成任务的当前状态（下载中/排队/暂停/失败），
+  /// 供下载面板标记「已在下载列表」，避免重复下载
+  Map<String, DownloadStatus> _activeDownloadTasks() {
+    final out = <String, DownloadStatus>{};
+    for (final task in DownloadManager.instance.tasks) {
+      if (task.status == DownloadStatus.completed) continue;
+      if (task.sourceKey != _sourceKey) continue;
+      final animeId = task.animeId;
+      final episode = task.episode;
+      if (animeId == null || episode == null) continue;
+      out.putIfAbsent('$animeId|$episode', () => task.status);
+    }
+    return out;
+  }
+
   /// 系列模式下载：从 loadSeries 加载系列条目（每条一个视频，可单独选分辨率）
   Future<void> _onDownloadSeries() async {
     final source = AnimeSource.find(_sourceKey);
@@ -1215,6 +1230,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       builder: (_) => _EpisodeDownloadPicker(
         items: items,
         downloadedFiles: downloadedFiles,
+        activeTasks: _activeDownloadTasks(),
         resolvePlay: _resolvePlayResult,
         animeTitle: data!.title,
         sourceKey: _sourceKey,
