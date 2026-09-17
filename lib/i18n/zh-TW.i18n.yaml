@@ -2331,6 +2331,7 @@ signInManager: 簽到管理
 signAll: 全部簽到
 signedAlready: 今日已簽到
 autoSignAtStart: 啟動時自動簽到
+autoSign: 自動簽到
 needLoginFirst: 需要先登入
 statsTimelineNoRecords: "還沒有任何紀錄"
 statsAllTimelineTitle: 全部時間軸

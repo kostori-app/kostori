@@ -45,8 +45,33 @@ class _PluginSignManagerPageState extends State<PluginSignManagerPage> {
     final cs = Theme.of(context).colorScheme;
     final manager = MePagePluginManager();
     final plugins = _signable();
+    final autoSignAtStart = manager.autoSigninMaster;
     return PopUpWidgetScaffold(
       title: t.signInManager,
+      // 「启动时自动签到」开关挪到 appbar 右侧，仅图标 + 悬浮提示
+      tailing: [
+        Tooltip(
+          message: t.autoSignAtStart,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              appdata.implicitData['meAutoSignin'] = !autoSignAtStart;
+              appdata.writeImplicitData();
+              setState(() {});
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Icon(
+                autoSignAtStart
+                    ? Icons.alarm_on_outlined
+                    : Icons.alarm_off_outlined,
+                size: 20,
+                color: autoSignAtStart ? cs.primary : cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ],
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -58,51 +83,23 @@ class _PluginSignManagerPageState extends State<PluginSignManagerPage> {
             ),
             clipBehavior: Clip.antiAlias,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          t.signInManager,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                  Expanded(
+                    child: Text(
+                      t.signInManager,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                      SizedBox(
-                        height: 34,
-                        child: Button.filled(
-                          onPressed: _runAll,
-                          child: Text(t.signAll),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          t.autoSignAtStart,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      CustomSwitch(
-                        value: manager.autoSigninMaster,
-                        onChanged: (v) {
-                          appdata.implicitData['meAutoSignin'] = v;
-                          appdata.writeImplicitData();
-                          setState(() {});
-                        },
-                      ),
-                    ],
+                  CapsuleButton(
+                    primary: true,
+                    leading: const Icon(Icons.event_available_outlined),
+                    text: t.signAll,
+                    onTap: _runAll,
                   ),
                 ],
               ),
@@ -199,13 +196,13 @@ class _SignCard extends StatelessWidget {
                       ],
                     )
                   else
-                    SizedBox(
-                      height: 32,
-                      child: Button.filled(
-                        isLoading: busy,
-                        onPressed: logged ? onSign : () {},
-                        child: Text(t.signAll),
-                      ),
+                    CapsuleButton(
+                      primary: true,
+                      isLoading: busy,
+                      enabled: logged,
+                      leading: const Icon(Icons.event_available_outlined),
+                      text: t.signAll,
+                      onTap: onSign,
                     ),
                 ],
               ),
@@ -237,12 +234,28 @@ class _SignCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  CustomSwitch(
-                    value: plugin.isAutoSign,
-                    onChanged: (v) {
-                      plugin.setAutoSign(v);
-                      onAutoChanged();
-                    },
+                  // 自动签到开关：图标按钮 + 悬浮提示
+                  Tooltip(
+                    message: t.autoSign,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        plugin.setAutoSign(!plugin.isAutoSign);
+                        onAutoChanged();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          plugin.isAutoSign
+                              ? Icons.alarm_on_outlined
+                              : Icons.alarm_off_outlined,
+                          size: 20,
+                          color: plugin.isAutoSign
+                              ? cs.primary
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),

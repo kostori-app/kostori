@@ -6859,6 +6859,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Auto sign-in on start'
 	String get autoSignAtStart => 'Auto sign-in on start';
 
+	/// en: 'Auto sign-in'
+	String get autoSign => 'Auto sign-in';
+
 	/// en: 'Login required'
 	String get needLoginFirst => 'Login required';
 
@@ -11071,6 +11074,7 @@ extension on Translations {
 			'signAll' => 'Sign in all',
 			'signedAlready' => 'Signed today',
 			'autoSignAtStart' => 'Auto sign-in on start',
+			'autoSign' => 'Auto sign-in',
 			'needLoginFirst' => 'Login required',
 			'statsTimelineNoRecords' => 'No records yet',
 			'statsAllTimelineTitle' => 'All-time timeline',
@@ -11315,9 +11319,9 @@ extension on Translations {
 			'profileMemoryHint' => 'Records preferences, frequent topics and key conclusions; switches with the assistant',
 			'profileMemoryMaxEntries' => 'Memory entry limit',
 			'profileMemoryContextBudget' => 'Context budget (tokens)',
-			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited',
 			_ => null,
 		} ?? switch (path) {
+			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited',
 			'aiContextBudget' => 'Context budget (tokens)',
 			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',
 			'contextBudget' => 'Context budget (tokens)',

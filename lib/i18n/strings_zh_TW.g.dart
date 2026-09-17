@@ -2311,6 +2311,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get signAll => '全部簽到';
 	@override String get signedAlready => '今日已簽到';
 	@override String get autoSignAtStart => '啟動時自動簽到';
+	@override String get autoSign => '自動簽到';
 	@override String get needLoginFirst => '需要先登入';
 	@override String get statsTimelineNoRecords => '還沒有任何紀錄';
 	@override String get statsAllTimelineTitle => '全部時間軸';
@@ -5282,6 +5283,7 @@ extension on TranslationsZhTw {
 			'signAll' => '全部簽到',
 			'signedAlready' => '今日已簽到',
 			'autoSignAtStart' => '啟動時自動簽到',
+			'autoSign' => '自動簽到',
 			'needLoginFirst' => '需要先登入',
 			'statsTimelineNoRecords' => '還沒有任何紀錄',
 			'statsAllTimelineTitle' => '全部時間軸',
@@ -5527,9 +5529,9 @@ extension on TranslationsZhTw {
 			'profileMemoryMaxEntries' => '記憶條目上限',
 			'profileMemoryContextBudget' => '上下文預算（token）',
 			'profileMemoryContextBudgetHint' => '由最新訊息往前累加，超出預算的較早訊息不進上下文，改由滾動摘要記憶；留空跟隨全域設定，0 表示不限制',
-			'aiContextBudget' => '上下文預算（token）',
 			_ => null,
 		} ?? switch (path) {
+			'aiContextBudget' => '上下文預算（token）',
 			'aiContextBudgetHint' => '所有對話與故事共用的預設上下文預算；助手檔案或故事另有設定時以它們為準，0 表示不限制',
 			'contextBudget' => '上下文預算（token）',
 			'contextBudgetHint' => '留空跟隨助手檔案 / 全域設定，0 表示不限制',

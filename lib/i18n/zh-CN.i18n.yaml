@@ -2329,6 +2329,7 @@ signInManager: 签到管理
 signAll: 全部签到
 signedAlready: 今日已签到
 autoSignAtStart: 启动时自动签到
+autoSign: 自动签到
 needLoginFirst: 需要先登录
 statsTimelineNoRecords: "还没有任何记录"
 statsAllTimelineTitle: 全部时间线

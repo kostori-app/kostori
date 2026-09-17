@@ -2330,6 +2330,7 @@ signInManager: Sign-in manager
 signAll: Sign in all
 signedAlready: Signed today
 autoSignAtStart: Auto sign-in on start
+autoSign: Auto sign-in
 needLoginFirst: Login required
 statsTimelineNoRecords: "No records yet"
 statsAllTimelineTitle: All-time timeline

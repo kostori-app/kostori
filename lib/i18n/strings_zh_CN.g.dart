@@ -2312,6 +2312,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get signAll => '全部签到';
 	@override String get signedAlready => '今日已签到';
 	@override String get autoSignAtStart => '启动时自动签到';
+	@override String get autoSign => '自动签到';
 	@override String get needLoginFirst => '需要先登录';
 	@override String get statsTimelineNoRecords => '还没有任何记录';
 	@override String get statsAllTimelineTitle => '全部时间线';
@@ -5284,6 +5285,7 @@ extension on TranslationsZhCn {
 			'signAll' => '全部签到',
 			'signedAlready' => '今日已签到',
 			'autoSignAtStart' => '启动时自动签到',
+			'autoSign' => '自动签到',
 			'needLoginFirst' => '需要先登录',
 			'statsTimelineNoRecords' => '还没有任何记录',
 			'statsAllTimelineTitle' => '全部时间线',
@@ -5528,9 +5530,9 @@ extension on TranslationsZhCn {
 			'profileMemoryHint' => '记录用户偏好/常问话题/关键结论，随助手切换',
 			'profileMemoryMaxEntries' => '记忆条目上限',
 			'profileMemoryContextBudget' => '上下文预算（token）',
-			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制',
 			_ => null,
 		} ?? switch (path) {
+			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制',
 			'aiContextBudget' => '上下文预算（token）',
 			'aiContextBudgetHint' => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制',
 			'contextBudget' => '上下文预算（token）',
