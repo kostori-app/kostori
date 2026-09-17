@@ -41,15 +41,6 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     t.aiTagFriendly,
   ];
 
-  static List<(String, String, String)> get _knownExtensions => [
-    ('markdown', t.aiExtMarkdown, t.aiExtMarkdownHint),
-    (
-      'image_understanding',
-      t.aiExtImageUnderstanding,
-      t.aiExtImageUnderstandingHint,
-    ),
-  ];
-
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nameCtrl;
@@ -1278,44 +1269,6 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
   }
 
-  Widget _buildExtensionsTab() {
-    final scheme = Theme.of(context).colorScheme;
-    bool isEnabled(String id) =>
-        _extensions.any((e) => e.extensionId == id && e.enabled);
-    void toggle(String id, bool v) {
-      setState(() {
-        final idx = _extensions.indexWhere((e) => e.extensionId == id);
-        if (idx >= 0) {
-          _extensions[idx] = _extensions[idx].copyWith(enabled: v);
-        } else {
-          _extensions.add(AssistantExtension(extensionId: id, enabled: v));
-        }
-      });
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            t.profileExtensionsHint,
-            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 8),
-          for (final (id, label, desc) in _knownExtensions)
-            SelectCard(
-              title: label,
-              subtitle: desc,
-              leading: const Icon(Icons.extension_outlined, size: 20),
-              selected: isEnabled(id),
-              onChanged: (v) => toggle(id, v),
-            ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildMemoryTab() {
     final scheme = Theme.of(context).colorScheme;
     final profileId =
@@ -1535,7 +1488,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
           ),
       ],
       body: DefaultTabController(
-        length: 8,
+        length: 7,
         child: Stack(
           children: [
             Positioned.fill(
@@ -1548,7 +1501,6 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                       labels: [
                         t.profileTabBasic,
                         t.profileTabPrompt,
-                        t.profileTabExtensions,
                         t.profileTabMemory,
                         t.profileTabRequest,
                         t.profileTabMcp,
@@ -1561,7 +1513,6 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
                         children: [
                           _tabScroll(_buildPersonaTab()),
                           _tabScroll(_buildPromptTab()),
-                          _tabScroll(_buildExtensionsTab()),
                           _tabScroll(_buildMemoryTab()),
                           _tabScroll(_buildRequestTab()),
                           _tabScroll(_buildMcpTab()),
