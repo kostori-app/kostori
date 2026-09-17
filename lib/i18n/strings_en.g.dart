@@ -3214,6 +3214,27 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Manage Groups'
 	String get manageGroups => 'Manage Groups';
 
+	/// en: 'Sub-groups'
+	String get downloadSubGroup => 'Sub-groups';
+
+	/// en: 'Top-level'
+	String get downloadGroupRoot => 'Top-level';
+
+	/// en: 'New sub-group'
+	String get downloadNewSubGroup => 'New sub-group';
+
+	/// en: 'Move to…'
+	String get downloadMigrateGroup => 'Move to…';
+
+	/// en: 'Move to top level'
+	String get downloadMigrateToRoot => 'Move to top level';
+
+	/// en: 'Move into this group'
+	String get downloadMigrateHere => 'Move into this group';
+
+	/// en: 'No group available'
+	String get downloadNoMigrateTarget => 'No group available';
+
 	/// en: 'New Group'
 	String get newGroup => 'New Group';
 
@@ -9963,6 +9984,13 @@ extension on Translations {
 			'searchGroupBuiltIn' => 'Built-in groups',
 			'searchGroupCustom' => 'My groups',
 			'manageGroups' => 'Manage Groups',
+			'downloadSubGroup' => 'Sub-groups',
+			'downloadGroupRoot' => 'Top-level',
+			'downloadNewSubGroup' => 'New sub-group',
+			'downloadMigrateGroup' => 'Move to…',
+			'downloadMigrateToRoot' => 'Move to top level',
+			'downloadMigrateHere' => 'Move into this group',
+			'downloadNoMigrateTarget' => 'No group available',
 			'newGroup' => 'New Group',
 			'groupName' => 'Group Name',
 			'groupExists' => 'Group name already exists',
@@ -10392,6 +10420,8 @@ extension on Translations {
 			'declineAndBlock' => 'Decline & Block',
 			'memes' => 'Memes',
 			'memeSaved' => 'Meme saved',
+			_ => null,
+		} ?? switch (path) {
 			'networkInfo' => 'Network Info',
 			'netLogMeta' => 'Summary only',
 			'netLogFull' => 'Full',
@@ -10399,8 +10429,6 @@ extension on Translations {
 			'hubInfo' => 'Hub Info',
 			'statsInfo' => 'Stats Info',
 			'ratingDetails' => 'Rating Details',
-			_ => null,
-		} ?? switch (path) {
 			'sourceInfo' => 'Source Info',
 			'playerInfo' => 'Player Info',
 			'logPrivacyProtection' => 'Log Privacy Protection',
@@ -10906,6 +10934,8 @@ extension on Translations {
 			'connectionFailed' => 'Connection failed',
 			'copySuccess' => 'Copy success',
 			'addToFavoritesSuccess' => 'Add to favorites success',
+			_ => null,
+		} ?? switch (path) {
 			'deleteFailed' => 'Delete failed',
 			'deleteSuccessful' => 'Deleted',
 			'confirmDeleteImageHint' => 'This cannot be undone',
@@ -10913,8 +10943,6 @@ extension on Translations {
 			'noTagData' => 'No tag data',
 			'authenticationRequired' => 'Authentication Required',
 			'pleaseAuthenticate' => 'Please authenticate to continue',
-			_ => null,
-		} ?? switch (path) {
 			'shutDown' => 'Shut Down',
 			'uploadingData' => 'Uploading data...',
 			'glimmerModeEnabled' => 'Glimmer mode: on',
@@ -11420,6 +11448,8 @@ extension on Translations {
 			'capabilityTools' => 'Tools',
 			'capabilityReasoning' => 'Reasoning',
 			'apiFormat' => 'API format',
+			_ => null,
+		} ?? switch (path) {
 			'apiFormatOpenai' => 'OpenAI (chat)',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google (Gemini)',
@@ -11427,8 +11457,6 @@ extension on Translations {
 			'testConnection' => 'Test connection',
 			'testApiKey' => 'Test API key',
 			'enabledByApiKey' => 'Enabled automatically when an API key is filled in',
-			_ => null,
-		} ?? switch (path) {
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => 'Connection OK',

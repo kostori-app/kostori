@@ -1333,6 +1333,45 @@ class DownloadManager extends ChangeNotifier {
 
   static const String groupsKey = 'downloadGroups';
 
+  /// 子组分隔符：分组名用路径形式（`父/子`），磁盘上即嵌套目录
+  static const String groupSeparator = '/';
+
+  /// 是否是子组（含分隔符）
+  static bool isSubGroup(String name) => name.contains(groupSeparator);
+
+  /// 拼出 [parent] 下的 [leaf]；[parent] 为空时即顶层
+  static String childName(String parent, String leaf) =>
+      parent.isEmpty ? leaf : '$parent$groupSeparator$leaf';
+
+  /// 顶层分组（不含子组），保持登记顺序
+  static List<String> rootGroups() =>
+      groups().where((g) => !isSubGroup(g)).toList();
+
+  /// [parent] 的直接子分组，保持登记顺序
+  static List<String> subGroupsOf(String parent) {
+    final prefix = '$parent$groupSeparator';
+    return groups().where((g) {
+      if (!g.startsWith(prefix)) return false;
+      return !g.substring(prefix.length).contains(groupSeparator);
+    }).toList();
+  }
+
+  static bool hasSubGroups(String parent) => subGroupsOf(parent).isNotEmpty;
+
+  /// 分组名的最后一段（子组对外的显示名）
+  static String leafOf(String name) {
+    final i = name.lastIndexOf(groupSeparator);
+    return i < 0 ? name : name.substring(i + 1);
+  }
+
+  /// 分组及其所有子孙分组
+  static List<String> groupWithDescendants(String name) {
+    final prefix = '$name$groupSeparator';
+    return groups()
+        .where((g) => g == name || g.startsWith(prefix))
+        .toList();
+  }
+
   /// 任务 id 自增序号：避免「同一毫秒 + 同一 URL」时 id 冲突
   /// （系列里同名条目并发下载会因此互相覆盖）
   static int _taskIdSeq = 0;
@@ -1370,16 +1409,39 @@ class DownloadManager extends ChangeNotifier {
     _saveGroups(list);
   }
 
-  /// 重命名分组：重命名目录 + 更新任务/记录
+  /// 按给定顺序保存分组（用于带子组的层级列表拖拽后回写）
+  static void setGroupOrder(List<String> ordered) {
+    final known = groups();
+    final out = <String>[];
+    for (final g in ordered) {
+      if (known.contains(g) && !out.contains(g)) out.add(g);
+    }
+    for (final g in known) {
+      if (!out.contains(g)) out.add(g);
+    }
+    _saveGroups(out);
+  }
+
+  /// 重命名分组：重命名目录 + 更新任务/记录；子组（`from/xxx`）一并跟着改名
   Future<void> renameGroup(String from, String to) async {
     final name = to.trim();
     if (from == name || name.isEmpty) return;
+    // 前缀映射：from → name，from/子 → name/子
+    final mapping = <String, String>{
+      for (final g in groupWithDescendants(from))
+        g: g == from ? name : '$name${g.substring(from.length)}',
+    };
     final list = groups();
     final idx = list.indexOf(from);
     if (idx >= 0) {
       list[idx] = name;
     } else {
       list.add(name);
+    }
+    for (final g in mapping.keys) {
+      if (g == from) continue;
+      final i = list.indexOf(g);
+      if (i >= 0) list[i] = mapping[g]!;
     }
     final dedup = <String>[];
     for (final g in list) {
@@ -1396,22 +1458,40 @@ class DownloadManager extends ChangeNotifier {
       } catch (_) {}
     }
     for (final t in _tasks) {
-      if (t.group == from) t.group = name;
+      final m = mapping[t.group];
+      if (m != null) t.group = m;
     }
     _persist();
-    await _rewriteRecordGroups({from: name});
+    await _rewriteRecordGroups(mapping);
     notifyListeners();
   }
 
-  /// 删除分组：移除分组名；组内条目回到未分组（磁盘目录/文件保留）
+  /// 迁移分组到 [newParent] 下（[newParent] 为空 = 移到顶层）。
+  /// 返回新分组名；冲突/无变化时返回 null。
+  Future<String?> migrateGroup(String from, String? newParent) async {
+    final parent = (newParent ?? '').trim();
+    if (parent == from || parent.startsWith('$from$groupSeparator')) {
+      return null; // 不能迁移到自己或自己的子组下
+    }
+    final target = childName(parent, leafOf(from));
+    if (target == from) return null;
+    if (groups().contains(target)) return null;
+    await createGroup(parent);
+    await renameGroup(from, target);
+    return target;
+  }
+
+  /// 删除分组：移除分组名（含子组）；组内条目回到未分组（磁盘目录/文件保留）
   Future<void> deleteGroup(String name) async {
-    final list = groups()..remove(name);
+    final removed = groupWithDescendants(name).toSet();
+    final list = groups()
+      ..removeWhere((g) => removed.contains(g));
     _saveGroups(list);
     for (final t in _tasks) {
-      if (t.group == name) t.group = '';
+      if (removed.contains(t.group)) t.group = '';
     }
     _persist();
-    await _rewriteRecordGroups({name: ''});
+    await _rewriteRecordGroups({for (final g in removed) g: ''});
     notifyListeners();
   }
 

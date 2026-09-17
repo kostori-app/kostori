@@ -1102,6 +1102,13 @@ singleSourceSearch: 单源
 searchGroupBuiltIn: 内置分组
 searchGroupCustom: 我的分组
 manageGroups: 管理分组
+downloadSubGroup: 子组
+downloadGroupRoot: 顶层组
+downloadNewSubGroup: 新建子组
+downloadMigrateGroup: 迁移到…
+downloadMigrateToRoot: 移到顶层
+downloadMigrateHere: 迁移到此组
+downloadNoMigrateTarget: 没有可迁移到的分组
 newGroup: 新建分组
 groupName: 分组名称
 groupExists: 分组名称已存在

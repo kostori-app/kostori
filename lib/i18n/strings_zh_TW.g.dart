@@ -1097,6 +1097,13 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get searchGroupBuiltIn => '內建分組';
 	@override String get searchGroupCustom => '我的分組';
 	@override String get manageGroups => '管理分組';
+	@override String get downloadSubGroup => '子組';
+	@override String get downloadGroupRoot => '頂層組';
+	@override String get downloadNewSubGroup => '新建子組';
+	@override String get downloadMigrateGroup => '遷移到…';
+	@override String get downloadMigrateToRoot => '移到頂層';
+	@override String get downloadMigrateHere => '遷移到此組';
+	@override String get downloadNoMigrateTarget => '沒有可遷移到的分組';
 	@override String get newGroup => '新增分組';
 	@override String get groupName => '分組名稱';
 	@override String get groupExists => '分組名稱已存在';
@@ -4101,6 +4108,13 @@ extension on TranslationsZhTw {
 			'searchGroupBuiltIn' => '內建分組',
 			'searchGroupCustom' => '我的分組',
 			'manageGroups' => '管理分組',
+			'downloadSubGroup' => '子組',
+			'downloadGroupRoot' => '頂層組',
+			'downloadNewSubGroup' => '新建子組',
+			'downloadMigrateGroup' => '遷移到…',
+			'downloadMigrateToRoot' => '移到頂層',
+			'downloadMigrateHere' => '遷移到此組',
+			'downloadNoMigrateTarget' => '沒有可遷移到的分組',
 			'newGroup' => '新增分組',
 			'groupName' => '分組名稱',
 			'groupExists' => '分組名稱已存在',
@@ -4530,6 +4544,8 @@ extension on TranslationsZhTw {
 			'declineAndBlock' => '拒絕並封鎖',
 			'memes' => '表情包',
 			'memeSaved' => '已儲存到表情包',
+			_ => null,
+		} ?? switch (path) {
 			'networkInfo' => '網路資訊',
 			'netLogMeta' => '僅概要',
 			'netLogFull' => '完整',
@@ -4537,8 +4553,6 @@ extension on TranslationsZhTw {
 			'hubInfo' => 'Hub 資訊',
 			'statsInfo' => '統計資訊',
 			'ratingDetails' => '評分詳情',
-			_ => null,
-		} ?? switch (path) {
 			'sourceInfo' => '源資訊',
 			'playerInfo' => '播放資訊',
 			'logPrivacyProtection' => '日誌隱私保護',
@@ -5044,6 +5058,8 @@ extension on TranslationsZhTw {
 			'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
 			'shareFailed' => '分享失敗',
 			'connectionFailed' => '連線失敗',
+			_ => null,
+		} ?? switch (path) {
 			'copySuccess' => '複製成功',
 			'addToFavoritesSuccess' => '添加收藏成功',
 			'deleteFailed' => '刪除失敗',
@@ -5051,8 +5067,6 @@ extension on TranslationsZhTw {
 			'confirmDeleteImageHint' => '刪除後將無法復原',
 			'confirmDeleteAiProvider' => '確定刪除該 AI 服務商設定？',
 			'noTagData' => '尚無標籤資料',
-			_ => null,
-		} ?? switch (path) {
 			'authenticationRequired' => '需要身分驗證',
 			'pleaseAuthenticate' => '請繼續身分驗證',
 			'shutDown' => '關閉',
@@ -5558,6 +5572,8 @@ extension on TranslationsZhTw {
 			'capabilityReasoning' => '推理',
 			'apiFormat' => '介面格式',
 			'apiFormatOpenai' => 'OpenAI（chat）',
+			_ => null,
+		} ?? switch (path) {
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google（Gemini）',
 			'apiFormatClaude' => 'Claude（Anthropic）',
@@ -5565,8 +5581,6 @@ extension on TranslationsZhTw {
 			'testApiKey' => '檢測 API Key',
 			'enabledByApiKey' => '填寫 API Key 後自動啟用',
 			'endpointChatCompletions' => 'Chat Completions',
-			_ => null,
-		} ?? switch (path) {
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => '連線成功',
 			'modelsUrl' => '查詢可用模型介面',

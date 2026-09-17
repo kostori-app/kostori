@@ -25,6 +25,7 @@ String _formatBytes(int bytes) {
 // 下载筛选的持久化 key
 const String _recordFilterKey = 'downloadRecordFilter';
 const String _taskFilterKey = 'downloadTaskFilter';
+const String _recordGroupFilterKey = 'downloadRecordGroupFilter';
 
 /// 视频下载管理页
 class DownloadPage extends StatefulWidget {
@@ -34,8 +35,20 @@ class DownloadPage extends StatefulWidget {
   State<DownloadPage> createState() => _DownloadPageState();
 }
 
-class _DownloadPageState extends State<DownloadPage> {
+class _DownloadPageState extends State<DownloadPage>
+    with SingleTickerProviderStateMixin {
   String _taskFilter = readDownloadFilter(_taskFilterKey, 'all');
+
+  /// 下载记录的「存在的/已删除」筛选（与分组筛选相互独立）
+  String _recordExistsFilter = readDownloadFilter(_recordFilterKey, 'exists');
+
+  late final TabController _tabCtrl = TabController(length: 2, vsync: this)
+    ..addListener(() => setState(() {}));
+
+  /// 下载记录 tab 的分组管理入口
+  final _recordsKey = GlobalKey<_RecordsTabState>();
+
+  bool get _isRecordsTab => _tabCtrl.index == 1;
 
   @override
   void initState() {
@@ -53,17 +66,9 @@ class _DownloadPageState extends State<DownloadPage> {
     saveDownloadFilter(_taskFilterKey, value);
   }
 
-  Future<void> _manageTaskGroups(List<DownloadFilterItem> items) async {
-    await showDownloadGroupManageSheet(
-      context,
-      items: items,
-      onSetGroup: (key, group) =>
-          DownloadManager.instance.setTaskGroup(key, group),
-      onChanged: () {
-        if (mounted) setState(() {});
-      },
-    );
-    if (mounted) setState(() {});
+  void _setRecordExistsFilter(String value) {
+    setState(() => _recordExistsFilter = value);
+    saveDownloadFilter(_recordFilterKey, value);
   }
 
   /// 长按下载中卡片：选择移动到哪个分组（= 下载目录子目录）
@@ -216,37 +221,188 @@ class _DownloadPageState extends State<DownloadPage> {
 
   @override
   Widget build(BuildContext context) {
-    final manager = DownloadManager.instance;
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: Appbar(
-          title: Text(t.download),
-          actions: [
-            IconButton(
-              tooltip: t.downloadSettings,
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => _showSettings(context),
-            ),
-          ],
-          bottom: CapsuleTabBar(
-            labels: [t.downloadActive, t.downloadRecords],
-            height: 42,
-            padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+    return Scaffold(
+      appBar: Appbar(
+        title: Text(t.download),
+        actions: [
+          IconButton(
+            tooltip: _sortByName ? t.sortModeName : t.sortModeTime,
+            icon: Icon(_sortByName ? Icons.sort_by_alpha : Icons.sort),
+            onPressed: _toggleSort,
           ),
+          IconButton(
+            tooltip: t.manageGroups,
+            icon: const Icon(Icons.tune),
+            onPressed: () =>
+                _isRecordsTab ? _recordsKey.currentState?.manage() : _manageTaskGroups(),
+          ),
+          IconButton(
+            tooltip: t.downloadSettings,
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => _showSettings(context),
+          ),
+        ],
+        bottom: _DownloadAppbarBottom(
+          controller: _tabCtrl,
+          existsFilter: _recordExistsFilter,
+          onExistsFilter: _setRecordExistsFilter,
         ),
-        body: TabBarView(
-          children: [
-            _buildActiveTab(context, manager),
-            const _RecordsTab(),
-          ],
-        ),
+      ),
+      body: TabBarView(
+        controller: _tabCtrl,
+        children: [
+          _ActiveTab(
+            filter: _taskFilter,
+            onFilter: _setTaskFilter,
+            onMove: _moveTaskToGroup,
+          ),
+          _RecordsTab(
+            key: _recordsKey,
+            existsFilter: _recordExistsFilter,
+          ),
+        ],
       ),
     );
   }
 
-  /// 正在下载：筛选条 + 操作按钮行 + 未完成任务列表
-  Widget _buildActiveTab(BuildContext context, DownloadManager manager) {
+  /// 排序方式：false = 时间，true = 名称 A-Z
+  bool get _sortByName => appdata.implicitData['downloadSortByName'] == true;
+
+  void _toggleSort() {
+    setState(() {
+      appdata.implicitData['downloadSortByName'] = !_sortByName;
+      appdata.writeImplicitData();
+    });
+  }
+
+  /// AppBar 分组管理入口：条目取全部任务
+  Future<void> _manageTaskGroups() async {
+    final tasks = DownloadManager.instance.tasks;
+    await showDownloadGroupManageSheet(
+      context,
+      items: [
+        for (final task in tasks)
+          (
+            key: task.id,
+            label: (task.episode ?? '').isEmpty
+                ? task.title
+                : '${task.title} · ${task.episode}',
+            group: task.group,
+          ),
+      ],
+      onSetGroup: (key, group) =>
+          DownloadManager.instance.setTaskGroup(key, group),
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+    if (mounted) setState(() {});
+  }
+}
+
+/// AppBar 底部：正在下载/下载记录 主导航 +（仅下载记录）存在的/已删除筛选
+class _DownloadAppbarBottom extends StatelessWidget
+    implements PreferredSizeWidget {
+  const _DownloadAppbarBottom({
+    required this.controller,
+    required this.existsFilter,
+    required this.onExistsFilter,
+  });
+
+  final TabController controller;
+  final String existsFilter;
+  final ValueChanged<String> onExistsFilter;
+
+  static const double _height = 46;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(_height);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final isRecords = controller.index == 1;
+        return SizedBox(
+          height: _height,
+          child: Row(
+            children: [
+              Flexible(
+                child: CapsuleTabBar(
+                  controller: controller,
+                  labels: [t.downloadActive, t.downloadRecords],
+                  height: _height,
+                  center: false,
+                  padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
+                ),
+              ),
+              if (isRecords)
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12, bottom: 2),
+                    child: DownloadFilterBar(
+                      padding: EdgeInsets.zero,
+                      builtins: [
+                        (key: 'all', label: t.all),
+                        (key: 'exists', label: t.exists),
+                        (key: 'deleted', label: t.deleted),
+                      ],
+                      selected: existsFilter,
+                      onSelected: onExistsFilter,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 正在下载：筛选条（仅状态）+ 操作按钮行 + 未完成任务列表
+class _ActiveTab extends StatelessWidget {
+  const _ActiveTab({
+    required this.filter,
+    required this.onFilter,
+    required this.onMove,
+  });
+
+  final String filter;
+  final ValueChanged<String> onFilter;
+  final void Function(DownloadTask task) onMove;
+
+  bool get _sortByName => appdata.implicitData['downloadSortByName'] == true;
+
+  List<DownloadTask> _filterTasks(List<DownloadTask> unfinished) {
+    switch (filter) {
+      case 'downloading':
+        return unfinished
+            .where((t) => t.status == DownloadStatus.downloading)
+            .toList();
+      case 'paused':
+        return unfinished
+            .where((t) => t.status == DownloadStatus.paused)
+            .toList();
+      case 'failed':
+        return unfinished
+            .where((t) => t.status == DownloadStatus.failed)
+            .toList();
+    }
+    return unfinished;
+  }
+
+  List<DownloadTask> _sortTasks(List<DownloadTask> list) {
+    if (!_sortByName) return list;
+    return [...list]..sort(
+      (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final manager = DownloadManager.instance;
     final tasks = manager.tasks;
     final unfinished = tasks
         .where((t) => t.status != DownloadStatus.completed)
@@ -283,21 +439,8 @@ class _DownloadPageState extends State<DownloadPage> {
             (key: 'paused', label: t.paused),
             (key: 'failed', label: t.failed),
           ],
-          groups: DownloadManager.groups(),
-          selected: _taskFilter,
-          onSelected: _setTaskFilter,
-          sortByName: _sortByName,
-          onToggleSort: _toggleSort,
-          onManage: () => _manageTaskGroups([
-            for (final task in tasks)
-              (
-                key: task.id,
-                label: (task.episode ?? '').isEmpty
-                    ? task.title
-                    : '${task.title} · ${task.episode}',
-                group: task.group,
-              ),
-          ]),
+          selected: filter,
+          onSelected: onFilter,
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -348,14 +491,14 @@ class _DownloadPageState extends State<DownloadPage> {
                     ),
                   ),
                 )
-              : ListView(
+                : ListView(
                   padding: const EdgeInsets.only(bottom: 16),
                   children: [
                     for (final (i, task) in filtered.indexed)
                       _DownloadTile(
                         index: i + 1,
                         task: task,
-                        onLongPress: () => _moveTaskToGroup(task),
+                        onLongPress: () => onMove(task),
                       ),
                   ],
                 ),
@@ -363,50 +506,14 @@ class _DownloadPageState extends State<DownloadPage> {
       ],
     );
   }
-
-  /// 排序方式：false = 时间，true = 名称 A-Z
-  bool get _sortByName => appdata.implicitData['downloadSortByName'] == true;
-
-  void _toggleSort() {
-    setState(() {
-      appdata.implicitData['downloadSortByName'] = !_sortByName;
-      appdata.writeImplicitData();
-    });
-  }
-
-  List<DownloadTask> _sortTasks(List<DownloadTask> list) {
-    if (!_sortByName) return list;
-    return [...list]..sort(
-      (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-    );
-  }
-
-  List<DownloadTask> _filterTasks(List<DownloadTask> unfinished) {
-    switch (_taskFilter) {
-      case 'downloading':
-        return unfinished
-            .where((t) => t.status == DownloadStatus.downloading)
-            .toList();
-      case 'paused':
-        return unfinished
-            .where((t) => t.status == DownloadStatus.paused)
-            .toList();
-      case 'failed':
-        return unfinished
-            .where((t) => t.status == DownloadStatus.failed)
-            .toList();
-    }
-    if (_taskFilter.startsWith(kDownloadGroupPrefix)) {
-      final name = _taskFilter.substring(kDownloadGroupPrefix.length);
-      return unfinished.where((t) => t.group == name).toList();
-    }
-    return unfinished;
-  }
 }
 
 /// 下载记录 tab：已完成的下载（本地播放 / 外部播放 / 删除）
 class _RecordsTab extends StatefulWidget {
-  const _RecordsTab();
+  const _RecordsTab({super.key, required this.existsFilter});
+
+  /// 存在的/已删除筛选（由 AppBar 底部那行控制）
+  final String existsFilter;
 
   @override
   State<_RecordsTab> createState() => _RecordsTabState();
@@ -421,7 +528,11 @@ class _RecordsTabState extends State<_RecordsTab> {
   /// filePath → 文件大小（字节）
   final Map<String, int> _sizes = {};
 
-  String _filter = readDownloadFilter(_recordFilterKey, 'exists');
+  /// 分组筛选：all / ungrouped / g:<分组名>
+  String _groupFilter = readDownloadFilter(_recordGroupFilterKey, 'all');
+
+  /// 子组筛选：子组完整名（空 = 该组全部）
+  String _subFilter = '';
 
   Timer? _reloadTimer;
   bool _reloading = false;
@@ -556,15 +667,8 @@ class _RecordsTabState extends State<_RecordsTab> {
     await _reload();
   }
 
-  /// 排序方式：false = 时间，true = 名称 A-Z
+  /// 排序方式：false = 时间，true = 名称 A-Z（AppBar 统一切换）
   bool get _sortByName => appdata.implicitData['downloadSortByName'] == true;
-
-  void _toggleSort() {
-    setState(() {
-      appdata.implicitData['downloadSortByName'] = !_sortByName;
-      appdata.writeImplicitData();
-    });
-  }
 
   /// 记录排序：已删除（文件不存在）沉底，其余按时间倒序或名称 A-Z
   List<Map<String, dynamic>> _sortRecords(List<Map<String, dynamic>> list) {
@@ -584,32 +688,49 @@ class _RecordsTabState extends State<_RecordsTab> {
     });
   }
 
+  /// 记录筛选：存在的/已删除（AppBar）+ 分组/子组（本页胶囊行）独立组合
   List<Map<String, dynamic>> _filtered() {
-    switch (_filter) {
+    var list = _records;
+    switch (widget.existsFilter) {
       case 'exists':
-        return _sortRecords(
-          _records.where((r) => _exists[r['filePath']] == true).toList(),
-        );
+        list = list.where((r) => _exists[r['filePath']] == true).toList();
       case 'deleted':
-        return _sortRecords(
-          _records.where((r) => _exists[r['filePath']] != true).toList(),
-        );
-      case 'ungrouped':
-        return _sortRecords(
-          _records
-              .where((r) => (r['group']?.toString() ?? '') == '')
-              .toList(),
-        );
+        list = list.where((r) => _exists[r['filePath']] != true).toList();
     }
-    if (_filter.startsWith(kDownloadGroupPrefix)) {
-      final name = _filter.substring(kDownloadGroupPrefix.length);
-      return _sortRecords(
-        _records
-            .where((r) => (r['group']?.toString() ?? '') == name)
-            .toList(),
-      );
+    if (_groupFilter == 'ungrouped') {
+      list = list.where((r) => (r['group']?.toString() ?? '') == '').toList();
+    } else if (_groupFilter.startsWith(kDownloadGroupPrefix)) {
+      final name = _groupFilter.substring(kDownloadGroupPrefix.length);
+      if (_subFilter.isNotEmpty) {
+        // 选中具体子组：只看该子组
+        list = list
+            .where((r) => (r['group']?.toString() ?? '') == _subFilter)
+            .toList();
+      } else {
+        // 顶层组：含其子组（子组行可选具体子组收窄）
+        final prefix = '$name${DownloadManager.groupSeparator}';
+        list = list.where((r) {
+          final g = r['group']?.toString() ?? '';
+          return g == name || g.startsWith(prefix);
+        }).toList();
+      }
     }
-    return _sortRecords(_records);
+    return _sortRecords(list);
+  }
+
+  /// 当前选中的自定义分组（完整名）；未选中自定义分组时为 null
+  String? get _selectedGroup {
+    if (!_groupFilter.startsWith(kDownloadGroupPrefix)) return null;
+    return _groupFilter.substring(kDownloadGroupPrefix.length);
+  }
+
+  void _setGroupFilter(String value) {
+    setState(() {
+      _groupFilter = value;
+      // 切换分组时清掉子组筛选
+      if (!value.startsWith(kDownloadGroupPrefix)) _subFilter = '';
+    });
+    saveDownloadFilter(_recordGroupFilterKey, value);
   }
 
   String _recordLabel(Map<String, dynamic> r) {
@@ -621,10 +742,8 @@ class _RecordsTabState extends State<_RecordsTab> {
         : title;
   }
 
-  void _setFilter(String value) {
-    setState(() => _filter = value);
-    saveDownloadFilter(_recordFilterKey, value);
-  }
+  /// AppBar 的「管理分组」入口调用
+  Future<void> manage() => _manageGroups();
 
   Future<void> _manageGroups() async {
     await showDownloadGroupManageSheet(
@@ -674,20 +793,33 @@ class _RecordsTabState extends State<_RecordsTab> {
     final filtered = _filtered();
     return Column(
       children: [
+        // 分组行：全部 / 未分组 + 顶层自建组
         DownloadFilterBar(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
           builtins: [
             (key: 'all', label: t.all),
-            (key: 'exists', label: t.exists),
-            (key: 'deleted', label: t.deleted),
             (key: 'ungrouped', label: t.ungrouped),
           ],
-          groups: DownloadManager.groups(),
-          selected: _filter,
-          onSelected: _setFilter,
-          sortByName: _sortByName,
-          onToggleSort: _toggleSort,
-          onManage: _manageGroups,
+          groups: DownloadManager.rootGroups(),
+          selected: _groupFilter,
+          onSelected: _setGroupFilter,
         ),
+        // 有子组的分组：额外一行子组胶囊
+        if (_selectedGroup != null &&
+            DownloadManager.hasSubGroups(_selectedGroup!))
+          DownloadFilterBar(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 2),
+            builtins: [(key: 'all', label: t.all)],
+            groups: DownloadManager.subGroupsOf(_selectedGroup!),
+            selected: _subFilter.isEmpty
+                ? 'all'
+                : '$kDownloadGroupPrefix$_subFilter',
+            onSelected: (v) => setState(() {
+              _subFilter = v == 'all'
+                  ? ''
+                  : v.substring(kDownloadGroupPrefix.length);
+            }),
+          ),
         const Divider(height: 1),
         Expanded(
           child: filtered.isEmpty

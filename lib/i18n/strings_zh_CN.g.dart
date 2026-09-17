@@ -1096,6 +1096,13 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get searchGroupBuiltIn => '内置分组';
 	@override String get searchGroupCustom => '我的分组';
 	@override String get manageGroups => '管理分组';
+	@override String get downloadSubGroup => '子组';
+	@override String get downloadGroupRoot => '顶层组';
+	@override String get downloadNewSubGroup => '新建子组';
+	@override String get downloadMigrateGroup => '迁移到…';
+	@override String get downloadMigrateToRoot => '移到顶层';
+	@override String get downloadMigrateHere => '迁移到此组';
+	@override String get downloadNoMigrateTarget => '没有可迁移到的分组';
 	@override String get newGroup => '新建分组';
 	@override String get groupName => '分组名称';
 	@override String get groupExists => '分组名称已存在';
@@ -4101,6 +4108,13 @@ extension on TranslationsZhCn {
 			'searchGroupBuiltIn' => '内置分组',
 			'searchGroupCustom' => '我的分组',
 			'manageGroups' => '管理分组',
+			'downloadSubGroup' => '子组',
+			'downloadGroupRoot' => '顶层组',
+			'downloadNewSubGroup' => '新建子组',
+			'downloadMigrateGroup' => '迁移到…',
+			'downloadMigrateToRoot' => '移到顶层',
+			'downloadMigrateHere' => '迁移到此组',
+			'downloadNoMigrateTarget' => '没有可迁移到的分组',
 			'newGroup' => '新建分组',
 			'groupName' => '分组名称',
 			'groupExists' => '分组名称已存在',
@@ -4531,6 +4545,8 @@ extension on TranslationsZhCn {
 			'memes' => '表情包',
 			'memeSaved' => '已保存到表情包',
 			'networkInfo' => '网络信息',
+			_ => null,
+		} ?? switch (path) {
 			'netLogMeta' => '仅概要',
 			'netLogFull' => '完整',
 			'netLogHint' => '概要只记方法/地址/状态/大小/耗时；完整包含请求头与响应正文（超长会截断）',
@@ -4538,8 +4554,6 @@ extension on TranslationsZhCn {
 			'statsInfo' => '统计信息',
 			'ratingDetails' => '评分详情',
 			'sourceInfo' => '源信息',
-			_ => null,
-		} ?? switch (path) {
 			'playerInfo' => '播放信息',
 			'logPrivacyProtection' => '日志隐私保护',
 			'logPrivacyProtectionDesc' => '对日志中的 token、密钥、密码等敏感信息打码',
@@ -5045,6 +5059,8 @@ extension on TranslationsZhCn {
 			'screenshotFailedPleaseRetry' => '截图失败，请重试',
 			'shareFailed' => '分享失败',
 			'connectionFailed' => '连接失败',
+			_ => null,
+		} ?? switch (path) {
 			'copySuccess' => '复制成功',
 			'addToFavoritesSuccess' => '添加收藏成功',
 			'deleteFailed' => '删除失败',
@@ -5052,8 +5068,6 @@ extension on TranslationsZhCn {
 			'confirmDeleteImageHint' => '删除后将无法恢复',
 			'confirmDeleteAiProvider' => '确定删除该 AI 服务商配置？',
 			'noTagData' => '暂无标签数据',
-			_ => null,
-		} ?? switch (path) {
 			'authenticationRequired' => '需要身份验证',
 			'pleaseAuthenticate' => '请继续身份验证',
 			'shutDown' => '关闭',
@@ -5559,6 +5573,8 @@ extension on TranslationsZhCn {
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
 			'apiFormat' => '接口格式',
+			_ => null,
+		} ?? switch (path) {
 			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
 			'apiFormatGemini' => 'Google（Gemini）',
@@ -5566,8 +5582,6 @@ extension on TranslationsZhCn {
 			'testConnection' => '测试连接',
 			'testApiKey' => '检测 API Key',
 			'enabledByApiKey' => '填写 API Key 后自动启用',
-			_ => null,
-		} ?? switch (path) {
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => '连接成功',

@@ -32,70 +32,50 @@ void saveDownloadFilter(String storageKey, String value) {
   appdata.writeImplicitData();
 }
 
-/// 顶部筛选/分组胶囊条 + 管理入口
+/// 筛选/分组胶囊条（排序与管理入口在 AppBar）
 class DownloadFilterBar extends StatelessWidget {
   const DownloadFilterBar({
     super.key,
     required this.builtins,
-    required this.groups,
+    this.groups = const [],
     required this.selected,
     required this.onSelected,
-    required this.onManage,
-    required this.sortByName,
-    required this.onToggleSort,
+    this.padding = const EdgeInsets.fromLTRB(12, 0, 12, 2),
   });
 
   final List<DownloadFilterOption> builtins;
+
+  /// 自定义分组（顶层分组用完整名，子组用最后一段显示）
   final List<String> groups;
   final String selected;
   final ValueChanged<String> onSelected;
-  final VoidCallback onManage;
-  final bool sortByName;
-  final VoidCallback onToggleSort;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 6, 2),
-      child: Row(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: CapsuleOptions(
-                children: [
-                  for (final b in builtins)
-                    CapsuleOption(
-                      text: b.label,
-                      isSelected: selected == b.key,
-                      onTap: () => onSelected(b.key),
-                    ),
-                  for (final name in groups)
-                    CapsuleOption(
-                      text: name,
-                      isSelected: selected == '$kDownloadGroupPrefix$name',
-                      onTap: () => onSelected('$kDownloadGroupPrefix$name'),
-                    ),
-                ],
+      padding: padding,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: CapsuleOptions(
+          alignment: WrapAlignment.start,
+          children: [
+            for (final b in builtins)
+              CapsuleOption(
+                text: b.label,
+                isSelected: selected == b.key,
+                onTap: () => onSelected(b.key),
               ),
-            ),
-          ),
-          IconButton(
-            tooltip: sortByName ? t.sortModeName : t.sortModeTime,
-            visualDensity: VisualDensity.compact,
-            icon: Icon(
-              sortByName ? Icons.sort_by_alpha : Icons.sort,
-              size: 20,
-            ),
-            onPressed: onToggleSort,
-          ),
-          IconButton(
-            tooltip: t.manageGroups,
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.tune, size: 20),
-            onPressed: onManage,
-          ),
-        ],
+            for (final name in groups)
+              CapsuleOption(
+                text: DownloadManager.isSubGroup(name)
+                    ? DownloadManager.leafOf(name)
+                    : name,
+                isSelected: selected == '$kDownloadGroupPrefix$name',
+                onTap: () => onSelected('$kDownloadGroupPrefix$name'),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -123,59 +103,154 @@ Future<void> showDownloadGroupManageSheet(
   );
 }
 
-/// 选择要移动到的分组（长按条目卡片触发）
+/// 选择要移动到的分组（长按条目卡片触发）：支持搜索 + 全部/未分组/顶层/子组筛选
 Future<void> showDownloadGroupPicker(
   BuildContext context, {
   required String current,
   required Future<void> Function(String group) onSelected,
 }) {
-  final groups = DownloadManager.groups();
   return showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: Colors.transparent,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: (_) => Sheet(
+    builder: (_) => _DownloadGroupPicker(
+      current: current,
+      onSelected: onSelected,
+    ),
+  );
+}
+
+class _DownloadGroupPicker extends StatefulWidget {
+  const _DownloadGroupPicker({required this.current, required this.onSelected});
+
+  final String current;
+  final Future<void> Function(String group) onSelected;
+
+  @override
+  State<_DownloadGroupPicker> createState() => _DownloadGroupPickerState();
+}
+
+class _DownloadGroupPickerState extends State<_DownloadGroupPicker> {
+  final _searchCtrl = TextEditingController();
+  String _keyword = '';
+
+  /// all / ungrouped / root / sub
+  String _filter = 'all';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<String> get _groups {
+    if (_filter == 'ungrouped') return const [];
+    final all = DownloadManager.groups();
+    final k = _keyword.trim().toLowerCase();
+    return all.where((g) {
+      final isSub = DownloadManager.isSubGroup(g);
+      if (_filter == 'root' && isSub) return false;
+      if (_filter == 'sub' && !isSub) return false;
+      if (k.isEmpty) return true;
+      final leaf = DownloadManager.leafOf(g).toLowerCase();
+      return g.toLowerCase().contains(k) || leaf.contains(k);
+    }).toList();
+  }
+
+  String _label(String group) => DownloadManager.isSubGroup(group)
+      ? '${DownloadManager.leafOf(group)}  ·  '
+            '${group.substring(0, group.lastIndexOf(DownloadManager.groupSeparator))}'
+      : group;
+
+  void _choose(String group) {
+    Navigator.pop(context);
+    widget.onSelected(group);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final groups = _groups;
+    return Sheet(
       title: t.moveToFolder,
       icon: Icons.drive_file_move_outline,
-      initialSize: 0.5,
-      builder: (context, sc) => ListView(
-        controller: sc,
+      initialSize: 0.65,
+      builder: (context, sc) => Column(
         children: [
-          _GroupChoiceTile(
-            label: t.ungrouped,
-            selected: current.isEmpty,
-            onTap: () {
-              Navigator.pop(context);
-              onSelected('');
-            },
-          ),
-          for (final g in groups)
-            _GroupChoiceTile(
-              label: g,
-              selected: current == g,
-              onTap: () {
-                Navigator.pop(context);
-                onSelected(g);
-              },
-            ),
-          if (groups.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Text(
-                  t.noData,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _keyword = v),
+              decoration: InputDecoration(
+                hintText: t.search,
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _keyword.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _keyword = '');
+                        },
+                      ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
+          ),
+          DownloadFilterBar(
+            builtins: [
+              (key: 'all', label: t.all),
+              (key: 'ungrouped', label: t.ungrouped),
+              (key: 'root', label: t.downloadGroupRoot),
+              (key: 'sub', label: t.downloadSubGroup),
+            ],
+            selected: _filter,
+            onSelected: (v) => setState(() => _filter = v),
+          ),
+          const Divider(height: 1),
+          Expanded(child: _buildList(sc, cs, groups)),
         ],
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _buildList(
+    ScrollController sc,
+    ColorScheme cs,
+    List<String> groups,
+  ) {
+    final showUngrouped = _filter == 'all' || _filter == 'ungrouped';
+    if (!showUngrouped && groups.isEmpty) {
+      return Center(
+        child: Text(t.noData, style: TextStyle(color: cs.onSurfaceVariant)),
+      );
+    }
+    return ListView(
+      controller: sc,
+      padding: const EdgeInsets.only(bottom: 12),
+      children: [
+        if (showUngrouped)
+          _GroupChoiceTile(
+            label: t.ungrouped,
+            selected: widget.current.isEmpty,
+            onTap: () => _choose(''),
+          ),
+        for (final g in groups)
+          _GroupChoiceTile(
+            label: _label(g),
+            selected: widget.current == g,
+            onTap: () => _choose(g),
+          ),
+      ],
+    );
+  }
 }
 
 class _GroupChoiceTile extends StatelessWidget {
@@ -193,11 +268,12 @@ class _GroupChoiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ListTile(
+      dense: true,
       leading: Icon(
         selected ? Icons.radio_button_checked : Icons.folder_outlined,
         color: selected ? cs.primary : cs.onSurfaceVariant,
       ),
-      title: Text(label),
+      title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       selected: selected,
       onTap: onTap,
     );
@@ -221,16 +297,30 @@ class _DownloadGroupManageSheet extends StatefulWidget {
 }
 
 class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
+  /// 层级展示用扁平列表：顶层分组 + 其直接子组（保持登记顺序）
   late List<String> _groups;
 
   @override
   void initState() {
     super.initState();
-    _groups = DownloadManager.groups();
+    _groups = _flatten();
+  }
+
+  List<String> _flatten() {
+    final out = <String>[];
+    for (final g in DownloadManager.rootGroups()) {
+      out.add(g);
+      out.addAll(DownloadManager.subGroupsOf(g));
+    }
+    // 兜底：登记顺序异常时也把漏掉的组补上
+    for (final g in DownloadManager.groups()) {
+      if (!out.contains(g)) out.add(g);
+    }
+    return out;
   }
 
   void _refresh() {
-    setState(() => _groups = DownloadManager.groups());
+    setState(() => _groups = _flatten());
     widget.onChanged();
   }
 
@@ -258,25 +348,86 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
     ).whenComplete(ctrl.dispose);
   }
 
-  Future<void> _create() async {
-    final name = await _promptName(title: t.newGroup);
+  /// 新建分组；[parent] 非空时在其下新建子组
+  Future<void> _create({String parent = ''}) async {
+    final name = await _promptName(
+      title: parent.isEmpty ? t.newGroup : t.downloadNewSubGroup,
+    );
     if (name == null || name.isEmpty) return;
-    if (_groups.contains(name)) {
+    final full = DownloadManager.childName(parent, name);
+    if (DownloadManager.groups().contains(full)) {
       App.rootContext.showMessage(message: t.groupExists);
       return;
     }
-    await DownloadManager.createGroup(name);
+    await DownloadManager.createGroup(full);
     _refresh();
   }
 
   Future<void> _rename(String old) async {
-    final name = await _promptName(initial: old, title: t.rename);
-    if (name == null || name.isEmpty || name == old) return;
-    if (_groups.contains(name)) {
+    final name = await _promptName(
+      initial: DownloadManager.leafOf(old),
+      title: t.rename,
+    );
+    if (name == null || name.isEmpty) return;
+    final parent = DownloadManager.isSubGroup(old)
+        ? old.substring(0, old.lastIndexOf(DownloadManager.groupSeparator))
+        : '';
+    final full = DownloadManager.childName(parent, name);
+    if (full == old) return;
+    if (DownloadManager.groups().contains(full)) {
       App.rootContext.showMessage(message: t.groupExists);
       return;
     }
-    await DownloadManager.instance.renameGroup(old, name);
+    await DownloadManager.instance.renameGroup(old, full);
+    _refresh();
+  }
+
+  /// 迁移分组：选一个父分组（空 = 顶层）
+  Future<void> _migrate(String name) async {
+    final excluded = DownloadManager.groupWithDescendants(name).toSet();
+    final candidates = DownloadManager.groups()
+        .where((g) => !excluded.contains(g))
+        .toList();
+    final parent = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Sheet(
+        title: t.downloadMigrateGroup,
+        icon: Icons.drive_file_move_outline,
+        initialSize: 0.5,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
+          children: [
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.home_outlined),
+              title: Text(t.downloadMigrateToRoot),
+              enabled: DownloadManager.isSubGroup(name),
+              onTap: () => Navigator.pop(ctx, ''),
+            ),
+            for (final g in candidates)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.folder_outlined),
+                title: Text(g, maxLines: 1, overflow: TextOverflow.ellipsis),
+                onTap: () => Navigator.pop(ctx, g),
+              ),
+            if (candidates.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(child: Text(t.downloadNoMigrateTarget)),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (parent == null) return;
+    final ok = await DownloadManager.instance.migrateGroup(name, parent);
+    if (ok == null) {
+      App.rootContext.showMessage(message: t.groupExists);
+      return;
+    }
     _refresh();
   }
 
@@ -335,7 +486,7 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             leading: const Icon(Icons.add),
             text: t.newGroup,
-            onTap: _create,
+            onTap: () => _create(),
           ),
         ),
       ),
@@ -351,53 +502,118 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
               buildDefaultDragHandles: false,
               itemCount: _groups.length,
               onReorderItem: (oldIndex, newIndex) {
-                DownloadManager.reorderGroups(oldIndex, newIndex);
+                final list = List<String>.from(_groups);
+                final item = list.removeAt(oldIndex);
+                list.insert(newIndex.clamp(0, list.length), item);
+                DownloadManager.setGroupOrder(list);
                 _refresh();
               },
-              itemBuilder: (context, i) {
-                final name = _groups[i];
-                return ListTile(
-                  key: ValueKey(name),
-                  leading: Icon(
-                    Icons.create_new_folder_outlined,
-                    color: cs.primary,
-                  ),
-                  title: Text(name),
-                  subtitle: Text(
-                    t.itemsCount(
-                      n: widget.items.where((e) => e.group == name).length,
-                    ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: t.assignSources,
-                        icon: const Icon(Icons.checklist),
-                        onPressed: () => _assign(name),
-                      ),
-                      IconButton(
-                        tooltip: t.rename,
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _rename(name),
-                      ),
-                      IconButton(
-                        tooltip: t.delete,
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _delete(name),
-                      ),
-                      ReorderableDragStartListener(
-                        index: i,
-                        child: Icon(
-                          Icons.drag_handle,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              itemBuilder: (context, i) => _groupTile(context, cs, i),
             ),
+    );
+  }
+
+  Widget _groupTile(BuildContext context, ColorScheme cs, int i) {
+    final name = _groups[i];
+    final isSub = DownloadManager.isSubGroup(name);
+    final count = widget.items.where((e) => e.group == name).length;
+    return ListTile(
+      key: ValueKey(name),
+      dense: true,
+      contentPadding: EdgeInsets.only(left: isSub ? 36 : 12, right: 4),
+      leading: Icon(
+        isSub ? Icons.subdirectory_arrow_right : Icons.create_new_folder_outlined,
+        color: cs.primary,
+      ),
+      title: Text(DownloadManager.leafOf(name)),
+      subtitle: Text(
+        isSub
+            ? '${t.itemsCount(n: count)} · '
+                  '${name.substring(0, name.lastIndexOf(DownloadManager.groupSeparator))}'
+            : t.itemsCount(n: count),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, size: 20, color: cs.onSurfaceVariant),
+            onSelected: (v) {
+              switch (v) {
+                case 'assign':
+                  _assign(name);
+                case 'sub':
+                  _create(parent: name);
+                case 'migrate':
+                  _migrate(name);
+                case 'rename':
+                  _rename(name);
+                case 'delete':
+                  _delete(name);
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'assign',
+                child: Row(
+                  children: [
+                    const Icon(Icons.checklist, size: 18),
+                    const SizedBox(width: 8),
+                    Text(t.assignSources),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'sub',
+                child: Row(
+                  children: [
+                    const Icon(Icons.create_new_folder_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text(t.downloadNewSubGroup),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'migrate',
+                child: Row(
+                  children: [
+                    const Icon(Icons.drive_file_move_outline, size: 18),
+                    const SizedBox(width: 8),
+                    Text(t.downloadMigrateGroup),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'rename',
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text(t.rename),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 18, color: cs.error),
+                    const SizedBox(width: 8),
+                    Text(t.delete),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // 子组跟随父组展示，只允许顶层分组拖动排序
+          if (!isSub)
+            ReorderableDelayedDragStartListener(
+              index: i,
+              child: Icon(Icons.drag_handle, color: cs.onSurfaceVariant),
+            ),
+        ],
+      ),
     );
   }
 }

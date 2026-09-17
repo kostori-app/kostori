@@ -1107,6 +1107,13 @@ singleSourceSearch: Single Source
 searchGroupBuiltIn: Built-in groups
 searchGroupCustom: My groups
 manageGroups: Manage Groups
+downloadSubGroup: Sub-groups
+downloadGroupRoot: Top-level
+downloadNewSubGroup: New sub-group
+downloadMigrateGroup: Move to…
+downloadMigrateToRoot: Move to top level
+downloadMigrateHere: Move into this group
+downloadNoMigrateTarget: No group available
 newGroup: New Group
 groupName: Group Name
 groupExists: Group name already exists
