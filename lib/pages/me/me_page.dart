@@ -250,45 +250,37 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (DataSync().lastError != null)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      showDialogMessage(
-                        App.rootContext,
-                        t.error,
-                        DataSync().lastError!,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(t.error, style: ts.s12),
-                        ],
+                  Tooltip(
+                    message: t.error,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        showDialogMessage(
+                          App.rootContext,
+                          t.error,
+                          DataSync().lastError!,
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.error_outline,
+                          color: context.colorScheme.error,
+                          size: 20,
+                        ),
                       ),
                     ),
-                  ).paddingRight(4),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.cloud_upload_outlined),
+                  tooltip: t.upload,
                   onPressed: () async {
                     DataSync().uploadData();
                   },
                 ),
                 IconButton(
                   icon: const Icon(Icons.cloud_download_outlined),
+                  tooltip: t.download,
                   onPressed: () async {
                     DataSync().downloadData();
                   },
@@ -590,19 +582,23 @@ class _ToolEntryGrid extends ConsumerWidget {
                   Icon(Icons.dashboard, color: cs.primary, size: 24),
                   const SizedBox(width: 8),
                   Expanded(child: Text(t.aggregationEntry, style: ts.s16)),
-                  // 连接服务器快捷入口（聚合入口右侧）
-                  TextButton.icon(
-                    onPressed: () =>
-                        showPopUpWidget(context, const HubClientDetailPage()),
-                    icon: Icon(
-                      connected ? Icons.link : Icons.link_off,
-                      size: 16,
-                      color: connected ? cs.primary : cs.onSurfaceVariant,
-                    ),
-                    label: Text(t.connectToHub),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                  // 连接服务器快捷入口（聚合入口右侧，仅图标 + 悬浮提示）
+                  Tooltip(
+                    message: t.connectToHub,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => showPopUpWidget(
+                        context,
+                        const HubClientDetailPage(),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          connected ? Icons.link : Icons.link_off,
+                          size: 20,
+                          color: connected ? cs.primary : cs.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ),
                 ],

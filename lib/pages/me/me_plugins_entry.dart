@@ -144,13 +144,19 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
                       ),
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: _openManage,
-                    icon: const Icon(Icons.settings_outlined, size: 16),
-                    label: Text(t.manage),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                  Tooltip(
+                    message: t.manage,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: _openManage,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.settings_outlined,
+                          size: 20,
+                          color: cs.primary,
+                        ),
+                      ),
                     ),
                   ),
                 ],
