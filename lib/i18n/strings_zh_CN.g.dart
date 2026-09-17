@@ -2433,7 +2433,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get editAssistantProfile => '编辑档案';
 	@override String get profileName => '档案名称';
 	@override String get profileIcon => '图标';
-	@override String get profileIconHint => '一个 emoji，例如 🤖';
 	@override String get profileIconUpload => '上传图片';
 	@override String get askUser => '询问用户';
 	@override String get askUserInputHint => '输入回答（可留空）';
@@ -5402,7 +5401,6 @@ extension on TranslationsZhCn {
 			'editAssistantProfile' => '编辑档案',
 			'profileName' => '档案名称',
 			'profileIcon' => '图标',
-			'profileIconHint' => '一个 emoji，例如 🤖',
 			'profileIconUpload' => '上传图片',
 			'askUser' => '询问用户',
 			'askUserInputHint' => '输入回答（可留空）',
@@ -5526,9 +5524,9 @@ extension on TranslationsZhCn {
 			'aiContextBudget' => '上下文预算（token）',
 			'aiContextBudgetHint' => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制',
 			'contextBudget' => '上下文预算（token）',
+			'contextBudgetHint' => '留空跟随助手档案 / 全局设置，0 表示不限制',
 			_ => null,
 		} ?? switch (path) {
-			'contextBudgetHint' => '留空跟随助手档案 / 全局设置，0 表示不限制',
 			'profileMemoryEntries' => '记忆条目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暂无记忆条目',

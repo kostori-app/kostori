@@ -367,7 +367,7 @@ class AssistantProfile {
   const AssistantProfile({
     required this.id,
     required this.name,
-    this.icon = '🤖',
+    this.icon = '',
     this.persona = '',
     this.tone = '',
     this.personalityTags = const [],
@@ -455,7 +455,7 @@ class AssistantProfile {
           (json['id'] as String?) ??
           'p_${DateTime.now().millisecondsSinceEpoch}',
       name: (json['name'] as String?) ?? '未命名助手',
-      icon: (json['icon'] as String?) ?? '🤖',
+      icon: (json['icon'] as String?) ?? '',
       persona: (json['persona'] as String?) ?? '',
       tone: (json['tone'] as String?) ?? '',
       personalityTags: strList(json['personalityTags']),
@@ -572,7 +572,7 @@ You are a helpful assistant, called assistant, based on model {{model_name}}.
 final AssistantProfile defaultProfile = AssistantProfile(
   id: 'assistant_default',
   name: '通用助手',
-  icon: '🤖',
+  icon: '',
   persona: '你是一位友好、可靠的通用助手，乐于以清晰、有条理的方式帮助用户解决各类问题。',
   tone: '自然、亲切，避免生硬；根据场景适当调整正式或轻松的语气。',
   systemPrompt: kBaseSystemPrompt,

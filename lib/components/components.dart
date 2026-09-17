@@ -95,6 +95,7 @@ part 'scroll.dart';
 part 'select.dart';
 
 part 'select_card.dart';
+part 'assistant_avatar.dart';
 
 part 'sheet.dart';
 

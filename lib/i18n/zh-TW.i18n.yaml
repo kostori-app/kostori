@@ -2456,7 +2456,6 @@ newProfile: 新增檔案
 editAssistantProfile: 編輯檔案
 profileName: 檔案名稱
 profileIcon: 圖示
-profileIconHint: 一個 emoji，例如 🤖
 profileIconUpload: 上傳圖片
 askUser: 詢問使用者
 askUserInputHint: 輸入回答（可留空）

@@ -87,7 +87,9 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     super.initState();
     final p = widget.profile;
     _nameCtrl = TextEditingController(text: p?.name ?? '');
-    _iconCtrl = TextEditingController(text: p?.icon ?? '🤖');
+    _iconCtrl = TextEditingController(
+      text: (p?.icon ?? '').startsWith('data:image') ? p!.icon : '',
+    );
     _personaCtrl = TextEditingController(text: p?.persona ?? '');
     _toneCtrl = TextEditingController(text: p?.tone ?? '');
     _tagsCtrl = TextEditingController(
@@ -220,7 +222,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     return AssistantProfile(
       id: id,
       name: _nameCtrl.text.trim(),
-      icon: _iconCtrl.text.trim().isEmpty ? '🤖' : _iconCtrl.text.trim(),
+      icon: _iconCtrl.text.trim(),
       persona: _personaCtrl.text.trim(),
       tone: _toneCtrl.text.trim(),
       personalityTags: _lines(_tagsCtrl),
@@ -494,39 +496,27 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? t.required : null,
           ),
-          // 头像：可填 emoji，也可上传图片（存 base64）
-          if (_iconCtrl.text.startsWith('data:image'))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                children: [
-                  AssistantAvatar(icon: _iconCtrl.text, size: 44),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(t.profileIcon, style: ts.s12)),
+          // 头像：仅支持上传图片（base64 存储），不再用 emoji
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              children: [
+                AssistantAvatar(icon: _iconCtrl.text, size: 44),
+                const SizedBox(width: 12),
+                Expanded(child: Text(t.profileIcon, style: ts.s12)),
+                if (_iconCtrl.text.startsWith('data:image'))
                   TextButton.icon(
                     icon: const Icon(Icons.delete_outline, size: 18),
                     label: Text(t.remove),
-                    onPressed: () => setState(() => _iconCtrl.text = '🤖'),
+                    onPressed: () => setState(() => _iconCtrl.text = ''),
+                  )
+                else
+                  TextButton.icon(
+                    icon: const Icon(Icons.image_outlined, size: 18),
+                    label: Text(t.profileIconUpload),
+                    onPressed: _pickIconImage,
                   ),
-                ],
-              ),
-            )
-          else
-            _field(
-              t.profileIcon,
-              _iconCtrl,
-              icon: Icons.emoji_emotions_outlined,
-              hintText: t.profileIconHint,
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: const Icon(Icons.image_outlined, size: 18),
-                label: Text(t.profileIconUpload),
-                onPressed: _pickIconImage,
-              ),
+              ],
             ),
           ),
         ],

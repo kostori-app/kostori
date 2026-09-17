@@ -1951,37 +1951,7 @@ class _AssistantProfileTile extends StatelessWidget {
   }
 }
 
-/// 助手头像：emoji 直接显示；base64 图片（data:image/...）渲染为圆形图
-class AssistantAvatar extends StatelessWidget {
-  const AssistantAvatar({super.key, required this.icon, this.size = 40});
 
-  final String icon;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    if (icon.startsWith('data:image')) {
-      try {
-        final comma = icon.indexOf(',');
-        final bytes = base64Decode(icon.substring(comma + 1));
-        return ClipOval(
-          child: Image.memory(
-            bytes,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-          ),
-        );
-      } catch (_) {}
-    }
-    return CircleAvatar(
-      radius: size / 2,
-      backgroundColor: scheme.secondaryContainer,
-      child: Text(icon.isEmpty ? '🤖' : icon, style: TextStyle(fontSize: size * 0.6)),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 // 助手档案 编辑弹窗

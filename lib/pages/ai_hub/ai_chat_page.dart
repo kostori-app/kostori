@@ -1183,7 +1183,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
           children: [
             for (final p in store.profiles)
               ListTile(
-                leading: Text(p.icon, style: const TextStyle(fontSize: 22)),
+                leading: AssistantAvatar(icon: p.icon, size: 32),
                 title: Text(p.name),
                 subtitle: p.persona.trim().isEmpty
                     ? null
