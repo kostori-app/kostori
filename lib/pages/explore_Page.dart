@@ -712,11 +712,9 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(height: widget.topInset),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Center(
-              child: _SourceDisplayModeBar(sourceKey: animeSourceKey),
-            ),
+          AnimeSourceLayoutBar(
+            sourceKey: animeSourceKey,
+            crossAxisAlignment: CrossAxisAlignment.center,
           ),
         ],
       ),
@@ -1143,87 +1141,4 @@ class ExploreSourceDisplayMode {
       setSourceDisplayMode(sourceKey, mode);
 }
 
-/// 探索页每源布局切换条：简洁 / 详细 / 瀑布流。
-/// 已自定义该源时显示覆盖模式并附「跟随全局」重置按钮；
-/// 未自定义时高亮全局默认模式。
-class _SourceDisplayModeBar extends StatelessWidget {
-  const _SourceDisplayModeBar({required this.sourceKey});
 
-  final String sourceKey;
-
-  @override
-  Widget build(BuildContext context) {
-    final override = ExploreSourceDisplayMode.of(sourceKey);
-    final value = override ?? appdata.settings['animeDisplayMode'];
-    final colorScheme = Theme.of(context).colorScheme;
-    final modes = [
-      ('brief', t.brief),
-      ('detailed', t.detailed),
-      ('masonry', t.masonry),
-      ('poster', t.poster),
-    ];
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.all(3),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: modes.map((mode) {
-              final (key, label) = mode;
-              final selected = value == key;
-              return GestureDetector(
-                onTap: () => ExploreSourceDisplayMode.set(sourceKey, key),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected ? colorScheme.surface : Colors.transparent,
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.toOpacity(0.08),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      color: selected
-                          ? colorScheme.onSurface
-                          : colorScheme.onSurface.toOpacity(0.45),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        if (override != null) ...[
-          const SizedBox(width: 4),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            iconSize: 16,
-            tooltip: t.sourceDisplayModeReset,
-            icon: Icon(Icons.restore, color: colorScheme.outline),
-            onPressed: () => ExploreSourceDisplayMode.set(sourceKey, null),
-          ),
-        ],
-      ],
-    );
-  }
-}

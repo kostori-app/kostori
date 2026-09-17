@@ -71,26 +71,29 @@ void setSourceDisplayMode(String sourceKey, String? mode, [String? subKey]) {
   App.forceRebuild();
 }
 
-/// 二级页面内容顶部的布局切换条（简洁 / 详细 / 瀑布流 / 海报）：
-/// 可单独覆盖该页面的显示模式；覆盖后右侧出现「跟随默认」重置按钮。
+/// 内容顶部的番剧卡片布局切换条（探索页同款分段控件）：
+/// 简洁 / 详细 / 瀑布流 / 海报；覆盖了该页显示模式时右侧出现「恢复默认」。
 class AnimeSourceLayoutBar extends StatelessWidget {
   const AnimeSourceLayoutBar({
     super.key,
     required this.sourceKey,
     this.subKey,
-    this.padding = const EdgeInsets.fromLTRB(8, 4, 8, 4),
+    this.crossAxisAlignment = CrossAxisAlignment.start,
+    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
   });
 
   final String sourceKey;
 
   final String? subKey;
 
+  final CrossAxisAlignment crossAxisAlignment;
+
   final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     final override = sourceDisplayModeOf(sourceKey, subKey);
-    final current = override ?? appdata.settings['animeDisplayMode'];
+    final value = override ?? appdata.settings['animeDisplayMode'];
     final colorScheme = Theme.of(context).colorScheme;
     final modes = [
       ('brief', t.brief),
@@ -100,28 +103,78 @@ class AnimeSourceLayoutBar extends StatelessWidget {
     ];
     return Padding(
       padding: padding,
-      child: CapsuleOptions(
-        alignment: WrapAlignment.start,
-        scrollable: true,
-        actionButton: override == null
-            ? null
-            : Tooltip(
-                message: t.sourceDisplayModeReset,
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 16,
-                  icon: Icon(Icons.restore, color: colorScheme.outline),
-                  onPressed: () =>
-                      setSourceDisplayMode(sourceKey, null, subKey),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: crossAxisAlignment,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.all(3),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: modes.map((mode) {
+                    final (key, label) = mode;
+                    final selected = value == key;
+                    return GestureDetector(
+                      onTap: () =>
+                          setSourceDisplayMode(sourceKey, key, subKey),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeInOut,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? colorScheme.surface
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: selected
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.toOpacity(0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: selected
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurface.toOpacity(0.45),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
-        children: [
-          for (final (key, label) in modes)
-            CapsuleOption(
-              text: label,
-              isSelected: current == key,
-              onTap: () => setSourceDisplayMode(sourceKey, key, subKey),
-            ),
+              if (override != null) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 16,
+                  tooltip: t.sourceDisplayModeReset,
+                  icon: Icon(Icons.restore, color: colorScheme.outline),
+                  onPressed: () => setSourceDisplayMode(sourceKey, null, subKey),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
