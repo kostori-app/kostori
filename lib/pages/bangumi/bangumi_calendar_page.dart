@@ -90,6 +90,20 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
     final missingIds = recentIds
         .where((id) => !existingIds.contains(id) && !skipIds.contains(id))
         .toList();
+    // 已缓存过详情（binding 表）的条目直接拿来用，不再请求网络
+    if (missingIds.isNotEmpty) {
+      final cachedItems = <BangumiItem>[];
+      for (final id in List<int>.from(missingIds)) {
+        final cached = await manager.getBangumiItem(id);
+        if (cached == null) continue;
+        missingIds.remove(id);
+        cachedItems.add(cached);
+      }
+      for (final item in cachedItems) {
+        existingIds.add(item.id);
+        allItems.add(item);
+      }
+    }
 
     final supplementToCache = <BangumiItem>[];
     if (missingIds.isNotEmpty) {
@@ -134,6 +148,10 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
       // 写回本地缓存，下次 getWeeks 直接命中，不再请求接口
       try {
         await manager.batchAddBangumiCalendar(supplementToCache);
+        // 同时写入 binding 表：即使日历行丢失，下次也能直接命中详情缓存
+        for (final item in supplementToCache) {
+          await manager.addBangumiBinding(item);
+        }
       } catch (e, s) {
         Log.warning('补全日历缓存', '$e\n$s');
       }

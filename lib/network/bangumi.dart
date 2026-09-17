@@ -301,13 +301,26 @@ class Bangumi {
     return personList;
   }
 
+  /// 本次会话内的详情缓存：同一 id 不重复请求（启动时多个入口可能同时发起）
+  static final Map<int, BangumiItem> _infoMemo = {};
+
   Future<BangumiItem?> getBangumiInfoByID(int id) async {
+    // 会话内缓存：同一 id 一次启动内只请求一次
+    // （跨启动的持久缓存交给日历补全的 binding 检查，避免详情页拿到过期数据）
+    final memo = _infoMemo[id];
+    if (memo != null) return memo;
     try {
       final res = await _dio.request(
         Api.bangumiInfoByID + id.toString(),
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
-      return BangumiItem.fromJson(res.data);
+      final item = BangumiItem.fromJson(res.data);
+      _infoMemo[id] = item;
+      // 写入本地库，后续启动直接命中
+      try {
+        await manager.addBangumiBinding(item);
+      } catch (_) {}
+      return item;
     } catch (e, s) {
       NetLog.error('getBangumiInfoByID', '$e\n$s');
       return null;
