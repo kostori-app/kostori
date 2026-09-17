@@ -494,26 +494,22 @@ class _WatcherState extends State<Watcher>
     playerController.loadFailed = false;
     try {
       if (!mounted) return;
-      final actualPlayUrl = await _resolvePlayUrl(res);
 
-      // 播放直链时把 cookie jar 中匹配该域名 cookie 附加到请求头（部分 CDN 校验）
+      // 先组装请求头（源 httpHeaders + cookie），再决定是否走代理：
+      // 走代理时这些头要交给代理使用，播放器只访问本地代理地址
       Map<String, String>? playHeaders;
-      if (actualPlayUrl == res && headers != null) {
+      if (headers != null) {
         playHeaders = Map<String, String>.from(headers!);
-        final uri = Uri.tryParse(actualPlayUrl);
-        if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
-          try {
-            final cookieHeader = await SingleInstanceCookieJar.instance
-                ?.loadForRequestCookieHeader(uri);
-            if (cookieHeader != null && cookieHeader.isNotEmpty) {
-              playHeaders['Cookie'] = cookieHeader;
-            }
-          } catch (_) {}
-        }
+        final cookieHeader = await _cookieHeaderFor(res);
+        if (cookieHeader.isNotEmpty) playHeaders['Cookie'] = cookieHeader;
       }
 
+      final actualPlayUrl = await _resolvePlayUrl(res, playHeaders);
+      final isDirect = actualPlayUrl == res;
+
       playerController.playUrl = actualPlayUrl;
-      playerController.videoHeaders = actualPlayUrl == res ? playHeaders : null;
+      // 直链：头由播放器带；走代理：头交给代理
+      playerController.videoHeaders = isDirect ? playHeaders : null;
       PlayLog.info('_play', '播放地址: $actualPlayUrl\n请求头: $playHeaders');
 
       // 步骤2：加载媒体数据
@@ -522,7 +518,7 @@ class _WatcherState extends State<Watcher>
       await playerController.player.open(
         Media(
           actualPlayUrl,
-          httpHeaders: actualPlayUrl == res ? playHeaders : const {},
+          httpHeaders: isDirect ? (playHeaders ?? const {}) : const {},
         ),
       );
     } catch (e, s) {
@@ -546,13 +542,41 @@ class _WatcherState extends State<Watcher>
     _startHistoryTimer();
   }
 
-  /// m3u8 广告过滤开启时走本地代理
-  Future<String> _resolvePlayUrl(String res) async {
+  /// 取播放地址应携带的 cookie：
+  /// 先按播放地址域名取；取不到再退回源站点域名（Referer 的 host）——
+  /// 很多 CDN 只认主站下发的 cookie，直接按 CDN 域取会为空
+  Future<String> _cookieHeaderFor(String url) async {
+    try {
+      final jar = SingleInstanceCookieJar.instance;
+      if (jar == null) return '';
+      final uri = Uri.tryParse(url);
+      if (uri == null || uri.host.isEmpty) return '';
+      final direct = await jar.loadForRequestCookieHeader(uri);
+      if (direct.isNotEmpty) return direct;
+      final referer = headers?['Referer'] ?? headers?['referer'];
+      final refUri = referer == null ? null : Uri.tryParse(referer);
+      if (refUri != null &&
+          refUri.host.isNotEmpty &&
+          refUri.host != uri.host) {
+        return await jar.loadForRequestCookieHeader(refUri);
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  /// m3u8 广告过滤开启时走本地代理（代理需要同样的请求头，含 cookie）
+  Future<String> _resolvePlayUrl(
+    String res, [
+    Map<String, String>? playHeaders,
+  ]) async {
     if (appdata.settings['m3u8AdFilterEnabled'] != true) return res;
     final isM3u8 =
         res.contains('.m3u8') || res.contains('mpegurl') || await _isM3u8(res);
     if (!isM3u8) return res;
-    final proxyUrl = await M3u8ProxyServer.instance.proxyUrl(res, headers);
+    final proxyUrl = await M3u8ProxyServer.instance.proxyUrl(
+      res,
+      playHeaders ?? headers,
+    );
     PlayLog.info('M3u8Proxy', '代理地址: $proxyUrl');
     return proxyUrl;
   }
