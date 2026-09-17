@@ -193,7 +193,7 @@ class _BodyState extends State<_Body> {
   void _loadFilter() {
     final saved = appdata.implicitData[_filterKey];
     if (saved is Map) {
-      _searchCtrl.text = saved['search']?.toString() ?? '';
+      // 搜索词不恢复：每次进入页面都从空白开始，避免上次搜索残留
       _isBangumiFilter = saved['isBangumi']?.toString() ?? 'all';
       _enabledFilter = saved['enabled']?.toString() ?? 'all';
       _sort = saved['sort']?.toString() ?? 'default';
@@ -202,7 +202,6 @@ class _BodyState extends State<_Body> {
 
   void _saveFilter() {
     appdata.implicitData[_filterKey] = {
-      'search': _searchCtrl.text,
       'isBangumi': _isBangumiFilter,
       'enabled': _enabledFilter,
       'sort': _sort,
@@ -492,8 +491,12 @@ class _BodyState extends State<_Body> {
   }
 
   Widget buildCard(BuildContext context) {
-    return _BuildSectionPadding(
-      DropTarget(
+    // 水平留白 8 + 卡片自带 12 = 20，与下方筛选栏(20)对齐；
+    // 不改筛选栏宽度（它是基准），只把这张卡加宽到同宽
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      sliver: SliverToBoxAdapter(
+        child: DropTarget(
         onDragDone: _onDragDone,
         onDragEntered: (_) {
           if (mounted) setState(() => _isDragging = true);
@@ -643,6 +646,7 @@ class _BodyState extends State<_Body> {
               ),
           ],
         ),
+      ),
       ),
     );
   }
