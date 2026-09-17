@@ -57,7 +57,10 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
     setState(() {});
   }
 
-  Widget _bangumiListSliver(BuildContext context, List<BangumiItem> bangumiItems) {
+  Widget _bangumiListSliver(
+    BuildContext context,
+    List<BangumiItem> bangumiItems,
+  ) {
     if (_layoutMode == 'detailed') {
       return SliverGrid(
         delegate: SliverChildBuilderDelegate((context, index) {
@@ -70,8 +73,10 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
       );
     }
     if (!useBriefMode) {
-      final columns =
-          ((MediaQuery.sizeOf(context).width / 140).floor()).clamp(2, 6);
+      final columns = ((MediaQuery.sizeOf(context).width / 140).floor()).clamp(
+        2,
+        6,
+      );
       return SliverMasonryGrid.count(
         crossAxisCount: columns,
         mainAxisSpacing: 4,
@@ -108,9 +113,7 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
       controller: scrollController,
       slivers: [
         SliverAppbar(
-          style: context.width < changePoint
-              ? AppbarStyle.shadow
-              : AppbarStyle.blur,
+          style: AppbarStyle.blur,
           leading: Tooltip(
             message: t.folders,
             child: context.width <= _kTwoPanelChangeWidth
