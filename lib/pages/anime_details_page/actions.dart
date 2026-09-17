@@ -875,20 +875,10 @@ class _BangumiSearchSheetState extends ConsumerState<_BangumiSearchSheet> {
   Widget build(BuildContext context) {
     return NestedScrollView(
       headerSliverBuilder: (_, _) => [
-        SliverAppBar(
-          pinned: true,
-          floating: true,
-          snap: true,
-          automaticallyImplyLeading: false,
-          flexibleSpace: ClipRect(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                color: context.colorScheme.surface.toOpacity(0.22),
-              ),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
+        SliverAppbar(
+          style: AppbarStyle.blur,
+          // 弹层内不需要返回键
+          leading: const SizedBox(),
           title: SizedBox(
             height: 52,
             child: Padding(

@@ -68,24 +68,10 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
           ),
           CustomScrollView(
             slivers: [
-              // SliverAppBar 全宽显示，不受 maxWidth 限制
-              SliverAppBar(
+              // 项目统一头部（磨砂玻璃），全宽显示，不受 maxWidth 限制
+              SliverAppbar(
                 title: Text(t.allEpisodes),
-                backgroundColor: Colors.transparent,
-                flexibleSpace: ClipRect(
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surface.toOpacity(0.22),
-                    ),
-                  ),
-                ),
-                pinned: true,
-                floating: true,
-                snap: true,
-                elevation: 0,
+                style: AppbarStyle.blur,
                 leading: IconButton(
                   onPressed: () {
                     Navigator.maybePop(context);

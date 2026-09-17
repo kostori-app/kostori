@@ -288,18 +288,14 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
 
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppBar(
-          pinned: true,
-          floating: true,
-          snap: true,
-          automaticallyImplyLeading: false,
-          elevation: 4,
-          titleSpacing: 0,
-          backgroundColor: Theme.of(context).colorScheme.surface,
+        SliverAppbar(
           title: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: commentsInfo,
           ),
+          style: AppbarStyle.blur,
+          // 弹层内不需要返回键
+          leading: const SizedBox(),
         ),
         SliverFillRemaining(
           hasScrollBody: true,
