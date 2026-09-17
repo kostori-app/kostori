@@ -40,8 +40,9 @@ class _DownloadPageState extends State<DownloadPage>
     with SingleTickerProviderStateMixin {
   String _taskFilter = readDownloadFilter(_taskFilterKey, 'all');
 
-  /// 下载记录的「存在的/已删除」筛选（与分组筛选相互独立）
-  String _recordExistsFilter = readDownloadFilter(_recordFilterKey, 'exists');
+  /// 下载记录的「存在的/已删除」筛选（可选项，不是必选维度：
+  /// 点已选中的项即取消筛选回到「全部」）
+  String _recordExistsFilter = readDownloadFilter(_recordFilterKey, 'all');
 
   late final TabController _tabCtrl = TabController(length: 2, vsync: this)
     ..addListener(() => setState(() {}));
@@ -56,6 +57,11 @@ class _DownloadPageState extends State<DownloadPage>
     super.initState();
     DownloadManager.instance.init();
     DownloadManager.instance.addListener(_onChange);
+    // 兼容旧版单维度筛选存下的值（如 ungrouped / 分组名）：无效值按「全部」处理
+    if (!const ['all', 'exists', 'deleted'].contains(_recordExistsFilter)) {
+      _recordExistsFilter = 'all';
+      saveDownloadFilter(_recordFilterKey, 'all');
+    }
   }
 
   void _onChange() {
@@ -68,8 +74,11 @@ class _DownloadPageState extends State<DownloadPage>
   }
 
   void _setRecordExistsFilter(String value) {
-    setState(() => _recordExistsFilter = value);
-    saveDownloadFilter(_recordFilterKey, value);
+    // 作为筛选能力可以不选：再次点击已选中的筛选项即取消（回到「全部」）
+    final next =
+        (value == _recordExistsFilter && value != 'all') ? 'all' : value;
+    setState(() => _recordExistsFilter = next);
+    saveDownloadFilter(_recordFilterKey, next);
   }
 
   /// 长按卡片：选择移动到哪个分组（= 下载目录子目录）

@@ -751,15 +751,15 @@ class _DownloadGroupItemPickerState extends State<_DownloadGroupItemPicker> {
                   )
                 : ListView.builder(
                     controller: sc,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: items.length,
                     itemBuilder: (context, i) {
                       final it = items[i];
-                      return CheckboxListTile(
-                        dense: true,
-                        title: Text(it.label),
-                        value: _selected.contains(it.key),
+                      return SelectCard(
+                        selected: _selected.contains(it.key),
+                        title: it.label,
                         onChanged: (v) => setState(() {
-                          if (v == true) {
+                          if (v) {
                             _selected.add(it.key);
                           } else {
                             _selected.remove(it.key);
