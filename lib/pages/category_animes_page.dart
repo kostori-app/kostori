@@ -153,10 +153,6 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
                 icon: const Icon(Icons.open_in_new),
                 onPressed: () => launchUrlString(widget.webUrl!),
               ),
-            AnimeSourceLayoutMenu(
-              sourceKey: widget.sourceKey,
-              subKey: 'category:${widget.category}',
-            ),
           ],
         ),
         body: body,
@@ -183,7 +179,16 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
   }
 
   Widget buildOptions() {
-    List<Widget> children = [];
+    List<Widget> children = [
+      // 内容顶部：布局切换条（简洁 / 详细 / 瀑布流 / 海报）
+      AnimeSourceLayoutBar(
+        sourceKey: widget.sourceKey,
+        subKey: 'category:${widget.category}',
+        padding: const EdgeInsets.only(bottom: 8),
+      ),
+      const Divider(height: 1),
+      const SizedBox(height: 8),
+    ];
     var group = 0;
     for (var optionList in options!) {
       if (optionList.label.isNotEmpty) {

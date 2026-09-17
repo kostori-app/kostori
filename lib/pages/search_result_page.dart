@@ -99,10 +99,24 @@ class _SearchResultPageState extends State<SearchResultPage> {
       mode: sourceDisplayModeOf(widget.sourceKey, 'search'),
       child: AnimeList(
         key: Key(text + options.toString() + sourceKey),
-        errorLeading: AppSearchBar(controller: controller, action: buildAction()),
-        leadingSliver: SliverSearchBar(
-          controller: controller,
-          action: buildAction(),
+        errorLeading: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppSearchBar(controller: controller, action: buildAction()),
+            AnimeSourceLayoutBar(sourceKey: widget.sourceKey, subKey: 'search'),
+          ],
+        ),
+        // 搜索栏下方、内容上方：布局切换条
+        leadingSliver: SliverMainAxisGroup(
+          slivers: [
+            SliverSearchBar(controller: controller, action: buildAction()),
+            SliverToBoxAdapter(
+              child: AnimeSourceLayoutBar(
+                sourceKey: widget.sourceKey,
+                subKey: 'search',
+              ),
+            ),
+          ],
         ),
         loadPage: source!.searchPageData!.loadPage == null
             ? null
@@ -122,7 +136,6 @@ class _SearchResultPageState extends State<SearchResultPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AnimeSourceLayoutMenu(sourceKey: widget.sourceKey, subKey: 'search'),
         if (widget.webUrl != null && widget.webUrl!.isNotEmpty)
           Tooltip(
             message: t.openInBrowser,

@@ -71,58 +71,59 @@ void setSourceDisplayMode(String sourceKey, String? mode, [String? subKey]) {
   App.forceRebuild();
 }
 
-/// 二级页面顶部布局切换菜单：可单独覆盖该页面的显示模式，
-/// 未覆盖时跟随源级/全局默认。
-class AnimeSourceLayoutMenu extends StatelessWidget {
-  const AnimeSourceLayoutMenu({
+/// 二级页面内容顶部的布局切换条（简洁 / 详细 / 瀑布流 / 海报）：
+/// 可单独覆盖该页面的显示模式；覆盖后右侧出现「跟随默认」重置按钮。
+class AnimeSourceLayoutBar extends StatelessWidget {
+  const AnimeSourceLayoutBar({
     super.key,
     required this.sourceKey,
     this.subKey,
+    this.padding = const EdgeInsets.fromLTRB(8, 4, 8, 4),
   });
 
   final String sourceKey;
 
   final String? subKey;
 
+  final EdgeInsetsGeometry padding;
+
   @override
   Widget build(BuildContext context) {
+    final override = sourceDisplayModeOf(sourceKey, subKey);
+    final current = override ?? appdata.settings['animeDisplayMode'];
     final colorScheme = Theme.of(context).colorScheme;
-    final current =
-        sourceDisplayModeOf(sourceKey, subKey) ??
-        appdata.settings['animeDisplayMode'];
     final modes = [
       ('brief', t.brief),
       ('detailed', t.detailed),
       ('masonry', t.masonry),
       ('poster', t.poster),
     ];
-    return PopupMenuButton<String>(
-      tooltip: t.displayModeOfAnimeTile,
-      icon: const Icon(Icons.grid_view_outlined),
-      onSelected: (v) =>
-          setSourceDisplayMode(sourceKey, v == '_default' ? null : v, subKey),
-      itemBuilder: (_) => [
-        for (final (key, label) in modes)
-          PopupMenuItem(
-            value: key,
-            child: Row(
-              children: [
-                Icon(
-                  key == current ? Icons.check : Icons.circle_outlined,
-                  size: 18,
-                  color: key == current ? colorScheme.primary : null,
+    return Padding(
+      padding: padding,
+      child: CapsuleOptions(
+        alignment: WrapAlignment.start,
+        scrollable: true,
+        actionButton: override == null
+            ? null
+            : Tooltip(
+                message: t.sourceDisplayModeReset,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  iconSize: 16,
+                  icon: Icon(Icons.restore, color: colorScheme.outline),
+                  onPressed: () =>
+                      setSourceDisplayMode(sourceKey, null, subKey),
                 ),
-                const SizedBox(width: 8),
-                Text(label),
-              ],
+              ),
+        children: [
+          for (final (key, label) in modes)
+            CapsuleOption(
+              text: label,
+              isSelected: current == key,
+              onTap: () => setSourceDisplayMode(sourceKey, key, subKey),
             ),
-          ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: '_default',
-          child: Text(subKey != null ? t.followSourceDefault : t.sortByDefault),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
