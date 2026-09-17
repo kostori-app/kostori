@@ -507,12 +507,11 @@ class DownloadManager extends ChangeNotifier {
     _speedSampleBytes.remove(id);
   }
 
-  /// mp4 直链：dart:io HttpClient 流式下载（断点续传 + 取消 + 连接中断重试）。
+  /// mp4 直链：AppDio（rhttp/reqwest）流式下载（断点续传 + 取消 + 连接中断重试）。
   ///
-  /// 不用 dio/rhttp：部分 CDN（moedet 等）拒绝 reqwest 的请求特征
-  /// （默认头/HTTP2 等），但 curl/浏览器（dart:io 与之一致）可正常下载。
-  /// 大文件传输中连接被服务端断开（HttpException: Connection closed）较常见，
-  /// 失败后基于已写入字节用 Range 续传，避免整个重下。
+  /// 用 `extra['httpVersion11']` 强制 HTTP/1.1：部分 CDN（moedet 等）对
+  /// reqwest 默认协商出的 HTTP/2 请求返回 400，HTTP/1.1 可正常下载。
+  /// 大文件传输中连接被服务端断开较常见，失败后基于已写入字节用 Range 续传。
   Future<void> _downloadDirect(
     DownloadTask task,
     FfmpegCancelToken cancelToken,
@@ -520,43 +519,64 @@ class DownloadManager extends ChangeNotifier {
   ) async {
     final tmp = File(tmpPath);
     const maxAttempts = 5;
+    final dio = AppDio();
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       if (cancelToken.isCancelled) throw FfmpegCancelledException();
       final downloaded = await tmp.exists() ? await tmp.length() : 0;
       task.downloadedBytes = downloaded;
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 20);
       var received = 0;
-      int total = -1;
+      var total = -1;
       var interrupted = false;
+      // 把 FfmpegCancelToken 的取消转发给 dio，及时中断正在进行的请求
+      final dioCancel = CancelToken();
+      final watch = Timer.periodic(const Duration(milliseconds: 300), (_) {
+        if (cancelToken.isCancelled && !dioCancel.isCancelled) {
+          dioCancel.cancel();
+        }
+      });
       try {
-        final request = await client.getUrl(Uri.parse(task.url));
-        request.headers.set(
-          'User-Agent',
-          task.headers['User-Agent'] ??
+        final headers = <String, dynamic>{
+          'User-Agent':
+              task.headers['User-Agent'] ??
               task.headers['user-agent'] ??
               _browserUA,
-        );
-        // 始终带 Range（首次 bytes=0-，续传从已下载处继续）
-        request.headers.set('Range', 'bytes=$downloaded-');
+          // 始终带 Range（首次 bytes=0-，续传从已下载处继续）
+          'Range': 'bytes=$downloaded-',
+          // 绕过网络缓存，避免 Range 与缓存冲突
+          'cache-time': 'no',
+        };
         task.headers.forEach((k, v) {
           final lk = k.toLowerCase();
           if (lk != 'user-agent' && lk != 'range') {
-            request.headers.set(k, v);
+            headers[k] = v;
           }
         });
-        final response = await request.close();
-        if (response.statusCode != 200 && response.statusCode != 206) {
+        final res = await dio.get<ResponseBody>(
+          task.url,
+          options: Options(
+            responseType: ResponseType.stream,
+            headers: headers,
+            followRedirects: true,
+            receiveTimeout: null,
+            extra: {'httpVersion11': true, 'streaming': true},
+          ),
+          cancelToken: dioCancel,
+        );
+        final status = res.statusCode ?? 0;
+        if (status != 200 && status != 206) {
           // 4xx/5xx（含 410 链接失效）不可通过 Range 续传恢复，直接失败不重试
-          throw _DownloadHttpError(response.statusCode);
+          throw _DownloadHttpError(status);
         }
-        total = response.contentLength;
+        final contentLength =
+            int.tryParse(res.headers.value('content-length') ?? '') ?? -1;
+        total = contentLength;
         if (downloaded == 0 && total >= 0) {
           task.totalBytes = total;
         }
+        final stream = res.data!.stream;
         final sink = tmp.openWrite(mode: FileMode.append);
         try {
-          await for (final chunk in response) {
+          await for (final chunk in stream) {
             if (cancelToken.isCancelled) {
               await sink.close();
               throw FfmpegCancelledException();
@@ -587,15 +607,27 @@ class DownloadManager extends ChangeNotifier {
           if (attempt >= maxAttempts) {
             throw Exception('下载中断：连接多次断开，请重试');
           }
-          // 短暂等待后续传（已下载部分保留在临时文件）
           await Future.delayed(Duration(seconds: attempt));
           continue;
         }
         if (cancelToken.isCancelled) throw FfmpegCancelledException();
         task.progress = 1;
         break;
+      } on DioException catch (e) {
+        if (CancelToken.isCancel(e) || cancelToken.isCancelled) {
+          throw FfmpegCancelledException();
+        }
+        final code = e.response?.statusCode;
+        if (code != null && code != 200 && code != 206) {
+          throw _DownloadHttpError(code);
+        }
+        if (attempt >= maxAttempts) {
+          throw Exception('下载中断：连接多次断开，请重试');
+        }
+        await Future.delayed(Duration(seconds: attempt));
+        continue;
       } finally {
-        client.close(force: true);
+        watch.cancel();
       }
     }
     notifyListeners();
