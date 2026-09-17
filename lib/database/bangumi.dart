@@ -502,23 +502,7 @@ class BangumiManager with ChangeNotifier {
     List<String> ids,
   ) {
     return _guard(() async {
-      DebugLog.info(
-        'checkWhetherDataExistsBatch',
-        'start, ids.length=${ids.length}',
-      );
       if (ids.isEmpty) return <String, BangumiDataEntry>{};
-
-      // 查询前先看数据库总数
-      final count = await _db
-          .customSelect(
-            'SELECT COUNT(*) as cnt FROM bangumi_data',
-            readsFrom: {_db.bangumiDataTable},
-          )
-          .getSingle();
-      DebugLog.info(
-        'checkWhetherDataExistsBatch',
-        'total db rows=${count.read<int>('cnt')}',
-      );
 
       final conditions = List.generate(
         ids.length,
@@ -535,11 +519,6 @@ class BangumiManager with ChangeNotifier {
             readsFrom: {_db.bangumiDataTable},
           )
           .get();
-
-      DebugLog.info(
-        'checkWhetherDataExistsBatch',
-        'matched rows=${rows.length}',
-      );
 
       final result = <String, BangumiDataEntry>{};
       for (final row in rows) {
@@ -560,10 +539,6 @@ class BangumiManager with ChangeNotifier {
         }
       }
 
-      DebugLog.info(
-        'checkWhetherDataExistsBatch',
-        'result size=${result.length}',
-      );
       return result;
     });
   }
@@ -647,7 +622,6 @@ class BangumiManager with ChangeNotifier {
             await addBangumiCalendar(item);
           }
         });
-        DebugLog.info('batchAddBangumiCalendar', items.length.toString());
       } catch (e, stack) {
         DebugLog.info('batchAddBangumiCalendar', e.toString());
         DebugLog.info('batchAddBangumiCalendar', stack.toString());
@@ -679,10 +653,9 @@ class BangumiManager with ChangeNotifier {
   /// 旧版本补全失败时会把 bangumi_data 的 titleTranslate 原始 JSON 当标题写入缓存。
   Future<void> cleanupBrokenCalendarRows() {
     return _guard(() async {
-      await (_db.delete(_db.bangumiCalendarTable)..where(
-            (t) => t.name.like('{%') | t.nameCn.like('{%'),
-          ))
-          .go();
+      await (_db.delete(
+        _db.bangumiCalendarTable,
+      )..where((t) => t.name.like('{%') | t.nameCn.like('{%'))).go();
     });
   }
 
@@ -796,10 +769,7 @@ class BangumiManager with ChangeNotifier {
           );
           return list.map((e) => EpisodeInfo.fromJson(e)).toList();
         } catch (e, s) {
-          DebugLog.error(
-            'allEpInfoFind',
-            'id=$id → jsonDecode failed: $e\n$s',
-          );
+          DebugLog.error('allEpInfoFind', 'id=$id → jsonDecode failed: $e\n$s');
           return <EpisodeInfo>[];
         }
       } catch (e, s) {
