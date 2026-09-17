@@ -2345,6 +2345,36 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Response preview'
 	String get vtResponsePreview => 'Response preview';
 
+	/// en: 'Hardware acceleration'
+	String get vtHwAccel => 'Hardware acceleration';
+
+	/// en: 'Hardware decoding in use'
+	String get vtHwAccelOn => 'Hardware decoding in use';
+
+	/// en: 'Software decoding'
+	String get vtHwAccelOff => 'Software decoding';
+
+	/// en: 'Requested decoder'
+	String get vtHwAccelRequested => 'Requested decoder';
+
+	/// en: 'Active decoder'
+	String get vtHwAccelCurrent => 'Active decoder';
+
+	/// en: 'Playback has not started yet'
+	String get vtHwAccelUnknown => 'Playback has not started yet';
+
+	/// en: 'Renderer'
+	String get vtRenderer => 'Renderer';
+
+	/// en: 'GPU context'
+	String get vtGpuContext => 'GPU context';
+
+	/// en: 'The player probes hwdec drivers one by one at startup (d3d11-egl / dxva2 / cuda…); failures are logged as errors. Trust the "Active decoder" row'
+	String get vtHwAccelHint => 'The player probes hwdec drivers one by one at startup (d3d11-egl / dxva2 / cuda…); failures are logged as errors. Trust the "Active decoder" row';
+
+	/// en: 'Some errors (e.g. property not found _setProperty(osc, 1)) are harmless init notices'
+	String get vtLogNoiseHint => 'Some errors (e.g. property not found _setProperty(osc, 1)) are harmless init notices';
+
 	/// en: 'Main title (Anime name)'
 	String get downloadMainTitle => 'Main title (Anime name)';
 
@@ -9599,6 +9629,16 @@ extension on Translations {
 			'vtAcceptRanges' => 'Range support',
 			'vtHtmlHint' => 'The response is HTML — it may be blocked or need Referer / Cookie',
 			'vtResponsePreview' => 'Response preview',
+			'vtHwAccel' => 'Hardware acceleration',
+			'vtHwAccelOn' => 'Hardware decoding in use',
+			'vtHwAccelOff' => 'Software decoding',
+			'vtHwAccelRequested' => 'Requested decoder',
+			'vtHwAccelCurrent' => 'Active decoder',
+			'vtHwAccelUnknown' => 'Playback has not started yet',
+			'vtRenderer' => 'Renderer',
+			'vtGpuContext' => 'GPU context',
+			'vtHwAccelHint' => 'The player probes hwdec drivers one by one at startup (d3d11-egl / dxva2 / cuda…); failures are logged as errors. Trust the "Active decoder" row',
+			'vtLogNoiseHint' => 'Some errors (e.g. property not found _setProperty(osc, 1)) are harmless init notices',
 			'downloadMainTitle' => 'Main title (Anime name)',
 			'downloadIgnoreEpisodeTitle' => 'Ignore episode titles',
 			'downloadIgnoreEpisodeTitleDesc' => 'Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names',
@@ -9845,6 +9885,8 @@ extension on Translations {
 			'systemNameField' => 'systemName',
 			'systemVersionField' => 'systemVersion',
 			'modelNameField' => 'modelName',
+			_ => null,
+		} ?? switch (path) {
 			'identifierForVendorField' => 'identifierForVendor',
 			'sysnameField' => 'sysname',
 			'nodenameField' => 'nodename',
@@ -9855,8 +9897,6 @@ extension on Translations {
 			'numberOfCoresField' => 'numberOfCores',
 			'systemMemoryInMegabytesField' => 'systemMemoryInMegabytes',
 			'userNameField' => 'userName',
-			_ => null,
-		} ?? switch (path) {
 			'majorVersionField' => 'majorVersion',
 			'minorVersionField' => 'minorVersion',
 			'buildNumberField' => 'buildNumber',
@@ -10359,6 +10399,8 @@ extension on Translations {
 			'hubInfo' => 'Hub Info',
 			'statsInfo' => 'Stats Info',
 			'ratingDetails' => 'Rating Details',
+			_ => null,
+		} ?? switch (path) {
 			'sourceInfo' => 'Source Info',
 			'playerInfo' => 'Player Info',
 			'logPrivacyProtection' => 'Log Privacy Protection',
@@ -10369,8 +10411,6 @@ extension on Translations {
 			'promptConfiguration' => 'Prompt Configuration',
 			'systemPrompt' => 'System Prompt',
 			'temperature' => 'Temperature',
-			_ => null,
-		} ?? switch (path) {
 			'promptSaved' => 'Prompt saved',
 			'editSystemPrompt' => 'Edit System Prompt',
 			'noHistoryYet' => 'No history yet',
@@ -10873,6 +10913,8 @@ extension on Translations {
 			'noTagData' => 'No tag data',
 			'authenticationRequired' => 'Authentication Required',
 			'pleaseAuthenticate' => 'Please authenticate to continue',
+			_ => null,
+		} ?? switch (path) {
 			'shutDown' => 'Shut Down',
 			'uploadingData' => 'Uploading data...',
 			'glimmerModeEnabled' => 'Glimmer mode: on',
@@ -10883,8 +10925,6 @@ extension on Translations {
 			'bangumiDataResetFailed' => 'Bangumi data reset failed...',
 			'playingNextEpisode' => 'Playing next episode',
 			'failedToLoadEpisode' => 'Failed to load episode',
-			_ => null,
-		} ?? switch (path) {
 			'noMoreEpisodes' => 'No more episodes to play',
 			'routeNotFound' => 'Route not found',
 			'loadingDuplicateEpisode' => 'Loading duplicate episode',
@@ -11387,6 +11427,8 @@ extension on Translations {
 			'testConnection' => 'Test connection',
 			'testApiKey' => 'Test API key',
 			'enabledByApiKey' => 'Enabled automatically when an API key is filled in',
+			_ => null,
+		} ?? switch (path) {
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => 'Connection OK',
@@ -11397,8 +11439,6 @@ extension on Translations {
 			'disableReasoning' => 'Disable reasoning',
 			'thinkingLevel' => 'Thinking level',
 			'thinkingLow' => 'Concise',
-			_ => null,
-		} ?? switch (path) {
 			'thinkingStandard' => 'Standard',
 			'thinkingDeep' => 'Deep',
 			'assistantSettings' => 'Assistant settings',

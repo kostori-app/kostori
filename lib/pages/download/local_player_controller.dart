@@ -151,6 +151,10 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       _subs.add(
         p.stream.buffering.listen((v) => _update(state.copyWith(buffering: v))),
       );
+      // 播放错误：详情页的诊断信息要用
+      _subs.add(
+        p.stream.error.listen((e) => _update(state.copyWith(error: e))),
+      );
       await p.open(Media(filePath), play: true);
     } catch (e) {
       _update(state.copyWith(error: e.toString()));

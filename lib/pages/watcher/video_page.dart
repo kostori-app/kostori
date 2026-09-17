@@ -1000,7 +1000,17 @@ bool get _isSeries =>
   }
 
   Widget _buildPlayerDetailsTab() {
-    return VideoInfoSheet.fromController(playerController);
+    return VideoInfoSheet.fromController(
+      playerController,
+      playbackOk: playerController.loadFailed
+          ? false
+          : (playerController.duration > Duration.zero ||
+                    playerController.playing
+                ? true
+                : null),
+      playbackError: playerController.lastPlayError,
+      firstFrame: playerController.duration > Duration.zero,
+    );
   }
 
   Widget get playerBody {

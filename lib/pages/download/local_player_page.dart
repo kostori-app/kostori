@@ -561,6 +561,11 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
           player: ctrl.player,
           videoUrl: widget.filePath,
           logs: const [],
+          playbackOk: st.error.isNotEmpty
+              ? false
+              : (st.duration > Duration.zero || st.playing ? true : null),
+          playbackError: st.error.isEmpty ? null : st.error,
+          firstFrame: st.duration > Duration.zero,
         ),
       ),
     );

@@ -759,6 +759,16 @@ vtRecheck: 重新检测
 vtAcceptRanges: 分段支持
 vtHtmlHint: 响应是 HTML，可能被拦截或需要 Referer / Cookie
 vtResponsePreview: 响应预览
+vtHwAccel: 硬件加速
+vtHwAccelOn: 已启用硬件解码
+vtHwAccelOff: 未启用（软件解码）
+vtHwAccelRequested: 请求的解码方式
+vtHwAccelCurrent: 实际解码方式
+vtHwAccelUnknown: 未开始播放，暂时无法判断
+vtRenderer: 渲染方式
+vtGpuContext: GPU 上下文
+vtHwAccelHint: 播放器启动时会逐个尝试硬件解码驱动（d3d11-egl / dxva2 / cuda…），失败的会打 error 日志，这是正常探测过程，请以「实际解码方式」为准
+vtLogNoiseHint: 部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的无害提示，不影响播放
 downloadMainTitle: 主标题（番剧名）
 downloadIgnoreEpisodeTitle: 不使用集标题
 downloadIgnoreEpisodeTitleDesc: 部分集标题无意义（如 1 / 视频），开启后用集号命名文件

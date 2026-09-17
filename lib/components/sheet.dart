@@ -810,8 +810,19 @@ class MediaWidget extends StatelessWidget {
 }
 
 class VideoInfoSheet extends StatefulWidget {
-  factory VideoInfoSheet.fromController(PlayerController controller) =>
-      VideoInfoSheet._(source: PlayerControllerInfoSource(controller));
+  factory VideoInfoSheet.fromController(
+    PlayerController controller, {
+    VideoProbeResult? probe,
+    String? playbackError,
+    bool? playbackOk,
+    bool firstFrame = false,
+  }) => VideoInfoSheet._(
+    source: PlayerControllerInfoSource(controller),
+    probe: probe,
+    playbackError: playbackError,
+    playbackOk: playbackOk,
+    firstFrame: firstFrame,
+  );
 
   factory VideoInfoSheet.fromPlayer({
     required Player player,
@@ -869,6 +880,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
   VideoProbeResult? _probe;
   bool _probing = false;
   Map<String, String> _mpvProperties = const {};
+  int _tick = 0;
 
   @override
   void initState() {
@@ -876,7 +888,13 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
     _tabControllerZero = TabController(length: 3, vsync: this);
     _tabControllerOne = TabController(length: 3, vsync: this);
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
+      // 诊断页停留时定期重读 mpv 属性：硬件解码/帧率等要开始播放后才有值
+      _tick++;
+      if (_tabControllerZero.index == 1 && _tick % 2 == 0) {
+        unawaited(_loadMpvProperties());
+      }
     });
     _probe = widget.probe;
     if (_probe == null) unawaited(_runProbe());
@@ -1157,6 +1175,47 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               if (widget.playbackError != null)
                 MapEntry(t.vtProbeError, widget.playbackError!),
             ],
+          ),
+          _diagCard(
+            title: t.vtHwAccel,
+            icon: Icons.memory,
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh, size: 18),
+              tooltip: t.vtRecheck,
+              onPressed: _loadMpvProperties,
+            ),
+            rows: [
+              MapEntry(
+                t.vtHwAccelCurrent,
+                switch (isHardwareDecoding(_mpvProperties)) {
+                  true =>
+                    '${t.vtHwAccelOn}'
+                        '${_mpvProperties['hwdec-current']?.isNotEmpty == true ? ' (${_mpvProperties['hwdec-current']})' : ''}',
+                  false => t.vtHwAccelOff,
+                  _ => t.vtHwAccelUnknown,
+                },
+              ),
+              MapEntry(t.vtHwAccelRequested, _mpvProperties['hwdec'] ?? '-'),
+              MapEntry(
+                t.hwPixelFormat,
+                _mpvProperties['video-params/hw-pixelformat'] ??
+                    _mpvProperties['hw-pixelformat'] ??
+                    '-',
+              ),
+              MapEntry(t.vtRenderer, _mpvProperties['vo'] ?? '-'),
+              MapEntry(t.vtGpuContext, _mpvProperties['gpu-context'] ?? '-'),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 12),
+            child: Text(
+              '${t.vtHwAccelHint}\n${t.vtLogNoiseHint}',
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.5,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
           _diagCard(
             title: t.vtMediaProperties,

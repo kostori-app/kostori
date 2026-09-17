@@ -49,6 +49,9 @@ class VideoTestState {
   final bool? playbackOk;
   final bool firstFrame;
 
+  /// mpv 实际使用的硬件解码器（空字符串 = 软件解码，null = 未知）
+  final String? hwdec;
+
   const VideoTestState({
     this.url = '',
     this.headers = const [],
@@ -65,6 +68,7 @@ class VideoTestState {
     this.mediaError,
     this.playbackOk,
     this.firstFrame = false,
+    this.hwdec,
   });
 
   VideoTestState copyWith({
@@ -86,6 +90,8 @@ class VideoTestState {
     bool? playbackOk,
     bool clearPlaybackOk = false,
     bool? firstFrame,
+    String? hwdec,
+    bool clearHwdec = false,
   }) => VideoTestState(
     url: url ?? this.url,
     headers: headers ?? this.headers,
@@ -102,6 +108,7 @@ class VideoTestState {
     mediaError: clearMediaError ? null : (mediaError ?? this.mediaError),
     playbackOk: clearPlaybackOk ? null : (playbackOk ?? this.playbackOk),
     firstFrame: firstFrame ?? this.firstFrame,
+    hwdec: clearHwdec ? null : (hwdec ?? this.hwdec),
   );
 }
 
@@ -169,13 +176,23 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
       }),
       player.stream.videoParams.listen((p) {
         if (p.w != null && p.w! > 0) {
+          final first = !state.firstFrame;
           state = state.copyWith(firstFrame: true, playbackOk: true);
+          // 出画后再查一次实际生效的解码器（mpv 只有开始播放后才有该属性）
+          if (first || state.hwdec == null) unawaited(_readHwdec());
         }
       }),
       player.stream.log.listen((event) {
         state = state.copyWith(logs: [...state.logs, PlayerLogEntry(event)]);
       }),
     ]);
+  }
+
+  /// 读取实际生效的硬件解码器：空字符串表示软件解码
+  Future<void> _readHwdec() async {
+    final props = await readMpvProperties(player);
+    if (!mounted) return;
+    state = state.copyWith(hwdec: props['hwdec-current'] ?? '');
   }
 
   /// 探测地址：是否可获取、是否视频、是什么类型（与播放相互独立）
@@ -210,6 +227,7 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
       clearProbe: true,
       clearMediaError: true,
       clearPlaybackOk: true,
+      clearHwdec: true,
       firstFrame: false,
       probing: true,
     );
@@ -990,6 +1008,35 @@ class _DiagnosticsCard extends ConsumerWidget {
                       color: playbackOk == null
                           ? cs.onSurfaceVariant
                           : (playbackOk ? cs.primary : cs.error),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Icon(
+                    state.hwdec == null || state.hwdec!.isEmpty
+                        ? Icons.memory_outlined
+                        : Icons.memory,
+                    size: 16,
+                    color: state.hwdec == null || state.hwdec!.isEmpty
+                        ? cs.onSurfaceVariant
+                        : cs.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      state.hwdec == null
+                          ? '${t.vtHwAccel}: ${t.vtHwAccelUnknown}'
+                          : state.hwdec!.isEmpty
+                          ? '${t.vtHwAccel}: ${t.vtHwAccelOff}'
+                          : '${t.vtHwAccel}: ${state.hwdec}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: state.hwdec == null || state.hwdec!.isEmpty
+                            ? cs.onSurfaceVariant
+                            : cs.primary,
+                      ),
                     ),
                   ),
                 ],

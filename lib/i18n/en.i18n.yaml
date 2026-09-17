@@ -770,6 +770,16 @@ vtRecheck: Re-check
 vtAcceptRanges: Range support
 vtHtmlHint: The response is HTML — it may be blocked or need Referer / Cookie
 vtResponsePreview: Response preview
+vtHwAccel: Hardware acceleration
+vtHwAccelOn: Hardware decoding in use
+vtHwAccelOff: Software decoding
+vtHwAccelRequested: Requested decoder
+vtHwAccelCurrent: Active decoder
+vtHwAccelUnknown: Playback has not started yet
+vtRenderer: Renderer
+vtGpuContext: GPU context
+vtHwAccelHint: The player probes hwdec drivers one by one at startup (d3d11-egl / dxva2 / cuda…); failures are logged as errors. Trust the "Active decoder" row
+vtLogNoiseHint: Some errors (e.g. property not found _setProperty(osc, 1)) are harmless init notices
 downloadMainTitle: Main title (Anime name)
 downloadIgnoreEpisodeTitle: Ignore episode titles
 downloadIgnoreEpisodeTitleDesc: Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names

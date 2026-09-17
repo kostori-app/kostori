@@ -355,7 +355,14 @@ const kMpvDebugProperties = <String>[
   'video-params/colormatrix',
   'video-params/primaries',
   'video-params/gamma',
+  'video-params/hw-pixelformat',
+  'hwdec',
   'hwdec-current',
+  'hwdec-interop',
+  'hw-pixelformat',
+  'vo',
+  'gpu-api',
+  'gpu-context',
   'audio-codec',
   'audio-params/format',
   'audio-params/samplerate',
@@ -365,6 +372,18 @@ const kMpvDebugProperties = <String>[
   'frame-drop-count',
   'decoder-frame-drop-count',
 ];
+
+/// 是否真的在用硬件解码。
+///
+/// mpv 的 `hwdec` 只是「请求」的解码方式（`auto`/`no`/`d3d11va`…），
+/// 真正生效与否要看 `hwdec-current`：为空或 `no` 说明在软件解码。
+/// 播放器启动时还会逐个尝试硬件解码驱动，失败的会打 error 日志，属正常探测。
+bool? isHardwareDecoding(Map<String, String> properties) {
+  final current = (properties['hwdec-current'] ?? '').trim().toLowerCase();
+  // 还没开始播放 / 还没解析出媒体时无法判断
+  if (current.isEmpty) return null;
+  return current != 'no';
+}
 
 /// 读取媒体属性；非原生播放器（如 web）返回空表。
 ///

@@ -156,9 +156,14 @@ abstract class _PlayerController with Store {
   @observable
   bool loadFailed = false;
 
+  /// 最近一次播放错误（详情页展示）
+  @observable
+  String? lastPlayError;
+
   /// 播放失败提示去抖：mpv 对失效链接会反复重试刷错误日志，短时间只弹一次
   DateTime? _lastFailToastAt;
   void toastPlayFailed(String msg) {
+    lastPlayError = msg;
     final now = DateTime.now();
     if (_lastFailToastAt != null &&
         now.difference(_lastFailToastAt!).inMilliseconds < 2000) {
@@ -573,6 +578,7 @@ abstract class _PlayerController with Store {
     playerLogSubscription = player.stream.log.listen((event) {
       playerLog.add(PlayerLogEntry(event));
       if (event.level == 'error' && event.text.contains('Failed to open')) {
+        lastPlayError = event.text;
         toastPlayFailed(t.failedToOpen);
         // open 对部分失败不抛异常，而是异步走 log 流；
         // 这里复位加载状态并标记失败，避免覆盖层一直显示"加载媒体数据"

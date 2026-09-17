@@ -799,6 +799,16 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtAcceptRanges => '分段支援';
 	@override String get vtHtmlHint => '回應是 HTML，可能被攔截或需要 Referer / Cookie';
 	@override String get vtResponsePreview => '回應預覽';
+	@override String get vtHwAccel => '硬體加速';
+	@override String get vtHwAccelOn => '已啟用硬體解碼';
+	@override String get vtHwAccelOff => '未啟用（軟體解碼）';
+	@override String get vtHwAccelRequested => '請求的解碼方式';
+	@override String get vtHwAccelCurrent => '實際解碼方式';
+	@override String get vtHwAccelUnknown => '未開始播放，暫時無法判斷';
+	@override String get vtRenderer => '渲染方式';
+	@override String get vtGpuContext => 'GPU 上下文';
+	@override String get vtHwAccelHint => '播放器啟動時會逐個嘗試硬體解碼驅動（d3d11-egl / dxva2 / cuda…），失敗會打 error 日誌，這是正常探測過程，請以「實際解碼方式」為準';
+	@override String get vtLogNoiseHint => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的無害提示，不影響播放';
 	@override String get downloadMainTitle => '主標題（番劇名）';
 	@override String get downloadIgnoreEpisodeTitle => '不使用集標題';
 	@override String get downloadIgnoreEpisodeTitleDesc => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案';
@@ -3749,6 +3759,16 @@ extension on TranslationsZhTw {
 			'vtAcceptRanges' => '分段支援',
 			'vtHtmlHint' => '回應是 HTML，可能被攔截或需要 Referer / Cookie',
 			'vtResponsePreview' => '回應預覽',
+			'vtHwAccel' => '硬體加速',
+			'vtHwAccelOn' => '已啟用硬體解碼',
+			'vtHwAccelOff' => '未啟用（軟體解碼）',
+			'vtHwAccelRequested' => '請求的解碼方式',
+			'vtHwAccelCurrent' => '實際解碼方式',
+			'vtHwAccelUnknown' => '未開始播放，暫時無法判斷',
+			'vtRenderer' => '渲染方式',
+			'vtGpuContext' => 'GPU 上下文',
+			'vtHwAccelHint' => '播放器啟動時會逐個嘗試硬體解碼驅動（d3d11-egl / dxva2 / cuda…），失敗會打 error 日誌，這是正常探測過程，請以「實際解碼方式」為準',
+			'vtLogNoiseHint' => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的無害提示，不影響播放',
 			'downloadMainTitle' => '主標題（番劇名）',
 			'downloadIgnoreEpisodeTitle' => '不使用集標題',
 			'downloadIgnoreEpisodeTitleDesc' => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案',
@@ -4003,6 +4023,8 @@ extension on TranslationsZhTw {
 			'systemNameField' => '系統名稱',
 			'systemVersionField' => '系統版本',
 			'modelNameField' => '型號名稱',
+			_ => null,
+		} ?? switch (path) {
 			'identifierForVendorField' => '供應商識別碼',
 			'sysnameField' => '核心名稱',
 			'nodenameField' => '節點名稱',
@@ -4013,8 +4035,6 @@ extension on TranslationsZhTw {
 			'numberOfCoresField' => '核心數',
 			'systemMemoryInMegabytesField' => '系統記憶體 (MB)',
 			'userNameField' => '使用者名稱',
-			_ => null,
-		} ?? switch (path) {
 			'majorVersionField' => '主版本號',
 			'minorVersionField' => '次版本號',
 			'buildNumberField' => '編譯號',
@@ -4517,6 +4537,8 @@ extension on TranslationsZhTw {
 			'hubInfo' => 'Hub 資訊',
 			'statsInfo' => '統計資訊',
 			'ratingDetails' => '評分詳情',
+			_ => null,
+		} ?? switch (path) {
 			'sourceInfo' => '源資訊',
 			'playerInfo' => '播放資訊',
 			'logPrivacyProtection' => '日誌隱私保護',
@@ -4527,8 +4549,6 @@ extension on TranslationsZhTw {
 			'promptConfiguration' => '提示設定',
 			'systemPrompt' => '系統提示',
 			'temperature' => '溫度 (Temperature)',
-			_ => null,
-		} ?? switch (path) {
 			'promptSaved' => '提示詞已儲存',
 			'editSystemPrompt' => '編輯系統提示詞',
 			'noHistoryYet' => '暫無歷史',
@@ -5031,6 +5051,8 @@ extension on TranslationsZhTw {
 			'confirmDeleteImageHint' => '刪除後將無法復原',
 			'confirmDeleteAiProvider' => '確定刪除該 AI 服務商設定？',
 			'noTagData' => '尚無標籤資料',
+			_ => null,
+		} ?? switch (path) {
 			'authenticationRequired' => '需要身分驗證',
 			'pleaseAuthenticate' => '請繼續身分驗證',
 			'shutDown' => '關閉',
@@ -5041,8 +5063,6 @@ extension on TranslationsZhTw {
 			'saveFailedPermission' => '儲存失敗：權限或目錄異常',
 			'bangumiDataUpdateFailed' => 'Bangumi資料更新失敗',
 			'bangumiDataResetFailed' => 'Bangumi資料重置失敗',
-			_ => null,
-		} ?? switch (path) {
 			'playingNextEpisode' => '正在播放下一集',
 			'failedToLoadEpisode' => '載入集數失敗',
 			'noMoreEpisodes' => '沒有更多集數可播放',
@@ -5545,6 +5565,8 @@ extension on TranslationsZhTw {
 			'testApiKey' => '檢測 API Key',
 			'enabledByApiKey' => '填寫 API Key 後自動啟用',
 			'endpointChatCompletions' => 'Chat Completions',
+			_ => null,
+		} ?? switch (path) {
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => '連線成功',
 			'modelsUrl' => '查詢可用模型介面',
@@ -5555,8 +5577,6 @@ extension on TranslationsZhTw {
 			'thinkingLevel' => '思考程度',
 			'thinkingLow' => '簡潔',
 			'thinkingStandard' => '標準',
-			_ => null,
-		} ?? switch (path) {
 			'thinkingDeep' => '深度',
 			'assistantSettings' => '助手設定',
 			'takePhoto' => '拍照',

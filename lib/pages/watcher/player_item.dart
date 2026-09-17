@@ -231,7 +231,17 @@ class _PlayerItemState extends State<PlayerItem>
       builder: (_) => Sheet(
         title: t.watcherDetailsLogs,
         icon: Icons.info_outline_rounded,
-        builder: (_, _) => VideoInfoSheet.fromController(playerController),
+        builder: (_, _) => VideoInfoSheet.fromController(
+          playerController,
+          playbackOk: playerController.loadFailed
+              ? false
+              : (playerController.duration > Duration.zero ||
+                        playerController.playing
+                    ? true
+                    : null),
+          playbackError: playerController.lastPlayError,
+          firstFrame: playerController.duration > Duration.zero,
+        ),
       ),
     );
   }

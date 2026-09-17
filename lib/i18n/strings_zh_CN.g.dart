@@ -800,6 +800,16 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtAcceptRanges => '分段支持';
 	@override String get vtHtmlHint => '响应是 HTML，可能被拦截或需要 Referer / Cookie';
 	@override String get vtResponsePreview => '响应预览';
+	@override String get vtHwAccel => '硬件加速';
+	@override String get vtHwAccelOn => '已启用硬件解码';
+	@override String get vtHwAccelOff => '未启用（软件解码）';
+	@override String get vtHwAccelRequested => '请求的解码方式';
+	@override String get vtHwAccelCurrent => '实际解码方式';
+	@override String get vtHwAccelUnknown => '未开始播放，暂时无法判断';
+	@override String get vtRenderer => '渲染方式';
+	@override String get vtGpuContext => 'GPU 上下文';
+	@override String get vtHwAccelHint => '播放器启动时会逐个尝试硬件解码驱动（d3d11-egl / dxva2 / cuda…），失败的会打 error 日志，这是正常探测过程，请以「实际解码方式」为准';
+	@override String get vtLogNoiseHint => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的无害提示，不影响播放';
 	@override String get downloadMainTitle => '主标题（番剧名）';
 	@override String get downloadIgnoreEpisodeTitle => '不使用集标题';
 	@override String get downloadIgnoreEpisodeTitleDesc => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件';
@@ -3751,6 +3761,16 @@ extension on TranslationsZhCn {
 			'vtAcceptRanges' => '分段支持',
 			'vtHtmlHint' => '响应是 HTML，可能被拦截或需要 Referer / Cookie',
 			'vtResponsePreview' => '响应预览',
+			'vtHwAccel' => '硬件加速',
+			'vtHwAccelOn' => '已启用硬件解码',
+			'vtHwAccelOff' => '未启用（软件解码）',
+			'vtHwAccelRequested' => '请求的解码方式',
+			'vtHwAccelCurrent' => '实际解码方式',
+			'vtHwAccelUnknown' => '未开始播放，暂时无法判断',
+			'vtRenderer' => '渲染方式',
+			'vtGpuContext' => 'GPU 上下文',
+			'vtHwAccelHint' => '播放器启动时会逐个尝试硬件解码驱动（d3d11-egl / dxva2 / cuda…），失败的会打 error 日志，这是正常探测过程，请以「实际解码方式」为准',
+			'vtLogNoiseHint' => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的无害提示，不影响播放',
 			'downloadMainTitle' => '主标题（番剧名）',
 			'downloadIgnoreEpisodeTitle' => '不使用集标题',
 			'downloadIgnoreEpisodeTitleDesc' => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件',
@@ -4004,6 +4024,8 @@ extension on TranslationsZhCn {
 			'systemVersionField' => '系统版本',
 			'modelNameField' => '型号名称',
 			'identifierForVendorField' => '供应商识别符',
+			_ => null,
+		} ?? switch (path) {
 			'sysnameField' => '系统名称',
 			'nodenameField' => '节点名称',
 			'releaseField' => '发布版本',
@@ -4014,8 +4036,6 @@ extension on TranslationsZhCn {
 			'systemMemoryInMegabytesField' => '系统内存 (MB)',
 			'userNameField' => '用户名',
 			'majorVersionField' => '主版本号',
-			_ => null,
-		} ?? switch (path) {
 			'minorVersionField' => '次版本号',
 			'buildNumberField' => '编译号',
 			'displayVersionField' => '显示版本',
@@ -4518,6 +4538,8 @@ extension on TranslationsZhCn {
 			'statsInfo' => '统计信息',
 			'ratingDetails' => '评分详情',
 			'sourceInfo' => '源信息',
+			_ => null,
+		} ?? switch (path) {
 			'playerInfo' => '播放信息',
 			'logPrivacyProtection' => '日志隐私保护',
 			'logPrivacyProtectionDesc' => '对日志中的 token、密钥、密码等敏感信息打码',
@@ -4528,8 +4550,6 @@ extension on TranslationsZhCn {
 			'systemPrompt' => '系统提示',
 			'temperature' => '温度 (Temperature)',
 			'promptSaved' => '提示词已保存',
-			_ => null,
-		} ?? switch (path) {
 			'editSystemPrompt' => '编辑系统提示词',
 			'noHistoryYet' => '暂无历史',
 			'clearAll' => '清空',
@@ -5032,6 +5052,8 @@ extension on TranslationsZhCn {
 			'confirmDeleteImageHint' => '删除后将无法恢复',
 			'confirmDeleteAiProvider' => '确定删除该 AI 服务商配置？',
 			'noTagData' => '暂无标签数据',
+			_ => null,
+		} ?? switch (path) {
 			'authenticationRequired' => '需要身份验证',
 			'pleaseAuthenticate' => '请继续身份验证',
 			'shutDown' => '关闭',
@@ -5042,8 +5064,6 @@ extension on TranslationsZhCn {
 			'saveFailedPermission' => '保存失败：权限或目录异常',
 			'bangumiDataUpdateFailed' => 'Bangumi数据更新失败',
 			'bangumiDataResetFailed' => 'Bangumi数据重置失败',
-			_ => null,
-		} ?? switch (path) {
 			'playingNextEpisode' => '正在播放下一集',
 			'failedToLoadEpisode' => '加载剧集失败',
 			'noMoreEpisodes' => '没有更多剧集可播放',
@@ -5546,6 +5566,8 @@ extension on TranslationsZhCn {
 			'testConnection' => '测试连接',
 			'testApiKey' => '检测 API Key',
 			'enabledByApiKey' => '填写 API Key 后自动启用',
+			_ => null,
+		} ?? switch (path) {
 			'endpointChatCompletions' => 'Chat Completions',
 			'endpointResponses' => 'Responses API',
 			'connectionOk' => '连接成功',
@@ -5556,8 +5578,6 @@ extension on TranslationsZhCn {
 			'disableReasoning' => '禁用推理',
 			'thinkingLevel' => '思考程度',
 			'thinkingLow' => '简洁',
-			_ => null,
-		} ?? switch (path) {
 			'thinkingStandard' => '标准',
 			'thinkingDeep' => '深度',
 			'assistantSettings' => '助手设置',
