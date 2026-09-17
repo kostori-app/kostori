@@ -402,7 +402,7 @@ class _LogsPageState extends State<LogsPage> {
     if (widget.inSheet) {
       // Sheet 内展示：无 Scaffold/Appbar，仅操作按钮 + 内容
       return DefaultTabController(
-        length: levelOrder.length,
+        length: levelOrder.length + 1,
         child: Column(
           children: [
             Row(
@@ -419,7 +419,7 @@ class _LogsPageState extends State<LogsPage> {
       );
     }
     return DefaultTabController(
-      length: levelOrder.length,
+      length: levelOrder.length + 1,
       child: Scaffold(
         appBar: Appbar(
           title: Text(t.logs),
