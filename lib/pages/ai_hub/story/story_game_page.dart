@@ -332,6 +332,11 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       if (!mounted || !_scrollController.hasClients) return;
       // 回调排队期间用户可能已上滑，重新确认，避免把用户拽回底部
       if (!force && !_isFollowing) return;
+      // 用户正在拖动/惯性滚动时不抢滚动，交给用户（RikkaHub 思路）
+      if (!force &&
+          _scrollController.position.isScrollingNotifier.value) {
+        return;
+      }
       if (animate) {
         _scrollController.animateTo(
           0,

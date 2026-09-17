@@ -372,28 +372,24 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     return '${(ms / 1000).toStringAsFixed(1)}s';
   }
 
-  /// 用户最近一次手势滚动的时间：短时间内不自动贴底，避免"抢滚动"
-  DateTime? _lastUserScrollAt;
-
   /// 每帧最多调度一次贴底，避免流式期间重复排队动画导致抖动
   bool _scrollScheduled = false;
 
-  /// 跟随模式下的贴底；非跟随、或用户刚滚动过时忽略。
+  /// 跟随模式下的贴底（RikkaHub 思路）：
+  /// - 只有「用户在底部」且「用户当前没有在滚动」时才贴底；
+  /// - 用户手势/惯性滚动期间绝不抢滚动，滚回底部后自动恢复跟随。
   void _scrollToBottom() {
     if (!_isFollowing || _scrollScheduled) return;
     _scrollScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollScheduled = false;
       if (!mounted || !_isFollowing || !_scrollCtrl.hasClients) return;
-      // 用户刚滑动过：把控制权交给用户，避免内容一边生成一边把视图拽走
-      final last = _lastUserScrollAt;
-      if (last != null &&
-          DateTime.now().difference(last) < const Duration(milliseconds: 800)) {
-        return;
-      }
       final pos = _scrollCtrl.position;
+      // 正在拖动 / 惯性滚动：交给用户
+      if (pos.isScrollingNotifier.value) return;
       if (pos.maxScrollExtent <= 0) return;
-      // 直接跳到最新，不用动画（动画会被高频流式更新打断，观感更差）
+      if ((pos.maxScrollExtent - pos.pixels).abs() <= 1) return;
+      // 直接跳到最新，不用动画（动画会被高频流式更新打断）
       _scrollCtrl.jumpTo(pos.maxScrollExtent);
     });
   }
@@ -408,21 +404,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     // 忽略子级横向列表（候选卡片横向滑动）的滚动通知，
     // 否则卡片滑到最右端会被误判为"贴近底部"而自动滚动到底
     if (notification.metrics.axis == Axis.horizontal) return false;
-    if (notification is UserScrollNotification ||
-        (notification is ScrollStartNotification &&
-            notification.dragDetails != null)) {
-      // 记录用户滚动时间：短时间内不自动贴底
-      _lastUserScrollAt = DateTime.now();
-    }
-    if (notification is UserScrollNotification) {
-      if (notification.direction == ScrollDirection.reverse &&
-          !_isNearBottom(notification.metrics) &&
-          _isFollowing) {
-        setState(() => _isFollowing = false);
-      }
-    } else if (notification is ScrollUpdateNotification) {
-      if (_isNearBottom(notification.metrics) && !_isFollowing) {
-        setState(() => _isFollowing = true);
+    // 跟随状态 = 用户是否在底部：上滑离底解除跟随，回到底部恢复
+    if (notification is ScrollUpdateNotification ||
+        notification is ScrollEndNotification) {
+      final atBottom = _isNearBottom(notification.metrics);
+      if (atBottom != _isFollowing) {
+        setState(() => _isFollowing = atBottom);
       }
     }
     return false;
