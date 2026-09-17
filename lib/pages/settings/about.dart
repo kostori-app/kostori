@@ -384,168 +384,24 @@ Future<void> updateLog(BuildContext context) async {
     App.rootContext.showMessage(message: e.toString());
     return;
   }
-  final dragProgress = ValueNotifier(0.0);
+  if (!context.mounted) return;
 
-  showGeneralDialog(
+  await showModalBottomSheet<void>(
     context: context,
-    barrierLabel: "Dismiss",
-    barrierDismissible: true,
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 300),
-    pageBuilder: (context, anim1, anim2) {
-      return Stack(
-        children: [
-          ValueListenableBuilder<double>(
-            valueListenable: dragProgress,
-            builder: (context, progress, _) {
-              final dragOpacity = (1.0 - progress).clamp(0.0, 1.0);
-
-              return FadeTransition(
-                opacity: anim1,
-                child: Opacity(
-                  opacity: dragOpacity,
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(color: Colors.black.toOpacity(0.2)),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-
-          SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(anim1),
-            child: _DraggableBlurSheet(
-              releases: releases.map((r) => ReleaseCard(release: r)).toList(),
-              maxHeight: MediaQuery.sizeOf(context).height * 0.75,
-              onDragProgress: (progress) => dragProgress.value = progress,
-            ),
-          ),
-        ],
-      );
-    },
-    transitionBuilder: (context, anim1, anim2, child) => child,
-  );
-}
-
-class _DraggableBlurSheet extends StatefulWidget {
-  final List<Widget> releases;
-  final double maxHeight;
-  final ValueChanged<double>? onDragProgress;
-
-  const _DraggableBlurSheet({
-    required this.releases,
-    this.onDragProgress,
-    required this.maxHeight,
-  });
-
-  @override
-  State<_DraggableBlurSheet> createState() => _DraggableBlurSheetState();
-}
-
-class _DraggableBlurSheetState extends State<_DraggableBlurSheet> {
-  double _dragOffset = 0;
-
-  void _updateDrag(double delta) {
-    setState(() {
-      _dragOffset += delta;
-      if (_dragOffset < 0) _dragOffset = 0; // 不允许向上无限拖
-      if (_dragOffset > widget.maxHeight) _dragOffset = widget.maxHeight;
-    });
-    widget.onDragProgress?.call(_dragOffset / widget.maxHeight);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: GestureDetector(
-        onVerticalDragUpdate: (details) => _updateDrag(details.delta.dy),
-        onVerticalDragEnd: (details) {
-          if (_dragOffset > 100 || (details.primaryVelocity ?? 0) > 700) {
-            Navigator.of(context).pop();
-          } else {
-            _updateDrag(-_dragOffset); // 回弹
-          }
-        },
-        child: Transform.translate(
-          offset: Offset(0, _dragOffset),
-          child: Container(
-            height: widget.maxHeight,
-            width: MediaQuery.sizeOf(context).width,
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor.toOpacity(0.9),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            child: Column(
-              children: [
-                // 顶部拖动条
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Container(
-                    height: 4,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                // 内容区
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    width: 1.5,
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Text(
-                                  t.kostoriChangelog,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          ...widget.releases,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    isScrollControlled: true,
+    builder: (_) => Sheet(
+      title: t.kostoriChangelog,
+      icon: Icons.history,
+      initialSize: 0.75,
+      builder: (context, sc) => ListView.separated(
+        controller: sc,
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+        itemCount: releases.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        itemBuilder: (context, index) => ReleaseCard(release: releases[index]),
       ),
-    );
-  }
+    ),
+  );
 }
 
 /// 检查最新版本信息
@@ -671,68 +527,112 @@ Future<bool> checkStoragePermission() async {
   return (await Permission.storage.request()).isGranted;
 }
 
-class ReleaseCard extends StatelessWidget {
+class ReleaseCard extends StatefulWidget {
   final Map<String, dynamic> release;
 
   const ReleaseCard({super.key, required this.release});
 
+  @override
+  State<ReleaseCard> createState() => _ReleaseCardState();
+}
+
+class _ReleaseCardState extends State<ReleaseCard> {
+  final TranslationController _tc = TranslationController();
+  bool _expanded = false;
+
   String _formatDate(String isoString) {
-    final date = DateTime.parse(isoString);
-    return DateFormat('yyyy/M/d').format(date);
+    final date = DateTime.tryParse(isoString);
+    return date == null ? isoString : DateFormat('yyyy/M/d').format(date);
+  }
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final createdAt = release['created_at'] as String;
-    final name = release['name'] as String? ?? release['tag_name'];
+    final cs = Theme.of(context).colorScheme;
+    final release = widget.release;
+    final createdAt = release['created_at'] as String? ?? '';
+    final name =
+        release['name'] as String? ?? release['tag_name']?.toString() ?? '';
     final body = release['body'] as String? ?? '';
 
-    return Card(
-      margin: const EdgeInsets.all(12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 第二行：版本名 (居中)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 1.5,
+    return Material(
+      color: cs.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: cs.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatDate(createdAt),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Center(
-                    child: Text(
-                      name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  TranslateIconButton(
+                    data: body,
+                    controller: _tc,
+                    iconSize: 18,
+                  ),
+                  IconButton(
+                    tooltip: _expanded ? t.collapse : t.expand,
+                    onPressed: () => setState(() => _expanded = !_expanded),
+                    icon: AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 20,
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TranslationWidget(
-              data: body,
-              title: Text(
-                _formatDate(createdAt),
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomMarkdownWidget(data: body),
+                  TranslationOutput(
+                    controller: _tc,
+                    padding: const EdgeInsets.only(top: 8),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
