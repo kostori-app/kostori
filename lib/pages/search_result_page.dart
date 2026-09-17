@@ -103,7 +103,11 @@ class _SearchResultPageState extends State<SearchResultPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppSearchBar(controller: controller, action: buildAction()),
-            AnimeSourceLayoutBar(sourceKey: widget.sourceKey, subKey: 'search'),
+            AnimeSourceLayoutBar(
+              sourceKey: widget.sourceKey,
+              subKey: 'search',
+              crossAxisAlignment: CrossAxisAlignment.center,
+            ),
           ],
         ),
         // 搜索栏下方、内容上方：布局切换条
@@ -114,6 +118,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
               child: AnimeSourceLayoutBar(
                 sourceKey: widget.sourceKey,
                 subKey: 'search',
+                crossAxisAlignment: CrossAxisAlignment.center,
               ),
             ),
           ],

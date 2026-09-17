@@ -184,6 +184,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
       AnimeSourceLayoutBar(
         sourceKey: widget.sourceKey,
         subKey: 'category:${widget.category}',
+        crossAxisAlignment: CrossAxisAlignment.center,
         padding: const EdgeInsets.only(bottom: 8),
       ),
       const Divider(height: 1),

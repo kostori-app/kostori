@@ -103,79 +103,84 @@ class AnimeSourceLayoutBar extends StatelessWidget {
     ];
     return Padding(
       padding: padding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: crossAxisAlignment,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.all(3),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: modes.map((mode) {
-                    final (key, label) = mode;
-                    final selected = value == key;
-                    return GestureDetector(
-                      onTap: () =>
-                          setSourceDisplayMode(sourceKey, key, subKey),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? colorScheme.surface
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          boxShadow: selected
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.toOpacity(0.08),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
+      // 撑满宽度，crossAxisAlignment 才能真正决定居左/居中
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: crossAxisAlignment,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.all(3),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: modes.map((mode) {
+                      final (key, label) = mode;
+                      final selected = value == key;
+                      return GestureDetector(
+                        onTap: () =>
+                            setSourceDisplayMode(sourceKey, key, subKey),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
                             color: selected
-                                ? colorScheme.onSurface
-                                : colorScheme.onSurface.toOpacity(0.45),
+                                ? colorScheme.surface
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: selected
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.toOpacity(0.08),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: selected
+                                  ? colorScheme.onSurface
+                                  : colorScheme.onSurface.toOpacity(0.45),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
-              ),
-              if (override != null) ...[
-                const SizedBox(width: 4),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 16,
-                  tooltip: t.sourceDisplayModeReset,
-                  icon: Icon(Icons.restore, color: colorScheme.outline),
-                  onPressed: () => setSourceDisplayMode(sourceKey, null, subKey),
-                ),
+                if (override != null) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    iconSize: 16,
+                    tooltip: t.sourceDisplayModeReset,
+                    icon: Icon(Icons.restore, color: colorScheme.outline),
+                    onPressed: () =>
+                        setSourceDisplayMode(sourceKey, null, subKey),
+                  ),
+                ],
               ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
