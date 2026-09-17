@@ -1054,7 +1054,8 @@ class _SelectiveSyncPage extends StatefulWidget {
   State<_SelectiveSyncPage> createState() => _SelectiveSyncPageState();
 }
 
-class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
+class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
+    with SingleTickerProviderStateMixin {
   static const _kinds = [
     'cards',
     'stories',
@@ -1074,10 +1075,26 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
   final Map<String, Set<String>> _selected = {};
   Map<String, dynamic>? _manifest;
 
+  late final TabController _tabCtrl = TabController(
+    length: _kinds.length,
+    vsync: this,
+  )..addListener(_onTabChanged);
+
+  void _onTabChanged() {
+    if (_tabCtrl.index == _tab) return;
+    setState(() => _tab = _tabCtrl.index);
+  }
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
   }
 
   String _ext(String kind) => kind == 'stories' ? '.md' : '.json';
@@ -1712,7 +1729,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
                 CapsuleOption(
                   text: _label(_kinds[i]),
                   isSelected: _tab == i,
-                  onTap: () => setState(() => _tab = i),
+                  onTap: () => _tabCtrl.animateTo(i),
                 ),
             ],
           ),
@@ -1720,7 +1737,10 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
         Expanded(
           child: _loading
               ? const Center(child: PolygonRefreshIndicator())
-              : _buildList(_kinds[_tab]),
+              : TabBarView(
+                  controller: _tabCtrl,
+                  children: [for (final kind in _kinds) _buildList(kind)],
+                ),
         ),
       ],
     );
@@ -1865,32 +1885,19 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Opacity(
-              opacity: canUpload ? 1 : 0.4,
-              child: Button.outlined(
-                onPressed: () {
-                  if (canUpload) _upload(kind, selected);
-                },
-                child: _actionLabel(
-                  Icons.cloud_upload_outlined,
-                  t.upload,
-                  selected.length,
-                ),
-              ),
+            CapsuleButton(
+              leading: const Icon(Icons.cloud_upload_outlined, size: 16),
+              text: '${t.upload} (${selected.length})',
+              enabled: canUpload,
+              onTap: () => _upload(kind, selected),
             ),
             const SizedBox(width: 12),
-            Opacity(
-              opacity: canDownload ? 1 : 0.4,
-              child: Button.filled(
-                onPressed: () {
-                  if (canDownload) _download(kind, selected);
-                },
-                child: _actionLabel(
-                  Icons.cloud_download_outlined,
-                  t.download,
-                  selected.length,
-                ),
-              ),
+            CapsuleButton(
+              primary: true,
+              leading: const Icon(Icons.cloud_download_outlined, size: 16),
+              text: '${t.download} (${selected.length})',
+              enabled: canDownload,
+              onTap: () => _download(kind, selected),
             ),
           ],
         ),
@@ -1898,12 +1905,4 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage> {
     );
   }
 
-  Widget _actionLabel(IconData icon, String label, int count) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 18),
-      const SizedBox(width: 6),
-      Text('$label ($count)'),
-    ],
-  );
 }
