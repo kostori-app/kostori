@@ -1219,21 +1219,31 @@ class _UrlRow extends ConsumerStatefulWidget {
 
 class _UrlRowState extends ConsumerState<_UrlRow> {
   late final TextEditingController _urlCtrl;
+  final FocusNode _urlFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _urlCtrl = TextEditingController(text: ref.read(videoTestProvider).url);
+    // 进页面不抢焦点（移动端否则会直接弹出输入法）
+    WidgetsBinding.instance.addPostFrameCallback((_) => _unfocus());
   }
 
   @override
   void dispose() {
+    _urlFocus.dispose();
     _urlCtrl.dispose();
     super.dispose();
   }
 
-  void _load() {
+  void _unfocus() {
+    if (!mounted) return;
+    if (_urlFocus.hasFocus) _urlFocus.unfocus();
     FocusScope.of(context).unfocus();
+  }
+
+  void _load() {
+    _unfocus();
     final headers = ref.read(videoTestProvider).headers;
     ref.read(videoTestProvider.notifier).load(_urlCtrl.text.trim(), headers);
   }
@@ -1295,18 +1305,35 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
+        // 多行输入框撑高时按钮贴底对齐
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: TextField(
               controller: _urlCtrl,
+              focusNode: _urlFocus,
+              autofocus: false,
               style: const TextStyle(fontSize: 13),
+              // 允许换行显示完整地址，不做单行横向滚动
+              minLines: 1,
+              maxLines: 4,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 hintText: t.vtInputUrlHint,
                 hintStyle: const TextStyle(fontSize: 13),
-                prefixIcon: const Icon(Icons.link_rounded, size: 18),
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.only(left: 12, top: 12),
+                  child: Icon(Icons.link_rounded, size: 18),
+                ),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 34,
+                  minHeight: 34,
+                ),
                 suffixIcon: _urlCtrl.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 16),
+                        tooltip: t.clear,
                         onPressed: () {
                           _urlCtrl.clear();
                           setState(() {});
@@ -1323,8 +1350,9 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
                 ),
               ),
               onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => _load(),
-              textInputAction: TextInputAction.go,
+              // 多行模式下回车不加载（避免误触），改用右侧按钮
+              onSubmitted: (_) => _unfocus(),
+              onTapOutside: (_) => _unfocus(),
             ),
           ),
           const SizedBox(width: 8),
@@ -1333,7 +1361,10 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
             isLabelVisible: headerCount > 0,
             label: Text('$headerCount'),
             child: IconButton(
-              onPressed: _openHeaderSheet,
+              onPressed: () {
+                _unfocus();
+                _openHeaderSheet();
+              },
               icon: const Icon(Icons.tune_rounded),
               tooltip: t.requestHeaders,
               style: IconButton.styleFrom(
@@ -1345,15 +1376,12 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
             ),
           ),
           const SizedBox(width: 4),
-          FilledButton(
-            onPressed: _urlCtrl.text.trim().isNotEmpty ? _load : null,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(t.vtLoad),
+          CapsuleButton(
+            primary: true,
+            leading: const Icon(Icons.play_arrow_rounded, size: 16),
+            text: t.vtLoad,
+            enabled: _urlCtrl.text.trim().isNotEmpty,
+            onTap: _load,
           ),
         ],
       ),
