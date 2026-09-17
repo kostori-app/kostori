@@ -67,7 +67,7 @@ class _LogSettingsState extends State<LogSettings> {
         SliverAppbar(title: Text(t.log)),
         // ── 日志管理 ──────────────────────────────────────────────
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
@@ -105,7 +105,7 @@ class _LogSettingsState extends State<LogSettings> {
         ),
         // ── 日志设置 ──────────────────────────────────────────────
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [

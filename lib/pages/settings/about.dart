@@ -54,7 +54,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
           ],
         ).toSliver(),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
@@ -126,7 +126,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
@@ -177,7 +177,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [

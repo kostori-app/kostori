@@ -63,7 +63,7 @@ class _PlayerSettingsState extends State<PlayerSettings> {
       slivers: [
         SliverAppbar(title: Text(t.player)),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
@@ -156,7 +156,7 @@ class _PlayerSettingsState extends State<PlayerSettings> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [

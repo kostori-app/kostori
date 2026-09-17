@@ -26,7 +26,7 @@ class _AppSettingsState extends State<AppSettings> {
       slivers: [
         SliverAppbar(title: Text(t.app)),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
@@ -120,7 +120,7 @@ class _AppSettingsState extends State<AppSettings> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
@@ -198,7 +198,7 @@ class _AppSettingsState extends State<AppSettings> {
         // 桌面平台：FFmpeg 设置
         if (App.isDesktop)
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             sliver: SliverToBoxAdapter(
               child: _SettingCard(
                 children: [
@@ -232,7 +232,7 @@ class _AppSettingsState extends State<AppSettings> {
           ),
         // Hub 管理
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [

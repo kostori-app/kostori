@@ -14,7 +14,7 @@ class _NetworkSettingsState extends State<NetworkSettings> {
       slivers: [
         SliverAppbar(title: Text(t.network)),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [

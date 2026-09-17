@@ -14,7 +14,7 @@ class _ExploreSettingsState extends State<ExploreSettings> {
       slivers: [
         SliverAppbar(title: Text(t.explore)),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),

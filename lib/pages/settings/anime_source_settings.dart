@@ -491,12 +491,8 @@ class _BodyState extends State<_Body> {
   }
 
   Widget buildCard(BuildContext context) {
-    // 水平留白 8 + 卡片自带 12 = 20，与下方筛选栏(20)对齐；
-    // 不改筛选栏宽度（它是基准），只把这张卡加宽到同宽
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      sliver: SliverToBoxAdapter(
-        child: DropTarget(
+    return _BuildSectionPadding(
+      DropTarget(
         onDragDone: _onDragDone,
         onDragEntered: (_) {
           if (mounted) setState(() => _isDragging = true);
@@ -646,7 +642,6 @@ class _BodyState extends State<_Body> {
               ),
           ],
         ),
-      ),
       ),
     );
   }

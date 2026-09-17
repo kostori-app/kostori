@@ -888,7 +888,8 @@ class _BuildSectionPadding extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      // 8 + 卡片自带 12 = 20，与各设置页筛选栏(20)对齐
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       sliver: SliverToBoxAdapter(child: child),
     );
   }
