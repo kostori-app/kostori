@@ -3220,6 +3220,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Pause the download before moving it to another group'
 	String get downloadPauseBeforeMove => 'Pause the download before moving it to another group';
 
+	/// en: 'Parent group'
+	String get downloadGroupParent => 'Parent group';
+
 	/// en: 'Top-level'
 	String get downloadGroupRoot => 'Top-level';
 
@@ -9989,6 +9992,7 @@ extension on Translations {
 			'manageGroups' => 'Manage Groups',
 			'downloadSubGroup' => 'Sub-groups',
 			'downloadPauseBeforeMove' => 'Pause the download before moving it to another group',
+			'downloadGroupParent' => 'Parent group',
 			'downloadGroupRoot' => 'Top-level',
 			'downloadNewSubGroup' => 'New sub-group',
 			'downloadMigrateGroup' => 'Move to…',
@@ -10422,9 +10426,9 @@ extension on Translations {
 			'allowMemberInvites' => 'Allow Member Invites',
 			'letAllMembersInviteOthers' => 'Let all members invite others',
 			'declineAndBlock' => 'Decline & Block',
-			'memes' => 'Memes',
 			_ => null,
 		} ?? switch (path) {
+			'memes' => 'Memes',
 			'memeSaved' => 'Meme saved',
 			'networkInfo' => 'Network Info',
 			'netLogMeta' => 'Summary only',
@@ -10936,9 +10940,9 @@ extension on Translations {
 			'screenshotFailedPleaseRetry' => 'Screenshot failed, please retry',
 			'shareFailed' => 'Share failed',
 			'connectionFailed' => 'Connection failed',
-			'copySuccess' => 'Copy success',
 			_ => null,
 		} ?? switch (path) {
+			'copySuccess' => 'Copy success',
 			'addToFavoritesSuccess' => 'Add to favorites success',
 			'deleteFailed' => 'Delete failed',
 			'deleteSuccessful' => 'Deleted',
@@ -11450,9 +11454,9 @@ extension on Translations {
 			'modalityAudio' => 'Audio',
 			'modalityVideo' => 'Video',
 			'capabilityTools' => 'Tools',
-			'capabilityReasoning' => 'Reasoning',
 			_ => null,
 		} ?? switch (path) {
+			'capabilityReasoning' => 'Reasoning',
 			'apiFormat' => 'API format',
 			'apiFormatOpenai' => 'OpenAI (chat)',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',

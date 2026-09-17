@@ -213,23 +213,20 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
         var folder = filteredFolders[index];
         final isAdded = added.contains(folder);
 
-        return CheckboxListTile(
-          value: selectedLocalFolders.contains(folder),
-          onChanged: (value) {
-            setState(() {
-              if (value == true) {
-                selectedLocalFolders.add(folder);
-              } else {
-                selectedLocalFolders.remove(folder);
-              }
-            });
-          },
-          title: Row(
-            children: [
-              Text(_displayName(folder)),
-              const SizedBox(width: 8),
-              if (isAdded)
-                Container(
+        final selected = selectedLocalFolders.contains(folder);
+        // 卡片式文件夹选择：无勾选框，选中即高亮
+        return SelectCard(
+          selected: selected,
+          title: _displayName(folder),
+          leading: Icon(
+            Icons.folder_outlined,
+            size: 20,
+            color: selected
+                ? Theme.of(context).colorScheme.onPrimaryContainer
+                : Theme.of(context).colorScheme.primary,
+          ),
+          trailing: isAdded
+              ? Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
@@ -242,9 +239,17 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     t.added,
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
-                ),
-            ],
-          ),
+                )
+              : null,
+          onChanged: (value) {
+            setState(() {
+              if (value) {
+                selectedLocalFolders.add(folder);
+              } else {
+                selectedLocalFolders.remove(folder);
+              }
+            });
+          },
         );
       },
     );

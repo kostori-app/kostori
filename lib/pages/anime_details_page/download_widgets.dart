@@ -87,32 +87,76 @@ class _DownloadGroupSelectSheet extends StatefulWidget {
 }
 
 class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
+  /// 新建分组：可选上级分组（顶层 / 某个顶层组），即支持新建子组
   Future<void> _create() async {
     final ctrl = TextEditingController();
+    var parent = '';
+    final roots = DownloadManager.rootGroups();
     final name = await showDialog<String>(
       context: context,
-      builder: (ctx) => ContentDialog(
-        title: t.newGroup,
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
-          decoration: InputDecoration(labelText: t.groupName),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(t.confirm),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => ContentDialog(
+          title: t.newGroup,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+                decoration: InputDecoration(labelText: t.groupName),
+              ),
+              if (roots.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  t.downloadGroupParent,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                CapsuleOptions(
+                  alignment: WrapAlignment.start,
+                  children: [
+                    CapsuleOption(
+                      text: t.downloadGroupRoot,
+                      isSelected: parent.isEmpty,
+                      onTap: () => setDlg(() => parent = ''),
+                    ),
+                    for (final g in roots)
+                      CapsuleOption(
+                        text: g,
+                        isSelected: parent == g,
+                        onTap: () => setDlg(() => parent = g),
+                      ),
+                  ],
+                ),
+              ],
+            ],
           ),
-        ],
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: Text(t.confirm),
+            ),
+          ],
+        ),
       ),
     );
     ctrl.dispose();
     final n = name?.trim() ?? '';
     if (n.isEmpty) return;
-    await DownloadManager.createGroup(n);
+    // 两层限制：父只能选顶层；同名时报错
+    final full = DownloadManager.childName(parent, n);
+    if (DownloadManager.groups().contains(full)) {
+      App.rootContext.showMessage(message: t.groupExists);
+      return;
+    }
+    await DownloadManager.createGroup(full);
     if (!mounted) return;
-    Navigator.of(context).pop(n);
+    Navigator.of(context).pop(full);
   }
 
   Future<void> _delete(String name) async {

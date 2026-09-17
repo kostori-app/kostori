@@ -1109,6 +1109,7 @@ searchGroupCustom: 我的分組
 manageGroups: 管理分組
 downloadSubGroup: 子組
 downloadPauseBeforeMove: 下載中，請先暫停再移動分組
+downloadGroupParent: 上級分組
 downloadGroupRoot: 頂層組
 downloadNewSubGroup: 新建子組
 downloadMigrateGroup: 遷移到…

@@ -1109,6 +1109,7 @@ searchGroupCustom: My groups
 manageGroups: Manage Groups
 downloadSubGroup: Sub-groups
 downloadPauseBeforeMove: Pause the download before moving it to another group
+downloadGroupParent: Parent group
 downloadGroupRoot: Top-level
 downloadNewSubGroup: New sub-group
 downloadMigrateGroup: Move to…

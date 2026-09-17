@@ -324,6 +324,21 @@ class AnimeTile extends ConsumerWidget {
           App.rootContext.showMessage(message: t.titleCopied);
         },
       ),
+      // 预览封面：与卡片封面同 hero，可从缩略图飞入预览页
+      if (anime.cover.isNotEmpty)
+        MenuEntry(
+          icon: Icons.image_outlined,
+          text: t.preview,
+          onClick: () => BangumiWidget.showImagePreview(
+            context: App.rootContext,
+            url: anime.cover,
+            title: anime.title,
+            heroTag: heroID != null
+                ? (heroTag ?? 'cover$heroID')
+                : 'anime_preview_${anime.sourceKey}_${anime.id}',
+            imageProvider: _findImageProvider(anime),
+          ),
+        ),
     ];
 
     // 收藏按钮：根据是否已收藏显示不同选项
