@@ -91,7 +91,10 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
                       try {
                         await updateLog(context);
                       } catch (e) {
-                        App.rootContext.showMessage(message: t.requestFailed);
+                        App.rootContext.showMessage(
+                          message: t.requestFailed,
+                          level: LogLevel.warning,
+                        );
                       } finally {
                         if (mounted) {
                           setState(() {
@@ -377,11 +380,14 @@ Future<void> updateLog(BuildContext context) async {
     final message =
         e.response?.data?['message']?.toString() ?? e.message ?? t.networkRequestFailed;
 
-    App.rootContext.showMessage(message: message);
+    App.rootContext.showMessage(message: message, level: LogLevel.warning);
 
     return;
   } catch (e) {
-    App.rootContext.showMessage(message: e.toString());
+    App.rootContext.showMessage(
+      message: e.toString(),
+      level: LogLevel.warning,
+    );
     return;
   }
   if (!context.mounted) return;
