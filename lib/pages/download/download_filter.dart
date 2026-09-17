@@ -69,11 +69,12 @@ class DownloadFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: padding,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: CapsuleOptions(
-          alignment: WrapAlignment.start,
-          children: [
+      // 交给 CapsuleOptions(scrollable) 自己滚动：轨道在滚动视图外，
+      // 横向滚动时两端的圆角不会被裁成直角
+      child: CapsuleOptions(
+        alignment: WrapAlignment.start,
+        scrollable: true,
+        children: [
             for (final b in builtins)
               CapsuleOption(
                 text: b.label,
@@ -86,8 +87,7 @@ class DownloadFilterBar extends StatelessWidget {
                 isSelected: selected == '$kDownloadGroupPrefix$name',
                 onTap: () => onSelected('$kDownloadGroupPrefix$name'),
               ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -269,7 +269,7 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
     }
     return ListView(
       controller: widget.scrollController,
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
       children: [
         if (showUngrouped)
           _GroupChoiceTile(
@@ -290,6 +290,7 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
   }
 }
 
+/// 分组选择卡片：整卡点击、选中高亮；子组缩进 + 子目录图标体现层级
 class _GroupChoiceTile extends StatelessWidget {
   const _GroupChoiceTile({
     required this.label,
@@ -303,7 +304,6 @@ class _GroupChoiceTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  /// 子组：缩进 + 子目录图标，体现层级
   final bool isSub;
 
   final Widget? trailing;
@@ -311,19 +311,17 @@ class _GroupChoiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.only(left: isSub ? 32 : 16, right: 8),
-      leading: Icon(
-        isSub
-            ? Icons.subdirectory_arrow_right
-            : (selected ? Icons.radio_button_checked : Icons.folder_outlined),
-        color: selected ? cs.primary : cs.onSurfaceVariant,
-      ),
-      title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: trailing,
+    return SelectCard(
       selected: selected,
-      onTap: onTap,
+      title: label,
+      leading: Icon(
+        isSub ? Icons.subdirectory_arrow_right : Icons.folder_outlined,
+        size: 20,
+        color: selected ? cs.onPrimaryContainer : cs.primary,
+      ),
+      trailing: trailing,
+      padding: EdgeInsets.only(left: isSub ? 18 : 0, bottom: 6),
+      onChanged: (_) => onTap(),
     );
   }
 }
@@ -430,11 +428,15 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
     _refresh();
   }
 
-  /// 迁移分组：选一个父分组（空 = 顶层）
+  /// 迁移分组：选一个父分组（空 = 顶层）。
+  /// 只支持两层（父组/子组），因此候选只有顶层分组（排除自己与当前父组）。
   Future<void> _migrate(String name) async {
-    final excluded = DownloadManager.groupWithDescendants(name).toSet();
-    final candidates = DownloadManager.groups()
-        .where((g) => !excluded.contains(g))
+    final isSub = DownloadManager.isSubGroup(name);
+    final currentParent = isSub
+        ? name.substring(0, name.lastIndexOf(DownloadManager.groupSeparator))
+        : '';
+    final candidates = DownloadManager.rootGroups()
+        .where((g) => g != name && g != currentParent)
         .toList();
     final parent = await showModalBottomSheet<String?>(
       context: context,
@@ -446,22 +448,22 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
         initialSize: 0.5,
         builder: (ctx, sc) => ListView(
           controller: sc,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           children: [
-            ListTile(
-              dense: true,
+            SelectCard(
+              selected: false,
+              title: t.downloadMigrateToRoot,
               leading: const Icon(Icons.home_outlined),
-              title: Text(t.downloadMigrateToRoot),
-              enabled: DownloadManager.isSubGroup(name),
-              onTap: () => Navigator.pop(ctx, ''),
+              onChanged: isSub ? (_) => Navigator.pop(ctx, '') : null,
             ),
             for (final g in candidates)
-              ListTile(
-                dense: true,
+              SelectCard(
+                selected: false,
+                title: g,
                 leading: const Icon(Icons.folder_outlined),
-                title: Text(g, maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: () => Navigator.pop(ctx, g),
+                onChanged: (_) => Navigator.pop(ctx, g),
               ),
-            if (candidates.isEmpty)
+            if (!isSub && candidates.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Center(child: Text(t.downloadNoMigrateTarget)),
@@ -612,16 +614,18 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
                   ],
                 ),
               ),
-              PopupMenuItem(
-                value: 'sub',
-                child: Row(
-                  children: [
-                    const Icon(Icons.create_new_folder_outlined, size: 18),
-                    const SizedBox(width: 8),
-                    Text(t.downloadNewSubGroup),
-                  ],
+              // 只支持两层（父组/子组）：子组下不能再建子组
+              if (!isSub)
+                PopupMenuItem(
+                  value: 'sub',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.create_new_folder_outlined, size: 18),
+                      const SizedBox(width: 8),
+                      Text(t.downloadNewSubGroup),
+                    ],
+                  ),
                 ),
-              ),
               PopupMenuItem(
                 value: 'migrate',
                 child: Row(

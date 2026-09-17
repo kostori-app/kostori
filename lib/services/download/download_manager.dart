@@ -1472,6 +1472,8 @@ class DownloadManager extends ChangeNotifier {
     if (parent == from || parent.startsWith('$from$groupSeparator')) {
       return null; // 不能迁移到自己或自己的子组下
     }
+    // 只支持两层：父组 / 子组，子组下不再嵌套
+    if (isSubGroup(parent)) return null;
     final target = childName(parent, leafOf(from));
     if (target == from) return null;
     if (groups().contains(target)) return null;

@@ -348,7 +348,8 @@ class _DownloadAppbarBottom extends StatelessWidget
           height: _height,
           child: Row(
             children: [
-              Flexible(
+              // 主导航靠左；占满剩余宽度，把右侧筛选推到最右
+              Expanded(
                 child: CapsuleTabBar(
                   controller: controller,
                   labels: [t.downloadActive, t.downloadRecords],
@@ -358,20 +359,15 @@ class _DownloadAppbarBottom extends StatelessWidget
                 ),
               ),
               if (isRecords)
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 12, bottom: 2),
-                    child: DownloadFilterBar(
-                      padding: EdgeInsets.zero,
-                      builtins: [
-                        (key: 'all', label: t.all),
-                        (key: 'exists', label: t.exists),
-                        (key: 'deleted', label: t.deleted),
-                      ],
-                      selected: existsFilter,
-                      onSelected: onExistsFilter,
-                    ),
-                  ),
+                DownloadFilterBar(
+                  padding: const EdgeInsets.only(right: 12, bottom: 2),
+                  builtins: [
+                    (key: 'all', label: t.all),
+                    (key: 'exists', label: t.exists),
+                    (key: 'deleted', label: t.deleted),
+                  ],
+                  selected: existsFilter,
+                  onSelected: onExistsFilter,
                 ),
             ],
           ),

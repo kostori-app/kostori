@@ -16,7 +16,9 @@ class SelectCard extends StatelessWidget {
 
   final String title;
   final bool selected;
-  final ValueChanged<bool> onChanged;
+
+  /// 为空时卡片不可点击（仍显示为普通卡片）
+  final ValueChanged<bool>? onChanged;
   final String? subtitle;
   final Widget? leading;
   final Widget? trailing;
@@ -52,7 +54,7 @@ class SelectCard extends StatelessWidget {
                   style: const TextStyle(fontSize: 11),
                 ),
           trailing: trailing,
-          onTap: () => onChanged(!selected),
+          onTap: onChanged == null ? null : () => onChanged!(!selected),
         ),
       ),
     );
