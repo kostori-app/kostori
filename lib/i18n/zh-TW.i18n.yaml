@@ -733,6 +733,31 @@ vtHeaders: 請求標頭 (Headers)
 vtNoHeaders: 尚無請求標頭，點擊「新增」建立
 playerNoRequestHeaders: 無請求頭
 vtApplyAndLoad: 套用並載入
+vtDiagnostics: 診斷
+vtUrlProbe: 位址檢測
+vtProbeRunning: 檢測中…
+vtProbeReachable: 位址可取得
+vtProbeUnreachable: 位址無法取得
+vtVideoType: 影片類型
+vtIsVideoUrl: 是影片位址
+vtNotVideoUrl: 不是影片位址
+vtPlaybackResult: 播放結果
+vtPlaybackOk: 播放成功
+vtPlaybackFailed: 播放失敗
+vtPlaybackPending: 等待播放
+vtFirstFrame: 已出首幀
+vtHttpStatus: 狀態碼
+vtContentType: 內容類型
+vtContentLength: 內容長度
+vtElapsed: 耗時
+vtRedirectChain: 重定向鏈
+vtProbeError: 檢測錯誤
+vtMediaProperties: 媒體屬性
+vtMediaPropertiesHint: 來自播放器（mpv），未開始播放時為空
+vtRecheck: 重新檢測
+vtAcceptRanges: 分段支援
+vtHtmlHint: 回應是 HTML，可能被攔截或需要 Referer / Cookie
+vtResponsePreview: 回應預覽
 downloadMainTitle: 主標題（番劇名）
 downloadIgnoreEpisodeTitle: 不使用集標題
 downloadIgnoreEpisodeTitleDesc: 部分集標題無意義（如 1 / video），開啟後用集號命名檔案
@@ -928,6 +953,7 @@ rating: 評分
 pixelFormat: 像素格式
 hwPixelFormat: 硬體像素格式
 resolution: 解析度
+displayResolution: 顯示解析度
 displayWidth: 顯示寬度
 displayHeight: 顯示高度
 aspect: 比例
@@ -948,14 +974,14 @@ trackTitle: 軌道標題
 trackLanguage: 軌道語言
 trackImage: 軌道圖像
 trackAlbumArt: 軌道專輯封面
-trackCodec: 軌道編解碼器
+trackCodec: 軌道編碼
 trackDecoder: 軌道解碼器
 trackWidth: 軌道寬度
 trackHeight: 軌道高度
 trackChannelsCount: 軌道聲道數
 trackChannels: 軌道聲道佈局
 trackSampleRate: 軌道採樣率
-trackFps: 軌道幀率
+trackFps: 幀率
 trackBitrate: 軌道位元率
 trackRotate: 軌道旋轉
 trackPar: 軌道 PAR
@@ -964,7 +990,7 @@ format: 格式
 sampleRate: 採樣率
 channelCount: 聲道數
 hrChannels: HR 聲道
-uriTrack: URI 軌道
+uriTrack: 由 URI 提供
 channelsCount: 聲道總數
 channels: 聲道
 fps: 幀率

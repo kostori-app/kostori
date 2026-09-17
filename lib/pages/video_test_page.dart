@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/video_probe.dart';
 import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
@@ -37,6 +38,17 @@ class VideoTestState {
   final double speed;
   final List<PlayerLogEntry> logs;
 
+  /// 地址探测（是否可获取 / 是否视频 / 类型）
+  final VideoProbeResult? probe;
+  final bool probing;
+
+  /// 播放错误（来自播放器）
+  final String? mediaError;
+
+  /// 播放结果：null = 尚未有结论
+  final bool? playbackOk;
+  final bool firstFrame;
+
   const VideoTestState({
     this.url = '',
     this.headers = const [],
@@ -48,6 +60,11 @@ class VideoTestState {
     this.buffer = Duration.zero,
     this.speed = 1.0,
     this.logs = const [],
+    this.probe,
+    this.probing = false,
+    this.mediaError,
+    this.playbackOk,
+    this.firstFrame = false,
   });
 
   VideoTestState copyWith({
@@ -61,6 +78,14 @@ class VideoTestState {
     Duration? buffer,
     double? speed,
     List<PlayerLogEntry>? logs,
+    VideoProbeResult? probe,
+    bool clearProbe = false,
+    bool? probing,
+    String? mediaError,
+    bool clearMediaError = false,
+    bool? playbackOk,
+    bool clearPlaybackOk = false,
+    bool? firstFrame,
   }) => VideoTestState(
     url: url ?? this.url,
     headers: headers ?? this.headers,
@@ -72,6 +97,11 @@ class VideoTestState {
     buffer: buffer ?? this.buffer,
     speed: speed ?? this.speed,
     logs: logs ?? this.logs,
+    probe: clearProbe ? null : (probe ?? this.probe),
+    probing: probing ?? this.probing,
+    mediaError: clearMediaError ? null : (mediaError ?? this.mediaError),
+    playbackOk: clearPlaybackOk ? null : (playbackOk ?? this.playbackOk),
+    firstFrame: firstFrame ?? this.firstFrame,
   );
 }
 
@@ -119,12 +149,50 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
         (v) => state = state.copyWith(completed: v),
       ),
       player.stream.position.listen((v) => state = state.copyWith(position: v)),
-      player.stream.duration.listen((v) => state = state.copyWith(duration: v)),
+      player.stream.duration.listen((v) {
+        // 解析出时长即可认为播放链路是通的
+        state = state.copyWith(
+          duration: v,
+          playbackOk: v > Duration.zero ? true : state.playbackOk,
+        );
+      }),
       player.stream.buffer.listen((v) => state = state.copyWith(buffer: v)),
+      // 播放错误：明确告诉用户失败原因
+      player.stream.error.listen((e) {
+        state = state.copyWith(mediaError: e, playbackOk: false);
+      }),
+      // 解码出画面尺寸 = 已经出画
+      player.stream.width.listen((w) {
+        if (w != null && w > 0) {
+          state = state.copyWith(firstFrame: true, playbackOk: true);
+        }
+      }),
+      player.stream.videoParams.listen((p) {
+        if (p.w != null && p.w! > 0) {
+          state = state.copyWith(firstFrame: true, playbackOk: true);
+        }
+      }),
       player.stream.log.listen((event) {
         state = state.copyWith(logs: [...state.logs, PlayerLogEntry(event)]);
       }),
     ]);
+  }
+
+  /// 探测地址：是否可获取、是否视频、是什么类型（与播放相互独立）
+  Future<void> probe({String? url, List<HeaderEntry>? headers}) async {
+    final target = url ?? state.url;
+    if (target.trim().isEmpty) return;
+    final list = headers ?? state.headers;
+    final headerMap = {
+      for (final h in list)
+        if (h.key.trim().isNotEmpty) h.key.trim(): h.value.trim(),
+    };
+    state = state.copyWith(probing: true, clearProbe: true);
+    final result = await probeVideoUrl(
+      target,
+      headers: headerMap.isEmpty ? null : headerMap,
+    );
+    if (mounted) state = state.copyWith(probe: result, probing: false);
   }
 
   Future<void> load(String url, List<HeaderEntry> headers) async {
@@ -139,7 +207,14 @@ class VideoTestNotifier extends StateNotifier<VideoTestState> {
       position: Duration.zero,
       duration: Duration.zero,
       completed: false,
+      clearProbe: true,
+      clearMediaError: true,
+      clearPlaybackOk: true,
+      firstFrame: false,
+      probing: true,
     );
+    // 地址探测与播放并行，互不阻塞
+    unawaited(probe(url: url, headers: headers));
     await player.open(
       Media(url, httpHeaders: headerMap.isEmpty ? null : headerMap),
     );
@@ -762,11 +837,12 @@ class _CompletedOverlay extends ConsumerWidget {
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () =>
+            CapsuleButton(
+              primary: true,
+              leading: const Icon(Icons.replay),
+              text: t.vtReplay,
+              onTap: () =>
                   ref.read(videoTestProvider.notifier).seek(Duration.zero),
-              icon: const Icon(Icons.replay),
-              label: Text(t.vtReplay),
             ),
           ],
         ),
@@ -801,9 +877,142 @@ class _ControlPanel extends ConsumerWidget {
           SizedBox(height: 8),
           _ProgressRow(),
           _PlaybackRow(),
+          _DiagnosticsCard(),
           _UrlRow(),
           SizedBox(height: 12),
         ],
+      ),
+    );
+  }
+}
+
+/// 调试信息卡：地址是否可获取、是不是视频、什么类型、播放是否成功、报错。
+/// 完整信息（含重定向链与 mpv 媒体属性）在 [VideoInfoSheet] 的「诊断」页。
+class _DiagnosticsCard extends ConsumerWidget {
+  const _DiagnosticsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(videoTestProvider);
+    final cs = Theme.of(context).colorScheme;
+    final probe = state.probe;
+
+    if (state.url.isEmpty) return const SizedBox.shrink();
+
+    final reachable = probe?.reachable ?? false;
+    final playable = probe?.kind.playable ?? false;
+    final playbackOk = state.playbackOk;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+      child: Material(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    reachable ? Icons.cloud_done_outlined : Icons.cloud_off,
+                    size: 16,
+                    color: reachable ? cs.primary : cs.error,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      state.probing
+                          ? t.vtProbeRunning
+                          : (reachable
+                                ? t.vtProbeReachable
+                                : t.vtProbeUnreachable),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (probe != null && !state.probing) ...[
+                    Text(
+                      '${probe.kind.label} · ${probe.statusCode ?? '-'} · '
+                      '${probe.elapsedMs}ms',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  IconButton(
+                    icon: const Icon(Icons.refresh, size: 18),
+                    tooltip: t.vtRecheck,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: state.probing
+                        ? null
+                        : () => ref.read(videoTestProvider.notifier).probe(),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Icon(
+                    playable ? Icons.movie_outlined : Icons.help_outline,
+                    size: 16,
+                    color: playable ? cs.primary : cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      playable ? t.vtIsVideoUrl : t.vtNotVideoUrl,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  Icon(
+                    playbackOk == null
+                        ? Icons.hourglass_empty
+                        : (playbackOk
+                              ? Icons.check_circle_outline
+                              : Icons.error_outline),
+                    size: 16,
+                    color: playbackOk == null
+                        ? cs.onSurfaceVariant
+                        : (playbackOk ? cs.primary : cs.error),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    playbackOk == null
+                        ? t.vtPlaybackPending
+                        : (playbackOk ? t.vtPlaybackOk : t.vtPlaybackFailed),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: playbackOk == null
+                          ? cs.onSurfaceVariant
+                          : (playbackOk ? cs.primary : cs.error),
+                    ),
+                  ),
+                ],
+              ),
+              if (state.mediaError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${t.vtProbeError}: ${state.mediaError}',
+                    style: TextStyle(fontSize: 12, color: cs.error),
+                  ),
+                ),
+              if (probe != null && probe.looksLikeHtml)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    t.vtHtmlHint,
+                    style: TextStyle(fontSize: 12, color: cs.error),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -951,6 +1160,10 @@ class _PlaybackRow extends ConsumerWidget {
                     player: notifier.player,
                     videoUrl: s.url,
                     logs: s.logs,
+                    probe: s.probe,
+                    playbackError: s.mediaError,
+                    playbackOk: s.playbackOk,
+                    firstFrame: s.firstFrame,
                   ),
                 ),
               );
@@ -1035,24 +1248,25 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
         title: t.vtHeaders,
         icon: Icons.tune_rounded,
         initialSize: 0.6,
-        headerTrailing: TextButton.icon(
-          onPressed: () => headerState.currentState?.addRow(),
-          icon: const Icon(Icons.add, size: 16),
-          label: Text(t.add),
+        headerTrailing: CapsuleButton(
+          leading: const Icon(Icons.add, size: 16),
+          text: t.add,
+          onTap: () => headerState.currentState?.addRow(),
         ),
         footer: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              OutlinedButton(
-                onPressed: () => headerState.currentState?.clearAll(),
-                child: Text(t.clear),
+              CapsuleButton(
+                text: t.clear,
+                onTap: () => headerState.currentState?.clearAll(),
               ),
               const Spacer(),
-              FilledButton.icon(
-                onPressed: () => headerState.currentState?.apply(),
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(t.vtApplyAndLoad),
+              CapsuleButton(
+                primary: true,
+                leading: const Icon(Icons.play_arrow_rounded),
+                text: t.vtApplyAndLoad,
+                onTap: () => headerState.currentState?.apply(),
               ),
             ],
           ),
@@ -1216,11 +1430,23 @@ class _HeaderSheetState extends State<_HeaderSheet> {
     });
   }
 
+  /// 常用请求头快捷添加
   static const _presets = {
     'Referer': '',
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     'Origin': '',
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'UA (Android)':
+        'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    'Accept': '*/*',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Cookie': '',
+    'Authorization': '',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Range': 'bytes=0-',
+    'Connection': 'keep-alive',
   };
 
   void _addPreset(String key, String value) {

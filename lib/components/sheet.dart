@@ -493,6 +493,9 @@ Future<void> showQrShareSheet(
 }
 
 abstract class VideoInfoSource {
+  /// 原生播放器（用于读取 mpv 调试属性），不可用时为 null
+  Player? get player;
+
   List<Media> get medias;
 
   String get videoUrl;
@@ -517,6 +520,9 @@ class PlayerControllerInfoSource implements VideoInfoSource {
   final PlayerController controller;
 
   const PlayerControllerInfoSource(this.controller);
+
+  @override
+  Player? get player => controller.player;
 
   @override
   List<Media> get medias => controller.playerPlaylist.medias;
@@ -547,6 +553,7 @@ class PlayerControllerInfoSource implements VideoInfoSource {
 }
 
 class RawPlayerInfoSource implements VideoInfoSource {
+  @override
   final Player player;
   @override
   final String videoUrl;
@@ -651,6 +658,24 @@ class ParamCard extends StatelessWidget {
   }
 }
 
+/// 过滤掉 null / 空 / unknown / auto 之类的无效项，避免出现「nullxnull」这种噪声
+Map<String, Object?> _compact(Map<String, Object?> map) {
+  bool valid(Object? value) {
+    if (value == null) return false;
+    final s = value.toString().trim();
+    if (s.isEmpty) return false;
+    final lower = s.toLowerCase();
+    if (lower == 'unknown' || lower == 'null' || lower == 'auto') return false;
+    if (s == '-') return false;
+    return true;
+  }
+
+  return {
+    for (final e in map.entries)
+      if (valid(e.value)) e.key: e.value,
+  };
+}
+
 class MediaInfoWidget extends StatelessWidget {
   final VideoParams? videoParams;
   final AudioParams? audioParams;
@@ -671,89 +696,58 @@ class MediaInfoWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Widget> cards = [];
 
-    if (videoParams != null) {
-      final Map<String, Object?> videoMap = {
-        t.pixelFormat: videoParams!.pixelformat,
-        t.hwPixelFormat: videoParams!.hwPixelformat,
-        t.resolution: '${videoParams!.w}x${videoParams!.h}',
-        t.displayWidth: videoParams!.dw,
-        t.displayHeight: videoParams!.dh,
-        t.aspect: videoParams!.aspect,
-        t.pixelAspectRatio: videoParams!.par,
-        t.colormatrix: videoParams!.colormatrix,
-        t.colorLevels: videoParams!.colorlevels,
-        t.primaries: videoParams!.primaries,
-        t.gamma: videoParams!.gamma,
-        t.signalPeak: videoParams!.sigPeak,
-        t.lights: videoParams!.light,
-        t.chromaLocation: videoParams!.chromaLocation,
-        t.rotate: videoParams!.rotate,
-        t.stereoIn: videoParams!.stereoIn,
-        t.averageBpp: videoParams!.averageBpp,
-        t.alpha: videoParams!.alpha,
-      };
-
-      if (videoTrack != null) {
-        videoMap.addAll({
-          t.trackId: videoTrack!.id,
-          t.trackTitle: videoTrack!.title,
-          t.trackLanguage: videoTrack!.language,
-          t.trackImage: videoTrack!.image,
-          t.trackAlbumArt: videoTrack!.albumart,
-          t.trackCodec: videoTrack!.codec,
-          t.trackDecoder: videoTrack!.decoder,
-          t.trackWidth: videoTrack!.w,
-          t.trackHeight: videoTrack!.h,
-          t.trackChannelsCount: videoTrack!.channelscount,
-          t.trackChannels: videoTrack!.channels,
-          t.trackSampleRate: videoTrack!.samplerate,
-          t.trackFps: videoTrack!.fps,
-          t.trackBitrate: videoTrack!.bitrate,
-          t.trackRotate: videoTrack!.rotate,
-          t.trackPar: videoTrack!.par,
-          t.trackAudioChannels: videoTrack!.audiochannels,
-        });
-      }
-
+    final vp = videoParams;
+    if (vp != null) {
+      final resolution = (vp.w == null || vp.h == null)
+          ? null
+          : '${vp.w}x${vp.h}';
+      final display = (vp.dw == null || vp.dh == null)
+          ? null
+          : '${vp.dw}x${vp.dh}';
+      final videoMap = _compact({
+        // 先放最有用的信息，读不到的不展示
+        t.trackCodec: videoTrack?.codec,
+        t.resolution: resolution,
+        t.trackFps: videoTrack?.fps,
+        t.trackBitrate: videoTrack?.bitrate,
+        t.pixelFormat: vp.pixelformat,
+        t.hwPixelFormat: vp.hwPixelformat,
+        t.displayResolution: display,
+        t.aspect: vp.aspect,
+        t.pixelAspectRatio: vp.par,
+        t.colormatrix: vp.colormatrix,
+        t.colorLevels: vp.colorlevels,
+        t.primaries: vp.primaries,
+        t.gamma: vp.gamma,
+        t.signalPeak: vp.sigPeak,
+        t.lights: vp.light,
+        t.chromaLocation: vp.chromaLocation,
+        t.rotate: vp.rotate,
+        t.stereoIn: vp.stereoIn,
+        t.averageBpp: vp.averageBpp,
+        t.alpha: vp.alpha,
+        t.trackDecoder: videoTrack?.decoder,
+        t.trackTitle: videoTrack?.title,
+        t.trackLanguage: videoTrack?.language,
+      });
       cards.add(ParamCard(title: t.video, params: videoMap));
     }
 
-    if (audioParams != null) {
-      final Map<String, Object?> audioMap = {
-        t.format: audioParams!.format,
-        t.sampleRate: audioParams!.sampleRate,
-        t.channels: audioParams!.channels,
-        t.channelCount: audioParams!.channelCount,
-        t.hrChannels: audioParams!.hrChannels,
-      };
-
-      if (audioTrack != null) {
-        audioMap.addAll({
-          t.trackId: audioTrack!.id,
-          t.trackTitle: audioTrack!.title,
-          t.trackLanguage: audioTrack!.language,
-          t.uriTrack: audioTrack!.uri,
-          t.trackImage: audioTrack!.image,
-          t.trackAlbumArt: audioTrack!.albumart,
-          t.trackCodec: audioTrack!.codec,
-          t.trackDecoder: audioTrack!.decoder,
-          t.trackWidth: audioTrack!.w,
-          t.trackHeight: audioTrack!.h,
-          t.channelsCount: audioTrack!.channelscount,
-          t.channels: audioTrack!.channels,
-          t.trackSampleRate: audioTrack!.samplerate,
-          t.fps: audioTrack!.fps,
-          t.bitrate: audioTrack!.bitrate,
-          t.rotate: audioTrack!.rotate,
-          t.par: audioTrack!.par,
-          t.audioChannels: audioTrack!.audiochannels,
-        });
-      }
-
-      if (audioBitrate != null) {
-        audioMap.addAll({t.audioBitrate: audioBitrate});
-      }
-
+    final ap = audioParams;
+    if (ap != null) {
+      final audioMap = _compact({
+        t.trackCodec: audioTrack?.codec,
+        t.sampleRate: ap.sampleRate,
+        t.channels: ap.channels,
+        t.channelCount: ap.channelCount,
+        t.bitrate: audioTrack?.bitrate,
+        t.audioBitrate: audioBitrate,
+        t.format: ap.format,
+        t.hrChannels: ap.hrChannels,
+        t.trackDecoder: audioTrack?.decoder,
+        t.trackTitle: audioTrack?.title,
+        t.trackLanguage: audioTrack?.language,
+      });
       cards.add(ParamCard(title: t.audio, params: audioMap));
     }
 
@@ -824,6 +818,10 @@ class VideoInfoSheet extends StatefulWidget {
     required String videoUrl,
     required List<PlayerLogEntry> logs,
     Map<String, String>? videoHeaders,
+    VideoProbeResult? probe,
+    String? playbackError,
+    bool? playbackOk,
+    bool firstFrame = false,
   }) => VideoInfoSheet._(
     source: RawPlayerInfoSource(
       player: player,
@@ -831,11 +829,32 @@ class VideoInfoSheet extends StatefulWidget {
       logs: logs,
       videoHeaders: videoHeaders,
     ),
+    probe: probe,
+    playbackError: playbackError,
+    playbackOk: playbackOk,
+    firstFrame: firstFrame,
   );
 
-  const VideoInfoSheet._({required this.source});
+  const VideoInfoSheet._({
+    required this.source,
+    this.probe,
+    this.playbackError,
+    this.playbackOk,
+    this.firstFrame = false,
+  });
 
   final VideoInfoSource source;
+
+  /// 已完成的地址探测（为空时 sheet 自己探测一次）
+  final VideoProbeResult? probe;
+
+  /// 播放错误信息
+  final String? playbackError;
+
+  /// 播放结果：null = 未确定
+  final bool? playbackOk;
+
+  final bool firstFrame;
 
   @override
   _VideoInfoSheetState createState() => _VideoInfoSheetState();
@@ -847,14 +866,44 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
   late TabController _tabControllerOne;
   Timer? _refreshTimer;
 
+  VideoProbeResult? _probe;
+  bool _probing = false;
+  Map<String, String> _mpvProperties = const {};
+
   @override
   void initState() {
     super.initState();
-    _tabControllerZero = TabController(length: 2, vsync: this);
+    _tabControllerZero = TabController(length: 3, vsync: this);
     _tabControllerOne = TabController(length: 3, vsync: this);
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
+    _probe = widget.probe;
+    if (_probe == null) unawaited(_runProbe());
+    unawaited(_loadMpvProperties());
+  }
+
+  Future<void> _runProbe() async {
+    final url = widget.source.videoUrl.trim();
+    if (url.isEmpty) return;
+    setState(() => _probing = true);
+    final result = await probeVideoUrl(
+      url,
+      headers: widget.source.videoHeaders,
+    );
+    if (!mounted) return;
+    setState(() {
+      _probe = result;
+      _probing = false;
+    });
+  }
+
+  Future<void> _loadMpvProperties() async {
+    final player = widget.source.player;
+    if (player == null) return;
+    final props = await readMpvProperties(player);
+    if (!mounted) return;
+    setState(() => _mpvProperties = props);
   }
 
   @override
@@ -872,7 +921,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
         children: [
           CapsuleTabBar(
             controller: _tabControllerZero,
-            labels: [t.status, t.log],
+            labels: [t.status, t.vtDiagnostics, t.log],
           ),
           Expanded(
             child: ExtendedTabBarView(
@@ -880,6 +929,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               controller: _tabControllerZero,
               children: [
                 KeepAliveWrapper(child: _buildVideoInfoTab()),
+                KeepAliveWrapper(child: _buildDiagnosticsTab()),
                 KeepAliveWrapper(child: _buildVideoLogTab()),
               ],
             ),
@@ -999,6 +1049,195 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                       style: Theme.of(context).textTheme.bodySmall,
                       scrollPhysics: const NeverScrollableScrollPhysics(),
                     ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 诊断：地址检测 + 播放检测 + mpv 媒体属性
+  Widget _buildDiagnosticsTab() {
+    final probe = _probe;
+    return Material(
+      color: Colors.transparent,
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          _diagCard(
+            title: t.vtUrlProbe,
+            icon: Icons.travel_explore_outlined,
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh, size: 18),
+              tooltip: t.vtRecheck,
+              onPressed: _probing ? null : _runProbe,
+            ),
+            rows: [
+              if (_probing)
+                MapEntry(t.vtProbeRunning, '')
+              else if (probe == null)
+                MapEntry(t.vtProbeUnreachable, '-')
+              else ...[
+                MapEntry(
+                  probe.reachable ? t.vtProbeReachable : t.vtProbeUnreachable,
+                  probe.reachable
+                      ? '${probe.statusCode ?? '-'} '
+                            '${probe.statusMessage ?? ''}'.trim()
+                      : probe.error ?? '-',
+                ),
+                MapEntry(t.vtVideoType, probe.kind.label),
+                MapEntry(
+                  probe.kind.playable ? t.vtIsVideoUrl : t.vtNotVideoUrl,
+                  probe.kind.playable
+                      ? (probe.kind.playlist ? 'playlist' : 'media')
+                      : probe.kind.label,
+                ),
+                MapEntry(t.vtContentType, probe.contentTypeLabel),
+                MapEntry(t.vtContentLength, probe.sizeLabel),
+                MapEntry(
+                  t.vtAcceptRanges,
+                  probe.acceptRanges ?? '-',
+                ),
+                MapEntry(t.vtElapsed, '${probe.elapsedMs} ms'),
+                if (probe.redirects.length > 1)
+                  MapEntry(
+                    t.vtRedirectChain,
+                    [
+                      for (var i = 0; i < probe.redirects.length; i++)
+                        '${i + 1}. ${probe.redirects[i]}',
+                    ].join('\n'),
+                  ),
+              ],
+            ],
+          ),
+          if (probe != null && probe.looksLikeHtml)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                t.vtHtmlHint,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          if (probe != null &&
+              probe.textPreview.isNotEmpty &&
+              (probe.kind == VideoUrlKind.hls ||
+                  probe.kind == VideoUrlKind.dash ||
+                  probe.kind == VideoUrlKind.html ||
+                  probe.kind == VideoUrlKind.unknown))
+            _diagCard(
+              title: t.vtResponsePreview,
+              icon: Icons.short_text,
+              rows: [MapEntry('body', probe.textPreview)],
+            ),
+          _diagCard(
+            title: t.vtPlaybackResult,
+            icon: Icons.play_circle_outline,
+            rows: [
+              MapEntry(
+                t.vtPlaybackResult,
+                widget.playbackOk == null
+                    ? t.vtPlaybackPending
+                    : (widget.playbackOk! ? t.vtPlaybackOk : t.vtPlaybackFailed),
+              ),
+              MapEntry(
+                t.vtFirstFrame,
+                widget.firstFrame ? '✓' : '✗',
+              ),
+              MapEntry(
+                t.media,
+                '${widget.source.medias.length} · '
+                '${widget.source.videoParams.w ?? '-'}x'
+                '${widget.source.videoParams.h ?? '-'}',
+              ),
+              if (widget.playbackError != null)
+                MapEntry(t.vtProbeError, widget.playbackError!),
+            ],
+          ),
+          _diagCard(
+            title: t.vtMediaProperties,
+            icon: Icons.tune,
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh, size: 18),
+              tooltip: t.vtRecheck,
+              onPressed: _loadMpvProperties,
+            ),
+            rows: _mpvProperties.isEmpty
+                ? [MapEntry(t.vtMediaPropertiesHint, '')]
+                : _mpvProperties.entries
+                      .map((e) => MapEntry(e.key, e.value))
+                      .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _diagCard({
+    required String title,
+    required IconData icon,
+    required List<MapEntry<String, String>> rows,
+    Widget? trailing,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: cs.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: cs.outlineVariant, width: 0.6),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 8, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 16, color: cs.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (trailing != null) trailing,
+                ],
+              ),
+              const SizedBox(height: 6),
+              for (final row in rows)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4, right: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 110,
+                        child: Text(
+                          row.key,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: SelectableText(
+                          row.value.isEmpty ? '-' : row.value,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],

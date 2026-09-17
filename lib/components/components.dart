@@ -43,6 +43,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/foundation/translation_service.dart';
+import 'package:kostori/foundation/video_probe.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';

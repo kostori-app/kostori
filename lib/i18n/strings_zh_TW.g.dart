@@ -774,6 +774,31 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtNoHeaders => '尚無請求標頭，點擊「新增」建立';
 	@override String get playerNoRequestHeaders => '無請求頭';
 	@override String get vtApplyAndLoad => '套用並載入';
+	@override String get vtDiagnostics => '診斷';
+	@override String get vtUrlProbe => '位址檢測';
+	@override String get vtProbeRunning => '檢測中…';
+	@override String get vtProbeReachable => '位址可取得';
+	@override String get vtProbeUnreachable => '位址無法取得';
+	@override String get vtVideoType => '影片類型';
+	@override String get vtIsVideoUrl => '是影片位址';
+	@override String get vtNotVideoUrl => '不是影片位址';
+	@override String get vtPlaybackResult => '播放結果';
+	@override String get vtPlaybackOk => '播放成功';
+	@override String get vtPlaybackFailed => '播放失敗';
+	@override String get vtPlaybackPending => '等待播放';
+	@override String get vtFirstFrame => '已出首幀';
+	@override String get vtHttpStatus => '狀態碼';
+	@override String get vtContentType => '內容類型';
+	@override String get vtContentLength => '內容長度';
+	@override String get vtElapsed => '耗時';
+	@override String get vtRedirectChain => '重定向鏈';
+	@override String get vtProbeError => '檢測錯誤';
+	@override String get vtMediaProperties => '媒體屬性';
+	@override String get vtMediaPropertiesHint => '來自播放器（mpv），未開始播放時為空';
+	@override String get vtRecheck => '重新檢測';
+	@override String get vtAcceptRanges => '分段支援';
+	@override String get vtHtmlHint => '回應是 HTML，可能被攔截或需要 Referer / Cookie';
+	@override String get vtResponsePreview => '回應預覽';
 	@override String get downloadMainTitle => '主標題（番劇名）';
 	@override String get downloadIgnoreEpisodeTitle => '不使用集標題';
 	@override String get downloadIgnoreEpisodeTitleDesc => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案';
@@ -918,6 +943,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get pixelFormat => '像素格式';
 	@override String get hwPixelFormat => '硬體像素格式';
 	@override String get resolution => '解析度';
+	@override String get displayResolution => '顯示解析度';
 	@override String get displayWidth => '顯示寬度';
 	@override String get displayHeight => '顯示高度';
 	@override String get aspect => '比例';
@@ -938,14 +964,14 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get trackLanguage => '軌道語言';
 	@override String get trackImage => '軌道圖像';
 	@override String get trackAlbumArt => '軌道專輯封面';
-	@override String get trackCodec => '軌道編解碼器';
+	@override String get trackCodec => '軌道編碼';
 	@override String get trackDecoder => '軌道解碼器';
 	@override String get trackWidth => '軌道寬度';
 	@override String get trackHeight => '軌道高度';
 	@override String get trackChannelsCount => '軌道聲道數';
 	@override String get trackChannels => '軌道聲道佈局';
 	@override String get trackSampleRate => '軌道採樣率';
-	@override String get trackFps => '軌道幀率';
+	@override String get trackFps => '幀率';
 	@override String get trackBitrate => '軌道位元率';
 	@override String get trackRotate => '軌道旋轉';
 	@override String get trackPar => '軌道 PAR';
@@ -954,7 +980,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get sampleRate => '採樣率';
 	@override String get channelCount => '聲道數';
 	@override String get hrChannels => 'HR 聲道';
-	@override String get uriTrack => 'URI 軌道';
+	@override String get uriTrack => '由 URI 提供';
 	@override String get channelsCount => '聲道總數';
 	@override String get channels => '聲道';
 	@override String get fps => '幀率';
@@ -3698,6 +3724,31 @@ extension on TranslationsZhTw {
 			'vtNoHeaders' => '尚無請求標頭，點擊「新增」建立',
 			'playerNoRequestHeaders' => '無請求頭',
 			'vtApplyAndLoad' => '套用並載入',
+			'vtDiagnostics' => '診斷',
+			'vtUrlProbe' => '位址檢測',
+			'vtProbeRunning' => '檢測中…',
+			'vtProbeReachable' => '位址可取得',
+			'vtProbeUnreachable' => '位址無法取得',
+			'vtVideoType' => '影片類型',
+			'vtIsVideoUrl' => '是影片位址',
+			'vtNotVideoUrl' => '不是影片位址',
+			'vtPlaybackResult' => '播放結果',
+			'vtPlaybackOk' => '播放成功',
+			'vtPlaybackFailed' => '播放失敗',
+			'vtPlaybackPending' => '等待播放',
+			'vtFirstFrame' => '已出首幀',
+			'vtHttpStatus' => '狀態碼',
+			'vtContentType' => '內容類型',
+			'vtContentLength' => '內容長度',
+			'vtElapsed' => '耗時',
+			'vtRedirectChain' => '重定向鏈',
+			'vtProbeError' => '檢測錯誤',
+			'vtMediaProperties' => '媒體屬性',
+			'vtMediaPropertiesHint' => '來自播放器（mpv），未開始播放時為空',
+			'vtRecheck' => '重新檢測',
+			'vtAcceptRanges' => '分段支援',
+			'vtHtmlHint' => '回應是 HTML，可能被攔截或需要 Referer / Cookie',
+			'vtResponsePreview' => '回應預覽',
 			'downloadMainTitle' => '主標題（番劇名）',
 			'downloadIgnoreEpisodeTitle' => '不使用集標題',
 			'downloadIgnoreEpisodeTitleDesc' => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案',
@@ -3884,6 +3935,7 @@ extension on TranslationsZhTw {
 			'pixelFormat' => '像素格式',
 			'hwPixelFormat' => '硬體像素格式',
 			'resolution' => '解析度',
+			'displayResolution' => '顯示解析度',
 			'displayWidth' => '顯示寬度',
 			'displayHeight' => '顯示高度',
 			'aspect' => '比例',
@@ -3904,14 +3956,14 @@ extension on TranslationsZhTw {
 			'trackLanguage' => '軌道語言',
 			'trackImage' => '軌道圖像',
 			'trackAlbumArt' => '軌道專輯封面',
-			'trackCodec' => '軌道編解碼器',
+			'trackCodec' => '軌道編碼',
 			'trackDecoder' => '軌道解碼器',
 			'trackWidth' => '軌道寬度',
 			'trackHeight' => '軌道高度',
 			'trackChannelsCount' => '軌道聲道數',
 			'trackChannels' => '軌道聲道佈局',
 			'trackSampleRate' => '軌道採樣率',
-			'trackFps' => '軌道幀率',
+			'trackFps' => '幀率',
 			'trackBitrate' => '軌道位元率',
 			'trackRotate' => '軌道旋轉',
 			'trackPar' => '軌道 PAR',
@@ -3920,7 +3972,7 @@ extension on TranslationsZhTw {
 			'sampleRate' => '採樣率',
 			'channelCount' => '聲道數',
 			'hrChannels' => 'HR 聲道',
-			'uriTrack' => 'URI 軌道',
+			'uriTrack' => '由 URI 提供',
 			'channelsCount' => '聲道總數',
 			'channels' => '聲道',
 			'fps' => '幀率',
@@ -3961,6 +4013,8 @@ extension on TranslationsZhTw {
 			'numberOfCoresField' => '核心數',
 			'systemMemoryInMegabytesField' => '系統記憶體 (MB)',
 			'userNameField' => '使用者名稱',
+			_ => null,
+		} ?? switch (path) {
 			'majorVersionField' => '主版本號',
 			'minorVersionField' => '次版本號',
 			'buildNumberField' => '編譯號',
@@ -3987,8 +4041,6 @@ extension on TranslationsZhTw {
 			'november' => '十一月',
 			'december' => '十二月',
 			'today' => '今天',
-			_ => null,
-		} ?? switch (path) {
 			'yesterday' => '昨天',
 			'last3Days' => '最近 3 天',
 			'last7Days' => '最近 7 天',
@@ -4475,6 +4527,8 @@ extension on TranslationsZhTw {
 			'promptConfiguration' => '提示設定',
 			'systemPrompt' => '系統提示',
 			'temperature' => '溫度 (Temperature)',
+			_ => null,
+		} ?? switch (path) {
 			'promptSaved' => '提示詞已儲存',
 			'editSystemPrompt' => '編輯系統提示詞',
 			'noHistoryYet' => '暫無歷史',
@@ -4501,8 +4555,6 @@ extension on TranslationsZhTw {
 			'requiredField' => '必填',
 			'configKey' => '設定 Key',
 			'memoField' => '備註',
-			_ => null,
-		} ?? switch (path) {
 			'valueRange' => '數值: 0.0 - 1.0',
 			'readOnlySystemPreset' => '唯讀系統預設',
 			'deleteConfig' => '刪除設定',
@@ -4989,6 +5041,8 @@ extension on TranslationsZhTw {
 			'saveFailedPermission' => '儲存失敗：權限或目錄異常',
 			'bangumiDataUpdateFailed' => 'Bangumi資料更新失敗',
 			'bangumiDataResetFailed' => 'Bangumi資料重置失敗',
+			_ => null,
+		} ?? switch (path) {
 			'playingNextEpisode' => '正在播放下一集',
 			'failedToLoadEpisode' => '載入集數失敗',
 			'noMoreEpisodes' => '沒有更多集數可播放',
@@ -5015,8 +5069,6 @@ extension on TranslationsZhTw {
 			'tagMark' => 'Tag 標記',
 			'regexHint' => '正則表達式，如 preroll|/ads?/',
 			'domainHint' => '網域，多個用逗號分隔',
-			_ => null,
-		} ?? switch (path) {
 			'durationHint' => '秒數，如 4.0',
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 廣告標記',
@@ -5503,6 +5555,8 @@ extension on TranslationsZhTw {
 			'thinkingLevel' => '思考程度',
 			'thinkingLow' => '簡潔',
 			'thinkingStandard' => '標準',
+			_ => null,
+		} ?? switch (path) {
 			'thinkingDeep' => '深度',
 			'assistantSettings' => '助手設定',
 			'takePhoto' => '拍照',
@@ -5529,8 +5583,6 @@ extension on TranslationsZhTw {
 			'profileMemoryMaxEntries' => '記憶條目上限',
 			'profileMemoryContextBudget' => '上下文預算（token）',
 			'profileMemoryContextBudgetHint' => '由最新訊息往前累加，超出預算的較早訊息不進上下文，改由滾動摘要記憶；留空跟隨全域設定，0 表示不限制',
-			_ => null,
-		} ?? switch (path) {
 			'aiContextBudget' => '上下文預算（token）',
 			'aiContextBudgetHint' => '所有對話與故事共用的預設上下文預算；助手檔案或故事另有設定時以它們為準，0 表示不限制',
 			'contextBudget' => '上下文預算（token）',

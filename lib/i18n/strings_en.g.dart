@@ -2270,6 +2270,81 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Apply and load'
 	String get vtApplyAndLoad => 'Apply and load';
 
+	/// en: 'Diagnostics'
+	String get vtDiagnostics => 'Diagnostics';
+
+	/// en: 'URL probe'
+	String get vtUrlProbe => 'URL probe';
+
+	/// en: 'Checking…'
+	String get vtProbeRunning => 'Checking…';
+
+	/// en: 'URL reachable'
+	String get vtProbeReachable => 'URL reachable';
+
+	/// en: 'URL unreachable'
+	String get vtProbeUnreachable => 'URL unreachable';
+
+	/// en: 'Video type'
+	String get vtVideoType => 'Video type';
+
+	/// en: 'Is a video URL'
+	String get vtIsVideoUrl => 'Is a video URL';
+
+	/// en: 'Not a video URL'
+	String get vtNotVideoUrl => 'Not a video URL';
+
+	/// en: 'Playback result'
+	String get vtPlaybackResult => 'Playback result';
+
+	/// en: 'Playback OK'
+	String get vtPlaybackOk => 'Playback OK';
+
+	/// en: 'Playback failed'
+	String get vtPlaybackFailed => 'Playback failed';
+
+	/// en: 'Waiting for playback'
+	String get vtPlaybackPending => 'Waiting for playback';
+
+	/// en: 'First frame rendered'
+	String get vtFirstFrame => 'First frame rendered';
+
+	/// en: 'Status code'
+	String get vtHttpStatus => 'Status code';
+
+	/// en: 'Content type'
+	String get vtContentType => 'Content type';
+
+	/// en: 'Content length'
+	String get vtContentLength => 'Content length';
+
+	/// en: 'Elapsed'
+	String get vtElapsed => 'Elapsed';
+
+	/// en: 'Redirect chain'
+	String get vtRedirectChain => 'Redirect chain';
+
+	/// en: 'Probe error'
+	String get vtProbeError => 'Probe error';
+
+	/// en: 'Media properties'
+	String get vtMediaProperties => 'Media properties';
+
+	/// en: 'From the player (mpv); empty until playback starts'
+	String get vtMediaPropertiesHint => 'From the player (mpv); empty until playback starts';
+
+	/// en: 'Re-check'
+	String get vtRecheck => 'Re-check';
+
+	/// en: 'Range support'
+	String get vtAcceptRanges => 'Range support';
+
+	/// en: 'The response is HTML — it may be blocked or need Referer / Cookie'
+	String get vtHtmlHint => 'The response is HTML — it may be blocked or need Referer / Cookie';
+
+	/// en: 'Response preview'
+	String get vtResponsePreview => 'Response preview';
+
 	/// en: 'Main title (Anime name)'
 	String get downloadMainTitle => 'Main title (Anime name)';
 
@@ -2677,6 +2752,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Resolution'
 	String get resolution => 'Resolution';
 
+	/// en: 'Display resolution'
+	String get displayResolution => 'Display resolution';
+
 	/// en: 'Display Width'
 	String get displayWidth => 'Display Width';
 
@@ -2785,8 +2863,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'HR Channels'
 	String get hrChannels => 'HR Channels';
 
-	/// en: 'URI Track'
-	String get uriTrack => 'URI Track';
+	/// en: 'From URI'
+	String get uriTrack => 'From URI';
 
 	/// en: 'Channels Count'
 	String get channelsCount => 'Channels Count';
@@ -2806,8 +2884,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Audio Channels'
 	String get audioChannels => 'Audio Channels';
 
-	/// en: 'AudioBitrate'
-	String get audioBitrate => 'AudioBitrate';
+	/// en: 'Audio bitrate'
+	String get audioBitrate => 'Audio bitrate';
 
 	/// en: 'Audio'
 	String get audio => 'Audio';
@@ -9496,6 +9574,31 @@ extension on Translations {
 			'vtNoHeaders' => 'No headers, click "Add" to create one',
 			'playerNoRequestHeaders' => 'No request headers',
 			'vtApplyAndLoad' => 'Apply and load',
+			'vtDiagnostics' => 'Diagnostics',
+			'vtUrlProbe' => 'URL probe',
+			'vtProbeRunning' => 'Checking…',
+			'vtProbeReachable' => 'URL reachable',
+			'vtProbeUnreachable' => 'URL unreachable',
+			'vtVideoType' => 'Video type',
+			'vtIsVideoUrl' => 'Is a video URL',
+			'vtNotVideoUrl' => 'Not a video URL',
+			'vtPlaybackResult' => 'Playback result',
+			'vtPlaybackOk' => 'Playback OK',
+			'vtPlaybackFailed' => 'Playback failed',
+			'vtPlaybackPending' => 'Waiting for playback',
+			'vtFirstFrame' => 'First frame rendered',
+			'vtHttpStatus' => 'Status code',
+			'vtContentType' => 'Content type',
+			'vtContentLength' => 'Content length',
+			'vtElapsed' => 'Elapsed',
+			'vtRedirectChain' => 'Redirect chain',
+			'vtProbeError' => 'Probe error',
+			'vtMediaProperties' => 'Media properties',
+			'vtMediaPropertiesHint' => 'From the player (mpv); empty until playback starts',
+			'vtRecheck' => 'Re-check',
+			'vtAcceptRanges' => 'Range support',
+			'vtHtmlHint' => 'The response is HTML — it may be blocked or need Referer / Cookie',
+			'vtResponsePreview' => 'Response preview',
 			'downloadMainTitle' => 'Main title (Anime name)',
 			'downloadIgnoreEpisodeTitle' => 'Ignore episode titles',
 			'downloadIgnoreEpisodeTitleDesc' => 'Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names',
@@ -9674,6 +9777,7 @@ extension on Translations {
 			'pixelFormat' => 'Pixel Format',
 			'hwPixelFormat' => 'HW Pixel Format',
 			'resolution' => 'Resolution',
+			'displayResolution' => 'Display resolution',
 			'displayWidth' => 'Display Width',
 			'displayHeight' => 'Display Height',
 			'aspect' => 'Aspect',
@@ -9710,14 +9814,14 @@ extension on Translations {
 			'sampleRate' => 'Sample Rate',
 			'channelCount' => 'Channel Count',
 			'hrChannels' => 'HR Channels',
-			'uriTrack' => 'URI Track',
+			'uriTrack' => 'From URI',
 			'channelsCount' => 'Channels Count',
 			'channels' => 'Channels',
 			'fps' => 'FPS',
 			'bitrate' => 'Bitrate',
 			'par' => 'PAR',
 			'audioChannels' => 'Audio Channels',
-			'audioBitrate' => 'AudioBitrate',
+			'audioBitrate' => 'Audio bitrate',
 			'audio' => 'Audio',
 			'video' => 'Video',
 			'media' => 'Media',
@@ -9751,6 +9855,8 @@ extension on Translations {
 			'numberOfCoresField' => 'numberOfCores',
 			'systemMemoryInMegabytesField' => 'systemMemoryInMegabytes',
 			'userNameField' => 'userName',
+			_ => null,
+		} ?? switch (path) {
 			'majorVersionField' => 'majorVersion',
 			'minorVersionField' => 'minorVersion',
 			'buildNumberField' => 'buildNumber',
@@ -9777,8 +9883,6 @@ extension on Translations {
 			'november' => 'November',
 			'december' => 'December',
 			'today' => 'Today',
-			_ => null,
-		} ?? switch (path) {
 			'yesterday' => 'Yesterday',
 			'last3Days' => 'Last 3 Days',
 			'last7Days' => 'Last 7 Days',
@@ -10265,6 +10369,8 @@ extension on Translations {
 			'promptConfiguration' => 'Prompt Configuration',
 			'systemPrompt' => 'System Prompt',
 			'temperature' => 'Temperature',
+			_ => null,
+		} ?? switch (path) {
 			'promptSaved' => 'Prompt saved',
 			'editSystemPrompt' => 'Edit System Prompt',
 			'noHistoryYet' => 'No history yet',
@@ -10291,8 +10397,6 @@ extension on Translations {
 			'requiredField' => 'Required',
 			'configKey' => 'Config Key',
 			'memoField' => 'Memo',
-			_ => null,
-		} ?? switch (path) {
 			'valueRange' => 'Value: 0.0 - 1.0',
 			'readOnlySystemPreset' => 'Read-only System Preset',
 			'deleteConfig' => 'Delete Config',
@@ -10779,6 +10883,8 @@ extension on Translations {
 			'bangumiDataResetFailed' => 'Bangumi data reset failed...',
 			'playingNextEpisode' => 'Playing next episode',
 			'failedToLoadEpisode' => 'Failed to load episode',
+			_ => null,
+		} ?? switch (path) {
 			'noMoreEpisodes' => 'No more episodes to play',
 			'routeNotFound' => 'Route not found',
 			'loadingDuplicateEpisode' => 'Loading duplicate episode',
@@ -10805,8 +10911,6 @@ extension on Translations {
 			'regexHint' => 'Regex pattern, e.g. preroll|/ads?/',
 			'domainHint' => 'Domains, separated by commas',
 			'durationHint' => 'Seconds, e.g. 4.0',
-			_ => null,
-		} ?? switch (path) {
 			'tagHint' => 'e.g. #EXT-X-CUE-OUT',
 			'cueAdTag' => 'CUE Ad Tag',
 			'ultraShortSegment' => 'Ultra Short Segment',
@@ -11293,6 +11397,8 @@ extension on Translations {
 			'disableReasoning' => 'Disable reasoning',
 			'thinkingLevel' => 'Thinking level',
 			'thinkingLow' => 'Concise',
+			_ => null,
+		} ?? switch (path) {
 			'thinkingStandard' => 'Standard',
 			'thinkingDeep' => 'Deep',
 			'assistantSettings' => 'Assistant settings',
@@ -11319,8 +11425,6 @@ extension on Translations {
 			'profileMemoryHint' => 'Records preferences, frequent topics and key conclusions; switches with the assistant',
 			'profileMemoryMaxEntries' => 'Memory entry limit',
 			'profileMemoryContextBudget' => 'Context budget (tokens)',
-			_ => null,
-		} ?? switch (path) {
 			'profileMemoryContextBudgetHint' => 'Counted from the newest messages; older ones beyond the budget are left out of context and covered by the rolling summary. Leave empty to follow the global setting; 0 = unlimited',
 			'aiContextBudget' => 'Context budget (tokens)',
 			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',

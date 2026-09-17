@@ -745,6 +745,31 @@ vtHeaders: Request Headers
 vtNoHeaders: No headers, click "Add" to create one
 playerNoRequestHeaders: No request headers
 vtApplyAndLoad: Apply and load
+vtDiagnostics: Diagnostics
+vtUrlProbe: URL probe
+vtProbeRunning: Checking…
+vtProbeReachable: URL reachable
+vtProbeUnreachable: URL unreachable
+vtVideoType: Video type
+vtIsVideoUrl: Is a video URL
+vtNotVideoUrl: Not a video URL
+vtPlaybackResult: Playback result
+vtPlaybackOk: Playback OK
+vtPlaybackFailed: Playback failed
+vtPlaybackPending: Waiting for playback
+vtFirstFrame: First frame rendered
+vtHttpStatus: Status code
+vtContentType: Content type
+vtContentLength: Content length
+vtElapsed: Elapsed
+vtRedirectChain: Redirect chain
+vtProbeError: Probe error
+vtMediaProperties: Media properties
+vtMediaPropertiesHint: From the player (mpv); empty until playback starts
+vtRecheck: Re-check
+vtAcceptRanges: Range support
+vtHtmlHint: The response is HTML — it may be blocked or need Referer / Cookie
+vtResponsePreview: Response preview
 downloadMainTitle: Main title (Anime name)
 downloadIgnoreEpisodeTitle: Ignore episode titles
 downloadIgnoreEpisodeTitleDesc: Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names
@@ -928,6 +953,7 @@ rating: Rating
 pixelFormat: Pixel Format
 hwPixelFormat: HW Pixel Format
 resolution: Resolution
+displayResolution: Display resolution
 displayWidth: Display Width
 displayHeight: Display Height
 aspect: Aspect
@@ -964,14 +990,14 @@ format: Format
 sampleRate: Sample Rate
 channelCount: Channel Count
 hrChannels: HR Channels
-uriTrack: URI Track
+uriTrack: From URI
 channelsCount: Channels Count
 channels: Channels
 fps: FPS
 bitrate: Bitrate
 par: PAR
 audioChannels: Audio Channels
-audioBitrate: AudioBitrate
+audioBitrate: Audio bitrate
 audio: Audio
 video: Video
 media: Media

@@ -775,6 +775,31 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtNoHeaders => '暂无请求头，点击"添加"新增';
 	@override String get playerNoRequestHeaders => '无请求头';
 	@override String get vtApplyAndLoad => '应用并加载';
+	@override String get vtDiagnostics => '诊断';
+	@override String get vtUrlProbe => '地址检测';
+	@override String get vtProbeRunning => '检测中…';
+	@override String get vtProbeReachable => '地址可获取';
+	@override String get vtProbeUnreachable => '地址不可获取';
+	@override String get vtVideoType => '视频类型';
+	@override String get vtIsVideoUrl => '是视频地址';
+	@override String get vtNotVideoUrl => '不是视频地址';
+	@override String get vtPlaybackResult => '播放结果';
+	@override String get vtPlaybackOk => '播放成功';
+	@override String get vtPlaybackFailed => '播放失败';
+	@override String get vtPlaybackPending => '等待播放';
+	@override String get vtFirstFrame => '已出首帧';
+	@override String get vtHttpStatus => '状态码';
+	@override String get vtContentType => '内容类型';
+	@override String get vtContentLength => '内容长度';
+	@override String get vtElapsed => '耗时';
+	@override String get vtRedirectChain => '重定向链';
+	@override String get vtProbeError => '检测错误';
+	@override String get vtMediaProperties => '媒体属性';
+	@override String get vtMediaPropertiesHint => '来自播放器（mpv），未开始播放时为空';
+	@override String get vtRecheck => '重新检测';
+	@override String get vtAcceptRanges => '分段支持';
+	@override String get vtHtmlHint => '响应是 HTML，可能被拦截或需要 Referer / Cookie';
+	@override String get vtResponsePreview => '响应预览';
 	@override String get downloadMainTitle => '主标题（番剧名）';
 	@override String get downloadIgnoreEpisodeTitle => '不使用集标题';
 	@override String get downloadIgnoreEpisodeTitleDesc => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件';
@@ -917,6 +942,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get pixelFormat => '像素格式';
 	@override String get hwPixelFormat => '硬件像素格式';
 	@override String get resolution => '分辨率';
+	@override String get displayResolution => '显示分辨率';
 	@override String get displayWidth => '显示宽度';
 	@override String get displayHeight => '显示高度';
 	@override String get aspect => '宽高比';
@@ -937,15 +963,15 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get trackLanguage => '轨道语言';
 	@override String get trackImage => '轨道图像';
 	@override String get trackAlbumArt => '轨道专辑封面';
-	@override String get trackCodec => '轨道解码器';
+	@override String get trackCodec => '轨道编码';
 	@override String get trackDecoder => '轨道解码器';
 	@override String get trackWidth => '轨道宽度';
 	@override String get trackHeight => '轨道高度';
 	@override String get trackChannelsCount => '轨道声道数';
 	@override String get trackChannels => '轨道声道';
 	@override String get trackSampleRate => '轨道采样率';
-	@override String get trackFps => '轨道 FPS';
-	@override String get trackBitrate => '轨道位元率';
+	@override String get trackFps => '帧率';
+	@override String get trackBitrate => '轨道码率';
 	@override String get trackRotate => '轨道旋转';
 	@override String get trackPar => '轨道 PAR';
 	@override String get trackAudioChannels => '轨道音频声道';
@@ -953,14 +979,14 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get sampleRate => '采样率';
 	@override String get channelCount => '声道数';
 	@override String get hrChannels => 'HR 声道';
-	@override String get uriTrack => 'URI 轨道';
+	@override String get uriTrack => '由 URI 提供';
 	@override String get channelsCount => '声道数';
 	@override String get channels => '声道';
 	@override String get fps => 'FPS';
 	@override String get bitrate => '位元率';
 	@override String get par => 'PAR';
 	@override String get audioChannels => '音频声道';
-	@override String get audioBitrate => '音频位元率';
+	@override String get audioBitrate => '音频码率';
 	@override String get audio => '音频';
 	@override String get video => '视频';
 	@override String get media => '媒体';
@@ -3700,6 +3726,31 @@ extension on TranslationsZhCn {
 			'vtNoHeaders' => '暂无请求头，点击"添加"新增',
 			'playerNoRequestHeaders' => '无请求头',
 			'vtApplyAndLoad' => '应用并加载',
+			'vtDiagnostics' => '诊断',
+			'vtUrlProbe' => '地址检测',
+			'vtProbeRunning' => '检测中…',
+			'vtProbeReachable' => '地址可获取',
+			'vtProbeUnreachable' => '地址不可获取',
+			'vtVideoType' => '视频类型',
+			'vtIsVideoUrl' => '是视频地址',
+			'vtNotVideoUrl' => '不是视频地址',
+			'vtPlaybackResult' => '播放结果',
+			'vtPlaybackOk' => '播放成功',
+			'vtPlaybackFailed' => '播放失败',
+			'vtPlaybackPending' => '等待播放',
+			'vtFirstFrame' => '已出首帧',
+			'vtHttpStatus' => '状态码',
+			'vtContentType' => '内容类型',
+			'vtContentLength' => '内容长度',
+			'vtElapsed' => '耗时',
+			'vtRedirectChain' => '重定向链',
+			'vtProbeError' => '检测错误',
+			'vtMediaProperties' => '媒体属性',
+			'vtMediaPropertiesHint' => '来自播放器（mpv），未开始播放时为空',
+			'vtRecheck' => '重新检测',
+			'vtAcceptRanges' => '分段支持',
+			'vtHtmlHint' => '响应是 HTML，可能被拦截或需要 Referer / Cookie',
+			'vtResponsePreview' => '响应预览',
 			'downloadMainTitle' => '主标题（番剧名）',
 			'downloadIgnoreEpisodeTitle' => '不使用集标题',
 			'downloadIgnoreEpisodeTitleDesc' => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件',
@@ -3884,6 +3935,7 @@ extension on TranslationsZhCn {
 			'pixelFormat' => '像素格式',
 			'hwPixelFormat' => '硬件像素格式',
 			'resolution' => '分辨率',
+			'displayResolution' => '显示分辨率',
 			'displayWidth' => '显示宽度',
 			'displayHeight' => '显示高度',
 			'aspect' => '宽高比',
@@ -3904,15 +3956,15 @@ extension on TranslationsZhCn {
 			'trackLanguage' => '轨道语言',
 			'trackImage' => '轨道图像',
 			'trackAlbumArt' => '轨道专辑封面',
-			'trackCodec' => '轨道解码器',
+			'trackCodec' => '轨道编码',
 			'trackDecoder' => '轨道解码器',
 			'trackWidth' => '轨道宽度',
 			'trackHeight' => '轨道高度',
 			'trackChannelsCount' => '轨道声道数',
 			'trackChannels' => '轨道声道',
 			'trackSampleRate' => '轨道采样率',
-			'trackFps' => '轨道 FPS',
-			'trackBitrate' => '轨道位元率',
+			'trackFps' => '帧率',
+			'trackBitrate' => '轨道码率',
 			'trackRotate' => '轨道旋转',
 			'trackPar' => '轨道 PAR',
 			'trackAudioChannels' => '轨道音频声道',
@@ -3920,14 +3972,14 @@ extension on TranslationsZhCn {
 			'sampleRate' => '采样率',
 			'channelCount' => '声道数',
 			'hrChannels' => 'HR 声道',
-			'uriTrack' => 'URI 轨道',
+			'uriTrack' => '由 URI 提供',
 			'channelsCount' => '声道数',
 			'channels' => '声道',
 			'fps' => 'FPS',
 			'bitrate' => '位元率',
 			'par' => 'PAR',
 			'audioChannels' => '音频声道',
-			'audioBitrate' => '音频位元率',
+			'audioBitrate' => '音频码率',
 			'audio' => '音频',
 			'video' => '视频',
 			'media' => '媒体',
@@ -3962,6 +4014,8 @@ extension on TranslationsZhCn {
 			'systemMemoryInMegabytesField' => '系统内存 (MB)',
 			'userNameField' => '用户名',
 			'majorVersionField' => '主版本号',
+			_ => null,
+		} ?? switch (path) {
 			'minorVersionField' => '次版本号',
 			'buildNumberField' => '编译号',
 			'displayVersionField' => '显示版本',
@@ -3988,8 +4042,6 @@ extension on TranslationsZhCn {
 			'december' => '十二月',
 			'today' => '今天',
 			'yesterday' => '昨天',
-			_ => null,
-		} ?? switch (path) {
 			'last3Days' => '最近 3 天',
 			'last7Days' => '最近 7 天',
 			'last30Days' => '最近 30 天',
@@ -4476,6 +4528,8 @@ extension on TranslationsZhCn {
 			'systemPrompt' => '系统提示',
 			'temperature' => '温度 (Temperature)',
 			'promptSaved' => '提示词已保存',
+			_ => null,
+		} ?? switch (path) {
 			'editSystemPrompt' => '编辑系统提示词',
 			'noHistoryYet' => '暂无历史',
 			'clearAll' => '清空',
@@ -4502,8 +4556,6 @@ extension on TranslationsZhCn {
 			'configKey' => '配置 Key',
 			'memoField' => '备注',
 			'valueRange' => '范围：0.0 - 1.0',
-			_ => null,
-		} ?? switch (path) {
 			'readOnlySystemPreset' => '只读系统预设',
 			'deleteConfig' => '删除配置',
 			'areYouSureYouWantToDeleteGeneric' => '确定要删除吗',
@@ -4990,6 +5042,8 @@ extension on TranslationsZhCn {
 			'saveFailedPermission' => '保存失败：权限或目录异常',
 			'bangumiDataUpdateFailed' => 'Bangumi数据更新失败',
 			'bangumiDataResetFailed' => 'Bangumi数据重置失败',
+			_ => null,
+		} ?? switch (path) {
 			'playingNextEpisode' => '正在播放下一集',
 			'failedToLoadEpisode' => '加载剧集失败',
 			'noMoreEpisodes' => '没有更多剧集可播放',
@@ -5016,8 +5070,6 @@ extension on TranslationsZhCn {
 			'durationFilter' => '时长过滤',
 			'tagMark' => 'Tag 标记',
 			'regexHint' => '正则表达式，如 preroll|/ads?/',
-			_ => null,
-		} ?? switch (path) {
 			'domainHint' => '域名，多个用逗号分隔',
 			'durationHint' => '秒数，如 4.0',
 			'tagHint' => '如',
@@ -5504,6 +5556,8 @@ extension on TranslationsZhCn {
 			'disableReasoning' => '禁用推理',
 			'thinkingLevel' => '思考程度',
 			'thinkingLow' => '简洁',
+			_ => null,
+		} ?? switch (path) {
 			'thinkingStandard' => '标准',
 			'thinkingDeep' => '深度',
 			'assistantSettings' => '助手设置',
@@ -5530,8 +5584,6 @@ extension on TranslationsZhCn {
 			'profileMemoryHint' => '记录用户偏好/常问话题/关键结论，随助手切换',
 			'profileMemoryMaxEntries' => '记忆条目上限',
 			'profileMemoryContextBudget' => '上下文预算（token）',
-			_ => null,
-		} ?? switch (path) {
 			'profileMemoryContextBudgetHint' => '按最近消息累加，超出预算的更早消息不进上下文，改由滚动摘要记忆；留空跟随全局设置，0 表示不限制',
 			'aiContextBudget' => '上下文预算（token）',
 			'aiContextBudgetHint' => '所有对话与故事共用的默认上下文预算；助手档案或故事里单独设置时以它们为准，0 表示不限制',
