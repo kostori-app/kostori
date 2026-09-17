@@ -737,6 +737,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get recognizeImageFailed => '圖片讀取失敗，請重試';
 	@override String get recognizeFailed => '辨識失敗';
 	@override String get newChat => '新對話';
+	@override String get searchChat => '搜尋對話';
+	@override String get welcomeBack => '歡迎回來';
 	@override String recognizeEpisodeSuffix({required Object n}) => '第${n}集';
 	@override String recognizePrompt({required Object title, required Object episode, required Object from, required Object to, required Object similarity}) => '我上傳了一張截圖，辨識結果為《${title}》${episode}（${from} → ${to}，相似度 ${similarity}）。請介紹一下這部番劇。';
 	@override String aiStepsSuffix({required Object n}) => ' · ${n} 步';
@@ -3650,6 +3652,8 @@ extension on TranslationsZhTw {
 			'recognizeImageFailed' => '圖片讀取失敗，請重試',
 			'recognizeFailed' => '辨識失敗',
 			'newChat' => '新對話',
+			'searchChat' => '搜尋對話',
+			'welcomeBack' => '歡迎回來',
 			'recognizeEpisodeSuffix' => ({required Object n}) => '第${n}集',
 			'recognizePrompt' => ({required Object title, required Object episode, required Object from, required Object to, required Object similarity}) => '我上傳了一張截圖，辨識結果為《${title}》${episode}（${from} → ${to}，相似度 ${similarity}）。請介紹一下這部番劇。',
 			'aiStepsSuffix' => ({required Object n}) => ' · ${n} 步',
@@ -3974,10 +3978,10 @@ extension on TranslationsZhTw {
 			'december' => '十二月',
 			'today' => '今天',
 			'yesterday' => '昨天',
-			'last3Days' => '最近 3 天',
-			'last7Days' => '最近 7 天',
 			_ => null,
 		} ?? switch (path) {
+			'last3Days' => '最近 3 天',
+			'last7Days' => '最近 7 天',
 			'last30Days' => '最近 30 天',
 			'last3Months' => '最近 3 個月',
 			'last6Months' => '最近 6 個月',
@@ -4488,10 +4492,10 @@ extension on TranslationsZhTw {
 			'readOnlySystemPreset' => '唯讀系統預設',
 			'deleteConfig' => '刪除設定',
 			'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
-			'baseUrl' => '基礎 URL',
-			'optionalField' => '選填',
 			_ => null,
 		} ?? switch (path) {
+			'baseUrl' => '基礎 URL',
+			'optionalField' => '選填',
 			'model' => '模型',
 			'tokens' => 'tokens',
 			'addModel' => '添加模型',
@@ -5002,10 +5006,10 @@ extension on TranslationsZhTw {
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 廣告標記',
 			'ultraShortSegment' => '極短分片',
-			'commonAdUrlPattern' => '常見廣告 URL 特徵',
-			'keywordMatch' => '關鍵字比對',
 			_ => null,
 		} ?? switch (path) {
+			'commonAdUrlPattern' => '常見廣告 URL 特徵',
+			'keywordMatch' => '關鍵字比對',
 			'keywordHint' => '子字串，如 advert 或 adservice',
 			'commonAdKeyword' => '常見廣告關鍵字',
 			'videoDetails' => '影片詳情',
@@ -5516,10 +5520,10 @@ extension on TranslationsZhTw {
 			'profileMemoryEmpty' => '暫無記憶條目',
 			'profileMemoryAdd' => '新增記憶',
 			'profileCopy' => '複製',
-			'profileExport' => '匯出',
-			'profileImport' => '匯入',
 			_ => null,
 		} ?? switch (path) {
+			'profileExport' => '匯出',
+			'profileImport' => '匯入',
 			'profileExported' => '已匯出到剪貼簿',
 			'profileImportFailed' => '匯入失敗',
 			'extensionManagement' => '擴充管理設定',

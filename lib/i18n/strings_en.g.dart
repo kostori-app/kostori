@@ -2159,6 +2159,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'New chat'
 	String get newChat => 'New chat';
 
+	/// en: 'Search chats'
+	String get searchChat => 'Search chats';
+
+	/// en: 'Welcome back'
+	String get welcomeBack => 'Welcome back';
+
 	/// en: 'episode ${n}'
 	String recognizeEpisodeSuffix({required Object n}) => 'episode ${n}';
 
@@ -9426,6 +9432,8 @@ extension on Translations {
 			'recognizeImageFailed' => 'Failed to read image, please retry',
 			'recognizeFailed' => 'Recognition failed',
 			'newChat' => 'New chat',
+			'searchChat' => 'Search chats',
+			'welcomeBack' => 'Welcome back',
 			'recognizeEpisodeSuffix' => ({required Object n}) => 'episode ${n}',
 			'recognizePrompt' => ({required Object title, required Object episode, required Object from, required Object to, required Object similarity}) => 'I uploaded a screenshot. Recognition result: 《${title}》${episode} (${from} → ${to}, similarity ${similarity}). Please introduce this anime.',
 			'aiStepsSuffix' => ({required Object n}) => ' · ${n} steps',
@@ -9742,10 +9750,10 @@ extension on Translations {
 			'december' => 'December',
 			'today' => 'Today',
 			'yesterday' => 'Yesterday',
-			'last3Days' => 'Last 3 Days',
-			'last7Days' => 'Last 7 Days',
 			_ => null,
 		} ?? switch (path) {
+			'last3Days' => 'Last 3 Days',
+			'last7Days' => 'Last 7 Days',
 			'last30Days' => 'Last 30 Days',
 			'last3Months' => 'Last 3 Months',
 			'last6Months' => 'Last 6 Months',
@@ -10256,10 +10264,10 @@ extension on Translations {
 			'readOnlySystemPreset' => 'Read-only System Preset',
 			'deleteConfig' => 'Delete Config',
 			'areYouSureYouWantToDeleteGeneric' => 'Are you sure you want to delete',
-			'baseUrl' => 'Base URL',
-			'optionalField' => 'Optional',
 			_ => null,
 		} ?? switch (path) {
+			'baseUrl' => 'Base URL',
+			'optionalField' => 'Optional',
 			'model' => 'Model',
 			'tokens' => 'tokens',
 			'addModel' => 'Add Model',
@@ -10770,10 +10778,10 @@ extension on Translations {
 			'cueAdTag' => 'CUE Ad Tag',
 			'ultraShortSegment' => 'Ultra Short Segment',
 			'commonAdUrlPattern' => 'Common Ad URL Pattern',
-			'keywordMatch' => 'Keyword Match',
-			'keywordHint' => 'Substring, e.g. advert or adservice',
 			_ => null,
 		} ?? switch (path) {
+			'keywordMatch' => 'Keyword Match',
+			'keywordHint' => 'Substring, e.g. advert or adservice',
 			'commonAdKeyword' => 'Common Ad Keyword',
 			'videoDetails' => 'Video Details',
 			'synopsis' => 'Synopsis',
@@ -11284,10 +11292,10 @@ extension on Translations {
 			'profileMemoryClear' => 'Clear',
 			'profileMemoryEmpty' => 'No memory entries yet',
 			'profileMemoryAdd' => 'New memory entry',
-			'profileCopy' => 'Duplicate',
-			'profileExport' => 'Export',
 			_ => null,
 		} ?? switch (path) {
+			'profileCopy' => 'Duplicate',
+			'profileExport' => 'Export',
 			'profileImport' => 'Import',
 			'profileExported' => 'Exported to clipboard',
 			'profileImportFailed' => 'Import failed',

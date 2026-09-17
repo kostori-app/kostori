@@ -708,6 +708,8 @@ bangumiClientIdSecretRequired: Please fill in the client ID first
 recognizeImageFailed: Failed to read image, please retry
 recognizeFailed: Recognition failed
 newChat: New chat
+searchChat: Search chats
+welcomeBack: Welcome back
 recognizeEpisodeSuffix: "episode ${n}"
 recognizePrompt: "I uploaded a screenshot. Recognition result: 《${title}》${episode} (${from} → ${to}, similarity ${similarity}). Please introduce this anime."
 aiStepsSuffix: " · ${n} steps"

@@ -616,15 +616,28 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   /// 右上角统一入口：选择助手档案 / 助手设置 / 话题列表
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  /// 侧边栏：原右上角"更多"里的入口移到这里，宽度按屏幕自适应
+  /// 日期分组标签：今天 / 昨天 / M月d日
+  String _sessionDayLabel(DateTime dt) {
+    final now = DateTime.now();
+    final d = DateTime(dt.year, dt.month, dt.day);
+    final today = DateTime(now.year, now.month, now.day);
+    final diff = today.difference(d).inDays;
+    if (diff <= 0) return t.today;
+    if (diff == 1) return t.yesterday;
+    return '${dt.month}月${dt.day}日';
+  }
+
+  /// 会话侧边栏：用户信息 / 新建·搜索 / 按日期分组的会话列表 / 助手选择
   Widget _buildSideDrawer(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.sizeOf(context).width;
     // 窄屏占比大一些、宽屏别覆盖太多
-    final width = (screenWidth * 0.8).clamp(240.0, 320.0);
+    final width = (screenWidth * 0.8).clamp(260.0, 340.0);
     final profile = _profileId == null
         ? null
         : AssistantProfileStore.instance.find(_profileId!);
+    final nickname =
+        (appdata.settings['userNickname'] as String?)?.trim() ?? '';
 
     void closeThen(VoidCallback action) {
       Navigator.of(context).pop();
@@ -635,60 +648,183 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       width: width,
       backgroundColor: scheme.surface,
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
           children: [
+            // 顶部：头像 + 昵称 + 欢迎回来
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
                 children: [
-                  Text(
-                    t.aiChat,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.primary,
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: scheme.secondaryContainer,
+                    child: Text(
+                      nickname.isEmpty
+                          ? '·'
+                          : nickname.substring(0, 1).toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: scheme.onSecondaryContainer,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    profile?.name ?? t.noPersonality,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurfaceVariant,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nickname.isEmpty ? t.userNickname : nickname,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          t.welcomeBack,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
+            // 新建 / 搜索
             ListTile(
-              leading: const Icon(Icons.badge_outlined),
-              title: Text(t.selectAssistantProfile),
-              subtitle: Text(
+              dense: true,
+              leading: const Icon(Icons.add, size: 20),
+              title: Text(t.newChat),
+              onTap: () => closeThen(_newSession),
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.search, size: 20),
+              title: Text(t.searchChat),
+              onTap: () => closeThen(_showSessionDrawer),
+            ),
+            const Divider(height: 1),
+            // 会话列表：按更新日期分组
+            Expanded(
+              child: StreamBuilder<List<AiSession>>(
+                stream: AiConversationService().watchSessions(type: 'chat'),
+                builder: (ctx, snap) {
+                  final sessions = snap.data ?? const <AiSession>[];
+                  if (sessions.isEmpty) {
+                    return Center(
+                      child: Text(
+                        t.noHistoryYet,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  }
+                  // 已按 updatedAt 倒序：顺序遍历即可天然按日期分组
+                  final groups = <String, List<AiSession>>{};
+                  for (final s in sessions) {
+                    final label = _sessionDayLabel(s.updatedAt);
+                    groups.putIfAbsent(label, () => []).add(s);
+                  }
+                  return ListView(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+                        child: Row(
+                          children: [
+                            Text(
+                              t.chat,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      for (final entry in groups.entries) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+                          child: Text(
+                            entry.key,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        for (final s in entry.value)
+                          ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                            ),
+                            selected: s.sessionId == _sessionId,
+                            title: Text(
+                              s.title.isEmpty ? t.aiConversation : s.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            onTap: () => closeThen(
+                              () => _switchSession(s.sessionId),
+                            ),
+                            onLongPress: () =>
+                                _confirmDeleteSession(ctx, s),
+                          ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+            const Divider(height: 1),
+            // 底部：助手选择
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.smart_toy_outlined, size: 20),
+              title: Text(
                 profile?.name ?? t.noPersonality,
-                style: const TextStyle(fontSize: 12),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13),
               ),
+              trailing: const Icon(Icons.unfold_more, size: 18),
               onTap: () => closeThen(_showAssistantPicker),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: Text(t.assistantSettings),
-              onTap: () =>
-                  closeThen(() => showAssistantProfileEditor(profile: profile)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.forum_outlined),
-              title: Text(t.topicList),
-              onTap: () => closeThen(_showSessionDrawer),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// 长按会话：确认删除
+  Future<void> _confirmDeleteSession(BuildContext context, AiSession s) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.delete,
+        content: Text(s.title.isEmpty ? t.aiConversation : s.title),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await AiConversationService().deleteSession(s.sessionId);
+    if (_sessionId == s.sessionId) {
+      await _loadOrCreateSession();
+    }
   }
 
   Widget _buildThinkingLevelButton() {

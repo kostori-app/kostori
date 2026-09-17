@@ -738,6 +738,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get recognizeImageFailed => '图片读取失败，请重试';
 	@override String get recognizeFailed => '识别失败';
 	@override String get newChat => '新对话';
+	@override String get searchChat => '搜索对话';
+	@override String get welcomeBack => '欢迎回来';
 	@override String recognizeEpisodeSuffix({required Object n}) => '第${n}集';
 	@override String recognizePrompt({required Object title, required Object episode, required Object from, required Object to, required Object similarity}) => '我上传了一张截图，识别结果为《${title}》${episode}（${from} → ${to}，相似度 ${similarity}）。请介绍一下这部番剧。';
 	@override String aiStepsSuffix({required Object n}) => ' · ${n} 步';
@@ -3652,6 +3654,8 @@ extension on TranslationsZhCn {
 			'recognizeImageFailed' => '图片读取失败，请重试',
 			'recognizeFailed' => '识别失败',
 			'newChat' => '新对话',
+			'searchChat' => '搜索对话',
+			'welcomeBack' => '欢迎回来',
 			'recognizeEpisodeSuffix' => ({required Object n}) => '第${n}集',
 			'recognizePrompt' => ({required Object title, required Object episode, required Object from, required Object to, required Object similarity}) => '我上传了一张截图，识别结果为《${title}》${episode}（${from} → ${to}，相似度 ${similarity}）。请介绍一下这部番剧。',
 			'aiStepsSuffix' => ({required Object n}) => ' · ${n} 步',
@@ -3975,10 +3979,10 @@ extension on TranslationsZhCn {
 			'today' => '今天',
 			'yesterday' => '昨天',
 			'last3Days' => '最近 3 天',
-			'last7Days' => '最近 7 天',
-			'last30Days' => '最近 30 天',
 			_ => null,
 		} ?? switch (path) {
+			'last7Days' => '最近 7 天',
+			'last30Days' => '最近 30 天',
 			'last3Months' => '最近 3 个月',
 			'last6Months' => '最近 6 个月',
 			'thisYear' => '今年',
@@ -4489,10 +4493,10 @@ extension on TranslationsZhCn {
 			'deleteConfig' => '删除配置',
 			'areYouSureYouWantToDeleteGeneric' => '确定要删除吗',
 			'baseUrl' => '基础 URL',
-			'optionalField' => '可选',
-			'model' => '模型',
 			_ => null,
 		} ?? switch (path) {
+			'optionalField' => '可选',
+			'model' => '模型',
 			'tokens' => 'tokens',
 			'addModel' => '添加模型',
 			'modelId' => '模型 ID',
@@ -5003,10 +5007,10 @@ extension on TranslationsZhCn {
 			'durationHint' => '秒数，如 4.0',
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 广告标记',
-			'ultraShortSegment' => '极短分片',
-			'commonAdUrlPattern' => '常见广告 URL 特征',
 			_ => null,
 		} ?? switch (path) {
+			'ultraShortSegment' => '极短分片',
+			'commonAdUrlPattern' => '常见广告 URL 特征',
 			'keywordMatch' => '关键字匹配',
 			'keywordHint' => '子串，如 advert 或 adservice',
 			'commonAdKeyword' => '常见广告关键字',
@@ -5517,10 +5521,10 @@ extension on TranslationsZhCn {
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暂无记忆条目',
 			'profileMemoryAdd' => '新增记忆',
-			'profileCopy' => '复制',
-			'profileExport' => '导出',
 			_ => null,
 		} ?? switch (path) {
+			'profileCopy' => '复制',
+			'profileExport' => '导出',
 			'profileImport' => '导入',
 			'profileExported' => '已导出到剪贴板',
 			'profileImportFailed' => '导入失败',

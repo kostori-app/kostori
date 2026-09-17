@@ -697,6 +697,8 @@ bangumiClientIdSecretRequired: 请先填写客户端 ID
 recognizeImageFailed: 图片读取失败，请重试
 recognizeFailed: 识别失败
 newChat: 新对话
+searchChat: 搜索对话
+welcomeBack: 欢迎回来
 recognizeEpisodeSuffix: "第${n}集"
 recognizePrompt: "我上传了一张截图，识别结果为《${title}》${episode}（${from} → ${to}，相似度 ${similarity}）。请介绍一下这部番剧。"
 aiStepsSuffix: " · ${n} 步"
