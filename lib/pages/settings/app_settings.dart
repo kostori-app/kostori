@@ -1179,56 +1179,29 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
                     ].join(' · '),
                     style: const TextStyle(fontSize: 12),
                   ),
-                ),
-                // 上传 / 下载 / 历史：连贯轨道 + 独立按钮（分段胶囊外观）
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: CapsuleButtonBar(
-                      children: [
-                        CapsuleButton(
-                          flat: true,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          leading: const Icon(
-                            Icons.cloud_upload_outlined,
-                            size: 16,
-                          ),
-                          text: t.upload,
-                          enabled: !_busy,
-                          onTap: () => _uploadPart(part),
-                        ),
-                        CapsuleButton(
-                          flat: true,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          leading: const Icon(
-                            Icons.cloud_download_outlined,
-                            size: 16,
-                          ),
-                          text: t.download,
-                          enabled:
-                              !_busy && remoteParts.containsKey(part.key),
-                          onTap: () => _downloadPart(part),
-                        ),
-                        CapsuleButton(
-                          flat: true,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          leading: const Icon(Icons.history, size: 16),
-                          text: t.syncHistory,
-                          enabled: !_busy,
-                          onTap: () => _showPartHistory(part),
-                        ),
-                      ],
-                    ),
+                  // 上传 / 下载 / 历史：连贯轨道 + 独立按钮（分段胶囊外观）
+                  trailing: CapsuleButtonBar(
+                    padding: const EdgeInsets.all(2),
+                    children: [
+                      _partAction(
+                        icon: Icons.cloud_upload_outlined,
+                        tooltip: t.upload,
+                        enabled: !_busy,
+                        onTap: () => _uploadPart(part),
+                      ),
+                      _partAction(
+                        icon: Icons.cloud_download_outlined,
+                        tooltip: t.download,
+                        enabled: !_busy && remoteParts.containsKey(part.key),
+                        onTap: () => _downloadPart(part),
+                      ),
+                      _partAction(
+                        icon: Icons.history,
+                        tooltip: t.syncHistory,
+                        enabled: !_busy,
+                        onTap: () => _showPartHistory(part),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1237,6 +1210,23 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
       ],
     );
   }
+
+  /// 分片操作按钮：图标 + 悬浮提示
+  Widget _partAction({
+    required IconData icon,
+    required String tooltip,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) => Tooltip(
+    message: tooltip,
+    child: CapsuleButton(
+      flat: true,
+      padding: const EdgeInsets.all(8),
+      leading: Icon(icon, size: 18),
+      enabled: enabled,
+      onTap: onTap,
+    ),
+  );
 
   /// 该部分的历史备份文件（按版本号倒序）
   /// 文件名格式：$name-$version-$date-$deviceTag.kostori
@@ -1771,17 +1761,23 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
         ),
       );
     }
-    return Column(
+    // 操作栏悬浮在列表之上，内容从其下方滚过
+    return Stack(
       children: [
-        Expanded(
+        Positioned.fill(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 72),
             children: [
               for (final id in ids) _buildItem(kind, id, selected),
             ],
           ),
         ),
-        _buildActions(kind, selected),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _buildActions(kind, selected),
+        ),
       ],
     );
   }
