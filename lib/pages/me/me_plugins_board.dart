@@ -125,7 +125,8 @@ class _ForumBoardRow extends StatelessWidget {
       );
     }
 
-    // 图片预览：复用被点击的 provider（同 headers/sourceKey，缓存命中），Hero 与列表 tile 同 tag
+    // 图片预览：复用被点击的 provider（同 headers/sourceKey，缓存命中），Hero 与列表 tile 同 tag；
+    // 传入整个帖子的图片列表，预览页可左右滑动切换
     void preview(int index) {
       if (images.isEmpty) return;
       final url = images[index];
@@ -135,6 +136,13 @@ class _ForumBoardRow extends StatelessWidget {
         title: title.isEmpty ? plugin.name : title,
         imageProvider: _siteProvider(url, plugin: plugin),
         heroTag: heroTagFor(index),
+        initialIndex: index,
+        galleryProviders: [
+          for (final u in images) _siteProvider(u, plugin: plugin),
+        ],
+        galleryHeroTags: [
+          for (var i = 0; i < images.length; i++) heroTagFor(i),
+        ],
       );
     }
 

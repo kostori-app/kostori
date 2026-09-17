@@ -934,6 +934,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
 
   Widget _postImages(BuildContext context, ColorScheme cs, _ThreadPost post) {
     final pid = post.pid == 0 ? post.floor : post.pid;
+    String heroTagFor(int i) => 'thread_${widget.plugin.key}_${pid}_$i';
     void preview(int i) {
       final url = post.images[i];
       BangumiWidget.showImagePreview(
@@ -941,7 +942,15 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         url: url,
         title: _title,
         imageProvider: _siteProvider(url, plugin: widget.plugin),
-        heroTag: 'thread_${widget.plugin.key}_${pid}_$i',
+        heroTag: heroTagFor(i),
+        initialIndex: i,
+        // 整条帖子的图片一起传入，预览页可左右滑动切换
+        galleryProviders: [
+          for (final u in post.images) _siteProvider(u, plugin: widget.plugin),
+        ],
+        galleryHeroTags: [
+          for (var k = 0; k < post.images.length; k++) heroTagFor(k),
+        ],
       );
     }
 
@@ -952,11 +961,10 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         itemCount: post.images.length,
         separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, i) {
-          final heroTag = 'thread_${widget.plugin.key}_${pid}_$i';
           return GestureDetector(
             onTap: () => preview(i),
             child: KostoriHero(
-              tag: heroTag,
+              tag: heroTagFor(i),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: _siteImage(
