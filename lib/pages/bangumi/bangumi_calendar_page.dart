@@ -62,9 +62,11 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           final begin = DateTime.tryParse(e.value.begin ?? '');
           if (begin == null) return false;
           if (!targetDays.contains(begin.weekday)) return false;
-          // 开始时间在最近 12 个月内
+          // 开始时间在最近 ~150 天内（只覆盖当季 + 上一季）：
+          // 旧番的重播/改档条目常被 bangumi-data 写成近期 begin，
+          // 放宽到 12 个月会把这类过期条目也拉来补全
           if (!begin.isAfter(
-            DateTime.now().subtract(const Duration(days: 365)),
+            DateTime.now().subtract(const Duration(days: 150)),
           )) {
             return false;
           }
@@ -129,10 +131,14 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           // bangumi-data 的 begin 有时与实际档期不符（如把 2023 旧番标成 2026）。
           // 与 bgm 条目自身首播日相差过大时视为脏数据，跳过补全。
           final infoAir = DateTime.tryParse(info.airDate);
-          if (begin != null &&
+          final tooOld =
               infoAir != null &&
-              begin.difference(infoAir).inDays.abs() > 180) {
-            // 跳过并记住：否则下次还会把它当"缺失条目"再请求一遍
+              infoAir.isBefore(DateTime.now().subtract(const Duration(days: 400)));
+          if (tooOld ||
+              (begin != null &&
+                  infoAir != null &&
+                  begin.difference(infoAir).inDays.abs() > 180)) {
+            // 过期条目 / 脏数据：跳过并记住，否则下次还会把它当"缺失条目"再请求
             newSkipIds.add(id);
             continue;
           }
