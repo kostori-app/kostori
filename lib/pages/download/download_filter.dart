@@ -40,6 +40,7 @@ class DownloadFilterBar extends StatelessWidget {
     this.groups = const [],
     required this.selected,
     required this.onSelected,
+    this.groupCounts = const {},
     this.padding = const EdgeInsets.fromLTRB(12, 0, 12, 2),
   });
 
@@ -47,9 +48,22 @@ class DownloadFilterBar extends StatelessWidget {
 
   /// 自定义分组（顶层分组用完整名，子组用最后一段显示）
   final List<String> groups;
+
+  /// 分组名 → 条目数（有值时显示为「组名 (n)」）
+  final Map<String, int> groupCounts;
+
   final String selected;
   final ValueChanged<String> onSelected;
   final EdgeInsetsGeometry padding;
+
+  /// 分组显示名：子组只显示最后一段；带条目数时追加「 (n)」
+  String _groupLabel(String name) {
+    final label = DownloadManager.isSubGroup(name)
+        ? DownloadManager.leafOf(name)
+        : name;
+    final n = groupCounts[name];
+    return n == null ? label : '$label ($n)';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,9 +82,7 @@ class DownloadFilterBar extends StatelessWidget {
               ),
             for (final name in groups)
               CapsuleOption(
-                text: DownloadManager.isSubGroup(name)
-                    ? DownloadManager.leafOf(name)
-                    : name,
+                text: _groupLabel(name),
                 isSelected: selected == '$kDownloadGroupPrefix$name',
                 onTap: () => onSelected('$kDownloadGroupPrefix$name'),
               ),

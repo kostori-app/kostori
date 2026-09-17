@@ -718,6 +718,25 @@ class _RecordsTabState extends State<_RecordsTab> {
     return _sortRecords(list);
   }
 
+  /// 分组条目数（按当前 存在的/已删除 筛选统计）：
+  /// 父组累计其下所有子组的条目，子组统计自身（含更深层子组）
+  Map<String, int> _groupCounts() {
+    final counts = <String, int>{};
+    for (final r in _records) {
+      final exists = _exists[r['filePath']] == true;
+      if (widget.existsFilter == 'exists' && !exists) continue;
+      if (widget.existsFilter == 'deleted' && exists) continue;
+      var g = r['group']?.toString() ?? '';
+      while (g.isNotEmpty) {
+        counts[g] = (counts[g] ?? 0) + 1;
+        final i = g.lastIndexOf(DownloadManager.groupSeparator);
+        if (i <= 0) break;
+        g = g.substring(0, i);
+      }
+    }
+    return counts;
+  }
+
   /// 当前选中的自定义分组（完整名）；未选中自定义分组时为 null
   String? get _selectedGroup {
     if (!_groupFilter.startsWith(kDownloadGroupPrefix)) return null;
@@ -791,9 +810,10 @@ class _RecordsTabState extends State<_RecordsTab> {
       );
     }
     final filtered = _filtered();
+    final groupCounts = _groupCounts();
     return Column(
       children: [
-        // 分组行：全部 / 未分组 + 顶层自建组
+        // 分组行：全部 / 未分组 + 顶层自建组（带条目数，含其子组）
         DownloadFilterBar(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
           builtins: [
@@ -801,6 +821,7 @@ class _RecordsTabState extends State<_RecordsTab> {
             (key: 'ungrouped', label: t.ungrouped),
           ],
           groups: DownloadManager.rootGroups(),
+          groupCounts: groupCounts,
           selected: _groupFilter,
           onSelected: _setGroupFilter,
         ),
@@ -811,6 +832,7 @@ class _RecordsTabState extends State<_RecordsTab> {
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 2),
             builtins: [(key: 'all', label: t.all)],
             groups: DownloadManager.subGroupsOf(_selectedGroup!),
+            groupCounts: groupCounts,
             selected: _subFilter.isEmpty
                 ? 'all'
                 : '$kDownloadGroupPrefix$_subFilter',
