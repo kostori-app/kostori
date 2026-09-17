@@ -391,9 +391,10 @@ class _LogsPageState extends State<LogsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 多一个「全部」放最前，避免在 INFO / ERROR 之间来回找同一次请求
+    // 多一个 ALL 放最前，避免在 INFO / ERROR 之间来回找同一次请求
+    // （与 INFO/WARNING/ERROR 保持同一种英文标签风格）
     final labels = [
-      t.all,
+      'ALL',
       for (final lvl in levelOrder) lvl.name.toUpperCase(),
     ];
     if (!_ready) {
