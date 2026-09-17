@@ -2456,6 +2456,9 @@ editAssistantProfile: Edit Profile
 profileName: Profile Name
 profileIcon: Icon
 profileIconHint: One emoji, e.g. 🤖
+profileIconUpload: Upload image
+askUser: Ask the user
+askUserInputHint: Type an answer (optional)
 profilePersona: Persona
 profileTone: Tone
 profilePromptFragments: Prompt Fragments (one per line)

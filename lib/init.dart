@@ -33,6 +33,7 @@ import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/skills/builtins/anime_info_skill.dart';
 import 'package:kostori/skills/builtins/bangumi_skill.dart';
 import 'package:kostori/skills/builtins/device_info_skill.dart';
+import 'package:kostori/skills/builtins/ask_user_skill.dart';
 import 'package:kostori/skills/builtins/dice_skill.dart';
 import 'package:kostori/skills/builtins/log_skill.dart';
 import 'package:kostori/skills/builtins/open_url_skill.dart';
@@ -95,6 +96,7 @@ Future<void> init() async {
     QueryLogsSkill(),
     RecognizeAnimeSkill(),
     DiceSkill(),
+    AskUserSkill(),
   ]);
   await SkillRegistry.instance.syncMcp().wait();
   await AiSkillStore.instance.init().wait();

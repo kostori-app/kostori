@@ -1855,76 +1855,130 @@ class _AssistantProfileTile extends StatelessWidget {
         ? SkillRegistry.instance.all.length
         : profile.enabledSkillIds.length;
     final persona = profile.persona.trim();
-    return ListTile(
-      leading: Text(profile.icon, style: const TextStyle(fontSize: 24)),
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(
-              profile.name,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
+    // 选中态用整张卡片高亮（不再单独画单选圆圈）
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: isActive
+            ? scheme.primaryContainer.withValues(alpha: 0.45)
+            : scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-          if (isActive) ...[
-            const SizedBox(width: 6),
-            Text(
-              t.defaultAssistant,
-              style: TextStyle(fontSize: 11, color: scheme.primary),
-            ),
-          ],
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (persona.isNotEmpty)
-            Text(
-              persona,
-              style: TextStyle(color: scheme.outline, fontSize: 12),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          Text(
-            '$toolCount ${t.profileLocalTools}',
-            style: TextStyle(color: scheme.primary, fontSize: 11),
-          ),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PopupMenuButton<String>(
-            tooltip: t.more,
-            icon: const Icon(Icons.more_vert, size: 20),
-            onSelected: (v) {
-              switch (v) {
-                case 'copy':
-                  _copy();
-                case 'export':
-                  _export();
-                case 'import':
-                  _import();
-              }
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(value: 'copy', child: Text(t.profileCopy)),
-              PopupMenuItem(value: 'export', child: Text(t.profileExport)),
-              PopupMenuItem(value: 'import', child: Text(t.profileImport)),
+          leading: AssistantAvatar(icon: profile.icon, size: 40),
+          title: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  profile.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (isActive) ...[
+                const SizedBox(width: 6),
+                Text(
+                  t.defaultAssistant,
+                  style: TextStyle(fontSize: 11, color: scheme.primary),
+                ),
+              ],
             ],
           ),
-          RadioGroup<String?>(
-            groupValue: store.activeId,
-            onChanged: (id) => store.setActive(id!),
-            child: Radio<String?>(value: profile.id),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (persona.isNotEmpty)
+                Text(
+                  persona,
+                  style: TextStyle(color: scheme.outline, fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              Text(
+                '$toolCount ${t.profileLocalTools}',
+                style: TextStyle(color: scheme.primary, fontSize: 11),
+              ),
+            ],
           ),
-          const Icon(Icons.arrow_right, size: 20),
-        ],
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PopupMenuButton<String>(
+                tooltip: t.more,
+                icon: const Icon(Icons.more_vert, size: 20),
+                onSelected: (v) {
+                  switch (v) {
+                    case 'copy':
+                      _copy();
+                    case 'export':
+                      _export();
+                    case 'import':
+                      _import();
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'copy', child: Text(t.profileCopy)),
+                  PopupMenuItem(value: 'export', child: Text(t.profileExport)),
+                  PopupMenuItem(value: 'import', child: Text(t.profileImport)),
+                ],
+              ),
+              // 点箭头设为默认（选中）
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: t.defaultAssistant,
+                icon: Icon(
+                  isActive ? Icons.check_circle : Icons.radio_button_unchecked,
+                  size: 20,
+                  color: isActive ? scheme.primary : scheme.outlineVariant,
+                ),
+                onPressed: () => store.setActive(profile.id),
+              ),
+            ],
+          ),
+          onTap: () => showPopUpWidget(
+            App.rootContext,
+            _AssistantProfileEditor(profile: profile),
+          ),
+        ),
       ),
-      onTap: () => showPopUpWidget(
-        App.rootContext,
-        _AssistantProfileEditor(profile: profile),
-      ),
+    );
+  }
+}
+
+/// 助手头像：emoji 直接显示；base64 图片（data:image/...）渲染为圆形图
+class AssistantAvatar extends StatelessWidget {
+  const AssistantAvatar({super.key, required this.icon, this.size = 40});
+
+  final String icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (icon.startsWith('data:image')) {
+      try {
+        final comma = icon.indexOf(',');
+        final bytes = base64Decode(icon.substring(comma + 1));
+        return ClipOval(
+          child: Image.memory(
+            bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          ),
+        );
+      } catch (_) {}
+    }
+    return CircleAvatar(
+      radius: size / 2,
+      backgroundColor: scheme.secondaryContainer,
+      child: Text(icon.isEmpty ? '🤖' : icon, style: TextStyle(fontSize: size * 0.6)),
     );
   }
 }

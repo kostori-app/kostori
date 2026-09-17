@@ -405,7 +405,11 @@ class AiConversationService {
 
     // 5. 调用 AI（支持 SkillRegistry 工具）
     if (useTools && profile != null && profile.enabledSkillIds.isNotEmpty) {
-      SkillRegistry.instance.setEnabled(profile.enabledSkillIds);
+      // ask_user 是 human-in-the-loop 核心能力，随档案工具集始终可用
+      SkillRegistry.instance.setEnabled({
+        ...profile.enabledSkillIds,
+        'ask_user',
+      });
     }
     // 设置上下文图片供 recognize_anime 等技能使用（结束后清空）
     if (images != null && images.isNotEmpty) {
@@ -614,7 +618,10 @@ class AiConversationService {
       final keyRow = await ai.getKeyRow();
       if (await ai.modelSupportsTools(keyRow?.model)) {
         if (profile != null && profile.enabledSkillIds.isNotEmpty) {
-          SkillRegistry.instance.setEnabled(profile.enabledSkillIds);
+          SkillRegistry.instance.setEnabled({
+            ...profile.enabledSkillIds,
+            'ask_user',
+          });
         }
         final built = SkillRegistry.instance.buildTools();
         if (toolNames != null) {

@@ -7225,6 +7225,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'One emoji, e.g. 🤖'
 	String get profileIconHint => 'One emoji, e.g. 🤖';
 
+	/// en: 'Upload image'
+	String get profileIconUpload => 'Upload image';
+
+	/// en: 'Ask the user'
+	String get askUser => 'Ask the user';
+
+	/// en: 'Type an answer (optional)'
+	String get askUserInputHint => 'Type an answer (optional)';
+
 	/// en: 'Persona'
 	String get profilePersona => 'Persona';
 
@@ -11175,6 +11184,9 @@ extension on Translations {
 			'profileName' => 'Profile Name',
 			'profileIcon' => 'Icon',
 			'profileIconHint' => 'One emoji, e.g. 🤖',
+			'profileIconUpload' => 'Upload image',
+			'askUser' => 'Ask the user',
+			'askUserInputHint' => 'Type an answer (optional)',
 			'profilePersona' => 'Persona',
 			'profileTone' => 'Tone',
 			'profilePromptFragments' => 'Prompt Fragments (one per line)',
@@ -11295,11 +11307,11 @@ extension on Translations {
 			'aiContextBudget' => 'Context budget (tokens)',
 			'aiContextBudgetHint' => 'Default context budget shared by all chats and stories; a profile or story setting overrides it. 0 = unlimited',
 			'contextBudget' => 'Context budget (tokens)',
+			_ => null,
+		} ?? switch (path) {
 			'contextBudgetHint' => 'Leave empty to follow the profile / global setting; 0 = unlimited',
 			'profileMemoryEntries' => 'Memory entries',
 			'profileMemoryClear' => 'Clear',
-			_ => null,
-		} ?? switch (path) {
 			'profileMemoryEmpty' => 'No memory entries yet',
 			'profileMemoryAdd' => 'New memory entry',
 			'profileCopy' => 'Duplicate',

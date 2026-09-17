@@ -2433,6 +2433,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get profileName => '檔案名稱';
 	@override String get profileIcon => '圖示';
 	@override String get profileIconHint => '一個 emoji，例如 🤖';
+	@override String get profileIconUpload => '上傳圖片';
+	@override String get askUser => '詢問使用者';
+	@override String get askUserInputHint => '輸入回答（可留空）';
 	@override String get profilePersona => '人設';
 	@override String get profileTone => '語氣';
 	@override String get profilePromptFragments => '提示片段（每行一條）';
@@ -5398,6 +5401,9 @@ extension on TranslationsZhTw {
 			'profileName' => '檔案名稱',
 			'profileIcon' => '圖示',
 			'profileIconHint' => '一個 emoji，例如 🤖',
+			'profileIconUpload' => '上傳圖片',
+			'askUser' => '詢問使用者',
+			'askUserInputHint' => '輸入回答（可留空）',
 			'profilePersona' => '人設',
 			'profileTone' => '語氣',
 			'profilePromptFragments' => '提示片段（每行一條）',
@@ -5519,11 +5525,11 @@ extension on TranslationsZhTw {
 			'aiContextBudgetHint' => '所有對話與故事共用的預設上下文預算；助手檔案或故事另有設定時以它們為準，0 表示不限制',
 			'contextBudget' => '上下文預算（token）',
 			'contextBudgetHint' => '留空跟隨助手檔案 / 全域設定，0 表示不限制',
+			_ => null,
+		} ?? switch (path) {
 			'profileMemoryEntries' => '記憶條目',
 			'profileMemoryClear' => '清空',
 			'profileMemoryEmpty' => '暫無記憶條目',
-			_ => null,
-		} ?? switch (path) {
 			'profileMemoryAdd' => '新增記憶',
 			'profileCopy' => '複製',
 			'profileExport' => '匯出',

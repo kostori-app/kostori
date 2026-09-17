@@ -425,7 +425,9 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       padding: const EdgeInsets.all(16),
       child: TextFormField(
         controller: ctrl,
-        maxLines: multiline ? 6 : 1,
+        // 内容有多高就多高：空的时候不占一大片
+        minLines: multiline ? 1 : null,
+        maxLines: multiline ? null : 1,
         decoration: InputDecoration(
           labelText: label,
           hintText: hintText,
@@ -501,15 +503,71 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? t.required : null,
           ),
-          _field(
-            t.profileIcon,
-            _iconCtrl,
-            icon: Icons.emoji_emotions_outlined,
-            hintText: t.profileIconHint,
+          // 头像：可填 emoji，也可上传图片（存 base64）
+          if (_iconCtrl.text.startsWith('data:image'))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                children: [
+                  AssistantAvatar(icon: _iconCtrl.text, size: 44),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(t.profileIcon, style: ts.s12)),
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: Text(t.remove),
+                    onPressed: () => setState(() => _iconCtrl.text = '🤖'),
+                  ),
+                ],
+              ),
+            )
+          else
+            _field(
+              t.profileIcon,
+              _iconCtrl,
+              icon: Icons.emoji_emotions_outlined,
+              hintText: t.profileIconHint,
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.image_outlined, size: 18),
+                label: Text(t.profileIconUpload),
+                onPressed: _pickIconImage,
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  /// 上传头像图片 → 转 base64 data URI 存进 icon
+  Future<void> _pickIconImage() async {
+    try {
+      final f = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+        maxWidth: 256,
+        maxHeight: 256,
+      );
+      if (f == null) return;
+      final bytes = await f.readAsBytes();
+      final ext = f.name.split('.').last.toLowerCase();
+      final mime = switch (ext) {
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        _ => 'image/jpeg',
+      };
+      if (!mounted) return;
+      setState(
+        () => _iconCtrl.text = 'data:$mime;base64,${base64Encode(bytes)}',
+      );
+    } catch (e) {
+      App.rootContext.showMessage(message: '$e', level: LogLevel.warning);
+    }
   }
 
   void _toggleTag(String tag) {
@@ -570,7 +628,8 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       child: TextFormField(
         controller: ctrl,
         readOnly: true,
-        maxLines: multiline ? 3 : 1,
+        minLines: multiline ? 1 : null,
+        maxLines: multiline ? null : 1,
         onTap: onTap,
         decoration: InputDecoration(
           labelText: label,

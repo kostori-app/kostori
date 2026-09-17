@@ -591,6 +591,7 @@ final AssistantProfile defaultProfile = AssistantProfile(
     'analyze_bangumi',
     'query_logs',
     'recognize_anime',
+    'ask_user',
   },
   params: const AssistantParams(),
   isBuiltin: true,

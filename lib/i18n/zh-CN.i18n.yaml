@@ -2455,6 +2455,9 @@ editAssistantProfile: 编辑档案
 profileName: 档案名称
 profileIcon: 图标
 profileIconHint: 一个 emoji，例如 🤖
+profileIconUpload: 上传图片
+askUser: 询问用户
+askUserInputHint: 输入回答（可留空）
 profilePersona: 人设
 profileTone: 语气
 profilePromptFragments: 提示片段（每行一条）
