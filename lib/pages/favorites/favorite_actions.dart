@@ -2,73 +2,8 @@
 
 part of 'favorites_page.dart';
 
-/// Open a dialog to create a new favorite folder.
-Future<void> newFolder() async {
-  return showDialog(
-    context: App.rootContext,
-    builder: (context) {
-      var controller = TextEditingController();
-      String? error;
-
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return ContentDialog(
-            title: t.newFolder,
-            content: Column(
-              children: [
-                TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: t.folderName,
-                    errorText: error,
-                  ),
-                  onChanged: (s) {
-                    if (error != null) {
-                      setState(() {
-                        error = null;
-                      });
-                    }
-                  },
-                ),
-              ],
-            ).paddingHorizontal(16),
-            actions: [
-              TextButton(
-                child: Text(t.importFromFile),
-                onPressed: () async {
-                  var file = await selectFile(ext: ['json']);
-                  if (file == null) return;
-                  var data = await file.readAsBytes();
-                  try {
-                    LocalFavoritesManager().fromJson(utf8.decode(data));
-                  } catch (e) {
-                    context.showMessage(message: t.failedToImport);
-                    return;
-                  }
-                  context.pop();
-                },
-              ).paddingRight(4),
-              FilledButton(
-                onPressed: () {
-                  var e = validateFolderName(controller.text);
-                  if (e != null) {
-                    setState(() {
-                      error = e;
-                    });
-                  } else {
-                    LocalFavoritesManager().createFolder(controller.text);
-                    context.pop();
-                  }
-                },
-                child: Text(t.create),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+/// 新建收藏文件夹（共用组件实现）
+Future<void> newFolder() => showNewFolderDialog();
 
 String? validateFolderName(String newFolderName) {
   var folders = LocalFavoritesManager().folderNames;

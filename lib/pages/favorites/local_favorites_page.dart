@@ -622,12 +622,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
   Future<void> _showFavoriteDialog() async {
     favoritesController.setIsRefreshEnabled(true);
-    final changed = await _FavoriteDialog.show(
-      context: context,
-      selectedAnimes: selectedAnimes,
-      favPage: favPage,
-      cancel: _cancel,
-      favoritesController: favoritesController,
+    // 与番剧详情页共用同一个收藏弹窗
+    final changed = await FavoriteDialog.show(
+      context,
+      items: selectedAnimes.keys.map((e) => e as FavoriteItem).toList(),
+      sourceFolder: favPage.folder,
+      onCancel: _cancel,
+      onFoldersChanged: () => favoritesController.setIsRefreshEnabled(true),
     );
     if (changed == true) {
       manager.initCounts();

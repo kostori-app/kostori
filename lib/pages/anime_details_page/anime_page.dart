@@ -45,7 +45,6 @@ import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/download/download_filter.dart';
 import 'package:kostori/pages/download/download_page.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
-import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -62,8 +61,6 @@ import 'package:url_launcher/url_launcher_string.dart';
 part 'actions.dart';
 
 part 'episodes.dart';
-
-part 'favorite.dart';
 
 part 'download_widgets.dart';
 

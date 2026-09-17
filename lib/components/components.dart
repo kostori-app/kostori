@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:gif/gif.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:kostori/components/animated.dart';
@@ -96,6 +97,8 @@ part 'scroll.dart';
 part 'select.dart';
 
 part 'select_card.dart';
+
+part 'favorite_dialog.dart';
 part 'assistant_avatar.dart';
 
 part 'sheet.dart';

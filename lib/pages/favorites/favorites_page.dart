@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:gif/gif.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
@@ -36,7 +35,6 @@ part 'favorite_actions.dart';
 
 part 'favorite_bangumi_page.dart';
 
-part 'favorite_dialog.dart';
 
 part 'local_favorites_page.dart';
 

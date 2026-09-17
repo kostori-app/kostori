@@ -167,17 +167,18 @@ abstract mixin class _AnimePageActions {
   }
 
   void openFavPanel() {
-    _FavoriteDialog.show(
-      cid: anime.id,
-      type: anime.animeType,
-      isFavorite: isFavorite,
-      onFavorite: (local) {
-        isAddToLocalFav = local ?? isAddToLocalFav;
-        update();
-      },
-      favoriteItem: _toFavoriteItem(),
-      context: App.rootContext,
-    );
+    // 与本地收藏页共用同一个收藏弹窗（样式与操作逻辑一致）
+    FavoriteDialog.show(
+      App.rootContext,
+      items: [_toFavoriteItem()],
+    ).then((changed) {
+      if (changed != true) return;
+      isAddToLocalFav = LocalFavoritesManager().isExist(
+        anime.id,
+        anime.animeType,
+      );
+      update();
+    });
   }
 
   void quickFavorite() {
