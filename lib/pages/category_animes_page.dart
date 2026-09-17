@@ -180,15 +180,6 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
 
   Widget buildOptions() {
     List<Widget> children = [
-      // 内容顶部：布局切换条（简洁 / 详细 / 瀑布流 / 海报）
-      AnimeSourceLayoutBar(
-        sourceKey: widget.sourceKey,
-        subKey: 'category:${widget.category}',
-        crossAxisAlignment: CrossAxisAlignment.center,
-        padding: const EdgeInsets.only(bottom: 8),
-      ),
-      const Divider(height: 1),
-      const SizedBox(height: 8),
     ];
     var group = 0;
     for (var optionList in options!) {
@@ -236,7 +227,17 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [...children, const Divider()],
+      children: [
+        ...children,
+        // 选项下方：番剧卡片布局切换条（简洁 / 详细 / 瀑布流 / 海报）
+        AnimeSourceLayoutBar(
+          sourceKey: widget.sourceKey,
+          subKey: 'category:${widget.category}',
+          crossAxisAlignment: CrossAxisAlignment.center,
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+        ),
+        const Divider(),
+      ],
     ).paddingLeft(8).paddingRight(8);
   }
 }
