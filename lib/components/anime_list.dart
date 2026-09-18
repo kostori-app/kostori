@@ -66,6 +66,10 @@ class AnimeListState extends State<AnimeList>
 
   final Map<int, bool> _loading = {};
 
+  /// 已加载过的条目 key（`sourceKey|id`）：用于识别「空页 / 重复页」，
+  /// 避免源一直返回同一批数据时无限翻页请求。
+  final Set<String> _loadedKeys = {};
+
   String? _nextUrl;
 
   bool showFB = false;
@@ -95,6 +99,11 @@ class AnimeListState extends State<AnimeList>
     _loading.clear();
     _loading.addAll(state['loading']);
     _nextUrl = state['nextUrl'];
+    _loadedKeys
+      ..clear()
+      ..addAll([
+        for (final a in _data.values.expand((e) => e)) '${a.sourceKey}|${a.id}',
+      ]);
   }
 
   void storeState() {
@@ -116,6 +125,7 @@ class AnimeListState extends State<AnimeList>
   void refresh() {
     _generation++;
     _data.clear();
+    _loadedKeys.clear();
     _page = 1;
     _maxPage = null;
     _error = null;
@@ -452,19 +462,17 @@ class AnimeListState extends State<AnimeList>
         var res = await widget.loadPage!(page);
         if (!mounted || gen != _generation) return;
         if (res.success) {
-          if (res.data.isEmpty) {
-            setState(() {
-              _data[page] = const [];
-              _maxPage ??= page;
-            });
-          } else {
-            setState(() {
-              _data[page] = res.data;
-              if (res.subData != null && res.subData is int) {
-                _maxPage = res.subData;
-              }
-            });
-          }
+          final added = _setPageData(page, res.data);
+          // 本页没有新条目（空页 / 源把同一页重复返回）：视为已到末尾。
+          // 必须把 maxPage 收到当前页，否则「源报了一个偏大的 maxPage 却返回空页」
+          // 会让无限滚动一直往后请求（明明没有新内容）。
+          setState(() {
+            if (added == 0) {
+              _maxPage = page;
+            } else if (res.subData != null && res.subData is int) {
+              _maxPage = res.subData;
+            }
+          });
         } else {
           setState(() {
             _error = res.errorMessage ?? t.unknownError;
@@ -475,6 +483,8 @@ class AnimeListState extends State<AnimeList>
           while (_data[page] == null) {
             if (gen != _generation) return;
             await _fetchNext();
+            // 到末尾（无下一页 / 空页）仍取不到该页：停止连续空请求
+            if (_maxPage != null && page > _maxPage!) break;
           }
           if (mounted && gen == _generation) {
             setState(() {});
@@ -493,11 +503,25 @@ class AnimeListState extends State<AnimeList>
     }
   }
 
+  /// 写入某页数据，返回本页新增（此前未出现过）的条目数。
+  /// 返回 0 表示这一页没有带来任何新内容，调用方应停止继续翻页。
+  int _setPageData(int page, List<Anime> items) {
+    var added = 0;
+    for (final a in items) {
+      if (_loadedKeys.add('${a.sourceKey}|${a.id}')) added++;
+    }
+    _data[page] = items;
+    return added;
+  }
+
   Future<void> _fetchNext() async {
     var res = await widget.loadNext!(_nextUrl);
-    _data[_data.length + 1] = res.data;
-    if (res.subData == null) {
+    final page = _data.length + 1;
+    final added = _setPageData(page, res.data);
+    // 没有下一页，或这一页没有新条目：标记为末尾，避免无限请求
+    if (res.subData == null || added == 0) {
       _maxPage = _data.length;
+      _nextUrl = null;
     } else {
       _nextUrl = res.subData;
     }
