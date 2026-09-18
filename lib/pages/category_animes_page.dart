@@ -1,3 +1,5 @@
+import "dart:math" as math;
+
 import "package:flutter/material.dart";
 import "package:kostori/components/anime_list.dart";
 import 'package:kostori/components/components.dart';
@@ -179,51 +181,77 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
   }
 
   Widget buildOptions() {
-    List<Widget> children = [
+    final labelStyle = TextStyle(
+      fontSize: 13,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    // 标题列宽按最长的标题估算（中文约 13.5px/字），保证各行选项左边缘对齐
+    final labels = [
+      for (final o in options!)
+        if (o.label.isNotEmpty) o.label.ts(sourceKey),
     ];
+    final labelWidth = labels.isEmpty
+        ? 0.0
+        : (labels.map((e) => e.length).reduce(math.max) * 13.5).clamp(
+            40.0,
+            112.0,
+          );
+    List<Widget> children = [];
     var group = 0;
     for (var optionList in options!) {
-      if (optionList.label.isNotEmpty) {
-        children.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
-            child: Text(
-              optionList.label.ts(sourceKey),
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-          ),
-        );
-      }
+      final label = optionList.label.isEmpty
+          ? ''
+          : optionList.label.ts(sourceKey);
+
+      // 选项组：标题与胶囊选项同一行（标题固定起始宽度，各行选项对齐）
+      Widget control;
       if (optionList.options.length <= 8) {
-        children.add(
-          CapsuleOptions(
-            // 筛选项靠左（同页的「简洁/详细/瀑布流/海报」布局条保持居中）
-            alignment: WrapAlignment.start,
-            children: [
-              for (var option in optionList.options.entries)
-                buildOptionItem(option.value.tl, option.key, group, context),
-            ],
-          ),
+        control = CapsuleOptions(
+          // 筛选项靠左（同页的「简洁/详细/瀑布流/海报」布局条保持居中）
+          alignment: WrapAlignment.start,
+          children: [
+            for (var option in optionList.options.entries)
+              buildOptionItem(option.value.tl, option.key, group, context),
+          ],
         );
       } else {
         var g = group;
-        children.add(
-          Select(
-            current: optionList.options[optionsValue[g]],
-            values: optionList.options.values.toList(),
-            onTap: (i) {
-              var key = optionList.options.keys.elementAt(i);
-              if (key == optionsValue[g]) return;
-              setState(() {
-                optionsValue[g] = key;
-              });
-            },
-          ),
+        control = Select(
+          current: optionList.options[optionsValue[g]],
+          values: optionList.options.values.toList(),
+          onTap: (i) {
+            var key = optionList.options.keys.elementAt(i);
+            if (key == optionsValue[g]) return;
+            setState(() {
+              optionsValue[g] = key;
+            });
+          },
         );
       }
-      if (options!.last != optionList) {
-        children.add(const SizedBox(height: 8));
-      }
+
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (label.isNotEmpty) ...[
+                SizedBox(
+                  width: labelWidth,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Flexible(child: control),
+            ],
+          ),
+        ),
+      );
       group++;
     }
     return Column(
