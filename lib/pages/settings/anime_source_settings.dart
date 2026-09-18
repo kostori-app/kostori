@@ -351,6 +351,8 @@ class _BodyState extends State<_Body> with RouteAware {
                 child: TextField(
                   controller: _searchCtrl,
                   focusNode: _searchFocus,
+                  // 点空白处收起键盘，避免焦点一直留在搜索框
+                  onTapOutside: (_) => _searchFocus.unfocus(),
                   decoration: InputDecoration(
                     hintText: t.search,
                     prefixIcon: const Icon(Icons.search, size: 20),

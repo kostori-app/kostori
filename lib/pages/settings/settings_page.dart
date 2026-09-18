@@ -41,6 +41,7 @@ import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/ai_service/setting_library.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/implicit_keys.dart';
 import 'package:kostori/foundation/text_rule.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -565,7 +566,12 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
                     ? Colors.black.toOpacity(0.1)
                     : Colors.white.toOpacity(0.1),
                 splashColor: Colors.transparent.toOpacity(0.0),
-                onTap: () => setState(() => currentPage = id),
+                onTap: () {
+                  // 切换分类会重建页面（AnimatedSwitcher 换 key）：
+                  // 先收起焦点，避免输入框在旧页面被 dispose 后仍持有焦点
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  setState(() => currentPage = id);
+                },
                 child: content,
               ),
             ),

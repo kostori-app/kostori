@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/implicit_keys.dart';
+import 'package:kostori/foundation/log.dart';
 
 /// 文本规则预览的默认示例文本
 const String kTextRulePreviewDefault = '[字幕组] 示例番剧名 - 第01集 [1080P]';
@@ -173,8 +175,11 @@ class TextRuleStore {
     if (step.find.isEmpty) return input;
     try {
       final re = RegExp(step.find, caseSensitive: step.caseSensitive);
+      // 全部匹配都会被替换；没有匹配到就是原样返回（多条规则不会互相“报错”，
+      // 只是按顺序依次作用：后面的规则看到的是前面规则处理过的文本）
       return input.replaceAllMapped(re, (m) => _expand(m, step.replace));
-    } catch (_) {
+    } catch (e) {
+      Log.warning('TextRule', '正则无效，已跳过该步骤「${step.find}」：$e');
       return input;
     }
   }
@@ -218,12 +223,13 @@ class TextRuleStore {
   }
 }
 
-/// 番源 → 选用的文本规则（存于 `implicitData['animeSourceTextRules']`）
+/// 番源 → 选用的文本规则（存于 `implicitData['animeSourceTextRules']`）。
+///
+/// 该键会随 WebDAV 同步（见 [syncedImplicitKeys]），规则定义本身存在
+/// `history.db` 的 `text_rules` 表，也参与同步。
 class SourceTextRuleConfig {
-  static const String _key = 'animeSourceTextRules';
-
   static List<String> ruleIdsFor(String sourceKey) {
-    final raw = appdata.implicitData[_key];
+    final raw = appdata.implicitData[sourceTextRulesKey];
     if (raw is Map) {
       final v = raw[sourceKey];
       if (v is List) return v.map((e) => e.toString()).toList();
@@ -233,14 +239,14 @@ class SourceTextRuleConfig {
 
   static void setRuleIds(String sourceKey, List<String> ids) {
     final map = Map<String, dynamic>.from(
-      appdata.implicitData[_key] as Map? ?? {},
+      appdata.implicitData[sourceTextRulesKey] as Map? ?? {},
     );
     if (ids.isEmpty) {
       map.remove(sourceKey);
     } else {
       map[sourceKey] = ids;
     }
-    appdata.implicitData[_key] = map;
+    appdata.implicitData[sourceTextRulesKey] = map;
     appdata.writeImplicitData();
   }
 
@@ -261,7 +267,7 @@ class SourceTextRuleConfig {
 
   /// 有多少个番源选用了该规则
   static int countSourcesUsing(String ruleId) {
-    final raw = appdata.implicitData[_key];
+    final raw = appdata.implicitData[sourceTextRulesKey];
     if (raw is! Map) return 0;
     var n = 0;
     for (final v in raw.values) {
@@ -272,7 +278,7 @@ class SourceTextRuleConfig {
 
   /// 选用该规则的所有番源 key
   static Set<String> sourcesUsing(String ruleId) {
-    final raw = appdata.implicitData[_key];
+    final raw = appdata.implicitData[sourceTextRulesKey];
     final out = <String>{};
     if (raw is Map) {
       raw.forEach((k, v) {
@@ -287,7 +293,7 @@ class SourceTextRuleConfig {
   /// 设置“哪些番源使用该规则”（其余番源移除该规则）
   static void setSourcesForRule(String ruleId, Set<String> sourceKeys) {
     final map = Map<String, dynamic>.from(
-      appdata.implicitData[_key] as Map? ?? {},
+      appdata.implicitData[sourceTextRulesKey] as Map? ?? {},
     );
     final keys = <String>{
       ...map.keys.map((e) => e.toString()),
@@ -308,7 +314,7 @@ class SourceTextRuleConfig {
         map[k] = list;
       }
     }
-    appdata.implicitData[_key] = map;
+    appdata.implicitData[sourceTextRulesKey] = map;
     appdata.writeImplicitData();
   }
 }

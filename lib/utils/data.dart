@@ -15,6 +15,7 @@ import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/implicit_keys.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/text_rule.dart';
@@ -289,6 +290,13 @@ Future<void> _writeMergeFilesFor(String key) async {
       FilePath.join(App.cachePath, 'stats_merge.json'),
       (await StatsManager().getStatsAll()).map((s) => s.toMergeJson()).toList(),
     );
+  } else if (key == 'data') {
+    // implicitData 整体不同步（含设备本地设置），只带上与设备无关的配置键：
+    // 番源显示模式覆盖 / 番源选用的文本规则 / 番源下载标题格式
+    await write(FilePath.join(App.cachePath, 'implicit_merge.json'), {
+      for (final k in syncedImplicitKeys)
+        if (appdata.implicitData[k] != null) k: appdata.implicitData[k],
+    });
   }
 }
 
@@ -347,6 +355,10 @@ List<(String, String)> _partEntries(String key) {
     // 故事 / 角色卡 / 存档 / 世界书 / 设定库 / 技能等走「选择性同步」，
     // 不放进整包，避免重复与体积膨胀
     add('appdata.json', FilePath.join(dp, 'appdata.json'));
+    add(
+      'implicit_merge.json',
+      FilePath.join(App.cachePath, 'implicit_merge.json'),
+    );
     addDir('anime_source', FilePath.join(dp, 'anime_source'));
     addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
   }
@@ -583,6 +595,19 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       var content = await appdataFile.readAsString();
       var data = jsonDecode(content);
       appdata.syncData(data);
+    }
+    // 设备无关的 implicitData 配置（文本规则选用 / 下载标题格式 / 显示模式覆盖）：
+    // 按条目合并，远端有值的键生效，本地独有的键保留
+    final implicitMergeFile = cacheDir.joinFile("implicit_merge.json");
+    if (await implicitMergeFile.exists()) {
+      try {
+        final incoming = jsonDecode(await implicitMergeFile.readAsString());
+        if (incoming is Map) {
+          appdata.mergeSyncedImplicit(incoming);
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'implicitData 字段级合并失败：$e');
+      }
     }
     if (await cookieFile.exists()) {
       DebugLog.info('importAppData', '开始导入cookieFile');

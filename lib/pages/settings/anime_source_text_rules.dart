@@ -48,6 +48,16 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
     if (mounted) setState(() {});
   }
 
+  /// 拖动调整顺序：列表顺序 = 套用顺序（越靠前越先作用）。
+  /// [onReorderItem] 的 newIndex 已按「移除后」的坐标给出，无需再修正。
+  void _reorder(int oldIndex, int newIndex) {
+    final rules = TextRuleStore.rules;
+    final rule = rules.removeAt(oldIndex);
+    rules.insert(newIndex.clamp(0, rules.length), rule);
+    TextRuleStore.save();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final rules = TextRuleStore.rules;
@@ -68,71 +78,106 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
                 style: TextStyle(color: cs.onSurfaceVariant),
               ),
             )
-          : ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+          : Column(
               children: [
-                for (final rule in rules)
-                  ListTile(
-                    leading: const Icon(Icons.text_fields),
-                    title: Text(rule.name.isEmpty ? t.textRuleName : rule.name),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          rule.steps.isEmpty
-                              ? t.textRuleNone
-                              : rule.steps
-                                    .map((s) => s.find)
-                                    .where((s) => s.isNotEmpty)
-                                    .join('  →  '),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          t.sourceCount(
-                            count: SourceTextRuleConfig.countSourcesUsing(
-                              rule.id,
-                            ),
-                          ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 15,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          t.textRuleOrderHint,
                           style: TextStyle(
                             fontSize: 12,
                             color: cs.onSurfaceVariant,
                           ),
                         ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          iconSize: 18,
-                          tooltip: t.textRuleSelectSources,
-                          icon: const Icon(Icons.playlist_add_check, size: 18),
-                          onPressed: () => _selectSources(rule),
-                        ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          iconSize: 18,
-                          tooltip: t.edit,
-                          icon: const Icon(Icons.edit_note, size: 18),
-                          onPressed: () => _edit(rule),
-                        ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          iconSize: 18,
-                          tooltip: t.delete,
-                          icon: Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: cs.error,
-                          ),
-                          onPressed: () => _delete(rule),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
+                Expanded(
+                  child: ReorderableListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    onReorderItem: _reorder,
+                    children: [
+                      for (final rule in rules)
+                        ListTile(
+                          key: ValueKey(rule.id),
+                          leading: const Icon(Icons.text_fields),
+                          title: Text(
+                            rule.name.isEmpty ? t.textRuleName : rule.name,
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                rule.steps.isEmpty
+                                    ? t.textRuleNone
+                                    : rule.steps
+                                          .map((s) => s.find)
+                                          .where((s) => s.isNotEmpty)
+                                          .join('  →  '),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                t.sourceCount(
+                                  count: SourceTextRuleConfig.countSourcesUsing(
+                                    rule.id,
+                                  ),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                iconSize: 18,
+                                tooltip: t.textRuleSelectSources,
+                                icon: const Icon(
+                                  Icons.playlist_add_check,
+                                  size: 18,
+                                ),
+                                onPressed: () => _selectSources(rule),
+                              ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                iconSize: 18,
+                                tooltip: t.edit,
+                                icon: const Icon(Icons.edit_note, size: 18),
+                                onPressed: () => _edit(rule),
+                              ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                iconSize: 18,
+                                tooltip: t.delete,
+                                icon: Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                  color: cs.error,
+                                ),
+                                onPressed: () => _delete(rule),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
     );
@@ -224,7 +269,7 @@ class _SourceRulesPageState extends State<_SourceRulesPage> {
 
   Future<void> _editDownloadFormat() async {
     final map = Map<String, dynamic>.from(
-      appdata.implicitData['downloadTitleFormats'] as Map? ?? {},
+      appdata.implicitData[downloadTitleFormatsKey] as Map? ?? {},
     );
     final current = map[source.key] as String? ?? '';
     final value = await showDialog<String>(
@@ -238,7 +283,7 @@ class _SourceRulesPageState extends State<_SourceRulesPage> {
     } else {
       map[source.key] = v;
     }
-    appdata.implicitData['downloadTitleFormats'] = map;
+    appdata.implicitData[downloadTitleFormatsKey] = map;
     appdata.writeImplicitData();
     setState(() {});
   }
@@ -246,7 +291,7 @@ class _SourceRulesPageState extends State<_SourceRulesPage> {
   @override
   Widget build(BuildContext context) {
     final selectedRules = SourceTextRuleConfig.rulesFor(source.key);
-    final formatMap = appdata.implicitData['downloadTitleFormats'] as Map?;
+    final formatMap = appdata.implicitData[downloadTitleFormatsKey] as Map?;
     final format = formatMap?[source.key]?.toString() ?? '';
     return PopUpWidgetScaffold(
       title: t.rules,

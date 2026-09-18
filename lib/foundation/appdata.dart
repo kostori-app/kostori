@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/implicit_keys.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/settings.dart';
 import 'package:kostori/network/api.dart';
@@ -52,6 +53,29 @@ class Appdata with Init {
       settings.fromJson(current);
     }
     saveData();
+  }
+
+  /// 合并同步过来的、与设备无关的 implicitData 配置（见 [syncedImplicitKeys]）。
+  ///
+  /// 值为 Map 时按条目合并（远端条目优先、本地独有条目保留），
+  /// 其余类型直接取远端值；有变化才写盘并触发界面刷新。
+  void mergeSyncedImplicit(Map incoming) {
+    var changed = false;
+    for (final key in syncedImplicitKeys) {
+      if (!incoming.containsKey(key)) continue;
+      final local = implicitData[key];
+      final remote = incoming[key];
+      final dynamic merged = (local is Map && remote is Map)
+          ? {...local, ...remote}
+          : remote;
+      if (jsonEncode(merged) != jsonEncode(local)) {
+        implicitData[key] = merged;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    writeImplicitData();
+    App.forceRebuild();
   }
 
   var implicitData = <String, dynamic>{};

@@ -274,13 +274,12 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   /// 当前筛选：全部 / 未下载 / 已下载
   _DownloadFilter _filter = _DownloadFilter.all;
 
-  bool _isDownloaded(_DownloadItem item) => widget.downloadedFiles.containsKey(
-    '${item.animeId}|${item.episodeName}',
-  );
+  bool _isDownloaded(_DownloadItem item) =>
+      widget.downloadedFiles.containsKey('${item.animeId}|${_itemName(item)}');
 
   /// 该条目是否已经在下载列表里（避免重复下载）
   DownloadStatus? _activeStatusOf(_DownloadItem item) =>
-      widget.activeTasks['${item.animeId}|${item.episodeName}'];
+      widget.activeTasks['${item.animeId}|${_itemName(item)}'];
 
   bool _isActive(_DownloadItem item) => _activeStatusOf(item) != null;
 
@@ -291,12 +290,21 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     _ => t.downloading,
   };
 
-  /// 按当前开关计算标题
-  String _computedTitle() {
-    if (_useRules && _rules.isNotEmpty) {
-      return TextRuleStore.apply(_originalTitle, _rules);
-    }
-    return _originalTitle;
+  /// 套用该源选中的文本规则（开关关闭或无规则时原样返回）
+  String _applyRules(String input) =>
+      (_useRules && _rules.isNotEmpty)
+      ? TextRuleStore.apply(input, _rules)
+      : input;
+
+  /// 番剧主标题（顶部输入框）：原始标题套用规则后的结果
+  String _computedTitle() => _applyRules(_originalTitle);
+
+  /// 条目标题（列表展示 / 文件名 / 去重标记）：手动重命名优先，
+  /// 其次套用文本规则（与主标题一致，否则列表显示的是未清洗的原始标题）
+  String _itemName(_DownloadItem item) {
+    final override = _nameOverrides[item.key];
+    if (override != null) return override;
+    return _applyRules(item.episodeName);
   }
 
   @override
@@ -347,9 +355,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
 
   /// 编辑下载标题（用于生成文件名，避免超长标题导致无法创建文件）
   Future<void> _editItemName(_DownloadItem item) async {
-    final ctrl = TextEditingController(
-      text: _nameOverrides[item.key] ?? item.title,
-    );
+    final ctrl = TextEditingController(text: _itemName(item));
     await showDialog<void>(
       context: context,
       builder: (ctx) => ContentDialog(
@@ -475,13 +481,15 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
           } catch (_) {}
         }
         final resolvedTitle = (itemTitle != null && itemTitle.trim().isNotEmpty)
-            ? itemTitle.trim()
+            // 系列条目取到的是源里的原始标题：同样要套用文本规则，
+            // 否则加了规则后文件名仍是清洗前的标题
+            ? _applyRules(itemTitle.trim())
             : (_animeTitle.trim().isEmpty ? null : _animeTitle.trim());
         return _DownloadPick(
           key: item.key,
           animeId: item.animeId,
-          // 用户编辑过标题时用它（用于文件名），否则用原始集名
-          episodeName: _nameOverrides[item.key] ?? item.episodeName,
+          // 用户编辑过标题时用它（用于文件名），否则用集名（套用规则后）
+          episodeName: _itemName(item),
           animeTitle: resolvedTitle,
           episodeNo: item.episodeNo,
           url: url,
@@ -650,7 +658,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
             for (final item in visibleItems)
               _DownloadItemCard(
                 item: item,
-                displayTitle: _nameOverrides[item.key] ?? item.title,
+                displayTitle: _itemName(item),
                 isDownloaded: _isDownloaded(item),
                 activeLabel: switch (_activeStatusOf(item)) {
                   final DownloadStatus s => _statusLabel(s),

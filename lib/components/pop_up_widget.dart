@@ -149,6 +149,9 @@ class PopupIndicatorWidget extends InheritedWidget {
 }
 
 Future<T> showPopUpWidget<T>(BuildContext context, Widget widget) async {
+  // 弹层压在根导航器上，原页面收不到 RouteAware.didPushNext；
+  // 不先收起焦点的话，弹层关闭后原输入框会被恢复焦点（键盘莫名弹出）
+  FocusManager.instance.primaryFocus?.unfocus();
   return await Navigator.of(
     context,
     rootNavigator: true,
