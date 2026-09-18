@@ -57,6 +57,19 @@ class SearchHistoryItem {
     required this.useCount,
     required this.lastUsedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'keyword': keyword,
+    'useCount': useCount,
+    'lastUsedAt': lastUsedAt,
+  };
+
+  static SearchHistoryItem fromJson(Map<String, dynamic> json) =>
+      SearchHistoryItem(
+        keyword: json['keyword']?.toString() ?? '',
+        useCount: (json['useCount'] as num?)?.toInt() ?? 0,
+        lastUsedAt: (json['lastUsedAt'] as num?)?.toInt() ?? 0,
+      );
 }
 
 class SearchHistoryManager with ChangeNotifier {
@@ -125,6 +138,50 @@ class SearchHistoryManager with ChangeNotifier {
           )
           .toList();
     });
+  }
+
+  /// 全部搜索记录（跨端同步用）
+  Future<List<SearchHistoryItem>> all() async {
+    final rows = await _db.select(_db.searchHistoryTable).get();
+    return rows
+        .map(
+          (r) => SearchHistoryItem(
+            keyword: r.keyword,
+            useCount: r.useCount,
+            lastUsedAt: r.lastUsedAt,
+          ),
+        )
+        .toList();
+  }
+
+  /// 跨端合并：同名关键词取较大的使用次数与较新的时间
+  Future<void> mergeSearchHistory(List<SearchHistoryItem> items) async {
+    for (final e in items) {
+      if (e.keyword.isEmpty) continue;
+      await _db.customUpdate(
+        '''
+      INSERT INTO search_history (keyword, useCount, lastUsedAt)
+      VALUES (?, ?, ?)
+      ON CONFLICT(keyword) DO UPDATE SET
+        useCount = MAX(useCount, excluded.useCount),
+        lastUsedAt = MAX(lastUsedAt, excluded.lastUsedAt)
+      ''',
+        variables: [
+          Variable.withString(e.keyword),
+          Variable.withInt(e.useCount),
+          Variable.withInt(e.lastUsedAt),
+        ],
+        updates: {_db.searchHistoryTable},
+      );
+    }
+    notifyListeners();
+  }
+
+  /// 把 WAL 里的改动写回主库文件（整库导出/覆盖前调用）
+  Future<void> checkpoint() async {
+    try {
+      await _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch (_) {}
   }
 
   Future<void> deleteSearch(String keyword) async {

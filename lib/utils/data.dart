@@ -15,7 +15,6 @@ import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/implicit_keys.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/text_rule.dart';
@@ -290,13 +289,14 @@ Future<void> _writeMergeFilesFor(String key) async {
       FilePath.join(App.cachePath, 'stats_merge.json'),
       (await StatsManager().getStatsAll()).map((s) => s.toMergeJson()).toList(),
     );
-  } else if (key == 'data') {
-    // implicitData 整体不同步（含设备本地设置），只带上与设备无关的配置键：
-    // 番源显示模式覆盖 / 番源选用的文本规则 / 番源下载标题格式
-    await write(FilePath.join(App.cachePath, 'implicit_merge.json'), {
-      for (final k in syncedImplicitKeys)
-        if (appdata.implicitData[k] != null) k: appdata.implicitData[k],
-    });
+  } else if (key == 'search') {
+    final rows = await SearchHistoryManager().all();
+    // 先 checkpoint，保证旧版依赖的 search_history.db 里也是最新数据
+    await SearchHistoryManager().checkpoint();
+    await write(
+      FilePath.join(App.cachePath, 'search_merge.json'),
+      rows.map((e) => e.toJson()).toList(),
+    );
   }
 }
 
@@ -349,16 +349,18 @@ List<(String, String)> _partEntries(String key) {
     add('bangumi.db', FilePath.join(dp, 'bangumi.db'));
   } else if (key == 'search') {
     add('search_history.db', FilePath.join(dp, 'search_history.db'));
+    add(
+      'search_merge.json',
+      FilePath.join(App.cachePath, 'search_merge.json'),
+    );
   } else if (key == 'cookies') {
     add('cookie.db', FilePath.join(dp, 'cookie.db'));
   } else if (key == 'data') {
     // 故事 / 角色卡 / 存档 / 世界书 / 设定库 / 技能等走「选择性同步」，
-    // 不放进整包，避免重复与体积膨胀
+    // 不放进整包，避免重复与体积膨胀。注意：番源/插件的本地配置（勾选的
+    // 文本规则、下载标题格式）都存在它们自己的 `<key>.data` 里，随本部分的
+    // anime_source / plugins 目录一起同步，implicitData 仍不参与同步。
     add('appdata.json', FilePath.join(dp, 'appdata.json'));
-    add(
-      'implicit_merge.json',
-      FilePath.join(App.cachePath, 'implicit_merge.json'),
-    );
     addDir('anime_source', FilePath.join(dp, 'anime_source'));
     addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
   }
@@ -581,8 +583,30 @@ Future<void> _applyImportedData(String cacheDirPath) async {
         _atomicReplace(statsFile.path, FilePath.join(App.dataPath, "stats.db"));
       });
     }
-    if (await searchHistoryFile.exists()) {
-      DebugLog.info('importAppData', '开始导入searchHistoryFile');
+    // 搜索历史字段级合并优先：按关键词取较大的使用次数与较新的时间，
+    // 两边各自的搜索记录都不会丢（search_history.db 是 WAL 库，整库拷贝
+    // 可能拿到还没 checkpoint 的旧数据，所以不再依赖整库覆盖）
+    final searchMergeFile = cacheDir.joinFile("search_merge.json");
+    var mergedSearch = false;
+    if (await searchMergeFile.exists()) {
+      try {
+        final list = jsonDecode(await searchMergeFile.readAsString());
+        if (list is List) {
+          await SearchHistoryManager().mergeSearchHistory(
+            list
+                .whereType<Map>()
+                .map((m) => SearchHistoryItem.fromJson(Map<String, dynamic>.from(m)))
+                .toList(),
+          );
+          mergedSearch = true;
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'search 字段级合并失败：$e');
+      }
+    }
+    if (!mergedSearch && await searchHistoryFile.exists()) {
+      // 旧版导出（无 search_merge.json）→ 整库覆盖（原子替换 + 备份）
+      DebugLog.info('importAppData', '开始导入searchHistoryFile（整库覆盖）');
       await SearchHistoryManager().reinit(() async {
         _atomicReplace(
           searchHistoryFile.path,
@@ -595,19 +619,6 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       var content = await appdataFile.readAsString();
       var data = jsonDecode(content);
       appdata.syncData(data);
-    }
-    // 设备无关的 implicitData 配置（文本规则选用 / 下载标题格式 / 显示模式覆盖）：
-    // 按条目合并，远端有值的键生效，本地独有的键保留
-    final implicitMergeFile = cacheDir.joinFile("implicit_merge.json");
-    if (await implicitMergeFile.exists()) {
-      try {
-        final incoming = jsonDecode(await implicitMergeFile.readAsString());
-        if (incoming is Map) {
-          appdata.mergeSyncedImplicit(incoming);
-        }
-      } catch (e) {
-        DebugLog.error('importAppData', 'implicitData 字段级合并失败：$e');
-      }
     }
     if (await cookieFile.exists()) {
       DebugLog.info('importAppData', '开始导入cookieFile');

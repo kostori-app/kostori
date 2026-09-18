@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:kostori/database/history.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/implicit_keys.dart';
 import 'package:kostori/foundation/log.dart';
 
 /// 文本规则预览的默认示例文本
@@ -223,13 +223,81 @@ class TextRuleStore {
   }
 }
 
-/// 番源 → 选用的文本规则（存于 `implicitData['animeSourceTextRules']`）。
+/// 番源自身数据文件（`anime_source/<key>.data`）里的本地配置键。
 ///
-/// 该键会随 WebDAV 同步（见 [syncedImplicitKeys]），规则定义本身存在
-/// `history.db` 的 `text_rules` 表，也参与同步。
+/// 这些配置存在源数据里而不是 `implicitData`：`implicitData` 是被刻意排除在
+/// 同步之外的（含下载目录、并发数等设备本地设置），而源数据文件随「数据」
+/// 同步部分一起上传/下载，多端即可共享这些配置。
+class SourceLocalConfig {
+  static const String _rulesKey = 'textRuleIds';
+
+  static const String _titleFormatKey = 'downloadTitleFormat';
+
+  /// 文本规则 id 列表
+  static List<String> ruleIdsIn(Map<dynamic, dynamic> data) {
+    final v = data[_rulesKey];
+    if (v is List) return v.map((e) => e.toString()).toList();
+    return const [];
+  }
+
+  static void setRuleIdsIn(Map<String, dynamic> data, List<String> ids) {
+    if (ids.isEmpty) {
+      data.remove(_rulesKey);
+    } else {
+      data[_rulesKey] = ids;
+    }
+  }
+
+  /// 下载标题格式（文件名模板）
+  static String titleFormatIn(Map<dynamic, dynamic> data) =>
+      data[_titleFormatKey]?.toString() ?? '';
+
+  static void setTitleFormatIn(Map<String, dynamic> data, String format) {
+    final v = format.trim();
+    if (v.isEmpty) {
+      data.remove(_titleFormatKey);
+    } else {
+      data[_titleFormatKey] = v;
+    }
+  }
+}
+
+/// 番源 → 选用的文本规则 / 下载标题格式（存于该源自己的数据文件）。
+///
+/// 规则的定义存在 `history.db` 的 `text_rules` 表（随 history 同步），
+/// 这里只保存「哪个源选了哪些规则」，随源数据一起同步。
 class SourceTextRuleConfig {
+  /// 旧版存储（`implicitData['animeSourceTextRules']`）：读取时一次性迁移到
+  /// 源数据文件，迁移后不再回退，避免「取消勾选后又被旧值复活」。
+  static const String legacyImplicitKey = 'animeSourceTextRules';
+
+  static AnimeSource? _sourceOf(String sourceKey) =>
+      AnimeSource.find(sourceKey);
+
   static List<String> ruleIdsFor(String sourceKey) {
-    final raw = appdata.implicitData[sourceTextRulesKey];
+    final source = _sourceOf(sourceKey);
+    if (source == null) return const [];
+    final ids = SourceLocalConfig.ruleIdsIn(source.data);
+    if (ids.isNotEmpty) return ids;
+    final legacy = _legacyRuleIdsFor(sourceKey);
+    if (legacy.isEmpty) return const [];
+    // 迁移旧选择到源数据（随「数据」部分同步），并清掉旧存储
+    SourceLocalConfig.setRuleIdsIn(source.data, legacy);
+    _removeLegacy(sourceKey);
+    unawaited(source.saveData());
+    return legacy;
+  }
+
+  static void setRuleIds(String sourceKey, List<String> ids) {
+    final source = _sourceOf(sourceKey);
+    if (source == null) return;
+    SourceLocalConfig.setRuleIdsIn(source.data, ids);
+    _removeLegacy(sourceKey);
+    unawaited(source.saveData());
+  }
+
+  static List<String> _legacyRuleIdsFor(String sourceKey) {
+    final raw = appdata.implicitData[legacyImplicitKey];
     if (raw is Map) {
       final v = raw[sourceKey];
       if (v is List) return v.map((e) => e.toString()).toList();
@@ -237,17 +305,27 @@ class SourceTextRuleConfig {
     return const [];
   }
 
-  static void setRuleIds(String sourceKey, List<String> ids) {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData[sourceTextRulesKey] as Map? ?? {},
-    );
-    if (ids.isEmpty) {
-      map.remove(sourceKey);
+  static void _removeLegacy(String sourceKey) {
+    final raw = appdata.implicitData[legacyImplicitKey];
+    if (raw is! Map || !raw.containsKey(sourceKey)) return;
+    final map = Map<String, dynamic>.from(raw)..remove(sourceKey);
+    if (map.isEmpty) {
+      appdata.implicitData.remove(legacyImplicitKey);
     } else {
-      map[sourceKey] = ids;
+      appdata.implicitData[legacyImplicitKey] = map;
     }
-    appdata.implicitData[sourceTextRulesKey] = map;
     appdata.writeImplicitData();
+  }
+
+  /// 该源的下载标题格式（文件名模板）
+  static String titleFormatFor(String sourceKey) =>
+      SourceLocalConfig.titleFormatIn(_sourceOf(sourceKey)?.data ?? const {});
+
+  static void setTitleFormat(String sourceKey, String format) {
+    final source = _sourceOf(sourceKey);
+    if (source == null) return;
+    SourceLocalConfig.setTitleFormatIn(source.data, format);
+    unawaited(source.saveData());
   }
 
   static List<TextRule> rulesFor(String sourceKey) {
@@ -266,55 +344,34 @@ class SourceTextRuleConfig {
       TextRuleStore.apply(input, rulesFor(sourceKey));
 
   /// 有多少个番源选用了该规则
-  static int countSourcesUsing(String ruleId) {
-    final raw = appdata.implicitData[sourceTextRulesKey];
-    if (raw is! Map) return 0;
-    var n = 0;
-    for (final v in raw.values) {
-      if (v is List && v.map((e) => e.toString()).contains(ruleId)) n++;
-    }
-    return n;
-  }
+  static int countSourcesUsing(String ruleId) =>
+      sourcesUsing(ruleId).length;
 
   /// 选用该规则的所有番源 key
   static Set<String> sourcesUsing(String ruleId) {
-    final raw = appdata.implicitData[sourceTextRulesKey];
     final out = <String>{};
-    if (raw is Map) {
-      raw.forEach((k, v) {
-        if (v is List && v.map((e) => e.toString()).contains(ruleId)) {
-          out.add(k.toString());
-        }
-      });
+    for (final source in AnimeSourceManager().all()) {
+      if (ruleIdsFor(source.key).contains(ruleId)) out.add(source.key);
     }
     return out;
   }
 
   /// 设置“哪些番源使用该规则”（其余番源移除该规则）
   static void setSourcesForRule(String ruleId, Set<String> sourceKeys) {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData[sourceTextRulesKey] as Map? ?? {},
-    );
-    final keys = <String>{
-      ...map.keys.map((e) => e.toString()),
-      ...sourceKeys,
-    };
-    for (final k in keys) {
-      final list = map[k] is List
-          ? (map[k] as List).map((e) => e.toString()).toList()
-          : <String>[];
-      if (sourceKeys.contains(k)) {
-        if (!list.contains(ruleId)) list.add(ruleId);
+    for (final source in AnimeSourceManager().all()) {
+      final list = ruleIdsFor(source.key);
+      final wanted = sourceKeys.contains(source.key);
+      final has = list.contains(ruleId);
+      if (wanted == has) continue;
+      if (wanted) {
+        SourceLocalConfig.setRuleIdsIn(source.data, [...list, ruleId]);
       } else {
-        list.remove(ruleId);
+        SourceLocalConfig.setRuleIdsIn(
+          source.data,
+          list.where((e) => e != ruleId).toList(),
+        );
       }
-      if (list.isEmpty) {
-        map.remove(k);
-      } else {
-        map[k] = list;
-      }
+      unawaited(source.saveData());
     }
-    appdata.implicitData[sourceTextRulesKey] = map;
-    appdata.writeImplicitData();
   }
 }

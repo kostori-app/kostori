@@ -40,6 +40,10 @@ class AnimeDisplayModeScope extends InheritedWidget {
       mode != oldWidget.mode;
 }
 
+/// 每源显示模式覆盖的存储 key（implicitData；implicitData 不参与同步，
+/// 需要多端共享的配置（如文本规则）存在源自己的数据文件里）。
+const String sourceDisplayModesKey = 'animeSourceDisplayModes';
+
 /// 读取某源显示模式覆盖，支持子维度（如 `sourceKey:search`、`sourceKey:category:国漫`）：
 /// 子覆盖 > 源级覆盖 > null（跟随全局默认）。
 String? sourceDisplayModeOf(String sourceKey, [String? subKey]) {

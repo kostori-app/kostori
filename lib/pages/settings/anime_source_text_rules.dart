@@ -268,31 +268,21 @@ class _SourceRulesPageState extends State<_SourceRulesPage> {
   AnimeSource get source => widget.source;
 
   Future<void> _editDownloadFormat() async {
-    final map = Map<String, dynamic>.from(
-      appdata.implicitData[downloadTitleFormatsKey] as Map? ?? {},
-    );
-    final current = map[source.key] as String? ?? '';
+    final current = SourceTextRuleConfig.titleFormatFor(source.key);
     final value = await showDialog<String>(
       context: context,
       builder: (_) => _DownloadFormatDialog(initialValue: current),
     );
     if (value == null || !mounted) return;
-    final v = value.trim();
-    if (v.isEmpty) {
-      map.remove(source.key);
-    } else {
-      map[source.key] = v;
-    }
-    appdata.implicitData[downloadTitleFormatsKey] = map;
-    appdata.writeImplicitData();
+    // 存进源自己的数据文件，随「数据」部分跨端同步
+    SourceTextRuleConfig.setTitleFormat(source.key, value);
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedRules = SourceTextRuleConfig.rulesFor(source.key);
-    final formatMap = appdata.implicitData[downloadTitleFormatsKey] as Map?;
-    final format = formatMap?[source.key]?.toString() ?? '';
+    final format = SourceTextRuleConfig.titleFormatFor(source.key);
     return PopUpWidgetScaffold(
       title: t.rules,
       body: ListView(
