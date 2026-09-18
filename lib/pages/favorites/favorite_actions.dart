@@ -17,79 +17,8 @@ String? validateFolderName(String newFolderName) {
   return null;
 }
 
-void addFavorite(Anime anime) {
-  var folders = LocalFavoritesManager().folderNames
-      .where((folder) => !isUnassignedFolder(folder))
-      .toList();
-
-  showDialog(
-    context: App.rootContext,
-    builder: (context) {
-      String? selectedFolder;
-
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return ContentDialog(
-            title: t.selectAFolder,
-            content: ListTile(
-              title: Text(t.folder),
-              trailing: Select(
-                current: selectedFolder,
-                values: folders,
-                minWidth: 112,
-                onTap: (v) {
-                  setState(() {
-                    selectedFolder = folders[v];
-                  });
-                },
-              ),
-            ),
-            actions: [
-              FilledButton(
-                onPressed: () {
-                  if (selectedFolder != null) {
-                    LocalFavoritesManager().addAnime(
-                      selectedFolder!,
-                      FavoriteItem(
-                        id: anime.id,
-                        name: anime.title,
-                        coverPath: anime.cover,
-                        author: anime.subtitle ?? '',
-                        type: AnimeType(
-                          (anime.sourceKey == 'local'
-                              ? 0
-                              : anime.sourceKey.hashCode),
-                        ),
-                        tags: anime.tags ?? [],
-                        viewMore: anime.viewMore,
-                      ),
-                    );
-                    context.pop();
-                  }
-                },
-                child: Text(t.confirm),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-
 void defaultFavorite(Anime anime) {
-  LocalFavoritesManager().addAnime(
-    kUnassignedFolder,
-    FavoriteItem(
-      id: anime.id,
-      name: anime.title,
-      coverPath: anime.cover,
-      author: anime.subtitle ?? '',
-      type: AnimeType((anime.sourceKey.hashCode)),
-      tags: anime.tags ?? [],
-      viewMore: anime.viewMore,
-    ),
-  );
+  LocalFavoritesManager().addAnime(kUnassignedFolder, favoriteItemOf(anime));
 }
 
 Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {

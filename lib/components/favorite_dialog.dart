@@ -71,6 +71,18 @@ const List<String> _kExcludedFavoriteFolders = [
   '默认',
 ];
 
+/// 由列表卡片的 [Anime] 构造收藏项：卡片菜单与收藏页共用同一套字段映射，
+/// 避免各处自行拼 [FavoriteItem] 导致 id / type 等不一致。
+FavoriteItem favoriteItemOf(Anime anime) => FavoriteItem(
+  id: anime.id,
+  name: anime.title,
+  coverPath: anime.cover,
+  author: anime.subtitle ?? '',
+  type: AnimeType(anime.sourceKey.hashCode),
+  tags: anime.tags ?? const [],
+  viewMore: anime.viewMore,
+);
+
 /// 收藏文件夹选择弹窗：番剧详情页与本地收藏页共用同一套样式与操作逻辑。
 ///
 /// - [items]：要操作的收藏条目（详情页 1 条，本地收藏页可多条）

@@ -367,9 +367,15 @@ class AnimeTile extends ConsumerWidget {
         MenuEntry(
           icon: Icons.stars_outlined,
           text: t.addToFavorites,
-          onClick: () {
-            addFavorite(anime);
-            ref.read(favoritesVersion.notifier).state++;
+          onClick: () async {
+            // 与番剧详情页、本地收藏页共用同一个收藏弹窗（可选择/新建文件夹）
+            final changed = await FavoriteDialog.show(
+              App.rootContext,
+              items: [favoriteItemOf(anime)],
+            );
+            if (changed == true) {
+              ref.read(favoritesVersion.notifier).state++;
+            }
           },
         ),
       );
