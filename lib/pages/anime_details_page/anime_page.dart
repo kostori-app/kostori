@@ -1561,43 +1561,42 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
       const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 6);
 
-      if (onTap != null) {
-        return Material(
-          color: color,
-          borderRadius: borderRadius,
-          child: InkWell(
-            borderRadius: borderRadius,
-            onTap: onTap,
-            onLongPress: () {
-              Clipboard.setData(ClipboardData(text: text));
-              context.showMessage(message: t.copied);
-            },
-            onSecondaryTapDown: (details) {
-              showMenuX(context, details.globalPosition, [
-                MenuEntry(
-                  icon: Icons.remove_red_eye,
-                  text: t.view,
-                  onClick: onTap,
-                ),
-                MenuEntry(
-                  icon: Icons.copy,
-                  text: t.copy,
-                  onClick: () {
-                    Clipboard.setData(ClipboardData(text: text));
-                    context.showMessage(message: t.copied);
-                  },
-                ),
-              ]);
-            },
-            child: Text(text).padding(padding),
-          ),
-        );
-      } else {
+      // 分组名（标题）仍是纯展示
+      if (isTitle) {
         return Container(
           decoration: BoxDecoration(color: color, borderRadius: borderRadius),
           child: Text(text).padding(padding),
         );
       }
+
+      void copy() {
+        Clipboard.setData(ClipboardData(text: text));
+        context.showMessage(message: t.copied);
+      }
+
+      // 条目 tag：点击行为由源决定（[onTap] 为 null 表示源声明不可点击），
+      // 长按 / 右键复制始终可用；不可点击时右键菜单不再显示「查看」。
+      return Material(
+        color: color,
+        borderRadius: borderRadius,
+        child: InkWell(
+          borderRadius: borderRadius,
+          onTap: onTap,
+          onLongPress: copy,
+          onSecondaryTapDown: (details) {
+            showMenuX(context, details.globalPosition, [
+              if (onTap != null)
+                MenuEntry(
+                  icon: Icons.remove_red_eye,
+                  text: t.view,
+                  onClick: onTap,
+                ),
+              MenuEntry(icon: Icons.copy, text: t.copy, onClick: copy),
+            ]);
+          },
+          child: Text(text).padding(padding),
+        ),
+      );
     }
 
     Widget buildWrap({required List<Widget> children}) {
@@ -1621,7 +1620,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   if (e.value.isNotEmpty)
                     buildTag(text: e.key.ts(animeSource.key), isTitle: true),
                   for (var tag in e.value)
-                    buildTag(text: tag, onTap: () => onTapTag(tag, e.key)),
+                    buildTag(
+                      text: tag,
+                      // 源声明 tag 不可点击时不传 onTap（默认仍可点击）
+                      onTap: animeSource.tagClickable
+                          ? () => onTapTag(tag, e.key)
+                          : null,
+                    ),
                 ],
               ),
           ],

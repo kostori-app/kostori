@@ -135,6 +135,10 @@ class AnimeSourceParser {
         JsEngine().runCode("this['temp'].version") ??
         (throw AnimeSourceParseException('version is required'));
     var isBangumi = JsEngine().runCode("this['temp'].isBangumi") ?? false;
+    // 「基本信息」里的 tag 是否可点击（源可声明 tagClickable: false 关掉）。
+    // 只接受布尔值，其它类型（未声明/写错）一律按默认值 true，避免旧源报错。
+    final rawTagClickable = JsEngine().runCode("this['temp'].tagClickable");
+    final bool tagClickable = rawTagClickable is bool ? rawTagClickable : true;
     var minAppVersion = JsEngine().runCode("this['temp'].minAppVersion");
     var url = JsEngine().runCode("this['temp'].url");
     if (minAppVersion != null) {
@@ -186,6 +190,7 @@ class AnimeSourceParser {
       linkResolveTarget: _parseLinkTargetResolver(),
       enableTagsSuggestions: _getValue("search.enableTagsSuggestions") ?? false,
       enableTagsTranslate: _getValue("anime.enableTagsTranslate") ?? false,
+      tagClickable: tagClickable,
       starRatingFunc: _parseStarRatingFunc(),
       playbackProgress: _parsePlaybackProgressFunc(),
       playbackStopped: _parsePlaybackStoppedFunc(),

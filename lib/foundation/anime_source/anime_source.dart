@@ -423,6 +423,10 @@ class AnimeSource {
 
   final bool enableTagsTranslate;
 
+  /// 番剧详情「基本信息」里的 tag 是否响应点击（默认 true，源可在 JS 里声明
+  /// `tagClickable: false` 关掉）。长按/右键复制不受该开关影响。
+  final bool tagClickable;
+
   final StarRatingFunc? starRatingFunc;
 
   /// 播放进度上报（源实现）
@@ -515,6 +519,7 @@ class AnimeSource {
       required this.linkResolveTarget,
     required this.enableTagsSuggestions,
     required this.enableTagsTranslate,
+    this.tagClickable = true,
     required this.starRatingFunc,
     this.playbackProgress,
     this.playbackStopped,

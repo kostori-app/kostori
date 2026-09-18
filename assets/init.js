@@ -1211,6 +1211,13 @@ class AnimeSource {
 
     isBangumi = false
 
+    /**
+     * 番剧详情「基本信息」里的 tag 是否响应点击（点击行为由 handleClickTagEvent
+     * 决定）。默认 true；设为 false 后 tag 不再可点击，但长按/右键复制仍然可用。
+     * @type {boolean}
+     */
+    tagClickable = true
+
     key = ""
 
     version = ""
