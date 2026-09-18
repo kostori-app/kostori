@@ -705,8 +705,10 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // 每源布局覆盖（null = 用探索设置里的全局默认）
-    final sourceMode = ExploreSourceDisplayMode.of(animeSourceKey);
+    // 布局覆盖：本页 > 该源 > 探索设置里的全局默认（null 表示跟随下一级）
+    // 用页面标题作为子 key：重命名页面会丢掉该页覆盖，但顺序调整不受影响
+    final pageModeKey = 'page:${widget.title}';
+    final pageMode = ExploreSourceDisplayMode.of(animeSourceKey, pageModeKey);
     final modeBar = SliverToBoxAdapter(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -714,6 +716,7 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
           SizedBox(height: widget.topInset),
           AnimeSourceLayoutBar(
             sourceKey: animeSourceKey,
+            subKey: pageModeKey,
             crossAxisAlignment: CrossAxisAlignment.center,
           ),
         ],
@@ -768,7 +771,7 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     } else {
       child = Center(child: Text(t.emptyPage));
     }
-    return AnimeDisplayModeScope(mode: sourceMode, child: child);
+    return AnimeDisplayModeScope(mode: pageMode, child: child);
   }
 
   @override
@@ -1133,8 +1136,11 @@ class _SourceExplorePageState extends State<_SourceExplorePage>
 
 /// 每源显示模式覆盖的持久化（存 implicitData['animeSourceDisplayModes']）。
 class ExploreSourceDisplayMode {
-  /// 返回该源的覆盖模式；无覆盖时返回 null（跟随探索设置里的全局默认）。
-  static String? of(String sourceKey) => sourceDisplayModeOf(sourceKey);
+  /// 返回该源（或某子页）的覆盖模式；无覆盖时返回 null（跟随上一级/全局默认）。
+  ///
+  /// 解析顺序：`子页 > 源级 > 探索设置里的全局默认`，见 [sourceDisplayModeOf]。
+  static String? of(String sourceKey, [String? subKey]) =>
+      sourceDisplayModeOf(sourceKey, subKey);
 
   /// 设置覆盖模式；传 null 清除覆盖（恢复全局默认）。
   static void set(String sourceKey, String? mode) =>

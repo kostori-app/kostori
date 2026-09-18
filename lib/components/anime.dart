@@ -93,7 +93,12 @@ class AnimeSourceLayoutBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final override = sourceDisplayModeOf(sourceKey, subKey);
+    // 本页/本维度的覆盖；没有时回退到源级覆盖，再回退到全局默认
+    final subOverride = subKey == null
+        ? null
+        : sourceDisplayModeOf(sourceKey, subKey);
+    final rootOverride = sourceDisplayModeOf(sourceKey);
+    final override = subOverride ?? rootOverride;
     final value = override ?? appdata.settings['animeDisplayMode'];
     final colorScheme = Theme.of(context).colorScheme;
     final modes = [
@@ -174,8 +179,12 @@ class AnimeSourceLayoutBar extends StatelessWidget {
                     iconSize: 16,
                     tooltip: t.sourceDisplayModeReset,
                     icon: Icon(Icons.restore, color: colorScheme.outline),
-                    onPressed: () =>
-                        setSourceDisplayMode(sourceKey, null, subKey),
+                    // 只清当前生效的那一级：本页有覆盖清本页，否则清该源
+                    onPressed: () => setSourceDisplayMode(
+                      sourceKey,
+                      null,
+                      subOverride != null ? subKey : null,
+                    ),
                   ),
                 ],
               ],
