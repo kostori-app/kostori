@@ -34,6 +34,7 @@ import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/ai_request_log.dart';
 import 'package:kostori/foundation/ai_service/balance_helper.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/group_chat.dart';
 import 'package:kostori/foundation/ai_service/mcp_client.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/ai_service/ai_skill_store.dart';

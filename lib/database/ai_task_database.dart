@@ -76,6 +76,46 @@ class AiTaskDatabase extends _$AiTaskDatabase {
     _instance = AiTaskDatabase._();
     revision.value++;
   }
+
+  /// 导出全部消息（跨端同步合并用）
+  Future<List<AiTask>> exportMergeData() async => select(aiTasks).get();
+
+  /// 合并同步来的消息：按「会话 + 角色 + 时间 + 正文」判重后增量插入，
+  /// 不覆盖本机已有消息（消息是不可变的，没有更新时间列）。
+  Future<void> mergeData(List<AiTask> rows) async {
+    if (rows.isEmpty) return;
+    final local = await select(aiTasks).get();
+    final existing = {for (final r in local) _taskKey(r): true};
+    final toWrite = <AiTask>[];
+    for (final r in rows) {
+      final key = _taskKey(r);
+      if (existing.containsKey(key)) continue;
+      existing[key] = true;
+      toWrite.add(r);
+    }
+    if (toWrite.isEmpty) return;
+    await batch((batch) {
+      for (final r in toWrite) {
+        // 自增 id 跨端没有意义，交给本机重新分配
+        batch.insert(
+          aiTasks,
+          r.toCompanion(true).copyWith(id: const Value.absent()),
+        );
+      }
+    });
+    revision.value++;
+  }
+
+  static String _taskKey(AiTask r) =>
+      '${r.sessionId}\u0000${r.role}\u0000${r.createdAt.toIso8601String()}'
+      '\u0000${r.inputContent}\u0000${r.outputContent ?? ''}';
+
+  /// 把 WAL 里的改动写回主库文件（导出整库前调用）
+  Future<void> checkpoint() async {
+    try {
+      await customStatement('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch (_) {}
+  }
 }
 
 LazyDatabase _openConnection() => LazyDatabase(() async {

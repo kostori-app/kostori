@@ -1065,6 +1065,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     'library',
     'story_chars',
     'skills',
+    'group_chats',
     'parts',
   ];
 
@@ -1108,6 +1109,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     'library' => SettingLibraryStore.instance.dirPath,
     'story_chars' => StoryCharacterStore.instance.dirPath,
     'skills' => AiSkillStore.instance.dirPath,
+    'group_chats' => GroupChatStore.instance.dirPath,
     _ => '',
   };
 
@@ -1123,6 +1125,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     await SettingLibraryStore.instance.ensureLoaded();
     await StoryCharacterStore.instance.ensureLoaded();
     await AiSkillStore.instance.ensureLoaded();
+    await GroupChatStore.instance.ensureLoaded();
     final sync = DataSync();
     final remote = <String, Map<String, RemoteFileInfo>>{};
     for (final kind in _kinds) {
@@ -1362,6 +1365,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     'library' => {for (final b in SettingLibraryStore.instance.books) b.id},
     'story_chars' => {...StoryCharacterStore.instance.storyIds},
     'skills' => {for (final s in AiSkillStore.instance.items) s.key},
+    'group_chats' => {for (final c in GroupChatStore.instance.chats) c.id},
     _ => <String>{},
   };
 
@@ -1374,6 +1378,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     'library' => SettingLibraryStore.instance.bookById(id)?.name ?? id,
     'story_chars' => StoryStore.instance.find(id)?.name ?? id,
     'skills' => AiSkillStore.instance.find(id)?.name ?? id,
+    'group_chats' => GroupChatStore.instance.find(id)?.name ?? id,
     _ => id,
   };
 
@@ -1392,6 +1397,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     'library' => t.storySettingLibrary,
     'story_chars' => t.syncStoryChars,
     'skills' => t.skills,
+    'group_chats' => t.groupChat,
     'parts' => t.syncParts,
     _ => kind,
   };
@@ -1682,6 +1688,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     await SettingLibraryStore.instance.reload();
     await StoryCharacterStore.instance.reload();
     await AiSkillStore.instance.reload();
+    await GroupChatStore.instance.reload();
     if (!mounted) return;
     setState(() {
       _busy = false;

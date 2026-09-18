@@ -386,6 +386,109 @@ class AiDatabase extends _$AiDatabase {
     _instance = null;
   }
 
+  /// 导出可跨端合并的用户数据。
+  ///
+  /// 缓存类表（模型目录 `ai_models`、服务商校验统计 `ai_provider_stats`）
+  /// 不导出：它们由各端自己查询/覆盖，混在一起反而会互相污染。
+  Future<Map<String, dynamic>> exportMergeData() async => {
+    'apiKeys': [for (final r in await select(aiApiKeys).get()) r.toJson()],
+    'customProviders': [
+      for (final r in await select(aiCustomProviders).get()) r.toJson(),
+    ],
+    'sessions': [for (final r in await select(aiSessions).get()) r.toJson()],
+    'auxSettings': [
+      for (final r in await select(aiAuxSettings).get()) r.toJson(),
+    ],
+    'mcpServers': [for (final r in await select(aiMcpServers).get()) r.toJson()],
+  };
+
+  /// 合并同步来的用户数据：同键取 `updatedAt` 较新的一方；
+  /// 无时间戳的表（`ai_aux_settings`）本机优先，只补齐本机没有的键。
+  /// MCP 服务器按 `name` 合并（自增 id 跨端没有意义，保留本机 id）。
+  Future<void> mergeData(Map<String, dynamic> data) async {
+    List<Map<String, dynamic>> rowsOf(String key) =>
+        (data[key] as List?)
+            ?.whereType<Map>()
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList() ??
+        const [];
+
+    await transaction(() async {
+      // 服务商 API Key：provider 为主键
+      final localApiKeys = {
+        for (final r in await select(aiApiKeys).get()) r.provider: r,
+      };
+      for (final m in rowsOf('apiKeys')) {
+        final r = AiApiKey.fromJson(m);
+        final local = localApiKeys[r.provider];
+        if (local == null || r.updatedAt.isAfter(local.updatedAt)) {
+          await into(aiApiKeys).insertOnConflictUpdate(r.toCompanion(true));
+        }
+      }
+
+      // 自定义服务商：provider 为主键
+      final localCustom = {
+        for (final r in await select(aiCustomProviders).get()) r.provider: r,
+      };
+      for (final m in rowsOf('customProviders')) {
+        final r = AiCustomProvider.fromJson(m);
+        final local = localCustom[r.provider];
+        if (local == null || r.updatedAt.isAfter(local.updatedAt)) {
+          await into(
+            aiCustomProviders,
+          ).insertOnConflictUpdate(r.toCompanion(true));
+        }
+      }
+
+      // 会话元数据：sessionId 为主键
+      final localSessions = {
+        for (final r in await select(aiSessions).get()) r.sessionId: r,
+      };
+      for (final m in rowsOf('sessions')) {
+        final r = AiSession.fromJson(m);
+        final local = localSessions[r.sessionId];
+        if (local == null || r.updatedAt.isAfter(local.updatedAt)) {
+          await into(aiSessions).insertOnConflictUpdate(r.toCompanion(true));
+        }
+      }
+
+      // MCP 服务器：按 name 合并
+      final localMcp = {
+        for (final r in await select(aiMcpServers).get()) r.name: r,
+      };
+      for (final m in rowsOf('mcpServers')) {
+        final r = AiMcpServer.fromJson(m);
+        final local = localMcp[r.name];
+        if (local == null) {
+          await into(
+            aiMcpServers,
+          ).insert(r.toCompanion(true).copyWith(id: const Value.absent()));
+        } else if (r.updatedAt.isAfter(local.updatedAt)) {
+          await into(aiMcpServers).insertOnConflictUpdate(
+            r.toCompanion(true).copyWith(id: Value(local.id)),
+          );
+        }
+      }
+
+      // 辅助任务模型设置：只补本机缺失
+      final localAuxKeys = {
+        for (final r in await select(aiAuxSettings).get()) r.key,
+      };
+      for (final m in rowsOf('auxSettings')) {
+        final r = AiAuxSetting.fromJson(m);
+        if (localAuxKeys.contains(r.key)) continue;
+        await into(aiAuxSettings).insertOnConflictUpdate(r.toCompanion(true));
+      }
+    });
+  }
+
+  /// 把 WAL 里的改动写回主库文件（导出整库前调用）
+  Future<void> checkpoint() async {
+    try {
+      await customStatement('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch (_) {}
+  }
+
   Future<void> _ensureTableExists(Migrator m, TableInfo table) async {
     try {
       await customStatement('SELECT 1 FROM ${table.actualTableName} LIMIT 1');

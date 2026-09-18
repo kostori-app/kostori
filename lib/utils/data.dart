@@ -9,8 +9,12 @@ import 'package:kostori/database/history.dart';
 import 'package:kostori/database/history_write_service.dart';
 import 'package:kostori/database/search_history.dart';
 import 'package:kostori/database/stats.dart';
+import 'package:kostori/foundation/ai_service/ai_skill_store.dart';
+import 'package:kostori/foundation/ai_service/assistant_profile.dart';
 import 'package:kostori/foundation/ai_service/character_card.dart';
+import 'package:kostori/foundation/ai_service/group_chat.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
+import 'package:kostori/foundation/ai_service/setting_library.dart';
 import 'package:kostori/foundation/ai_service/story.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -64,6 +68,7 @@ void recoverStaleBackups() {
     'search_history.db',
     'cookie.db',
     'ai_database.db',
+    'ai_tasks.db',
   ]) {
     final target = File('$dataPath${Platform.pathSeparator}$name');
     final backup = File('$dataPath${Platform.pathSeparator}$name.bak');
@@ -135,6 +140,17 @@ Future<File> exportAppData() async {
   } catch (e) {
     DebugLog.error('exportAppData', 'progress_merge.json 导出失败：$e');
   }
+  var assistantMergeFile = FilePath.join(App.cachePath, 'assistant_merge.json');
+  try {
+    final payload = {
+      'profiles': AssistantProfileStore.instance.exportMergeData(),
+      'memory': AssistantMemoryStore.instance.exportMergeData(),
+    };
+    final jsonStr = await Isolate.run(() => jsonEncode(payload));
+    await File(assistantMergeFile).writeAsString(jsonStr);
+  } catch (e) {
+    DebugLog.error('exportAppData', 'assistant_merge.json 导出失败：$e');
+  }
   try {
     final favorites = LocalFavoritesManager().getAllFavoriteMergeMaps();
     final jsonStr = await Isolate.run(() {
@@ -190,6 +206,10 @@ Future<File> exportAppData() async {
     final pmf = File(progressMergeFile);
     if (pmf.existsSync()) {
       zipFile.addFile("progress_merge.json", progressMergeFile);
+    }
+    final amf = File(assistantMergeFile);
+    if (amf.existsSync()) {
+      zipFile.addFile("assistant_merge.json", assistantMergeFile);
     }
     final fmf = File(favoritesMergeFile);
     if (fmf.existsSync()) {
@@ -280,7 +300,25 @@ Future<void> _writeMergeFilesFor(String key) async {
     }
   }
 
-  if (key == 'history') {
+  if (key == 'ai') {
+    // 只合并用户数据（Key / 自定义服务商 / 会话元数据 / MCP / 辅助设置），
+    // 模型目录与服务商统计属于各端缓存，不参与同步
+    final ai = AiDatabase.instance;
+    await ai.checkpoint();
+    await write(
+      FilePath.join(App.cachePath, 'ai_merge.json'),
+      await ai.exportMergeData(),
+    );
+  } else if (key == 'ai_tasks') {
+    final tasks = AiTaskDatabase.instance;
+    await tasks.checkpoint();
+    await write(
+      FilePath.join(App.cachePath, 'ai_task_merge.json'),
+      (await tasks.exportMergeData()).map((e) => e.toJson()).toList(),
+    );
+  } else if (key == 'history') {
+    // 先 checkpoint：旧版导入依赖整库副本时也能拿到最新数据
+    await HistoryManager().checkpoint();
     await write(
       FilePath.join(App.cachePath, 'history_merge.json'),
       (await HistoryManager().getAll()).map((h) => h.toJson()).toList(),
@@ -304,9 +342,22 @@ Future<void> _writeMergeFilesFor(String key) async {
       LocalFavoritesManager().getAllFavoriteMergeMaps(),
     );
   } else if (key == 'stats') {
+    await StatsManager().checkpoint();
     await write(
       FilePath.join(App.cachePath, 'stats_merge.json'),
-      (await StatsManager().getStatsAll()).map((s) => s.toMergeJson()).toList(),
+      // 用未过滤的全量记录导出：已卸载源的统计也要能同步过去
+      (await StatsManager().getStatsAllRaw())
+          .map((s) => s.toMergeJson())
+          .toList(),
+    );
+  } else if (key == 'bangumi') {
+    // 绑定条目是用户手动建立的，整库覆盖会丢；bangumi 资料/日历/分集信息
+    // 都是服务端缓存，各端自己维护即可
+    final manager = providerContainer.read(bangumiManagerProvider);
+    await manager.checkpoint();
+    await write(
+      FilePath.join(App.cachePath, 'bangumi_merge.json'),
+      (await manager.getAllBindings()).map((e) => e.toJson()).toList(),
     );
   } else if (key == 'search') {
     final rows = await SearchHistoryManager().all();
@@ -316,6 +367,22 @@ Future<void> _writeMergeFilesFor(String key) async {
       FilePath.join(App.cachePath, 'search_merge.json'),
       rows.map((e) => e.toJson()).toList(),
     );
+  } else if (key == 'cookies') {
+    final jar = SingleInstanceCookieJar.instance;
+    if (jar != null) {
+      await jar.checkpoint();
+      await write(
+        FilePath.join(App.cachePath, 'cookie_merge.json'),
+        (await jar.allRows()).map((e) => e.toJson()).toList(),
+      );
+    }
+  } else if (key == 'data') {
+    // 助手档案与长期记忆存在 shared_preferences 里，不在任何目录/DB 中，
+    // 单独导出成合并文件
+    await write(FilePath.join(App.cachePath, 'assistant_merge.json'), {
+      'profiles': AssistantProfileStore.instance.exportMergeData(),
+      'memory': AssistantMemoryStore.instance.exportMergeData(),
+    });
   }
 }
 
@@ -339,8 +406,13 @@ List<(String, String)> _partEntries(String key) {
 
   if (key == 'ai') {
     add('ai_database.db', FilePath.join(dp, 'ai_database.db'));
+    add('ai_merge.json', FilePath.join(App.cachePath, 'ai_merge.json'));
   } else if (key == 'ai_tasks') {
     add('ai_tasks.db', FilePath.join(dp, 'ai_tasks.db'));
+    add(
+      'ai_task_merge.json',
+      FilePath.join(App.cachePath, 'ai_task_merge.json'),
+    );
   } else if (key == 'history') {
     add('history.db', FilePath.join(dp, 'history.db'));
     add(
@@ -370,6 +442,7 @@ List<(String, String)> _partEntries(String key) {
     add('stats_merge.json', FilePath.join(App.cachePath, 'stats_merge.json'));
   } else if (key == 'bangumi') {
     add('bangumi.db', FilePath.join(dp, 'bangumi.db'));
+    add('bangumi_merge.json', FilePath.join(App.cachePath, 'bangumi_merge.json'));
   } else if (key == 'search') {
     add('search_history.db', FilePath.join(dp, 'search_history.db'));
     add(
@@ -378,12 +451,17 @@ List<(String, String)> _partEntries(String key) {
     );
   } else if (key == 'cookies') {
     add('cookie.db', FilePath.join(dp, 'cookie.db'));
+    add('cookie_merge.json', FilePath.join(App.cachePath, 'cookie_merge.json'));
   } else if (key == 'data') {
     // 故事 / 角色卡 / 存档 / 世界书 / 设定库 / 技能等走「选择性同步」，
     // 不放进整包，避免重复与体积膨胀。注意：番源/插件的本地配置（勾选的
     // 文本规则、下载标题格式）都存在它们自己的 `<key>.data` 里，随本部分的
     // anime_source / plugins 目录一起同步，implicitData 仍不参与同步。
     add('appdata.json', FilePath.join(dp, 'appdata.json'));
+    add(
+      'assistant_merge.json',
+      FilePath.join(App.cachePath, 'assistant_merge.json'),
+    );
     addDir('anime_source', FilePath.join(dp, 'anime_source'));
     addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
   }
@@ -588,8 +666,33 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       );
       LocalFavoritesManager().init();
     }
-    if (await bangumiFile.exists()) {
-      DebugLog.info('importAppData', '开始导入bangumiFile');
+    // 绑定字段级合并优先：只补齐本机缺少的绑定，资料/日历缓存保留本机
+    final bangumiMergeFile = cacheDir.joinFile("bangumi_merge.json");
+    var mergedBangumi = false;
+    if (await bangumiMergeFile.exists()) {
+      try {
+        final list = jsonDecode(await bangumiMergeFile.readAsString());
+        if (list is List) {
+          final manager = providerContainer.read(bangumiManagerProvider);
+          await manager.init();
+          await manager.mergeBindings(
+            list
+                .whereType<Map>()
+                .map(
+                  (m) => BangumiBindingTableData.fromJson(
+                    Map<String, dynamic>.from(m),
+                  ),
+                )
+                .toList(),
+          );
+          mergedBangumi = true;
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'bangumi 字段级合并失败：$e');
+      }
+    }
+    if (!mergedBangumi && await bangumiFile.exists()) {
+      DebugLog.info('importAppData', '开始导入bangumiFile（整库覆盖）');
       providerContainer.invalidate(bangumiInitProvider);
       await providerContainer.read(bangumiManagerProvider).reinit(() async {
         _atomicReplace(
@@ -663,8 +766,55 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       var data = jsonDecode(content);
       appdata.syncData(data);
     }
-    if (await cookieFile.exists()) {
-      DebugLog.info('importAppData', '开始导入cookieFile');
+    // 助手档案 / 长期记忆：按 id 增量合并（本机已有的保留本机版本）
+    final assistantMergeFile = cacheDir.joinFile("assistant_merge.json");
+    if (await assistantMergeFile.exists()) {
+      try {
+        final data = jsonDecode(await assistantMergeFile.readAsString());
+        if (data is Map) {
+          await AssistantProfileStore.instance.mergeData(
+            (data['profiles'] as List?)
+                    ?.whereType<Map>()
+                    .map((m) => Map<String, dynamic>.from(m))
+                    .toList() ??
+                const [],
+          );
+          final memory = data['memory'];
+          if (memory is Map) {
+            await AssistantMemoryStore.instance.mergeData(
+              Map<String, dynamic>.from(memory),
+            );
+          }
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'assistant 字段级合并失败：$e');
+      }
+    }
+    // Cookie 字段级合并优先：补齐本机没有的、以及过期时间更晚的 Cookie，
+    // 避免用另一端的登录态整库覆盖本机
+    final cookieMergeFile = cacheDir.joinFile("cookie_merge.json");
+    var mergedCookies = false;
+    if (await cookieMergeFile.exists()) {
+      try {
+        final list = jsonDecode(await cookieMergeFile.readAsString());
+        if (list is List) {
+          final jar =
+              SingleInstanceCookieJar.instance ??
+              await SingleInstanceCookieJar.createInstance();
+          await jar.mergeCookies(
+            list
+                .whereType<Map>()
+                .map((m) => CookiesTableData.fromJson(Map<String, dynamic>.from(m)))
+                .toList(),
+          );
+          mergedCookies = true;
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'cookie 字段级合并失败：$e');
+      }
+    }
+    if (!mergedCookies && await cookieFile.exists()) {
+      DebugLog.info('importAppData', '开始导入cookieFile（整库覆盖）');
       // 关连接 → 替换文件 → 同一实例重新打开：
       // 不新建实例，避免共用同一 db 文件时出现 drift 多实例告警/竞态
       final jar = SingleInstanceCookieJar.instance;
@@ -676,9 +826,23 @@ Future<void> _applyImportedData(String cacheDirPath) async {
         await SingleInstanceCookieJar.createInstance();
       }
     }
+    // AI 配置字段级合并优先：只合并用户数据，模型目录等缓存保留本机
     var aiFile = cacheDir.joinFile("ai_database.db");
-    if (await aiFile.exists()) {
-      DebugLog.info('importAppData', '开始导入aiFile');
+    final aiMergeFile = cacheDir.joinFile("ai_merge.json");
+    var mergedAi = false;
+    if (await aiMergeFile.exists()) {
+      try {
+        final data = jsonDecode(await aiMergeFile.readAsString());
+        if (data is Map) {
+          await AiDatabase.instance.mergeData(Map<String, dynamic>.from(data));
+          mergedAi = true;
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'ai 字段级合并失败：$e');
+      }
+    }
+    if (!mergedAi && await aiFile.exists()) {
+      DebugLog.info('importAppData', '开始导入aiFile（整库覆盖）');
       await AiDatabase.instance.close();
       _atomicReplace(
         aiFile.path,
@@ -686,9 +850,28 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       );
       AiDatabase.init();
     }
+    // AI 消息字段级合并优先：按内容判重后增量插入，不覆盖本机聊天记录
     var aiTasksFile = cacheDir.joinFile("ai_tasks.db");
-    if (await aiTasksFile.exists()) {
-      DebugLog.info('importAppData', '开始导入aiTasksFile');
+    final aiTaskMergeFile = cacheDir.joinFile("ai_task_merge.json");
+    var mergedAiTasks = false;
+    if (await aiTaskMergeFile.exists()) {
+      try {
+        final list = jsonDecode(await aiTaskMergeFile.readAsString());
+        if (list is List) {
+          await AiTaskDatabase.instance.mergeData(
+            list
+                .whereType<Map>()
+                .map((m) => AiTask.fromJson(Map<String, dynamic>.from(m)))
+                .toList(),
+          );
+          mergedAiTasks = true;
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'ai_tasks 字段级合并失败：$e');
+      }
+    }
+    if (!mergedAiTasks && await aiTasksFile.exists()) {
+      DebugLog.info('importAppData', '开始导入aiTasksFile（整库覆盖）');
       await AiTaskDatabase.instance.close();
       _atomicReplace(
         aiTasksFile.path,
@@ -699,10 +882,11 @@ Future<void> _applyImportedData(String cacheDirPath) async {
     var animeSourceDir = FilePath.join(cacheDirPath, "anime_source");
     if (Directory(animeSourceDir).existsSync()) {
       DebugLog.info('importAppData', '开始导入animeSource');
-      Directory(
-        FilePath.join(App.dataPath, "anime_source"),
-      ).deleteIfExistsSync(recursive: true);
-      Directory(FilePath.join(App.dataPath, "anime_source")).createSync();
+      // 按文件覆盖，不删除本机独有的源/数据：另一端没有的源往往只是
+      // 该端没装，直接整目录删除会把本机的源连同登录数据一起清掉
+      Directory(FilePath.join(App.dataPath, "anime_source")).createSync(
+        recursive: true,
+      );
       for (var file in Directory(animeSourceDir).listSync()) {
         if (file is File) {
           var targetFile = FilePath.join(
@@ -718,10 +902,10 @@ Future<void> _applyImportedData(String cacheDirPath) async {
     var pluginsDir = FilePath.join(cacheDirPath, mePluginsDirName);
     if (Directory(pluginsDir).existsSync()) {
       DebugLog.info('importAppData', '开始导入mePlugins');
-      Directory(
-        FilePath.join(App.dataPath, mePluginsDirName),
-      ).deleteIfExistsSync(recursive: true);
-      Directory(FilePath.join(App.dataPath, mePluginsDirName)).createSync();
+      // 同 animeSource：只覆盖同名文件，保留本机独有的插件与登录数据
+      Directory(FilePath.join(App.dataPath, mePluginsDirName)).createSync(
+        recursive: true,
+      );
       for (var file in Directory(pluginsDir).listSync()) {
         if (file is File) {
           var targetFile = FilePath.join(
@@ -767,11 +951,16 @@ Future<void> _applyImportedData(String cacheDirPath) async {
         }
       }
     }
+    // 上面这些目录都可能是从这里导入的，全部重新加载，避免界面/逻辑仍用旧缓存
     await CharacterCardStore.instance.reload();
     await StoryStore.instance.reload();
     await StorySessionStore.instance.reload();
     await PromptInjectionStore.instance.reload();
     await WorldBookStore.instance.reload();
+    await GroupChatStore.instance.reload();
+    await SettingLibraryStore.instance.reload();
+    await StoryCharacterStore.instance.reload();
+    await AiSkillStore.instance.reload();
 }
 
 /// 导入单个部分（分部分同步）

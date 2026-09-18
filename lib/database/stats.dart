@@ -600,6 +600,15 @@ class StatsManager with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 把 WAL 里的改动写回主库文件（导出整库副本前调用）
+  Future<void> checkpoint() async {
+    try {
+      await _guard(
+        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+      );
+    } catch (_) {}
+  }
+
   /// 通知“按天事件”缓存失效（外部直接改库后可调用）
   void invalidateEventMapCache() {
   }
@@ -761,13 +770,21 @@ class StatsManager with ChangeNotifier {
     return row != null ? StatsDataImpl.fromDrift(row) : null;
   });
 
-  Future<List<StatsDataImpl>> getStatsAll() => _guard(() async {
+  /// 全部统计记录，不做「仅已安装源」过滤。
+  /// 同步导出/合并必须用它：否则已卸载源的记录会被当成「本地没有」，
+  /// 合并时整条覆盖，丢掉本机已有的按天统计。
+  Future<List<StatsDataImpl>> getStatsAllRaw() => _guard(() async {
     final rows = await _db.select(_db.statsTable).get();
     final all = <StatsDataImpl>[];
     for (var i = 0; i < rows.length; i++) {
       all.add(StatsDataImpl.fromDrift(rows[i]));
       if (i % 50 == 0) await Future.delayed(Duration.zero);
     }
+    return all;
+  });
+
+  Future<List<StatsDataImpl>> getStatsAll() async {
+    final all = await getStatsAllRaw();
 
     final bangumiType = AnimeType.fromKey('bangumi').value;
 
@@ -791,7 +808,7 @@ class StatsManager with ChangeNotifier {
               (selectorList.contains(s.type) && existingTypes.contains(s.type)),
         )
         .toList();
-  });
+  }
 
   /// 合并两个 DailyEvent 列表：按日期分组，同日期合并 platformEventRecords 并去重，
   /// 不同日期都保留。返回按日期升序的结果。
@@ -827,7 +844,8 @@ class StatsManager with ChangeNotifier {
   /// 用于 WebDAV 多端同步。
   Future<void> mergeStatsList(List<StatsDataImpl> remote) async {
     if (remote.isEmpty) return;
-    final local = await getStatsAll();
+    // 用未过滤的全量记录做本地映射：已卸载源的记录同样参与合并
+    final local = await getStatsAllRaw();
     final localMap = {for (final s in local) '${s.id}\u0000${s.type}': s};
 
     for (final r in remote) {

@@ -740,6 +740,15 @@ class HistoryManager with ChangeNotifier {
     isInitialized = false;
   }
 
+  /// 把 WAL 里的改动写回主库文件（导出整库副本前调用）
+  Future<void> checkpoint() async {
+    try {
+      await _guard(
+        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+      );
+    } catch (_) {}
+  }
+
   Future<void> reinit([Future<void> Function()? between]) async {
     await _waitIdle();
     if (isInitialized) {

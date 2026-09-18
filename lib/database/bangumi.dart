@@ -726,6 +726,59 @@ class BangumiManager with ChangeNotifier {
         .map((rows) => rows.map(_bindingRowToItem).toList());
   }
 
+  /// 全部绑定条目（跨端同步导出用）
+  Future<List<BangumiBindingTableData>> getAllBindings() {
+    return _guard(() => _db.select(_db.bangumiBindingTable).get());
+  }
+
+  /// 跨端合并绑定条目：本地没有的补齐；本地已有则保留本地
+  /// （绑定是用户手动建立/删除的，没有更新时间列，纯增量合并最安全）。
+  Future<void> mergeBindings(List<BangumiBindingTableData> rows) {
+    return _guard(() async {
+      if (rows.isEmpty) return;
+      final local = await getAllBindings();
+      final localIds = local.map((r) => r.id).toSet();
+      final toWrite = rows.where((r) => !localIds.contains(r.id)).toList();
+      if (toWrite.isEmpty) return;
+      await _db.batch((batch) {
+        for (final r in toWrite) {
+          batch.insert(
+            _db.bangumiBindingTable,
+            BangumiBindingTableCompanion(
+              id: Value(r.id),
+              type: Value(r.type),
+              name: Value(r.name),
+              nameCn: Value(r.nameCn),
+              summary: Value(r.summary),
+              airDate: Value(r.airDate),
+              airWeekday: Value(r.airWeekday),
+              total: Value(r.total),
+              totalEpisodes: Value(r.totalEpisodes),
+              count: Value(r.count),
+              score: Value(r.score),
+              rank: Value(r.rank),
+              images: Value(r.images),
+              collection: Value(r.collection),
+              tags: Value(r.tags),
+              alias: Value(r.alias),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
+      });
+      notifyListeners();
+    });
+  }
+
+  /// 把 WAL 里的改动写回主库文件（导出整库前调用）
+  Future<void> checkpoint() async {
+    try {
+      await _guard(
+        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+      );
+    } catch (_) {}
+  }
+
   // ─── bangumi_AllEpInfo ─────────────────────
 
   Future<void> addBangumiAllEpInfo(int bangumiId, dynamic data) {

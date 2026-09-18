@@ -701,6 +701,27 @@ class AssistantProfileStore extends ChangeNotifier {
     }
   }
 
+  /// 导出全部助手档案（跨端同步用）
+  List<Map<String, dynamic>> exportMergeData() =>
+      [for (final p in _profiles) p.toJson()];
+
+  /// 合并同步来的助手档案：本机没有的 id 直接补充，已有的保留本机版本
+  /// （档案没有更新时间列，纯增量合并最安全；当前选中档案仍由本机决定）
+  Future<void> mergeData(List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return;
+    if (!isInitialized) await init();
+    var changed = false;
+    for (final m in rows) {
+      final p = AssistantProfile.fromJson(m);
+      if (p.id.isEmpty || _find(p.id) != null) continue;
+      _profiles.add(p);
+      changed = true;
+    }
+    if (!changed) return;
+    await _save();
+    notifyListeners();
+  }
+
   Future<void> setActive(String id) async {
     if (_find(id) == null) return;
     _activeId = id;
@@ -889,6 +910,31 @@ class AssistantMemoryStore extends ChangeNotifier {
 
   Future<void> clear(String profileId) async {
     await _save(profileId, const []);
+  }
+
+  /// 导出全部长期记忆（跨端同步用）
+  Map<String, List<String>> exportMergeData() => {
+    for (final e in _cache.entries) e.key: List.of(e.value),
+  };
+
+  /// 合并同步来的长期记忆：按档案 id 取并集，重复条目只保留一条
+  Future<void> mergeData(Map<String, dynamic> data) async {
+    var changed = false;
+    for (final entry in data.entries) {
+      final incoming = entry.value is List
+          ? (entry.value as List).whereType<String>().toList()
+          : const <String>[];
+      if (incoming.isEmpty) continue;
+      final current = await entriesFor(entry.key);
+      final merged = List.of(current);
+      for (final e in incoming) {
+        if (!merged.contains(e)) merged.add(e);
+      }
+      if (merged.length == current.length) continue;
+      await _save(entry.key, merged);
+      changed = true;
+    }
+    if (changed) notifyListeners();
   }
 }
 

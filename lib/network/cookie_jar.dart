@@ -275,6 +275,72 @@ class CookieJarSql {
     await _withDb(() => _db.delete(_db.cookiesTable).go());
   }
 
+  /// 全部 Cookie（跨端同步导出用）
+  Future<List<CookiesTableData>> allRows() =>
+      _withDb(() => _db.select(_db.cookiesTable).get());
+
+  /// 把 WAL 里的改动写回主库文件（导出整库前调用）
+  Future<void> checkpoint() async {
+    try {
+      await _withDb(
+        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+      );
+    } catch (_) {}
+  }
+
+  /// 跨端合并 Cookie：
+  /// - 本机没有的同名（name+domain+path）Cookie 直接补齐；
+  /// - 双方都有时取过期时间更晚的一条（会话 Cookie 或无法比较时保留本机），
+  ///   避免用另一端的旧登录态覆盖本机；
+  /// - `cf_clearance` 与设备/IP 绑定，本机已有就保留本机。
+  Future<void> mergeCookies(List<CookiesTableData> rows) async {
+    if (rows.isEmpty) return;
+    final localRows = await _withDb(() => _db.select(_db.cookiesTable).get());
+    final local = <String, CookiesTableData>{
+      for (final r in localRows) _cookieKey(r.name, r.domain, r.path): r,
+    };
+
+    final toWrite = <CookiesTableData>[];
+    for (final r in rows) {
+      final l = local[_cookieKey(r.name, r.domain, r.path)];
+      if (l == null) {
+        toWrite.add(r);
+        continue;
+      }
+      if (r.name == 'cf_clearance') continue;
+      final remoteExpires = r.expires;
+      final localExpires = l.expires;
+      if (remoteExpires != null &&
+          (localExpires == null || remoteExpires > localExpires)) {
+        toWrite.add(r);
+      }
+    }
+    if (toWrite.isEmpty) return;
+
+    await _withDb(
+      () => _db.batch((batch) {
+        for (final r in toWrite) {
+          batch.insert(
+            _db.cookiesTable,
+            CookiesTableCompanion(
+              name: Value(r.name),
+              value: Value(r.value),
+              domain: Value(r.domain),
+              path: Value(r.path),
+              expires: Value(r.expires),
+              secure: Value(r.secure),
+              httpOnly: Value(r.httpOnly),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
+      }),
+    );
+  }
+
+  static String _cookieKey(String name, String domain, String? path) =>
+      '$name\u0000$domain\u0000$path';
+
   /// 关闭连接（数据导入替换 cookie.db 之前调用），完成后用 [reopen] 打开
   Future<void> close() async {
     final pending = _reopening;
