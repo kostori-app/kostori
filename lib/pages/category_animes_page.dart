@@ -197,6 +197,8 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
       if (optionList.options.length <= 8) {
         children.add(
           CapsuleOptions(
+            // 筛选项靠左（同页的「简洁/详细/瀑布流/海报」布局条保持居中）
+            alignment: WrapAlignment.start,
             children: [
               for (var option in optionList.options.entries)
                 buildOptionItem(option.value.tl, option.key, group, context),
