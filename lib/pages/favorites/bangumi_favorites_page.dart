@@ -300,7 +300,9 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
     super.build(context);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: Appbar(
+        // 该页原有顶栏无标题（仅返回入口 + 刷新 + 底部胶囊 Tab）
+        title: const SizedBox.shrink(),
         leading: Tooltip(
           message: t.folders,
           child: context.width <= _kTwoPanelChangeWidth

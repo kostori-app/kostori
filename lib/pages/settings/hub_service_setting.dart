@@ -1716,7 +1716,7 @@ class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(t.webAdminDashboard)),
+      appBar: Appbar(title: Text(t.webAdminDashboard)),
       body: CustomScrollView(
         slivers: [
           _BuildSectionPadding(
