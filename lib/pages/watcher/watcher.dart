@@ -69,6 +69,14 @@ abstract class WatcherPlayer {
   /// 加载指定线路的某一集
   Future<void> loadInfo(int episodeIndex, int road);
 
+  /// 播放已下载的本地文件：仍复用当前播放器与选集/进度逻辑，
+  /// 只是媒体源换成本地文件（不再向源解析地址，离线也能播）。
+  Future<void> loadLocalFile(
+    String path, {
+    required int episodeIndex,
+    required int road,
+  });
+
   /// 重载当前集视频链接（绕过同集重复加载检查，重新解析地址）
   Future<void> reloadCurrent();
 
@@ -345,6 +353,19 @@ class _WatcherState extends State<Watcher>
     await _loadEpisode(episodeIndex: episodeIndex, road: road);
   }
 
+  @override
+  Future<void> loadLocalFile(
+    String path, {
+    required int episodeIndex,
+    required int road,
+  }) async {
+    await _loadEpisode(
+      episodeIndex: episodeIndex,
+      road: road,
+      localPath: path,
+    );
+  }
+
   /// 重载当前集：绕过「同集重复加载」检查，强制重新解析视频链接
   @override
   Future<void> reloadCurrent() async {
@@ -364,6 +385,7 @@ class _WatcherState extends State<Watcher>
   Future<void> _loadEpisode({
     required int episodeIndex,
     required int road,
+    String? localPath,
   }) async {
     // 一起看成员：禁止手动切换集数，只能跟随房主（房主同步会临时解锁放行）
     if (playerController.syncLocked) return;
@@ -375,7 +397,10 @@ class _WatcherState extends State<Watcher>
       App.rootContext.showMessage(message: t.watcherRouteNotFound);
       return;
     }
-    if (episodeIndex == loaded && road == playerController.currentRoad) {
+    // 同一集已在播放：本地文件与当前播放源不同时不拦截（可切到本地文件播放）
+    if (episodeIndex == loaded &&
+        road == playerController.currentRoad &&
+        (localPath == null || playerController.playUrl == localPath)) {
       App.rootContext.showMessage(message: t.watcherDuplicateEpisode);
       return;
     }
@@ -426,47 +451,57 @@ class _WatcherState extends State<Watcher>
 
       time = progressFind.progressInMilli;
 
-      // 步骤0：解析视频地址
+      // 步骤0：解析视频地址；已下载的本地文件直接用本地路径（离线可播）
       playerController.loadingStep = 0;
-      playerController.isParsing = true;
+      playerController.isParsing = localPath == null;
 
-      final res = await type.animeSource!.loadAnimePages!(
-        anime.id,
-        _episodeKey(road, epIndex),
-      );
-
-      // 已切走或播放器已退出：丢弃过期结果，不再初始化播放器
-      if (gen != _loadGen || !mounted) return;
-
-      // 兼容：源可返回 String（纯 URL）或结构化对象（AnimePlayResult）
-      final (playUrl, playResult) = _parsePlayResult(res);
-      if (playUrl.isEmpty) {
-        playerController.isParsing = false;
-        PlayLog.error("加载剧集", "$res 不合法");
-        App.rootContext.showMessage(
-          message: t.fetchVideoUrlError(detail: res),
-          level: LogLevel.error,
+      String playUrl;
+      AnimePlayResult? playResult;
+      if (localPath != null) {
+        playUrl = localPath;
+      } else {
+        final res = await type.animeSource!.loadAnimePages!(
+          anime.id,
+          _episodeKey(road, epIndex),
         );
-        return;
+
+        // 已切走或播放器已退出：丢弃过期结果，不再初始化播放器
+        if (gen != _loadGen || !mounted) return;
+
+        // 兼容：源可返回 String（纯 URL）或结构化对象（AnimePlayResult）
+        (playUrl, playResult) = _parsePlayResult(res);
+        if (playUrl.isEmpty) {
+          playerController.isParsing = false;
+          PlayLog.error("加载剧集", "$res 不合法");
+          App.rootContext.showMessage(
+            message: t.fetchVideoUrlError(detail: res),
+            level: LogLevel.error,
+          );
+          return;
+        }
+
+        // 结构化结果优先提供播放请求头（如 emby 鉴权）
+        final prHeaders = playResult?.headers;
+        if (prHeaders != null && prHeaders.isNotEmpty) {
+          headers = prHeaders;
+        }
       }
 
       // 步骤1：地址就绪，初始化播放器
       playerController.isParsing = false;
       playerController.loadingStep = 1;
-      // 结构化结果优先提供播放请求头（如 emby 鉴权）
-      final prHeaders = playResult?.headers;
-      if (prHeaders != null && prHeaders.isNotEmpty) {
-        headers = prHeaders;
-      }
       playerController.playResult = playResult;
 
-      await _play(playUrl, time);
+      await _play(playUrl, time, local: localPath != null);
 
       // 播放器已退出：后续状态写入无意义
       if (!mounted) return;
 
-      // 源提供播放进度上报接口时开始同步（emby/jellyfin 历史）
-      _startPlaybackReporting(playUrl, playResult);
+      // 源提供播放进度上报接口时开始同步（emby/jellyfin 历史）；
+      // 本地文件没有源侧会话，不需要上报
+      if (playResult != null) {
+        _startPlaybackReporting(playUrl, playResult);
+      }
 
       playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
@@ -490,7 +525,13 @@ class _WatcherState extends State<Watcher>
   }
 
   /// 打开媒体并等待缓冲就绪，然后启动历史/进度定时上报
-  Future<void> _play(String res, int currentPlaybackTime) async {
+  ///
+  /// [local] 为 true 时 [res] 是本地文件路径：不组装请求头、不过代理/广告过滤。
+  Future<void> _play(
+    String res,
+    int currentPlaybackTime, {
+    bool local = false,
+  }) async {
     playerController.loadFailed = false;
     try {
       if (!mounted) return;
@@ -498,18 +539,20 @@ class _WatcherState extends State<Watcher>
       // 先组装请求头（源 httpHeaders + cookie），再决定是否走代理：
       // 走代理时这些头要交给代理使用，播放器只访问本地代理地址
       Map<String, String>? playHeaders;
-      if (headers != null) {
+      if (!local && headers != null) {
         playHeaders = Map<String, String>.from(headers!);
         final cookieHeader = await _cookieHeaderFor(res);
         if (cookieHeader.isNotEmpty) playHeaders['Cookie'] = cookieHeader;
       }
 
-      final actualPlayUrl = await _resolvePlayUrl(res, playHeaders);
+      final actualPlayUrl = local
+          ? res
+          : await _resolvePlayUrl(res, playHeaders);
       final isDirect = actualPlayUrl == res;
 
       playerController.playUrl = actualPlayUrl;
       // 直链：头由播放器带；走代理：头交给代理
-      playerController.videoHeaders = isDirect ? playHeaders : null;
+      playerController.videoHeaders = isDirect && !local ? playHeaders : null;
       PlayLog.info('_play', '播放地址: $actualPlayUrl\n请求头: $playHeaders');
 
       // 步骤2：加载媒体数据
@@ -518,7 +561,7 @@ class _WatcherState extends State<Watcher>
       await playerController.player.open(
         Media(
           actualPlayUrl,
-          httpHeaders: isDirect ? (playHeaders ?? const {}) : const {},
+          httpHeaders: isDirect && !local ? (playHeaders ?? const {}) : const {},
         ),
       );
     } catch (e, s) {

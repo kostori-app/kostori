@@ -33,12 +33,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     if (mounted) setState(() => _downloaded = loaded);
   }
 
-  /// 播放已下载的本地文件
-  void _playLocal(String path) {
-    App.mainNavigatorKey?.currentContext?.to(
-      () => LocalPlayerPage(filePath: path),
-    );
-  }
+
 
   /// 系列模式：源无分集，加载与剧集平行的系列列表（复用 Anime 结构）
   List<Anime>? _series;
@@ -163,19 +158,23 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                   '${items[i].id}|${items[i].title}',
                 ),
                 onTap: () async {
-                  // 已下载且文件仍在：优先播放本地文件
+                  // 播放用原始列表索引，排序不影响播放逻辑
+                  final originalIndex = series.indexOf(items[i]);
+                  // 已下载且文件仍在：用当前播放器播本地文件（离线可播）
                   final localPath =
                       _downloaded['${items[i].id}|${items[i].title}'];
                   if (localPath != null) {
-                    _playLocal(localPath);
-                    return;
+                    await state.playerController.playLocalFile(
+                      localPath,
+                      index: originalIndex + 1,
+                      road: 0,
+                    );
+                  } else {
+                    await state.playerController.playEpisode(
+                      originalIndex + 1,
+                      0,
+                    );
                   }
-                  // 播放用原始列表索引，排序不影响播放逻辑
-                  final originalIndex = series.indexOf(items[i]);
-                  await state.playerController.playEpisode(
-                    originalIndex + 1,
-                    0,
-                  );
                   // 系列条目互相独立：点击时同页切换详情信息为该条目
                   await state._switchToSeriesEntry(items[i]);
                   if (mounted) setState(() {});
@@ -212,15 +211,18 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
-            // 已下载且文件仍在：优先播放本地文件
+            final idx = _series!.indexWhere((a) => a.id == entry.id);
+            if (idx < 0) return;
+            // 已下载且文件仍在：用当前播放器播本地文件（不再跳本地播放器页）
             if (localPath != null) {
-              _playLocal(localPath);
+              state.playerController.playLocalFile(
+                localPath,
+                index: idx + 1,
+                road: 0,
+              );
               return;
             }
-            final idx = _series!.indexWhere((a) => a.id == entry.id);
-            if (idx >= 0) {
-              state.playerController.playEpisode(idx + 1, 0);
-            }
+            state.playerController.playEpisode(idx + 1, 0);
           },
           child: Padding(
             padding: const EdgeInsets.all(10),
@@ -533,15 +535,20 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                               ),
                               child: InkWell(
                                 onTap: () async {
-                                  // 已下载且文件仍在：优先播放本地文件
+                                  // 已下载且文件仍在：用当前播放器播本地文件
+                                  // （离线可播，不再跳去独立的本地播放器页）
                                   if (localPath != null) {
-                                    _playLocal(localPath);
-                                    return;
+                                    await state.playerController.playLocalFile(
+                                      localPath,
+                                      index: index + 1,
+                                      road: playList,
+                                    );
+                                  } else {
+                                    await state.playerController.playEpisode(
+                                      index + 1,
+                                      playList,
+                                    );
                                   }
-                                  await state.playerController.playEpisode(
-                                    index + 1,
-                                    playList,
-                                  );
                                   if (mounted) setState(() {});
                                 },
                                 onLongPress: () {

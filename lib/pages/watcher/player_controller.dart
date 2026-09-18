@@ -418,6 +418,17 @@ abstract class _PlayerController with Store {
   Future<void> playEpisode(int index, int road) =>
       WatcherPlayer.currentState!.loadInfo(index, road);
 
+  /// 在当前播放器里播放已下载的本地文件（保持选集/进度逻辑，离线可播）
+  Future<void> playLocalFile(
+    String path, {
+    required int index,
+    required int road,
+  }) => WatcherPlayer.currentState!.loadLocalFile(
+    path,
+    episodeIndex: index,
+    road: road,
+  );
+
   /// 重载当前集视频链接（重新解析地址）
   Future<void> reloadCurrent() => WatcherPlayer.currentState!.reloadCurrent();
 
