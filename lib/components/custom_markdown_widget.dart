@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
@@ -159,9 +160,9 @@ class CustomMarkdownWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: widgets,
       );
-      markdown = selectable ? SelectionArea(child: column) : column;
+      markdown = selectable ? AppSelectionArea(child: column) : column;
     } catch (_) {
-      markdown = SelectionArea(
+      markdown = AppSelectionArea(
         child: SelectableText(
           data,
           style: TextStyle(color: textColor, fontSize: 14, height: 1.6),

@@ -476,7 +476,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
     }
     flushInline();
 
-    return SelectionArea(
+    return AppSelectionArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children,

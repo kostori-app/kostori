@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/utils/utils.dart';
@@ -65,7 +66,7 @@ class CommentsCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    return SelectionArea(
+    return AppSelectionArea(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(

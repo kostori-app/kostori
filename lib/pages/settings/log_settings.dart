@@ -481,7 +481,7 @@ class _LogsPageState extends State<LogsPage> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
-                      child: SelectionArea(
+                      child: AppSelectionArea(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -630,7 +630,7 @@ class _LogDetailPage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        child: SelectionArea(
+        child: AppSelectionArea(
           child: Text(
             _prettyLogContentCached(log),
             style: TextStyle(

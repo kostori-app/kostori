@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -57,7 +58,7 @@ class EpisodeCommentsCard extends StatelessWidget {
 
     final id = commentItem!.comment.user.id;
 
-    return SelectionArea(
+    return AppSelectionArea(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(

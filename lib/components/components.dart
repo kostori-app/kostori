@@ -51,6 +51,7 @@ import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/remote_control_page.dart';
+import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
@@ -99,6 +100,8 @@ part 'select.dart';
 part 'select_card.dart';
 
 part 'favorite_dialog.dart';
+
+part 'selection_menu.dart';
 part 'assistant_avatar.dart';
 
 part 'sheet.dart';
