@@ -1242,11 +1242,16 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       drawer: _buildSideDrawer(context),
       drawerEnableOpenDragGesture: true,
       appBar: Appbar(
+        // 返回按钮与项目 Appbar 默认样式保持一致（arrow_back_ios_new）
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            BackButton(
-              onPressed: () => Navigator.of(context).maybePop(),
+            Tooltip(
+              message: t.back,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
             ),
             IconButton(
               tooltip: t.more,
@@ -1279,7 +1284,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.edit, size: 14),
+                        Tooltip(
+                          message: t.rename,
+                          child: const Icon(Icons.edit, size: 14),
+                        ),
                       ],
                     ),
                   );
