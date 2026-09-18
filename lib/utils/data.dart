@@ -95,6 +95,7 @@ Future<File> exportAppData() async {
   var historyMergeFile = FilePath.join(App.cachePath, 'history_merge.json');
   var pluginHistoryMergeFile = FilePath.join(App.cachePath, 'plugin_history_merge.json');
   var textRulesMergeFile = FilePath.join(App.cachePath, 'text_rules_merge.json');
+  var progressMergeFile = FilePath.join(App.cachePath, 'progress_merge.json');
   var favoritesMergeFile = FilePath.join(App.cachePath, 'favorites_merge.json');
   var statsMergeFile = FilePath.join(App.cachePath, 'stats_merge.json');
   try {
@@ -124,6 +125,15 @@ Future<File> exportAppData() async {
     await File(textRulesMergeFile).writeAsString(jsonStr);
   } catch (e) {
     DebugLog.error('exportAppData', 'text_rules_merge.json 导出失败：$e');
+  }
+  try {
+    final progress = await HistoryManager().getAllProgress();
+    final jsonStr = await Isolate.run(() {
+      return jsonEncode(progress.map((p) => p.toJson()).toList());
+    });
+    await File(progressMergeFile).writeAsString(jsonStr);
+  } catch (e) {
+    DebugLog.error('exportAppData', 'progress_merge.json 导出失败：$e');
   }
   try {
     final favorites = LocalFavoritesManager().getAllFavoriteMergeMaps();
@@ -176,6 +186,10 @@ Future<File> exportAppData() async {
     final trmf = File(textRulesMergeFile);
     if (trmf.existsSync()) {
       zipFile.addFile("text_rules_merge.json", textRulesMergeFile);
+    }
+    final pmf = File(progressMergeFile);
+    if (pmf.existsSync()) {
+      zipFile.addFile("progress_merge.json", progressMergeFile);
     }
     final fmf = File(favoritesMergeFile);
     if (fmf.existsSync()) {
@@ -279,6 +293,11 @@ Future<void> _writeMergeFilesFor(String key) async {
       FilePath.join(App.cachePath, 'text_rules_merge.json'),
       await HistoryManager().getTextRules(),
     );
+    // 观看进度（progress 表）：整库覆盖时不会生效（合并优先），单独导出合并
+    await write(
+      FilePath.join(App.cachePath, 'progress_merge.json'),
+      (await HistoryManager().getAllProgress()).map((p) => p.toJson()).toList(),
+    );
   } else if (key == 'favorites') {
     await write(
       FilePath.join(App.cachePath, 'favorites_merge.json'),
@@ -335,6 +354,10 @@ List<(String, String)> _partEntries(String key) {
     add(
       'text_rules_merge.json',
       FilePath.join(App.cachePath, 'text_rules_merge.json'),
+    );
+    add(
+      'progress_merge.json',
+      FilePath.join(App.cachePath, 'progress_merge.json'),
     );
   } else if (key == 'favorites') {
     add('local_favorite.db', FilePath.join(dp, 'local_favorite.db'));
@@ -505,6 +528,26 @@ Future<void> _applyImportedData(String cacheDirPath) async {
         }
       } catch (e) {
         DebugLog.error('importAppData', 'text_rules 字段级合并失败：$e');
+      }
+    }
+    // 观看进度字段级合并（history.db 的 progress 表）：放在历史合并之后，
+    // 保证远端新增的历史条目先就位
+    final progressMergeFile = cacheDir.joinFile("progress_merge.json");
+    if (await progressMergeFile.exists()) {
+      try {
+        final list = jsonDecode(await progressMergeFile.readAsString());
+        if (list is List) {
+          HistoryWriteService.pause();
+          await HistoryManager().mergeProgressList(
+            list
+                .whereType<Map>()
+                .map((m) => Progress.fromJson(Map<String, dynamic>.from(m)))
+                .toList(),
+          );
+          HistoryWriteService.resume();
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'progress 字段级合并失败：$e');
       }
     }
     if (!mergedHistory && await historyFile.exists()) {

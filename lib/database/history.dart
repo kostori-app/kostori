@@ -343,6 +343,58 @@ class Progress {
       startTime = r.startTime != null ? DateTime.tryParse(r.startTime!) : null,
       endTime = r.endTime != null ? DateTime.tryParse(r.endTime!) : null;
 
+  Progress({
+    required this.historyId,
+    required this.type,
+    required this.episode,
+    required this.road,
+    required this.progressInMilli,
+    this.isCompleted = false,
+    this.startTime,
+    this.endTime,
+  });
+
+  /// 跨端同步用序列化（见 `utils/data.dart` 的 progress_merge.json）
+  Map<String, dynamic> toJson() => {
+    'historyId': historyId,
+    'type': type.value,
+    'episode': episode,
+    'road': road,
+    'progressInMilli': progressInMilli,
+    'isCompleted': isCompleted,
+    'startTime': startTime?.toIso8601String(),
+    'endTime': endTime?.toIso8601String(),
+  };
+
+  static Progress fromJson(Map<String, dynamic> json) => Progress(
+    historyId: json['historyId']?.toString() ?? '',
+    type: HistoryType((json['type'] as num?)?.toInt() ?? 0),
+    episode: (json['episode'] as num?)?.toInt() ?? 0,
+    road: (json['road'] as num?)?.toInt() ?? 0,
+    progressInMilli: (json['progressInMilli'] as num?)?.toInt() ?? 0,
+    isCompleted: json['isCompleted'] == true,
+    startTime: DateTime.tryParse(json['startTime']?.toString() ?? ''),
+    endTime: DateTime.tryParse(json['endTime']?.toString() ?? ''),
+  );
+
+  /// 同一条进度（type + historyId + episode + road）的唯一键
+  String get key => '${type.value}|$historyId|$episode|$road';
+
+  /// 是否比 [other] 更新：结束时间更晚优先，都没有结束时间时比较观看进度
+  bool isNewerThan(Progress other) {
+    final end = endTime;
+    final otherEnd = other.endTime;
+    if (end != null && otherEnd != null) {
+      final c = end.compareTo(otherEnd);
+      if (c != 0) return c > 0;
+    } else if (end != null) {
+      return true;
+    } else if (otherEnd != null) {
+      return false;
+    }
+    return progressInMilli > other.progressInMilli;
+  }
+
   @override
   String toString() =>
       'Progress{type: $type, historyId: $historyId, episode: $episode, road: $road, '
@@ -912,6 +964,71 @@ class HistoryManager with ChangeNotifier {
     });
     // 合并后统一刷新缓存并通知一次
     await _updateCache();
+    notifyListeners();
+  });
+
+  /// 全部观看进度（跨端同步导出用）
+  Future<List<Progress>> getAllProgress() => _guard(() async {
+    final rows = await _db.select(_db.progressTable).get();
+    return rows.map(Progress.fromDrift).toList();
+  });
+
+  /// 字段级合并观看进度：同一条（type/historyId/episode/road）取「结束时间更晚、
+  /// 否则观看进度更大」的一条，`isCompleted` 取两端或。
+  ///
+  /// 用于跨端同步：只做增量合并，不删除本地条目（历史被删时的进度清理由
+  /// [mergeHistoryList] 级联完成）。
+  Future<void> mergeProgressList(List<Progress> remote) => _guard(() async {
+    if (remote.isEmpty) return;
+    final localRows = await _db.select(_db.progressTable).get();
+    final localMap = <String, Progress>{};
+    for (final row in localRows) {
+      final p = Progress.fromDrift(row);
+      localMap[p.key] = p;
+    }
+
+    final toWrite = <Progress>[];
+    for (final r in remote) {
+      final local = localMap[r.key];
+      if (local == null) {
+        toWrite.add(r);
+        continue;
+      }
+      final winner = r.isNewerThan(local) ? r : local;
+      toWrite.add(
+        Progress(
+          historyId: winner.historyId,
+          type: winner.type,
+          episode: winner.episode,
+          road: winner.road,
+          progressInMilli: winner.progressInMilli,
+          // 任一端标记看完即视为看完，避免回退成未完成
+          isCompleted: local.isCompleted || r.isCompleted,
+          startTime: winner.startTime,
+          endTime: winner.endTime,
+        ),
+      );
+    }
+    if (toWrite.isEmpty) return;
+
+    await _db.batch((batch) {
+      for (final p in toWrite) {
+        batch.insert(
+          _db.progressTable,
+          ProgressTableCompanion(
+            type: Value(p.type.value),
+            historyId: Value(p.historyId),
+            episode: Value(p.episode),
+            road: Value(p.road),
+            progressInMilli: Value(p.progressInMilli),
+            isCompleted: Value(p.isCompleted),
+            startTime: Value(p.startTime?.toIso8601String()),
+            endTime: Value(p.endTime?.toIso8601String()),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
     notifyListeners();
   });
 }
