@@ -71,8 +71,28 @@ class CookieJarSql {
   late _CookieDb _db;
   final String path;
 
+  /// 正在进行中的重开（并发触发时共用一次，避免创建多个 drift 实例）
+  Future<void>? _reopening;
+
   CookieJarSql(this.path) {
     _db = _CookieDb(path);
+  }
+
+  /// 重开数据库连接：先关旧连接再建新连接。
+  /// （drift 对同一数据库类的多个存活实例会告警，多实例还有损坏风险）
+  Future<void> _reopen() {
+    final pending = _reopening;
+    if (pending != null) return pending;
+    final future = () async {
+      try {
+        await _db.close();
+      } catch (_) {}
+      _db = _CookieDb(path);
+    }();
+    _reopening = future;
+    return future.whenComplete(() {
+      if (identical(_reopening, future)) _reopening = null;
+    });
   }
 
   Future<T> _withDb<T>(Future<T> Function() op) async {
@@ -82,7 +102,7 @@ class CookieJarSql {
       final msg = e.toString();
       if (msg.contains('connection was closed') ||
           msg.contains("Can't re-open a database")) {
-        _db = _CookieDb(path);
+        await _reopen();
         return await op();
       }
       rethrow;
@@ -255,9 +275,19 @@ class CookieJarSql {
     await _withDb(() => _db.delete(_db.cookiesTable).go());
   }
 
-  Future<void> dispose() async {
+  /// 关闭连接（数据导入替换 cookie.db 之前调用），完成后用 [reopen] 打开
+  Future<void> close() async {
+    final pending = _reopening;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {}
+    }
     await _db.close();
   }
+
+  /// 重新打开连接（与 [close] 配对；复用同一实例，避免多实例竞态）
+  Future<void> reopen() => _reopen();
 }
 
 // ═══════════════════════════════════════════════════════════

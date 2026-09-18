@@ -586,12 +586,16 @@ Future<void> _applyImportedData(String cacheDirPath) async {
     }
     if (await cookieFile.exists()) {
       DebugLog.info('importAppData', '开始导入cookieFile');
-      await SingleInstanceCookieJar.instance?.dispose();
-      SingleInstanceCookieJar.instance = null;
+      // 关连接 → 替换文件 → 同一实例重新打开：
+      // 不新建实例，避免共用同一 db 文件时出现 drift 多实例告警/竞态
+      final jar = SingleInstanceCookieJar.instance;
+      await jar?.close();
       _atomicReplace(cookieFile.path, FilePath.join(App.dataPath, "cookie.db"));
-      SingleInstanceCookieJar.instance = SingleInstanceCookieJar(
-        FilePath.join(App.dataPath, "cookie.db"),
-      );
+      if (jar != null) {
+        await jar.reopen();
+      } else {
+        await SingleInstanceCookieJar.createInstance();
+      }
     }
     var aiFile = cacheDir.joinFile("ai_database.db");
     if (await aiFile.exists()) {
