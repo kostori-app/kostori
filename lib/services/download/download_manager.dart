@@ -25,6 +25,42 @@ class _DownloadHttpError implements Exception {
   String toString() => 'HTTP $code';
 }
 
+/// 解析下载响应头，得到本次响应的起始偏移与文件完整大小。
+///
+/// - `start`：响应内容的起始字节偏移；无法确认时为 -1。
+/// - `total`：文件完整大小（206 取 `Content-Range` 的 `/total`）；
+///   未知时为 -1，此时无法校验下载是否完整。
+({int start, int total}) parseDownloadRange({
+  required int status,
+  required String? contentRange,
+  required int contentLength,
+}) {
+  if (status == 206 && contentRange != null) {
+    final match = RegExp(
+      r'bytes\s+(\d+)-(\d+)\s*/\s*(\d+|\*)',
+    ).firstMatch(contentRange);
+    if (match != null) {
+      return (
+        start: int.tryParse(match.group(1) ?? '') ?? -1,
+        total: int.tryParse(match.group(3) ?? '') ?? -1,
+      );
+    }
+  }
+  if (status == 200 && contentLength > 0) {
+    return (start: 0, total: contentLength);
+  }
+  return (start: -1, total: -1);
+}
+
+/// m3u8 播放列表是否被截断：VOD 列表按规范以 `#EXT-X-ENDLIST` 结尾，
+/// 缺少它说明响应体被提前断流（否则会漏掉尾部分片）。
+bool isTruncatedHlsPlaylist(String content) {
+  if (!RegExp(r'#EXT-X-PLAYLIST-TYPE:\s*VOD').hasMatch(content)) {
+    return false;
+  }
+  return !content.contains('#EXT-X-ENDLIST');
+}
+
 /// 视频下载管理器：任务队列 + 并发控制 + 进度通知 + 本地持久化。
 ///
 /// 下载走 FFmpeg（`FfmpegEncoder.download`），支持 mp4 直链与 m3u8/HLS，
@@ -536,10 +572,12 @@ class DownloadManager extends ChangeNotifier {
     final dio = AppDio();
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       if (cancelToken.isCancelled) throw FfmpegCancelledException();
-      final downloaded = await tmp.exists() ? await tmp.length() : 0;
+      var downloaded = await tmp.exists() ? await tmp.length() : 0;
       task.downloadedBytes = downloaded;
       var received = 0;
       var total = -1;
+      // 服务端给出的完整文件大小；-1 表示未知（无法校验完整性）
+      var expectedFull = -1;
       var interrupted = false;
       // 把 FfmpegCancelToken 的取消转发给 dio，及时中断正在进行的请求
       final dioCancel = CancelToken();
@@ -604,9 +642,36 @@ class DownloadManager extends ChangeNotifier {
         }
         final contentLength =
             int.tryParse(res.headers.value('content-length') ?? '') ?? -1;
+        // 服务端返回的断点区间与本地已下载字节不一致时，续传会让文件错位，
+        // 这里清空断点重新下载
+        final range = parseDownloadRange(
+          status: status,
+          contentRange: res.headers.value('content-range'),
+          contentLength: contentLength,
+        );
+        if (range.start > 0 && range.start != downloaded) {
+          await _deleteQuiet(tmp);
+          downloaded = 0;
+          task.downloadedBytes = 0;
+          if (attempt >= maxAttempts) {
+            throw Exception('下载失败：服务端断点范围异常，请重试');
+          }
+          await Future.delayed(Duration(seconds: attempt));
+          continue;
+        }
+        // 服务端忽略 Range 直接返回整段（200）：清空断点文件后重写，
+        // 否则会在旧内容后追加造成文件损坏
+        if (status == 200 && downloaded > 0) {
+          await _deleteQuiet(tmp);
+          downloaded = 0;
+          task.downloadedBytes = 0;
+        }
+        expectedFull = range.total > 0
+            ? range.total
+            : (status == 200 && contentLength > 0 ? contentLength : -1);
         total = contentLength;
-        if (downloaded == 0 && total >= 0) {
-          task.totalBytes = total;
+        if (expectedFull > 0) {
+          task.totalBytes = expectedFull;
         }
         final stream = res.data!.stream;
         final sink = tmp.openWrite(mode: FileMode.append);
@@ -646,6 +711,22 @@ class DownloadManager extends ChangeNotifier {
           continue;
         }
         if (cancelToken.isCancelled) throw FfmpegCancelledException();
+        // 流「正常结束」也可能是服务端/代理提前断流（不抛异常），
+        // 必须核对落盘字节数：残缺文件继续断点续传，不能当成下载完成
+        final written = await tmp.exists() ? await tmp.length() : 0;
+        task.downloadedBytes = written;
+        if (expectedFull > 0 && written < expectedFull) {
+          Log.warning(
+            'DownloadManager',
+            '下载不完整 ${task.title}: $written/$expectedFull，继续续传',
+          );
+          if (attempt >= maxAttempts) {
+            throw Exception('下载中断：文件不完整（$written/$expectedFull），请重试');
+          }
+          await Future.delayed(Duration(seconds: attempt));
+          continue;
+        }
+        if (written > 0) task.totalBytes = written;
         task.progress = 1;
         break;
       } on DioException catch (e) {
@@ -720,8 +801,23 @@ class DownloadManager extends ChangeNotifier {
                     extra: const {'httpVersion11': true},
                   ),
                 );
-                data = resp.data;
-                if (data != null && data.isNotEmpty) break;
+                final body = resp.data;
+                final expect =
+                    int.tryParse(
+                      resp.headers.value('content-length') ?? '',
+                    ) ??
+                    -1;
+                // dio 读取长度不足的响应体不会抛错，只能靠长度校验发现
+                // 被提前断流的分片，否则合并出的视频会在断点处卡住
+                if (body != null && body.isNotEmpty) {
+                  if (expect <= 0 || body.length >= expect) {
+                    data = body;
+                    break;
+                  }
+                  if (attempt >= 2) {
+                    throw Exception('分片 $i 不完整（${body.length}/$expect）');
+                  }
+                }
               } catch (e) {
                 if (attempt >= 2) rethrow;
               }
@@ -865,6 +961,11 @@ class DownloadManager extends ChangeNotifier {
         );
         content = v.data ?? '';
       }
+    }
+
+    // 播放列表被截断时不能直接按现有分片下载，否则合并出的视频中途截断
+    if (isTruncatedHlsPlaylist(content)) {
+      throw Exception('m3u8 播放列表下载中断（缺少 #EXT-X-ENDLIST），请重试');
     }
 
     final segBase = _baseOf(targetUrl);
