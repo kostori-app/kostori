@@ -266,13 +266,27 @@ class DownloadManager extends ChangeNotifier {
       effectiveHeaders['User-Agent'] =
           appdata.implicitData['ua'] as String? ?? _browserUA;
     }
-    // 附加 cookie jar 匹配该域名的 cookie，与播放端一致（否则校验会话的源会 403/410）
+    // 附加 cookie jar 的 cookie，与播放端一致（否则校验会话的源会 403/410）。
+    // 很多 CDN 只认主站下发的 cookie：按下载地址域名取不到时，
+    // 退回 Referer（源站）域名的 cookie —— 与播放端的 _cookieHeaderFor 同逻辑
     final dlUri = Uri.tryParse(url);
     if (dlUri != null && (dlUri.scheme == 'http' || dlUri.scheme == 'https')) {
       try {
-        final cookieHeader = await SingleInstanceCookieJar.instance
-            ?.loadForRequestCookieHeader(dlUri);
-        if (cookieHeader != null && cookieHeader.isNotEmpty) {
+        final jar = SingleInstanceCookieJar.instance;
+        var cookieHeader =
+            await jar?.loadForRequestCookieHeader(dlUri) ?? '';
+        if (cookieHeader.isEmpty) {
+          final referer =
+              effectiveHeaders['Referer'] ?? effectiveHeaders['referer'];
+          final refUri = referer == null ? null : Uri.tryParse(referer);
+          if (refUri != null &&
+              refUri.host.isNotEmpty &&
+              refUri.host != dlUri.host) {
+            cookieHeader =
+                await jar?.loadForRequestCookieHeader(refUri) ?? '';
+          }
+        }
+        if (cookieHeader.isNotEmpty) {
           effectiveHeaders['Cookie'] = cookieHeader;
         }
       } catch (_) {}
