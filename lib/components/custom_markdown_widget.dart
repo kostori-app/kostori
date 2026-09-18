@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:markdown_widget/config/configs.dart';
 import 'package:markdown_widget/config/markdown_generator.dart';
 import 'package:markdown_widget/widget/blocks/container/blockquote.dart';
+import 'package:markdown_widget/widget/blocks/container/list.dart';
 import 'package:markdown_widget/widget/blocks/container/table.dart';
 import 'package:markdown_widget/widget/blocks/leaf/code_block.dart';
 import 'package:markdown_widget/widget/blocks/leaf/heading.dart';
+import 'package:markdown_widget/widget/blocks/leaf/horizontal_rules.dart';
 import 'package:markdown_widget/widget/blocks/leaf/paragraph.dart';
 import 'package:markdown_widget/widget/inlines/code.dart';
 
@@ -40,15 +44,14 @@ class CustomMarkdownWidget extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textColor = isDark ? Colors.white : Colors.black87;
     final codeBackground = isDark ? Colors.white10 : Colors.grey[100]!;
-    final codeBorder = isDark ? Colors.white12 : Colors.grey[300]!;
     final tableBorderColor = isDark ? Colors.white24 : Colors.grey[300]!;
     final tableHeaderBg = isDark ? Colors.white10 : Colors.grey[100]!;
 
     final config = MarkdownConfig(
       configs: [
-        // 正文段落
+        // 正文段落：略小字号 + 紧凑行高，贴近常见 AI 客户端的排版
         PConfig(
-          textStyle: TextStyle(color: textColor, fontSize: 14, height: 1.6),
+          textStyle: TextStyle(color: textColor, fontSize: 15, height: 1.5),
         ),
 
         // 行内代码
@@ -56,56 +59,59 @@ class CustomMarkdownWidget extends StatelessWidget {
           style: TextStyle(
             color: colorScheme.primary,
             backgroundColor: codeBackground,
-            fontSize: 13,
+            fontSize: 13.5,
             fontFamily: 'monospace',
           ),
         ),
 
-        // 代码块
+        // 代码块：自带「语言 + 复制」头部（见 _codeBlockWrapper）
         PreConfig(
           textStyle: TextStyle(
             fontSize: 13,
-            color: isDark ? Colors.greenAccent[200] : Colors.teal[800],
+            height: 1.5,
+            color: textColor.toOpacity(0.92),
             fontFamily: 'monospace',
           ),
-          decoration: BoxDecoration(
-            color: codeBackground,
-            border: Border.all(color: codeBorder),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.all(12),
-          margin: const EdgeInsets.symmetric(vertical: 8),
+          // 主题跟随明暗，避免深色下用浅色主题导致颜色发灰发绿
+          theme: isDark ? PreConfig.darkConfig.theme : const PreConfig().theme,
+          decoration: const BoxDecoration(),
+          padding: EdgeInsets.zero,
+          margin: EdgeInsets.zero,
+          wrapper: (child, code, language) =>
+              _codeBlockWrapper(context, child, code, language),
         ),
 
-        // H1
+        // 标题：字号收敛一些，间距紧凑
         H1Config(
           style: TextStyle(
             color: textColor,
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            height: 1.4,
+            height: 1.35,
           ),
         ),
-
-        // H2
         H2Config(
           style: TextStyle(
             color: textColor,
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: FontWeight.bold,
-            height: 1.4,
+            height: 1.35,
           ),
         ),
-
-        // H3
         H3Config(
           style: TextStyle(
             color: textColor,
-            fontSize: 16,
+            fontSize: 15.5,
             fontWeight: FontWeight.w600,
-            height: 1.4,
+            height: 1.35,
           ),
         ),
+
+        // 水平分割线：细线 + 弱化颜色
+        HrConfig(height: 1, color: colorScheme.outlineVariant.toOpacity(0.6)),
+
+        // 列表：收紧左侧缩进与行间距（避免「松散列表」大间距）
+        ListConfig(marginLeft: 20, marginBottom: 2),
 
         // 引用块
         BlockquoteConfig(
@@ -125,8 +131,8 @@ class CustomMarkdownWidget extends StatelessWidget {
             height: 1.4,
           ),
           bodyStyle: TextStyle(color: textColor, fontSize: 13, height: 1.4),
-          headPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          bodyPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          headPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          bodyPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           wrapper: (child) => ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 0),
             child: SingleChildScrollView(
@@ -173,5 +179,65 @@ class CustomMarkdownWidget extends StatelessWidget {
     }
 
     return Padding(padding: padding, child: markdown);
+  }
+
+  /// 代码块外壳：顶部「语言 + 复制」栏 + 内容区，圆角卡片样式
+  Widget _codeBlockWrapper(
+    BuildContext context,
+    Widget child,
+    String code,
+    String language,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    final label = language.trim().isEmpty ? 'text' : language.trim();
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: cs.outlineVariant.toOpacity(0.5),
+          width: 0.6,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: t.copy,
+                visualDensity: VisualDensity.compact,
+                iconSize: 16,
+                color: cs.onSurfaceVariant,
+                icon: const Icon(Icons.copy),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  App.rootContext.showMessage(message: t.copySuccess);
+                },
+              ),
+            ],
+          ),
+          Divider(height: 1, color: cs.outlineVariant.toOpacity(0.4)),
+          Padding(padding: const EdgeInsets.all(12), child: child),
+        ],
+      ),
+    );
   }
 }

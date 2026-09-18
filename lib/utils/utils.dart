@@ -19,8 +19,19 @@ import 'package:path_provider/path_provider.dart';
 class Utils {
   Utils._();
 
+  /// 是否列表项（`- ` / `* ` / `+ ` / `1. `）
+  static bool _isListLine(String line) =>
+      RegExp(r'^\s*([-*+]|\d+[.)])\s+').hasMatch(line);
+
   static String normalizeData(String raw, {bool indentFirstLine = true}) {
-    final lines = raw.split('\n').map((line) => line.trimLeft()).toList();
+    // 代码块内保留原始缩进（缩进即语义），其余行去掉左空白
+    final rawLines = raw.split('\n');
+    final lines = <String>[];
+    var preInCode = false;
+    for (final l in rawLines) {
+      if (l.trimLeft().startsWith('```')) preInCode = !preInCode;
+      lines.add(preInCode ? l : l.trimLeft());
+    }
 
     final out = <String>[];
     bool inCodeBlock = false;
@@ -91,7 +102,8 @@ class Utils {
       }
     }
 
-    // 非空行后插入空行；表格行之间不插（保持表头/分隔行/内容行连续）
+    // 非空行后插入空行；表格行之间不插（保持表头/分隔行/内容行连续），
+    // 连续列表项之间也不插（否则会被解析成「松散列表」，每项间距过大）
     final withSpacing = <String>[];
     for (var i = 0; i < out.length; i++) {
       final line = out[i];
@@ -99,6 +111,7 @@ class Utils {
       if (line.trim().isEmpty) continue;
       final next = i + 1 < out.length ? out[i + 1] : '';
       if (_isTableSyntaxLine(line) && _isTableSyntaxLine(next)) continue;
+      if (_isListLine(line) && _isListLine(next)) continue;
       withSpacing.add('');
     }
 
