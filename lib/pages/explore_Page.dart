@@ -12,6 +12,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/network/cache.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
 
@@ -185,7 +186,7 @@ class _ExplorePageState extends State<ExplorePage>
       String currentPageId = sourcePages[currentSource]![pageIndex];
       // 页面可能尚未构建或已销毁，找不到时静默跳过
       GlobalState.findOrNull<_SingleExplorePageState>(
-        currentPageId,
+        _explorePageStateKey(currentSource, currentPageId),
       )?.toTop();
     }
   }
@@ -335,7 +336,9 @@ class _ExplorePageState extends State<ExplorePage>
     String currentSource = sources[sourceController.index];
     int pageIndex = pageControllers[currentSource]?.index ?? 0;
     String currentPageId = sourcePages[currentSource]![pageIndex];
-    GlobalState.findOrNull<_SingleExplorePageState>(currentPageId)?.refresh();
+    GlobalState.findOrNull<_SingleExplorePageState>(
+      _explorePageStateKey(currentSource, currentPageId),
+    )?.refresh();
   }
 
   Widget buildEmpty() {
@@ -550,7 +553,10 @@ class _ExplorePageState extends State<ExplorePage>
                             String currentPageId =
                                 sourcePages[currentSource]![pageIndex];
                             GlobalState.findOrNull<_SingleExplorePageState>(
-                              currentPageId,
+                              _explorePageStateKey(
+                                currentSource,
+                                currentPageId,
+                              ),
                             )?.toTop();
                           },
                         ),
@@ -618,6 +624,13 @@ class _ExplorePageState extends State<ExplorePage>
   @override
   bool get wantKeepAlive => true;
 }
+
+/// 探索页子页面的全局状态 key。
+///
+/// 必须带上源 key：不同源常有同名子页（如都叫「最新」「热门」），只按标题
+/// 查找会命中别的源的页面，导致刷新 / 回顶作用到了错误的页面上。
+String _explorePageStateKey(String sourceKey, String pageTitle) =>
+    'explore|$sourceKey|$pageTitle';
 
 class _SingleExplorePage extends StatefulWidget {
   const _SingleExplorePage(
@@ -781,10 +794,13 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   }
 
   @override
-  Object? get key => widget.title;
+  Object? get key => _explorePageStateKey(widget.sourceKey, widget.title);
 
   @override
   void refresh() {
+    // 用户主动刷新：清掉内存响应缓存（同一个 URL 否则会命中 5 秒~2 小时
+    // 的缓存，表现为「没有重新请求、内容也不刷新」）
+    NetworkCacheManager().clear();
     refreshHandler?.call();
   }
 

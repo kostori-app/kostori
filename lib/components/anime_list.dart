@@ -12,6 +12,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/network/cache.dart';
 import 'package:kostori/network/cloudflare.dart';
 
 class AnimeList extends StatefulWidget {
@@ -123,6 +124,9 @@ class AnimeListState extends State<AnimeList>
   }
 
   void refresh() {
+    // 用户主动刷新：清掉内存响应缓存，否则同一 URL 会命中 NetworkCacheManager
+    // 的 5 秒~2 小时缓存，导致「点了刷新但没有重新请求、内容也不变」
+    NetworkCacheManager().clear();
     _generation++;
     _data.clear();
     _loadedKeys.clear();
