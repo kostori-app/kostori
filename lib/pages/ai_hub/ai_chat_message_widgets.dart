@@ -1331,12 +1331,8 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Future<void> _translate(BuildContext context) async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _TranslationResultSheet(source: content),
-    );
+    // 与选中文本菜单共用同一个翻译结果弹层
+    await showTranslationSheet(content);
   }
 }
 

@@ -52,7 +52,7 @@ Widget appSelectionContextMenu(
             ContextMenuController.removeAny();
             final text = selectedText().trim();
             if (text.isEmpty) return;
-            showSelectionTranslationSheet(text);
+            showTranslationSheet(text);
           },
         ),
       if (hasSelection)
@@ -98,7 +98,7 @@ Widget appEditableSelectionContextMenu(
           onPressed: () {
             ContextMenuController.removeAny();
             if (text.isEmpty) return;
-            showSelectionTranslationSheet(text);
+            showTranslationSheet(text);
           },
         ),
       if (hasSelection)
@@ -114,28 +114,30 @@ Widget appEditableSelectionContextMenu(
   );
 }
 
-/// 翻译选中文本：底部弹层展示译文
-Future<void> showSelectionTranslationSheet(String text) {
+/// 翻译结果弹层（选中文本菜单的「翻译」与 AI 消息翻译共用）：
+/// 上方原文卡片、下方译文；加载中骨架屏，失败可重试，右上角可复制译文。
+Future<void> showTranslationSheet(String text) {
   return showModalBottomSheet<void>(
     context: App.rootContext,
     isScrollControlled: true,
-    builder: (_) => _SelectionTranslationSheet(source: text),
+    backgroundColor: Colors.transparent,
+    builder: (_) => _TranslationSheet(source: text),
   );
 }
 
-class _SelectionTranslationSheet extends StatefulWidget {
-  const _SelectionTranslationSheet({required this.source});
+/// 翻译结果弹层：上方原文卡片、下方译文（加载用骨架屏、失败可重试）。
+class _TranslationSheet extends StatefulWidget {
+  const _TranslationSheet({required this.source});
 
   final String source;
 
   @override
-  State<_SelectionTranslationSheet> createState() =>
-      _SelectionTranslationSheetState();
+  State<_TranslationSheet> createState() => _TranslationSheetState();
 }
 
-class _SelectionTranslationSheetState
-    extends State<_SelectionTranslationSheet> {
+class _TranslationSheetState extends State<_TranslationSheet> {
   String? _result;
+  String? _error;
   bool _loading = true;
 
   @override
@@ -150,13 +152,17 @@ class _SelectionTranslationSheetState
     setState(() {
       _loading = false;
       _result = res.success ? res.data : null;
+      _error = res.success ? null : (res.errorMessage ?? t.translationFailed);
     });
-    if (!res.success) {
-      App.rootContext.showMessage(
-        message: '${t.translationFailed}: ${res.errorMessage}',
-        level: LogLevel.warning,
-      );
-    }
+  }
+
+  void _retry() {
+    setState(() {
+      _loading = true;
+      _result = null;
+      _error = null;
+    });
+    _run();
   }
 
   void _copy() {
@@ -169,38 +175,92 @@ class _SelectionTranslationSheetState
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final result = _result;
+    final hasResult = result != null && result.isNotEmpty;
     return Sheet(
       title: '${t.translate} · ${TranslationService.getPoweredName()}',
       icon: Icons.translate,
-      initialSize: 0.6,
-      headerTrailing: _result == null
-          ? null
-          : IconButton(
+      initialSize: 0.55,
+      headerTrailing: hasResult
+          ? IconButton(
               tooltip: t.copy,
               icon: const Icon(Icons.copy, size: 18),
               onPressed: _copy,
+            )
+          : null,
+      builder: (context, sc) => ListView(
+        controller: sc,
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        children: [
+          // 原文：弱化的卡片，可选中复制
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest.toOpacity(0.45),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: scheme.outlineVariant.toOpacity(0.6),
+                width: 0.6,
+              ),
             ),
-      builder: (context, _) {
-        if (_loading) {
-          return const Center(child: PolygonRefreshIndicator());
-        }
-        final result = _result;
-        if (result == null || result.isEmpty) {
-          return Center(
-            child: Text(
-              t.translationFailed,
-              style: TextStyle(color: scheme.error),
+            child: SelectableText(
+              widget.source,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.6,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-          );
-        }
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: SelectableText(
-            result,
-            style: const TextStyle(fontSize: 14, height: 1.6),
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          if (_loading)
+            Skeletonizer.zone(child: Bone.multiText(lines: 4))
+          else if (hasResult) ...[
+            Row(
+              children: [
+                Icon(Icons.translate, size: 14, color: scheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  t.translationResult,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SelectableText(
+              result,
+              style: const TextStyle(fontSize: 15, height: 1.7),
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: scheme.errorContainer.toOpacity(0.35),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _error ?? t.translationFailed,
+                style: TextStyle(fontSize: 13, color: scheme.error),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CapsuleButton(
+                leading: const Icon(Icons.refresh, size: 16),
+                text: t.retry,
+                onTap: _retry,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

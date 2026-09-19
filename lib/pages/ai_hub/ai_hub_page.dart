@@ -46,7 +46,6 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
