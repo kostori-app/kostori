@@ -54,12 +54,54 @@ Future<Uint8List?> _resolveInlineImage(String url, String? sourceKey) async {
     }
   }
   if (!InlineImageStore.looksLikeBase64(url)) return null;
-  final cached = await InlineImageStore.read(InlineImageStore.refOf(url));
+  final ref = await InlineImageStore.refOfAsync(url);
+  final cached = await InlineImageStore.read(ref);
   if (cached != null) return cached;
-  final bytes = InlineImageStore.decode(url);
+  final bytes = await InlineImageStore.decodeAsync(url);
   if (bytes == null || !InlineImageStore.looksLikeImage(bytes)) return null;
-  unawaited(InlineImageStore.storeBase64(url));
+  unawaited(InlineImageStore.storeBase64(url, ref: ref, bytes: bytes));
   return bytes;
+}
+
+/// `cover.<id>` 占位封面：同一 (源, id) 只解析一次详情取封面，
+/// 并发与重复显示都复用，避免每张封面反复跑源 JS `loadInfo`。
+final Map<String, String> _coverPlaceholderCache = {};
+final Map<String, Future<String?>> _coverPlaceholderTasks = {};
+
+const int _kCoverPlaceholderCacheLimit = 128;
+
+Future<String?> _resolveCoverPlaceholder(String sourceKey, String aid) {
+  final key = '$sourceKey@$aid';
+  final cached = _coverPlaceholderCache[key];
+  if (cached != null) return Future.value(cached);
+  final pending = _coverPlaceholderTasks[key];
+  if (pending != null) return pending;
+  final task = _loadCoverPlaceholder(sourceKey, aid, key);
+  _coverPlaceholderTasks[key] = task;
+  return task.whenComplete(() => _coverPlaceholderTasks.remove(key));
+}
+
+Future<String?> _loadCoverPlaceholder(
+  String sourceKey,
+  String aid,
+  String key,
+) async {
+  try {
+    final loader = AnimeSource.find(sourceKey)?.loadAnimeInfo;
+    if (loader == null) return null;
+    final info = await loader(aid);
+    final cover = info.data.cover;
+    if (cover.isEmpty) return null;
+    _coverPlaceholderCache.remove(key);
+    _coverPlaceholderCache[key] = cover;
+    if (_coverPlaceholderCache.length > _kCoverPlaceholderCacheLimit) {
+      _coverPlaceholderCache.remove(_coverPlaceholderCache.keys.first);
+    }
+    return cover;
+  } catch (e) {
+    DebugLog.warning('InlineImage', 'cover placeholder failed: $e');
+    return null;
+  }
 }
 
 abstract class ImageDownloader {
@@ -149,12 +191,13 @@ abstract class ImageDownloader {
       configs['headers']['user-agent'] = webUA;
     }
 
-    if (((configs['url'] as String?) ?? url).startsWith('cover.') &&
-        sourceKey != null) {
-      var animeSource = AnimeSource.find(sourceKey);
-      if (animeSource != null) {
-        var animeInfo = await animeSource.loadAnimeInfo!(aid!);
-        yield* loadThumbnail(animeInfo.data.cover, sourceKey);
+    final resolvedUrl = (configs['url'] as String?) ?? url;
+    if (resolvedUrl.startsWith('cover.') &&
+        sourceKey != null &&
+        aid != null) {
+      final cover = await _resolveCoverPlaceholder(sourceKey, aid);
+      if (cover != null) {
+        yield* loadThumbnail(cover, sourceKey);
         return;
       }
     }

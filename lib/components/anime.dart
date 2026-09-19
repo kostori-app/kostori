@@ -702,13 +702,29 @@ class AnimeTile extends ConsumerWidget {
     if (anime.cover.isEmpty) return const SizedBox();
     if (image == null) return const SizedBox();
 
-    return AnimatedImage(
-      image: image,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      // 以 Ink.image 渲染，使外层 InkWell 的波纹能显示在图片之上
-      ink: true,
+    // 按实际渲染宽度限制解码尺寸：封面动辄按原图（1500+ 宽）解码，
+    // 一页几十张同时解码会让 raster 线程出现上百 ms 的长帧。
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int? cacheWidth;
+        final w = constraints.maxWidth;
+        final dpr = MediaQuery.devicePixelRatioOf(context);
+        if (w.isFinite && w > 0 && dpr > 0) {
+          cacheWidth = (w * dpr).round().clamp(1, 2048).toInt();
+        }
+        return AnimatedImage(
+          image: image,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          // 以 Ink.image 渲染，使外层 InkWell 的波纹能显示在图片之上
+          ink: true,
+          // 网格封面一屏几十张、会随下一页成批就绪，关掉淡入避免成批 AnimatedSwitcher
+          // 过渡（主要重建来源）
+          animate: false,
+          cacheWidth: cacheWidth,
+        );
+      },
     );
   }
 

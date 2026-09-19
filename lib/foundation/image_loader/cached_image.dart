@@ -25,15 +25,20 @@ class CachedImageProvider
 
   final String? aid;
 
-  static int loadingCount = 0;
-
   static const _kMaxLoadingCount = 8;
 
   /// 站内 base64/inline 图每张都要抓取 + 解密 + 压缩，单独用更小的并发闸门，
   /// 避免首屏几十张一起上把 CPU/JS 引擎压住
-  static int _inlineLoadingCount = 0;
-
   static const _kMaxInlineLoadingCount = 4;
+
+  /// 图片并发闸门（FIFO，一次只放行一个）。
+  ///
+  /// 之前是 `while (count > max) await Future.delayed(...)` 的轮询：一有空位
+  /// 等待者会在同一段事件循环里成批进入 `load`，把同步活挤到一两个帧里集中
+  /// 爆发。改成队列后释放时只唤醒队首，加载节奏被摊平。
+  static final _slotGate = AsyncGate(_kMaxLoadingCount);
+
+  static final _inlineGate = AsyncGate(_kMaxInlineLoadingCount);
 
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
@@ -41,8 +46,7 @@ class CachedImageProvider
     // （每张都要抓图 + 解密 + 转 base64），必须和其它图片共用并发上限，
     // 否则会把 UI 线程和源请求压死。
     if (InlineImageStore.isRef(url)) {
-      await _waitForInlineSlot(checkStop);
-      _inlineLoadingCount++;
+      await _inlineGate.acquire(checkStop);
       try {
         final cached = await InlineImageStore.read(url);
         if (cached != null) return _yieldBytes(chunkEvents, cached);
@@ -50,7 +54,7 @@ class CachedImageProvider
         if (fetched != null) return _yieldBytes(chunkEvents, fetched);
         throw ImageLoadException(url, 'inline image is no longer cached');
       } finally {
-        _inlineLoadingCount--;
+        _inlineGate.release();
       }
     }
 
@@ -63,21 +67,27 @@ class CachedImageProvider
     }
 
     if (isBase64) {
-      // 已经转存过就直接读缓存，避免重复解码/压缩
-      final ref = InlineImageStore.refOf(url);
-      final cached = await InlineImageStore.read(ref);
-      if (cached != null) return _yieldBytes(chunkEvents, cached);
-      // 首次遇到：内存解码显示，同时转存给下次用（复用算好的引用和字节）
-      final bytes = InlineImageStore.decode(url);
-      if (bytes == null || !InlineImageStore.looksLikeImage(bytes)) {
-        throw ImageLoadException(url, 'invalid base64 image');
+      // 裸 base64 同样要解码（首屏大量未转存条目），和短引用共用并发闸门，
+      // 否则会一起在主线程解码把 UI 压住
+      await _inlineGate.acquire(checkStop);
+      try {
+        // 已经转存过就直接读缓存，避免重复解码/压缩
+        final ref = await InlineImageStore.refOfAsync(url);
+        final cached = await InlineImageStore.read(ref);
+        if (cached != null) return _yieldBytes(chunkEvents, cached);
+        // 首次遇到：大图在后台 isolate 解码显示，同时转存给下次用
+        final bytes = await InlineImageStore.decodeAsync(url);
+        if (bytes == null || !InlineImageStore.looksLikeImage(bytes)) {
+          throw ImageLoadException(url, 'invalid base64 image');
+        }
+        unawaited(InlineImageStore.storeBase64(url, ref: ref, bytes: bytes));
+        return _yieldBytes(chunkEvents, bytes);
+      } finally {
+        _inlineGate.release();
       }
-      unawaited(InlineImageStore.storeBase64(url, ref: ref, bytes: bytes));
-      return _yieldBytes(chunkEvents, bytes);
     }
 
-    await _waitForSlot(checkStop);
-    loadingCount++;
+    await _slotGate.acquire(checkStop);
     try {
       if (url.startsWith("file://")) {
         var file = File(url.substring(7));
@@ -111,23 +121,7 @@ class CachedImageProvider
       }
       throw ImageLoadException(url, 'Empty response body');
     } finally {
-      loadingCount--;
-    }
-  }
-
-  /// 等待并发位（同一时刻最多 [_kMaxLoadingCount] 张图在加载）
-  Future<void> _waitForSlot(dynamic checkStop) async {
-    while (loadingCount > _kMaxLoadingCount) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      checkStop();
-    }
-  }
-
-  /// 站内图使用更小的并发闸门（见 [_kMaxInlineLoadingCount]）
-  Future<void> _waitForInlineSlot(dynamic checkStop) async {
-    while (_inlineLoadingCount >= _kMaxInlineLoadingCount) {
-      await Future.delayed(const Duration(milliseconds: 60));
-      checkStop();
+      _slotGate.release();
     }
   }
 

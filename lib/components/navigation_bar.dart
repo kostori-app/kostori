@@ -119,6 +119,17 @@ class NaviPaneState extends State<NaviPane>
   double get bottomBarHeight =>
       _kBottomBarHeight + MediaQuery.paddingOf(context).bottom;
 
+  /// 翻页选择条（AnimeList paging 模式）的高度
+  static const double pageSelectorHeight = 46.0;
+
+  /// 探索页翻页模式时，悬浮主导航需要抬高的距离，避免与页面底部翻页选择条
+  /// 重叠。探索页是底部导航第 5 项（index 4）。
+  double get navBottomLift {
+    if (currentPage != 4) return 0;
+    if (appdata.settings.s.animeListDisplayMode != 'paging') return 0;
+    return pageSelectorHeight + 8;
+  }
+
   void onNavigatorStateChange() {
     onRebuild(context);
   }
@@ -941,7 +952,19 @@ class _NaviMainViewState extends State<_NaviMainView> {
     state.mainViewUpdateHandler = () {
       setState(() {});
     };
+    // 显示模式/抬升开关变化时，导航栏位置要跟着更新
+    appdata.settings.addListener(_onSettingsChanged);
     super.initState();
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    appdata.settings.removeListener(_onSettingsChanged);
+    super.dispose();
   }
 
   @override
@@ -1038,7 +1061,8 @@ class _NaviMainViewState extends State<_NaviMainView> {
           ),
         ],
       );
-      final bottomPad = MediaQuery.paddingOf(context).bottom + 12;
+      final bottomPad =
+        MediaQuery.paddingOf(context).bottom + 12 + state.navBottomLift;
       // 完整态：主悬浮导航居中 + 动作坞紧贴其右侧（不合并成整行居中）
       final Widget fullBars = SizedBox(
         height: NaviPaneState._kBottomBarHeight,
@@ -1123,7 +1147,8 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ],
       );
     }
-    final bottomPad = MediaQuery.paddingOf(context).bottom + 12;
+    final bottomPad =
+        MediaQuery.paddingOf(context).bottom + 12 + state.navBottomLift;
     final topInset = MediaQuery.paddingOf(context).top;
     return Stack(
       children: [

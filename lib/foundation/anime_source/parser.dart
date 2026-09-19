@@ -958,7 +958,7 @@ class AnimeSourceParser {
         """);
         // 兼容返回 base64/data URL 字符串，或直接返回字节数组
         if (res is String) {
-          return res.isEmpty ? null : InlineImageStore.decode(res);
+          return res.isEmpty ? null : await InlineImageStore.decodeAsync(res);
         }
         return jsBytesOf(res);
       } catch (e, s) {

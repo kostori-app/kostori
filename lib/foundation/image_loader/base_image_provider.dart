@@ -1,4 +1,5 @@
-import 'dart:async' show Future, StreamController, scheduleMicrotask;
+import 'dart:async' show Completer, Future, StreamController, scheduleMicrotask;
+import 'dart:collection' show Queue;
 import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui show Codec;
@@ -20,6 +21,10 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
   );
 
   static double? _effectiveScreenWidth;
+
+  /// 同时解码的图片数量上限（见 `_loadBufferAsync`：load 之后 decode 之前
+  /// 没有别的闸门，缓存命中时会一批一起解码）。
+  static final AsyncGate _decodeGate = AsyncGate(4);
 
   static const double _normalAnimeImageRatio = 0.72;
 
@@ -140,11 +145,27 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
       }
 
       try {
-        final buffer = await ImmutableBuffer.fromUint8List(data);
-        return await decode(
-          buffer,
-          getTargetSize: enableResize ? _getTargetSize : null,
-        );
+        final sw = kReleaseMode ? null : (Stopwatch()..start());
+        // 解码单独限流：load() 返回后槽位就释放了，缓存命中时一批图会在几毫秒内
+        // 全部过闸，几十个 decode 同时跑会让 raster 尖峰（上百 ms 的长帧）。
+        await _decodeGate.acquire(() {});
+        late ui.Codec codec;
+        try {
+          final buffer = await ImmutableBuffer.fromUint8List(data);
+          codec = await decode(
+            buffer,
+            getTargetSize: enableResize ? _getTargetSize : null,
+          );
+        } finally {
+          _decodeGate.release();
+        }
+        if (sw != null && sw.elapsedMilliseconds >= 200) {
+          DebugLog.warning(
+            'ImagePerf',
+            'decode ${sw.elapsedMilliseconds}ms (${data.length} B) $key',
+          );
+        }
+        return codec;
       } catch (e) {
         await CacheManager().delete(this.key);
         if (data.length < 2 * 1024) {
@@ -253,5 +274,47 @@ class Base64ImageProvider extends BaseImageProvider<Base64ImageProvider> {
   @override
   Future<Base64ImageProvider> obtainKey(ImageConfiguration configuration) {
     return SynchronousFuture(this);
+  }
+}
+
+/// 简单的异步信号量（FIFO）：最多 [max] 个并发，释放时只唤醒队首一个。
+///
+/// 不轮询、不用定时器：等待者由 [release] 唤醒，醒来后再调一次 [checkStop]
+/// 判断是否已被取消（滚出屏幕），是则立刻把槽位让给下一个，不泄漏。
+class AsyncGate {
+  AsyncGate(this.max);
+
+  final int max;
+
+  int _active = 0;
+
+  final Queue<Completer<void>> _waiters = Queue();
+
+  Future<void> acquire(void Function() checkStop) async {
+    checkStop();
+    if (_active < max) {
+      _active++;
+      return;
+    }
+    final completer = Completer<void>();
+    _waiters.add(completer);
+    await completer.future;
+    try {
+      checkStop();
+    } catch (_) {
+      // 排队期间已被取消：让出槽位后抛出停止异常
+      release();
+      rethrow;
+    }
+  }
+
+  void release() {
+    if (_waiters.isNotEmpty) {
+      // 槽位直接转交给队首，无需先释放再竞争
+      final next = _waiters.removeFirst();
+      if (!next.isCompleted) next.complete();
+    } else if (_active > 0) {
+      _active--;
+    }
   }
 }

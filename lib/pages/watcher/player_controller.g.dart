@@ -301,6 +301,24 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$lastPlayErrorAtom = Atom(
+    name: '_PlayerController.lastPlayError',
+    context: context,
+  );
+
+  @override
+  String? get lastPlayError {
+    _$lastPlayErrorAtom.reportRead();
+    return super.lastPlayError;
+  }
+
+  @override
+  set lastPlayError(String? value) {
+    _$lastPlayErrorAtom.reportWrite(value, super.lastPlayError, () {
+      super.lastPlayError = value;
+    });
+  }
+
   late final _$bufferAtom = Atom(
     name: '_PlayerController.buffer',
     context: context,
@@ -942,6 +960,7 @@ currentPosition: ${currentPosition},
 isBuffering: ${isBuffering},
 completed: ${completed},
 loadFailed: ${loadFailed},
+lastPlayError: ${lastPlayError},
 buffer: ${buffer},
 duration: ${duration},
 previewImage: ${previewImage},

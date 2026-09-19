@@ -3,6 +3,7 @@
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -21,6 +22,25 @@ class CacheManager {
   int dir = 0;
 
   int _limitSize = 2 * 1024 * 1024 * 1024;
+
+  /// findCache 的内存缓存：列表滚动/重建时同一 key 会被反复查，避免每次都
+  /// 同步走 sqlite。条目只保鲜 [_memoryFreshMs]，之后回落到 sqlite（顺带续期），
+  /// 既摊平滚动期间的查询，又不改变滑动过期的语义。写入/删除/清理时同步失效。
+  final Map<String, _CacheLookup> _memory = {};
+  static const int _memoryLimit = 512;
+  static const int _memoryFreshMs = 30 * 1000;
+
+  void _remember(String key, File? file, int? expires) {
+    _memory.remove(key);
+    _memory[key] = _CacheLookup(
+      file,
+      expires,
+      DateTime.now().millisecondsSinceEpoch,
+    );
+    while (_memory.length > _memoryLimit) {
+      _memory.remove(_memory.keys.first);
+    }
+  }
 
   CacheManager._create() {
     Directory(cachePath).createSync(recursive: true);
@@ -78,6 +98,7 @@ class CacheManager {
       ''',
         [key, dir.toString(), name, expires],
       );
+      _remember(key, file, expires);
       if (_currentSize != null) {
         _currentSize = _currentSize! + data.length;
       }
@@ -92,6 +113,19 @@ class CacheManager {
   /// If cache is not found, it will return null.
   /// If cache is found, it will return the file, and update the expires time.
   Future<File?> findCache(String key) async {
+    var now = DateTime.now().millisecondsSinceEpoch;
+    final memo = _memory[key];
+    if (memo != null) {
+      final fresh = now - memo.time < _memoryFreshMs;
+      final notExpired = memo.expires == null || memo.expires! >= now;
+      if (fresh && notExpired) {
+        if (memo.file == null) return null;
+        // 正命中也要确认文件还在（缓存清理可能已删掉）
+        if (await memo.file!.exists()) return memo.file;
+      }
+      _memory.remove(key);
+    }
+    final selectSw = kReleaseMode ? null : (Stopwatch()..start());
     var res = _db.select(
       '''
       SELECT * FROM cache
@@ -99,7 +133,14 @@ class CacheManager {
     ''',
       [key],
     );
+    if (selectSw != null && selectSw.elapsedMilliseconds >= 20) {
+      DebugLog.warning(
+        'Cache Perf',
+        'findCache select ${selectSw.elapsedMilliseconds}ms: $key',
+      );
+    }
     if (res.isEmpty) {
+      _remember(key, null, null);
       return null;
     }
     var row = res.first;
@@ -107,7 +148,6 @@ class CacheManager {
     var name = row[2] as String;
     var expires = row[3] as int;
     var file = File('$cachePath/$dir/$name');
-    var now = DateTime.now().millisecondsSinceEpoch;
     if (expires < now) {
       // expired
       _db.execute(
@@ -120,19 +160,21 @@ class CacheManager {
       if (await file.exists()) {
         await file.delete();
       }
+      _remember(key, null, null);
       return null;
     }
     if (await file.exists()) {
       // update time
-      var expires = now + 7 * 24 * 60 * 60 * 1000;
+      var newExpires = now + 7 * 24 * 60 * 60 * 1000;
       _db.execute(
         '''
         UPDATE cache
         SET expires = ?
         WHERE key = ?
       ''',
-        [expires, key],
+        [newExpires, key],
       );
+      _remember(key, file, newExpires);
       return file;
     } else {
       _db.execute(
@@ -143,6 +185,7 @@ class CacheManager {
         [key],
       );
     }
+    _remember(key, null, null);
     return null;
   }
 
@@ -164,6 +207,8 @@ class CacheManager {
       return;
     }
     _isChecking = true;
+    // 会删文件/删行：内存缓存整表作废
+    _memory.clear();
     var res = _db.select(
       '''
       SELECT * FROM cache
@@ -234,6 +279,7 @@ class CacheManager {
 
   /// Delete cache by key.
   Future<void> delete(String key) async {
+    _memory.remove(key);
     var res = _db.select(
       '''
       SELECT * FROM cache
@@ -267,6 +313,7 @@ class CacheManager {
 
   /// Delete all cache.
   Future<void> clear() async {
+    _memory.clear();
     await Directory(cachePath).delete(recursive: true);
     Directory(cachePath).createSync(recursive: true);
     _db.execute('''
@@ -274,4 +321,16 @@ class CacheManager {
     ''');
     _currentSize = 0;
   }
+}
+
+/// [_CacheLookup] 的内存条目：file 为 null 表示 miss。
+class _CacheLookup {
+  final File? file;
+
+  final int? expires;
+
+  /// 写入内存的时刻，用于控制保鲜期
+  final int time;
+
+  const _CacheLookup(this.file, this.expires, this.time);
 }

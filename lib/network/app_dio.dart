@@ -77,6 +77,11 @@ class MyLogInterceptor extends Interceptor {
       handler.next(response);
       return;
     }
+    // 二进制响应（图片/文件下载）成功时静默：量大且基本是缩略图，只有失败才需要日志
+    if (response.data is List<int> && (response.statusCode ?? 0) < 400) {
+      handler.next(response);
+      return;
+    }
     final startedMs = response.requestOptions.extra['__logStartMs'];
     final costMs = startedMs is int
         ? DateTime.now().millisecondsSinceEpoch - startedMs
@@ -150,8 +155,15 @@ class MyLogInterceptor extends Interceptor {
       return;
     }
     if (NetLog.metaOnly) {
-      // 概要模式：只记一行，不打请求头/正文
-      NetLog.info("→ Network", '${options.method} ${options.uri}');
+      // 概要模式：只记一行，不打请求头/正文。
+      // 二进制请求（图片/文件）成功时会静默，这里也不打请求行（失败由 onError 记录）
+      if (options.responseType != ResponseType.bytes) {
+        NetLog.info("→ Network", '${options.method} ${options.uri}');
+      }
+      handler.next(options);
+      return;
+    }
+    if (options.responseType == ResponseType.bytes) {
       handler.next(options);
       return;
     }

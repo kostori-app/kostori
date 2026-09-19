@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:charset/charset.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/io.dart';
-import 'package:flutter/foundation.dart' show protected;
+import 'package:flutter/foundation.dart' show kReleaseMode, protected;
 import 'package:flutter/services.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:html/dom.dart' as dom;
@@ -312,7 +312,16 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
   }
 
   dynamic runCode(String js, [String? name]) {
-    return _engine!.evaluate(js, name: name);
+    final sw = kReleaseMode ? null : (Stopwatch()..start());
+    final res = _engine!.evaluate(js, name: name);
+    if (sw != null && sw.elapsedMilliseconds >= 50) {
+      final label = name ?? (js.length > 80 ? js.substring(0, 80) : js);
+      SourceLog.warning(
+        'JS Perf',
+        'evaluate ${sw.elapsedMilliseconds}ms: $label',
+      );
+    }
+    return res;
   }
 
   void dispose() {

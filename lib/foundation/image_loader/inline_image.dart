@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
@@ -61,6 +62,17 @@ class InlineImageStore {
   /// data URL / 裸 base64 → 短引用（同步可得，便于写库前替换）
   static String refOf(String dataUrl) =>
       '$prefix${sha1.convert(utf8.encode(dataUrl))}';
+
+  /// [refOf] 的异步版：大字符串的 `utf8.encode` + sha1 放到后台 isolate。
+  ///
+  /// 首屏几十张 base64 封面时，在主线程对整串算 sha1 会吃到帧时间；小字符串
+  /// 仍同步（isolate 启动开销反而更大）。写库路径继续用同步的 [refOf]。
+  static Future<String> refOfAsync(String dataUrl) {
+    if (dataUrl.length < _kDecodeIsolateBytes) {
+      return Future.value(refOf(dataUrl));
+    }
+    return Isolate.run(() => refOf(dataUrl));
+  }
 
   /// 把 base64 图片换成短引用；非 base64 字符串原样返回。
   ///
@@ -181,6 +193,21 @@ class InlineImageStore {
     } catch (_) {
       return null;
     }
+  }
+
+  /// 小于该体积的 base64 同步解码：isolate 的启动 + 字符串拷贝开销
+  /// 可能比解码本身还大（Android 上 spawn 一次约 10ms）。
+  static const int _kDecodeIsolateBytes = 256 * 1024;
+
+  /// 解码 `data:` URL / 裸 base64；失败返回 null。
+  ///
+  /// 大图放到后台 isolate：列表首屏可能同时触发几十张（且源回源的常是
+  /// 全尺寸 base64），在主线程同步解码会把帧时间吃光。
+  static Future<Uint8List?> decodeAsync(String dataUrl) {
+    if (dataUrl.length < _kDecodeIsolateBytes) {
+      return Future.value(decode(dataUrl));
+    }
+    return Isolate.run(() => decode(dataUrl));
   }
 
   /// 平台没有实现压缩（Windows/Linux）时只记一次，之后不再尝试

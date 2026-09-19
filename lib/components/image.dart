@@ -60,6 +60,7 @@ class AnimatedImage extends StatefulWidget {
     this.isAntiAlias = false,
     this.part,
     this.ink = false,
+    this.animate = true,
     Map<String, String>? headers,
     int? cacheWidth,
     int? cacheHeight,
@@ -73,6 +74,12 @@ class AnimatedImage extends StatefulWidget {
   /// 使点击波纹能显示在图片之上）。
   /// 启用后图片加载完成用 Ink.image 绘制；加载/错误态仍走骨架屏/错误图标。
   final bool ink;
+
+  /// 就绪后是否用 [AnimatedSwitcher] 淡入。
+  ///
+  /// 列表/网格封面（一屏几十张、且会随下一页成批就绪）关掉它：`AnimatedSwitcher`
+  /// 的过渡状态会在动画期间反复 `setState`，成批淡入时是主要的重建来源。
+  final bool animate;
 
   final String? semanticLabel;
 
@@ -409,13 +416,21 @@ class _AnimatedImageState extends State<AnimatedImage>
         );
       }
     } else {
-      // 加载中骨架屏：用无动画 SolidColorEffect（滚动时大量 loading 卡各自
-      // shimmer 是掉帧来源），就绪后仍由 AnimatedSwitcher 淡入
+      // 加载中占位：直接用纯色块。`Skeletonizer`/`Bone` 即使配 `SolidColorEffect`
+      // 不播动画，每次 paint 仍会 `LinearGradient(...).createShader()` 并跑
+      // `RenderSkeletonizer`；一屏几十张 loading 卡滚动时是主要的掉帧来源。
       final cs = Theme.of(context).colorScheme;
-      result = Skeletonizer.zone(
-        effect: SolidColorEffect(color: cs.surfaceContainerHighest),
-        child: Bone(height: widget.height, width: widget.width ?? 100),
+      result = ColoredBox(
+        color: cs.surfaceContainerHighest,
+        child: SizedBox(
+          width: widget.width ?? 100,
+          height: widget.height,
+        ),
       );
+    }
+
+    if (!widget.animate) {
+      return result;
     }
 
     final Widget animated = AnimatedSwitcher(

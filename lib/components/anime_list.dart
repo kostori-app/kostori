@@ -531,6 +531,18 @@ class AnimeListState extends State<AnimeList>
     }
   }
 
+  /// 主悬浮导航底部占位。页面内容延伸到窗口底部（导航是悬浮层），
+  /// 底部控件/内容需要自己让出导航栏区域，否则会和悬浮导航重叠。
+  double _bottomNavInset(BuildContext context) {
+    final pane = context.findAncestorStateOfType<NaviPaneState>();
+    if (pane != null) return pane.bottomBarHeight;
+    return MediaQuery.paddingOf(context).bottom;
+  }
+
+  /// 悬浮主导航因页面底部控件（翻页选择条）需要抬升的距离（由 NaviPane 计算）
+  double _navLift(BuildContext context) =>
+      context.findAncestorStateOfType<NaviPaneState>()?.navBottomLift ?? 0;
+
   @override
   Widget build(BuildContext context) {
     var type = appdata.settings['animeListDisplayMode'];
@@ -608,6 +620,9 @@ class AnimeListState extends State<AnimeList>
           ? _buildCompactPageSelector()
           : _buildFullPageSelector(),
     );
+    // 悬浮主导航会因翻页选择条整体上移，列表底部留白要清过导航栏顶部；
+    // 选择条本身仍贴底（抬升在 NaviPane 里按设置做）。
+    final contentBottom = _bottomNavInset(context) + 20 + _navLift(context);
 
     if (_error != null) {
       return Stack(
@@ -676,11 +691,7 @@ class AnimeListState extends State<AnimeList>
                 menuBuilder: widget.menuBuilder,
               ),
               if (widget.trailingSliver != null) widget.trailingSliver!,
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  bottom: 46 + MediaQuery.paddingOf(context).bottom + 4,
-                ),
-              ),
+              SliverPadding(padding: EdgeInsets.only(bottom: contentBottom + 4)),
             ],
           ),
         ),
@@ -810,6 +821,12 @@ class AnimeListState extends State<AnimeList>
                   ),
                 ),
               if (widget.trailingSliver != null) widget.trailingSliver!,
+              // 让出底部悬浮主导航，避免最后一行被压住
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: _bottomNavInset(context) + 20 + _navLift(context),
+                ),
+              ),
             ],
           ),
         ),
@@ -818,7 +835,7 @@ class AnimeListState extends State<AnimeList>
           Positioned(
             left: 0,
             right: 0,
-            bottom: MediaQuery.paddingOf(context).bottom + 12,
+            bottom: _bottomNavInset(context) + 12 + _navLift(context),
             child: IgnorePointer(
               child: SizedBox(
                 height: 64,

@@ -76,6 +76,14 @@ void main() {
       expect(InlineImageStore.decode('not base64!!'), isNull);
     });
 
+    test('decodeAsync 大图走后台 isolate，结果与同步解码一致', () async {
+      final raw = 'A' * 300000;
+      final sync = InlineImageStore.decode(raw);
+      expect(sync, isNotNull);
+      expect(await InlineImageStore.decodeAsync(raw), sync);
+      expect(await InlineImageStore.decodeAsync('not base64!!'), isNull);
+    });
+
     // 注意：真机/真异步环境下的落盘往返（testWidgets 是假异步，文件 IO 不会完成）
     test('转存后可读回，未转存则读不到', () async {
       final tempPath = Directory.systemTemp.createTempSync('kostori_inline_').path;
