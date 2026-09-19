@@ -60,6 +60,7 @@ import 'package:marquee/marquee.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 part 'anime.dart';
 

@@ -35,4 +35,38 @@ void main() {
     await _pumpArea(tester);
     expect(find.byType(AdaptiveTextSelectionToolbar), findsNothing);
   });
+
+  group('firstUrlInSelection', () {
+    test('纯链接原样返回', () {
+      expect(
+        firstUrlInSelection('https://mypikpak.com/s/abc123'),
+        'https://mypikpak.com/s/abc123',
+      );
+    });
+
+    test('去掉结尾的标点', () {
+      expect(
+        firstUrlInSelection(' https://mypikpak.com/s/abc123。 '),
+        'https://mypikpak.com/s/abc123',
+      );
+      expect(
+        firstUrlInSelection('（https://mypikpak.com/s/abc123）'),
+        'https://mypikpak.com/s/abc123',
+      );
+    });
+
+    test('从整段文本里取第一个链接', () {
+      expect(
+        firstUrlInSelection('看这个 https://a.com/p/1 提取码 1234'),
+        'https://a.com/p/1',
+      );
+    });
+
+    test('没有链接 / 非 http(s) / 只有协议时返回 null', () {
+      expect(firstUrlInSelection('hello world'), isNull);
+      expect(firstUrlInSelection('magnet:?xt=urn:btih:abc'), isNull);
+      expect(firstUrlInSelection('https://'), isNull);
+      expect(firstUrlInSelection(''), isNull);
+    });
+  });
 }

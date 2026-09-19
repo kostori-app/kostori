@@ -2760,6 +2760,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get downloadOther => '其他';
 	@override String get downloadRecords => '下載紀錄';
 	@override String get openWithOtherPlayer => '用其他播放器開啟';
+	@override String get openWithOtherApp => '用其他應用程式開啟';
 	@override String get downloadTitleFormat => '下載標題格式';
 	@override String get downloadFormatHint => '佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份';
 	@override String get rules => '規則';
@@ -5780,6 +5781,7 @@ extension on TranslationsZhTw {
 			'downloadOther' => '其他',
 			'downloadRecords' => '下載紀錄',
 			'openWithOtherPlayer' => '用其他播放器開啟',
+			'openWithOtherApp' => '用其他應用程式開啟',
 			'downloadTitleFormat' => '下載標題格式',
 			'downloadFormatHint' => '佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份',
 			'rules' => '規則',

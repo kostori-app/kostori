@@ -2787,6 +2787,7 @@ downloadWifiOnly: 僅 WiFi 下載
 downloadOther: 其他
 downloadRecords: 下載紀錄
 openWithOtherPlayer: 用其他播放器開啟
+openWithOtherApp: 用其他應用程式開啟
 downloadTitleFormat: "下載標題格式"
 downloadFormatHint: "佔位符：{title} 標題 {episode} 集數 {author} 作者 {resolution} 解析度 {source} 源 {year} 年份"
 rules: "規則"

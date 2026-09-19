@@ -2761,6 +2761,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get downloadOther => '其他';
 	@override String get downloadRecords => '下载记录';
 	@override String get openWithOtherPlayer => '用其他播放器打开';
+	@override String get openWithOtherApp => '用其他应用打开';
 	@override String get downloadTitleFormat => '下载标题格式';
 	@override String get downloadFormatHint => '占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份';
 	@override String get rules => '规则';
@@ -5782,6 +5783,7 @@ extension on TranslationsZhCn {
 			'downloadOther' => '其他',
 			'downloadRecords' => '下载记录',
 			'openWithOtherPlayer' => '用其他播放器打开',
+			'openWithOtherApp' => '用其他应用打开',
 			'downloadTitleFormat' => '下载标题格式',
 			'downloadFormatHint' => '占位符：{title} 标题 {episode} 集数 {author} 作者 {resolution} 分辨率 {source} 源 {year} 年份',
 			'rules' => '规则',

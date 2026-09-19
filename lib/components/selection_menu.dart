@@ -65,8 +65,73 @@ Widget appSelectionContextMenu(
             App.rootContext.to(() => SearchPage(keyword: text));
           },
         ),
+      ...appSelectionLinkItems(selectedText()),
     ],
   );
+}
+
+/// 选中文本里包含链接时追加的菜单项：
+/// - 「在浏览器打开」：交给系统默认应用（通常是浏览器）；
+/// - 「用其他应用打开」：移动端才显示，Android 走「非浏览器应用」意图、
+///   iOS 走 Universal Link，可直接跳到 PikPak 这类已注册该链接的 App。
+List<ContextMenuButtonItem> appSelectionLinkItems(String selectedText) {
+  final url = firstUrlInSelection(selectedText);
+  if (url == null) return const [];
+  return [
+    ContextMenuButtonItem(
+      label: t.openInBrowser,
+      onPressed: () {
+        ContextMenuController.removeAny();
+        _openSelectedUrl(url, nonBrowser: false);
+      },
+    ),
+    if (App.isMobile)
+      ContextMenuButtonItem(
+        label: t.openWithOtherApp,
+        onPressed: () {
+          ContextMenuController.removeAny();
+          _openSelectedUrl(url, nonBrowser: true);
+        },
+      ),
+  ];
+}
+
+/// 取文本里第一个 http(s) 链接（去掉结尾常见的标点，避免把中文句号带进去）。
+/// 供选中文本菜单判断是否追加「浏览器/其他应用打开」。
+String? firstUrlInSelection(String text) {
+  final match = RegExp(r'https?://[^\s]+').firstMatch(text.trim());
+  if (match == null) return null;
+  final url = match.group(0)!.replaceAll(
+    // 结尾常见的半角/全角标点（中英文句号、引号、括号等）
+    RegExp(r'''[)\]}>）】」』》〉，。；、,.;:!?'"”’]+$'''),
+    '',
+  );
+  // 协议后面必须还有内容，否则视为无效
+  final uri = Uri.tryParse(url);
+  if (uri == null || uri.host.isEmpty) return null;
+  return url;
+}
+
+/// 打开链接。[nonBrowser] 为 true 时优先交给非浏览器的其他应用。
+Future<void> _openSelectedUrl(String url, {required bool nonBrowser}) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  var ok = false;
+  try {
+    if (nonBrowser && App.isAndroid) {
+      // Android：只挑「非浏览器」的应用（PikPak 等注册了该链接的 App）
+      ok = await launchUrl(uri, mode: LaunchMode.externalNonBrowserApplication);
+    } else {
+      // iOS 走 Universal Link（装了对应 App 会直接进 App，否则落到浏览器），
+      // 桌面端交给系统默认应用
+      ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  } catch (_) {
+    ok = false;
+  }
+  if (!ok) {
+    App.rootContext.showMessage(message: t.failedToOpen, level: LogLevel.warning);
+  }
 }
 
 /// [SelectableText]（以及任何内部使用 [EditableText] 的组件）用的自定义选中菜单：
@@ -110,6 +175,7 @@ Widget appEditableSelectionContextMenu(
             App.rootContext.to(() => SearchPage(keyword: text));
           },
         ),
+      ...appSelectionLinkItems(text),
     ],
   );
 }

@@ -8206,6 +8206,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Open with other player'
 	String get openWithOtherPlayer => 'Open with other player';
 
+	/// en: 'Open with another app'
+	String get openWithOtherApp => 'Open with another app';
+
 	/// en: 'Download title format'
 	String get downloadTitleFormat => 'Download title format';
 
@@ -11663,6 +11666,7 @@ extension on Translations {
 			'downloadOther' => 'Other',
 			'downloadRecords' => 'Download records',
 			'openWithOtherPlayer' => 'Open with other player',
+			'openWithOtherApp' => 'Open with another app',
 			'downloadTitleFormat' => 'Download title format',
 			'downloadFormatHint' => 'Placeholders: {title} {episode} {author} {resolution} {source} {year}',
 			'rules' => 'Rules',
