@@ -5,8 +5,43 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/image_loader/inline_image.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/image.dart';
+
+/// 解析站内 base64 / `inline:<token>` 图片：
+/// 先读本地缓存；短引用缓存失效时调源的 `loadInlineImage(token)` 回源一次
+/// 并重新转存；裸 base64 则内存解码后转存。
+Future<Uint8List?> resolveInlineImage(String url, String? sourceKey) async {
+  if (InlineImageStore.isRef(url)) {
+    final cached = await InlineImageStore.read(url);
+    if (cached != null) return cached;
+    final loader = sourceKey == null
+        ? null
+        : AnimeSource.find(sourceKey)?.loadInlineImage;
+    if (loader == null) return null;
+    try {
+      final data = await loader(
+        url.substring(InlineImageStore.prefix.length),
+      );
+      if (data == null || data.isEmpty) return null;
+      final bytes = Uint8List.fromList(data);
+      unawaited(InlineImageStore.storeRef(url, bytes));
+      return bytes;
+    } catch (e) {
+      DebugLog.error('InlineImage', 'loadInlineImage failed: $e');
+      return null;
+    }
+  }
+  if (!InlineImageStore.looksLikeBase64(url)) return null;
+  final cached = await InlineImageStore.read(InlineImageStore.refOf(url));
+  if (cached != null) return cached;
+  final bytes = InlineImageStore.decode(url);
+  if (bytes == null) return null;
+  unawaited(InlineImageStore.storeBase64(url));
+  return bytes;
+}
 
 abstract class ImageDownloader {
   /// 对同一图片的并发请求去重：多个 provider 同时加载同一 URL 时只发起一次下载。
@@ -45,6 +80,26 @@ abstract class ImageDownloader {
         totalBytes: data.length,
         imageBytes: data,
       );
+    }
+
+    // 站内 base64 / 转存短引用：没有 URL 可请求，直接走本地/源回源
+    if (InlineImageStore.looksLikeBase64(url) ||
+        InlineImageStore.isRef(url)) {
+      final bytes = await resolveInlineImage(url, sourceKey);
+      if (bytes == null) {
+        yield ImageDownloadProgress(
+          currentBytes: 0,
+          totalBytes: 0,
+          error: 'inline image unavailable',
+        );
+        return;
+      }
+      yield ImageDownloadProgress(
+        currentBytes: bytes.length,
+        totalBytes: bytes.length,
+        imageBytes: bytes,
+      );
+      return;
     }
 
     var configs = <String, dynamic>{};

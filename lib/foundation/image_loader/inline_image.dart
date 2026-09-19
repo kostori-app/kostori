@@ -87,6 +87,14 @@ class InlineImageStore {
     }
   }
 
+  /// 把回源拿到的字节按短引用重新转存（缓存失效后的回填）
+  static Future<void> storeRef(String ref, List<int> bytes) =>
+      CacheManager().writeCache(
+        cacheKeyOfRef(ref),
+        Uint8List.fromList(bytes),
+        _cacheDuration,
+      );
+
   /// 读取短引用对应的字节；同一张图正在转存时会先等它完成。
   static Future<Uint8List?> read(String ref) async {
     if (!isRef(ref)) return null;

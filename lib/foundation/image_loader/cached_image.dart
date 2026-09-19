@@ -2,8 +2,6 @@ import 'dart:async' show Future, unawaited;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kostori/foundation/anime_source/anime_source.dart';
-import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart'
     as image_provider;
@@ -127,28 +125,9 @@ class CachedImageProvider
     return bytes;
   }
 
-  /// 短引用缓存失效时回源：交给该源实现的 `loadInlineImage(token)`（可选）
-  Future<Uint8List?> _loadInlineRef(String ref) async {
-    final key = sourceKey;
-    if (key == null) return null;
-    final loader = AnimeSource.find(key)?.loadInlineImage;
-    if (loader == null) return null;
-    try {
-      final data = await loader(
-        ref.substring(InlineImageStore.prefix.length),
-      );
-      if (data == null || data.isEmpty) return null;
-      final bytes = Uint8List.fromList(data);
-      // 回源拿到后重新转存，避免每次都回源
-      unawaited(
-        CacheManager().writeCache(InlineImageStore.cacheKeyOfRef(ref), bytes),
-      );
-      return bytes;
-    } catch (e) {
-      DebugLog.error('CachedImageProvider', 'loadInlineImage failed: $e');
-      return null;
-    }
-  }
+  /// 短引用缓存失效时回源（与收藏/历史页共用同一套解析）
+  Future<Uint8List?> _loadInlineRef(String ref) =>
+      resolveInlineImage(ref, sourceKey);
 
   @override
   Future<CachedImageProvider> obtainKey(ImageConfiguration configuration) {
