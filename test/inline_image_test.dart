@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +29,25 @@ void main() {
       expect(InlineImageStore.isRef(ref), isTrue);
       // 非 base64 原样返回，不会被改写
       expect(InlineImageStore.refOfBase64('https://a.com/b.jpg'), 'https://a.com/b.jpg');
+    });
+
+    test('looksLikeImage 只认真实图片魔数', () {
+      expect(InlineImageStore.looksLikeImage(base64Decode(_kPng)), isTrue);
+      expect(
+        InlineImageStore.looksLikeImage([0xFF, 0xD8, 0xFF, 0xE0, 0, 0, 0, 0]),
+        isTrue,
+      );
+      expect(
+        InlineImageStore.looksLikeImage(utf8.encode('GIF89a...')),
+        isTrue,
+      );
+      // 解密失败/HTML 错误页/截断内容 → 不当作图片
+      expect(
+        InlineImageStore.looksLikeImage(utf8.encode('<html>error</html>')),
+        isFalse,
+      );
+      expect(InlineImageStore.looksLikeImage(const [1, 2, 3]), isFalse);
+      expect(InlineImageStore.looksLikeImage(const []), isFalse);
     });
 
     test('解码 data URL 与裸 base64', () {

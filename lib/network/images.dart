@@ -27,6 +27,11 @@ Future<Uint8List?> resolveInlineImage(String url, String? sourceKey) async {
       );
       if (data == null || data.isEmpty) return null;
       final bytes = Uint8List.fromList(data);
+      // 解密失败/被截断的内容不缓存也不显示，下次渲染自然会重试
+      if (!InlineImageStore.looksLikeImage(bytes)) {
+        DebugLog.warning('InlineImage', 'not an image: $url');
+        return null;
+      }
       unawaited(InlineImageStore.storeRef(url, bytes));
       return bytes;
     } catch (e) {
@@ -38,7 +43,7 @@ Future<Uint8List?> resolveInlineImage(String url, String? sourceKey) async {
   final cached = await InlineImageStore.read(InlineImageStore.refOf(url));
   if (cached != null) return cached;
   final bytes = InlineImageStore.decode(url);
-  if (bytes == null) return null;
+  if (bytes == null || !InlineImageStore.looksLikeImage(bytes)) return null;
   unawaited(InlineImageStore.storeBase64(url));
   return bytes;
 }

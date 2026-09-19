@@ -29,14 +29,20 @@ class CachedImageProvider
 
   static const _kMaxLoadingCount = 8;
 
+  /// 站内 base64/inline 图每张都要抓取 + 解密 + 压缩，单独用更小的并发闸门，
+  /// 避免首屏几十张一起上把 CPU/JS 引擎压住
+  static int _inlineLoadingCount = 0;
+
+  static const _kMaxInlineLoadingCount = 4;
+
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
     // 转存后的短引用 / 源侧懒加载图片：一次渲染可能同时触发几十张
     // （每张都要抓图 + 解密 + 转 base64），必须和其它图片共用并发上限，
     // 否则会把 UI 线程和源请求压死。
     if (InlineImageStore.isRef(url)) {
-      await _waitForSlot(checkStop);
-      loadingCount++;
+      await _waitForInlineSlot(checkStop);
+      _inlineLoadingCount++;
       try {
         final cached = await InlineImageStore.read(url);
         if (cached != null) return _yieldBytes(chunkEvents, cached);
@@ -44,7 +50,7 @@ class CachedImageProvider
         if (fetched != null) return _yieldBytes(chunkEvents, fetched);
         throw ImageLoadException(url, 'inline image is no longer cached');
       } finally {
-        loadingCount--;
+        _inlineLoadingCount--;
       }
     }
 
@@ -110,6 +116,14 @@ class CachedImageProvider
   Future<void> _waitForSlot(dynamic checkStop) async {
     while (loadingCount > _kMaxLoadingCount) {
       await Future.delayed(const Duration(milliseconds: 100));
+      checkStop();
+    }
+  }
+
+  /// 站内图使用更小的并发闸门（见 [_kMaxInlineLoadingCount]）
+  Future<void> _waitForInlineSlot(dynamic checkStop) async {
+    while (_inlineLoadingCount >= _kMaxInlineLoadingCount) {
+      await Future.delayed(const Duration(milliseconds: 60));
       checkStop();
     }
   }

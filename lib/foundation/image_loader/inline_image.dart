@@ -30,6 +30,9 @@ class InlineImageStore {
   /// 压缩质量
   static const int quality = 80;
 
+  /// 小于该体积的图片不再重编码（缩略图/截图本来就很小的场景省一次全量编码）
+  static const int _kSkipCompressBelow = 40 * 1024;
+
   /// 缓存有效期：一年（真正的清理交给 [CacheManager] 的容量上限）
   static const int _cacheDuration = 365 * 24 * 60 * 60 * 1000;
 
@@ -77,6 +80,11 @@ class InlineImageStore {
       if (await CacheManager().findCache(key) != null) return;
       final bytes = decode(dataUrl);
       if (bytes == null || bytes.isEmpty) return;
+      // 不是图片（解密失败/被截断的响应）就不落盘，避免把坏内容缓存一年
+      if (!looksLikeImage(bytes)) {
+        DebugLog.warning('InlineImageStore', 'not an image, skip caching');
+        return;
+      }
       await CacheManager().writeCache(
         key,
         await _compress(bytes),
@@ -85,6 +93,27 @@ class InlineImageStore {
     } catch (e) {
       DebugLog.error('InlineImageStore', 'store failed: $e');
     }
+  }
+
+  /// 是否是受支持的图片字节（按魔数判断）
+  static bool looksLikeImage(List<int> b) {
+    bool at(int i, List<int> sig) {
+      if (b.length < i + sig.length) return false;
+      for (var j = 0; j < sig.length; j++) {
+        if (b[i + j] != sig[j]) return false;
+      }
+      return true;
+    }
+
+    if (at(0, [0x89, 0x50, 0x4E, 0x47])) return true; // PNG
+    if (at(0, [0xFF, 0xD8, 0xFF])) return true; // JPEG
+    if (at(0, [0x47, 0x49, 0x46, 0x38])) return true; // GIF8
+    if (at(0, [0x42, 0x4D])) return true; // BMP
+    if (at(0, [0x52, 0x49, 0x46, 0x46]) && at(8, [0x57, 0x45, 0x42, 0x50])) {
+      return true; // RIFF....WEBP
+    }
+    if (at(4, [0x66, 0x74, 0x79, 0x70])) return true; // ftyp (avif/heic)
+    return false;
   }
 
   /// 把回源拿到的字节按短引用重新转存（缓存失效后的回填）
@@ -108,7 +137,14 @@ class InlineImageStore {
     final file = await CacheManager().findCache(key);
     if (file == null) return null;
     try {
-      return await file.readAsBytes();
+      final bytes = await file.readAsBytes();
+      // 之前缓存的坏内容（解密失败/截断）：删掉并当作 miss，下次渲染会回源重试，
+      // 不用等一年缓存过期
+      if (!looksLikeImage(bytes)) {
+        await CacheManager().delete(key);
+        return null;
+      }
+      return bytes;
     } catch (_) {
       return null;
     }
@@ -130,8 +166,9 @@ class InlineImageStore {
     }
   }
 
-  /// 压缩成 WebP；平台不支持或图片本身不可解码时退回原字节。
+  /// 压缩成 WebP；本来就很小 / 平台不支持 / 无法解码时退回原字节。
   static Future<Uint8List> _compress(Uint8List bytes) async {
+    if (bytes.length < _kSkipCompressBelow) return bytes;
     try {
       final out = await FlutterImageCompress.compressWithList(
         bytes,
