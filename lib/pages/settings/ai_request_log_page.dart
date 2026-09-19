@@ -115,7 +115,7 @@ class _AiRequestLogPageState extends State<AiRequestLogPage> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              SelectableText(
+                              SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                                 e.request,
                                 style: const TextStyle(fontSize: 12),
                               ),
@@ -132,7 +132,7 @@ class _AiRequestLogPageState extends State<AiRequestLogPage> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              SelectableText(
+                              SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                                 e.response,
                                 style: const TextStyle(fontSize: 12),
                               ),

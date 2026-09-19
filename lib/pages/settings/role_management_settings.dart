@@ -859,7 +859,7 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
                   ],
                   if (content.trim().isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    SelectableText(
+                    SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                       content.trim(),
                       style: const TextStyle(fontSize: 13, height: 1.5),
                     ),
@@ -1038,7 +1038,7 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
               : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: SelectableText(
+        child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
           body,
           style: TextStyle(
             fontSize: 13,

@@ -1358,7 +1358,7 @@ class _StoryBubble extends StatelessWidget {
                     color: scheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: SelectableText(
+                  child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                     content,
                     style: TextStyle(
                       color: scheme.onSecondaryContainer,
@@ -1489,7 +1489,7 @@ class _StoryText extends StatelessWidget {
         if (index < text.length) {
           spans.add(TextSpan(text: text.substring(index), style: base));
         }
-        final rendered = SelectableText.rich(TextSpan(children: spans));
+        final rendered = SelectableText.rich(contextMenuBuilder: appEditableSelectionContextMenu, TextSpan(children: spans));
         // 通用兜底：以【标签】开头的段落按引用块样式渲染（左竖条）
         final trimmed = text.trimLeft();
         final close = trimmed.indexOf('】');

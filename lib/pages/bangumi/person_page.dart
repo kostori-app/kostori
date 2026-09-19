@@ -350,7 +350,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                       ),
                                                 ),
                                               ),
-                                              SelectableText(
+                                              SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                                                 characterFullItem.infobox
                                                     .map(
                                                       (item) =>

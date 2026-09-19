@@ -69,6 +69,51 @@ Widget appSelectionContextMenu(
   );
 }
 
+/// [SelectableText]（以及任何内部使用 [EditableText] 的组件）用的自定义选中菜单：
+/// 默认项（复制 / 全选 / 分享…）之后追加「翻译」与「搜索选中文字」。
+///
+/// 与 [appSelectionContextMenu] 的区别只是选中文本和锚点的来源不同
+/// （[EditableTextState] 里可以同步拿到选区文本）。
+Widget appEditableSelectionContextMenu(
+  BuildContext context,
+  EditableTextState state,
+) {
+  final value = state.textEditingValue;
+  final selection = value.selection;
+  final text = selection.isValid && !selection.isCollapsed
+      ? selection.textInside(value.text).trim()
+      : '';
+
+  final items = state.contextMenuButtonItems;
+  final hasSelection = items.any(
+    (item) => item.type == ContextMenuButtonType.copy,
+  );
+  return AdaptiveTextSelectionToolbar.buttonItems(
+    anchors: state.contextMenuAnchors,
+    buttonItems: [
+      ...items,
+      if (hasSelection)
+        ContextMenuButtonItem(
+          label: t.translate,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            if (text.isEmpty) return;
+            showSelectionTranslationSheet(text);
+          },
+        ),
+      if (hasSelection)
+        ContextMenuButtonItem(
+          label: t.search,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            if (text.isEmpty) return;
+            App.rootContext.to(() => SearchPage(keyword: text));
+          },
+        ),
+    ],
+  );
+}
+
 /// 翻译选中文本：底部弹层展示译文
 Future<void> showSelectionTranslationSheet(String text) {
   return showModalBottomSheet<void>(

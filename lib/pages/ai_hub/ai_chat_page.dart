@@ -2282,7 +2282,7 @@ class _TranslationResultSheetState extends State<_TranslationResultSheet> {
         }
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: SelectableText(
+          child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
             result,
             style: const TextStyle(fontSize: 14, height: 1.6),
           ),

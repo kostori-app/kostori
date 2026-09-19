@@ -818,7 +818,7 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         .join('\n');
     final urls = <String>[];
     final spans = _linkSpans(src, cs.primary, urls);
-    final rich = SelectableText.rich(
+    final rich = SelectableText.rich(contextMenuBuilder: appEditableSelectionContextMenu,
       TextSpan(
         style: TextStyle(fontSize: fontSize, height: height, color: color),
         children: spans,

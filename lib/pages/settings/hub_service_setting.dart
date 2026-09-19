@@ -1614,7 +1614,7 @@ class _SatoriBotEditPageState extends ConsumerState<_SatoriBotEditPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: SelectableText(
+                      child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                         _profile.token,
                         style: const TextStyle(fontSize: 12),
                       ),

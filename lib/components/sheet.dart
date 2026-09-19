@@ -622,7 +622,7 @@ class ParamCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(
+              SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                 title,
                 style: Theme.of(
                   context,
@@ -635,7 +635,7 @@ class ParamCard extends StatelessWidget {
                   .map(
                     (e) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SelectableText.rich(
+                      child: SelectableText.rich(contextMenuBuilder: appEditableSelectionContextMenu,
                         TextSpan(
                           children: [
                             TextSpan(
@@ -985,14 +985,14 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SelectableText(
+                        SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                           t.source,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           scrollPhysics: const NeverScrollableScrollPhysics(),
                         ),
                         const SizedBox(height: 8),
-                        SelectableText(
+                        SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                           'URI: ${widget.source.videoUrl}',
                           style: Theme.of(context).textTheme.bodyMedium,
                           scrollPhysics: const NeverScrollableScrollPhysics(),
@@ -1044,7 +1044,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(
+              SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                 t.requestHeaders,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -1053,7 +1053,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               ),
               const SizedBox(height: 8),
               if (entries.isEmpty)
-                SelectableText(
+                SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                   t.playerNoRequestHeaders,
                   style: Theme.of(context).textTheme.bodyMedium,
                   scrollPhysics: const NeverScrollableScrollPhysics(),
@@ -1062,7 +1062,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 ...entries.map(
                   (e) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: SelectableText(
+                    child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                       '${e.key}: ${e.value}',
                       style: Theme.of(context).textTheme.bodySmall,
                       scrollPhysics: const NeverScrollableScrollPhysics(),
@@ -1291,7 +1291,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                         ),
                       ),
                       Expanded(
-                        child: SelectableText(
+                        child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                           row.value.isEmpty ? '-' : row.value,
                           style: const TextStyle(fontSize: 12),
                         ),

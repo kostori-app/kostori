@@ -385,7 +385,7 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 320),
         child: SingleChildScrollView(
-          child: SelectableText(
+          child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
             prompt,
             style: const TextStyle(fontSize: 12, height: 1.5),
           ),

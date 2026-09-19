@@ -458,7 +458,7 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  SelectableText(
+                  SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                     _preview,
                     style: const TextStyle(fontSize: 14, height: 1.4),
                   ),
@@ -677,7 +677,7 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 2),
-          SelectableText(result, style: const TextStyle(fontSize: 13)),
+          SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, result, style: const TextStyle(fontSize: 13)),
         ],
       ),
     );

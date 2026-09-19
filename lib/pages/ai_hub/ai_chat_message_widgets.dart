@@ -362,7 +362,7 @@ class _StepContent extends StatelessWidget {
           ),
         if (step.args != null && step.args!.isNotEmpty) ...[
           const SizedBox(height: 4),
-          SelectableText(
+          SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
             const JsonEncoder.withIndent('  ').convert(step.args),
             style: TextStyle(
               fontSize: 11,
@@ -373,7 +373,7 @@ class _StepContent extends StatelessWidget {
         ],
         if (step.result != null && step.result!.isNotEmpty) ...[
           const SizedBox(height: 4),
-          SelectableText(
+          SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
             step.result!,
             style: TextStyle(
               fontSize: 11,
@@ -435,7 +435,7 @@ class _ThinkingContentState extends State<_ThinkingContent> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final text = SelectableText(
+    final text = SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
       widget.text,
       style: const TextStyle(fontSize: 12, height: 1.5),
     );
@@ -722,7 +722,7 @@ class _StreamingBubble extends StatelessWidget {
           if (hasText)
             useMarkdown
                 ? CustomMarkdownWidget(data: text, indentFirstLine: false)
-                : SelectableText(text),
+                : SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, text),
           if (errorText != null)
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -1060,7 +1060,7 @@ class _ChatBubble extends StatelessWidget {
                   color: scheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: SelectableText(
+                child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                   content,
                   style: TextStyle(
                     color: scheme.onSecondaryContainer,
@@ -1101,7 +1101,7 @@ class _ChatBubble extends StatelessWidget {
                   data: effectiveContent,
                   indentFirstLine: false,
                 )
-              : SelectableText(effectiveContent),
+              : SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, effectiveContent),
           // 多个候选：横向排列 BangumiBriefCard，供用户左右滑动选择跳转
           if (_bangumiCandidates.isNotEmpty) ...[
             const SizedBox(height: 6),

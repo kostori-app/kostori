@@ -220,7 +220,7 @@ class _AiTasksManagerPageState extends State<AiTasksManagerPage> {
             const SizedBox(height: 4),
             SizedBox(
               width: double.infinity,
-              child: SelectableText(
+              child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                 task.inputContent,
                 style: const TextStyle(fontSize: 12),
               ),
@@ -241,7 +241,7 @@ class _AiTasksManagerPageState extends State<AiTasksManagerPage> {
               const SizedBox(height: 4),
               SizedBox(
                 width: double.infinity,
-                child: SelectableText(
+                child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                   output,
                   style: const TextStyle(fontSize: 12),
                 ),

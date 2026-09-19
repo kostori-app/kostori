@@ -591,7 +591,7 @@ class _TopBar extends ConsumerWidget {
                       accelerationDuration: Duration.zero,
                       decelerationDuration: Duration.zero,
                     )
-                  : SelectableText(title, style: style, maxLines: 1),
+                  : SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, title, style: style, maxLines: 1),
             );
           },
         ),
@@ -733,7 +733,7 @@ class _TopBar extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(child: SelectableText(value)),
+          Expanded(child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, value)),
         ],
       ),
     );

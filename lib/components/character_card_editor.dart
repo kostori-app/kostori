@@ -1088,7 +1088,7 @@ class _CharacterCardViewState extends State<CharacterCardView>
             ],
           ),
           const SizedBox(height: 4),
-          SelectableText(
+          SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
             content.trim(),
             style: const TextStyle(fontSize: 13, height: 1.5),
           ),
@@ -1162,7 +1162,7 @@ class _CharacterCardViewState extends State<CharacterCardView>
           if (e.content.trim().isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4, left: 21),
-              child: SelectableText(
+              child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
                 e.content.trim(),
                 style: const TextStyle(fontSize: 13, height: 1.5),
               ),
