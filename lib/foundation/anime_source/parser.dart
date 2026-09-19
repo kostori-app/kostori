@@ -956,9 +956,11 @@ class AnimeSourceParser {
         final res = await JsEngine().runCode("""
           AnimeSource.sources.$_key.anime.loadInlineImage(${jsonEncode(token)})
         """);
-        final data = res?.toString() ?? '';
-        if (data.isEmpty) return null;
-        return InlineImageStore.decode(data);
+        // 兼容返回 base64/data URL 字符串，或直接返回字节数组
+        if (res is String) {
+          return res.isEmpty ? null : InlineImageStore.decode(res);
+        }
+        return jsBytesOf(res);
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
         return null;

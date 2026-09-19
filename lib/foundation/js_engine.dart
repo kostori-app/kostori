@@ -505,21 +505,36 @@ mixin class _JSEngineApi {
           // 按指定字符集解码字节（如 euc-jp / gbk / shift-jis）
           final name = data["charset"]?.toString() ?? 'utf-8';
           final encoding = Charset.getByName(name) ?? utf8;
-          return isEncode
-              ? encoding.encode(value)
-              : encoding.decode(value as List<int>);
+          if (isEncode) return encoding.encode('$value');
+          final bytes = jsBytesOf(value);
+          if (bytes == null) {
+            throw "decode 需要字节数组（Uint8Array/ArrayBuffer），"
+                "收到 ${value.runtimeType}";
+          }
+          return encoding.decode(bytes);
         case "base64":
-          return isEncode ? base64Encode(value) : base64Decode(value);
+          if (!isEncode) {
+            final text = value is String ? value : '$value';
+            if (text.isEmpty) throw "decodeBase64 需要 base64 字符串";
+            return base64Decode(text);
+          }
+          // 源侧常传 Uint8Array/ArrayBuffer：桥接过来可能是 List，也可能是
+          // 形如 {0:,1:,…} 的 Map，这里都接受；字符串按 UTF-8 编码
+          final bytes = jsBytesOf(value);
+          if (bytes != null) return base64Encode(bytes);
+          if (value is String) return base64Encode(utf8.encode(value));
+          throw "encodeBase64 需要字节数组（Uint8Array/ArrayBuffer），"
+              "收到 ${value.runtimeType}";
         case "md5":
-          return Uint8List.fromList(md5.convert(value).bytes);
+          return Uint8List.fromList(md5.convert(_hashInput(value)).bytes);
         case "sha1":
-          return Uint8List.fromList(sha1.convert(value).bytes);
+          return Uint8List.fromList(sha1.convert(_hashInput(value)).bytes);
         case "sha256":
-          return Uint8List.fromList(sha256.convert(value).bytes);
+          return Uint8List.fromList(sha256.convert(_hashInput(value)).bytes);
         case "sha512":
-          return Uint8List.fromList(sha512.convert(value).bytes);
+          return Uint8List.fromList(sha512.convert(_hashInput(value)).bytes);
         case "hmac":
-          var key = data["key"];
+          var key = jsBytesOf(data["key"]) ?? utf8.encode('${data["key"]}');
           var hash = data["hash"];
           var hmac = Hmac(switch (hash) {
             "md5" => md5,
@@ -529,61 +544,65 @@ mixin class _JSEngineApi {
             _ => throw "Unsupported hash: $hash",
           }, key);
           if (data['isString'] == true) {
-            return hmac.convert(value).toString();
+            return hmac.convert(_hashInput(value)).toString();
           } else {
-            return Uint8List.fromList(hmac.convert(value).bytes);
+            return Uint8List.fromList(hmac.convert(_hashInput(value)).bytes);
           }
         case "aes-ecb":
           if (!isEncode) {
-            var key = data["key"];
+            final key = _requireBytes(data["key"], 'aes-ecb key');
+            final input = _requireBytes(value, 'aes-ecb data');
             var cipher = ECBBlockCipher(AESEngine());
             cipher.init(false, KeyParameter(key));
             var offset = 0;
-            var result = Uint8List(value.length);
-            while (offset < value.length) {
-              offset += cipher.processBlock(value, offset, result, offset);
+            var result = Uint8List(input.length);
+            while (offset < input.length) {
+              offset += cipher.processBlock(input, offset, result, offset);
             }
             return result;
           }
           return null;
         case "aes-cbc":
           if (!isEncode) {
-            var key = data["key"];
-            var iv = data["iv"];
+            final key = _requireBytes(data["key"], 'aes-cbc key');
+            final iv = _requireBytes(data["iv"], 'aes-cbc iv');
+            final input = _requireBytes(value, 'aes-cbc data');
             var cipher = CBCBlockCipher(AESEngine());
             cipher.init(false, ParametersWithIV(KeyParameter(key), iv));
             var offset = 0;
-            var result = Uint8List(value.length);
-            while (offset < value.length) {
-              offset += cipher.processBlock(value, offset, result, offset);
+            var result = Uint8List(input.length);
+            while (offset < input.length) {
+              offset += cipher.processBlock(input, offset, result, offset);
             }
             return result;
           }
           return null;
         case "aes-cfb":
           if (!isEncode) {
-            var key = data["key"];
+            final key = _requireBytes(data["key"], 'aes-cfb key');
+            final input = _requireBytes(value, 'aes-cfb data');
             var blockSize = data["blockSize"];
             var cipher = CFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
             var offset = 0;
-            var result = Uint8List(value.length);
-            while (offset < value.length) {
-              offset += cipher.processBlock(value, offset, result, offset);
+            var result = Uint8List(input.length);
+            while (offset < input.length) {
+              offset += cipher.processBlock(input, offset, result, offset);
             }
             return result;
           }
           return null;
         case "aes-ofb":
           if (!isEncode) {
-            var key = data["key"];
+            final key = _requireBytes(data["key"], 'aes-ofb key');
+            final input = _requireBytes(value, 'aes-ofb data');
             var blockSize = data["blockSize"];
             var cipher = OFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
             var offset = 0;
-            var result = Uint8List(value.length);
-            while (offset < value.length) {
-              offset += cipher.processBlock(value, offset, result, offset);
+            var result = Uint8List(input.length);
+            while (offset < input.length) {
+              offset += cipher.processBlock(input, offset, result, offset);
             }
             return result;
           }
@@ -596,7 +615,7 @@ mixin class _JSEngineApi {
               false,
               PrivateKeyParameter<RSAPrivateKey>(_parsePrivateKey(key)),
             );
-            return _processInBlocks(cipher, value);
+            return _processInBlocks(cipher, _requireBytes(value, 'rsa data'));
           }
           return null;
         default:
@@ -825,3 +844,49 @@ class JSAutoFreeFunction {
     func.destroy();
   });
 }
+
+/// 把 JS 传过来的值尽量转成字节数组。
+///
+/// flutter_qjs 对 `Uint8Array` / `ArrayBuffer` 的桥接结果可能是 `List`，
+/// 也可能是形如 `{0: 1, 1: 2, ...}` 的 `Map`，这里统一归一化；
+/// 非字节数据返回 null（由调用方给出更清楚的报错）。
+Uint8List? jsBytesOf(Object? value) {
+  if (value is Uint8List) return value;
+  if (value is List) {
+    final out = Uint8List(value.length);
+    for (var i = 0; i < value.length; i++) {
+      final e = value[i];
+      if (e is! num) return null;
+      out[i] = e.toInt() & 0xff;
+    }
+    return out;
+  }
+  if (value is Map) {
+    // 只认「下标 → 字节」的键（忽略 byteLength 之类的附加字段）
+    final numeric = <int, int>{};
+    value.forEach((k, v) {
+      final i = int.tryParse(k.toString());
+      if (i == null || i < 0 || v is! num) return;
+      numeric[i] = v.toInt() & 0xff;
+    });
+    if (numeric.isEmpty) return null;
+    final length = numeric.keys.reduce((a, b) => a > b ? a : b) + 1;
+    final out = Uint8List(length);
+    for (var i = 0; i < length; i++) {
+      final e = numeric[i];
+      if (e == null) return null; // 下标不连续 → 不是字节数组
+      out[i] = e;
+    }
+    return out;
+  }
+  return null;
+}
+
+/// 哈希类 convert 的输入：字节数组，或（兼容）字符串按 UTF-8
+List<int> _hashInput(Object? value) =>
+    jsBytesOf(value) ?? utf8.encode('$value');
+
+/// 必须拿到字节数组（AES/RSA 等），否则给出清楚的报错
+Uint8List _requireBytes(Object? value, String what) =>
+    jsBytesOf(value) ??
+    (throw "$what 需要字节数组（Uint8Array/ArrayBuffer），收到 ${value.runtimeType}");
