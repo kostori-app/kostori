@@ -210,6 +210,9 @@ class _ExplorePageState extends State<ExplorePage>
     sourceController.addListener(_onSourceChanged);
     _rebuildPageControllers();
     appdata.settings.addListener(onSettingsChanged);
+    // 源被启用/禁用（设置页开关）时也要刷新：探索页的源列表与 TabController
+    // 必须一起重建，否则会停留/错位在旧的源上
+    AnimeSourceManager().addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
     _fbController = AnimationController(
       vsync: this,
@@ -277,6 +280,7 @@ class _ExplorePageState extends State<ExplorePage>
       c.dispose();
     }
     appdata.settings.removeListener(onSettingsChanged);
+    AnimeSourceManager().removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
     _fbController.dispose();
     WidgetsBinding.instance.addPostFrameCallback((_) {
