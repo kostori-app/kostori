@@ -1757,9 +1757,12 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
         !widget.horizontal &&
         !widget.disableMasonry &&
         mode == 'masonry') {
-      // 列表排序/数据变化时用签名 key 强制重建瀑布流布局缓存，
-      // 避免 SliverMasonryGrid 复用过期的行列估算导致空白/单列错乱
+      // 列表被替换/重排时用签名 key 强制重建瀑布流布局缓存，
+      // 避免 SliverMasonryGrid 复用过期的行列估算导致空白/单列错乱。
+      // 签名只看前若干个条目：加载下一页（追加）时 key 保持不变，
+      // 否则网格重建会让滚动位置被修正回顶部。
       final sig = animes
+          .take(24)
           .map((a) => _SliverGridAnimes.heroIDOf(a))
           .fold<int>(0, (acc, id) => acc ^ (id * 31 + 7) & 0x7fffffff);
       return SliverMasonryAnimes(
