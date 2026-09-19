@@ -33,13 +33,21 @@ class CachedImageProvider
 
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
-    // 转存后的短引用：直接读磁盘缓存，缓存被清理时交给源按 token 回源
+    // 转存后的短引用 / 源侧懒加载图片：一次渲染可能同时触发几十张
+    // （每张都要抓图 + 解密 + 转 base64），必须和其它图片共用并发上限，
+    // 否则会把 UI 线程和源请求压死。
     if (InlineImageStore.isRef(url)) {
-      final cached = await InlineImageStore.read(url);
-      if (cached != null) return _yieldBytes(chunkEvents, cached);
-      final fetched = await _loadInlineRef(url);
-      if (fetched != null) return _yieldBytes(chunkEvents, fetched);
-      throw ImageLoadException(url, 'inline image is no longer cached');
+      await _waitForSlot(checkStop);
+      loadingCount++;
+      try {
+        final cached = await InlineImageStore.read(url);
+        if (cached != null) return _yieldBytes(chunkEvents, cached);
+        final fetched = await _loadInlineRef(url);
+        if (fetched != null) return _yieldBytes(chunkEvents, fetched);
+        throw ImageLoadException(url, 'inline image is no longer cached');
+      } finally {
+        loadingCount--;
+      }
     }
 
     final isBase64 = InlineImageStore.looksLikeBase64(url);
@@ -61,10 +69,7 @@ class CachedImageProvider
       return _yieldBytes(chunkEvents, bytes);
     }
 
-    while (loadingCount > _kMaxLoadingCount) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      checkStop();
-    }
+    await _waitForSlot(checkStop);
     loadingCount++;
     try {
       if (url.startsWith("file://")) {
@@ -100,6 +105,14 @@ class CachedImageProvider
       throw ImageLoadException(url, 'Empty response body');
     } finally {
       loadingCount--;
+    }
+  }
+
+  /// 等待并发位（同一时刻最多 [_kMaxLoadingCount] 张图在加载）
+  Future<void> _waitForSlot(dynamic checkStop) async {
+    while (loadingCount > _kMaxLoadingCount) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      checkStop();
     }
   }
 
