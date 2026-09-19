@@ -229,6 +229,41 @@ let Convert = {
     },
 
     /**
+     * 同 decryptAesCbc，但在后台线程执行，不占用 UI 线程；
+     * 必须 `await`（返回 Promise）。图片解密等大计算量场景请用它。
+     * @param value {ArrayBuffer}
+     * @param key {ArrayBuffer}
+     * @param iv {ArrayBuffer}
+     * @returns {Promise<ArrayBuffer>}
+     */
+    decryptAesCbcAsync: (value, key, iv) => {
+        return sendMessage({
+            method: "convert",
+            type: "aes-cbc",
+            value: value,
+            key: key,
+            iv: iv,
+            isEncode: false,
+            isolate: true
+        });
+    },
+
+    /**
+     * 同 decryptAesEcb，但在后台线程执行；必须 `await`。
+     * @returns {Promise<ArrayBuffer>}
+     */
+    decryptAesEcbAsync: (value, key) => {
+        return sendMessage({
+            method: "convert",
+            type: "aes-ecb",
+            value: value,
+            key: key,
+            isEncode: false,
+            isolate: true
+        });
+    },
+
+    /**
      * @param {ArrayBuffer} value
      * @param {ArrayBuffer} key
      * @param {number} blockSize

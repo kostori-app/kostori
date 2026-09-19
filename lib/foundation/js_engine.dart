@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math' as math;
 
 import 'package:charset/charset.dart';
@@ -552,6 +553,12 @@ mixin class _JSEngineApi {
           if (!isEncode) {
             final key = _requireBytes(data["key"], 'aes-ecb key');
             final input = _requireBytes(value, 'aes-ecb data');
+            // isolate: true → 放到后台线程算（源侧需 await），不占用 UI 线程
+            if (data["isolate"] == true) {
+              return Isolate.run(
+                () => aesDecryptBytes(mode: 'aes-ecb', data: input, key: key),
+              );
+            }
             var cipher = ECBBlockCipher(AESEngine());
             cipher.init(false, KeyParameter(key));
             var offset = 0;
@@ -567,6 +574,16 @@ mixin class _JSEngineApi {
             final key = _requireBytes(data["key"], 'aes-cbc key');
             final iv = _requireBytes(data["iv"], 'aes-cbc iv');
             final input = _requireBytes(value, 'aes-cbc data');
+            if (data["isolate"] == true) {
+              return Isolate.run(
+                () => aesDecryptBytes(
+                  mode: 'aes-cbc',
+                  data: input,
+                  key: key,
+                  iv: iv,
+                ),
+              );
+            }
             var cipher = CBCBlockCipher(AESEngine());
             cipher.init(false, ParametersWithIV(KeyParameter(key), iv));
             var offset = 0;
@@ -582,6 +599,16 @@ mixin class _JSEngineApi {
             final key = _requireBytes(data["key"], 'aes-cfb key');
             final input = _requireBytes(value, 'aes-cfb data');
             var blockSize = data["blockSize"];
+            if (data["isolate"] == true) {
+              return Isolate.run(
+                () => aesDecryptBytes(
+                  mode: 'aes-cfb',
+                  data: input,
+                  key: key,
+                  blockSize: blockSize,
+                ),
+              );
+            }
             var cipher = CFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
             var offset = 0;
@@ -597,6 +624,16 @@ mixin class _JSEngineApi {
             final key = _requireBytes(data["key"], 'aes-ofb key');
             final input = _requireBytes(value, 'aes-ofb data');
             var blockSize = data["blockSize"];
+            if (data["isolate"] == true) {
+              return Isolate.run(
+                () => aesDecryptBytes(
+                  mode: 'aes-ofb',
+                  data: input,
+                  key: key,
+                  blockSize: blockSize,
+                ),
+              );
+            }
             var cipher = OFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
             var offset = 0;
@@ -890,3 +927,36 @@ List<int> _hashInput(Object? value) =>
 Uint8List _requireBytes(Object? value, String what) =>
     jsBytesOf(value) ??
     (throw "$what 需要字节数组（Uint8Array/ArrayBuffer），收到 ${value.runtimeType}");
+
+/// AES 解密（纯计算，可安全地放到后台 isolate 执行）。
+///
+/// [mode] 取 `aes-ecb` / `aes-cbc` / `aes-cfb` / `aes-ofb`；
+/// cbc 需要 [iv]，cfb/ofb 需要 [blockSize]。
+Uint8List aesDecryptBytes({
+  required String mode,
+  required Uint8List data,
+  required Uint8List key,
+  Uint8List? iv,
+  int? blockSize,
+}) {
+  final engine = AESEngine();
+  final BlockCipher cipher = switch (mode) {
+    'aes-ecb' => ECBBlockCipher(engine),
+    'aes-cbc' => CBCBlockCipher(engine),
+    'aes-cfb' => CFBBlockCipher(engine, blockSize ?? 8),
+    'aes-ofb' => OFBBlockCipher(engine, blockSize ?? 8),
+    _ => throw ArgumentError('Unsupported AES mode: $mode'),
+  };
+  cipher.init(
+    false,
+    iv != null
+        ? ParametersWithIV(KeyParameter(key), iv)
+        : KeyParameter(key),
+  );
+  final out = Uint8List(data.length);
+  var offset = 0;
+  while (offset < data.length) {
+    offset += cipher.processBlock(data, offset, out, offset);
+  }
+  return out;
+}
