@@ -635,7 +635,6 @@ abstract class _PlayerController with Store {
     await player.setAudioTrack(AudioTrack.auto());
 
     player.setPlaylistMode(PlaylistMode.none);
-    // playerTimer = getPlayerTimer();
     startPlayerStreams();
 
     animeImg = WatcherPlayer.currentState!.anime.cover;

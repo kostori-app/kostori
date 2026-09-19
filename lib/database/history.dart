@@ -726,7 +726,6 @@ class HistoryManager with ChangeNotifier {
     _db = _HistoryDb();
     isInitialized = true;
     // busy_timeout：多连接偶发写锁等待，避免立即 SQLITE_BUSY
-    // （不使用 WAL，保持只在 history.db 单文件）
     try {
       await _db.customStatement('PRAGMA busy_timeout = 10000;');
     } catch (_) {}

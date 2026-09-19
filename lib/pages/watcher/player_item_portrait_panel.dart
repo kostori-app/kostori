@@ -537,9 +537,6 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                 color: Colors.white,
                                 icon: const Icon(Icons.skip_next),
                                 onPressed: () {
-                                  // if (playerController.loading) {
-                                  //   return;
-                                  // }
                                   playerController.pause();
                                   playerController.playNextEpisode();
                                 },

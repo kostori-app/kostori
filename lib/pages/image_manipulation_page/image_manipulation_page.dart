@@ -757,7 +757,6 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
               icon: const Icon(Icons.check),
               onPressed: () {
                 widget.onSelected(selectedImages);
-                // Navigator.pop(context);
               },
             ),
         ],

@@ -63,8 +63,8 @@ bool isTruncatedHlsPlaylist(String content) {
 
 /// 视频下载管理器：任务队列 + 并发控制 + 进度通知 + 本地持久化。
 ///
-/// 下载走 FFmpeg（`FfmpegEncoder.download`），支持 mp4 直链与 m3u8/HLS，
-/// 默认转封装为 mp4（流复制，不重编码）。
+/// 支持 mp4 直链（dio 流式写入，Range 断点续传，完成后校验字节数）
+/// 与 m3u8/HLS（分片下载后用 FFmpeg 转封装为 mp4，流复制不重编码）。
 class DownloadManager extends ChangeNotifier {
   DownloadManager._internal();
 

@@ -268,7 +268,6 @@ class Utils {
       // 尝试标准解析（兜底）
       return DateTime.parse(dateStr).toLocal();
     } catch (e) {
-      // Log.addLog(LogLevel.warning, 'parseDate', '日期解析失败: $dateStr\n$e');
       return null;
     }
   }

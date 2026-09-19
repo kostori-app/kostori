@@ -71,8 +71,6 @@ class TaskbarManager {
     _clearListeners();
     WindowsTaskbar.setProgressMode(TaskbarProgressMode.noProgress);
     WindowsTaskbar.resetThumbnailToolbar();
-    // WindowsTaskbar.resetFlashTaskbarAppIcon();
-    // WindowsTaskbar.resetOverlayIcon();
     WindowsTaskbar.resetWindowTitle();
   }
 

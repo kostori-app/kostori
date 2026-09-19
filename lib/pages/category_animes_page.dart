@@ -203,7 +203,6 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
           ? ''
           : optionList.label.ts(sourceKey);
 
-      // 选项组：标题与胶囊选项同一行（标题固定起始宽度，各行选项对齐）
       Widget control;
       if (optionList.options.length <= 8) {
         control = CapsuleOptions(

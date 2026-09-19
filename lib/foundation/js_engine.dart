@@ -200,8 +200,7 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
                 (throw "Setting not found: $settingKey");
           case "isLogged":
             return AnimeSource.find(message["key"])!.isLogged;
-          // temporary solution for [setTimeout] function
-          // TODO: implement [setTimeout] in quickjs project
+          // [setTimeout] 的临时替代实现（QuickJS 里暂不支持定时器）
           case "delay":
             return Future.delayed(Duration(milliseconds: message["time"]));
           case "UI":
