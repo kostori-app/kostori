@@ -1,11 +1,13 @@
-import 'dart:async' show Future;
-import 'dart:convert';
+import 'dart:async' show Future, unawaited;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart'
     as image_provider;
+import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/images.dart';
 import 'package:kostori/utils/io.dart';
@@ -31,9 +33,16 @@ class CachedImageProvider
 
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
-    final isBase64 =
-        url.startsWith('data:') ||
-        (!url.contains('://') && !url.startsWith('/') && url.length > 100);
+    // 转存后的短引用：直接读磁盘缓存，缓存被清理时交给源按 token 回源
+    if (InlineImageStore.isRef(url)) {
+      final cached = await InlineImageStore.read(url);
+      if (cached != null) return _yieldBytes(chunkEvents, cached);
+      final fetched = await _loadInlineRef(url);
+      if (fetched != null) return _yieldBytes(chunkEvents, fetched);
+      throw ImageLoadException(url, 'inline image is no longer cached');
+    }
+
+    final isBase64 = InlineImageStore.looksLikeBase64(url);
     final isFile = url.startsWith('file://');
     final isHttp = url.startsWith('http://') || url.startsWith('https://');
 
@@ -42,18 +51,14 @@ class CachedImageProvider
     }
 
     if (isBase64) {
-      var raw = url;
-      if (raw.contains(',')) {
-        raw = raw.split(',').last;
-      }
-      final bytes = base64Decode(raw);
-      chunkEvents.add(
-        ImageChunkEvent(
-          cumulativeBytesLoaded: bytes.length,
-          expectedTotalBytes: bytes.length,
-        ),
-      );
-      return bytes;
+      // 已经转存过就直接读缓存，避免重复解码/压缩
+      final cached = await InlineImageStore.read(InlineImageStore.refOf(url));
+      if (cached != null) return _yieldBytes(chunkEvents, cached);
+      // 首次遇到：内存解码显示，同时转存给下次用
+      unawaited(InlineImageStore.storeBase64(url));
+      final bytes = InlineImageStore.decode(url);
+      if (bytes == null) throw ImageLoadException(url, 'invalid base64 image');
+      return _yieldBytes(chunkEvents, bytes);
     }
 
     while (loadingCount > _kMaxLoadingCount) {
@@ -95,6 +100,40 @@ class CachedImageProvider
       throw ImageLoadException(url, 'Empty response body');
     } finally {
       loadingCount--;
+    }
+  }
+
+  /// 上报字节数并返回（内存里已有的字节）
+  Uint8List _yieldBytes(dynamic chunkEvents, Uint8List bytes) {
+    chunkEvents.add(
+      ImageChunkEvent(
+        cumulativeBytesLoaded: bytes.length,
+        expectedTotalBytes: bytes.length,
+      ),
+    );
+    return bytes;
+  }
+
+  /// 短引用缓存失效时回源：交给该源实现的 `loadInlineImage(token)`（可选）
+  Future<Uint8List?> _loadInlineRef(String ref) async {
+    final key = sourceKey;
+    if (key == null) return null;
+    final loader = AnimeSource.find(key)?.loadInlineImage;
+    if (loader == null) return null;
+    try {
+      final data = await loader(
+        ref.substring(InlineImageStore.prefix.length),
+      );
+      if (data == null || data.isEmpty) return null;
+      final bytes = Uint8List.fromList(data);
+      // 回源拿到后重新转存，避免每次都回源
+      unawaited(
+        CacheManager().writeCache(InlineImageStore.cacheKeyOfRef(ref), bytes),
+      );
+      return bytes;
+    } catch (e) {
+      DebugLog.error('CachedImageProvider', 'loadInlineImage failed: $e');
+      return null;
     }
   }
 

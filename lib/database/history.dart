@@ -10,6 +10,7 @@ import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:path/path.dart' as p;
 
@@ -114,7 +115,8 @@ class History implements Anime {
     id: Value(id),
     title: Value(title),
     subtitle: Value(subtitle),
-    cover: Value(cover),
+    // base64 封面换成 `inline:<hash>` 短引用，避免 history.db 被撑爆
+    cover: Value(InlineImageStore.refOfBase64(cover)),
     time: Value(time.millisecondsSinceEpoch),
     type: Value(type.value),
     lastWatchEpisode: Value(lastWatchEpisode),
@@ -141,7 +143,7 @@ class History implements Anime {
     'type': type.value,
     'title': title,
     'subtitle': subtitle,
-    'cover': cover,
+    'cover': InlineImageStore.refOfBase64(cover),
     'time': time.millisecondsSinceEpoch,
     'lastWatchEpisode': lastWatchEpisode,
     'lastWatchTime': lastWatchTime,
@@ -611,7 +613,7 @@ class PluginEventItem {
     'itemKey': itemKey,
     'title': title,
     'subtitle': subtitle,
-    'coverUrl': coverUrl,
+    'coverUrl': InlineImageStore.refOfBase64(coverUrl),
     'extraJson': extraJson,
     'createdAt': createdAt,
   };
@@ -1249,7 +1251,8 @@ extension ProgressHelper on HistoryManager {
               itemKey: r.itemKey,
               title: r.title,
               subtitle: Value(r.subtitle),
-              coverUrl: Value(r.coverUrl),
+              // base64 封面同样只存短引用
+              coverUrl: Value(InlineImageStore.refOfBase64(r.coverUrl)),
               extraJson: Value(r.extraJson),
               createdAt: r.createdAt,
             ),

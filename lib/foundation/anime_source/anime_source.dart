@@ -11,6 +11,7 @@ import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/database/history.dart';
+import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -427,6 +428,13 @@ class AnimeSource {
   /// `tagClickable: false` 关掉）。长按/右键复制不受该开关影响。
   final bool tagClickable;
 
+  /// 站内 base64 图片（`inline:<token>`）缓存被清理时的回源接口（可选）。
+  ///
+  /// 入参是引用里的 token，返回图片字节（或 base64 / data URL 字符串）。
+  /// 源实现 `anime.loadInlineImage` 即可让被清缓存的图重新取回，
+  /// 不必重新抓整个页面。
+  final Future<List<int>?> Function(String token)? loadInlineImage;
+
   final StarRatingFunc? starRatingFunc;
 
   /// 播放进度上报（源实现）
@@ -520,6 +528,7 @@ class AnimeSource {
     required this.enableTagsSuggestions,
     required this.enableTagsTranslate,
     this.tagClickable = true,
+    this.loadInlineImage,
     required this.starRatingFunc,
     this.playbackProgress,
     this.playbackStopped,

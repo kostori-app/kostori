@@ -191,6 +191,7 @@ class AnimeSourceParser {
       enableTagsSuggestions: _getValue("search.enableTagsSuggestions") ?? false,
       enableTagsTranslate: _getValue("anime.enableTagsTranslate") ?? false,
       tagClickable: tagClickable,
+      loadInlineImage: _parseInlineImageLoader(),
       starRatingFunc: _parseStarRatingFunc(),
       playbackProgress: _parsePlaybackProgressFunc(),
       playbackStopped: _parsePlaybackStoppedFunc(),
@@ -942,6 +943,26 @@ class AnimeSourceParser {
         throw "function onThumbnailLoad return invalid data";
       }
       return res as Map<String, dynamic>;
+    };
+  }
+
+  /// 站内 base64 图片按 token 回源（可选）：JS 返回 base64 或 data URL 字符串
+  Future<List<int>?> Function(String token)? _parseInlineImageLoader() {
+    if (!_checkExists("anime.loadInlineImage")) {
+      return null;
+    }
+    return (token) async {
+      try {
+        final res = await JsEngine().runCode("""
+          AnimeSource.sources.$_key.anime.loadInlineImage(${jsonEncode(token)})
+        """);
+        final data = res?.toString() ?? '';
+        if (data.isEmpty) return null;
+        return InlineImageStore.decode(data);
+      } catch (e, s) {
+        SourceLog.error("Network", "$e\n$s");
+        return null;
+      }
     };
   }
 

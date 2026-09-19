@@ -1,0 +1,58 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/image_loader/inline_image.dart';
+
+/// 1x1 透明 PNG
+const String _kPng =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
+    'AAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==';
+
+void main() {
+  group('InlineImageStore', () {
+    test('识别 base64 / data URL', () {
+      expect(InlineImageStore.looksLikeBase64('data:image/png;base64,$_kPng'), isTrue);
+      expect(InlineImageStore.looksLikeBase64('a' * 200), isTrue);
+      expect(InlineImageStore.looksLikeBase64('https://a.com/b.jpg'), isFalse);
+      expect(InlineImageStore.looksLikeBase64('/data/a.jpg'), isFalse);
+      expect(InlineImageStore.looksLikeBase64('short'), isFalse);
+    });
+
+    test('同一个 data URL 得到同一个引用，且引用很短', () {
+      final url = 'data:image/png;base64,$_kPng';
+      final ref = InlineImageStore.refOf(url);
+      expect(ref, startsWith(InlineImageStore.prefix));
+      expect(ref.length, lessThan(80));
+      expect(InlineImageStore.refOf(url), ref);
+      expect(InlineImageStore.isRef(ref), isTrue);
+      // 非 base64 原样返回，不会被改写
+      expect(InlineImageStore.refOfBase64('https://a.com/b.jpg'), 'https://a.com/b.jpg');
+    });
+
+    test('解码 data URL 与裸 base64', () {
+      final bytes = InlineImageStore.decode('data:image/png;base64,$_kPng');
+      expect(bytes, isNotNull);
+      expect(bytes!.length, greaterThan(0));
+      expect(InlineImageStore.decode(_kPng), bytes);
+      expect(InlineImageStore.decode('not base64!!'), isNull);
+    });
+
+    // 注意：真机/真异步环境下的落盘往返（testWidgets 是假异步，文件 IO 不会完成）
+    test('转存后可读回，未转存则读不到', () async {
+      final tempPath = Directory.systemTemp.createTempSync('kostori_inline_').path;
+      App.dataPath = tempPath;
+      App.cachePath = tempPath;
+
+      final url = 'data:image/png;base64,$_kPng';
+      final ref = InlineImageStore.refOfBase64(url, store: false);
+      // 未转存（缓存里没有）时读不到 → 调用方回源或占位
+      expect(await InlineImageStore.read(ref), isNull);
+
+      await InlineImageStore.storeBase64(url);
+      final bytes = await InlineImageStore.read(ref);
+      expect(bytes, isNotNull);
+      expect(bytes!.length, greaterThan(0));
+    });
+  });
+}

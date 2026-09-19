@@ -9,6 +9,7 @@ import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -641,7 +642,8 @@ class StatsManager with ChangeNotifier {
     id: s.id,
     type: s.type,
     title: Value(s.title),
-    cover: Value(s.cover),
+    // base64 封面换成 `inline:<hash>` 短引用，避免 stats.db 被撑爆
+    cover: Value(InlineImageStore.refOfBase64(s.cover ?? '')),
     bangumiId: Value(s.bangumiId),
     liked: Value(s.liked),
     isBangumi: Value(s.isBangumi),

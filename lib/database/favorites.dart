@@ -10,6 +10,7 @@ import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart';
 import 'package:kostori/foundation/log.dart';
 
@@ -220,7 +221,11 @@ class _FavEntry {
   FavoriteItem item;
   String? recentlyWatched;
 
-  _FavEntry(this.item, [this.recentlyWatched]);
+  /// 入库前把 base64 封面换成 `inline:<hash>` 短引用：
+  /// 图片字节落盘（CacheManager），数据库只留几十字节的引用。
+  _FavEntry(this.item, [this.recentlyWatched]) {
+    item.coverPath = InlineImageStore.refOfBase64(item.coverPath);
+  }
 }
 
 class LocalFavoritesManager with ChangeNotifier {

@@ -1205,6 +1205,13 @@ function ImageLoadingConfig({url, method, data, headers, onResponse, modifyImage
  * ## 播放进度上报
  * - `anime.playbackProgress(url, positionMs, durationMs, playing, playSessionId)`
  * - `anime.playbackStopped(url, positionMs, playSessionId)`
+ *
+ * ## 站内 base64 图片（可选）
+ * 站点把图片内联成 base64（`data:image/...;base64,...`）时，App 会自动把
+ * 它转存成本地文件并只保留 `inline:<token>` 这种短引用（数据库/同步里不会
+ * 再出现超长 base64）。缓存被清理后，App 会调用：
+ * - `anime.loadInlineImage(token)` → 返回该图的 base64 或 data URL 字符串
+ * 实现它即可按需回源单张图，无需重新抓整个页面。
  */
 class AnimeSource {
     name = ""
