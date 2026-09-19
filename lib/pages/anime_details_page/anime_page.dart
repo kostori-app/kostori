@@ -560,7 +560,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   Widget animeTab() {
     return TabBarView(
       controller: tabController,
-      physics: _tabPhysics,
+      // 翻页手势：桌面端禁用（避免滚轮/触控板横滚误切 tab），移动端保留滑动
+      physics: tabPagePhysics,
       children: [
         AppScrollBar(
           controller: infoScrollCtrl,

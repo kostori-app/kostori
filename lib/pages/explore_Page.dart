@@ -467,6 +467,8 @@ class _ExplorePageState extends State<ExplorePage>
             removeTop: true,
             child: ExtendedTabBarView(
               controller: sourceController,
+              // 桌面端不用滚轮/拖动翻源，避免误切
+              physics: tabPagePhysics,
               children: sources
                   .map(
                     (sourceKey) => _SourceExplorePage(
@@ -1126,6 +1128,8 @@ class _SourceExplorePageState extends State<_SourceExplorePage>
     return ExtendedTabBarView(
       key: PageStorageKey('tab_view_${widget.sourceKey}'),
       controller: widget.pageController,
+      // 桌面端不用滚轮/拖动翻页，避免误切子导航
+      physics: tabPagePhysics,
       children: widget.pages.map((e) => buildBody(e)).toList(),
     );
   }

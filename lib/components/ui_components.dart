@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/foundation/app.dart';
 
 class KostoriRefreshIndicator extends StatefulWidget {
   const KostoriRefreshIndicator({super.key});
@@ -171,3 +172,10 @@ class FloatingMenuState extends State<FloatingMenu>
     );
   }
 }
+
+/// TabBarView / PageView 一类「翻页」组件的 physics：
+/// 桌面端禁用（点标签切换即可），避免滚轮、触控板横滚或 Shift+滚轮误切 tab；
+/// 移动端保留左右滑动切换。
+ScrollPhysics get tabPagePhysics => App.isDesktop
+    ? const NeverScrollableScrollPhysics()
+    : const BouncingScrollPhysics();
