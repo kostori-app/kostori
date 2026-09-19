@@ -554,11 +554,12 @@ mixin class _JSEngineApi {
             final key = _requireBytes(data["key"], 'aes-ecb key');
             final input = _requireBytes(value, 'aes-ecb data');
             // isolate: true → 放到后台线程算（源侧需 await），不占用 UI 线程
-            if (data["isolate"] == true) {
-              return Isolate.run(
-                () => aesDecryptBytes(mode: 'aes-ecb', data: input, key: key),
-              );
-            }
+            final background = _aesMaybeIsolate(
+              data,
+              input,
+              () => aesDecryptBytes(mode: 'aes-ecb', data: input, key: key),
+            );
+            if (background != null) return background;
             var cipher = ECBBlockCipher(AESEngine());
             cipher.init(false, KeyParameter(key));
             var offset = 0;
@@ -574,16 +575,17 @@ mixin class _JSEngineApi {
             final key = _requireBytes(data["key"], 'aes-cbc key');
             final iv = _requireBytes(data["iv"], 'aes-cbc iv');
             final input = _requireBytes(value, 'aes-cbc data');
-            if (data["isolate"] == true) {
-              return Isolate.run(
-                () => aesDecryptBytes(
-                  mode: 'aes-cbc',
-                  data: input,
-                  key: key,
-                  iv: iv,
-                ),
-              );
-            }
+            final background = _aesMaybeIsolate(
+              data,
+              input,
+              () => aesDecryptBytes(
+                mode: 'aes-cbc',
+                data: input,
+                key: key,
+                iv: iv,
+              ),
+            );
+            if (background != null) return background;
             var cipher = CBCBlockCipher(AESEngine());
             cipher.init(false, ParametersWithIV(KeyParameter(key), iv));
             var offset = 0;
@@ -599,16 +601,17 @@ mixin class _JSEngineApi {
             final key = _requireBytes(data["key"], 'aes-cfb key');
             final input = _requireBytes(value, 'aes-cfb data');
             var blockSize = data["blockSize"];
-            if (data["isolate"] == true) {
-              return Isolate.run(
-                () => aesDecryptBytes(
-                  mode: 'aes-cfb',
-                  data: input,
-                  key: key,
-                  blockSize: blockSize,
-                ),
-              );
-            }
+            final background = _aesMaybeIsolate(
+              data,
+              input,
+              () => aesDecryptBytes(
+                mode: 'aes-cfb',
+                data: input,
+                key: key,
+                blockSize: blockSize,
+              ),
+            );
+            if (background != null) return background;
             var cipher = CFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
             var offset = 0;
@@ -624,16 +627,17 @@ mixin class _JSEngineApi {
             final key = _requireBytes(data["key"], 'aes-ofb key');
             final input = _requireBytes(value, 'aes-ofb data');
             var blockSize = data["blockSize"];
-            if (data["isolate"] == true) {
-              return Isolate.run(
-                () => aesDecryptBytes(
-                  mode: 'aes-ofb',
-                  data: input,
-                  key: key,
-                  blockSize: blockSize,
-                ),
-              );
-            }
+            final background = _aesMaybeIsolate(
+              data,
+              input,
+              () => aesDecryptBytes(
+                mode: 'aes-ofb',
+                data: input,
+                key: key,
+                blockSize: blockSize,
+              ),
+            );
+            if (background != null) return background;
             var cipher = OFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
             var offset = 0;
@@ -927,6 +931,24 @@ List<int> _hashInput(Object? value) =>
 Uint8List _requireBytes(Object? value, String what) =>
     jsBytesOf(value) ??
     (throw "$what 需要字节数组（Uint8Array/ArrayBuffer），收到 ${value.runtimeType}");
+
+/// 小于该体积的 AES 直接在本地算：isolate 的启动 + 数据拷贝开销
+/// 比解密本身还大（Android 上 spawn 一次约 10ms）。
+const int _kAesIsolateBytes = 64 * 1024;
+
+/// `isolate: true` 的 AES：大图放后台 isolate，小数据原地算。
+///
+/// 两种情况都返回 Future（保持 JS 侧 `await Convert.xxxAsync()` 的 Promise 语义）；
+/// 返回 null 表示源没用 isolate，调用方继续走同步实现。
+Future<Uint8List>? _aesMaybeIsolate(
+  Map<String, dynamic> data,
+  Uint8List input,
+  Uint8List Function() compute,
+) {
+  if (data["isolate"] != true) return null;
+  if (input.length < _kAesIsolateBytes) return Future.value(compute());
+  return Isolate.run(compute);
+}
 
 /// AES 解密（纯计算，可安全地放到后台 isolate 执行）。
 ///

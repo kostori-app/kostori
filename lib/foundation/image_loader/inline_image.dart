@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/log.dart';
@@ -40,9 +40,15 @@ class InlineImageStore {
   static final Map<String, Future<void>> _pending = {};
 
   /// 是否是 base64 图片（`data:` 前缀，或超长且没有 scheme 的字符串）
-  static bool looksLikeBase64(String url) =>
-      url.startsWith('data:') ||
-      (!url.contains('://') && !url.startsWith('/') && url.length > 100);
+  ///
+  /// 只扫描开头一小段：base64 文本动辄几百 KB，整串 `contains` 每次渲染都要
+  /// 跑一遍，这里 scheme 只可能出现在最前面。
+  static bool looksLikeBase64(String url) {
+    if (url.startsWith('data:')) return true;
+    if (url.length <= 100 || url.startsWith('/')) return false;
+    final head = url.length > 32 ? url.substring(0, 32) : url;
+    return !head.contains('://');
+  }
 
   static bool isRef(String value) => value.startsWith(prefix);
 
@@ -67,27 +73,38 @@ class InlineImageStore {
   }
 
   /// 转存：解码 → 压缩 → 写盘（同一引用只做一次）
-  static Future<void> storeBase64(String dataUrl) {
-    final ref = refOf(dataUrl);
-    final key = cacheKeyOfRef(ref);
-    return _pending[key] ??= _store(key, dataUrl).whenComplete(() {
-      _pending.remove(key);
-    });
+  ///
+  /// 调用方已经算过 [ref] / 解过 [bytes] 时传进来，省掉重复的 sha1 与解码。
+  static Future<void> storeBase64(
+    String dataUrl, {
+    String? ref,
+    Uint8List? bytes,
+  }) {
+    final key = cacheKeyOfRef(ref ?? refOf(dataUrl));
+    return _pending[key] ??= _store(key, dataUrl, bytes: bytes).whenComplete(
+      () {
+        _pending.remove(key);
+      },
+    );
   }
 
-  static Future<void> _store(String key, String dataUrl) async {
+  static Future<void> _store(
+    String key,
+    String dataUrl, {
+    Uint8List? bytes,
+  }) async {
     try {
       if (await CacheManager().findCache(key) != null) return;
-      final bytes = decode(dataUrl);
-      if (bytes == null || bytes.isEmpty) return;
+      final decoded = bytes ?? decode(dataUrl);
+      if (decoded == null || decoded.isEmpty) return;
       // 不是图片（解密失败/被截断的响应）就不落盘，避免把坏内容缓存一年
-      if (!looksLikeImage(bytes)) {
+      if (!looksLikeImage(decoded)) {
         DebugLog.warning('InlineImageStore', 'not an image, skip caching');
         return;
       }
       await CacheManager().writeCache(
         key,
-        await _compress(bytes),
+        await _compress(decoded),
         _cacheDuration,
       );
     } catch (e) {
@@ -166,9 +183,14 @@ class InlineImageStore {
     }
   }
 
+  /// 平台没有实现压缩（Windows/Linux）时只记一次，之后不再尝试
+  static bool _compressUnsupported = false;
+
   /// 压缩成 WebP；本来就很小 / 平台不支持 / 无法解码时退回原字节。
   static Future<Uint8List> _compress(Uint8List bytes) async {
-    if (bytes.length < _kSkipCompressBelow) return bytes;
+    if (bytes.length < _kSkipCompressBelow || _compressUnsupported) {
+      return bytes;
+    }
     try {
       final out = await FlutterImageCompress.compressWithList(
         bytes,
@@ -179,7 +201,12 @@ class InlineImageStore {
       );
       return out.isNotEmpty ? out : bytes;
     } catch (e) {
-      DebugLog.error('InlineImageStore', 'compress failed: $e');
+      if (e is MissingPluginException || e is UnimplementedError) {
+        // 该平台没有实现，别再对每张图都抛一次（也不刷日志）
+        _compressUnsupported = true;
+      } else {
+        DebugLog.error('InlineImageStore', 'compress failed: $e');
+      }
       return bytes;
     }
   }

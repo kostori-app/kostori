@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/image_loader/inline_image.dart';
 
 /// 1x1 透明 PNG
@@ -48,6 +49,23 @@ void main() {
       );
       expect(InlineImageStore.looksLikeImage(const [1, 2, 3]), isFalse);
       expect(InlineImageStore.looksLikeImage(const []), isFalse);
+    });
+
+    test('超长 URL 的图片键不会把整串拼进去', () {
+      final dataUrl = 'data:image/png;base64,$_kPng${'A' * 5000}';
+      final provider = CachedImageProvider(dataUrl, sourceKey: 'demo');
+      expect(provider.key.length, lessThan(120));
+      // 同一 URL 稳定，同一 URL 不同源/剧集不串图
+      expect(provider.key, CachedImageProvider(dataUrl, sourceKey: 'demo').key);
+      expect(
+        provider.key,
+        isNot(CachedImageProvider(dataUrl, sourceKey: 'other').key),
+      );
+      // 普通 URL 保持原样（不改变既有缓存键）
+      expect(
+        const CachedImageProvider('https://a.com/b.jpg', sourceKey: 'demo').key,
+        'https://a.com/b.jpgdemo',
+      );
     });
 
     test('解码 data URL 与裸 base64', () {

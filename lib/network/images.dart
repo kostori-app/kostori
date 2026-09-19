@@ -10,10 +10,24 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/image.dart';
 
+/// 同一张图并发只解析一次：列表重建、同一封面多处显示时很常见，
+/// 否则会重复走 JS 引擎抓取/解密/压缩。
+final Map<String, Future<Uint8List?>> _resolvingInlineImages = {};
+
 /// 解析站内 base64 / `inline:<token>` 图片：
 /// 先读本地缓存；短引用缓存失效时调源的 `loadInlineImage(token)` 回源一次
 /// 并重新转存；裸 base64 则内存解码后转存。
-Future<Uint8List?> resolveInlineImage(String url, String? sourceKey) async {
+Future<Uint8List?> resolveInlineImage(String url, String? sourceKey) {
+  final pending = _resolvingInlineImages[url];
+  if (pending != null) return pending;
+  final task = _resolveInlineImage(url, sourceKey);
+  _resolvingInlineImages[url] = task;
+  return task.whenComplete(() {
+    _resolvingInlineImages.remove(url);
+  });
+}
+
+Future<Uint8List?> _resolveInlineImage(String url, String? sourceKey) async {
   if (InlineImageStore.isRef(url)) {
     final cached = await InlineImageStore.read(url);
     if (cached != null) return cached;
@@ -56,7 +70,11 @@ abstract class ImageDownloader {
     String? aid,
     Map<String, String>? headers,
   ]) {
-    final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
+    // data URL 可能几百 KB，别把它整串当键（去重只需要能区分即可）
+    final cacheKey = url.length > 512
+        ? 'long:${url.hashCode}x${url.length}@$sourceKey'
+              '${aid != null ? '@$aid' : ''}'
+        : "$url@$sourceKey${aid != null ? '@$aid' : ''}";
     final existing = _loadingImages[cacheKey];
     if (existing != null) return existing.stream;
     final wrapper = _StreamWrapper<ImageDownloadProgress>(
@@ -75,19 +93,8 @@ abstract class ImageDownloader {
     String? aid,
     Map<String, String>? headers,
   ]) async* {
-    final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
-    final cache = await CacheManager().findCache(cacheKey);
-
-    if (cache != null) {
-      var data = await cache.readAsBytes();
-      yield ImageDownloadProgress(
-        currentBytes: data.length,
-        totalBytes: data.length,
-        imageBytes: data,
-      );
-    }
-
-    // 站内 base64 / 转存短引用：没有 URL 可请求，直接走本地/源回源
+    // 站内 base64 / 转存短引用：没有 URL 可请求，直接用 inline 缓存/回源，
+    // 不必再拿几百 KB 的 data URL 去 CacheManager 里算 md5 + 查库
     if (InlineImageStore.looksLikeBase64(url) ||
         InlineImageStore.isRef(url)) {
       final bytes = await resolveInlineImage(url, sourceKey);
@@ -105,6 +112,18 @@ abstract class ImageDownloader {
         imageBytes: bytes,
       );
       return;
+    }
+
+    final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
+    final cache = await CacheManager().findCache(cacheKey);
+
+    if (cache != null) {
+      var data = await cache.readAsBytes();
+      yield ImageDownloadProgress(
+        currentBytes: data.length,
+        totalBytes: data.length,
+        imageBytes: data,
+      );
     }
 
     var configs = <String, dynamic>{};

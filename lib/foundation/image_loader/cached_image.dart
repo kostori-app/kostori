@@ -64,12 +64,15 @@ class CachedImageProvider
 
     if (isBase64) {
       // 已经转存过就直接读缓存，避免重复解码/压缩
-      final cached = await InlineImageStore.read(InlineImageStore.refOf(url));
+      final ref = InlineImageStore.refOf(url);
+      final cached = await InlineImageStore.read(ref);
       if (cached != null) return _yieldBytes(chunkEvents, cached);
-      // 首次遇到：内存解码显示，同时转存给下次用
-      unawaited(InlineImageStore.storeBase64(url));
+      // 首次遇到：内存解码显示，同时转存给下次用（复用算好的引用和字节）
       final bytes = InlineImageStore.decode(url);
-      if (bytes == null) throw ImageLoadException(url, 'invalid base64 image');
+      if (bytes == null || !InlineImageStore.looksLikeImage(bytes)) {
+        throw ImageLoadException(url, 'invalid base64 image');
+      }
+      unawaited(InlineImageStore.storeBase64(url, ref: ref, bytes: bytes));
       return _yieldBytes(chunkEvents, bytes);
     }
 
@@ -148,8 +151,16 @@ class CachedImageProvider
     return SynchronousFuture(this);
   }
 
+  /// 图片缓存键。
+  ///
+  /// 普通 URL 保持原样；base64 图（data URL）动辄几百 KB，直接拼进 key 会让
+  /// 每次缓存查找/去重都为这个巨串重建一次字符串并算哈希，这里换成
+  /// 「哈希 + 长度」的短键。
   @override
-  String get key => url + (sourceKey ?? "") + (aid ?? "");
+  String get key {
+    if (url.length <= 512) return url + (sourceKey ?? "") + (aid ?? "");
+    return 'long:${url.hashCode}x${url.length}@${sourceKey ?? ''}@${aid ?? ''}';
+  }
 }
 
 /// 图片加载失败异常（网络不可达/域名屏蔽/连接中断等）
