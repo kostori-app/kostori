@@ -1,11 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/db_common.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -17,7 +16,6 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:path/path.dart' as p;
 
 part 'stats.g.dart';
 
@@ -525,16 +523,7 @@ class _StatsDb extends _$_StatsDb {
       MigrationStrategy(onCreate: (m) => m.createAll());
 }
 
-LazyDatabase _openConn() => LazyDatabase(() async {
-  final file = File(p.join(App.dataPath, 'stats.db'));
-  return NativeDatabase.createInBackground(
-  file,
-  setup: (db) {
-    db.execute('PRAGMA journal_mode = WAL;');
-    db.execute('PRAGMA synchronous = NORMAL;');
-  },
-);
-});
+LazyDatabase _openConn() => openWalDb('stats.db');
 
 // ═══════════════════════════════════════════════════════════
 // StatsManager
@@ -602,13 +591,11 @@ class StatsManager with ChangeNotifier {
   }
 
   /// 把 WAL 里的改动写回主库文件（导出整库副本前调用）
-  Future<void> checkpoint() async {
-    try {
-      await _guard(
-        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-      );
-    } catch (_) {}
-  }
+  Future<void> checkpoint() => walCheckpoint(
+    () => _guard(
+      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+    ),
+  );
 
   /// 通知“按天事件”缓存失效（外部直接改库后可调用）
   void invalidateEventMapCache() {

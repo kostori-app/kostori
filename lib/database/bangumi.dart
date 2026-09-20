@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/database/db_common.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_tag.dart';
@@ -292,18 +293,7 @@ class _BangumiDb extends _$_BangumiDb {
       MigrationStrategy(onCreate: (m) => m.createAll());
 }
 
-LazyDatabase _openConn() => LazyDatabase(() async {
-  final file = File(p.join(App.dataPath, 'bangumi.db'));
-  return NativeDatabase.createInBackground(
-    file,
-    setup: (db) {
-      // WAL + NORMAL：异常中断（杀进程/崩溃/强制退出）时大幅降低
-      // 数据库损坏（disk image malformed）概率
-      db.execute('PRAGMA journal_mode = WAL;');
-      db.execute('PRAGMA synchronous = NORMAL;');
-    },
-  );
-});
+LazyDatabase _openConn() => openWalDb('bangumi.db');
 
 // ═══════════════════════════════════════════════════════════
 // 辅助：Drift 行 → BangumiItem
@@ -771,13 +761,11 @@ class BangumiManager with ChangeNotifier {
   }
 
   /// 把 WAL 里的改动写回主库文件（导出整库前调用）
-  Future<void> checkpoint() async {
-    try {
-      await _guard(
-        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-      );
-    } catch (_) {}
-  }
+  Future<void> checkpoint() => walCheckpoint(
+    () => _guard(
+      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+    ),
+  );
 
   // ─── bangumi_AllEpInfo ─────────────────────
 

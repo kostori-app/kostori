@@ -1,18 +1,14 @@
 // ignore_for_file: collection_methods_unrelated_type
 
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/database/db_common.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
-import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:path/path.dart' as p;
 
 part 'history.g.dart';
 
@@ -570,16 +566,7 @@ CREATE TABLE IF NOT EXISTS text_rules (
 const String _alterTextRulesUpdatedAtSql =
     'ALTER TABLE text_rules ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0';
 
-LazyDatabase _openConn() => LazyDatabase(() async {
-  final file = File(p.join(App.dataPath, 'history.db'));
-  return NativeDatabase.createInBackground(
-  file,
-  setup: (db) {
-    db.execute('PRAGMA journal_mode = WAL;');
-    db.execute('PRAGMA synchronous = NORMAL;');
-  },
-);
-});
+LazyDatabase _openConn() => openWalDb('history.db');
 
 // ═══════════════════════════════════════════════════════════
 // HistoryManager（单例）
@@ -744,15 +731,11 @@ class HistoryManager with ChangeNotifier {
   }
 
   /// 把 WAL 里的改动写回主库文件（导出整库副本前调用）
-  Future<void> checkpoint() async {
-    // 检查点失败不影响后续导出（下次打开自动重放 WAL），故意静默
-    try {
-      await _guard(
-        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-      );
-      // ignore: empty_catches
-    } catch (_) {}
-  }
+  Future<void> checkpoint() => walCheckpoint(
+    () => _guard(
+      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+    ),
+  );
 
   Future<void> reinit([Future<void> Function()? between]) async {
     await _waitIdle();

@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:kostori/database/daos/ai_api_key_dao.dart';
 import 'package:kostori/database/daos/ai_aux_settings_dao.dart';
 import 'package:kostori/database/daos/ai_custom_provider_dao.dart';
@@ -10,8 +7,7 @@ import 'package:kostori/database/daos/ai_model_dao.dart';
 import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
 import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_skill_dao.dart';
-import 'package:kostori/foundation/app.dart';
-import 'package:path/path.dart' as p;
+import 'package:kostori/database/db_common.dart';
 
 part 'ai_database.g.dart';
 
@@ -483,11 +479,8 @@ class AiDatabase extends _$AiDatabase {
   }
 
   /// 把 WAL 里的改动写回主库文件（导出整库前调用）
-  Future<void> checkpoint() async {
-    try {
-      await customStatement('PRAGMA wal_checkpoint(TRUNCATE);');
-    } catch (_) {}
-  }
+  Future<void> checkpoint() =>
+      walCheckpoint(() => customStatement('PRAGMA wal_checkpoint(TRUNCATE);'));
 
   Future<void> _ensureTableExists(Migrator m, TableInfo table) async {
     try {
@@ -515,13 +508,4 @@ class AiDatabase extends _$AiDatabase {
   static void init() => _instance = AiDatabase._();
 }
 
-LazyDatabase _openConnection() => LazyDatabase(() async {
-  final file = File(p.join(App.dataPath, 'ai_database.db'));
-  return NativeDatabase.createInBackground(
-  file,
-  setup: (db) {
-    db.execute('PRAGMA journal_mode = WAL;');
-    db.execute('PRAGMA synchronous = NORMAL;');
-  },
-);
-});
+LazyDatabase _openConnection() => openWalDb('ai_database.db');

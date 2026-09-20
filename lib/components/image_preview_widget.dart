@@ -689,7 +689,7 @@ class _TopBar extends ConsumerWidget {
 
     final stat = await file.stat();
     final ext = file.path.split('.').last.toUpperCase();
-    final size = _formatFileSize(stat.size);
+    final size = formatBytesShort(stat.size);
     final width = image.width;
     final height = image.height;
     final modified = DateFormat('yyyy-MM-dd HH:mm').format(stat.modified);
@@ -737,11 +737,5 @@ class _TopBar extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }

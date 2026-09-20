@@ -667,7 +667,6 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                         ),
                                       ),
                                 if (showRightButton) ...[
-                                  // Spacer(),
                                   SizedBox(height: 4),
                                   (!widget.isLoading)
                                       ? _button()
@@ -838,7 +837,6 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          // Spacer(),
                           Expanded(
                             child: BangumiBarChartPage(
                               bangumiItem: widget.bangumiItem,

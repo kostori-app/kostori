@@ -199,8 +199,7 @@ class _WatcherState extends State<Watcher>
     return _series!;
   }
 
-  // ---------------- 生命周期 ----------------
-
+  // 生命周期
   @override
   void initState() {
     super.initState();
@@ -302,15 +301,13 @@ class _WatcherState extends State<Watcher>
     setState(() {});
   }
 
-  // ---------------- 请求头 ----------------
-
+  // 请求头
   /// 动态添加或更新请求头
   void setHeader(String key, String value) {
     headers?[key] = value;
   }
 
-  // ---------------- 集加载与播放 ----------------
-
+  // 集加载与播放
   /// 播放下一集（已到最后一集时提示无更多剧集）
   @override
   Future<void> playNextEpisode({bool checkRemainingTime = true}) async {
@@ -704,8 +701,7 @@ class _WatcherState extends State<Watcher>
     });
   }
 
-  // ---------------- 历史与统计 ----------------
-
+  // 历史与统计
   Future<void> updateHistory() async {
     history.lastWatchEpisode = epIndex;
     // 系列条目互相独立（每条目一个独立视频）：历史按单集记录，不把系列当多集
@@ -783,8 +779,7 @@ class _WatcherState extends State<Watcher>
     }
   }
 
-  // ---------------- UI ----------------
-
+  // UI
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -799,8 +794,7 @@ class _WatcherState extends State<Watcher>
     );
   }
 
-  // ---------------- 工具方法 ----------------
-
+  // 工具方法
   /// 解析 loadAnimePages 返回值：String（旧）或 Map（AnimePlayResult）
   (String, AnimePlayResult?) _parsePlayResult(dynamic res) {
     if (res is String) return (res, null);
@@ -923,3 +917,4 @@ class _WatcherState extends State<Watcher>
     }
   }
 }
+

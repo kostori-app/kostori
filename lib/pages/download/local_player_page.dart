@@ -107,8 +107,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     super.dispose();
   }
 
-  // ---- 控件显示/隐藏 ----
-
+  // 控件显示/隐藏
   void displayVideoController() {
     animationController.forward();
     hideTimer?.cancel();
@@ -358,8 +357,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  // ---- 侧边栏 ----
-
+  // 侧边栏
   Widget _buildSideBar() {
     return Positioned(
       right: 10,
@@ -659,8 +657,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  // ---- HUD 指示 ----
-
+  // HUD 指示
   Widget _buildSeekIndicator(LocalPlayerState state) {
     // 方向配色 + 磨砂玻璃 + 目标时间/总时长 + 进度条
     final target = state.seekPreview ?? state.position;
@@ -936,3 +933,4 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 }
+

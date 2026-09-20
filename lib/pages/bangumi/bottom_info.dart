@@ -330,7 +330,6 @@ class BottomInfoState extends State<BottomInfo>
                             height: height,
                           ),
                         ),
-                        // SizedBox(width: 12.0),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),

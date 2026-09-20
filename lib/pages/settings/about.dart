@@ -546,11 +546,6 @@ class _ReleaseCardState extends State<ReleaseCard> {
   final TranslationController _tc = TranslationController();
   bool _expanded = false;
 
-  String _formatDate(String isoString) {
-    final date = DateTime.tryParse(isoString);
-    return date == null ? isoString : DateFormat('yyyy/M/d').format(date);
-  }
-
   @override
   void dispose() {
     _tc.dispose();
@@ -562,6 +557,10 @@ class _ReleaseCardState extends State<ReleaseCard> {
     final cs = Theme.of(context).colorScheme;
     final release = widget.release;
     final createdAt = release['created_at'] as String? ?? '';
+    final createdAtDate = DateTime.tryParse(createdAt);
+    final createdAtText = createdAtDate == null
+        ? createdAt
+        : DateFormat('yyyy/M/d').format(createdAtDate);
     final name =
         release['name'] as String? ?? release['tag_name']?.toString() ?? '';
     final body = release['body'] as String? ?? '';
@@ -593,7 +592,7 @@ class _ReleaseCardState extends State<ReleaseCard> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _formatDate(createdAt),
+                          createdAtText,
                           style: TextStyle(
                             fontSize: 12,
                             color: cs.onSurfaceVariant,

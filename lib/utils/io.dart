@@ -204,18 +204,6 @@ Future<void> copyDirectoryIsolate(
   await Isolate.run(() => overrideIO(() => copyDirectory(source, destination)));
 }
 
-String findValidDirectoryName(String path, String directory) {
-  var name = sanitizeFileName(directory);
-  var dir = Directory("$path/$name");
-  var i = 1;
-  while (dir.existsSync() && dir.listSync().isNotEmpty) {
-    name = sanitizeFileName("$directory($i)");
-    dir = Directory("$path/$name");
-    i++;
-  }
-  return name;
-}
-
 class DirectoryPicker {
   /// Pick a directory.
   ///
@@ -267,26 +255,6 @@ class DirectoryPicker {
   }
 }
 
-class IOSDirectoryPicker {
-  static const MethodChannel _channel = MethodChannel("kostori/method_channel");
-
-  // 调用 iOS 目录选择方法
-  static Future<String?> selectDirectory() async {
-    IO._isSelectingFiles = true;
-    try {
-      final String? path = await _channel.invokeMethod('selectDirectory');
-      return path;
-    } catch (e) {
-      // 返回报错信息
-      return e.toString();
-    } finally {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        IO._isSelectingFiles = false;
-      });
-    }
-  }
-}
-
 Future<FileSelectResult?> selectFile({required List<String> ext}) async {
   if (IO._isSelectingFiles) return null;
   IO._isSelectingFiles = true;
@@ -327,11 +295,6 @@ Future<String?> selectDirectory() async {
     await Future.delayed(const Duration(milliseconds: 100));
     IO._isSelectingFiles = false;
   }
-}
-
-// selectDirectoryIOS
-Future<String?> selectDirectoryIOS() async {
-  return IOSDirectoryPicker.selectDirectory();
 }
 
 Future<void> saveFile({
@@ -447,6 +410,32 @@ String bytesToReadableString(int bytes) {
   } else {
     return "${(bytes / 1024 / 1024 / 1024).toStringAsFixed(2)} GB";
   }
+}
+
+/// 短字节格式（1 位小数、上限 MB）：下载页与图片预览共用，
+/// 替代两处逐字相同的私有 _formatBytes/_formatFileSize
+String formatBytesShort(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) {
+    return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  }
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+}
+
+/// 网速格式（下载页与系统状态 widget 共用）：
+/// 零/负值时的显示由 [zeroText] 决定（下载页传 '' 表示隐藏，状态页默认 '0 B/s'）
+String formatSpeed(num bytesPerSec, {String zeroText = '0 B/s'}) {
+  if (bytesPerSec <= 0) return zeroText;
+  if (bytesPerSec < 1024) {
+    final v = bytesPerSec is int
+        ? bytesPerSec.toString()
+        : bytesPerSec.toStringAsFixed(0);
+    return '$v B/s';
+  }
+  if (bytesPerSec < 1024 * 1024) {
+    return '${(bytesPerSec / 1024).toStringAsFixed(1)} KB/s';
+  }
+  return '${(bytesPerSec / (1024 * 1024)).toStringAsFixed(1)} MB/s';
 }
 
 /// 指定目录所在分区的剩余空间（字节）。目前仅 Android 经原生 StatFs 实现，

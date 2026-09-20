@@ -1,16 +1,12 @@
 // AI 消息（会话消息）单独一个库：ai_tasks.db
 // 体积最大，独立成库便于选择性同步（可跳过消息库，只同步设置/故事等）。
 
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
-import 'package:kostori/foundation/app.dart';
+import 'package:kostori/database/db_common.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:path/path.dart' as p;
 
 part 'ai_task_database.g.dart';
 
@@ -111,23 +107,11 @@ class AiTaskDatabase extends _$AiTaskDatabase {
       '\u0000${r.inputContent}\u0000${r.outputContent ?? ''}';
 
   /// 把 WAL 里的改动写回主库文件（导出整库前调用）
-  Future<void> checkpoint() async {
-    try {
-      await customStatement('PRAGMA wal_checkpoint(TRUNCATE);');
-    } catch (_) {}
-  }
+  Future<void> checkpoint() =>
+      walCheckpoint(() => customStatement('PRAGMA wal_checkpoint(TRUNCATE);'));
 }
 
-LazyDatabase _openConnection() => LazyDatabase(() async {
-  final file = File(p.join(App.dataPath, 'ai_tasks.db'));
-  return NativeDatabase.createInBackground(
-    file,
-    setup: (db) {
-      db.execute('PRAGMA journal_mode = WAL;');
-      db.execute('PRAGMA synchronous = NORMAL;');
-    },
-  );
-});
+LazyDatabase _openConnection() => openWalDb('ai_tasks.db');
 
 /// 把旧 ai_database.db 里的 ai_tasks 迁到独立库（一次性），并删除旧表。
 ///

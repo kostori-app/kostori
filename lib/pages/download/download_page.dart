@@ -15,14 +15,6 @@ import 'package:kostori/services/download/download_task.dart';
 import 'package:kostori/network/external_player.dart';
 import 'package:kostori/utils/io.dart';
 
-String _formatBytes(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) {
-    return '${(bytes / 1024).toStringAsFixed(1)} KB';
-  }
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-}
-
 // 下载筛选的持久化 key
 const String _recordFilterKey = 'downloadRecordFilter';
 const String _taskFilterKey = 'downloadTaskFilter';
@@ -1017,7 +1009,7 @@ class _RecordsTabState extends State<_RecordsTab> {
                       if (time.isNotEmpty) chip(time),
                       if (sourceName.isNotEmpty) chip(sourceName),
                       if (exists)
-                        chip(_formatBytes(_sizes[fp] ?? 0))
+                        chip(formatBytesShort(_sizes[fp] ?? 0))
                       else
                         chip(t.deleted, textColor: colorScheme.onError),
                     ],
@@ -1297,8 +1289,8 @@ class _DownloadTile extends StatelessWidget {
   String _buildProgressInfo() {
     if (task.status == DownloadStatus.queued) return '';
     final parts = <String>[
-      _formatBytes(task.downloadedBytes),
-      if (task.totalBytes > 0) _formatBytes(task.totalBytes),
+      formatBytesShort(task.downloadedBytes),
+      if (task.totalBytes > 0) formatBytesShort(task.totalBytes),
     ];
     final bytes = parts.join(' / ');
     final segs = task.segTotal > 0 ? '${task.segDone}/${task.segTotal}' : '';
@@ -1460,7 +1452,7 @@ class _DownloadTile extends StatelessWidget {
         );
       }
       final pct = (task.progress * 100).clamp(0.0, 100.0).toStringAsFixed(0);
-      final speed = _formatSpeed(task.downloadSpeed);
+      final speed = formatSpeed(task.downloadSpeed, zeroText: '');
       final res = task.resolution?.trim();
       final hasRes = res != null && res.isNotEmpty;
       // 百分比组件：容器内 = 多边形加载动画(左) + 百分比(右)，
@@ -1563,16 +1555,5 @@ class _DownloadTile extends StatelessWidget {
     s = s.split('\n').first.trim();
     if (s.length > 48) s = '${s.substring(0, 48)}...';
     return s;
-  }
-
-  String _formatSpeed(double bytesPerSec) {
-    if (bytesPerSec <= 0) return '';
-    if (bytesPerSec < 1024) {
-      return '${bytesPerSec.toStringAsFixed(0)} B/s';
-    }
-    if (bytesPerSec < 1024 * 1024) {
-      return '${(bytesPerSec / 1024).toStringAsFixed(1)} KB/s';
-    }
-    return '${(bytesPerSec / (1024 * 1024)).toStringAsFixed(1)} MB/s';
   }
 }

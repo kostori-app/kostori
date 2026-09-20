@@ -778,9 +778,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
           builder: (context, setStates) {
             String formatDate(DateTime? date) {
               if (date == null) return t.unselected;
-              return "${date.year.toString().padLeft(4, '0')}-"
-                  "${date.month.toString().padLeft(2, '0')}-"
-                  "${date.day.toString().padLeft(2, '0')}";
+              return Utils.formatDate(date);
             }
 
             // 自定义日期选择器（年月日）

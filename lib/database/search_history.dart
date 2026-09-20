@@ -1,11 +1,7 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/foundation/app.dart';
-import 'package:path/path.dart' as p;
+import 'package:kostori/database/db_common.dart';
 
 part 'search_history.g.dart';
 
@@ -36,16 +32,7 @@ class _SearchHistoryDb extends _$_SearchHistoryDb {
       MigrationStrategy(onCreate: (m) => m.createAll());
 }
 
-LazyDatabase _openConn() => LazyDatabase(() async {
-  final file = File(p.join(App.dataPath, 'search_history.db'));
-  return NativeDatabase.createInBackground(
-  file,
-  setup: (db) {
-    db.execute('PRAGMA journal_mode = WAL;');
-    db.execute('PRAGMA synchronous = NORMAL;');
-  },
-);
-});
+LazyDatabase _openConn() => openWalDb('search_history.db');
 
 class SearchHistoryItem {
   final String keyword;
@@ -178,11 +165,8 @@ class SearchHistoryManager with ChangeNotifier {
   }
 
   /// 把 WAL 里的改动写回主库文件（整库导出/覆盖前调用）
-  Future<void> checkpoint() async {
-    try {
-      await _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);');
-    } catch (_) {}
-  }
+  Future<void> checkpoint() =>
+      walCheckpoint(() => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'));
 
   Future<void> deleteSearch(String keyword) async {
     await (_db.delete(

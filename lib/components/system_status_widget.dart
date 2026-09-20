@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 class BatteryWidget extends StatefulWidget {
@@ -222,8 +223,8 @@ class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
         final uploadSpeed = (txBytes - _lastTxBytes).clamp(0, txBytes);
 
         setState(() {
-          _downloadSpeed = _formatSpeed(downloadSpeed);
-          _uploadSpeed = _formatSpeed(uploadSpeed);
+          _downloadSpeed = formatSpeed(downloadSpeed);
+          _uploadSpeed = formatSpeed(uploadSpeed);
           _lastRxBytes = rxBytes;
           _lastTxBytes = txBytes;
         });
@@ -231,20 +232,6 @@ class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
         debugPrint("getNetworkStats error: $e");
       }
     });
-  }
-
-  String _formatSpeed(int speed) {
-    if (speed <= 0) return '0 B/s';
-    if (speed < 1024) {
-      // 低于 1KB 显示字节
-      return '$speed B/s';
-    }
-    if (speed < 1024 * 1024) {
-      // 显示 KB/s
-      return '${(speed / 1024).toStringAsFixed(1)} KB/s';
-    }
-    // 显示 MB/s
-    return '${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
   }
 
   @override

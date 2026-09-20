@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:kostori/database/db_common.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:path/path.dart' as p;
@@ -280,13 +281,11 @@ class CookieJarSql {
       _withDb(() => _db.select(_db.cookiesTable).get());
 
   /// 把 WAL 里的改动写回主库文件（导出整库前调用）
-  Future<void> checkpoint() async {
-    try {
-      await _withDb(
-        () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-      );
-    } catch (_) {}
-  }
+  Future<void> checkpoint() => walCheckpoint(
+    () => _withDb(
+      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+    ),
+  );
 
   /// 跨端合并 Cookie：
   /// - 本机没有的同名（name+domain+path）Cookie 直接补齐；

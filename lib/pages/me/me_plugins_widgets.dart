@@ -936,8 +936,7 @@ class _PluginFormState extends State<_PluginForm> {
   }
 }
 
-// ---------- 子页 / 导航壳 ----------
-
+// 子页 / 导航壳
 Map<String, dynamic> _paramsOf(Map<String, dynamic> m) {
   final p = <String, dynamic>{};
   if (m['params'] is Map) {
@@ -945,4 +944,5 @@ Map<String, dynamic> _paramsOf(Map<String, dynamic> m) {
   }
   return p;
 }
+
 
