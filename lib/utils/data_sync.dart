@@ -26,7 +26,7 @@ class RemoteFileInfo {
   const RemoteFileInfo({required this.name, this.size = 0, this.modified});
 }
 
-class DataSync with ChangeNotifier {
+class DataSync with ChangeNotifier, WidgetsBindingObserver {
   DataSync._() {
     final t = appdata.implicitData['dataLastSyncTime'];
     if (t is int) _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(t);
@@ -43,6 +43,21 @@ class DataSync with ChangeNotifier {
         var controller = WindowFrame.of(ctx);
         controller.addCloseListener(_handleWindowClose);
       });
+    } else {
+      // 移动端没有关窗兜底：切后台/被杀时防抖定时器直接丢失，
+      // paused 时取消防抖立即刷出（不阻塞挂起，刷不出则 _dispatchUpload
+      // 的重试链会接管）
+      WidgetsBinding.instance.addObserver(this);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && _dirty && isEnabled) {
+      _uploadDebounce?.cancel();
+      _uploadDebounce = null;
+      _dirty = false;
+      _dispatchUpload();
     }
   }
 
@@ -53,6 +68,40 @@ class DataSync with ChangeNotifier {
   double? _progress;
 
   double? get progress => _progress;
+
+  /// 本轮多文件任务的总份数/已完成份数。
+  ///
+  /// 此前每个文件的 onProgress 都是 0→1，导致全量同步时进度条每传完
+  /// 一个文件就闪一下 100%。现在单文件进度折算进总份数，
+  /// 单文件任务（total=1）行为与原来完全一致。
+  int _progressTotal = 1;
+  int _progressDone = 0;
+
+  void _reportFileProgress(int count, int total) {
+    final frac = total > 0 ? count / total : 0.0;
+    if (_progressTotal <= 1) {
+      _progress = total > 0 ? frac : null;
+    } else {
+      _progress =
+          (_progressDone + frac.clamp(0.0, 1.0)) / _progressTotal;
+    }
+    notifyListeners();
+  }
+
+  void _reportFileDone() {
+    _progressDone++;
+    if (_progressTotal <= 1) {
+      _progress = 1.0;
+    } else {
+      _progress = (_progressDone / _progressTotal).clamp(0.0, 1.0);
+    }
+    notifyListeners();
+  }
+
+  void _resetProgressChart() {
+    _progressTotal = 1;
+    _progressDone = 0;
+  }
 
   bool _isDownloading = false;
 
@@ -90,6 +139,9 @@ class DataSync with ChangeNotifier {
   Timer? _uploadDebounce;
   bool _dirty = false;
 
+  /// 上传失败的重试次数（2/4/6 分钟退避，3 次后停等下次改动，避免离线空转）
+  int _retryCount = 0;
+
   /// 数据变化时触发：节流合并短时间内的多次变化为一次上传，
   /// 避免频繁上下行占用流量（例如频繁切换页面、逐集更新进度）。
   void onDataChanged() {
@@ -108,14 +160,49 @@ class DataSync with ChangeNotifier {
           _uploadDebounce = null;
           if (_dirty) {
             _dirty = false;
-            unawaited(uploadData());
+            _dispatchUpload();
           }
         });
         return;
       }
       _dirty = false;
-      unawaited(uploadData());
+      _dispatchUpload();
     });
+  }
+
+  /// 发起一次上传并跟踪结果：成功清重试计数；失败重标脏 + 退避重试，
+  /// 上传期间的新改动（_dirty 又被置起）成功后补传一次。
+  ///
+  /// 此前这里 `_dirty = false` 后直接 fire-and-forget，失败窗口内的改动
+  /// 要等下一次数据变化才有机会同步，移动端杀进程即丢。
+  void _dispatchUpload() {
+    unawaited(
+      uploadData().then((res) {
+        if (res.error) {
+          _dirty = true;
+          if (_retryCount < 3) {
+            _retryCount++;
+            _uploadDebounce?.cancel();
+            _uploadDebounce = Timer(Duration(minutes: _retryCount * 2), () {
+              _uploadDebounce = null;
+              if (_dirty) {
+                _dirty = false;
+                _dispatchUpload();
+              }
+            });
+          } else {
+            _retryCount = 0;
+          }
+          notifyListeners();
+          return;
+        }
+        _retryCount = 0;
+        if (_dirty) {
+          _dirty = false;
+          _dispatchUpload();
+        }
+      }),
+    );
   }
 
   bool _handleWindowClose() {
@@ -243,12 +330,23 @@ class DataSync with ChangeNotifier {
         const <String, dynamic>{};
     final newHashes = <String, dynamic>{...localHashes};
     var downloaded = 0;
-    for (final part in _autoParts) {
+    // 只拉远端清单里有的部分；总数按实际要处理的部分算，
+    // 跳过（哈希一致）和下完都各记一份，进度单调不闪回
+    final pending = _autoParts
+        .where((p) => remoteMeta[p.key] is Map)
+        .toList();
+    _progressTotal = pending.isEmpty ? 1 : pending.length;
+    _progressDone = 0;
+    for (final part in pending) {
       final meta = remoteMeta[part.key];
-      if (meta is! Map) continue;
+      if (meta is! Map) {
+        _reportFileDone();
+        continue;
+      }
       final remoteHash = meta['hash']?.toString();
       // 与上次下载的哈希一致 → 该部分未变化，跳过下载
       if (remoteHash != null && remoteHash == localHashes[part.key]) {
+        _reportFileDone();
         continue;
       }
       final remoteName = meta['file']?.toString() ?? '${part.name}.kostori';
@@ -258,10 +356,7 @@ class DataSync with ChangeNotifier {
       Future<void> pull(String remoteDir) => client.read2File(
         _join(_normDir(remoteDir), remoteName),
         localFile.path,
-        onProgress: (count, total) {
-          _progress = total > 0 ? count / total : null;
-          notifyListeners();
-        },
+        onProgress: (count, total) => _reportFileProgress(count, total),
       );
       try {
         await pull(part.dir);
@@ -275,6 +370,7 @@ class DataSync with ChangeNotifier {
       localFile.deleteIgnoreError();
       if (remoteHash != null) newHashes[part.key] = remoteHash;
       downloaded++;
+      _reportFileDone();
     }
     appdata.implicitData['syncPartHashes'] = newHashes;
     appdata.writeImplicitData();
@@ -287,6 +383,7 @@ class DataSync with ChangeNotifier {
     if (client == null) return const Res.error('Invalid WebDAV configuration');
     _isUploading = true;
     _progress = null;
+    _resetProgressChart();
     notifyListeners();
     try {
       await prepareSyncPart(part.key);
@@ -306,10 +403,7 @@ class DataSync with ChangeNotifier {
         await client.write(
           _join(dir, remoteName),
           bytes,
-          onProgress: (count, total) {
-            _progress = total > 0 ? count / total : null;
-            notifyListeners();
-          },
+          onProgress: (count, total) => _reportFileProgress(count, total),
         );
         final parts = <String, dynamic>{
           ...?(prevManifest?['parts'] as Map?)?.cast<String, dynamic>(),
@@ -343,6 +437,7 @@ class DataSync with ChangeNotifier {
     } finally {
       _isUploading = false;
       _progress = null;
+      _resetProgressChart();
       notifyListeners();
     }
   }
@@ -353,6 +448,7 @@ class DataSync with ChangeNotifier {
     if (client == null) return const Res.error('Invalid WebDAV configuration');
     _isDownloading = true;
     _progress = null;
+    _resetProgressChart();
     notifyListeners();
     try {
       final manifest = (await readManifest()).dataOrNull;
@@ -367,10 +463,7 @@ class DataSync with ChangeNotifier {
       Future<void> pull(String remoteDir) => client.read2File(
         _join(_normDir(remoteDir), remoteName),
         local.path,
-        onProgress: (count, total) {
-          _progress = total > 0 ? count / total : null;
-          notifyListeners();
-        },
+        onProgress: (count, total) => _reportFileProgress(count, total),
       );
       try {
         await pull(part.dir);
@@ -388,6 +481,7 @@ class DataSync with ChangeNotifier {
     } finally {
       _isDownloading = false;
       _progress = null;
+      _resetProgressChart();
       notifyListeners();
     }
   }
@@ -398,6 +492,7 @@ class DataSync with ChangeNotifier {
     if (client == null) return const Res.error('Invalid WebDAV configuration');
     _isDownloading = true;
     _progress = null;
+    _resetProgressChart();
     notifyListeners();
     try {
       final local = File(
@@ -406,10 +501,7 @@ class DataSync with ChangeNotifier {
       Future<void> pull(String remoteDir) => client.read2File(
         _join(_normDir(remoteDir), remoteName),
         local.path,
-        onProgress: (count, total) {
-          _progress = total > 0 ? count / total : null;
-          notifyListeners();
-        },
+        onProgress: (count, total) => _reportFileProgress(count, total),
       );
       try {
         await pull(part.dir);
@@ -427,6 +519,7 @@ class DataSync with ChangeNotifier {
     } finally {
       _isDownloading = false;
       _progress = null;
+      _resetProgressChart();
       notifyListeners();
     }
   }
@@ -482,14 +575,17 @@ class DataSync with ChangeNotifier {
         // 从旧清单开始，保留选择性同步专用的部分（如 ai_tasks）
         final partsMeta = <String, dynamic>{...prevParts};
         var uploaded = 0;
+        _progressTotal = _autoParts.length;
+        _progressDone = 0;
         for (final part in _autoParts) {
           await prepareSyncPart(part.key);
           final hash = await partContentHash(part.key);
           final prev = prevParts[part.key];
           final prevHash = prev is Map ? prev['hash']?.toString() : null;
           if (prevHash != null && prevHash == hash) {
-            // 未变化：跳过上传，沿用旧元数据
+            // 未变化：跳过上传，沿用旧元数据（同样记一份，进度单调）
             partsMeta[part.key] = prev;
+            _reportFileDone();
             continue;
           }
           final file = await exportPart(part.key);
@@ -502,10 +598,8 @@ class DataSync with ChangeNotifier {
             await client.write(
               _join(dir, remoteName),
               bytes,
-              onProgress: (count, total) {
-                _progress = total > 0 ? count / total : null;
-                notifyListeners();
-              },
+              onProgress: (count, total) =>
+                  _reportFileProgress(count, total),
             );
             partsMeta[part.key] = {
               'version': newVersion,
@@ -515,6 +609,7 @@ class DataSync with ChangeNotifier {
               'file': remoteName,
             };
             uploaded++;
+            _reportFileDone();
           } finally {
             file.deleteIgnoreError();
           }
@@ -556,6 +651,7 @@ class DataSync with ChangeNotifier {
     } finally {
       _isUploading = false;
       _progress = null;
+      _resetProgressChart();
       if (_lastError == null) _recordSyncSuccess();
       notifyListeners();
     }
@@ -615,6 +711,7 @@ class DataSync with ChangeNotifier {
     } finally {
       _isDownloading = false;
       _progress = null;
+      _resetProgressChart();
       if (_lastError == null) _recordSyncSuccess();
       notifyListeners();
     }
