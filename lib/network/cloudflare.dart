@@ -61,10 +61,14 @@ class CloudflareException implements DioException {
 }
 
 class CloudflareInterceptor extends Interceptor {
-  @override
+  import 'package:kostori/lib/utils/network_utils.dart';
+
+// ...
+
+@override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (options.headers['cookie'].toString().contains('cf_clearance')) {
-      options.headers['user-agent'] = appdata.implicitData['ua'] ?? webUA;
+      options.headers['user-agent'] = NetworkUtils.userAgent;
     }
     handler.next(options);
   }

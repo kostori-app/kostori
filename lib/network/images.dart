@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
@@ -40,7 +42,10 @@ Future<Uint8List?> _resolveInlineImage(String url, String? sourceKey) async {
         url.substring(InlineImageStore.prefix.length),
       );
       if (data == null || data.isEmpty) return null;
-      final bytes = Uint8List.fromList(data);
+      // loader 已在 parser 侧把大转换搬到后台，这里避免二次全量拷贝：
+      // Uint8List 直接用；普通 List 大图才走一次 isolate 拷贝，
+      // 小图同步拷贝（spawn 开销反而更大）。
+      final bytes = await _asBytes(data);
       // 解密失败/被截断的内容不缓存也不显示，下次渲染自然会重试
       if (!InlineImageStore.looksLikeImage(bytes)) {
         DebugLog.warning('InlineImage', 'not an image: $url');
@@ -61,6 +66,23 @@ Future<Uint8List?> _resolveInlineImage(String url, String? sourceKey) async {
   if (bytes == null || !InlineImageStore.looksLikeImage(bytes)) return null;
   unawaited(InlineImageStore.storeBase64(url, ref: ref, bytes: bytes));
   return bytes;
+}
+
+/// 回源字节 → [Uint8List]：避免主线程大内存二次拷贝。
+///
+/// [Uint8List] 直接复用；普通 [List] 在较大时放到后台 isolate 做一次
+/// `Uint8List.fromList`（纯内存拷贝，不碰 UI），小列表同步拷贝即可。
+Future<Uint8List> _asBytes(List<int> data) {
+  if (data is Uint8List) return Future.value(data);
+  const kIsolateBytes = 64 * 1024;
+  if (data.length < kIsolateBytes) {
+    return Future.value(Uint8List.fromList(data));
+  }
+  try {
+    return Isolate.run(() => Uint8List.fromList(data));
+  } catch (_) {
+    return Future.value(Uint8List.fromList(data));
+  }
 }
 
 /// `cover.<id>` 占位封面：同一 (源, id) 只解析一次详情取封面，
@@ -104,6 +126,22 @@ Future<String?> _loadCoverPlaceholder(
   }
 }
 
+/// JS `onResponse` 返回归一化：ArrayBuffer → 直接用，普通数组 → 拷贝，
+/// 其它（源返回了非字节）→ null（调用方用原字节）。
+Uint8List? _coerceBytes(dynamic value) {
+  if (value == null) return null;
+  if (value is Uint8List) return value;
+  if (value is List<int>) return Uint8List.fromList(value);
+  if (value is List) {
+    try {
+      return Uint8List.fromList(value.cast<int>());
+    } catch (_) {
+      return null;
+    }
+  }
+  return null;
+}
+
 abstract class ImageDownloader {
   /// 对同一图片的并发请求去重：多个 provider 同时加载同一 URL 时只发起一次下载。
   static Stream<ImageDownloadProgress> loadThumbnail(
@@ -112,11 +150,8 @@ abstract class ImageDownloader {
     String? aid,
     Map<String, String>? headers,
   ]) {
-    // data URL 可能几百 KB，别把它整串当键（去重只需要能区分即可）
-    final cacheKey = url.length > 512
-        ? 'long:${url.hashCode}x${url.length}@$sourceKey'
-              '${aid != null ? '@$aid' : ''}'
-        : "$url@$sourceKey${aid != null ? '@$aid' : ''}";
+    // 去重键与磁盘键/内存键共用同一格式（长串用稳定 sha1，不再用 hashCode）
+    final cacheKey = imageCacheKey(url, sourceKey, aid);
     final existing = _loadingImages[cacheKey];
     if (existing != null) return existing.stream;
     final wrapper = _StreamWrapper<ImageDownloadProgress>(
@@ -156,16 +191,19 @@ abstract class ImageDownloader {
       return;
     }
 
-    final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
+    final cacheKey = imageCacheKey(url, sourceKey, aid);
     final cache = await CacheManager().findCache(cacheKey);
 
     if (cache != null) {
+      // 缓存命中直接返回：此前命中后仍继续全量下载（静默刷新），导致每次
+      // 滚动重建都重复费流量；封面/缩略图基本不可变，7 天过期足以保鲜。
       var data = await cache.readAsBytes();
       yield ImageDownloadProgress(
         currentBytes: data.length,
         totalBytes: data.length,
         imageBytes: data,
       );
+      return;
     }
 
     var configs = <String, dynamic>{};
@@ -188,7 +226,7 @@ abstract class ImageDownloader {
     configs['headers'] ??= {};
     if (configs['headers']['user-agent'] == null &&
         configs['headers']['User-Agent'] == null) {
-      configs['headers']['user-agent'] = webUA;
+      configs['headers']['user-agent'] = NetworkUtils.userAgent;
     }
 
     final resolvedUrl = (configs['url'] as String?) ?? url;
@@ -232,13 +270,15 @@ abstract class ImageDownloader {
     if (expectedBytes == -1) {
       expectedBytes = null;
     }
-    var buffer = <int>[];
+    // BytesBuilder 累积：List.addAll 逐 chunk 搬运是 O(n²)，大图分片多时
+    // 主线程 CPU 与内存峰值翻倍；toBytes() 零拷贝交付
+    final builder = BytesBuilder();
     try {
       await for (var data in stream) {
-        buffer.addAll(data);
+        builder.add(data);
         if (expectedBytes != null) {
           yield ImageDownloadProgress(
-            currentBytes: buffer.length,
+            currentBytes: builder.length,
             totalBytes: expectedBytes,
           );
         }
@@ -248,30 +288,29 @@ abstract class ImageDownloader {
       return;
     }
 
+    Uint8List bytes;
     if (configs['onResponse'] is JSInvokable) {
-      final uint8List = Uint8List.fromList(buffer);
-      buffer = (configs['onResponse'] as JSInvokable)([uint8List]);
-      (configs['onResponse'] as JSInvokable).free();
+      // JS 回调抛错也必须 free，否则 QuickJS 句柄永久泄漏
+      final cb = configs['onResponse'] as JSInvokable;
+      try {
+        bytes = _coerceBytes(cb([builder.toBytes()])) ?? builder.toBytes();
+      } finally {
+        cb.free();
+      }
+    } else {
+      bytes = builder.toBytes();
     }
 
-    await CacheManager().writeCache(cacheKey, buffer);
+    await CacheManager().writeCache(cacheKey, bytes);
     yield ImageDownloadProgress(
-      currentBytes: buffer.length,
-      totalBytes: buffer.length,
-      imageBytes: Uint8List.fromList(buffer),
+      currentBytes: bytes.length,
+      totalBytes: bytes.length,
+      imageBytes: bytes,
     );
   }
 
   static final _loadingImages =
       <String, _StreamWrapper<ImageDownloadProgress>>{};
-
-  /// Cancel all loading images.
-  static void cancelAllLoadingImages() {
-    for (var wrapper in _loadingImages.values) {
-      wrapper.cancel();
-    }
-    _loadingImages.clear();
-  }
 
   /// Load a anime image from the network or cache.
   /// The function will prevent multiple requests for the same image.
@@ -305,12 +344,14 @@ abstract class ImageDownloader {
     final cache = await CacheManager().findCache(cacheKey);
 
     if (cache != null) {
+      // 同上：命中直接返回，避免每看一次就重下一遍漫画页（页图不可变）。
       var data = await cache.readAsBytes();
       yield ImageDownloadProgress(
         currentBytes: data.length,
         totalBytes: data.length,
         imageBytes: data,
       );
+      return;
     }
 
     Future<Map<String, dynamic>?> Function()? onLoadFailed;
@@ -364,22 +405,26 @@ abstract class ImageDownloader {
         if (expectedBytes == -1) {
           expectedBytes = null;
         }
-        var buffer = <int>[];
+        final builder = BytesBuilder();
         await for (var data in stream) {
-          buffer.addAll(data);
+          builder.add(data);
           yield ImageDownloadProgress(
-            currentBytes: buffer.length,
+            currentBytes: builder.length,
             totalBytes: expectedBytes,
           );
         }
 
+        Uint8List data;
         if (configs['onResponse'] is JSInvokable) {
-          buffer = (configs['onResponse'] as JSInvokable)([buffer]);
-          (configs['onResponse'] as JSInvokable).free();
+          final cb = configs['onResponse'] as JSInvokable;
+          try {
+            data = _coerceBytes(cb([builder.toBytes()])) ?? builder.toBytes();
+          } finally {
+            cb.free();
+          }
+        } else {
+          data = builder.toBytes();
         }
-
-        var data = Uint8List.fromList(buffer);
-        buffer.clear();
 
         if (configs['modifyImage'] != null) {
           var newData = await modifyImageWithScript(
@@ -397,17 +442,24 @@ abstract class ImageDownloader {
         );
         return;
       } catch (e) {
-        if (retryLimit < 0 || onLoadFailed == null) {
+        // onLoadFailed 回调的 free 必须走 finally：拿到新配置前任何抛错
+        //（含回调自身抛错）都不能泄漏句柄
+        final pending = onLoadFailed;
+        if (retryLimit < 0 || pending == null) {
           rethrow;
         }
-        var newConfig = await onLoadFailed();
-        (configs['onLoadFailed'] as JSInvokable).free();
         onLoadFailed = null;
-        if (newConfig == null) {
-          rethrow;
+        final cb = configs['onLoadFailed'] as JSInvokable;
+        try {
+          var newConfig = await pending();
+          if (newConfig == null) {
+            rethrow;
+          }
+          configs = newConfig;
+          retryLimit--;
+        } finally {
+          cb.free();
         }
-        configs = newConfig;
-        retryLimit--;
       } finally {
         if (onLoadFailed != null) {
           (configs['onLoadFailed'] as JSInvokable).free();
@@ -470,15 +522,6 @@ class _StreamWrapper<T> {
       }
     };
     return controller.stream;
-  }
-
-  void cancel() {
-    for (var controller in controllers) {
-      controller.close();
-    }
-    controllers.clear();
-    isClosed = true;
-    _cancelled = true;
   }
 }
 

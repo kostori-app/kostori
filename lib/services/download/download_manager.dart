@@ -109,12 +109,28 @@ class DownloadManager extends ChangeNotifier {
   }
 
   Future<void> _refreshDownloadedKeys() async {
-    final records = await allRecords();
-    _downloadedKeys = {
-      for (final r in records)
-        if ((r['animeId']?.toString() ?? '').isNotEmpty)
-          '${r['animeId']}|${r['sourceKey']}',
-    };
+    List records;
+    try {
+      records = await allRecords();
+    } catch (_) {
+      return;
+    }
+    // 文件已删的记录不再点亮角标（此前只看记录不看文件，删文件后仍显示已下载）
+    final keys = <String>{};
+    await Future.wait(
+      records.whereType<Map>().map((r) async {
+        final fp = r['filePath']?.toString() ?? '';
+        if (fp.isEmpty) return;
+        try {
+          if (!await File(fp).exists()) return;
+        } catch (_) {
+          return;
+        }
+        final aid = r['animeId']?.toString() ?? '';
+        if (aid.isNotEmpty) keys.add('$aid|${r['sourceKey']}');
+      }),
+    );
+    _downloadedKeys = keys;
     if (!_recordsChanged.isClosed) _recordsChanged.add(null);
   }
 
@@ -275,6 +291,11 @@ class DownloadManager extends ChangeNotifier {
   }
 
   /// 创建下载任务（自动进入队列）
+  ///
+  /// 同一内容去重：url + 清晰度 + 分组一致且旧任务未完成（queued/downloading/
+  /// paused/failed）时直接复用旧任务（paused/failed 顺手 resume），
+  /// 避免重复点击/规则变化/重进弹窗建出无限多的同集任务。
+  /// 不同清晰度视为不同任务，不去重。
   Future<DownloadTask?> enqueue({
     required String url,
     String? title,
@@ -284,6 +305,7 @@ class DownloadManager extends ChangeNotifier {
     String? animeId,
     String? animeTitle,
     String? episode,
+    String? episodeRaw,
     String? author,
     String? episodeNo,
     String? resolution,
@@ -292,6 +314,19 @@ class DownloadManager extends ChangeNotifier {
   }) async {
     if (url.isEmpty) return null;
     if (url.startsWith('blob:')) return null;
+    final groupKey = group ?? '';
+    for (final t in _tasks) {
+      if (t.url == url &&
+          (t.resolution ?? '') == (resolution ?? '') &&
+          t.group == groupKey &&
+          t.status != DownloadStatus.completed) {
+        if (t.status == DownloadStatus.paused ||
+            t.status == DownloadStatus.failed) {
+          await resume(t.id);
+        }
+        return t;
+      }
+    }
     // 无 UA 时补浏览器 UA：优先用播放时 WebView 记录的真实 UA
     // （签名 CDN 如 beeg 会校验 UA，与播放不一致会导致 403 Wrong key），
     // 再回落固定浏览器 UA；缺省会被 rhttp 填成 "kostori/..."，
@@ -299,8 +334,7 @@ class DownloadManager extends ChangeNotifier {
     var effectiveHeaders = Map<String, String>.from(headers);
     if (effectiveHeaders['User-Agent'] == null &&
         effectiveHeaders['user-agent'] == null) {
-      effectiveHeaders['User-Agent'] =
-          appdata.implicitData['ua'] as String? ?? _browserUA;
+      effectiveHeaders['User-Agent'] = NetworkUtils.userAgent;
     }
     // 附加 cookie jar 的 cookie，与播放端一致（否则校验会话的源会 403/410）。
     // 很多 CDN 只认主站下发的 cookie：按下载地址域名取不到时，
@@ -337,6 +371,7 @@ class DownloadManager extends ChangeNotifier {
       animeId: animeId,
       animeTitle: animeTitle,
       episode: episode,
+      episodeRaw: episodeRaw,
       episodeNo: episodeNo,
       author: author,
       resolution: resolution,
@@ -396,6 +431,10 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
+  /// 并发数等设置变化后补调度（调大立即补起排队任务；调小不杀已跑任务，
+  /// 自然收敛）。设置页改完直接调，不用等下一次 enqueue。
+  void poke() => _schedule();
+
   Future<void> _runTask(DownloadTask task) async {
     task.status = DownloadStatus.downloading;
     // 断点恢复时先按已下载量还原进度，避免进度条瞬间跳到 0 再恢复
@@ -449,6 +488,9 @@ class DownloadManager extends ChangeNotifier {
       // 补全实际文件大小（m3u8 下载时无法预知总大小，合并后取真实值）
       task.totalBytes = await File(finalPath).length();
       task.status = DownloadStatus.completed;
+      // 与 completed 同一帧刷掉合并态（finally 里统一 notify），
+      // 避免合并条先变回下载条再消失
+      task.isMerging = false;
       task.progress = 1;
       task.error = null;
       await _writeRecord(task);
@@ -504,6 +546,8 @@ class DownloadManager extends ChangeNotifier {
       _runningIds.remove(task.id);
       _cancelTokens.remove(task.id);
       _clearSpeedSamples(task.id);
+      // 结束即清零：否则卡片残留最后一次速度（停滞看门狗只管 downloading 态）
+      task.downloadSpeed = 0;
       _persist();
       notifyListeners();
       _syncKeepAlive(force: true);
@@ -511,9 +555,41 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
+  /// 速度停滞看门狗：停住（无数据块）时 _updateDownloadProgress 不会被调用，
+  /// 卡片就会一直显示上一次的速度。1s 巡检一次，超过 1.5s 没进展的
+  /// downloading 任务速度置 0；无下载任务时自动停表，不空转。
+  Timer? _speedTick;
+
+  void _ensureSpeedTick() {
+    if (_speedTick != null) return;
+    _speedTick = Timer.periodic(const Duration(seconds: 1), (_) {
+      final now = DateTime.now();
+      var changed = false;
+      var anyDownloading = false;
+      for (final t in _tasks) {
+        if (t.status != DownloadStatus.downloading || t.isMerging) continue;
+        anyDownloading = true;
+        if (t.downloadSpeed == 0) continue;
+        final last = _speedSampleTime[t.id];
+        if (last == null ||
+            now.difference(last).inMilliseconds > 1500) {
+          t.downloadSpeed = 0;
+          changed = true;
+        }
+      }
+      if (!anyDownloading) {
+        _speedTick?.cancel();
+        _speedTick = null;
+        return;
+      }
+      if (changed) notifyListeners();
+    });
+  }
+
   /// 计算并上报下载进度（含速度采样，500ms 间隔平滑）。
   /// 依赖 [DownloadTask.downloadedBytes] 已更新。
   void _updateDownloadProgress(DownloadTask task) {
+    _ensureSpeedTick();
     final now = DateTime.now();
     final lastTime = _speedSampleTime[task.id];
     final lastBytes = _speedSampleBytes[task.id];
@@ -789,48 +865,70 @@ class DownloadManager extends ChangeNotifier {
             segPaths[i] = segFile.path;
             completed++;
           } else {
-            // 分片下载带重试：签名 CDN（如 beeg）偶发 403/断连，重试可缓解
-            List<int>? data;
+            // 分片下载带重试：签名 CDN（如 beeg）偶发 403/断连，重试可缓解。
+            // 流式直写文件：此前整分片先读进内存（List<int> 常驻主 isolate，
+            // 多分片并发时几十 MB + GC，是下载时 UI 卡的主因之一）
+            var received = 0;
             for (var attempt = 0; attempt < 3; attempt++) {
               try {
-                final resp = await dio.get<List<int>>(
+                final resp = await dio.get<ResponseBody>(
                   segUrls[i],
                   options: Options(
                     headers: task.headers,
-                    responseType: ResponseType.bytes,
+                    responseType: ResponseType.stream,
                     extra: const {'httpVersion11': true},
                   ),
                 );
-                final body = resp.data;
                 final expect =
                     int.tryParse(
                       resp.headers.value('content-length') ?? '',
                     ) ??
                     -1;
-                // dio 读取长度不足的响应体不会抛错，只能靠长度校验发现
-                // 被提前断流的分片，否则合并出的视频会在断点处卡住
-                if (body != null && body.isNotEmpty) {
-                  if (expect <= 0 || body.length >= expect) {
-                    data = body;
-                    break;
+                final sink = segFile.openWrite();
+                var got = 0;
+                try {
+                  await for (final chunk in resp.data!.stream) {
+                    if (cancelToken.isCancelled) {
+                      throw FfmpegCancelledException();
+                    }
+                    sink.add(chunk);
+                    got += chunk.length;
                   }
-                  if (attempt >= 2) {
-                    throw Exception('分片 $i 不完整（${body.length}/$expect）');
-                  }
+                  await sink.flush();
+                } catch (_) {
+                  try {
+                    await sink.close();
+                  } catch (_) {}
+                  rethrow;
                 }
+                await sink.close();
+                // dio 流提前断开不抛错，靠长度校验发现，
+                // 否则合并出的视频会在断点处卡住
+                if (got == 0) continue;
+                if (expect > 0 && got < expect) {
+                  if (attempt >= 2) {
+                    throw Exception('分片 $i 不完整（$got/$expect）');
+                  }
+                  continue;
+                }
+                // 落盘校验：close 后文件元数据即准确，对不上说明写入丢了
+                //（无 fsync，崩溃/断电可能丢尾），重试而非将坏片送去合并
+                if (await segFile.length() != got) continue;
+                received = got;
+                break;
               } catch (e) {
+                if (e is FfmpegCancelledException) rethrow;
                 if (attempt >= 2) rethrow;
               }
               if (attempt < 2) {
                 await Future.delayed(const Duration(seconds: 1));
               }
             }
-            if (data == null || data.isEmpty) {
+            if (received <= 0) {
               throw Exception('分片 $i 下载为空');
             }
-            await segFile.writeAsBytes(data, flush: true);
             segPaths[i] = segFile.path;
-            task.downloadedBytes += data.length;
+            task.downloadedBytes += received;
             completed++;
           }
           task.progress = segUrls.isEmpty
@@ -852,7 +950,10 @@ class DownloadManager extends ChangeNotifier {
       throw Exception('部分分片下载失败（${errors.length} 个）：\n${errors.join('\n')}');
     }
 
-    // 3. ffmpeg 合并 ts → mp4（合并进度实时反映到 task.progress）
+    // 3. ffmpeg 合并 ts → mp4（合并进度实时反映到 task.progress）。
+    // 成功时保持 isMerging=true 直到外层落盘+记录+清理全部完成、
+    // 一次性切 completed：否则 finally 先刷一次“非合并下载态”，
+    // 卡片会“合并条→下载条→消失”闪一下（中间的文件操作要几秒）
     task.isMerging = true;
     task.progress = 0;
     task.error = null;
@@ -864,9 +965,10 @@ class DownloadManager extends ChangeNotifier {
         outputPath: tmpPath,
         cancelToken: cancelToken,
       );
-    } finally {
+    } catch (_) {
       task.isMerging = false;
       notifyListeners();
+      rethrow;
     }
   }
 
@@ -1089,6 +1191,7 @@ class DownloadManager extends ChangeNotifier {
     _cancelTokens[id]?.cancel();
     t.status = DownloadStatus.paused;
     t.error = null;
+    t.downloadSpeed = 0;
     _persist();
     notifyListeners();
   }
@@ -1281,10 +1384,61 @@ class DownloadManager extends ChangeNotifier {
   }
 
   static String _sanitize(String name) {
-    final cleaned = name
-        .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+    var cleaned = name
+        .replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_')
         .trim();
-    return cleaned.isEmpty ? 'video' : cleaned;
+    // Windows：尾点尾空格非法，直接砍掉
+    while (cleaned.endsWith('.')) {
+      cleaned = cleaned.substring(0, cleaned.length - 1);
+    }
+    if (cleaned.isEmpty) return 'video';
+    // Windows 保留名（CON/PRN/AUX/NUL/COM1-9/LPT1-9）无法创建，加前缀
+    if (_windowsReservedNames.contains(cleaned.toUpperCase())) {
+      cleaned = '_$cleaned';
+    }
+    // 按 UTF-8 字节截断到 200（ext4 上限 255 字节，留分组/_id 后缀余量），
+    // 且不在代理对/字符中间切断（此前 substring 按 UTF-16 码元）
+    final bytes = utf8.encode(cleaned);
+    if (bytes.length > 200) {
+      final buf = StringBuffer();
+      var len = 0;
+      for (final r in cleaned.runes) {
+        final rl = utf8.encode(String.fromCharCode(r)).length;
+        if (len + rl > 200) break;
+        buf.writeCharCode(r);
+        len += rl;
+      }
+      cleaned = buf.toString();
+      if (cleaned.isEmpty) return 'video';
+    } else if (cleaned.length > 100) {
+      // 纯 ASCII 长名同样收敛到 100 字符（与此前行为一致）
+      cleaned = cleaned.substring(0, 100);
+    }
+    return cleaned;
+  }
+
+  static const _windowsReservedNames = {
+    'CON', 'PRN', 'AUX', 'NUL',
+    'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+    'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
+  };
+
+  /// 分组名按段净化：分组支持 `/` 子层级，只能净化每一段；
+  /// `.`/`..`/空段丢弃（防 `../` 穿越），非法字符规则与 [_sanitize] 一致
+  static String sanitizeGroupName(String name) {
+    final segs = <String>[];
+    for (var s in name.split('/')) {
+      var out = s.replaceAll(RegExp(r'[\\:*?"<>|\x00-\x1F]'), '_').trim();
+      while (out.endsWith('.')) {
+        out = out.substring(0, out.length - 1);
+      }
+      if (out.isEmpty || out == '.' || out == '..') continue;
+      if (_windowsReservedNames.contains(out.toUpperCase())) {
+        out = '_$out';
+      }
+      segs.add(out);
+    }
+    return segs.join('/');
   }
 
   /// 每源标题格式：源配置覆盖 → 全局默认 → 内置默认
@@ -1313,11 +1467,6 @@ class DownloadManager extends ChangeNotifier {
         .trim();
     name = _sanitize(name);
     if (name.isEmpty) return 'video';
-    // 文件名过长会导致创建文件失败（文件系统路径/名称长度限制），
-    // 截断到安全长度（UTF-16 码元，Android ext4 文件名上限 255 字节内）
-    if (name.length > 100) {
-      name = name.substring(0, 100);
-    }
     return name;
   }
 
@@ -1348,6 +1497,7 @@ class DownloadManager extends ChangeNotifier {
         'sourceKey': task.sourceKey,
         'title': task.title,
         'episode': task.episode,
+        'episodeRaw': task.episodeRaw,
         'resolution': task.resolution,
         'group': task.group,
         'filePath': task.filePath,
@@ -1390,6 +1540,9 @@ class DownloadManager extends ChangeNotifier {
   /// 已下载且文件仍存在的 `animeId|episode` → 本地文件路径（同源）。
   /// 供下载面板标记"已下载"并直接播放本地文件；文件已删除的记录不返回，
   /// 此时按未下载处理（系列里同名条目靠 animeId 区分）。
+  ///
+  /// 一条记录登记两个键（规则套用后名 + 原始名）：规则开关/手动改名后
+  /// 任意一边都能命中，不再因改名误判未下载而重复下载。
   static Future<Map<String, String>> downloadedFilesFor(
     String sourceKey,
   ) async {
@@ -1404,7 +1557,11 @@ class DownloadManager extends ChangeNotifier {
         if (fp == null || fp.isEmpty) continue;
         if (!await File(fp).exists()) continue;
         // 同名集可能有多份（不同标题/文件）：保留最新的一条（记录为倒序）
-        out.putIfAbsent('${e['animeId']}|${e['episode']}', () => fp);
+        final animeId = e['animeId'];
+        for (final ep in {e['episode'], e['episodeRaw']}) {
+          if (ep == null || (ep as String).isEmpty) continue;
+          out.putIfAbsent('$animeId|$ep', () => fp);
+        }
       }
       return out;
     } catch (_) {
@@ -1517,7 +1674,8 @@ class DownloadManager extends ChangeNotifier {
 
   /// 新建分组：登记名称并创建目录
   static Future<void> createGroup(String name) async {
-    final g = name.trim();
+    // 入口即净化：`../` 穿越、非法字符、保留名在此统一处理
+    final g = sanitizeGroupName(name.trim());
     if (g.isEmpty) return;
     final list = groups();
     if (!list.contains(g)) {
@@ -1552,7 +1710,7 @@ class DownloadManager extends ChangeNotifier {
 
   /// 重命名分组：重命名目录 + 更新任务/记录；子组（`from/xxx`）一并跟着改名
   Future<void> renameGroup(String from, String to) async {
-    final name = to.trim();
+    final name = sanitizeGroupName(to.trim());
     if (from == name || name.isEmpty) return;
     // 前缀映射：from → name，from/子 → name/子
     final mapping = <String, String>{
@@ -1626,16 +1784,26 @@ class DownloadManager extends ChangeNotifier {
   }
 
   /// 设置任务分组（会移动磁盘上的目录/文件）
+  ///
+  /// 移动失败时抛出的异常在此吞掉并记日志：分组元数据保持原值，
+  /// 不出现“记录已改组、文件还在原地”的分叉（此前失败也照改）。
   Future<void> setTaskGroup(String id, String group) async {
     final t = _tasks.where((e) => e.id == id).firstOrNull;
-    if (t == null || t.group == group) return;
+    final g = sanitizeGroupName(group.trim());
+    if (t == null || t.group == g) return;
     final oldPath = t.filePath;
-    final newPath = await _moveTaskDir(t, group);
-    t.group = group;
+    String? newPath;
+    try {
+      newPath = await _moveTaskDir(t, g);
+    } catch (e) {
+      Log.error('DownloadManager', 'setTaskGroup 移动失败，已保持原分组：$e');
+      return;
+    }
+    t.group = g;
     if (newPath != null) t.filePath = newPath;
     _persist();
     if (oldPath != null) {
-      await _updateRecordPath(oldPath, t.filePath ?? oldPath, group);
+      await _updateRecordPath(oldPath, t.filePath ?? oldPath, g);
     }
     notifyListeners();
   }
@@ -1645,14 +1813,21 @@ class DownloadManager extends ChangeNotifier {
     final records = await allRecords();
     final record = records.where((r) => r['filePath'] == filePath).firstOrNull;
     if (record == null) return;
-    if ((record['group']?.toString() ?? '') == group) return;
+    final g = sanitizeGroupName(group.trim());
+    if ((record['group']?.toString() ?? '') == g) return;
     final task = _tasks.where((e) => e.filePath == filePath).firstOrNull;
     if (task != null) {
-      await setTaskGroup(task.id, group);
+      await setTaskGroup(task.id, g);
       return;
     }
-    final newPath = await _moveFileToGroup(filePath, group);
-    await _updateRecordPath(filePath, newPath, group);
+    String? newPath;
+    try {
+      newPath = await _moveFileToGroup(filePath, g);
+    } catch (e) {
+      Log.error('DownloadManager', 'setRecordGroup 移动失败，已保持原分组：$e');
+      return;
+    }
+    await _updateRecordPath(filePath, newPath ?? filePath, g);
     notifyListeners();
   }
 
@@ -1700,47 +1875,42 @@ class DownloadManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 移动任务目录到新分组，返回新的文件路径（未变/失败返回 null）
+  /// 移动任务目录到新分组，返回新的文件路径；无批量可移返回 null。
+  /// 移动失败直接抛（调用方保持原分组元数据，不与其分叉）。
   Future<String?> _moveTaskDir(DownloadTask task, String newGroup) async {
     final oldDir = Directory(_taskDirPath(task));
     final newDir = Directory(p.join(groupDir(newGroup), _safeTaskName(task)));
     if (oldDir.path == newDir.path) return null;
-    try {
+    if (await oldDir.exists()) {
       await newDir.parent.create(recursive: true);
-      if (await oldDir.exists()) {
-        await oldDir.rename(newDir.path);
-        if (task.filePath != null) {
-          return p.join(newDir.path, p.basename(task.filePath!));
-        }
-        return null;
+      await oldDir.rename(newDir.path);
+      if (task.filePath != null) {
+        return p.join(newDir.path, p.basename(task.filePath!));
       }
-    } catch (_) {}
+      return null;
+    }
     if (task.filePath != null) {
-      final moved = await _moveFileToGroup(task.filePath!, newGroup);
-      return moved == task.filePath ? null : moved;
+      return _moveFileToGroup(task.filePath!, newGroup);
     }
     return null;
   }
 
-  /// 移动记录文件（连同其所在任务目录）到新分组，返回新路径
-  Future<String> _moveFileToGroup(String filePath, String group) async {
+  /// 移动记录文件（连同其所在任务目录）到新分组，返回新路径；
+  /// 无需移动返回 null，失败直接抛。
+  Future<String?> _moveFileToGroup(String filePath, String group) async {
     final f = File(filePath);
-    if (!await f.exists()) return filePath;
+    if (!await f.exists()) return null;
     final srcDir = Directory(p.dirname(filePath));
     final dstBase = Directory(groupDir(group));
     final dstDir = Directory(p.join(dstBase.path, p.basename(srcDir.path)));
-    if (srcDir.path == dstDir.path) return filePath;
-    try {
-      await dstBase.create(recursive: true);
-      if (await srcDir.exists()) {
-        await srcDir.rename(dstDir.path);
-        return p.join(dstDir.path, p.basename(filePath));
-      }
-      await f.rename(p.join(dstBase.path, p.basename(filePath)));
-      return p.join(dstBase.path, p.basename(filePath));
-    } catch (_) {
-      return filePath;
+    if (srcDir.path == dstDir.path) return null;
+    await dstBase.create(recursive: true);
+    if (await srcDir.exists()) {
+      await srcDir.rename(dstDir.path);
+      return p.join(dstDir.path, p.basename(filePath));
     }
+    await f.rename(p.join(dstBase.path, p.basename(filePath)));
+    return p.join(dstBase.path, p.basename(filePath));
   }
 
   Future<void> _updateRecordPath(

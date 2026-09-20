@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, empty_catches
+// ignore_for_file: use_build_context_synchronously
 
 import 'dart:math';
 
@@ -18,6 +18,7 @@ import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_response.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_response.dart';
+import 'package:kostori/lib/utils/network_utils.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_response.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -316,10 +317,12 @@ class Bangumi {
       );
       final item = BangumiItem.fromJson(res.data);
       _infoMemo[id] = item;
-      // 写入本地库，后续启动直接命中
+      // 写入本地库，后续启动直接命中；失败只影响下次冷启动速度，记一行
       try {
         await manager.addBangumiBinding(item);
-      } catch (_) {}
+      } catch (e) {
+        NetLog.info('getBangumiInfoByID', 'local cache write failed: $e');
+      }
       return item;
     } catch (e, s) {
       NetLog.error('getBangumiInfoByID', '$e\n$s');
@@ -630,11 +633,13 @@ class Bangumi {
     }
   }
 
-  Future<void> getBangumiData() async {
+Future<void> getBangumiData() async {
     try {
       final response = await _dio.request(
         Api.bangumiDataUrl,
-        options: Options(method: 'GET', headers: {'user-agent': webUA}),
+        options: Options(method: 'GET', headers: {
+          'user-agent': NetworkUtils.userAgent,
+        }),
       );
 
       final responseData = response.data;
