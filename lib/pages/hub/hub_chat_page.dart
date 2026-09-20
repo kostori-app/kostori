@@ -17,6 +17,7 @@ import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
@@ -537,12 +538,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           validateStatus: (s) => s != null && s < 400,
           sendTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 5),
-          headers: {
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                'AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/120.0.0.0 Safari/537.36',
-          },
+          headers: {'User-Agent': webUA},
         ),
       );
       // 非文本/非 HTML 响应（如图片、二进制）不解析
