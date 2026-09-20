@@ -58,6 +58,8 @@ import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
+import 'package:kostori/pages/search_source_select_page.dart';
+import 'package:kostori/utils/search_source_groups.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';

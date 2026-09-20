@@ -139,7 +139,7 @@ class BangumiBriefCard extends StatelessWidget {
                     : bangumiItem.id.toString(),
                 child: BangumiWidget.kostoriImage(
                   context,
-                  bangumiItem.images['large']!,
+                  bangumiItem.cardImage,
                   width: constraints.maxWidth,
                   height: height,
                   // 按显示宽度解码（非原图尺寸），减小缓存占用并加快重新加载
@@ -467,7 +467,7 @@ class BangumiDetailedCard extends StatelessWidget {
             tag: '$heroTag-${bangumiItem.id}',
             child: BangumiWidget.kostoriImage(
               context,
-              bangumiItem.images['large']!,
+              bangumiItem.cardImage,
               width: height * 0.72,
               height: height,
             ),
@@ -903,10 +903,10 @@ class _BangumiCardState extends State<BangumiCard> {
   @override
   Widget build(BuildContext context) {
     // 各尺寸封面回退，避免某尺寸缺失时 image 为 null 崩溃
-    String? image =
-        widget.bangumiItem.images['large'] ??
-        widget.bangumiItem.images['common'] ??
-        widget.bangumiItem.images['medium'];
+    // （小卡片优先 medium，lain.bgm.tv 国内慢，大图体积差几倍）
+    String? image = widget.bangumiItem.cardImage.isNotEmpty
+        ? widget.bangumiItem.cardImage
+        : null;
     final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
     final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
     final useMarquee = appdata.settings['tileTitleMarquee'] == true;

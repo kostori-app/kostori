@@ -3,6 +3,7 @@ import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/database/history.dart';
+import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/image_loader/history_image_provider.dart'
@@ -55,4 +56,11 @@ class HistoryImageProvider
 
   @override
   String get key => "history${history.id}${history.type.value}";
+
+  /// 坏字节实际落在下载器磁盘键下（见 load 里的 loadThumbnail 参数），
+  /// 按写时的键删，否则坏图一直命中。
+  @override
+  Future<void> purgeBadCache() => CacheManager().delete(
+    imageCacheKey(history.cover, history.type.sourceKey, history.id),
+  );
 }

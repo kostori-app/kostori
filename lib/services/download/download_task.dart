@@ -36,7 +36,11 @@ class DownloadTask {
   final String? episode;
 
   /// 纯集号（如 "5"），用于开启“不使用集标题”时替代无意义的集标题做文件名
-  final String? episodeNo;
+  final   String? episodeNo;
+
+  /// 集名的原始值（套用文本规则/手动重命名之前）：下载记录同时存它，
+  /// 规则开关/改名后仍能按原始名命中“已下载”，不再重复下载
+  String? episodeRaw;
 
   final String? author;
 
@@ -86,6 +90,7 @@ class DownloadTask {
     this.animeId,
     this.animeTitle,
     this.episode,
+    this.episodeRaw,
     this.episodeNo,
     this.author,
     this.resolution,
@@ -122,6 +127,7 @@ class DownloadTask {
     'animeId': animeId,
     'animeTitle': animeTitle,
     'episode': episode,
+    'episodeRaw': episodeRaw,
     'episodeNo': episodeNo,
     'author': author,
     'resolution': resolution,
@@ -148,6 +154,7 @@ class DownloadTask {
     animeId: json['animeId'] as String?,
     animeTitle: json['animeTitle'] as String?,
     episode: json['episode'] as String?,
+    episodeRaw: json['episodeRaw'] as String?,
     episodeNo: json['episodeNo'] as String?,
     author: json['author'] as String?,
     resolution: json['resolution'] as String?,

@@ -266,6 +266,16 @@ class BangumiItem {
   String toString() {
     return 'BangumiItem{id: $id, type: $type, name: $name, nameCn: $nameCn, summary: $summary, airDate: $airDate, airWeekday: $airWeekday, rank: $rank, total: $total, score: $score, totalEpisodes: $totalEpisodes, count: $count, collection: $collection, images: $images, tags: $tags, alias: $alias}';
   }
+
+  /// 卡片列表封面：优先 medium（lain.bgm.tv 国内慢，大图的几倍体积 +
+  /// 解码直接决定列表体感），API 缺该档时逐级回退
+  String get cardImage {
+    for (final k in const ['medium', 'large', 'common', 'small', 'grid']) {
+      final u = images[k];
+      if (u != null && u.isNotEmpty) return u;
+    }
+    return '';
+  }
 }
 
 class EpisodeResult {

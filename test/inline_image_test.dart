@@ -61,10 +61,11 @@ void main() {
         provider.key,
         isNot(CachedImageProvider(dataUrl, sourceKey: 'other').key),
       );
-      // 普通 URL 保持原样（不改变既有缓存键）
+      // 普通 URL 保持与磁盘键同一格式（此前内存键 `url+src` 与磁盘键 `url@src`
+      // 不一致，坏缓存删不掉；统一后内存键重建不影响落盘）
       expect(
         const CachedImageProvider('https://a.com/b.jpg', sourceKey: 'demo').key,
-        'https://a.com/b.jpgdemo',
+        'https://a.com/b.jpg@demo',
       );
     });
 

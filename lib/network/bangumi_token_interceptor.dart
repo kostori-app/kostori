@@ -1,5 +1,3 @@
-// ignore_for_file: empty_catches
-
 import 'package:dio/dio.dart';
 import 'package:kostori/network/bangumi_oauth.dart';
 

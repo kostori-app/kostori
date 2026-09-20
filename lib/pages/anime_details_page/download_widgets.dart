@@ -48,6 +48,10 @@ class _DownloadPick {
 
   final String episodeName;
 
+  /// 集名的原始值（套用规则/改名之前）：随任务存入记录，
+  /// 规则开关变化后仍能命中“已下载”
+  final String episodeRaw;
+
   /// 选定的番剧主标题（用户可在弹窗顶部编辑，覆盖文件名的 {title} 部分）
   final String? animeTitle;
 
@@ -67,6 +71,7 @@ class _DownloadPick {
     required this.key,
     required this.animeId,
     required this.episodeName,
+    required this.episodeRaw,
     this.animeTitle,
     this.episodeNo,
     this.url,
@@ -275,11 +280,18 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   _DownloadFilter _filter = _DownloadFilter.all;
 
   bool _isDownloaded(_DownloadItem item) =>
-      widget.downloadedFiles.containsKey('${item.animeId}|${_itemName(item)}');
+      widget.downloadedFiles.containsKey('${item.animeId}|${_itemName(item)}') ||
+      // 规则开关/改名后：记录里同时存了原始名，按原始名也能命中
+      widget.downloadedFiles.containsKey(
+        '${item.animeId}|${item.episodeName}',
+      );
 
-  /// 该条目是否已经在下载列表里（避免重复下载）
+  /// 该条目是否已经在下载列表里（避免重复下载）：
+  /// 任务存的是确认瞬间的集名，规则开关/改名后按下当前名查不到，
+  /// 同 _isDownloaded 做双键回退
   DownloadStatus? _activeStatusOf(_DownloadItem item) =>
-      widget.activeTasks['${item.animeId}|${_itemName(item)}'];
+      widget.activeTasks['${item.animeId}|${_itemName(item)}'] ??
+      widget.activeTasks['${item.animeId}|${item.episodeName}'];
 
   bool _isActive(_DownloadItem item) => _activeStatusOf(item) != null;
 
@@ -295,6 +307,18 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
       (_useRules && _rules.isNotEmpty)
       ? TextRuleStore.apply(input, _rules)
       : input;
+
+  /// 规则是否至少命中了一处（主标题或任一条目）：开关开着但零匹配时，
+  /// 标题看起来“没变化”，必须明确提示，否则用户以为开关坏了。
+  /// 注意用原始名比较，不受手动重命名（_nameOverrides）干扰。
+  bool get _rulesMatched {
+    if (!_useRules || _rules.isEmpty) return true;
+    if (_applyRules(_originalTitle) != _originalTitle) return true;
+    for (final item in widget.items) {
+      if (_applyRules(item.episodeName) != item.episodeName) return true;
+    }
+    return false;
+  }
 
   /// 番剧主标题（顶部输入框）：原始标题套用规则后的结果
   String _computedTitle() => _applyRules(_originalTitle);
@@ -490,6 +514,8 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
           animeId: item.animeId,
           // 用户编辑过标题时用它（用于文件名），否则用集名（套用规则后）
           episodeName: _itemName(item),
+          // 原始集名一并带上：记录双键，规则开关/改名后仍判已下载
+          episodeRaw: item.episodeName,
           animeTitle: resolvedTitle,
           episodeNo: item.episodeNo,
           url: url,
@@ -591,6 +617,18 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
               ),
             ),
           ),
+          // 规则开着但对当前标题/条目零匹配：明确提示，否则看起来像开关坏了
+          if (!_rulesMatched)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8, left: 4),
+              child: Text(
+                t.textRuleNoMatch,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
           // 下载分组（= 下载目录子目录）：点击打开选择弹层（可新建/删除）
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -969,6 +1007,322 @@ class _DownloadItemCardState extends State<_DownloadItemCard> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 解析单集/系列条目的播放结果（String 或 AnimePlayResult），下载流程共用
+Future<AnimePlayResult?> resolveAnimePlayResult(
+  AnimeSource source,
+  String dataId,
+  String epKey,
+) async {
+  final loadPages = source.loadAnimePages;
+  if (loadPages == null) return null;
+  final res = await loadPages(dataId, epKey);
+  if (res is! Map) return null;
+  try {
+    return AnimePlayResult.fromJson(Map<String, dynamic>.from(res));
+  } catch (_) {
+    return null;
+  }
+}
+
+/// 解析最终下载地址（已给定的 url 优先；blob/空视为不可下载）
+Future<String?> resolveAnimeEpisodeUrl({
+  required AnimeSource source,
+  required String dataId,
+  required String epKey,
+  String? url,
+}) async {
+  if (url != null && url.isNotEmpty && !url.startsWith('blob:')) return url;
+  final loadPages = source.loadAnimePages;
+  if (loadPages == null) return null;
+  final res = await loadPages(dataId, epKey);
+  if (res is String) return res;
+  if (res is Map) {
+    try {
+      return AnimePlayResult.fromJson(Map<String, dynamic>.from(res)).url;
+    } catch (_) {
+      return null;
+    }
+  }
+  return null;
+}
+
+/// 入队一部剧集：落盘命名/文本规则/历史行为与详情页下载一致，
+/// 返回 task（null 表示失败，内部已提示）
+Future<DownloadTask?> enqueueAnimeEpisode({
+  required AnimeSource source,
+  required String animeId,
+  required String dataId,
+  required String epKey,
+  required String epName,
+  String? url,
+  String? resolution,
+  String? animeTitle,
+  String? displayTitle,
+  String? cover,
+  String? uploader,
+  String? episodeNo,
+  String? episodeRaw,
+  String? group,
+}) async {
+  final targetUrl = await resolveAnimeEpisodeUrl(
+    source: source,
+    dataId: dataId,
+    epKey: epKey,
+    url: url,
+  );
+  if (targetUrl == null ||
+      targetUrl.isEmpty ||
+      targetUrl.startsWith('blob:')) {
+    App.rootContext.showMessage(message: t.downloadFailed);
+    return null;
+  }
+  final task = await DownloadManager.instance.enqueue(
+    url: targetUrl,
+    title: animeTitle ?? displayTitle ?? epName,
+    subtitle: epName,
+    cover: cover,
+    sourceKey: source.key,
+    animeId: animeId,
+    animeTitle: animeTitle ?? displayTitle ?? epName,
+    episode: epName,
+    episodeRaw: episodeRaw ?? epName,
+    episodeNo: episodeNo,
+    author: uploader,
+    headers: source.httpHeaders ?? const {},
+    resolution: resolution,
+    group: group,
+  );
+  // 并发未满时任务已立即开始（status 已切 downloading），
+  // 排队中则提示等待，给用户明确反馈
+  App.rootContext.showMessage(
+    message: task != null && task.status == DownloadStatus.queued
+        ? t.downloadQueued
+        : t.downloadStarted,
+  );
+  return task;
+}
+
+/// `animeId|episode` → 未完成任务的当前状态（下载中/排队/暂停/失败），
+/// 供下载面板标记「已在下载列表」，避免重复下载
+Map<String, DownloadStatus> activeDownloadTasksOf(String sourceKey) {
+  final out = <String, DownloadStatus>{};
+  for (final task in DownloadManager.instance.tasks) {
+    if (task.status == DownloadStatus.completed) continue;
+    if (task.sourceKey != sourceKey) continue;
+    final animeId = task.animeId;
+    final episode = task.episode;
+    if (animeId == null || episode == null) continue;
+    out.putIfAbsent('$animeId|$episode', () => task.status);
+  }
+  return out;
+}
+
+/// 列表卡片右键/长按菜单的“下载”：在外层直接拉起与详情页**同款**下载选择器
+///（文本规则/分组/清晰度/筛选/已下载判定逻辑完全一致）。
+/// 同时写入一条历史，之后能在历史页找到该番剧，避免“下了但找不到”。
+Future<void> openAnimeDownloadPicker(Anime anime) async {
+  final source = AnimeSource.find(anime.sourceKey);
+  if (source == null) return;
+  final context = App.rootContext;
+  // 先弹 loading 再请求：详情/系列两段网络可能各花几秒，黑等会被当成没点上。
+  // loading 可取消（取消按钮/点外部）：每个网络等待后都检查，中断后不再
+  // 写历史、不开选择器（JS/网络请求本身停不掉，但结果会被丢弃）。
+  var cancelled = false;
+  final loading = showLoadingDialog(
+    context,
+    barrierDismissible: true,
+    allowCancel: true,
+    onCancel: () => cancelled = true,
+    message: anime.title,
+  );
+  bool gone() => cancelled || loading.closed;
+  try {
+    AnimeDetails? data;
+    try {
+      data = (await source.loadAnimeInfo?.call(anime.id))?.dataOrNull;
+    } catch (_) {}
+    if (gone()) return;
+    if (data == null) {
+      context.showMessage(message: t.downloadFailed);
+      return;
+    }
+    // 写历史：入口封面兜底（详情接口可能不返 cover），之后历史页可回找
+    try {
+      final history = History.fromModel(model: data);
+      if (history.cover.isEmpty && anime.cover.isNotEmpty) {
+        history.cover = anime.cover;
+      }
+      history.time = DateTime.now();
+      await HistoryManager().addHistory(history);
+    } catch (_) {}
+    if (gone()) return;
+    final episode = data.episode;
+    if (episode == null || episode.isEmpty || episode.values.first.isEmpty) {
+      await _openSeriesDownloadPicker(
+        context,
+        source,
+        data,
+        anime.id,
+        isCancelled: gone,
+      );
+      return;
+    }
+    final eps = episode.values.first;
+    final items = <_DownloadItem>[
+      for (final e in eps.entries)
+        () {
+          final title = AnimeDetails.episodeTitleOf(e.value);
+          final name = title.isEmpty ? t.episodeN(n: e.key) : title;
+          final keyStr = e.key.toString();
+          return _DownloadItem(
+            key: keyStr,
+            animeId: anime.id,
+            title: name,
+            subtitle: '',
+            episodeName: name,
+            episodeNo: int.tryParse(keyStr) != null ? keyStr : null,
+            sourceKey: anime.sourceKey,
+          );
+        }(),
+    ];
+    await _openAnimeDownloadPicker(
+      context,
+      source: source,
+      data: data,
+      animeTitle: data.title,
+      items: items,
+      isCancelled: gone,
+    );
+  } finally {
+    // 选择器已接管界面（或已失败/取消）：loading 必须收掉，
+    // 否则它盖在选择器上面
+    loading.close();
+  }
+}
+
+/// 卡片入口的系列模式：与详情页 `_onDownloadSeries` 同逻辑
+Future<void> _openSeriesDownloadPicker(
+  BuildContext context,
+  AnimeSource source,
+  AnimeDetails data,
+  String animeId, {
+  bool Function()? isCancelled,
+}) async {
+  if (source.loadSeries == null) {
+    App.rootContext.showMessage(message: t.downloadNotYet);
+    return;
+  }
+  final res = await source.loadSeries!(data);
+  // 系列是第二段网络：等回来时用户可能已经取消，不再开选择器
+  if (isCancelled?.call() ?? false) return;
+  final series = res.dataOrNull ?? const <Anime>[];
+  if (series.isEmpty) {
+    App.rootContext.showMessage(message: t.downloadNotYet);
+    return;
+  }
+  final ordered = List<Anime>.from(series);
+  final currentIndex = ordered.indexWhere((a) => a.id == animeId);
+  Anime? currentEntry;
+  if (currentIndex >= 0) {
+    currentEntry = ordered.removeAt(currentIndex);
+  }
+  final items = <_DownloadItem>[
+    if (currentEntry != null)
+      _DownloadItem(
+        key: currentEntry.id,
+        animeId: currentEntry.id,
+        title: currentEntry.title,
+        subtitle: currentEntry.subtitle ?? '',
+        episodeName: currentEntry.title,
+        sourceKey: source.key,
+        isCurrent: true,
+      )
+    else
+      _DownloadItem(
+        key: animeId,
+        animeId: animeId,
+        title: data.title,
+        subtitle: data.subTitle ?? '',
+        episodeName: data.title,
+        sourceKey: source.key,
+        isCurrent: true,
+      ),
+    for (final a in ordered)
+      _DownloadItem(
+        key: a.id,
+        animeId: a.id,
+        title: a.title,
+        subtitle: a.subtitle ?? '',
+        episodeName: a.title,
+        sourceKey: source.key,
+      ),
+  ];
+  await _openAnimeDownloadPicker(
+    context,
+    source: source,
+    data: data,
+    animeTitle: data.title,
+    items: items,
+    resolveAnimeTitle: (id) async {
+      final load = source.loadAnimeInfo;
+      if (load == null) return null;
+      try {
+        final info = await load(id);
+        return info.dataOrNull?.title;
+      } catch (_) {
+        return null;
+      }
+    },
+  );
+}
+
+/// 弹出下载选择器并入队：详情页与卡片入口共用，行为完全一致
+Future<void> _openAnimeDownloadPicker(
+  BuildContext context, {
+  required AnimeSource source,
+  required AnimeDetails data,
+  required String animeTitle,
+  required List<_DownloadItem> items,
+  Future<String?> Function(String id)? resolveAnimeTitle,
+  bool Function()? isCancelled,
+}) async {
+  final downloadedFiles = await DownloadManager.downloadedFilesFor(source.key);
+  if (isCancelled?.call() ?? false) return;
+  if (!context.mounted) return;
+  final result = await showModalBottomSheet<List<_DownloadPick>>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => _EpisodeDownloadPicker(
+      items: items,
+      downloadedFiles: downloadedFiles,
+      activeTasks: activeDownloadTasksOf(source.key),
+      resolvePlay: (epKey) => resolveAnimePlayResult(source, data.id, epKey),
+      animeTitle: animeTitle,
+      sourceKey: source.key,
+      resolveAnimeTitle: resolveAnimeTitle,
+    ),
+  );
+  if (result == null || result.isEmpty) return;
+  for (final item in result) {
+    await enqueueAnimeEpisode(
+      source: source,
+      animeId: item.animeId,
+      dataId: data.id,
+      epKey: item.key,
+      epName: item.episodeName,
+      url: item.url,
+      resolution: item.resolution,
+      animeTitle: item.animeTitle,
+      episodeNo: item.episodeNo,
+      episodeRaw: item.episodeRaw,
+      group: item.group,
+      cover: data.cover,
+      displayTitle: data.title,
+      uploader: data.uploader,
     );
   }
 }

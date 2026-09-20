@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 头像清洗：旧的 emoji 占位（🧑）视为空，由界面用角色名首字代替
@@ -432,6 +433,8 @@ class CharacterCard {
           decoded.cast<String, dynamic>(),
         );
       }
+      // 不是 JSON 就不是角色卡：格式嗅探链的正常分支，故意静默
+      // ignore: empty_catches
     } catch (_) {}
     return null;
   }
@@ -503,7 +506,7 @@ class CharacterCard {
   }
 
   static CharacterCard? _decodeCharaText(String text) {
-    // 常见：base64 编码的 JSON
+    // 常见：base64 编码的 JSON（不是则走下一嗅探，静默）
     try {
       final normalized = text.replaceAll(RegExp(r'\s'), '');
       final decoded = utf8.decode(base64.decode(normalized));
@@ -513,8 +516,9 @@ class CharacterCard {
           json.cast<String, dynamic>(),
         );
       }
+      // ignore: empty_catches
     } catch (_) {}
-    // 兜底：直接是 JSON 文本
+    // 兜底：直接是 JSON 文本（不是则返回 null，静默）
     try {
       final json = jsonDecode(text.trim());
       if (json is Map) {
@@ -522,6 +526,7 @@ class CharacterCard {
           json.cast<String, dynamic>(),
         );
       }
+      // ignore: empty_catches
     } catch (_) {}
     return null;
   }
@@ -565,9 +570,14 @@ class CharacterCardStore extends ChangeNotifier {
           _cards.add(
             _hydrate(CharacterCard.fromJson(json.cast<String, dynamic>())),
           );
-        } catch (_) {}
+        } catch (e) {
+          // 单张坏卡只跳过该文件（记文件名，方便用户定位）
+          DebugLog.warning('CharacterCard', 'skip corrupt card ${entity.path}: $e');
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      DebugLog.warning('CharacterCard', 'init card library failed: $e');
+    }
     await _migrateLegacy();
     _loaded = true;
     notifyListeners();

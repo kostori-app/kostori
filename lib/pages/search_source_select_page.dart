@@ -171,6 +171,8 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
 
 /// 可复用的搜索源选择器：分组胶囊筛选 + 搜索框 + 条目卡片列表。
 /// 单选点选即回调；多选（聚合搜索）切换勾选。
+/// [sourceProvider]/[groupsProvider] 可覆盖数据源：默认只列启用的搜索源；
+/// 文本规则绑定等场景传全部源（禁用/无搜索页的源也要能绑）。
 class SearchSourcePicker extends StatefulWidget {
   const SearchSourcePicker({
     super.key,
@@ -178,6 +180,8 @@ class SearchSourcePicker extends StatefulWidget {
     required this.selected,
     required this.onChanged,
     this.initialGroup = 'all',
+    this.sourceProvider,
+    this.groupsProvider,
   });
 
   /// 是否多选（聚合搜索）
@@ -190,6 +194,12 @@ class SearchSourcePicker extends StatefulWidget {
   final void Function(Set<String> selected, String group) onChanged;
 
   final String initialGroup;
+
+  /// 按分组取源列表；null 用默认的启用搜索源
+  final List<AnimeSource> Function(String group)? sourceProvider;
+
+  /// 分组列表；null 用默认的搜索分组
+  final List<String> Function()? groupsProvider;
 
   @override
   State<SearchSourcePicker> createState() => _SearchSourcePickerState();
@@ -214,7 +224,11 @@ class _SearchSourcePickerState extends State<SearchSourcePicker> {
     super.dispose();
   }
 
-  List<AnimeSource> get _groupSources => enabledSearchSources(_group);
+  List<AnimeSource> get _groupSources {
+    final provider = widget.sourceProvider;
+    if (provider != null) return provider(_group);
+    return enabledSearchSources(_group);
+  }
 
   List<AnimeSource> get _sources {
     final k = _keyword.trim().toLowerCase();
@@ -263,6 +277,11 @@ class _SearchSourcePickerState extends State<SearchSourcePicker> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final groups = widget.groupsProvider?.call() ?? searchGroups();
+    // 当前分组在新数据源下不存在时回退（直接取修正值参与本次构建，不调 setState）
+    if (!groups.contains(_group)) {
+      _group = groups.isNotEmpty ? groups.first : 'all';
+    }
     final sources = _sources;
     return Column(
       children: [
@@ -272,7 +291,7 @@ class _SearchSourcePickerState extends State<SearchSourcePicker> {
             scrollDirection: Axis.horizontal,
             child: CapsuleOptions(
               children: [
-                for (final group in searchGroups())
+                for (final group in groups)
                   CapsuleOption(
                     text: searchGroupLabel(group),
                     isSelected: _group == group,

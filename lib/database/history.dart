@@ -727,9 +727,11 @@ class HistoryManager with ChangeNotifier {
     if (isInitialized) return;
     _db = _HistoryDb();
     isInitialized = true;
-    // busy_timeout：多连接偶发写锁等待，避免立即 SQLITE_BUSY
+    // busy_timeout：多连接偶发写锁等待，避免立即 SQLITE_BUSY。
+    // 失败也无妨（旧驱动不支持该 PRAGMA），故意静默。
     try {
       await _db.customStatement('PRAGMA busy_timeout = 10000;');
+      // ignore: empty_catches
     } catch (_) {}
     await _updateCache();
   });
@@ -743,10 +745,12 @@ class HistoryManager with ChangeNotifier {
 
   /// 把 WAL 里的改动写回主库文件（导出整库副本前调用）
   Future<void> checkpoint() async {
+    // 检查点失败不影响后续导出（下次打开自动重放 WAL），故意静默
     try {
       await _guard(
         () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
       );
+      // ignore: empty_catches
     } catch (_) {}
   }
 
@@ -1148,12 +1152,15 @@ extension ProgressHelper on HistoryManager {
 
   Future<void> _ensureDb() => _guard(() async {
     if (!isInitialized) await init();
+    // 幂等建表/加列：已存在时抛错是正常路径，故意静默
     try {
       await _db.customStatement(_createPluginEventsSql);
       await _db.customStatement(_createTextRulesSql);
+      // ignore: empty_catches
     } catch (_) {}
     try {
       await _db.customStatement(_alterTextRulesUpdatedAtSql);
+      // ignore: empty_catches
     } catch (_) {}
   });
 

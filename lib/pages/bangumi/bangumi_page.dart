@@ -114,13 +114,20 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     bangumiItems.addAll(result);
     // 保持本页所有条目封面，避免跳详情页加载新图后逐出列表页缓存
     if (mounted) {
+      // 卡片真实内容宽必须与 BangumiBriefCard 内 constraints.maxWidth 一致，
+      // 否则 ResizeImage key 失配、预热白做：
+      // SliverPadding 水平 8*2 + crossSpacing 4*(列-1)，卡片 Padding 2*2
       final columns = _getFixedCrossAxisCount() ?? _resolveMasonryColumns();
-      final cardW = (MediaQuery.sizeOf(context).width - 32) / columns;
+      final cardW =
+          (MediaQuery.sizeOf(context).width - 16 - 4 * (columns - 1)) /
+              columns -
+          4;
+      // 只预热本页新增（此前全量重刷，还会触发 _maxKeep 逐出抖动）；
+      // 用 medium 档（见 BangumiItem.cardImage），lain.bgm.tv 国内慢，
+      // 大图体积差几倍，直接决定首屏体感
       _imageCache.precacheAll(
         context,
-        bangumiItems
-            .map((e) => e.images['large'] ?? '')
-            .where((u) => u.isNotEmpty),
+        result.map((e) => e.cardImage).where((u) => u.isNotEmpty),
         sourceKey: 'bangumi',
         cacheWidth: (cardW * MediaQuery.devicePixelRatioOf(context)).round(),
       );

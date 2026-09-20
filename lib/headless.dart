@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/main_isolate_runner.dart';
 import 'package:kostori/foundation/webview_resolver.dart';
@@ -59,6 +60,7 @@ Future<void> runHeadlessMode(List<String> args) async {
   // 无头模式也注册主 isolate 通道（防御性：若源脚本触发 WebView 平台操作）
   MainIsolateRunner.register();
   WebViewResolver.registerMainIsolateHandler();
+  JsEngine.registerWorkerBridgeHandler();
   if (args.contains('--ignore-disheadless-log')) {
     Log.isMuted = true;
   }

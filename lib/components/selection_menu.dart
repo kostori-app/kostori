@@ -27,6 +27,23 @@ class _AppSelectionAreaState extends State<AppSelectionArea> {
   }
 }
 
+/// 框架默认项过滤：`state.contextMenuButtonItems` 在 Android 上还会带上
+/// 其他 App 注册的 `ACTION_PROCESS_TEXT` 项（如词典/其他客户端的“在XX内打开”），
+/// 用户没装过也会觉得莫名其妙。这里只保留系统基础项，其余一律丢掉，
+/// 项目自定义项（翻译/搜索/链接）不受影响，照常追加。
+List<ContextMenuButtonItem> _frameworkBaseItems(
+  List<ContextMenuButtonItem> items,
+) {
+  const allow = {
+    ContextMenuButtonType.cut,
+    ContextMenuButtonType.copy,
+    ContextMenuButtonType.paste,
+    ContextMenuButtonType.selectAll,
+    ContextMenuButtonType.share,
+  };
+  return items.where((e) => allow.contains(e.type)).toList();
+}
+
 /// 选中文本的菜单：默认项 + 翻译 + 搜索
 ///
 /// [selectedText] 延迟到点击时才取值，避免菜单构建时选中内容尚未同步。
@@ -35,7 +52,7 @@ Widget appSelectionContextMenu(
   SelectableRegionState state,
   String Function() selectedText,
 ) {
-  final items = state.contextMenuButtonItems;
+  final items = _frameworkBaseItems(state.contextMenuButtonItems);
   // 有选中内容时（框架给出「复制」项）才追加自定义项
   final hasSelection = items.any(
     (item) => item.type == ContextMenuButtonType.copy,
@@ -149,7 +166,7 @@ Widget appEditableSelectionContextMenu(
       ? selection.textInside(value.text).trim()
       : '';
 
-  final items = state.contextMenuButtonItems;
+  final items = _frameworkBaseItems(state.contextMenuButtonItems);
   final hasSelection = items.any(
     (item) => item.type == ContextMenuButtonType.copy,
   );

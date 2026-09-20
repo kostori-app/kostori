@@ -17,6 +17,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/js_pool.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/main_isolate_runner.dart';
 import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cookie_jar.dart';
@@ -127,11 +128,59 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
     }
   }
 
+  /// 后台 worker isolate 中的 JS 回调里，需要回主线程执行的方法。
+  ///
+  /// 后台引擎只有纯计算能力（`convert` 加解密/`html` 解析/`random`/`uuid`/
+  /// `delay`/`getPlatform` 留在本地，解密热路径零往返）；凡是触及应用状态的
+  ///（网络 Cookie、源数据、设置、剪贴板、UI、日志、compute 池）一律经由
+  /// [MainIsolateRunner] 的 `jsBridge` 通道在主线程执行，保证登录态/代理/
+  /// 缓存行为与主线程完全一致。
+  static const _kForwardToMain = {
+    'log',
+    'load_data',
+    'save_data',
+    'delete_data',
+    'http',
+    'webview',
+    'cookie',
+    'load_setting',
+    'isLogged',
+    'UI',
+    'getLocale',
+    'setClipboard',
+    'getClipboard',
+    'compute',
+  };
+
+  /// 主 isolate 上注册 `jsBridge` 通道，供后台 worker 把上述方法 RPC 回来。
+  ///
+  /// 幂等，可在应用启动与热重载后重复调用。
+  static void registerWorkerBridgeHandler() {
+    MainIsolateRunner.registerHandler('jsBridge', (payload) async {
+      final msg = Map<String, dynamic>.from(payload as Map);
+      return JsEngine().handleWorkerBridge(msg);
+    });
+  }
+
+  /// 主 isolate 执行来自后台 worker 的 sendMessage 请求。
+  Object? handleWorkerBridge(Map<String, dynamic> message) {
+    return _messageReceiver(message);
+  }
+
   Object? _messageReceiver(dynamic message) {
     try {
       if (message is Map<dynamic, dynamic>) {
         if (message["method"] == null) return null;
         String method = message["method"] as String;
+        // 后台 worker：有状态操作回主线程（返回 Future → JS 侧即 Promise，
+        // 与主线程原有的 http 等异步桥接语义一致）。
+        if (!MainIsolateRunner.isMainIsolate &&
+            _kForwardToMain.contains(method)) {
+          return MainIsolateRunner.run(
+            'jsBridge',
+            Map<String, dynamic>.from(message),
+          );
+        }
         switch (method) {
           case "log":
             String level = message["level"];

@@ -184,6 +184,40 @@ class TextRuleStore {
     }
   }
 
+  /// 预览用：对每一步报告 `skipped（空）/invalid（正则非法）/miss（零匹配）/
+  /// hit（命中 n 处）`，与 [_applyStep] 同语义（后步看到前步处理过的文本）。
+  ///
+  /// 解决“规则明明保存了却没生效，用户看不出是没匹配还是没启用”：
+  /// 编辑弹窗逐条展示命中状态，一眼定位。
+  static List<TextRuleStepReport> dryRun(
+    String input,
+    Iterable<TextRuleStep> steps,
+  ) {
+    final out = <TextRuleStepReport>[];
+    var text = input;
+    for (final step in steps) {
+      if (step.find.isEmpty) {
+        out.add(const TextRuleStepReport(TextRuleStepState.skipped, 0));
+        continue;
+      }
+      RegExp re;
+      try {
+        re = RegExp(step.find, caseSensitive: step.caseSensitive);
+      } catch (_) {
+        out.add(const TextRuleStepReport(TextRuleStepState.invalid, 0));
+        continue;
+      }
+      final hits = re.allMatches(text).length;
+      if (hits == 0) {
+        out.add(const TextRuleStepReport(TextRuleStepState.miss, 0));
+      } else {
+        text = text.replaceAllMapped(re, (m) => _expand(m, step.replace));
+        out.add(TextRuleStepReport(TextRuleStepState.hit, hits));
+      }
+    }
+    return out;
+  }
+
   /// 展开替换串中的 `$1`、`${1}`、`${name}`（`$$` 表示字面 `$`）
   static String _expand(Match m, String replacement) {
     final sb = StringBuffer();
@@ -221,6 +255,30 @@ class TextRuleStore {
     }
     return sb.toString();
   }
+}
+
+/// [TextRuleStore.dryRun] 单步报告
+enum TextRuleStepState {
+  /// find 为空，跳过
+  skipped,
+
+  /// 正则非法，应用时同样跳过
+  invalid,
+
+  /// 零匹配：原文原样保留（“没生效”最常见原因）
+  miss,
+
+  /// 命中
+  hit,
+}
+
+class TextRuleStepReport {
+  final TextRuleStepState state;
+
+  ///命中处数（仅 hit 时有意义）
+  final int hits;
+
+  const TextRuleStepReport(this.state, this.hits);
 }
 
 /// 番源自身数据文件（`anime_source/<key>.data`）里的本地配置键。

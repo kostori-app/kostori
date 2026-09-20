@@ -207,16 +207,16 @@ class LoadingDialogController {
 
   bool closed = false;
 
+  /// 对话框彻底关闭（主动 close 或被手势/路由弹掉）时触发一次
+  void Function()? onClosed;
+
   void close() {
     if (closed) {
       return;
     }
     closed = true;
-    if (_closeDialog == null) {
-      Future.microtask(_closeDialog!);
-    } else {
-      _closeDialog!();
-    }
+    _closeDialog?.call();
+    onClosed?.call();
   }
 
   void setProgress(double? value) {
@@ -289,7 +289,13 @@ LoadingDialogController showLoadingDialog(
 
   var navigator = Navigator.of(context, rootNavigator: true);
 
-  navigator.push(loadingDialogRoute).then((value) => controller.closed = true);
+  // 路由被外部弹掉（barrier 点击/返回键）同样算关闭，通知持有方清理
+  navigator.push(loadingDialogRoute).then((value) {
+    if (!controller.closed) {
+      controller.closed = true;
+      controller.onClosed?.call();
+    }
+  });
 
   controller._closeDialog = () {
     navigator.removeRoute(loadingDialogRoute);

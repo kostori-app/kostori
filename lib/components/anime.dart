@@ -349,6 +349,13 @@ class AnimeTile extends ConsumerWidget {
             imageProvider: _findImageProvider(anime),
           ),
         ),
+      // 下载：外层直达与详情页同款的下载选择器（规则/分组/清晰度一致），
+      // 同时写历史，之后能在历史页找到
+      MenuEntry(
+        icon: Icons.download_outlined,
+        text: t.download,
+        onClick: () => openAnimeDownloadPicker(anime),
+      ),
     ];
 
     // 收藏按钮：根据是否已收藏显示不同选项

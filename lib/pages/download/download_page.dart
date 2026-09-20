@@ -52,6 +52,11 @@ class _DownloadPageState extends State<DownloadPage>
 
   bool get _isRecordsTab => _tabCtrl.index == 1;
 
+  /// 设置弹层里下载目录的剩余空间查询（按目录缓存 Future，目录不变不重查；
+  /// 非 Android 返回 null，UI 不占位）
+  String? _freeSpaceDir;
+  Future<int?>? _freeSpaceFuture;
+
   @override
   void initState() {
     super.initState();
@@ -166,6 +171,7 @@ class _DownloadPageState extends State<DownloadPage>
                     onChanged: (v) {
                       appdata.implicitData['downloadConcurrent'] = v;
                       appdata.writeImplicitData();
+                      DownloadManager.instance.poke();
                     },
                   ),
                   sliderRow(
@@ -204,10 +210,45 @@ class _DownloadPageState extends State<DownloadPage>
                   ListTile(
                     leading: const Icon(Icons.folder_outlined),
                     title: Text(t.downloadDir),
-                    subtitle: Text(
-                      _currentDownloadDir(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    subtitle: Builder(
+                      builder: (ctx) {
+                        final dir = _currentDownloadDir();
+                        // 目录变化才重新查询，原生 StatFs 很快但也没必要每帧查
+                        if (_freeSpaceDir != dir) {
+                          _freeSpaceDir = dir;
+                          _freeSpaceFuture = getFreeDiskBytes(dir);
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              dir,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            FutureBuilder<int?>(
+                              future: _freeSpaceFuture,
+                              builder: (ctx, snap) {
+                                final free = snap.data;
+                                // 加载中/不支持/失败都不占位，查到才显示一行
+                                if (free == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Text(
+                                  '${t.downloadFreeSpace}：${bytesToReadableString(free)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      ctx,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     onTap: () async {
                       final dir = await selectDirectory();

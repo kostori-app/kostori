@@ -80,6 +80,9 @@ class AnimeSourceParser {
 
   String? _name;
 
+  /// 本次 parse 的源脚本原文（`AnimeSource.sourceJs` 的来源）。
+  String? _sourceJs;
+
   Future<AnimeSource> createAndParse(String js, String fileName) async {
     if (!fileName.endsWith("js")) {
       fileName = "$fileName.js";
@@ -109,6 +112,7 @@ class AnimeSourceParser {
 
   Future<AnimeSource> parse(String js, String filePath) async {
     js = js.replaceAll("\r\n", "\n");
+    _sourceJs = js;
     var line1 = js
         .split('\n')
         .firstWhereOrNull((e) => e.trim().startsWith("class "));
@@ -176,6 +180,7 @@ class AnimeSourceParser {
       getImageLoadingConfig: _parseImageLoadingConfigFunc(),
       getThumbnailLoadingConfig: _parseThumbnailLoadingConfigFunc(),
       filePath: filePath,
+      sourceJs: _sourceJs ?? js,
       url: url ?? "",
       version: version ?? "1.0.0",
       commentsLoader: _parseCommentsLoader(),
@@ -947,18 +952,55 @@ class AnimeSourceParser {
   }
 
   /// 站内 base64 图片按 token 回源（可选）：JS 返回 base64 或 data URL 字符串
+  ///
+  /// 根治 UI 卡顿：优先在 JSPool 后台 isolate 求值（解密/base64/桥接拷贝全在
+  /// 后台，有状态操作经 `jsBridge` RPC 回主线程，登录态与主线程一致）。
+  /// worker 内没有主引擎的 JS 实例状态（如 `init()` 写入的字段），失败或取空
+  /// 时回退主线程，保证与旧行为一致。
   Future<List<int>?> Function(String token)? _parseInlineImageLoader() {
     if (!_checkExists("anime.loadInlineImage")) {
       return null;
     }
+    final sourceKey = _key!;
+    final sourceJs = _sourceJs;
     return (token) async {
+      if (sourceJs != null && sourceJs.isNotEmpty) {
+        try {
+          final bytes = await JSPool().executeInlineImage(
+            sourceKey: sourceKey,
+            sourceJs: sourceJs,
+            token: token,
+          );
+          if (bytes != null) return bytes;
+          // worker 干净地返回空：大概率图确实不在了，但为兼容依赖主引擎
+          // JS 状态的源，仍回退主线程试一次（miss 路径低频，可接受）。
+        } catch (e) {
+          SourceLog.warning(
+            'InlineImage',
+            'worker failed, fallback to main: $sourceKey $e',
+          );
+        }
+      }
       try {
         final res = await JsEngine().runCode("""
-          AnimeSource.sources.$_key.anime.loadInlineImage(${jsonEncode(token)})
+          AnimeSource.sources.$sourceKey.anime.loadInlineImage(${jsonEncode(token)})
         """);
         // 兼容返回 base64/data URL 字符串，或直接返回字节数组
         if (res is String) {
           return res.isEmpty ? null : await InlineImageStore.decodeAsync(res);
+        }
+        if (res is Uint8List) return res;
+        if (res is List || res is Map) {
+          // 数组/Map 的逐字节归一化是 O(n) 纯计算，放到后台 isolate，
+          // 避免与 UI 抢帧（大图时 spawn 开销远小于主线程卡顿）。
+          const kIsolateBytes = 32 * 1024;
+          final length = res is List ? res.length : (res as Map).length;
+          if (length < kIsolateBytes) return jsBytesOf(res);
+          try {
+            return await Isolate.run(() => jsBytesOf(res));
+          } catch (_) {
+            return jsBytesOf(res);
+          }
         }
         return jsBytesOf(res);
       } catch (e, s) {

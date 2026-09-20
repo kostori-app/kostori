@@ -449,6 +449,20 @@ String bytesToReadableString(int bytes) {
   }
 }
 
+/// 指定目录所在分区的剩余空间（字节）。目前仅 Android 经原生 StatFs 实现，
+/// 其他平台返回 null（调用方显示“—”即可）。目录不存在不抛错，返回 null。
+Future<int?> getFreeDiskBytes(String dir) async {
+  try {
+    if (!Platform.isAndroid) return null;
+    const channel = MethodChannel('kostori/storage');
+    final v = await channel.invokeMethod<int>('getFreeSpace', {'path': dir});
+    if (v == null || v < 0) return null;
+    return v;
+  } catch (_) {
+    return null;
+  }
+}
+
 class FileSelectResult {
   final String path;
 

@@ -14,6 +14,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
@@ -51,6 +52,7 @@ void main(List<String> args) {
         // 注册主 isolate 任务通道：WebView2 等平台操作需在主线程执行
         MainIsolateRunner.register();
         WebViewResolver.registerMainIsolateHandler();
+        JsEngine.registerWorkerBridgeHandler();
 
         await init();
 
@@ -114,6 +116,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 幂等：热重载会重跑 initState，确保主 isolate 通道与 webview 处理器始终就位
     MainIsolateRunner.register();
     WebViewResolver.registerMainIsolateHandler();
+    JsEngine.registerWorkerBridgeHandler();
     checkUpdates();
     super.initState();
   }

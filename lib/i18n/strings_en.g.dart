@@ -8242,6 +8242,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Step ${n}'
 	String textRuleStepN({required Object n}) => 'Step ${n}';
 
+	/// en: '${n} match(es)'
+	String textRuleStepHit({required Object n}) => '${n} match(es)';
+
+	/// en: 'No match'
+	String get textRuleStepMiss => 'No match';
+
+	/// en: 'Invalid regex'
+	String get textRuleStepInvalid => 'Invalid regex';
+
 	/// en: 'No rules'
 	String get textRuleNone => 'No rules';
 
@@ -8256,6 +8265,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Rules off'
 	String get textRuleNotApplied => 'Rules off';
+
+	/// en: 'No rule matched the current titles — check regex or bindings'
+	String get textRuleNoMatch => 'No rule matched the current titles — check regex or bindings';
 
 	/// en: 'Delete this rule?'
 	String get textRuleDeleteConfirm => 'Delete this rule?';
@@ -8274,6 +8286,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Download directory'
 	String get downloadDir => 'Download directory';
+
+	/// en: 'Free space'
+	String get downloadFreeSpace => 'Free space';
 
 	/// en: 'Resolving video address'
 	String get loadingStepParse => 'Resolving video address';
@@ -11678,17 +11693,22 @@ extension on Translations {
 			'textRuleCaseSensitive' => 'Case sensitive',
 			'textRuleStepAdd' => 'Add step',
 			'textRuleStepN' => ({required Object n}) => 'Step ${n}',
+			'textRuleStepHit' => ({required Object n}) => '${n} match(es)',
+			'textRuleStepMiss' => 'No match',
+			'textRuleStepInvalid' => 'Invalid regex',
 			'textRuleNone' => 'No rules',
 			'textRuleSelectHint' => 'Select rules to apply to this source',
 			'textRuleApply' => 'Apply rules',
 			'textRuleApplied' => 'Rules applied',
 			'textRuleNotApplied' => 'Rules off',
+			'textRuleNoMatch' => 'No rule matched the current titles — check regex or bindings',
 			'textRuleDeleteConfirm' => 'Delete this rule?',
 			'textRulePreviewInput' => 'Preview text',
 			'textRulePreviewResult' => 'Preview result',
 			'textRuleSelectSources' => 'Sources using this rule',
 			'textRuleOrderHint' => 'List order is apply order: earlier rules run first (drag to reorder)',
 			'downloadDir' => 'Download directory',
+			'downloadFreeSpace' => 'Free space',
 			'loadingStepParse' => 'Resolving video address',
 			'loadingStepInit' => 'Initializing player',
 			'loadingStepLoad' => 'Loading media',

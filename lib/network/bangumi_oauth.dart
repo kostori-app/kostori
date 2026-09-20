@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, empty_catches
+// ignore_for_file: use_build_context_synchronously
 import 'package:kostori/components/animated.dart';
 
 import 'dart:math';
@@ -89,6 +89,8 @@ Future<bool> bangumiRefreshToken() async {
     bangumiOAuthLogout();
     try {
       App.rootContext.showMessage(message: t.loginExpiredReLogin);
+      // 无可用 context 时（如后台刷新）提示发不出，静默即可
+      // ignore: empty_catches
     } catch (_) {}
   } catch (e) {
     Log.error('BangumiOAuth', '刷新token失败: $e');

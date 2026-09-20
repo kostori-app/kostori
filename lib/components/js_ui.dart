@@ -142,6 +142,14 @@ mixin class JsUiApi {
       i++;
     }
     _loadingDialogControllers[i] = controller;
+    // 关闭即从表里摘掉：此前只在 JS 调 cancelLoading 时删除，源脚本抛错
+    // 或对话框被手势点掉都会泄漏 controller + 捕获的 JS 句柄（靠 GC +
+    // JSAutoFreeFunction finalizer 回收）。id 可能被复用，只删同一实例。
+    controller.onClosed = () {
+      if (_loadingDialogControllers[i] == controller) {
+        _loadingDialogControllers.remove(i);
+      }
+    };
     return i;
   }
 

@@ -97,5 +97,47 @@ void main() {
       ];
       expect(TextRuleStore.apply('abc', broken), 'abc');
     });
+
+    group('dryRun', () {
+      test('逐条报告 hit/miss/invalid/skipped，后步看到前步结果', () {
+        final steps = [
+          const TextRuleStep(find: r'^\[[^\]]*\]\s*', replace: ''),
+          const TextRuleStep(find: 'zzz', replace: 'y'),
+          const TextRuleStep(find: '([', replace: 'z'),
+          const TextRuleStep(find: '', replace: 'z'),
+        ];
+        final rep = TextRuleStore.dryRun('[字幕组] 示例番剧', steps);
+        expect(rep[0].state, TextRuleStepState.hit);
+        expect(rep[0].hits, 1);
+        expect(rep[1].state, TextRuleStepState.miss);
+        expect(rep[2].state, TextRuleStepState.invalid);
+        expect(rep[3].state, TextRuleStepState.skipped);
+      });
+
+      test('截图用例：^ 锚定导致 [无码破解]DVDMS-800 零匹配', () {
+        final steps = [
+          const TextRuleStep(
+            find: r'^\s*([A-Za-z]{2,}[-\_ ]?\d{2,})\b.*$',
+            replace: r'$1',
+          ),
+        ];
+        final rep = TextRuleStore.dryRun('[无码破解]DVDMS-800 高清', steps);
+        expect(rep.single.state, TextRuleStepState.miss);
+        // 去掉 ^ 后命中
+        const fixed = TextRuleStep(
+          find: r'.*?([A-Za-z]{2,}[-\_ ]?\d{2,})\b.*$',
+          replace: r'$1',
+        );
+        final rep2 = TextRuleStore.dryRun('[无码破解]DVDMS-800 高清', [fixed]);
+        expect(rep2.single.state, TextRuleStepState.hit);
+        expect(
+          TextRuleStore.apply(
+            '[无码破解]DVDMS-800 高清',
+            [TextRule(id: 'x', name: 'jav', steps: [fixed])],
+          ),
+          'DVDMS-800',
+        );
+      });
+    });
   });
 }

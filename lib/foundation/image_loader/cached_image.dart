@@ -2,6 +2,7 @@ import 'dart:async' show Future, unawaited;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart'
     as image_provider;
@@ -27,9 +28,10 @@ class CachedImageProvider
 
   static const _kMaxLoadingCount = 8;
 
-  /// 站内 base64/inline 图每张都要抓取 + 解密 + 压缩，单独用更小的并发闸门，
-  /// 避免首屏几十张一起上把 CPU/JS 引擎压住
-  static const _kMaxInlineLoadingCount = 4;
+  /// 站内 base64/inline 回源已搬到 JSPool 后台 isolate（JS 解密与桥接拷贝
+  /// 不再占用 UI 线程），闸门可以大于 worker 数：多出的任务在后台排队，
+  /// 主线程无感；有效并行度由 worker 数（6，与 compute 共用、按最闲调度）决定。
+  static const _kMaxInlineLoadingCount = 8;
 
   /// 图片并发闸门（FIFO，一次只放行一个）。
   ///
@@ -50,7 +52,11 @@ class CachedImageProvider
       try {
         final cached = await InlineImageStore.read(url);
         if (cached != null) return _yieldBytes(chunkEvents, cached);
+        checkStop();
         final fetched = await _loadInlineRef(url);
+        // 滑动滚出屏幕后：JS 回源不可取消，但至少丢弃结果、不再解码/进缓存，
+        // 避免“滑走后还卡一下”。
+        checkStop();
         if (fetched != null) return _yieldBytes(chunkEvents, fetched);
         throw ImageLoadException(url, 'inline image is no longer cached');
       } finally {
@@ -75,8 +81,10 @@ class CachedImageProvider
         final ref = await InlineImageStore.refOfAsync(url);
         final cached = await InlineImageStore.read(ref);
         if (cached != null) return _yieldBytes(chunkEvents, cached);
+        checkStop();
         // 首次遇到：大图在后台 isolate 解码显示，同时转存给下次用
         final bytes = await InlineImageStore.decodeAsync(url);
+        checkStop();
         if (bytes == null || !InlineImageStore.looksLikeImage(bytes)) {
           throw ImageLoadException(url, 'invalid base64 image');
         }
@@ -145,16 +153,17 @@ class CachedImageProvider
     return SynchronousFuture(this);
   }
 
-  /// 图片缓存键。
-  ///
-  /// 普通 URL 保持原样；base64 图（data URL）动辄几百 KB，直接拼进 key 会让
-  /// 每次缓存查找/去重都为这个巨串重建一次字符串并算哈希，这里换成
-  /// 「哈希 + 长度」的短键。
+  /// 下载磁盘键与内存键同格式（[imageCacheKey]），默认清理即够，显式声明
+  /// 防止未来两边格式再分叉。
   @override
-  String get key {
-    if (url.length <= 512) return url + (sourceKey ?? "") + (aid ?? "");
-    return 'long:${url.hashCode}x${url.length}@${sourceKey ?? ''}@${aid ?? ''}';
-  }
+  Future<void> purgeBadCache() =>
+      CacheManager().delete(imageCacheKey(url, sourceKey, aid));
+
+  /// 图片缓存键：与下载器磁盘键/去重键共用 [imageCacheKey]（此前三处格式
+  /// 各不相同：短串分支分隔符不统一、长串用进程相关的 `hashCode`）。
+  /// 注意这是 Flutter ImageCache 的内存键，改格式只影响本次运行。
+  @override
+  String get key => imageCacheKey(url, sourceKey, aid);
 }
 
 /// 图片加载失败异常（网络不可达/域名屏蔽/连接中断等）

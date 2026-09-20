@@ -25,6 +25,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import android.net.TrafficStats
 import android.media.MediaScannerConnection
+import android.os.StatFs
 import dev.flutter.packages.file_selector_android.FileUtils
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -278,9 +279,21 @@ class MainActivity : AudioServiceFragmentActivity() {
         }
 
         val storageChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "kostori/storage")
-        storageChannel.setMethodCallHandler { _, res ->
-            requestStoragePermission { result ->
-                res.success(result)
+        storageChannel.setMethodCallHandler { call, res ->
+            if (call.method == "getFreeSpace") {
+                // 下载目录剩余空间（StatFs，字节）：目录不存在时按 App 私有目录兜底
+                try {
+                    val rawPath = call.argument<String>("path")
+                    var dir = if (rawPath.isNullOrEmpty()) filesDir else File(rawPath)
+                    if (!dir.exists()) dir = filesDir
+                    res.success(StatFs(dir.absolutePath).availableBytes)
+                } catch (e: Exception) {
+                    res.error("STATFS_FAIL", e.message, null)
+                }
+            } else {
+                requestStoragePermission { result ->
+                    res.success(result)
+                }
             }
         }
 

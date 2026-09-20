@@ -486,7 +486,7 @@ class AnimeListState extends State<AnimeList>
         try {
           while (_data[page] == null) {
             if (gen != _generation) return;
-            await _fetchNext();
+            await _fetchNext(gen);
             // 到末尾（无下一页 / 空页）仍取不到该页：停止连续空请求
             if (_maxPage != null && page > _maxPage!) break;
           }
@@ -518,8 +518,10 @@ class AnimeListState extends State<AnimeList>
     return added;
   }
 
-  Future<void> _fetchNext() async {
+  Future<void> _fetchNext(int gen) async {
     var res = await widget.loadNext!(_nextUrl);
+    // 刷新后旧请求的响应直接丢弃，避免污染新列表的 _data/_loadedKeys
+    if (gen != _generation) return;
     final page = _data.length + 1;
     final added = _setPageData(page, res.data);
     // 没有下一页，或这一页没有新条目：标记为末尾，避免无限请求
@@ -599,7 +601,7 @@ class AnimeListState extends State<AnimeList>
                           appdata.settings['animeListDisplayMode'] =
                               type == 'paging' ? 'continuous' : 'paging';
                           appdata.saveData();
-                          refresh;
+                          refresh();
                           setState(() {});
                         },
                       ),

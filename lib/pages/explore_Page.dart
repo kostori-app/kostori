@@ -581,7 +581,7 @@ class _ExplorePageState extends State<ExplorePage>
                                 ? 'continuous'
                                 : 'paging';
                             appdata.saveData();
-                            refresh;
+                            refresh();
                             setState(() {});
                           },
                         ),

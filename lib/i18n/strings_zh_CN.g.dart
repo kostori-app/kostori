@@ -2773,17 +2773,22 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get textRuleCaseSensitive => '区分大小写';
 	@override String get textRuleStepAdd => '添加步骤';
 	@override String textRuleStepN({required Object n}) => '步骤 ${n}';
+	@override String textRuleStepHit({required Object n}) => '命中 ${n} 处';
+	@override String get textRuleStepMiss => '未命中';
+	@override String get textRuleStepInvalid => '正则无效';
 	@override String get textRuleNone => '暂无规则';
 	@override String get textRuleSelectHint => '选择应用到该源的规则';
 	@override String get textRuleApply => '套用规则';
 	@override String get textRuleApplied => '已套用规则';
 	@override String get textRuleNotApplied => '未套用规则';
+	@override String get textRuleNoMatch => '规则未命中当前标题，请检查正则或绑定';
 	@override String get textRuleDeleteConfirm => '确定删除该规则？';
 	@override String get textRulePreviewInput => '预览文本';
 	@override String get textRulePreviewResult => '预览结果';
 	@override String get textRuleSelectSources => '选择使用该规则的番源';
 	@override String get textRuleOrderHint => '列表顺序即套用顺序：越靠前的规则越先作用（拖动可调整）';
 	@override String get downloadDir => '下载目录';
+	@override String get downloadFreeSpace => '可用空间';
 	@override String get loadingStepParse => '解析视频地址';
 	@override String get loadingStepInit => '初始化播放器';
 	@override String get loadingStepLoad => '加载媒体数据';
@@ -5795,17 +5800,22 @@ extension on TranslationsZhCn {
 			'textRuleCaseSensitive' => '区分大小写',
 			'textRuleStepAdd' => '添加步骤',
 			'textRuleStepN' => ({required Object n}) => '步骤 ${n}',
+			'textRuleStepHit' => ({required Object n}) => '命中 ${n} 处',
+			'textRuleStepMiss' => '未命中',
+			'textRuleStepInvalid' => '正则无效',
 			'textRuleNone' => '暂无规则',
 			'textRuleSelectHint' => '选择应用到该源的规则',
 			'textRuleApply' => '套用规则',
 			'textRuleApplied' => '已套用规则',
 			'textRuleNotApplied' => '未套用规则',
+			'textRuleNoMatch' => '规则未命中当前标题，请检查正则或绑定',
 			'textRuleDeleteConfirm' => '确定删除该规则？',
 			'textRulePreviewInput' => '预览文本',
 			'textRulePreviewResult' => '预览结果',
 			'textRuleSelectSources' => '选择使用该规则的番源',
 			'textRuleOrderHint' => '列表顺序即套用顺序：越靠前的规则越先作用（拖动可调整）',
 			'downloadDir' => '下载目录',
+			'downloadFreeSpace' => '可用空间',
 			'loadingStepParse' => '解析视频地址',
 			'loadingStepInit' => '初始化播放器',
 			'loadingStepLoad' => '加载媒体数据',

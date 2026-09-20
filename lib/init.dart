@@ -78,6 +78,9 @@ Future<void> init() async {
     MePagePluginManager().init().wait(),
   ];
   await Future.wait(futures);
+  // 后台 worker 回源（loadInlineImage）的 jsBridge 通道：无头/GUI 共用，
+  // 与 WebViewResolver 的主线程处理器一同常驻（幂等，热重载可重复注册）
+  JsEngine.registerWorkerBridgeHandler();
   // 加载持久化的文本规则（history.db 的 text_rules 表）
   await TextRuleStore.load();
   SkillRegistry.instance.registerAll([
@@ -128,7 +131,9 @@ Future<void> init() async {
       await migrateAiTasksToOwnDb();
       // 已迁移过的旧库也压缩一次（迁移会提前返回，不会走到 VACUUM）
       await compactAiDatabaseIfNeeded();
-    } catch (_) {}
+    } catch (e) {
+      DebugLog.warning('Init', 'AI database prewarm failed: $e');
+    }
   }());
   // 加载持久化的下载任务
   await DownloadManager.instance.init();
@@ -172,7 +177,9 @@ Future<void> _cleanupStalePrefs() async {
         DebugLog.info('Prefs', 'removed stale key: $key');
       }
     }
-  } catch (_) {}
+  } catch (e) {
+    DebugLog.warning('Prefs', 'cleanup stale keys failed: $e');
+  }
 }
 
 /// 记录 shared_preferences 中体积最大的键（诊断用，迁移后确认是否瘦身）
@@ -190,7 +197,9 @@ Future<void> _logPrefsSizes() async {
         .map((e) => '${e.$1}=${(e.$2 / 1024).toStringAsFixed(0)}KB')
         .join(', ');
     DebugLog.info('Prefs', 'largest keys: $top');
-  } catch (_) {}
+  } catch (e) {
+    DebugLog.warning('Prefs', 'log prefs sizes failed: $e');
+  }
 }
 
 void _checkOldConfigs() {

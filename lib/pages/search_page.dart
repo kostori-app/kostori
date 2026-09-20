@@ -164,6 +164,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void dispose() {
     focusNode.dispose();
+    scrollController.dispose();
     appdata.settings.removeListener(updateSearchSourcesIfNeeded);
     super.dispose();
   }

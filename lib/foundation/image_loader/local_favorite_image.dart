@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart'
     as image_provider;
@@ -66,4 +67,16 @@ class LocalFavoriteImageProvider
 
   @override
   String get key => id + intKey.toString();
+
+  /// 坏字节可能在两处：刚写下的本地文件 + 下载器磁盘缓存，按写时的位置删。
+  @override
+  Future<void> purgeBadCache() async {
+    var fileName = key.hashCode.toString();
+    var file = File(FilePath.join(App.dataPath, 'favorite_cover', fileName));
+    try {
+      if (await file.exists()) await file.delete();
+    } catch (_) {}
+    final sourceKey = AnimeSource.fromIntKey(intKey)?.key;
+    await CacheManager().delete(imageCacheKey(url, sourceKey, null));
+  }
 }

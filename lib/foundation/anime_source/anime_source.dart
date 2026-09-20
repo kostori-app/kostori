@@ -3,6 +3,7 @@ library;
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
@@ -13,6 +14,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/foundation/js_engine.dart';
+import 'package:kostori/foundation/js_pool.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/res.dart';
@@ -102,6 +104,9 @@ class AnimeSourceManager with ChangeNotifier, Init {
 
   static const _disabledKey = 'disabled_anime_sources';
 
+  /// 禁用列表的更新时间（同步用新者胜；与列表存在同一 implicitData）
+  static const _disabledAtKey = 'disabled_anime_sources_updated_at';
+
   Set<String> get _disabledSources {
     final raw = appdata.implicitData[_disabledKey];
     if (raw is List) {
@@ -112,7 +117,33 @@ class AnimeSourceManager with ChangeNotifier, Init {
 
   void _saveDisabled(Set<String> disabled) {
     appdata.implicitData[_disabledKey] = disabled.toList();
+    appdata.implicitData[_disabledAtKey] =
+        DateTime.now().millisecondsSinceEpoch;
     appdata.writeImplicitData();
+  }
+
+  /// 导出同步：禁用列表 + 更新时间。
+  ///
+  /// implicitData 按设计不参与同步（设备本地设置），但源开关是用户意图，
+  /// 随「数据」部分的 source_config_merge.json 同步（新者胜）。
+  Map<String, dynamic> exportSourceConfig() => {
+    'disabled': _disabledSources.toList(),
+    'updatedAt': appdata.implicitData[_disabledAtKey] as int? ?? 0,
+  };
+
+  /// 导入同步：远端更新才覆盖本地，返回是否发生变化
+  bool importSourceConfig(Map<String, dynamic> map) {
+    final remoteAt = (map['updatedAt'] as num?)?.toInt() ?? 0;
+    final localAt = appdata.implicitData[_disabledAtKey] as int? ?? 0;
+    if (remoteAt <= localAt) return false;
+    final remote =
+        (map['disabled'] as List?)?.whereType<String>().toSet() ??
+        <String>{};
+    appdata.implicitData[_disabledKey] = remote.toList();
+    appdata.implicitData[_disabledAtKey] = remoteAt;
+    appdata.writeImplicitData();
+    notifyListeners();
+    return true;
   }
 
   /// 源是否启用（默认启用）
@@ -392,6 +423,10 @@ class AnimeSource {
 
   final String filePath;
 
+  /// 源脚本原文：后台 worker 回源（`loadInlineImage`）时在后台 isolate 求值，
+  /// 主线程不再跑这份 JS。源升级会重新 parse，这里随之更新。
+  final String sourceJs;
+
   final String url;
 
   final String version;
@@ -513,6 +548,7 @@ class AnimeSource {
     required this.getImageLoadingConfig,
     required this.getThumbnailLoadingConfig,
     required this.filePath,
+    required this.sourceJs,
     required this.url,
     required this.version,
     required this.commentsLoader,

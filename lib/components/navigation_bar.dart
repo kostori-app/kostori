@@ -982,34 +982,58 @@ class _NaviMainViewState extends State<_NaviMainView> {
   }
 
   /// 滚动监听：浏览（手指上滑）收缩为横线；回滚或到顶恢复；不可滚动不收缩
+  ///
+  /// 注意用“全类型 + metrics”判断：短内容根本发不出 ScrollUpdateNotification
+  ///（也没有滚动增量），只靠 update 分支里的 `maxScrollExtent<=0` 永远执行不到，
+  /// 切源/刷新后变短就会脏留收缩态。这里 Metrics/Overscroll/End 通知同样
+  /// 做强制展开校正。
   bool _onScrollNotification(ScrollNotification notification) {
     // 处理所有层级的滚动通知（嵌套滚动：探索页等内部列表也会触发）
-    if (notification is ScrollUpdateNotification) {
-      // 忽略横向滚动（日历、横向列表等），仅垂直滚动控制导航栏收起
-      if (notification.metrics.axis != Axis.vertical) return false;
-      final metrics = notification.metrics;
-      final delta = notification.scrollDelta ?? 0;
-      // 内容不可滚动或已滚到顶部 → 强制显示完整栏
-      if (metrics.maxScrollExtent <= 0 || metrics.pixels <= 0) {
-        if (_minimized) {
-          setState(() => _minimized = false);
-        }
-        return false;
-      }
-      // 已滚动到底部附近：保持收缩，避免触底回弹/加载下一页的微小回退触发展开
-      if (metrics.pixels >= metrics.maxScrollExtent - 10) {
-        return false;
-      }
-      if (delta > 0 && !_minimized) {
-        setState(() {
-          _minimized = true;
-          _actionsOpen = false;
-        });
-      } else if (delta < 0 && _minimized) {
+    // 忽略横向滚动（日历、横向列表等），仅垂直滚动控制导航栏收起
+    if (notification.metrics.axis != Axis.vertical) return false;
+    final metrics = notification.metrics;
+    // 内容不可滚动或已滚到顶部 → 强制显示完整栏
+    if (metrics.maxScrollExtent <= 0 || metrics.pixels <= 0) {
+      if (_minimized) {
         setState(() => _minimized = false);
       }
+      return false;
+    }
+    if (notification is! ScrollUpdateNotification) return false;
+    // 已滚动到底部附近：保持收缩，避免触底回弹/加载下一页的微小回退触发展开
+    if (metrics.pixels >= metrics.maxScrollExtent - 10) {
+      return false;
+    }
+    final delta = notification.scrollDelta ?? 0;
+    if (delta > 0 && !_minimized) {
+      setState(() {
+        _minimized = true;
+        _actionsOpen = false;
+      });
+    } else if (delta < 0 && _minimized) {
+      setState(() => _minimized = false);
     }
     return false;
+  }
+
+  /// 悬浮栏完整态 ↔ 收缩横线的共用切换动画：上浮淡入（300ms easeOutCubic），
+  /// 下沉淡出；旧的 scale 0.6 缩放观感偏“弹”，改为位移后更跟手。
+  static const _kNavSwitchDuration = Duration(milliseconds: 300);
+
+  static Widget _navSwitchTransition(
+    Widget child,
+    Animation<double> animation,
+  ) {
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.35),
+          end: Offset.zero,
+        ).animate(animation),
+        child: child,
+      ),
+    );
   }
 
   /// 顶部状态栏的磨砂玻璃（内容从下方滚过时被模糊）
@@ -1091,9 +1115,9 @@ class _NaviMainViewState extends State<_NaviMainView> {
       );
       // 完整态 ↔ 收缩横线 走与窄屏一致的动画，且整体底部对齐（横条不会悬高）
       final Widget floating = AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
+        duration: _kNavSwitchDuration,
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
         layoutBuilder: (currentChild, previousChildren) {
           return Stack(
             alignment: Alignment.bottomCenter,
@@ -1103,16 +1127,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
             ],
           );
         },
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.6, end: 1).animate(animation),
-              alignment: Alignment.bottomCenter,
-              child: child,
-            ),
-          );
-        },
+        transitionBuilder: _navSwitchTransition,
         child: _minimized
             ? _MiniBar(
                 key: const ValueKey('mini'),
@@ -1209,9 +1224,9 @@ class _NaviMainViewState extends State<_NaviMainView> {
                       bottom: 0,
                       child: Center(
                         child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
+                          duration: _kNavSwitchDuration,
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
                           layoutBuilder: (currentChild, previousChildren) {
                             return Stack(
                               alignment: Alignment.bottomCenter,
@@ -1221,17 +1236,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
                               ],
                             );
                           },
-                          transitionBuilder: (child, animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: ScaleTransition(
-                                scale: Tween<double>(begin: 0.6, end: 1)
-                                    .animate(animation),
-                                alignment: Alignment.bottomCenter,
-                                child: child,
-                              ),
-                            );
-                          },
+                          transitionBuilder: _navSwitchTransition,
                           child: _minimized
                               ? _MiniBar(
                                   key: const ValueKey('mini'),
@@ -1250,14 +1255,15 @@ class _NaviMainViewState extends State<_NaviMainView> {
                       bottom: (navH - btnW) / 2,
                       child: IgnorePointer(
                         ignoring: _minimized,
+                        // 与主切换同节奏（300ms easeOutCubic），避免动作坞先走完
                         child: AnimatedOpacity(
                           opacity: _minimized ? 0 : 1,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOut,
+                          duration: _kNavSwitchDuration,
+                          curve: Curves.easeOutCubic,
                           child: AnimatedScale(
                             scale: _minimized ? 0.6 : 1,
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOut,
+                            duration: _kNavSwitchDuration,
+                            curve: Curves.easeOutCubic,
                             alignment: Alignment.bottomCenter,
                             child: state.buildFloatingActions(
                               open: open,

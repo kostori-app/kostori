@@ -41,8 +41,13 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
   }
 
   Future<void> _selectSources(TextRule rule) async {
-    await showDialog<void>(
+    await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => _RuleSourcesDialog(rule: rule),
     );
     if (mounted) setState(() {});
@@ -184,7 +189,9 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
   }
 }
 
-/// 选择“哪些番源使用该规则”
+/// 选择“哪些番源使用该规则”：搜索里的同款选择器（分组筛选 + 搜索 +
+/// 源卡片，点卡片即勾选，右侧无勾选框），底部显示已选数量确认。
+/// 数据源是全部番源（禁用/无搜索页的源也要能绑规则，不只启用搜索源）。
 class _RuleSourcesDialog extends StatefulWidget {
   const _RuleSourcesDialog({required this.rule});
 
@@ -203,53 +210,64 @@ class _RuleSourcesDialogState extends State<_RuleSourcesDialog> {
     _selected = SourceTextRuleConfig.sourcesUsing(widget.rule.id);
   }
 
+  /// 全部番源按分组取（'all' = 全部；自定义分组按 key 交集；其余按派生分组）
+  static List<AnimeSource> _allSourcesByGroup(String group) {
+    final all = AnimeSource.allSources();
+    if (group == 'all') return all;
+    final custom = customSearchGroups();
+    if (custom.containsKey(group)) {
+      final keys = custom[group]!.toSet();
+      return all.where((e) => keys.contains(e.key)).toList();
+    }
+    return all.where((e) => e.searchGroup == group).toList();
+  }
+
+  /// 全部番源的分组列表（派生分组按名称排序，自定义分组跟后）
+  static List<String> _allSourceGroups() {
+    final derived = <String>{};
+    for (final s in AnimeSource.allSources()) {
+      derived.add(s.searchGroup);
+    }
+    final result = <String>['all', ...derived.toList()..sort()];
+    for (final g in customSearchGroups().keys.toList()..sort()) {
+      if (!result.contains(g)) result.add(g);
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final sources = AnimeSource.all().toList();
-    return ContentDialog(
+    return Sheet(
       title: t.textRuleSelectSources,
-      content: SizedBox(
-        width: double.infinity,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 380),
-          child: sources.isEmpty
-              ? const Center(child: Text('—'))
-              : SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final s in sources)
-                        CheckboxListTile(
-                          dense: true,
-                          value: _selected.contains(s.key),
-                          title: Text(s.name),
-                          subtitle: Text(
-                            s.key,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onChanged: (v) => setState(() {
-                            if (v == true) {
-                              _selected.add(s.key);
-                            } else {
-                              _selected.remove(s.key);
-                            }
-                          }),
-                        ),
-                    ],
-                  ),
-                ),
+      icon: Icons.rule,
+      initialSize: 0.8,
+      footer: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                SourceTextRuleConfig.setSourcesForRule(
+                  widget.rule.id,
+                  _selected,
+                );
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.check),
+              label: Text('${t.apply} (${_selected.length})'),
+            ),
+          ),
         ),
       ),
-      actions: [
-        Button.filled(
-          onPressed: () {
-            SourceTextRuleConfig.setSourcesForRule(widget.rule.id, _selected);
-            Navigator.of(context).pop();
-          },
-          child: Text(t.confirm),
-        ),
-      ],
+      builder: (context, sc) => SearchSourcePicker(
+        multiSelect: true,
+        selected: _selected,
+        sourceProvider: _allSourcesByGroup,
+        groupsProvider: _allSourceGroups,
+        onChanged: (selected, group) => setState(() => _selected = selected),
+      ),
     );
   }
 }
@@ -646,10 +664,22 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
 
   void _save() => Navigator.of(context).pop(_buildRule());
 
-  /// 编辑中的实时预览：示例文本 → 套用当前步骤后的结果
+  /// 编辑中的实时预览：示例文本 → 套用当前步骤后的结果，
+  /// 附每一步命中状态（命中 n 处 / 未命中 / 正则无效），一眼看出哪步没生效
   Widget _editorPreview(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final result = TextRuleStore.apply(_sampleCtrl.text, [_buildRule()]);
+    final rule = _buildRule();
+    final result = TextRuleStore.apply(_sampleCtrl.text, [rule]);
+    final reports = TextRuleStore.dryRun(
+      _sampleCtrl.text,
+      _steps.map(
+        (s) => TextRuleStep(
+          find: s.find.text,
+          replace: s.replace.text,
+          caseSensitive: s.caseSensitive,
+        ),
+      ),
+    );
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -678,6 +708,29 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
           ),
           const SizedBox(height: 2),
           SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, result, style: const TextStyle(fontSize: 13)),
+          const SizedBox(height: 6),
+          for (var i = 0; i < reports.length; i++)
+            if (reports[i].state != TextRuleStepState.skipped)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  switch (reports[i].state) {
+                    TextRuleStepState.hit =>
+                      '${t.textRuleStepN(n: i + 1)} · ${t.textRuleStepHit(n: reports[i].hits)}',
+                    TextRuleStepState.miss =>
+                      '${t.textRuleStepN(n: i + 1)} · ${t.textRuleStepMiss}',
+                    TextRuleStepState.invalid =>
+                      '${t.textRuleStepN(n: i + 1)} · ${t.textRuleStepInvalid}',
+                    TextRuleStepState.skipped => '',
+                  },
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: reports[i].state == TextRuleStepState.hit
+                        ? cs.primary
+                        : cs.error,
+                  ),
+                ),
+              ),
         ],
       ),
     );
@@ -685,12 +738,15 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // 视口随屏幕走（此前锁死 380px，小屏+键盘弹起只能看到一半）；
+    // 名称框去 autofocus：编辑已有条目不再抢焦点弹键盘
+    final maxH = MediaQuery.sizeOf(context).height * 0.72;
     return ContentDialog(
       title: widget.initial == null ? t.textRuleAdd : t.edit,
       content: SizedBox(
         width: double.infinity,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 380),
+          constraints: BoxConstraints(maxHeight: maxH),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -698,7 +754,6 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
               children: [
                 TextField(
                   controller: _nameCtrl,
-                  autofocus: true,
                   decoration: InputDecoration(
                     labelText: t.textRuleName,
                     border: const OutlineInputBorder(),

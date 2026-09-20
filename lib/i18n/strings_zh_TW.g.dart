@@ -2772,17 +2772,22 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get textRuleCaseSensitive => '區分大小寫';
 	@override String get textRuleStepAdd => '新增步驟';
 	@override String textRuleStepN({required Object n}) => '步驟 ${n}';
+	@override String textRuleStepHit({required Object n}) => '命中 ${n} 處';
+	@override String get textRuleStepMiss => '未命中';
+	@override String get textRuleStepInvalid => '正則無效';
 	@override String get textRuleNone => '尚無規則';
 	@override String get textRuleSelectHint => '選擇套用至此來源的規則';
 	@override String get textRuleApply => '套用規則';
 	@override String get textRuleApplied => '已套用規則';
 	@override String get textRuleNotApplied => '未套用規則';
+	@override String get textRuleNoMatch => '規則未命中目前標題，請檢查正則或綁定';
 	@override String get textRuleDeleteConfirm => '確定刪除該規則？';
 	@override String get textRulePreviewInput => '預覽文字';
 	@override String get textRulePreviewResult => '預覽結果';
 	@override String get textRuleSelectSources => '選擇使用該規則的番源';
 	@override String get textRuleOrderHint => '列表順序即套用順序：越靠前的規則越先作用（拖動可調整）';
 	@override String get downloadDir => '下載目錄';
+	@override String get downloadFreeSpace => '可用空間';
 	@override String get loadingStepParse => '解析影片網址';
 	@override String get loadingStepInit => '初始化播放器';
 	@override String get loadingStepLoad => '載入媒體資料';
@@ -5793,17 +5798,22 @@ extension on TranslationsZhTw {
 			'textRuleCaseSensitive' => '區分大小寫',
 			'textRuleStepAdd' => '新增步驟',
 			'textRuleStepN' => ({required Object n}) => '步驟 ${n}',
+			'textRuleStepHit' => ({required Object n}) => '命中 ${n} 處',
+			'textRuleStepMiss' => '未命中',
+			'textRuleStepInvalid' => '正則無效',
 			'textRuleNone' => '尚無規則',
 			'textRuleSelectHint' => '選擇套用至此來源的規則',
 			'textRuleApply' => '套用規則',
 			'textRuleApplied' => '已套用規則',
 			'textRuleNotApplied' => '未套用規則',
+			'textRuleNoMatch' => '規則未命中目前標題，請檢查正則或綁定',
 			'textRuleDeleteConfirm' => '確定刪除該規則？',
 			'textRulePreviewInput' => '預覽文字',
 			'textRulePreviewResult' => '預覽結果',
 			'textRuleSelectSources' => '選擇使用該規則的番源',
 			'textRuleOrderHint' => '列表順序即套用順序：越靠前的規則越先作用（拖動可調整）',
 			'downloadDir' => '下載目錄',
+			'downloadFreeSpace' => '可用空間',
 			'loadingStepParse' => '解析影片網址',
 			'loadingStepInit' => '初始化播放器',
 			'loadingStepLoad' => '載入媒體資料',

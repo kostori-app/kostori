@@ -1130,18 +1130,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   /// `animeId|episode` → 未完成任务的当前状态（下载中/排队/暂停/失败），
   /// 供下载面板标记「已在下载列表」，避免重复下载
-  Map<String, DownloadStatus> _activeDownloadTasks() {
-    final out = <String, DownloadStatus>{};
-    for (final task in DownloadManager.instance.tasks) {
-      if (task.status == DownloadStatus.completed) continue;
-      if (task.sourceKey != _sourceKey) continue;
-      final animeId = task.animeId;
-      final episode = task.episode;
-      if (animeId == null || episode == null) continue;
-      out.putIfAbsent('$animeId|$episode', () => task.status);
-    }
-    return out;
-  }
+  Map<String, DownloadStatus> _activeDownloadTasks() =>
+      activeDownloadTasksOf(_sourceKey);
 
   /// 系列模式下载：从 loadSeries 加载系列条目（每条一个视频，可单独选分辨率）
   Future<void> _onDownloadSeries() async {
@@ -1244,6 +1234,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         resolution: item.resolution,
         animeTitle: item.animeTitle,
         episodeNo: item.episodeNo,
+        episodeRaw: item.episodeRaw,
         group: item.group,
       );
     }
@@ -1252,14 +1243,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   /// 解析单集/系列条目的播放结果（String 或 AnimePlayResult）
   Future<AnimePlayResult?> _resolvePlayResult(String epKey) async {
     final source = AnimeSource.find(_sourceKey);
-    if (source == null || source.loadAnimePages == null) return null;
-    final res = await source.loadAnimePages!(data!.id, epKey);
-    if (res is! Map) return null;
-    try {
-      return AnimePlayResult.fromJson(Map<String, dynamic>.from(res));
-    } catch (_) {
-      return null;
-    }
+    if (source == null) return null;
+    return resolveAnimePlayResult(source, data!.id, epKey);
   }
 
   /// 解析地址并加入下载队列；[url]/[resolution] 指定分辨率时使用该清晰度
@@ -1271,6 +1256,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     String? resolution,
     String? animeTitle,
     String? episodeNo,
+    String? episodeRaw,
     String? group,
   }) async {
     final source = AnimeSource.find(_sourceKey);
@@ -1278,54 +1264,22 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       App.rootContext.showMessage(message: t.downloadFailed);
       return;
     }
-    var targetUrl = url;
-    if (targetUrl == null) {
-      final res = await source.loadAnimePages!(data!.id, epKey);
-      if (res is String) {
-        targetUrl = res;
-      } else if (res is Map) {
-        targetUrl = _parsePlayResultUrl(res);
-      }
-    }
-    if (!mounted) return;
-    if (targetUrl == null ||
-        targetUrl.isEmpty ||
-        targetUrl.startsWith('blob:')) {
-      App.rootContext.showMessage(message: t.downloadFailed);
-      return;
-    }
-    final task = await DownloadManager.instance.enqueue(
-      url: targetUrl,
-      title: animeTitle ?? data!.title,
-      subtitle: epName,
-      cover: data!.cover,
-      sourceKey: data!.sourceKey,
+    await enqueueAnimeEpisode(
+      source: source,
       animeId: animeId,
-      animeTitle: animeTitle ?? data!.title,
-      episode: epName,
-      episodeNo: episodeNo,
-      author: data!.uploader,
-      headers: source.httpHeaders ?? const {},
+      dataId: data!.id,
+      epKey: epKey,
+      epName: epName,
+      url: url,
       resolution: resolution,
+      animeTitle: animeTitle,
+      displayTitle: data!.title,
+      cover: data!.cover,
+      uploader: data!.uploader,
+      episodeNo: episodeNo,
+      episodeRaw: episodeRaw,
       group: group,
     );
-    if (!mounted) return;
-    // 并发未满时任务已立即开始（status 已切 downloading），
-    // 排队中则提示等待，给用户明确反馈
-    App.rootContext.showMessage(
-      message: task != null && task.status == DownloadStatus.queued
-          ? t.downloadQueued
-          : t.downloadStarted,
-    );
-  }
-
-  /// 从 AnimePlayResult Map 取默认播放地址
-  String? _parsePlayResultUrl(Map res) {
-    try {
-      return AnimePlayResult.fromJson(Map<String, dynamic>.from(res)).url;
-    } catch (_) {
-      return null;
-    }
   }
 
   Widget buildComment() {

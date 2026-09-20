@@ -1,14 +1,24 @@
 import 'dart:async' show Completer, Future, StreamController, scheduleMicrotask;
 import 'dart:collection' show Queue;
 import 'dart:convert';
-import 'dart:math';
+import 'dart:math' show max;
 import 'dart:ui' as ui show Codec;
 import 'dart:ui';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/log.dart';
+
+/// 图片缓存键：与磁盘缓存/去重共用同一格式（改格式会使已落盘的旧键变孤儿，
+/// 故短串分支保持原样）；超长文本（base64 data URL）用 sha1 + 长度代替
+/// Dart `hashCode`（进程随机种子、跨重启失效、32 位易碰撞）。
+String imageCacheKey(String url, String? sourceKey, [String? aid]) {
+  final tail = '@$sourceKey${aid != null ? '@$aid' : ''}';
+  if (url.length <= 512) return '$url$tail';
+  return 'long:${sha1.convert(utf8.encode(url))}x${url.length}$tail';
+}
 
 abstract class BaseImageProvider<T extends BaseImageProvider<T>>
     extends ImageProvider<T> {
@@ -148,9 +158,13 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
         final sw = kReleaseMode ? null : (Stopwatch()..start());
         // 解码单独限流：load() 返回后槽位就释放了，缓存命中时一批图会在几毫秒内
         // 全部过闸，几十个 decode 同时跑会让 raster 尖峰（上百 ms 的长帧）。
-        await _decodeGate.acquire(() {});
+        // 排队与起解前都检查 stop：滚出屏幕的图片直接让槽，不占解码资源。
+        await _decodeGate.acquire(() {
+          if (stop) throw const _ImageLoadingStopException();
+        });
         late ui.Codec codec;
         try {
+          if (stop) throw const _ImageLoadingStopException();
           final buffer = await ImmutableBuffer.fromUint8List(data);
           codec = await decode(
             buffer,
@@ -167,7 +181,9 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
         }
         return codec;
       } catch (e) {
-        await CacheManager().delete(this.key);
+        // 坏字节的落盘键与内存键不在同一命名空间（如下游下载键），删 this.key
+        // 删不掉，各子类通过 purgeBadCache 按写时的键清理
+        await purgeBadCache();
         if (data.length < 2 * 1024) {
           // data is too short, it's likely that the data is text, not image
           try {
@@ -212,6 +228,10 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
 
   String get key;
 
+  /// 解码失败时清理坏缓存：默认删内存键；数据实际落盘在别处的子类覆写
+  ///（如下游 `ImageDownloader` 的磁盘键、本地文件），否则坏字节一直命中。
+  Future<void> purgeBadCache() => CacheManager().delete(key);
+
   @override
   bool operator ==(Object other) {
     return other is BaseImageProvider<T> && key == other.key;
@@ -239,8 +259,11 @@ class Base64ImageProvider extends BaseImageProvider<Base64ImageProvider> {
 
   final String base64String;
 
+  /// 此前只取前 64 字符（基本全是 `data:image/…;base64,` 前缀），不同图片
+  /// 同键会导致 ImageCache 串图；改用全串短哈希（const 构造器下每次现算，
+  /// 调用处是小图，sha1 开销可忽略）。
   @override
-  String get key => base64String.substring(0, min(64, base64String.length));
+  String get key => imageCacheKey(base64String, null);
 
   @override
   Future<Uint8List> load(

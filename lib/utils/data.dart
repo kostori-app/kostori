@@ -151,6 +151,18 @@ Future<File> exportAppData() async {
   } catch (e) {
     DebugLog.error('exportAppData', 'assistant_merge.json 导出失败：$e');
   }
+  var sourceConfigMergeFile = FilePath.join(
+    App.cachePath,
+    'source_config_merge.json',
+  );
+  try {
+    final jsonStr = await Isolate.run(
+      () => jsonEncode(AnimeSourceManager().exportSourceConfig()),
+    );
+    await File(sourceConfigMergeFile).writeAsString(jsonStr);
+  } catch (e) {
+    DebugLog.error('exportAppData', 'source_config_merge.json 导出失败：$e');
+  }
   try {
     final favorites = LocalFavoritesManager().getAllFavoriteMergeMaps();
     final jsonStr = await Isolate.run(() {
@@ -210,6 +222,10 @@ Future<File> exportAppData() async {
     final amf = File(assistantMergeFile);
     if (amf.existsSync()) {
       zipFile.addFile("assistant_merge.json", assistantMergeFile);
+    }
+    final scmf = File(sourceConfigMergeFile);
+    if (scmf.existsSync()) {
+      zipFile.addFile("source_config_merge.json", sourceConfigMergeFile);
     }
     final fmf = File(favoritesMergeFile);
     if (fmf.existsSync()) {
@@ -383,6 +399,11 @@ Future<void> _writeMergeFilesFor(String key) async {
       'profiles': AssistantProfileStore.instance.exportMergeData(),
       'memory': AssistantMemoryStore.instance.exportMergeData(),
     });
+    // 番源启用/禁用：存在 implicitData（默认不同步），单独导出合并文件
+    await write(
+      FilePath.join(App.cachePath, 'source_config_merge.json'),
+      AnimeSourceManager().exportSourceConfig(),
+    );
   }
 }
 
@@ -461,6 +482,10 @@ List<(String, String)> _partEntries(String key) {
     add(
       'assistant_merge.json',
       FilePath.join(App.cachePath, 'assistant_merge.json'),
+    );
+    add(
+      'source_config_merge.json',
+      FilePath.join(App.cachePath, 'source_config_merge.json'),
     );
     addDir('anime_source', FilePath.join(dp, 'anime_source'));
     addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
@@ -788,6 +813,22 @@ Future<void> _applyImportedData(String cacheDirPath) async {
         }
       } catch (e) {
         DebugLog.error('importAppData', 'assistant 字段级合并失败：$e');
+      }
+    }
+    // 番源启用/禁用：新者胜（旧包无此文件时跳过，本地不动）
+    final sourceConfigMergeFile = cacheDir.joinFile("source_config_merge.json");
+    if (await sourceConfigMergeFile.exists()) {
+      try {
+        final data = jsonDecode(await sourceConfigMergeFile.readAsString());
+        if (data is Map) {
+          if (AnimeSourceManager().importSourceConfig(
+            Map<String, dynamic>.from(data),
+          )) {
+            DebugLog.info('importAppData', '已同步番源启用状态');
+          }
+        }
+      } catch (e) {
+        DebugLog.error('importAppData', 'source_config 字段级合并失败：$e');
       }
     }
     // Cookie 字段级合并优先：补齐本机没有的、以及过期时间更晚的 Cookie，
