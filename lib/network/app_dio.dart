@@ -357,6 +357,8 @@ class RHttpAdapter implements HttpClientAdapter {
       options.headers['User-Agent'] =
           "kostori/v${App.version} (Android) (https://github.com/kostori-app/kostori)";
     }
+    // 将 dio 的取消信号转发给 rhttp，真正中断正在进行的（流式）请求
+    final rhttpCancelToken = cancelFuture == null ? null : rhttp.CancelToken();
     if (rhttpCancelToken != null) {
       unawaited(cancelFuture!.then((_) => rhttpCancelToken.cancel()));
     }

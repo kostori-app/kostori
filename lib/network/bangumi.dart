@@ -18,7 +18,7 @@ import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_response.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_response.dart';
-import 'package:kostori/lib/utils/network_utils.dart';
+import 'package:kostori/utils/network_utils.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_response.dart';
 import 'package:kostori/foundation/consts.dart';

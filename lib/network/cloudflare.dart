@@ -5,10 +5,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/webview.dart';
+import 'package:kostori/utils/network_utils.dart';
 
 class CloudflareException implements DioException {
   final String url;
@@ -61,11 +61,7 @@ class CloudflareException implements DioException {
 }
 
 class CloudflareInterceptor extends Interceptor {
-  import 'package:kostori/lib/utils/network_utils.dart';
-
-// ...
-
-@override
+  @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (options.headers['cookie'].toString().contains('cf_clearance')) {
       options.headers['user-agent'] = NetworkUtils.userAgent;

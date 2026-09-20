@@ -14,6 +14,7 @@ import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/services/download/download_keep_alive.dart';
 import 'package:kostori/services/download/download_task.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
+import 'package:kostori/utils/network_utils.dart';
 import 'package:path/path.dart' as p;
 
 /// 下载直链的永久性 HTTP 错误（403/404/410 等）：地址失效，重试无意义。
