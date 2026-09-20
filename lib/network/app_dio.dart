@@ -351,12 +351,12 @@ class RHttpAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    // 补全 User-Agent（若已由上层统一注入则会保留原值）
     if (options.headers['User-Agent'] == null &&
         options.headers['user-agent'] == null) {
       options.headers['User-Agent'] =
           "kostori/v${App.version} (Android) (https://github.com/kostori-app/kostori)";
     }
+
     // 将 dio 的取消信号转发给 rhttp，真正中断正在进行的（流式）请求
     final rhttpCancelToken = cancelFuture == null ? null : rhttp.CancelToken();
     if (rhttpCancelToken != null) {

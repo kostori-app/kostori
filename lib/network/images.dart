@@ -11,7 +11,6 @@ import 'package:kostori/foundation/image_loader/inline_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/image.dart';
-import 'package:kostori/utils/network_utils.dart';
 
 /// 同一张图并发只解析一次：列表重建、同一封面多处显示时很常见，
 /// 否则会重复走 JS 引擎抓取/解密/压缩。
@@ -227,7 +226,7 @@ abstract class ImageDownloader {
     configs['headers'] ??= {};
     if (configs['headers']['user-agent'] == null &&
         configs['headers']['User-Agent'] == null) {
-      configs['headers']['user-agent'] = NetworkUtils.userAgent;
+      configs['headers']['user-agent'] = webUA;
     }
 
     final resolvedUrl = (configs['url'] as String?) ?? url;

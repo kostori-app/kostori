@@ -5,10 +5,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/webview.dart';
-import 'package:kostori/utils/network_utils.dart';
 
 class CloudflareException implements DioException {
   final String url;
@@ -64,16 +64,18 @@ class CloudflareInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (options.headers['cookie'].toString().contains('cf_clearance')) {
-      options.headers['user-agent'] = NetworkUtils.userAgent;
+      options.headers['user-agent'] = appdata.implicitData['ua'] ?? webUA;
     }
     handler.next(options);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response != null &&
-        _looksLikeChallenge(err.response!.statusCode, err.response!.headers)) {
-      handler.next(_check(err.response!) ?? err);
+    final res = err.response;
+    if (res != null && _isChallenge(res)) {
+      // 判定为挑战就直接换成 CloudflareException，交给上层弹「验证」按钮；
+      // 若此处再回落到普通 err，用户只会看到 403，反复重试仍被拦截
+      handler.next(CloudflareException(res.requestOptions.uri.toString()));
     } else {
       handler.next(err);
     }
@@ -81,44 +83,52 @@ class CloudflareInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (_looksLikeChallenge(response.statusCode, response.headers)) {
-      var err = _check(response);
-      if (err != null) {
-        handler.reject(err);
-        return;
-      }
+    if (_isChallenge(response)) {
+      handler.reject(
+        CloudflareException(response.requestOptions.uri.toString()),
+      );
+      return;
     }
     handler.next(response);
   }
 
-  /// 判断响应是否可能是 CF 挑战页：
-  /// - `cf-mitigated: challenge` 头（403/429/503 常见）
-  /// - `server: cloudflare` 且状态码为 403/503（很多挑战页不带 cf-mitigated 头）
-  bool _looksLikeChallenge(int? statusCode, Headers headers) {
-    if (statusCode != 403 && statusCode != 503 && statusCode != 429) {
-      return false;
-    }
-    final mitigated = headers['cf-mitigated']?.firstOrNull;
-    if (mitigated == 'challenge') return true;
+  /// 挑战页正文强特征：CF interstitial 专用脚本/表单。
+  /// 正常页面（含挂 Turnstile 挂件的登录页）不含，故可安全用于识别
+  /// 「状态码为 200 的挑战页」。
+  static bool _hasChallengeMarkers(String body) =>
+      body.contains('window._cf_chl_opt') || body.contains('cf-chl-widget');
+
+  /// 判断响应是否可能是 CF 挑战页，任一条件成立即可：
+  /// - `cf-mitigated: challenge` 头（最可靠）
+  /// - 状态码 403/429/503 且 `server: cloudflare`（很多挑战页不带 cf-mitigated）
+  /// - 正文带挑战页强特征（部分 managed challenge 返回 200，状态码不可靠）
+  bool _looksLikeChallenge(int? statusCode, Headers headers, {String? body}) {
+    if (headers['cf-mitigated']?.firstOrNull == 'challenge') return true;
     final server = headers['server']?.firstOrNull?.toLowerCase();
-    return server == 'cloudflare' || server == 'cloudflare-nginx';
+    final serverCf = server == 'cloudflare' || server == 'cloudflare-nginx';
+    if (serverCf &&
+        (statusCode == 403 || statusCode == 429 || statusCode == 503)) {
+      return true;
+    }
+    if (body != null && _hasChallengeMarkers(body)) return true;
+    return false;
   }
 
-  CloudflareException? _check(Response response) {
-    final mitigated = response.headers['cf-mitigated']?.firstOrNull;
-    if (mitigated == "challenge") {
-      return CloudflareException(response.requestOptions.uri.toString());
+  /// 从响应判定挑战：正文只在「较小且为 HTML」时扫描，
+  /// 避免对大 JSON / 二进制响应做无谓的字符串匹配。
+  bool _isChallenge(Response response) {
+    final data = response.data;
+    String? body;
+    if (data is String &&
+        data.length <= 64 * 1024 &&
+        (response.headers.value('content-type')?.contains('html') ?? false)) {
+      body = data;
     }
-    // 无 cf-mitigated 头时，尝试从响应体识别 challenge 特征
-    if (response.data is String) {
-      final body = response.data as String;
-      if (body.contains('challenge-platform') ||
-          body.contains('window._cf_chl_opt') ||
-          body.contains('cf-chl-widget')) {
-        return CloudflareException(response.requestOptions.uri.toString());
-      }
-    }
-    return null;
+    return _looksLikeChallenge(
+      response.statusCode,
+      response.headers,
+      body: body,
+    );
   }
 }
 

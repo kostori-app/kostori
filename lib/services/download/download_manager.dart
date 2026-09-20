@@ -14,7 +14,6 @@ import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/services/download/download_keep_alive.dart';
 import 'package:kostori/services/download/download_task.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
-import 'package:kostori/utils/network_utils.dart';
 import 'package:path/path.dart' as p;
 
 /// 下载直链的永久性 HTTP 错误（403/404/410 等）：地址失效，重试无意义。
@@ -335,7 +334,8 @@ class DownloadManager extends ChangeNotifier {
     var effectiveHeaders = Map<String, String>.from(headers);
     if (effectiveHeaders['User-Agent'] == null &&
         effectiveHeaders['user-agent'] == null) {
-      effectiveHeaders['User-Agent'] = NetworkUtils.userAgent;
+      effectiveHeaders['User-Agent'] =
+          appdata.implicitData['ua'] as String? ?? _browserUA;
     }
     // 附加 cookie jar 的 cookie，与播放端一致（否则校验会话的源会 403/410）。
     // 很多 CDN 只认主站下发的 cookie：按下载地址域名取不到时，
