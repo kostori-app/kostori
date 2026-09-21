@@ -695,9 +695,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${count} items'
 	String exploreItemsCount({required Object count}) => '${count} items';
 
-	/// en: '${items} items · ${pages} pages'
-	String exploreOverlayItemsPages({required Object items, required Object pages}) => '${items} items · ${pages} pages';
-
 	/// en: '${items} items · ${sections} sections'
 	String exploreOverlayItemsSections({required Object items, required Object sections}) => '${items} items · ${sections} sections';
 
@@ -9170,7 +9167,6 @@ extension on Translations {
 			'explore' => 'Explore',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => 'Loaded ${pages} pages · ${count} items',
 			'exploreItemsCount' => ({required Object count}) => '${count} items',
-			'exploreOverlayItemsPages' => ({required Object items, required Object pages}) => '${items} items · ${pages} pages',
 			'exploreOverlayItemsSections' => ({required Object items, required Object sections}) => '${items} items · ${sections} sections',
 			'hideScrollbarForMasonry' => 'Hide scrollbar in masonry',
 			'hideScrollbarForMasonryDesc' => 'Hide the side scrollbar in masonry layout to avoid jitter',
@@ -9464,9 +9460,9 @@ extension on Translations {
 			'voiceActorC' => ({required Object c}) => 'Voice Actor: ${c}',
 			'episodeEN' => ({required Object e, required Object n}) => 'Episode ${e}: ${n}',
 			'hotspot' => 'hotspot',
+			'completed' => 'Completed',
 			_ => null,
 		} ?? switch (path) {
-			'completed' => 'Completed',
 			'mainCharacter' => 'Main character',
 			'supportingCharacter' => 'Supporting character',
 			'cameo' => 'Cameo',
@@ -9978,9 +9974,9 @@ extension on Translations {
 			'deviceField' => 'device',
 			'productField' => 'product',
 			'manufacturerField' => 'manufacturer',
+			'versionReleaseField' => 'version_release',
 			_ => null,
 		} ?? switch (path) {
-			'versionReleaseField' => 'version_release',
 			'versionSdkIntField' => 'version_sdkInt',
 			'displayField' => 'display',
 			'hardwareField' => 'hardware',
@@ -10492,9 +10488,9 @@ extension on Translations {
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} removed reaction ${o}',
 			'noUsersAvailableToInvite' => 'No users available to invite',
 			'inviteToRoom' => 'Invite to Room',
+			'invite' => 'Invite',
 			_ => null,
 		} ?? switch (path) {
-			'invite' => 'Invite',
 			'invited' => 'invited',
 			'roomInvite' => 'Room Invite',
 			'invitedYouTo' => 'invited you to',
@@ -11006,9 +11002,9 @@ extension on Translations {
 			'allCopiedSuccess' => 'All copied success',
 			'bindBangumiIdSuccess' => 'Bangumi ID bound successfully',
 			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
+			'applySuccess' => 'Apply success',
 			_ => null,
 		} ?? switch (path) {
-			'applySuccess' => 'Apply success',
 			'noChanges' => 'No changes',
 			'applyFailed' => 'Apply failed',
 			'noResultsTryOtherKeywords' => 'No results found, please try other keywords',
@@ -11520,9 +11516,9 @@ extension on Translations {
 			'inputModality' => 'Input modalities',
 			'outputModality' => 'Output modalities',
 			'supportsReasoning' => 'Supports reasoning',
+			'capabilities' => 'Capabilities',
 			_ => null,
 		} ?? switch (path) {
-			'capabilities' => 'Capabilities',
 			'modelTypeChat' => 'Chat',
 			'modelTypeImage' => 'Image',
 			'modelTypeEmbedding' => 'Embedding',

@@ -1329,3 +1329,22 @@ class _MiniBar extends StatelessWidget {
     );
   }
 }
+
+/// 探索页信息小圆片（在下方、贴近导航栏）的底距。
+/// 与 [navOverlayFabBottom] 配合形成「悬浮按钮在上、文字信息在下」的一列，
+/// 整体紧贴悬浮主导航栏上方，和 bangumi 页的条目信息框位置一致。
+double navOverlayChipBottom(BuildContext context) {
+  final mq = MediaQuery.of(context);
+  final navi = context.findAncestorStateOfType<NaviPaneState>();
+  final lift = navi?.navBottomLift ?? 0;
+  // 导航栏底部距屏幕底 + 栏高 = 栏顶；圆片贴在栏顶上方 4
+  return mq.padding.bottom +
+      12 +
+      lift +
+      NaviPaneState._kBottomBarHeight +
+      4;
+}
+
+/// 探索页悬浮按钮的底距：在信息圆片上方（圆片高约 22 + 间距 6）。
+double navOverlayFabBottom(BuildContext context) =>
+    navOverlayChipBottom(context) + 22 + 6;

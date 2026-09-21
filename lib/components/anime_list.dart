@@ -29,6 +29,7 @@ class AnimeList extends StatefulWidget {
     this.refreshHandlerCallback,
     this.enablePageStorage = false,
     this.enableFloatingMenu = true,
+    this.showLoadedOverlay = false,
   });
 
   final Future<Res<List<Anime>>> Function(int page)? loadPage;
@@ -55,6 +56,9 @@ class AnimeList extends StatefulWidget {
 
   /// 是否显示内置的右下角浮动按钮（探索页用页面级 GridSpeedDial，可关闭）
   final bool enableFloatingMenu;
+
+  /// 是否显示右下角"已加载条目"信息圆片（探索页专用；样式与 bangumi 页一致）
+  final bool showLoadedOverlay;
 
   @override
   State<AnimeList> createState() => AnimeListState();
@@ -574,33 +578,11 @@ class AnimeListState extends State<AnimeList>
     return _flatCache;
   }
 
-  /// 滚动模式右下角加载指示器：单行紧凑小圆片（ⓘ 条目数 · 页数），
-  /// 与右下角悬浮按钮同一底距、位于其左侧（图二风格）
+  /// 滚动模式右下角加载指示器：单行紧凑小圆片（与 bangumi 页信息框同款：
+  /// 实底 surface + 阴影 + onSurface 10 号字），紧贴悬浮按钮下方
   Widget _loadedProgressChip(BuildContext context) {
     final total = _flatAnimes().length;
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.toOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.toOpacity(0.6), width: 0.6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.info_outline, size: 13, color: cs.onSurfaceVariant),
-          const SizedBox(width: 5),
-          Text(
-            t.exploreOverlayItemsPages(
-              items: total.toString(),
-              pages: _data.length.toString(),
-            ),
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
+    return LoadedInfoChip(text: t.itemsCount(n: total));
   }
 
   @override
@@ -906,14 +888,64 @@ class AnimeListState extends State<AnimeList>
               ),
             ),
           ),
-        // 滚动模式右下角指示器：与悬浮按钮同一底距（右下角、按钮左侧）
-        if (_error == null && _data.isNotEmpty)
+        // 滚动模式右下角指示器：紧贴悬浮按钮下方（探索页专用）
+        if (widget.showLoadedOverlay && _error == null && _data.isNotEmpty)
           Positioned(
-            right: 62,
-            bottom: _bottomNavInset(context) + 15,
+            right: 10,
+            bottom: navOverlayChipBottom(context),
             child: _loadedProgressChip(context),
           ),
       ],
+    );
+  }
+}
+
+/// 右下角"已加载条目"信息小圆片：样式与 bangumi 页条目数量浮框一致
+/// （实底 surface + 阴影 + onSurface 10 号字 + 1.2 缩放）。
+class LoadedInfoChip extends StatelessWidget {
+  const LoadedInfoChip({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Transform.scale(
+      scale: 1.2,
+      alignment: Alignment.bottomRight,
+      child: RepaintBoundary(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.toOpacity(0.25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.info_outline, size: 10, color: cs.onSurface),
+                const SizedBox(width: 4),
+                Text(
+                  text,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurface,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

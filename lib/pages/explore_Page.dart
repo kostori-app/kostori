@@ -496,9 +496,9 @@ class _ExplorePageState extends State<ExplorePage>
         Positioned(top: 0, left: 0, right: 0, child: sourceTabBar),
         // 注意：Positioned 必须是 Stack 的直接子节点，包在 AnimatedBuilder
         // 里会失效（按钮被当普通 child 排到左上角）——所以 Positioned 在外、
-        // 动画在内。bottom 用主导航高度对齐，紧贴悬浮导航栏上方
+        // 动画在内。bottom 与信息圆片配合：按钮在上、圆片在下，整体紧贴导航栏
         Positioned(
-          bottom: _fbBottom(context),
+          bottom: navOverlayFabBottom(context),
           right: 10,
           child: AnimatedBuilder(
             animation: _fbController,
@@ -620,13 +620,7 @@ class _ExplorePageState extends State<ExplorePage>
     );
   }
 
-  /// 悬浮按钮底距：主导航高度（含安全区）+ 间距，紧贴导航栏上方
-  double _fbBottom(BuildContext context) {
-    final navi = context.findAncestorStateOfType<NaviPaneState>();
-    final inset =
-        navi?.bottomBarHeight ?? MediaQuery.paddingOf(context).bottom;
-    return inset + 15;
-  }
+  /// 悬浮按钮底距统一由 [navOverlayFabBottom] 提供（贴导航栏、在信息圆片上方）
 
   @override
   bool get wantKeepAlive => true;
@@ -771,6 +765,8 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         controller: scrollController,
         // 探索页用页面级 GridSpeedDial，避免多 tab 浮动按钮叠加
         enableFloatingMenu: false,
+        // 右下角"已加载条目"信息圆片（样式与 bangumi 页一致）
+        showLoadedOverlay: true,
         leadingSliver: modeBar,
         refreshHandlerCallback: (c) {
           refreshHandler = c;
@@ -895,11 +891,11 @@ class _MixedExplorePageState
     // 结构保持稳定（始终同一 Stack），避免加载指示器出现时重建 scroll
     // 导致滚动位置被重置跳回顶部；加载下一页时才显示底部悬浮转圈
     final showLoader = isLoading && !isFirstLoading;
-    // 与 AnimeList 一致：悬浮按钮底距 = 主导航高度 + 15
+    // 信息圆片：与 AnimeList 同锚点（贴导航栏上方、悬浮按钮下方）
     final navi = context.findAncestorStateOfType<NaviPaneState>();
     final navInset =
         navi?.bottomBarHeight ?? MediaQuery.paddingOf(context).bottom;
-    // 条目总数 + 分区数（单行紧凑小圆片，图二风格）
+    // 条目总数 + 分区数
     var items = 0;
     for (final part in data) {
       if (part is ExplorePagePart) {
@@ -910,7 +906,6 @@ class _MixedExplorePageState
         items += part.length;
       }
     }
-    final cs = Theme.of(context).colorScheme;
     return Stack(
       children: [
         scroll,
@@ -927,31 +922,12 @@ class _MixedExplorePageState
             ),
           ),
         Positioned(
-          right: 62,
-          bottom: navInset + 15,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.toOpacity(0.9),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: cs.outlineVariant.toOpacity(0.6),
-                width: 0.6,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.info_outline, size: 13, color: cs.onSurfaceVariant),
-                const SizedBox(width: 5),
-                Text(
-                  t.exploreOverlayItemsSections(
-                    items: items.toString(),
-                    sections: data.length.toString(),
-                  ),
-                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                ),
-              ],
+          right: 10,
+          bottom: navOverlayChipBottom(context),
+          child: LoadedInfoChip(
+            text: t.exploreOverlayItemsSections(
+              items: items.toString(),
+              sections: data.length.toString(),
             ),
           ),
         ),

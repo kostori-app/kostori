@@ -209,7 +209,6 @@ explorePages: 探索页面
 explore: 探索
 exploreLoadedDetail: "已加载 ${pages} 页 · 共 ${count} 条"
 exploreItemsCount: "共 ${count} 条"
-exploreOverlayItemsPages: "${items} 条 · ${pages} 页"
 exploreOverlayItemsSections: "${items} 条 · ${sections} 分区"
 hideScrollbarForMasonry: "瀑布流隐藏滚动条"
 hideScrollbarForMasonryDesc: "瀑布流布局下不显示右侧滚动条，避免滚动条抽搐"
