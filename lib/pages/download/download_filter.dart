@@ -848,7 +848,7 @@ class _StorageBarState extends State<StorageBar> {
         return Padding(
           padding: widget.dense
               ? const EdgeInsets.only(bottom: 8)
-              : const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              : const EdgeInsets.fromLTRB(12, 2, 12, 0),
           child: Row(
             children: [
               Icon(Icons.sd_storage_outlined, size: 16, color: color),

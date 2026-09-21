@@ -42,7 +42,12 @@ class _DownloadPageState extends State<DownloadPage>
   /// 下载记录 tab 的分组管理入口
   final _recordsKey = GlobalKey<_RecordsTabState>();
 
-  bool get _isRecordsTab => _tabCtrl.index == 1;
+  bool get _isRecordsTab =>
+      (_tabCtrl.animation?.value ?? _tabCtrl.index.toDouble()).round().clamp(
+            0,
+            1,
+          ) ==
+      1;
 
   @override
   void initState() {
@@ -346,7 +351,13 @@ class _DownloadAppbarBottom extends StatelessWidget
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        final isRecords = controller.index == 1;
+        // 用动画值而非 index：index 要等切换动画走完才翻转，
+        // 右侧筛选会“移动完成后一会才出现/消失”；动画值过半即切换
+        final isRecords =
+            (controller.animation?.value ?? controller.index.toDouble())
+                .round()
+                .clamp(0, 1) ==
+            1;
         return SizedBox(
           height: _height,
           child: Row(
