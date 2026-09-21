@@ -566,6 +566,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String noUpdateAvailableForThisArchitectureA({required Object a}) => '当前架构 (${a}) 暂无可用更新';
 	@override String get checkUpdateFailed => '检查更新失败...';
 	@override String get downloadFailed => '下载失败';
+	@override String get downloadLinkExpired => '链接已失效（410），请重新解析后下载';
 	@override String get failedToCheckTheHashValuePleaseTryAgain => '哈希值检查失败，请重试';
 	@override String get english => '英语';
 	@override String get dynamicColor => '动态色彩';
@@ -3557,6 +3558,7 @@ extension on TranslationsZhCn {
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
 			'checkUpdateFailed' => '检查更新失败...',
 			'downloadFailed' => '下载失败',
+			'downloadLinkExpired' => '链接已失效（410），请重新解析后下载',
 			'failedToCheckTheHashValuePleaseTryAgain' => '哈希值检查失败，请重试',
 			'english' => '英语',
 			'dynamicColor' => '动态色彩',
@@ -4053,9 +4055,9 @@ extension on TranslationsZhCn {
 			'deviceField' => '设备',
 			'productField' => '产品',
 			'manufacturerField' => '制造商',
-			'versionReleaseField' => '版本发布',
 			_ => null,
 		} ?? switch (path) {
+			'versionReleaseField' => '版本发布',
 			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '显示',
 			'hardwareField' => '硬件',
@@ -4567,9 +4569,9 @@ extension on TranslationsZhCn {
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} 取消了回应 ${o}',
 			'noUsersAvailableToInvite' => '暂无可用邀请的用户',
 			'inviteToRoom' => '邀请加入房间',
-			'invite' => '邀请',
 			_ => null,
 		} ?? switch (path) {
+			'invite' => '邀请',
 			'invited' => '已邀请',
 			'roomInvite' => '房间邀请',
 			'invitedYouTo' => '邀请你加入',
@@ -5081,9 +5083,9 @@ extension on TranslationsZhCn {
 			'addressAlreadyExists' => '地址已存在',
 			'pleaseEnableAtLeastOneAddress' => '请先开启至少一个地址',
 			'requestFailed' => '请求失败',
-			'allCopiedSuccess' => '全部复制成功',
 			_ => null,
 		} ?? switch (path) {
+			'allCopiedSuccess' => '全部复制成功',
 			'bindBangumiIdSuccess' => '绑定Bangumi ID成功',
 			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			'applySuccess' => '应用成功',
@@ -5595,9 +5597,9 @@ extension on TranslationsZhCn {
 			'modelType' => '模型类型',
 			'inputModality' => '输入模态',
 			'outputModality' => '输出模态',
-			'supportsReasoning' => '支持推理',
 			_ => null,
 		} ?? switch (path) {
+			'supportsReasoning' => '支持推理',
 			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '图像',

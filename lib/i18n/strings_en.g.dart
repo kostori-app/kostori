@@ -1643,6 +1643,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Download failed'
 	String get downloadFailed => 'Download failed';
 
+	/// en: 'Link expired (410), please re-resolve and download'
+	String get downloadLinkExpired => 'Link expired (410), please re-resolve and download';
+
 	/// en: 'Failed to check the hash value. Please try again'
 	String get failedToCheckTheHashValuePleaseTryAgain => 'Failed to check the hash value. Please try again';
 
@@ -9485,6 +9488,7 @@ extension on Translations {
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => 'No update available for this architecture (${a})',
 			'checkUpdateFailed' => 'Check update failed...',
 			'downloadFailed' => 'Download failed',
+			'downloadLinkExpired' => 'Link expired (410), please re-resolve and download',
 			'failedToCheckTheHashValuePleaseTryAgain' => 'Failed to check the hash value. Please try again',
 			'english' => 'English',
 			'dynamicColor' => 'Dynamic color',
@@ -9974,9 +9978,9 @@ extension on Translations {
 			'modelField' => 'model',
 			'deviceField' => 'device',
 			'productField' => 'product',
-			'manufacturerField' => 'manufacturer',
 			_ => null,
 		} ?? switch (path) {
+			'manufacturerField' => 'manufacturer',
 			'versionReleaseField' => 'version_release',
 			'versionSdkIntField' => 'version_sdkInt',
 			'displayField' => 'display',
@@ -10488,9 +10492,9 @@ extension on Translations {
 			'pReactedWithO' => ({required Object p, required Object o}) => '${p} reacted with ${o}',
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} removed reaction ${o}',
 			'noUsersAvailableToInvite' => 'No users available to invite',
-			'inviteToRoom' => 'Invite to Room',
 			_ => null,
 		} ?? switch (path) {
+			'inviteToRoom' => 'Invite to Room',
 			'invite' => 'Invite',
 			'invited' => 'invited',
 			'roomInvite' => 'Room Invite',
@@ -11002,9 +11006,9 @@ extension on Translations {
 			'requestFailed' => 'Request failed',
 			'allCopiedSuccess' => 'All copied success',
 			'bindBangumiIdSuccess' => 'Bangumi ID bound successfully',
-			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
 			_ => null,
 		} ?? switch (path) {
+			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
 			'applySuccess' => 'Apply success',
 			'noChanges' => 'No changes',
 			'applyFailed' => 'Apply failed',
@@ -11516,9 +11520,9 @@ extension on Translations {
 			'modelType' => 'Model type',
 			'inputModality' => 'Input modalities',
 			'outputModality' => 'Output modalities',
-			'supportsReasoning' => 'Supports reasoning',
 			_ => null,
 		} ?? switch (path) {
+			'supportsReasoning' => 'Supports reasoning',
 			'capabilities' => 'Capabilities',
 			'modelTypeChat' => 'Chat',
 			'modelTypeImage' => 'Image',

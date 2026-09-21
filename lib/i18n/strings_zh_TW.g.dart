@@ -565,6 +565,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String noUpdateAvailableForThisArchitectureA({required Object a}) => '該架構 (${a}) 暫無可用更新';
 	@override String get checkUpdateFailed => '檢查更新失敗...';
 	@override String get downloadFailed => '下載失敗';
+	@override String get downloadLinkExpired => '連結已失效（410），請重新解析後下載';
 	@override String get failedToCheckTheHashValuePleaseTryAgain => '檢查雜湊值失敗，請重試';
 	@override String get english => '英語';
 	@override String get dynamicColor => '動態顏色';
@@ -3555,6 +3556,7 @@ extension on TranslationsZhTw {
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
 			'checkUpdateFailed' => '檢查更新失敗...',
 			'downloadFailed' => '下載失敗',
+			'downloadLinkExpired' => '連結已失效（410），請重新解析後下載',
 			'failedToCheckTheHashValuePleaseTryAgain' => '檢查雜湊值失敗，請重試',
 			'english' => '英語',
 			'dynamicColor' => '動態顏色',
@@ -4052,9 +4054,9 @@ extension on TranslationsZhTw {
 			'modelField' => '型號',
 			'deviceField' => '設備',
 			'productField' => '產品',
-			'manufacturerField' => '製造商',
 			_ => null,
 		} ?? switch (path) {
+			'manufacturerField' => '製造商',
 			'versionReleaseField' => '版本發佈',
 			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '顯示',
@@ -4566,9 +4568,9 @@ extension on TranslationsZhTw {
 			'pReactedWithO' => ({required Object p, required Object o}) => '${p} 對訊息回應了 ${o}',
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} 移除了回應 ${o}',
 			'noUsersAvailableToInvite' => '暫無可用邀請使用者',
-			'inviteToRoom' => '邀請加入房間',
 			_ => null,
 		} ?? switch (path) {
+			'inviteToRoom' => '邀請加入房間',
 			'invite' => '邀請',
 			'invited' => '已邀請',
 			'roomInvite' => '房間邀請',
@@ -5080,9 +5082,9 @@ extension on TranslationsZhTw {
 			'addressAlreadyExists' => '地址已存在',
 			'pleaseEnableAtLeastOneAddress' => '請先啟用至少一個位址',
 			'requestFailed' => '請求失敗',
-			'allCopiedSuccess' => '全部複製成功',
 			_ => null,
 		} ?? switch (path) {
+			'allCopiedSuccess' => '全部複製成功',
 			'notBoundToBangumi' => '該動漫尚未綁定 Bangumi 條目',
 			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
 			'applySuccess' => '應用成功',
@@ -5594,9 +5596,9 @@ extension on TranslationsZhTw {
 			'inputModality' => '輸入模態',
 			'outputModality' => '輸出模態',
 			'supportsReasoning' => '支援推理',
-			'capabilities' => '能力',
 			_ => null,
 		} ?? switch (path) {
+			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '圖像',
 			'modelTypeEmbedding' => '嵌入',

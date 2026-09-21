@@ -536,6 +536,7 @@ inconsistentVersions: Inconsistent versions
 noUpdateAvailableForThisArchitectureA: No update available for this architecture (${a})
 checkUpdateFailed: Check update failed...
 downloadFailed: Download failed
+downloadLinkExpired: Link expired (410), please re-resolve and download
 failedToCheckTheHashValuePleaseTryAgain: Failed to check the hash value. Please try again
 english: English
 dynamicColor: Dynamic color

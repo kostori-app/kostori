@@ -525,6 +525,7 @@ inconsistentVersions: 版本不一致
 noUpdateAvailableForThisArchitectureA: 当前架构 (${a}) 暂无可用更新
 checkUpdateFailed: 检查更新失败...
 downloadFailed: 下载失败
+downloadLinkExpired: 链接已失效（410），请重新解析后下载
 failedToCheckTheHashValuePleaseTryAgain: 哈希值检查失败，请重试
 english: 英语
 dynamicColor: 动态色彩

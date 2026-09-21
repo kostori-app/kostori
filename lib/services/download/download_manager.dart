@@ -786,6 +786,14 @@ class DownloadManager extends ChangeNotifier {
   void _notifyDownloadFailed(DownloadTask task, Object e) {
     _batchFailed(task);
     try {
+      // 410 耗尽重试仍失败：链接（签名）已失效，提示重新解析而不是盲重试
+      if (e.toString().contains('410')) {
+        App.rootContext.showMessage(
+          message: '${t.downloadLinkExpired}：${task.title}',
+          level: LogLevel.error,
+        );
+        return;
+      }
       var reason = e.toString().replaceFirst('Exception: ', '');
       reason = reason.split('\n').first.trim();
       if (reason.length > 60) reason = '${reason.substring(0, 60)}...';
@@ -801,6 +809,38 @@ class DownloadManager extends ChangeNotifier {
     _speedSampleBytes.remove(id);
   }
 
+  /// 每次请求前用 jar 里最新的 cookie 刷新任务头：
+  /// 入队时冻结的 Cookie（会话/签名）可能在排队期间过期，
+  /// 第二个任务开始时拿着旧 cookie 就会 403/410，而过会 jar 被播放等
+  /// 行为刷新后重试又能下。jar 里有更新的值就覆盖（内存 + 落盘），
+  /// 没有则保持原样。与入队时同逻辑（含 Referer 源站兜底）。
+  Future<void> _refreshTaskCookie(DownloadTask task) async {
+    try {
+      final jar = SingleInstanceCookieJar.instance;
+      if (jar == null) return;
+      final dlUri = Uri.tryParse(task.url);
+      if (dlUri == null ||
+          dlUri.host.isEmpty ||
+          (dlUri.scheme != 'http' && dlUri.scheme != 'https')) {
+        return;
+      }
+      var cookie = await jar.loadForRequestCookieHeader(dlUri);
+      if (cookie.isEmpty) {
+        final referer = task.headers['Referer'] ?? task.headers['referer'];
+        final refUri = referer == null ? null : Uri.tryParse(referer);
+        if (refUri != null &&
+            refUri.host.isNotEmpty &&
+            refUri.host != dlUri.host) {
+          cookie = await jar.loadForRequestCookieHeader(refUri);
+        }
+      }
+      if (cookie.isNotEmpty && task.headers['Cookie'] != cookie) {
+        task.headers['Cookie'] = cookie;
+        _persist();
+      }
+    } catch (_) {}
+  }
+
   /// mp4 直链：AppDio（rhttp/reqwest）流式下载（断点续传 + 取消 + 连接中断重试）。
   ///
   /// 用 `extra['httpVersion11']` 强制 HTTP/1.1：部分 CDN（moedet 等）对
@@ -814,8 +854,13 @@ class DownloadManager extends ChangeNotifier {
     final tmp = File(tmpPath);
     const maxAttempts = 5;
     final dio = AppDio();
+    // 410 回退标记：续传 Range 被拒时只回退整段重下一次，
+    // 避免死循环删进度
+    var retriedFull = false;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       if (cancelToken.isCancelled) throw FfmpegCancelledException();
+      // 排队久了 cookie 可能已过期，每次请求前刷新一次
+      await _refreshTaskCookie(task);
       var downloaded = await tmp.exists() ? await tmp.length() : 0;
       task.downloadedBytes = downloaded;
       var received = 0;
@@ -881,7 +926,23 @@ class DownloadManager extends ChangeNotifier {
         }
         final status = res.statusCode ?? 0;
         if (status != 200 && status != 206) {
-          // 4xx/5xx（含 410 链接失效）不可通过 Range 续传恢复，直接失败不重试
+          // 410（签名/续传区间失效）与 429（限流）经常是暂时的：
+          // 第一次下没事、第二次 410、过会又能下就是这个特征。
+          // 续传请求被拒时先回退整段重试一次；仍失败则退避重试，
+          // 耗尽才报链接失效（不再像以前直接判死）
+          if ((status == 410 || status == 429) && downloaded > 0 && !retriedFull) {
+            retriedFull = true;
+            await _deleteQuiet(tmp);
+            task.downloadedBytes = 0;
+            await Future.delayed(const Duration(seconds: 2));
+            continue;
+          }
+          if (status == 410 || status == 429) {
+            if (attempt >= maxAttempts) throw _DownloadHttpError(status);
+            await Future.delayed(Duration(seconds: attempt * 2));
+            continue;
+          }
+          // 其余 4xx/5xx 不可通过续传/重试恢复，直接失败不重试
           throw _DownloadHttpError(status);
         }
         final contentLength =
@@ -979,6 +1040,11 @@ class DownloadManager extends ChangeNotifier {
         }
         final code = e.response?.statusCode;
         if (code != null && code != 200 && code != 206) {
+          // 与上面同理：410/429 可重试，耗尽才判死
+          if ((code == 410 || code == 429) && attempt < maxAttempts) {
+            await Future.delayed(Duration(seconds: attempt * 2));
+            continue;
+          }
           throw _DownloadHttpError(code);
         }
         if (attempt >= maxAttempts) {
@@ -1003,6 +1069,8 @@ class DownloadManager extends ChangeNotifier {
     final dio = AppDio();
     final segDir = p.join(taskDir, 'segments');
     await Directory(segDir).create(recursive: true);
+    // m3u8 解析与分片同样用任务头：先刷新过期 cookie
+    await _refreshTaskCookie(task);
 
     // 断点续传：已有分片字节计入已下载（避免重复统计）
     var existingBytes = 0;
