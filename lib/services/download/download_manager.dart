@@ -393,6 +393,8 @@ class DownloadManager extends ChangeNotifier {
       _persist();
       // Q21：恢复总进度计数（崩溃/杀进程后有未完成任务时重建显示）
       _loadBatch();
+      // 老版本任务补序号
+      _backfillTaskSeq();
       notifyListeners();
       unawaited(_refreshDownloadedKeys());
       // 兜底：清理残留分片（已完成/失败/孤儿任务的分片目录），
@@ -541,6 +543,10 @@ class DownloadManager extends ChangeNotifier {
       group: group ?? '',
       headers: effectiveHeaders,
       createdAt: DateTime.now(),
+      // 序号：没有未完成任务时从 1 重排（新一轮），否则续上最大序号；
+      // 已完成任务保留在列表里但不参与，保证中途完成不重置、
+      // 清空后新任务又从 1 开始
+      seq: _nextTaskSeq(),
     );
     _tasks.add(task);
     _batchAdd();
@@ -548,6 +554,42 @@ class DownloadManager extends ChangeNotifier {
     notifyListeners();
     _schedule();
     return task;
+  }
+
+  /// 下一个任务序号：只看未完成任务；空列表从 1 开始
+  int _nextTaskSeq() {
+    var maxSeq = 0;
+    var hasUnfinished = false;
+    for (final t in _tasks) {
+      if (t.status == DownloadStatus.completed) continue;
+      hasUnfinished = true;
+      if (t.seq > maxSeq) maxSeq = t.seq;
+    }
+    return hasUnfinished ? maxSeq + 1 : 1;
+  }
+
+  /// 老版本持久化任务无 seq：按创建时间补上（只补未完成），保持显示稳定
+  void _backfillTaskSeq() {
+    try {
+      final pending = _tasks
+          .where(
+            (t) =>
+                t.status != DownloadStatus.completed && t.seq <= 0,
+          )
+          .toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      if (pending.isEmpty) return;
+      var maxSeq = 0;
+      for (final t in _tasks) {
+        if (t.status != DownloadStatus.completed && t.seq > maxSeq) {
+          maxSeq = t.seq;
+        }
+      }
+      for (final t in pending) {
+        t.seq = ++maxSeq;
+      }
+      _persist();
+    } catch (_) {}
   }
 
   /// 把某个刚恢复的任务提升到队首（正在下载之后），

@@ -214,6 +214,189 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
   }
 }
 
+/// 文本规则选择弹层：开关 + 筛选胶囊（全部/已绑定本源）+ 搜索 + 规则列表，
+/// 与搜索源选择器同一套交互。返回选中的手动规则（null = 源内默认）与开关。
+class _TextRulePickSheet extends StatefulWidget {
+  const _TextRulePickSheet({
+    required this.sourceKey,
+    required this.defaultCount,
+    required this.manualId,
+    required this.useRules,
+  });
+
+  final String sourceKey;
+  final int defaultCount;
+  final String? manualId;
+  final bool useRules;
+
+  @override
+  State<_TextRulePickSheet> createState() => _TextRulePickSheetState();
+}
+
+class _TextRulePickSheetState extends State<_TextRulePickSheet> {
+  String? _manualId;
+  bool _useRules;
+
+  /// 筛选：all 全部 / bound 已绑定本源
+  String _filter = 'all';
+  final _searchCtrl = TextEditingController();
+  String _keyword = '';
+
+  _TextRulePickSheetState()
+    : _manualId = null,
+      _useRules = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _manualId = widget.manualId;
+    _useRules = widget.useRules;
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// 当前选择实际生效的规则（手动一条 / 源内默认多条）
+  List<TextRule> get _effective {
+    if (_manualId != null) {
+      final r = TextRuleStore.byId(_manualId!);
+      return r == null ? const [] : [r];
+    }
+    return SourceTextRuleConfig.rulesFor(widget.sourceKey);
+  }
+
+  List<TextRule> get _visible {
+    final bound = SourceTextRuleConfig.ruleIdsFor(widget.sourceKey).toSet();
+    final k = _keyword.trim().toLowerCase();
+    return TextRuleStore.rules.where((r) {
+      if (_filter == 'bound' && !bound.contains(r.id)) return false;
+      if (k.isEmpty) return true;
+      final name = r.name.toLowerCase();
+      if (name.contains(k)) return true;
+      return r.steps.any((s) => s.find.toLowerCase().contains(k));
+    }).toList();
+  }
+
+  void _confirm() => Navigator.of(
+    context,
+  ).pop((manualId: _manualId, useRules: _useRules && _effective.isNotEmpty));
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final visible = _visible;
+    return Sheet(
+      title: t.textRuleApply,
+      icon: Icons.rule,
+      initialSize: 0.7,
+      footer: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: CapsuleButton(
+            primary: true,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            text: t.confirm,
+            onTap: _confirm,
+          ),
+        ),
+      ),
+      builder: (context, sc) => ListView(
+        controller: sc,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        children: [
+          // 开关（与选择合并在此）
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _useRules ? t.textRuleApplied : t.textRuleNotApplied,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              CustomSwitch(
+                value: _useRules,
+                onChanged: (v) => setState(() => _useRules = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 筛选：全部 / 已绑定本源
+          CapsuleOptions(
+            alignment: WrapAlignment.start,
+            scrollable: true,
+            children: [
+              CapsuleOption(
+                text: t.all,
+                isSelected: _filter == 'all',
+                onTap: () => setState(() => _filter = 'all'),
+              ),
+              CapsuleOption(
+                text: t.textRuleBoundOnly,
+                isSelected: _filter == 'bound',
+                onTap: () => setState(() => _filter = 'bound'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 搜索
+          TextField(
+            controller: _searchCtrl,
+            onChanged: (v) => setState(() => _keyword = v),
+            decoration: InputDecoration(
+              hintText: t.search,
+              isDense: true,
+              prefixIcon: const Icon(Icons.search, size: 20),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // 源内默认
+          SelectCard(
+            title: '${t.textRuleApply} (${widget.defaultCount})',
+            selected: _manualId == null,
+            onChanged: (_) => setState(() {
+              _manualId = null;
+              _useRules = true;
+            }),
+          ),
+          const SizedBox(height: 4),
+          if (visible.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  t.noData,
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                ),
+              ),
+            )
+          else
+            for (final r in visible)
+              SelectCard(
+                title: (r.name.isEmpty ? t.textRuleName : r.name),
+                selected: _manualId == r.id,
+                onChanged: (_) => setState(() {
+                  _manualId = r.id;
+                  _useRules = true;
+                }),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 卡片化下载选择弹窗：每集一张卡片（封面 + 标题 + 分辨率选择）
 class _EpisodeDownloadPicker extends StatefulWidget {
   const _EpisodeDownloadPicker({
@@ -365,9 +548,24 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     super.dispose();
   }
 
-  void _toggleRules() {
+  /// 文本规则选择弹层（搜索 + 筛选，开关与手动选择合并在此）：
+  /// 源内默认 / 手动指定一条覆盖源内配置
+  Future<void> _pickRule() async {
+    final res = await showModalBottomSheet<({String? manualId, bool useRules})>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TextRulePickSheet(
+        sourceKey: widget.sourceKey,
+        defaultCount: _defaultRules.length,
+        manualId: _manualRuleId,
+        useRules: _useRules,
+      ),
+    );
+    if (res == null || !mounted) return;
     setState(() {
-      _useRules = !_useRules;
+      _manualRuleId = res.manualId;
+      _useRules = res.useRules;
       _animeTitle = _computedTitle();
       _titleCtrl.text = _animeTitle;
     });
@@ -613,61 +811,25 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 prefixIcon: const Icon(Icons.title, size: 18),
-                // 一键切换是否套用文本规则；Q10：可手动指定一条规则覆盖源内默认
+                // 开关与手动选规则合并为一个按钮：点开展示搜索+筛选的选择弹层
                 suffixIcon: TextRuleStore.rules.isEmpty
                     ? null
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          PopupMenuButton<String?>(
-                            tooltip: t.textRuleApply,
-                            icon: Icon(
-                              Icons.rule_folder_outlined,
-                              size: 20,
-                              color: _manualRuleId != null
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                            ),
-                            onSelected: (v) => setState(() {
-                              _manualRuleId = v;
-                              _useRules = _rules.isNotEmpty;
-                              _animeTitle = _computedTitle();
-                              _titleCtrl.text = _animeTitle;
-                            }),
-                            itemBuilder: (_) => [
-                              PopupMenuItem<String?>(
-                                value: null,
-                                child: Text(
-                                  '${t.textRuleApply} (${_defaultRules.length})',
-                                ),
-                              ),
-                              for (final r in TextRuleStore.rules)
-                                PopupMenuItem<String?>(
-                                  value: r.id,
-                                  child: Text(
-                                    r.name.isEmpty ? t.textRuleName : r.name,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          IconButton(
-                            tooltip: _useRules
-                                ? t.textRuleApplied
-                                : t.textRuleNotApplied,
-                            icon: Icon(
-                              Icons.rule,
-                              size: 20,
-                              color: _useRules
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                            ),
-                            onPressed: _toggleRules,
-                          ),
-                        ],
+                    : IconButton(
+                        tooltip: _useRules
+                            ? t.textRuleApplied
+                            : t.textRuleNotApplied,
+                        icon: Icon(
+                          _manualRuleId != null
+                              ? Icons.rule_folder_outlined
+                              : Icons.rule,
+                          size: 20,
+                          color: _useRules && _rules.isNotEmpty
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: _pickRule,
                       ),
               ),
             ),
@@ -1253,7 +1415,7 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
     ];
     // Q7：历史推后到分集解析完成、选择器打开前再写，
     // 此时已知集数信息，避免早写导致历史条目内容为空（0/0）
-    await _writeDownloadHistory(data, anime.cover);
+    await _writeDownloadHistory(data, anime.cover, allEpisode: items.length);
     if (gone()) return;
     await _openAnimeDownloadPicker(
       context,
@@ -1272,14 +1434,36 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
 
 /// 卡片入口下载流程写历史（推后到分集就绪后调用）：
 /// 入口封面兜底（详情接口可能不返 cover），之后历史页可回找。
-Future<void> _writeDownloadHistory(AnimeDetails data, String coverFallback) async {
+/// [allEpisode] 为本次解析出的条目数，写入历史的总数，避免显示 0/0；
+/// 已有观看进度只增量补全，不覆盖。
+Future<void> _writeDownloadHistory(
+  AnimeDetails data,
+  String coverFallback, {
+  required int allEpisode,
+}) async {
   try {
+    final manager = HistoryManager();
+    var existing = manager.find(data.id, data.historyType);
+    existing ??= await manager.findAsync(data.id, data.historyType);
     final history = History.fromModel(model: data);
     if (history.cover.isEmpty && coverFallback.isNotEmpty) {
       history.cover = coverFallback;
     }
+    if (allEpisode > 0) history.allEpisode = allEpisode;
+    if (existing != null) {
+      // 保留已有观看进度，只补全缺失信息
+      history.watchEpisode = existing.watchEpisode;
+      history.lastWatchEpisode = existing.lastWatchEpisode;
+      history.lastWatchTime = existing.lastWatchTime;
+      history.lastRoad = existing.lastRoad;
+      if ((history.allEpisode ?? 0) <= 0) {
+        history.allEpisode = existing.allEpisode;
+      }
+      if (history.cover.isEmpty) history.cover = existing.cover;
+      if (history.title.isEmpty) history.title = existing.title;
+    }
     history.time = DateTime.now();
-    await HistoryManager().addHistory(history);
+    await manager.addHistory(history);
   } catch (_) {}
 }
 
@@ -1341,7 +1525,11 @@ Future<void> _openSeriesDownloadPicker(
         sourceKey: source.key,
       ),
   ];
-  await _writeDownloadHistory(data, coverFallback);
+  await _writeDownloadHistory(
+    data,
+    coverFallback,
+    allEpisode: items.length,
+  );
   if (isCancelled?.call() ?? false) return;
   await _openAnimeDownloadPicker(
     context,

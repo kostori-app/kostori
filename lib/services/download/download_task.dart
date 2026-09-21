@@ -49,6 +49,11 @@ class DownloadTask {
   /// 所属分组（同时作为下载目录的子目录名，空表示根目录）
   String group;
 
+  /// 列表序号：入队时分配；未完成列表为空时新任务从 1 重排，
+  /// 否则续上最大序号。完成后任务仍保留在列表里，不参与计数，
+  /// 序号不会涨到几百。持久化，重启后保持稳定。
+  int seq;
+
   DownloadStatus status;
 
   /// 进度 0~1
@@ -95,6 +100,7 @@ class DownloadTask {
     this.author,
     this.resolution,
     this.group = '',
+    this.seq = 0,
     this.status = DownloadStatus.queued,
     this.progress = 0,
     this.totalBytes = 0,
@@ -132,6 +138,7 @@ class DownloadTask {
     'author': author,
     'resolution': resolution,
     'group': group,
+    'seq': seq,
     'status': status.name,
     'progress': progress,
     'totalBytes': totalBytes,
@@ -159,6 +166,7 @@ class DownloadTask {
     author: json['author'] as String?,
     resolution: json['resolution'] as String?,
     group: json['group']?.toString() ?? '',
+    seq: (json['seq'] as num?)?.toInt() ?? 0,
     status: DownloadStatus.values.firstWhere(
       (e) => e.name == json['status'],
       orElse: () => DownloadStatus.failed,

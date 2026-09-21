@@ -460,8 +460,8 @@ class _ActiveTab extends StatelessWidget {
     }
 
     final filtered = _sortTasks(_filterTasks(unfinished));
-    // Q19：序号按任务创建时间全局稳定编号（新任务排末尾），
-    // 不随筛选/排序重置，避免“1 下完了下一个又变 1”
+    // 序号优先用任务自带的持久 seq（入队时分配：空列表从 1 重排，
+    // 否则续最大；完成不重置、清空后重来）；老任务兜底用创建时间顺序
     final ordered = [...tasks]
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final globalIndex = <String, int>{
@@ -576,7 +576,9 @@ class _ActiveTab extends StatelessWidget {
                   children: [
                     for (final task in filtered)
                       _DownloadTile(
-                        index: globalIndex[task.id] ?? 0,
+                        index: task.seq > 0
+                            ? task.seq
+                            : (globalIndex[task.id] ?? 0),
                         task: task,
                         onLongPress: () => onMove(task),
                       ),

@@ -2799,6 +2799,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get textRulePreviewResult => '預覽結果';
 	@override String get textRuleSelectSources => '選擇使用該規則的番源';
 	@override String get textRuleOrderHint => '列表順序即套用順序：越靠前的規則越先作用（拖動可調整）';
+	@override String get textRuleBoundOnly => '已綁定本源';
 	@override String get downloadDir => '下載目錄';
 	@override String get downloadFreeSpace => '可用空間';
 	@override String get loadingStepParse => '解析影片網址';
@@ -5840,6 +5841,7 @@ extension on TranslationsZhTw {
 			'textRulePreviewResult' => '預覽結果',
 			'textRuleSelectSources' => '選擇使用該規則的番源',
 			'textRuleOrderHint' => '列表順序即套用順序：越靠前的規則越先作用（拖動可調整）',
+			'textRuleBoundOnly' => '已綁定本源',
 			'downloadDir' => '下載目錄',
 			'downloadFreeSpace' => '可用空間',
 			'loadingStepParse' => '解析影片網址',

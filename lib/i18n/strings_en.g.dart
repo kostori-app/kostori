@@ -8323,6 +8323,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'List order is apply order: earlier rules run first (drag to reorder)'
 	String get textRuleOrderHint => 'List order is apply order: earlier rules run first (drag to reorder)';
 
+	/// en: 'Bound to source'
+	String get textRuleBoundOnly => 'Bound to source';
+
 	/// en: 'Download directory'
 	String get downloadDir => 'Download directory';
 
@@ -11765,6 +11768,7 @@ extension on Translations {
 			'textRulePreviewResult' => 'Preview result',
 			'textRuleSelectSources' => 'Sources using this rule',
 			'textRuleOrderHint' => 'List order is apply order: earlier rules run first (drag to reorder)',
+			'textRuleBoundOnly' => 'Bound to source',
 			'downloadDir' => 'Download directory',
 			'downloadFreeSpace' => 'Free space',
 			'loadingStepParse' => 'Resolving video address',
