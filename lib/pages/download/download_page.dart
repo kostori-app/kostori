@@ -236,6 +236,15 @@ class _DownloadPageState extends State<DownloadPage>
   @override
   void dispose() {
     DownloadManager.instance.removeListener(_onChange);
+    // 退出下载页时：全部任务已完成就自动关闭总进度条；
+    // 还有未完成则保留（已落盘，下次进来恢复显示）
+    try {
+      final m = DownloadManager.instance;
+      if (m.batchTotal > 0 &&
+          m.batchDoneView + m.batchFailedView >= m.batchTotal) {
+        m.dismissBatch();
+      }
+    } catch (_) {}
     super.dispose();
   }
 
@@ -591,8 +600,8 @@ class _ActiveTab extends StatelessWidget {
 }
 
 /// Q21：总任务进度条（按任务完成数计数，失败也计数）：
-/// 单条双色（完成=主题色，失败=错误色），初始为 0 不显示，
-/// 完成后保留显示直到用户手动关闭；内部 try/catch 保底，绝不崩列表。
+/// 单条双色（完成=主题色，失败=错误色），初始为 0 不显示；
+/// 进度信息本身就是这条进度条（无文字行）；内部 try/catch 保底，绝不崩列表。
 class _BatchProgressBar extends StatelessWidget {
   const _BatchProgressBar({required this.manager});
 
@@ -619,48 +628,32 @@ class _BatchProgressBar extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      failed > 0
-                          ? '${t.downloadCompleted} $done/$total · ${t.failed} $failed'
-                          : '${t.downloadCompleted} $done/$total',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: cs.onSurfaceVariant,
-                      ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    height: 12,
+                    child: Row(
+                      children: [
+                        if (done > 0)
+                          Expanded(
+                            flex: done,
+                            child: ColoredBox(color: cs.primary),
+                          ),
+                        if (failed > 0)
+                          Expanded(
+                            flex: failed,
+                            child: ColoredBox(color: cs.error),
+                          ),
+                        if (rest > 0)
+                          Expanded(
+                            flex: rest,
+                            child: ColoredBox(
+                              color: cs.surfaceContainerHighest,
+                            ),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: SizedBox(
-                        height: 6,
-                        child: Row(
-                          children: [
-                            if (done > 0)
-                              Expanded(
-                                flex: done,
-                                child: ColoredBox(color: cs.primary),
-                              ),
-                            if (failed > 0)
-                              Expanded(
-                                flex: failed,
-                                child: ColoredBox(color: cs.error),
-                              ),
-                            if (rest > 0)
-                              Expanded(
-                                flex: rest,
-                                child: ColoredBox(
-                                  color: cs.surfaceContainerHighest,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               IconButton(
@@ -1536,44 +1529,26 @@ class _DownloadTile extends StatelessWidget {
     );
   }
 
-  /// 来源元信息行（无来源时隐藏；分辨率在状态行左侧展示，避免重复）
-  /// Q13：右侧追加“下载到哪个文件组”，最多一行省略
+  /// 来源元信息行：来源与文件组同一行、用 • 隔开（与速度信息同式样），
+  /// 不左右顶开（无来源无分组时隐藏）
   Widget _buildMetaRow(BuildContext context) {
     final String? src = task.sourceKey == null
         ? null
         : AnimeSource.find(task.sourceKey!)?.name;
     final group = task.group.trim();
-    if ((src == null || src.isEmpty) && group.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    final style = TextStyle(
-      fontSize: 11,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    );
-    return Row(
-      children: [
-        if (src != null && src.isNotEmpty)
-          Expanded(
-            child: Text(
-              src,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: style,
-            ),
-          ),
-        if (src != null && src.isNotEmpty && group.isNotEmpty)
-          const SizedBox(width: 8),
-        if (group.isNotEmpty)
-          Expanded(
-            child: Text(
-              group,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: style,
-            ),
-          ),
-      ],
+    final text = [
+      if (src != null && src.isNotEmpty) src,
+      if (group.isNotEmpty) group,
+    ].join(' • ');
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 11,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 
