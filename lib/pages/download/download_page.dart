@@ -1584,7 +1584,8 @@ class _DownloadTile extends StatelessWidget {
         pctValue = 99;
       }
       final pct = pctValue.toStringAsFixed(0);
-      final speed = formatSpeed(task.downloadSpeed, zeroText: '');
+      // 速度始终显示：为 0（含极小值）时显示 0 B/s，而不是隐藏
+      final speed = formatSpeed(task.downloadSpeed);
       final res = task.resolution?.trim();
       final hasRes = res != null && res.isNotEmpty;
       // 百分比组件：容器内 = 多边形加载动画(左) + 百分比(右)，
@@ -1632,16 +1633,14 @@ class _DownloadTile extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           pctBox,
-          if (speed.isNotEmpty) ...[
-            const SizedBox(width: 6),
-            Text(
-              '·  $speed',
-              style: TextStyle(
-                fontSize: 11,
-                color: colorScheme.onSurfaceVariant,
-              ),
+          const SizedBox(width: 6),
+          Text(
+            '·  $speed',
+            style: TextStyle(
+              fontSize: 11,
+              color: colorScheme.onSurfaceVariant,
             ),
-          ],
+          ),
           const Spacer(),
         ],
       );

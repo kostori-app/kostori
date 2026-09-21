@@ -426,15 +426,14 @@ String formatBytesShort(int bytes) {
 }
 
 /// 网速格式（下载页与系统状态 widget 共用）：
-/// 零/负值时的显示由 [zeroText] 决定（下载页传 '' 表示隐藏，状态页默认 '0 B/s'）
-/// Q2：速度极小（<1 B/s，如 0.1 取整会显示“0 B/s”）也按 0 处理，直接隐藏/显示 zeroText
+/// 零/负值（含取整后为 0 的极小值）统一显示 [zeroText]（默认 '0 B/s'）。
+/// 下载页直接显示 0 B/s，不再隐藏。
 String formatSpeed(num bytesPerSec, {String zeroText = '0 B/s'}) {
   if (bytesPerSec < 1) return zeroText;
   if (bytesPerSec < 1024) {
     final v = bytesPerSec is int
         ? bytesPerSec.toString()
         : bytesPerSec.toStringAsFixed(0);
-    // 四舍五入后为 0（如 0.4 B/s）同样按 0 处理，避免“0 B/s”闪现
     if (v == '0') return zeroText;
     return '$v B/s';
   }
