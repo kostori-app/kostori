@@ -991,7 +991,10 @@ class _MixedExplorePageState
             icon: Icons.circle,
             iconSize: 7,
             alignment: Alignment.bottomLeft,
-            borderRadius: BorderRadius.zero,
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(10),
+              bottomRight: Radius.circular(10),
+            ),
           ),
         ),
         Positioned(
@@ -1002,7 +1005,10 @@ class _MixedExplorePageState
             icon: Icons.play_arrow_rounded,
             iconSize: 11,
             iconTrailing: true,
-            borderRadius: BorderRadius.zero,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(10),
+              bottomLeft: Radius.circular(10),
+            ),
           ),
         ),
       ],

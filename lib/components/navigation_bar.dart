@@ -462,21 +462,18 @@ class NaviPaneState extends State<NaviPane>
   /// 与窄屏底部导航完全一致的磨砂圆角胶囊容器
   Widget _frostedPill({required Widget child}) {
     final colorScheme = Theme.of(context).colorScheme;
-    return ClipRRect(
+    return BlurEffect(
       borderRadius: const BorderRadius.all(Radius.circular(22)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withValues(alpha: 0.82),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(22),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface.withValues(alpha: 0.82),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+            width: 1,
           ),
-          child: child,
+          borderRadius: BorderRadius.circular(22),
         ),
+        child: child,
       ),
     );
   }
@@ -815,10 +812,15 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController controller;
 
+  /// 只建一次：build 里新建 CurvedAnimation 会不断往 controller 挂监听且不释放，
+  /// 导航栏重建次数一多就堆积成掉帧源。
+  late final CurvedAnimation _curve;
+
   bool isHovering = false;
 
   @override
   void dispose() {
+    _curve.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -843,12 +845,13 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
       vsync: this,
       duration: _fastAnimationDuration,
     );
+    _curve = CurvedAnimation(parent: controller, curve: Curves.ease);
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: CurvedAnimation(parent: controller, curve: Curves.ease),
+      animation: _curve,
       builder: (context, child) {
         return MouseRegion(
           cursor: SystemMouseCursors.click,
@@ -1012,11 +1015,18 @@ class _NaviMainView extends StatefulWidget {
 class _NaviMainViewState extends State<_NaviMainView> {
   NaviPaneState get state => widget.state;
 
-  /// 底部导航栏是否收缩成一条粗短横线（滚动浏览时）
-  bool _minimized = false;
+  /// 底部导航栏是否收缩成一条粗短横线（滚动浏览时）。
+  /// 用 ValueNotifier + ValueListenableBuilder 驱动，只重建悬浮栏本身，
+  /// 不再让滚动收起/展开去 setState 整棵主视图（会连带重建页面栈）。
+  final ValueNotifier<bool> _minimized = ValueNotifier<bool>(false);
 
   /// 悬浮导航左侧的“更多”动作菜单是否展开
-  bool _actionsOpen = false;
+  final ValueNotifier<bool> _actionsOpen = ValueNotifier<bool>(false);
+
+  /// 滚动收放的方向累积量（滞回），避免嵌套滚动/回弹的符号抖动反复切换。
+  double _scrollAccum = 0;
+
+  static const double _kToggleThreshold = 12.0;
 
   @override
   void initState() {
@@ -1035,6 +1045,8 @@ class _NaviMainViewState extends State<_NaviMainView> {
   @override
   void dispose() {
     appdata.settings.removeListener(_onSettingsChanged);
+    _minimized.dispose();
+    _actionsOpen.dispose();
     super.dispose();
   }
 
@@ -1043,12 +1055,9 @@ class _NaviMainViewState extends State<_NaviMainView> {
     super.didUpdateWidget(oldWidget);
     // 切换 tab 时恢复完整导航栏
     if (oldWidget.state.currentPage != widget.state.currentPage) {
-      if (_minimized || _actionsOpen) {
-        setState(() {
-          _minimized = false;
-          _actionsOpen = false;
-        });
-      }
+      _minimized.value = false;
+      _actionsOpen.value = false;
+      _scrollAccum = 0;
     }
   }
 
@@ -1065,26 +1074,41 @@ class _NaviMainViewState extends State<_NaviMainView> {
     final metrics = notification.metrics;
     // 内容不可滚动或已滚到顶部 → 强制显示完整栏
     if (metrics.maxScrollExtent <= 0 || metrics.pixels <= 0) {
-      if (_minimized) {
-        setState(() => _minimized = false);
+      _scrollAccum = 0;
+      if (_minimized.value) {
+        _minimized.value = false;
       }
       return false;
     }
     if (notification is! ScrollUpdateNotification) return false;
     // 已滚动到底部附近：保持收缩，避免触底回弹/加载下一页的微小回退触发展开
-    if (metrics.pixels >= metrics.maxScrollExtent - 10) {
-      return false;
-    }
+    if (metrics.pixels >= metrics.maxScrollExtent - 10) return false;
     final delta = notification.scrollDelta ?? 0;
-    if (delta > 0 && !_minimized) {
-      setState(() {
-        _minimized = true;
-        _actionsOpen = false;
-      });
-    } else if (delta < 0 && _minimized) {
-      setState(() => _minimized = false);
+    // 方向变化时清零，只在同一方向上累积够阈值才切换
+    if ((delta > 0) != (_scrollAccum > 0)) _scrollAccum = 0;
+    _scrollAccum += delta;
+    if (_scrollAccum >= _kToggleThreshold && !_minimized.value) {
+      _minimized.value = true;
+      _actionsOpen.value = false;
+      _scrollAccum = 0;
+    } else if (_scrollAccum <= -_kToggleThreshold && _minimized.value) {
+      _minimized.value = false;
+      _scrollAccum = 0;
     }
     return false;
+  }
+
+  /// 只订阅收放状态重建悬浮栏；主视图/页面栈不受影响。
+  Widget _minimizedState(
+    Widget Function(bool minimized, bool actionsOpen) builder,
+  ) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _minimized,
+      builder: (context, minimized, _) => ValueListenableBuilder<bool>(
+        valueListenable: _actionsOpen,
+        builder: (context, open, _) => builder(minimized, open),
+      ),
+    );
   }
 
   /// 悬浮栏完整态 ↔ 收缩横线的共用切换动画：上浮淡入（300ms easeOutCubic），
@@ -1110,17 +1134,14 @@ class _NaviMainViewState extends State<_NaviMainView> {
   /// 顶部状态栏的磨砂玻璃（内容从下方滚过时被模糊）
   Widget _frostedStatusBar() {
     final cs = Theme.of(context).colorScheme;
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: cs.surface.withValues(alpha: 0.45),
-            border: Border(
-              bottom: BorderSide(
-                color: cs.outlineVariant.withValues(alpha: 0.2),
-                width: 1,
-              ),
+    return BlurEffect(
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface.withValues(alpha: 0.45),
+          border: Border(
+            bottom: BorderSide(
+              color: cs.outlineVariant.withValues(alpha: 0.2),
+              width: 1,
             ),
           ),
         ),
@@ -1185,26 +1206,28 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ),
       );
       // 完整态 ↔ 收缩横线 走与窄屏一致的动画，且整体底部对齐（横条不会悬高）
-      final Widget floating = AnimatedSwitcher(
-        duration: _kNavSwitchDuration,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        layoutBuilder: (currentChild, previousChildren) {
-          return Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              ...previousChildren,
-              if (currentChild != null) currentChild,
-            ],
-          );
-        },
-        transitionBuilder: _navSwitchTransition,
-        child: _minimized
-            ? _MiniBar(
-                key: const ValueKey('mini'),
-                onTap: () => setState(() => _minimized = false),
-              )
-            : KeyedSubtree(key: const ValueKey('full'), child: fullBars),
+      final Widget floating = _minimizedState(
+        (minimized, _) => AnimatedSwitcher(
+          duration: _kNavSwitchDuration,
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          layoutBuilder: (currentChild, previousChildren) {
+            return Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            );
+          },
+          transitionBuilder: _navSwitchTransition,
+          child: minimized
+              ? _MiniBar(
+                  key: const ValueKey('mini'),
+                  onTap: () => _minimized.value = false,
+                )
+              : KeyedSubtree(key: const ValueKey('full'), child: fullBars),
+        ),
       );
       return Stack(
         children: [
@@ -1276,7 +1299,6 @@ class _NaviMainViewState extends State<_NaviMainView> {
               const btnW = 40.0;
               const navH = NaviPaneState._kBottomBarHeight;
               final navW = state.floatingNavWidth;
-              final open = _actionsOpen;
               // 始终按完整展开高度预留（让展开/收起的动画不被裁切）
               final fullColH =
                   state.widget.paneActions.length * (btnW + 8) + btnW;
@@ -1285,67 +1307,68 @@ class _NaviMainViewState extends State<_NaviMainView> {
                 8.0,
                 (constraints.maxWidth - navW) / 2 - btnW - 14,
               );
-              return SizedBox(
-                height: stackH,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: AnimatedSwitcher(
-                          duration: _kNavSwitchDuration,
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          layoutBuilder: (currentChild, previousChildren) {
-                            return Stack(
-                              alignment: Alignment.bottomCenter,
-                              children: [
-                                ...previousChildren,
-                                if (currentChild != null) currentChild,
-                              ],
-                            );
-                          },
-                          transitionBuilder: _navSwitchTransition,
-                          child: _minimized
-                              ? _MiniBar(
-                                  key: const ValueKey('mini'),
-                                  onTap: () =>
-                                      setState(() => _minimized = false),
-                                )
-                              : KeyedSubtree(
-                                  key: const ValueKey('full'),
-                                  child: state.buildBottom(),
-                                ),
+              return _minimizedState(
+                (minimized, open) => SizedBox(
+                  height: stackH,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: AnimatedSwitcher(
+                            duration: _kNavSwitchDuration,
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            layoutBuilder: (currentChild, previousChildren) {
+                              return Stack(
+                                alignment: Alignment.bottomCenter,
+                                children: [
+                                  ...previousChildren,
+                                  if (currentChild != null) currentChild,
+                                ],
+                              );
+                            },
+                            transitionBuilder: _navSwitchTransition,
+                            child: minimized
+                                ? _MiniBar(
+                                    key: const ValueKey('mini'),
+                                    onTap: () => _minimized.value = false,
+                                  )
+                                : KeyedSubtree(
+                                    key: const ValueKey('full'),
+                                    child: state.buildBottom(),
+                                  ),
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      left: btnLeft,
-                      bottom: (navH - btnW) / 2,
-                      child: IgnorePointer(
-                        ignoring: _minimized,
-                        // 与主切换同节奏（300ms easeOutCubic），避免动作坞先走完
-                        child: AnimatedOpacity(
-                          opacity: _minimized ? 0 : 1,
-                          duration: _kNavSwitchDuration,
-                          curve: Curves.easeOutCubic,
-                          child: AnimatedScale(
-                            scale: _minimized ? 0.6 : 1,
+                      Positioned(
+                        left: btnLeft,
+                        bottom: (navH - btnW) / 2,
+                        child: IgnorePointer(
+                          ignoring: minimized,
+                          // 与主切换同节奏（300ms easeOutCubic），避免动作坞先走完
+                          child: AnimatedOpacity(
+                            opacity: minimized ? 0 : 1,
                             duration: _kNavSwitchDuration,
                             curve: Curves.easeOutCubic,
-                            alignment: Alignment.bottomCenter,
-                            child: state.buildFloatingActions(
-                              open: open,
-                              onToggle: () =>
-                                  setState(() => _actionsOpen = !_actionsOpen),
+                            child: AnimatedScale(
+                              scale: minimized ? 0.6 : 1,
+                              duration: _kNavSwitchDuration,
+                              curve: Curves.easeOutCubic,
+                              alignment: Alignment.bottomCenter,
+                              child: state.buildFloatingActions(
+                                open: open,
+                                onToggle: () =>
+                                    _actionsOpen.value = !_actionsOpen.value,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -1371,7 +1394,12 @@ class _MiniBar extends StatelessWidget {
         width: 52,
         height: 8,
         decoration: BoxDecoration(
+          color: colorScheme.surface.withValues(alpha: 0.88),
           borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
@@ -1379,22 +1407,6 @@ class _MiniBar extends StatelessWidget {
               offset: const Offset(0, 4),
             ),
           ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surface.withValues(alpha: 0.78),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -1406,6 +1418,9 @@ const double _kOverlayChipHeight = 27.0;
 
 /// 圆片与悬浮按钮之间的间距。
 const double _kOverlayFabGap = 8.0;
+
+/// 信息圆片与屏幕底边的间距（个位数，避免完全贴边）。
+const double _kOverlayChipMargin = 4.0;
 
 /// 底部悬浮控件的基准底距：真实安全区 + 翻页抬升（不含导航栏的 12 边距）。
 ///
@@ -1420,9 +1435,9 @@ double _overlaySafeBottom(BuildContext context) {
   return safeBottom + (navi?.navBottomLift ?? 0);
 }
 
-/// 信息圆片的底距：贴屏幕左右下角（左右贴边、底部只让出真实安全区）。
+/// 信息圆片的底距：左右贴屏幕边，底部留 [_kOverlayChipMargin]。
 double navOverlayChipBottom(BuildContext context) =>
-    _overlaySafeBottom(context);
+    _overlaySafeBottom(context) + _kOverlayChipMargin;
 
 /// 悬浮按钮的底距：
 /// - 有信息圆片时垫在圆片上方，留出 [_kOverlayFabGap] 间距；

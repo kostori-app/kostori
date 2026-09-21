@@ -644,7 +644,10 @@ class AnimeListState extends State<AnimeList>
           icon: Icons.circle,
           iconSize: 7,
           alignment: Alignment.bottomLeft,
-          borderRadius: BorderRadius.zero,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(10),
+            bottomRight: Radius.circular(10),
+          ),
         ),
       ),
       Positioned(
@@ -655,7 +658,10 @@ class AnimeListState extends State<AnimeList>
           icon: Icons.play_arrow_rounded,
           iconSize: 11,
           iconTrailing: true,
-          borderRadius: BorderRadius.zero,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(10),
+            bottomLeft: Radius.circular(10),
+          ),
         ),
       ),
     ];
@@ -977,7 +983,7 @@ class AnimeListState extends State<AnimeList>
 /// 左下/右下角信息小圆片：图标 + 数字。
 /// 页数用圆形图标、条目用圆角三角形；[alignment] 让贴左/贴右的缩放都朝屏内。
 /// [iconTrailing] 为 true 时图标放在数字右边；[borderRadius] 控制圆角
-/// （贴屏幕左右边的圆片用直角，不要圆角）。
+/// （贴边的圆片：贴边侧直角、内侧倒圆）。
 class LoadedInfoChip extends StatelessWidget {
   const LoadedInfoChip({
     super.key,
