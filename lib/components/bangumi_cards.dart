@@ -903,7 +903,7 @@ class _BangumiCardState extends State<BangumiCard> {
   @override
   Widget build(BuildContext context) {
     // 各尺寸封面回退，避免某尺寸缺失时 image 为 null 崩溃
-    // （小卡片优先 medium，lain.bgm.tv 国内慢，大图体积差几倍）
+    // （卡片用 large 高清档，见 BangumiItem.cardImage）
     String? image = widget.bangumiItem.cardImage.isNotEmpty
         ? widget.bangumiItem.cardImage
         : null;

@@ -123,8 +123,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
               columns -
           4;
       // 只预热本页新增（此前全量重刷，还会触发 _maxKeep 逐出抖动）；
-      // 用 medium 档（见 BangumiItem.cardImage），lain.bgm.tv 国内慢，
-      // 大图体积差几倍，直接决定首屏体感
+      // 用 large 高清档（见 BangumiItem.cardImage），与卡片显示一致
       _imageCache.precacheAll(
         context,
         result.map((e) => e.cardImage).where((u) => u.isNotEmpty),
