@@ -1159,7 +1159,7 @@ class LocalFavoritesManager with ChangeNotifier {
     _schedulePersist();
   }
 
-  /// Q6：静默刷新所有文件夹中该条目的封面/标题（列表再次刷到时调用）：
+  /// 静默刷新所有文件夹中该条目的封面/标题（列表再次刷到时调用）：
   /// 仅字段确实变化时通知并落盘；无变化返回 false，不打扰 UI
   bool refreshStored(
     String id,

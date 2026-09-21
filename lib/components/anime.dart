@@ -72,7 +72,7 @@ void setSourceDisplayMode(String sourceKey, String? mode, [String? subKey]) {
   App.forceRebuild();
 }
 
-/// Q6：列表刷到条目时静默更新收藏/历史里存的封面与标题：
+/// 列表刷到条目时静默更新收藏/历史里存的封面与标题：
 /// id + sourceKey 特征吻合且内容变化才写；同 key 10 分钟只检查一次，
 /// 单次最多写 5 条；调用方应在 build 之后（microtask）触发，全程吞错。
 final Map<String, int> _storedRefreshLast = {};
@@ -1622,7 +1622,7 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  // Q24：透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
+  // 透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
   // （如历史页）跳转详情时带上才能对上 Hero 动画；老的两参写法仍兼容
   final void Function(Anime, int heroID, [String? heroTag])? onTap;
 
@@ -1685,7 +1685,7 @@ class SliverMasonryAnimes extends ConsumerStatefulWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  // Q24：透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
+  // 透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
   // （如历史页）跳转详情时带上才能对上 Hero 动画；老的两参写法仍兼容
   final void Function(Anime, int heroID, [String? heroTag])? onTap;
 
@@ -1799,7 +1799,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   void didUpdateWidget(covariant SliverGridAnimes oldWidget) {
     if (!oldWidget.animes.isEqualTo(widget.animes)) {
       animes = _buildAnimes();
-      // Q6：数据变化后（build 结束后）静默刷新收藏/历史封面
+      // 数据变化后（build 结束后）静默刷新收藏/历史封面
       final snapshot = List<Anime>.of(animes);
       unawaited(Future(() => maybeRefreshStoredCovers(snapshot)));
     }
@@ -1920,7 +1920,7 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  // Q24：透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
+  // 透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
   // （如历史页）跳转详情时带上才能对上 Hero 动画；老的两参写法仍兼容
   final void Function(Anime, int heroID, [String? heroTag])? onTap;
 

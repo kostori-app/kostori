@@ -29,7 +29,8 @@ class AnimeList extends StatefulWidget {
     this.refreshHandlerCallback,
     this.enablePageStorage = false,
     this.enableFloatingMenu = true,
-    this.showLoadedOverlay = false,
+    this.showLoadedOverlay = true,
+    this.manageBottomOverlay = true,
   });
 
   final Future<Res<List<Anime>>> Function(int page)? loadPage;
@@ -38,7 +39,7 @@ class AnimeList extends StatefulWidget {
 
   final Widget? leadingSliver;
 
-  /// Q3：多个头部 sliver（逐个加入滚动视图，各自的 pinned 才能生效；
+  /// 多个头部 sliver（逐个加入滚动视图，各自的 pinned 才能生效；
   /// 包在 SliverMainAxisGroup 里时内部 pinned 不起作用，搜索栏就钉不住）
   final List<Widget>? leadingSlivers;
 
@@ -57,8 +58,12 @@ class AnimeList extends StatefulWidget {
   /// 是否显示内置的右下角浮动按钮（探索页用页面级 GridSpeedDial，可关闭）
   final bool enableFloatingMenu;
 
-  /// 是否显示右下角"已加载条目"信息圆片（探索页专用；样式与 bangumi 页一致）
+  /// 是否显示右下角信息圆片（页数 / 条目数）。
   final bool showLoadedOverlay;
+
+  /// 是否自行向 NaviPane 上报底部悬浮形态（翻页抬升 / 圆片）。
+  /// 探索页由 ExplorePage 统一管理，传 false，避免重复上报。
+  final bool manageBottomOverlay;
 
   @override
   State<AnimeList> createState() => AnimeListState();
@@ -150,6 +155,7 @@ class AnimeListState extends State<AnimeList>
 
   @override
   void dispose() {
+    _overlayNavi?.unregisterOverlay(this);
     scrollController.dispose();
     super.dispose();
   }
@@ -159,6 +165,46 @@ class AnimeListState extends State<AnimeList>
     super.didChangeDependencies();
     restoreState(PageStorage.of(context).readState(context));
     widget.refreshHandlerCallback?.call(refresh);
+    _scheduleSyncBottomOverlay();
+  }
+
+  NaviPaneState? _overlayNavi;
+
+  /// 首次上报时所属的主导航页下标（之后不再变，避免 keep-alive 期间被改写）
+  int? _overlayNavPage;
+
+  bool _overlaySyncScheduled = false;
+
+  /// 合并触发并在帧后执行：注册会调用 NaviPane.setState，不能发生在 build 期。
+  void _scheduleSyncBottomOverlay() {
+    if (_overlaySyncScheduled) return;
+    _overlaySyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _overlaySyncScheduled = false;
+      if (mounted) _syncBottomOverlay();
+    });
+  }
+
+  /// 向 NaviPane 上报当前是翻页 / 连续、是否显示圆片。
+  void _syncBottomOverlay() {
+    if (!widget.manageBottomOverlay) return;
+    final navi = context.findAncestorStateOfType<NaviPaneState>();
+    if (navi == null) return;
+    _overlayNavi = navi;
+    final paging = appdata.settings['animeListDisplayMode'] == 'paging';
+    final showChip = widget.showLoadedOverlay;
+    if (!paging && !showChip) {
+      navi.unregisterOverlay(this);
+      _overlayNavPage = null;
+      return;
+    }
+    _overlayNavPage ??= navi.currentPage;
+    navi.registerOverlay(
+      this,
+      navPage: _overlayNavPage!,
+      paging: paging,
+      showChip: showChip,
+    );
   }
 
   Widget _buildCompactPageSelector() {
@@ -452,7 +498,7 @@ class AnimeListState extends State<AnimeList>
     if (widget.loadPage == null && widget.loadNext == null) {
       _error = t.loadPageAndLoadNextCantBeNull;
       Future.microtask(() {
-        setState(() {});
+        if (mounted) setState(() {});
       });
     }
     if (_data[page] != null || _loading[page] == true) {
@@ -551,7 +597,7 @@ class AnimeListState extends State<AnimeList>
   double _navLift(BuildContext context) =>
       context.findAncestorStateOfType<NaviPaneState>()?.navBottomLift ?? 0;
 
-  /// Q3：连续模式展平缓存：build 每次都会来一次，页数×条目的全量拷贝
+  /// 连续模式展平缓存：build 每次都会来一次，页数×条目的全量拷贝
   /// O(n) 分配是滑动掉帧的次因之一；_data[page] 只写入一次（refresh 除外），
   /// 用（页数，总条数）做结构指纹命中缓存
   List<Anime> _flatCache = const [];
@@ -578,11 +624,41 @@ class AnimeListState extends State<AnimeList>
     return _flatCache;
   }
 
-  /// 滚动模式右下角加载指示器：单行紧凑小圆片（与 bangumi 页信息框同款：
-  /// 实底 surface + 阴影 + onSurface 10 号字），紧贴悬浮按钮下方
-  Widget _loadedProgressChip(BuildContext context) {
-    final total = _flatAnimes().length;
-    return LoadedInfoChip(text: t.itemsCount(n: total));
+  /// 屏幕左右下角的信息圆片：左＝页数（圆形图标）、右＝条目（圆角三角形）。
+  /// paging / 连续两种模式共用。
+  List<Widget> _overlayChips(BuildContext context, {required bool paging}) {
+    if (!widget.showLoadedOverlay) return const [];
+    final navi = context.findAncestorStateOfType<NaviPaneState>();
+    if (navi != null && !navi.overlayShowChip) return const [];
+    final int pages = paging ? _page : _data.length;
+    final int items = paging
+        ? (_data[_page]?.length ?? 0)
+        : _flatAnimes().length;
+    final bottom = navOverlayChipBottom(context);
+    return [
+      Positioned(
+        left: 0,
+        bottom: bottom,
+        child: LoadedInfoChip(
+          text: pages.toString(),
+          icon: Icons.circle,
+          iconSize: 7,
+          alignment: Alignment.bottomLeft,
+          borderRadius: BorderRadius.zero,
+        ),
+      ),
+      Positioned(
+        right: 0,
+        bottom: bottom,
+        child: LoadedInfoChip(
+          text: items.toString(),
+          icon: Icons.play_arrow_rounded,
+          iconSize: 11,
+          iconTrailing: true,
+          borderRadius: BorderRadius.zero,
+        ),
+      ),
+    ];
   }
 
   @override
@@ -595,10 +671,11 @@ class AnimeListState extends State<AnimeList>
               ? buildPagingMode(context)
               : buildContinuousMode(context),
         ),
-        // Q4：悬浮按钮与主导航悬浮栏保持同一高度（两种模式一致）
         Positioned(
-          bottom: _bottomNavInset(context) + 15,
-          right: 10,
+          bottom: widget.showLoadedOverlay
+              ? navOverlayFabBottom(context)
+              : _bottomNavInset(context) + 15,
+          right: 12,
           child: widget.enableFloatingMenu
               ? FloatingMenu(
                   controller: scrollController,
@@ -643,6 +720,7 @@ class AnimeListState extends State<AnimeList>
                               type == 'paging' ? 'continuous' : 'paging';
                           appdata.saveData();
                           refresh();
+                          _scheduleSyncBottomOverlay();
                           setState(() {});
                         },
                       ),
@@ -759,6 +837,7 @@ class AnimeListState extends State<AnimeList>
             ],
           ),
         ),
+        ..._overlayChips(context, paging: true),
       ],
     );
   }
@@ -888,31 +967,49 @@ class AnimeListState extends State<AnimeList>
               ),
             ),
           ),
-        // 滚动模式右下角指示器：紧贴悬浮按钮下方（探索页专用）
-        if (widget.showLoadedOverlay && _error == null && _data.isNotEmpty)
-          Positioned(
-            right: 10,
-            bottom: navOverlayChipBottom(context),
-            child: _loadedProgressChip(context),
-          ),
+        if (_error == null && _data.isNotEmpty)
+          ..._overlayChips(context, paging: false),
       ],
     );
   }
 }
 
-/// 右下角"已加载条目"信息小圆片：样式与 bangumi 页条目数量浮框一致
-/// （实底 surface + 阴影 + onSurface 10 号字 + 1.2 缩放）。
+/// 左下/右下角信息小圆片：图标 + 数字。
+/// 页数用圆形图标、条目用圆角三角形；[alignment] 让贴左/贴右的缩放都朝屏内。
+/// [iconTrailing] 为 true 时图标放在数字右边；[borderRadius] 控制圆角
+/// （贴屏幕左右边的圆片用直角，不要圆角）。
 class LoadedInfoChip extends StatelessWidget {
-  const LoadedInfoChip({super.key, required this.text});
+  const LoadedInfoChip({
+    super.key,
+    required this.text,
+    this.icon,
+    this.iconSize = 10,
+    this.iconTrailing = false,
+    this.alignment = Alignment.bottomRight,
+    this.borderRadius = const BorderRadius.all(Radius.circular(10)),
+  });
 
   final String text;
+
+  final IconData? icon;
+
+  final double iconSize;
+
+  final bool iconTrailing;
+
+  final Alignment alignment;
+
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final style = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: cs.onSurface, fontSize: 10);
     return Transform.scale(
       scale: 1.2,
-      alignment: Alignment.bottomRight,
+      alignment: alignment,
       child: RepaintBoundary(
         child: Material(
           color: Colors.transparent,
@@ -920,7 +1017,7 @@ class LoadedInfoChip extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: cs.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: borderRadius,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.toOpacity(0.25),
@@ -932,15 +1029,15 @@ class LoadedInfoChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.info_outline, size: 10, color: cs.onSurface),
-                const SizedBox(width: 4),
-                Text(
-                  text,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurface,
-                    fontSize: 10,
-                  ),
-                ),
+                if (icon != null && !iconTrailing) ...[
+                  Icon(icon, size: iconSize, color: cs.onSurface),
+                  const SizedBox(width: 4),
+                ],
+                Text(text, style: style),
+                if (icon != null && iconTrailing) ...[
+                  const SizedBox(width: 4),
+                  Icon(icon, size: iconSize, color: cs.onSurface),
+                ],
               ],
             ),
           ),

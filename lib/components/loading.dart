@@ -241,6 +241,9 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
 
   bool get isFirstLoading => _isFirstLoading;
 
+  /// 已成功加载的页数（`_page` 是下一页的序号，首屏成功后为 2）。
+  int get loadedPages => (_page - 1).clamp(0, 1 << 30);
+
   bool get haveNextPage => _maxPage == null || _page <= _maxPage!;
 
   void nextPage() {

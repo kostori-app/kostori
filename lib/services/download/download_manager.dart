@@ -161,7 +161,7 @@ class DownloadManager extends ChangeNotifier {
   DateTime? _lastKeepAlive;
   bool _keepAliveStarted = false;
 
-  // Q21：总任务进度（按任务完成数计数，失败也计入；单条双色）。
+  // 总任务进度（按任务完成数计数，失败也计入；单条双色）。
   // - 初始为 0 时不显示；完成后继续显示，直到用户手动关闭或应用退出。
   // - 意外退出（崩溃/杀进程）且还有未完成任务时，下次启动恢复显示。
   // - 全部逻辑 try/catch 包底：计数绝不能把下载主流程搞崩。
@@ -340,7 +340,7 @@ class DownloadManager extends ChangeNotifier {
       return;
     }
     _lastKeepAlive = now;
-    // Q20：剩余任务数 = 全部未完成（下载中/排队/暂停/失败），进度条只列当前传输中的
+    // 剩余任务数 = 全部未完成（下载中/排队/暂停/失败），进度条只列当前传输中的
     final remaining =
         _tasks.where((t) => t.status != DownloadStatus.completed).length;
     DownloadKeepAlive.update(
@@ -391,7 +391,7 @@ class DownloadManager extends ChangeNotifier {
       }
       Directory(_downloadDir).createSync(recursive: true);
       _persist();
-      // Q21：恢复总进度计数（崩溃/杀进程后有未完成任务时重建显示）
+      // 恢复总进度计数（崩溃/杀进程后有未完成任务时重建显示）
       _loadBatch();
       // 老版本任务补序号
       _backfillTaskSeq();
@@ -704,7 +704,7 @@ class DownloadManager extends ChangeNotifier {
       await _cleanupSegments(taskDir);
       _batchDone(task);
       try {
-        // Q22：下载完成的提示固定显示在顶部
+        // 下载完成的提示固定显示在顶部
         App.rootContext.showMessage(
           message: '${t.downloadCompleted}: ${task.title}',
           style: ToastStyle.top,
@@ -1154,7 +1154,7 @@ class DownloadManager extends ChangeNotifier {
                   options: Options(
                     headers: task.headers,
                     responseType: ResponseType.stream,
-                    // Q12：分片 hanging 会导致 79/80 卡住不动（Future.wait 永不结束），
+                    // 分片 hanging 会导致 79/80 卡住不动（Future.wait 永不结束），
                     // 显式超时让尾部分片失败走重试/报错，而不是静默卡死
                     sendTimeout: const Duration(seconds: 30),
                     receiveTimeout: const Duration(seconds: 30),

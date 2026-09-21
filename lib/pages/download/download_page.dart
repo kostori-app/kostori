@@ -202,7 +202,7 @@ class _DownloadPageState extends State<DownloadPage>
                   ListTile(
                     leading: const Icon(Icons.folder_outlined),
                     title: Text(t.downloadDir),
-                    // Q9：剩余/总量空间已移到页面外部 StorageBar 常驻显示，
+                    // 剩余/总量空间已移到页面外部 StorageBar 常驻显示，
                     // 这里只保留目录本身
                     subtitle: Text(
                       _currentDownloadDir(),
@@ -279,7 +279,7 @@ class _DownloadPageState extends State<DownloadPage>
       ),
       body: Column(
         children: [
-          // Q9：剩余/全部存储移到页面外部常驻（设置弹窗里不再重复显示）
+          // 剩余/全部存储移到页面外部常驻（设置弹窗里不再重复显示）
           const StorageBar(),
           Expanded(
             child: TabBarView(
@@ -478,7 +478,7 @@ class _ActiveTab extends StatelessWidget {
     };
     return Column(
       children: [
-        // Q16：正在下载条目计数
+        // 正在下载条目计数
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
           child: Row(
@@ -493,9 +493,9 @@ class _ActiveTab extends StatelessWidget {
             ],
           ),
         ),
-        // Q21：总任务进度（完成数/失败数双色单条；完成后保留到手动关闭）
+        // 总任务进度（完成数/失败数双色单条；完成后保留到手动关闭）
         if (manager.batchVisible) _BatchProgressBar(manager: manager),
-        // Q18：筛选胶囊 + 4 个批量操作放在同一行可横滑；
+        // 筛选胶囊 + 4 个批量操作放在同一行可横滑；
         // 操作按钮用项目分段胶囊样式，只显示 icon，文字放 tooltip
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -599,7 +599,7 @@ class _ActiveTab extends StatelessWidget {
   }
 }
 
-/// Q21：总任务进度条（按任务完成数计数，失败也计数）：
+/// 总任务进度条（按任务完成数计数，失败也计数）：
 /// 单条双色（完成=主题色，失败=错误色），初始为 0 不显示；
 /// 进度信息本身就是这条进度条（无文字行）；内部 try/catch 保底，绝不崩列表。
 class _BatchProgressBar extends StatelessWidget {
@@ -1051,7 +1051,7 @@ class _RecordsTabState extends State<_RecordsTab> {
             ? ''
             : (AnimeSource.find(sourceKey)?.name ?? sourceKey);
         final exists = _exists[fp] ?? false;
-        // Q15：时间精确到秒（YYYY-MM-DD HH:MM:SS）
+        // 时间精确到秒（YYYY-MM-DD HH:MM:SS）
         var time = (r['time'] as String? ?? '')
             .replaceAll('T', ' ')
             .replaceAll('.000', '');
@@ -1575,7 +1575,7 @@ class _DownloadTile extends StatelessWidget {
           ],
         );
       }
-      // Q12：m3u8 未下完时百分比封顶 99%，避免 79/80 显示 100% 误导
+      // m3u8 未下完时百分比封顶 99%，避免 79/80 显示 100% 误导
       // （已完成/合并态不受影响）
       var pctValue = (task.progress * 100).clamp(0.0, 100.0);
       if (task.segTotal > 0 &&

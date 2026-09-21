@@ -905,7 +905,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
                   hintText: t.search,
                   border: InputBorder.none,
                 ),
-                // Q8：点击输入框外部失去焦点，避免移动端输入法收起后
+                // 点击输入框外部失去焦点，避免移动端输入法收起后
                 // 焦点仍在框内、返回页面时输入法又弹起
                 onTapOutside: (_) {
                   final node = focusNode;
@@ -1020,7 +1020,7 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
                   hintText: t.search,
                   border: InputBorder.none,
                 ),
-                // Q8：同 SliverSearchBar，点击外部失焦
+                // 同 SliverSearchBar，点击外部失焦
                 onTapOutside: (_) =>
                     FocusManager.instance.primaryFocus?.unfocus(),
                 onSubmitted: (text) {
@@ -1105,7 +1105,7 @@ class TabActionButton extends StatelessWidget {
   }
 }
 
-/// Q7：项目统一返回按钮：点击返回，长按从左侧弹出快捷抽屉
+/// 项目统一返回按钮：点击返回，长按从左侧弹出快捷抽屉
 /// （设置 / 搜索 / 分类 / 翻译 / 下载 / 备忘录）。
 class AppBackButton extends StatelessWidget {
   const AppBackButton({super.key, this.withTooltip = true});
@@ -1127,7 +1127,7 @@ class AppBackButton extends StatelessWidget {
   }
 }
 
-/// Q7：左侧快捷抽屉（左侧滑入的浮层，非 Scaffold.drawer，
+/// 左侧快捷抽屉（左侧滑入的浮层，非 Scaffold.drawer，
 /// 各页无需改造即可长按返回键使用）
 Future<void> openQuickDrawer(BuildContext context) {
   final entries = <({IconData icon, String label, Widget page})>[

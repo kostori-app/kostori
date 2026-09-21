@@ -265,7 +265,7 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       () => AppWebview(
         initialUrl: url,
         singlePage: true,
-        // Q8：自动检测偶发不退出（已过 CF 但 cookie/标题判断没跟上），
+        // 自动检测偶发不退出（已过 CF 但 cookie/标题判断没跟上），
         // 右上角手动确认强制提取一次并关闭
         confirmLabel: t.confirm,
         onConfirm: (controller) async {

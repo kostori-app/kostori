@@ -72,6 +72,7 @@ class _ExplorePageState extends State<ExplorePage>
   late Map<String, List<String>> sourcePages;
 
   void onSettingsChanged() {
+    _scheduleSyncLift();
     final pagesMap = _readPagesMap();
     var savedOrder = List<String>.from(appdata.settings.s.exploreSourcesOrder);
     var allSources = AnimeSource.all();
@@ -173,6 +174,7 @@ class _ExplorePageState extends State<ExplorePage>
         length: pages.length,
         vsync: this,
       );
+      pageControllers[source]!.addListener(_onPageChanged);
       if (pages.isNotEmpty && prevIndex < pages.length) {
         pageControllers[source]!.index = prevIndex;
       }
@@ -181,6 +183,7 @@ class _ExplorePageState extends State<ExplorePage>
 
   void onNaviItemTapped(int index) {
     if (index == 4) {
+      _scheduleSyncLift();
       String currentSource = sources[sourceController.index];
       int pageIndex = pageControllers[currentSource]?.index ?? 0;
       String currentPageId = sourcePages[currentSource]![pageIndex];
@@ -202,6 +205,62 @@ class _ExplorePageState extends State<ExplorePage>
 
   NaviPaneState? naviPane;
 
+  bool _syncLiftScheduled = false;
+
+  /// 合并多次触发，避免在 build / tab 动画逐帧调用 NaviPane.setState。
+  void _scheduleSyncLift() {
+    if (_syncLiftScheduled) return;
+    _syncLiftScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncLiftScheduled = false;
+      if (mounted) _syncExploreOverlay();
+    });
+  }
+
+  /// 把当前探索子页的底部悬浮形态同步给 NaviPane：
+  /// - 只有「翻页式 AnimeList」才有底部翻页选择条，才需要抬高主导航；
+  /// - AnimeList 连续模式 / mixed 才显示右下角信息圆片；multipart 不显示。
+  void _syncExploreOverlay() {
+    final navi = naviPane ??= NaviPane.of(context);
+    final data = _activeExploreData();
+    final paging = appdata.settings.s.animeListDisplayMode == 'paging';
+    // 与 _SingleExplorePageState 的分发顺序一致：multipart 优先
+    final isMultiPart = data?.loadMultiPart != null;
+    final isAnimeList =
+        !isMultiPart &&
+        data != null &&
+        (data.loadPage != null || data.loadNext != null);
+    final isMixed = !isMultiPart && data?.loadMixed != null;
+    navi.setExploreOverlay(
+      pagingSelector: isAnimeList && paging,
+      showChip: isMixed || (isAnimeList && !paging),
+    );
+  }
+
+  ExplorePageData? _activeExploreData() {
+    if (sources.isEmpty) return null;
+    final si = sourceController.index;
+    if (si < 0 || si >= sources.length) return null;
+    final sourceKey = sources[si];
+    final pages = sourcePages[sourceKey] ?? const <String>[];
+    final pi = pageControllers[sourceKey]?.index ?? 0;
+    if (pi < 0 || pi >= pages.length) return null;
+    return _exploreDataOf(sourceKey, pages[pi]);
+  }
+
+  ExplorePageData? _exploreDataOf(String sourceKey, String title) {
+    final source = AnimeSource.find(sourceKey);
+    if (source == null) return null;
+    for (final d in source.explorePages) {
+      if (d.title == title) return d;
+    }
+    return null;
+  }
+
+  void _onPageChanged() {
+    _scheduleSyncLift();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -220,6 +279,7 @@ class _ExplorePageState extends State<ExplorePage>
       duration: const Duration(milliseconds: 300),
     );
     _fbFade = CurvedAnimation(parent: _fbController, curve: Curves.easeInOut);
+    _scheduleSyncLift();
   }
 
   void _initSourcesAndPages() {
@@ -330,6 +390,7 @@ class _ExplorePageState extends State<ExplorePage>
     _lastSourceIndex = i;
     appdata.implicitData['exploreSourceKey'] = sources[i];
     appdata.writeImplicitData();
+    _scheduleSyncLift();
   }
 
   void refresh() {
@@ -496,10 +557,10 @@ class _ExplorePageState extends State<ExplorePage>
         Positioned(top: 0, left: 0, right: 0, child: sourceTabBar),
         // 注意：Positioned 必须是 Stack 的直接子节点，包在 AnimatedBuilder
         // 里会失效（按钮被当普通 child 排到左上角）——所以 Positioned 在外、
-        // 动画在内。bottom 与信息圆片配合：按钮在上、圆片在下，整体紧贴导航栏
+        // 动画在内。按钮与信息圆片叠在屏幕右下角（按钮在上、圆片在下）
         Positioned(
           bottom: navOverlayFabBottom(context),
-          right: 10,
+          right: 12,
           child: AnimatedBuilder(
             animation: _fbController,
             builder: (_, _) => FadeTransition(
@@ -582,6 +643,7 @@ class _ExplorePageState extends State<ExplorePage>
                               : 'paging';
                           appdata.saveData();
                           refresh();
+                          _scheduleSyncLift();
                           setState(() {});
                         },
                       ),
@@ -765,7 +827,7 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         controller: scrollController,
         // 探索页用页面级 GridSpeedDial，避免多 tab 浮动按钮叠加
         enableFloatingMenu: false,
-        // 右下角"已加载条目"信息圆片（样式与 bangumi 页一致）
+        manageBottomOverlay: false,
         showLoadedOverlay: true,
         leadingSliver: modeBar,
         refreshHandlerCallback: (c) {
@@ -922,13 +984,25 @@ class _MixedExplorePageState
             ),
           ),
         Positioned(
-          right: 10,
+          left: 0,
           bottom: navOverlayChipBottom(context),
           child: LoadedInfoChip(
-            text: t.exploreOverlayItemsSections(
-              items: items.toString(),
-              sections: data.length.toString(),
-            ),
+            text: loadedPages.toString(),
+            icon: Icons.circle,
+            iconSize: 7,
+            alignment: Alignment.bottomLeft,
+            borderRadius: BorderRadius.zero,
+          ),
+        ),
+        Positioned(
+          right: 0,
+          bottom: navOverlayChipBottom(context),
+          child: LoadedInfoChip(
+            text: items.toString(),
+            icon: Icons.play_arrow_rounded,
+            iconSize: 11,
+            iconTrailing: true,
+            borderRadius: BorderRadius.zero,
           ),
         ),
       ],

@@ -824,7 +824,7 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   });
 
-  /// Q6：静默刷新已存条目的封面/标题（列表再次刷到该条目时调用）：
+  /// 静默刷新已存条目的封面/标题（列表再次刷到该条目时调用）：
   /// 仅字段确实变化时写库并通知；无变化返回 false，不打扰 UI
   bool refreshStored(
     String id,

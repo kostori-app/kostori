@@ -518,7 +518,7 @@ class _WatcherState extends State<Watcher>
       PlayLog.error("_loadEpisode", "$e\n$s");
       // 已切走或播放器已退出：过期任务（被取消的 WebView 解析）的报错静默丢弃
       if (gen != _loadGen || !mounted) return;
-      // Q4：loadEp 里触发 CF 验证（视频链接请求被 challenge 拦截）时，
+      // loadEp 里触发 CF 验证（视频链接请求被 challenge 拦截）时，
       // 弹验证页让用户过一次，通过后自动重试本集（仅重试一次，避免循环）
       CloudflareException? cfe;
       if (e is CloudflareException) {

@@ -122,12 +122,83 @@ class NaviPaneState extends State<NaviPane>
   /// 翻页选择条（AnimeList paging 模式）的高度
   static const double pageSelectorHeight = 46.0;
 
-  /// 探索页翻页模式时，悬浮主导航需要抬高的距离，避免与页面底部翻页选择条
-  /// 重叠。探索页是底部导航第 5 项（index 4）。
+  /// 当前探索子页是否是「翻页式 AnimeList」（ExplorePage 同步）。
+  /// mixed / multipart 子页没有选择条，不能跟着 paging 设置一起抬高。
+  bool _explorePagingSelector = false;
+
+  /// 当前探索子页是否显示右下角信息圆片（ExplorePage 同步，覆盖 mixed）。
+  bool _exploreShowChip = false;
+
+  /// 各 AnimeList 注册的底部悬浮形态：owner -> (所属主导航页, 翻页, 圆片)。
+  /// 用主导航页下标做标签：非当前页的列表（如 keep-alive 的探索 tab、
+  /// 切换到别的导航页后仍挂载的页）不参与，避免误抬升导航栏。
+  final Map<Object, (int, bool, bool)> _overlayOwners = {};
+
+  /// 底部悬浮形态变化后安全地请求重建。
+  ///
+  /// AnimeList.dispose 会在元素 unmount（树锁定）期间调用 unregisterOverlay，
+  /// 此时直接 setState 会抛 “widget tree was locked”。统一延后到帧后执行。
+  bool _overlayRebuildScheduled = false;
+
+  void _scheduleOverlayRebuild() {
+    if (!mounted || _overlayRebuildScheduled) return;
+    _overlayRebuildScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _overlayRebuildScheduled = false;
+      if (mounted) setState(() {});
+    });
+  }
+
+  /// 由 ExplorePage 在源/子页切换、显示模式变化时同步（mixed 等无 AnimeList）。
+  void setExploreOverlay({
+    required bool pagingSelector,
+    required bool showChip,
+  }) {
+    if (_explorePagingSelector == pagingSelector &&
+        _exploreShowChip == showChip) {
+      return;
+    }
+    _explorePagingSelector = pagingSelector;
+    _exploreShowChip = showChip;
+    _scheduleOverlayRebuild();
+  }
+
+  /// 由 AnimeList 上报自己当前的底部悬浮形态。
+  void registerOverlay(
+    Object owner, {
+    required int navPage,
+    required bool paging,
+    required bool showChip,
+  }) {
+    final next = (navPage, paging, showChip);
+    if (_overlayOwners[owner] == next) return;
+    _overlayOwners[owner] = next;
+    _scheduleOverlayRebuild();
+  }
+
+  void unregisterOverlay(Object owner) {
+    if (_overlayOwners.remove(owner) == null) return;
+    _scheduleOverlayRebuild();
+  }
+
+  /// 当前导航页是否存在翻页选择条（探索页或任意 AnimeList）。
+  bool get _pagingSelectorActive =>
+      (currentPage == 4 && _explorePagingSelector) ||
+      _overlayOwners.values.any((r) => r.$1 == currentPage && r.$2);
+
+  /// 当前导航页是否显示右下角信息圆片。
+  bool get overlayShowChip =>
+      (currentPage == 4 && _exploreShowChip) ||
+      _overlayOwners.values.any((r) => r.$1 == currentPage && r.$3);
+
+  /// 翻页选择条出现时，悬浮主导航需要抬高的距离，避免与页面底部选择条重叠。
+  ///
+  /// 翻页选择条贴屏幕底（不走安全区），所以这里把安全区减掉，让导航栏底边
+  /// 始终落在选择条上方约 8：导航栏底距 = 安全区 + 12 + lift。
   double get navBottomLift {
-    if (currentPage != 4) return 0;
-    if (appdata.settings.s.animeListDisplayMode != 'paging') return 0;
-    return pageSelectorHeight + 8;
+    if (!_pagingSelectorActive) return 0;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    return math.max(0.0, pageSelectorHeight + 8 - 12 - safeBottom);
   }
 
   void onNavigatorStateChange() {
@@ -1330,21 +1401,39 @@ class _MiniBar extends StatelessWidget {
   }
 }
 
-/// 探索页信息小圆片（在下方、贴近导航栏）的底距。
-/// 与 [navOverlayFabBottom] 配合形成「悬浮按钮在上、文字信息在下」的一列，
-/// 整体紧贴悬浮主导航栏上方，和 bangumi 页的条目信息框位置一致。
-double navOverlayChipBottom(BuildContext context) {
-  final mq = MediaQuery.of(context);
+/// 信息圆片（含 1.2 倍缩放后）的视觉高度估算。
+const double _kOverlayChipHeight = 27.0;
+
+/// 圆片与悬浮按钮之间的间距。
+const double _kOverlayFabGap = 8.0;
+
+/// 底部悬浮控件的基准底距：真实安全区 + 翻页抬升（不含导航栏的 12 边距）。
+///
+/// 注意：页面内容被 `MediaQuery.removePadding(removeBottom: true)` 处理过，
+/// 这里的 `MediaQuery.padding.bottom` 读到的是 0；必须从 NaviPane 的栏高反推
+/// 真实安全区，否则控件会被系统手势条盖住。
+double _overlaySafeBottom(BuildContext context) {
   final navi = context.findAncestorStateOfType<NaviPaneState>();
-  final lift = navi?.navBottomLift ?? 0;
-  // 导航栏底部距屏幕底 + 栏高 = 栏顶；圆片贴在栏顶上方 4
-  return mq.padding.bottom +
-      12 +
-      lift +
-      NaviPaneState._kBottomBarHeight +
-      4;
+  final safeBottom = navi != null
+      ? navi.bottomBarHeight - NaviPaneState._kBottomBarHeight
+      : MediaQuery.paddingOf(context).bottom;
+  return safeBottom + (navi?.navBottomLift ?? 0);
 }
 
-/// 探索页悬浮按钮的底距：在信息圆片上方（圆片高约 22 + 间距 6）。
-double navOverlayFabBottom(BuildContext context) =>
-    navOverlayChipBottom(context) + 22 + 6;
+/// 信息圆片的底距：贴屏幕左右下角（左右贴边、底部只让出真实安全区）。
+double navOverlayChipBottom(BuildContext context) =>
+    _overlaySafeBottom(context);
+
+/// 悬浮按钮的底距：
+/// - 有信息圆片时垫在圆片上方，留出 [_kOverlayFabGap] 间距；
+/// - 翻页模式没有圆片，与主导航栏垂直居中对齐。
+double navOverlayFabBottom(BuildContext context) {
+  final navi = context.findAncestorStateOfType<NaviPaneState>();
+  if (navi != null && !navi.overlayShowChip) {
+    // 导航栏底距屏幕 12，按钮在 58 高的导航栏内垂直居中
+    return _overlaySafeBottom(context) +
+        12 +
+        (NaviPaneState._kBottomBarHeight - 40) / 2;
+  }
+  return navOverlayChipBottom(context) + _kOverlayChipHeight + _kOverlayFabGap;
+}

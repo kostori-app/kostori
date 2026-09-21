@@ -250,7 +250,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get explore => '探索';
 	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条';
 	@override String exploreItemsCount({required Object count}) => '共 ${count} 条';
-	@override String exploreOverlayItemsSections({required Object items, required Object sections}) => '${items} 条 · ${sections} 分区';
 	@override String get hideScrollbarForMasonry => '瀑布流隐藏滚动条';
 	@override String get hideScrollbarForMasonryDesc => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐';
 	@override String get memo => '备忘录';
@@ -3239,7 +3238,6 @@ extension on TranslationsZhCn {
 			'explore' => '探索',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条',
 			'exploreItemsCount' => ({required Object count}) => '共 ${count} 条',
-			'exploreOverlayItemsSections' => ({required Object items, required Object sections}) => '${items} 条 · ${sections} 分区',
 			'hideScrollbarForMasonry' => '瀑布流隐藏滚动条',
 			'hideScrollbarForMasonryDesc' => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐',
 			'memo' => '备忘录',
@@ -3540,9 +3538,9 @@ extension on TranslationsZhCn {
 			'unknown' => '未知',
 			'debugInfo' => '调试信息',
 			'install' => '安装',
+			'viewOnGithub' => '在 GitHub 上查看',
 			_ => null,
 		} ?? switch (path) {
-			'viewOnGithub' => '在 GitHub 上查看',
 			'noProxyOverrides' => '无代理覆写',
 			'save' => '保存',
 			'mirror' => '镜像',
@@ -4054,9 +4052,9 @@ extension on TranslationsZhCn {
 			'manufacturerField' => '制造商',
 			'versionReleaseField' => '版本发布',
 			'versionSdkIntField' => 'SDK 版本',
+			'displayField' => '显示',
 			_ => null,
 		} ?? switch (path) {
-			'displayField' => '显示',
 			'hardwareField' => '硬件',
 			'physicalRamSizeField' => '实体内存大小',
 			'availableRamSizeField' => '可用内存大小',
@@ -4568,9 +4566,9 @@ extension on TranslationsZhCn {
 			'inviteToRoom' => '邀请加入房间',
 			'invite' => '邀请',
 			'invited' => '已邀请',
+			'roomInvite' => '房间邀请',
 			_ => null,
 		} ?? switch (path) {
-			'roomInvite' => '房间邀请',
 			'invitedYouTo' => '邀请你加入',
 			'acceptInvite' => '接受',
 			'acceptedYourInvite' => '接受了你的邀请',
@@ -5082,9 +5080,9 @@ extension on TranslationsZhCn {
 			'requestFailed' => '请求失败',
 			'allCopiedSuccess' => '全部复制成功',
 			'bindBangumiIdSuccess' => '绑定Bangumi ID成功',
+			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			_ => null,
 		} ?? switch (path) {
-			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			'applySuccess' => '应用成功',
 			'noChanges' => '没有更改',
 			'applyFailed' => '应用失败',
@@ -5596,9 +5594,9 @@ extension on TranslationsZhCn {
 			'outputModality' => '输出模态',
 			'supportsReasoning' => '支持推理',
 			'capabilities' => '能力',
+			'modelTypeChat' => '聊天',
 			_ => null,
 		} ?? switch (path) {
-			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '图像',
 			'modelTypeEmbedding' => '嵌入',
 			'modelTypeAudio' => '音频',

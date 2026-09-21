@@ -70,7 +70,7 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
     return PopUpWidgetScaffold(
       title: t.textRules,
       tailing: [
-        // Q10：测试按钮（在添加按钮左边，icon 风格）：输入一段文本，
+        // 测试按钮（在添加按钮左边，icon 风格）：输入一段文本，
         // 看多条规则各命中几处、首条命中后的文本是什么
         IconButton(
           icon: const Icon(Icons.science_outlined),
@@ -392,7 +392,7 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
     final applied = TextRuleStore.rules
         .where((r) => sel.contains(r.id))
         .toList();
-    // Q10：源内预览同样单一应用语义（首条命中即停）
+    // 源内预览同样单一应用语义（首条命中即停）
     return TextRuleStore.applyFirstHit(_sampleCtrl.text, applied);
   }
 
@@ -843,7 +843,7 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
   }
 }
 
-/// Q10：文本规则测试弹窗：输入一段文本，勾选一条或多条规则，
+/// 文本规则测试弹窗：输入一段文本，勾选一条或多条规则，
 /// 展示每条规则的命中情况（命中几处/未命中/正则无效）与
 /// 按优先级单一应用后的最终文本（首条命中即停）。
 class _TextRuleTestDialog extends StatefulWidget {

@@ -450,7 +450,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   /// 该源默认选用的文本规则（源内配置）
   late final List<TextRule> _defaultRules;
 
-  /// Q10：手动选择的文本规则 id（null = 用源内默认）；
+  /// 手动选择的文本规则 id（null = 用源内默认）；
   /// 下载选择器内可手动指定一条规则覆盖源内配置
   String? _manualRuleId;
 
@@ -869,7 +869,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
               ),
             ),
           ),
-          // Q9：当前下载目录存储空间（总量/剩余 + 进度条）
+          // 当前下载目录存储空间（总量/剩余 + 进度条）
           const StorageBar(dense: true),
           // 筛选：全部 / 未下载 / 下载中 / 已下载
           Padding(
@@ -1362,7 +1362,7 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
   try {
     AnimeDetails? data;
     Object? infoError;
-    // Q7：加载 Massively 展示当前步骤
+    // 加载 Massively 展示当前步骤
     loading.setMessage('${anime.title} · ${t.downloadStepLoadingInfo}');
     try {
       data = (await source.loadAnimeInfo?.call(anime.id))?.dataOrNull;
@@ -1371,7 +1371,7 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
     }
     if (gone()) return;
     if (data == null) {
-      // Q7：错误也要有报告（原因写进提示，而不是只有“下载失败”）
+      // 错误也要有报告（原因写进提示，而不是只有“下载失败”）
       final detail = infoError?.toString().split('\n').first ?? '';
       context.showMessage(
         message: detail.isEmpty
@@ -1413,7 +1413,7 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
           );
         }(),
     ];
-    // Q7：历史推后到分集解析完成、选择器打开前再写，
+    // 历史推后到分集解析完成、选择器打开前再写，
     // 此时已知集数信息，避免早写导致历史条目内容为空（0/0）
     await _writeDownloadHistory(data, anime.cover, allEpisode: items.length);
     if (gone()) return;

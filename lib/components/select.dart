@@ -476,7 +476,7 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   final ScrollController _scrollController = ScrollController();
 
   /// 上次已自动滚动到的下标：避免动画每一帧都触发 animateTo 导致互相打架卡死
-  /// （Q1：选中 tab 卡在屏幕外不动的潜在根因）
+  /// （选中 tab 卡在屏幕外不动的潜在根因）
   int _lastScrolledIndex = -1;
 
   @override
@@ -545,9 +545,9 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   }
 
   /// 选中项不在可视区时滚动过去（对齐 TabBar 的自动滚动行为）
-  /// Q25：内容够长时尽量让选中项居中（可看清两边）；
+  /// 内容够长时尽量让选中项居中（可看清两边）；
   /// 在最左/最右时自然贴边（clamp 到滚动范围）。
-  /// Q1：只在下标变化时滚动一次，避免动画帧反复 animateTo 卡死。
+  /// 只在下标变化时滚动一次，避免动画帧反复 animateTo 卡死。
   void _scrollSelectedIntoView(double value, List<Rect> rects) {
     if (!widget.autoScroll || !widget.scrollable) return;
     if (rects.isEmpty || !_scrollController.hasClients) return;

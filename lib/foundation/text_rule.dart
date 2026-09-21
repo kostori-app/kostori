@@ -434,7 +434,7 @@ class SourceTextRuleConfig {
 
   static bool hasRules(String sourceKey) => rulesFor(sourceKey).isNotEmpty;
 
-  /// 源内应用：单一应用语义（Q10）——按优先级顺序，第一条命中的规则生效即停，
+  /// 源内应用：单一应用语义——按优先级顺序，第一条命中的规则生效即停，
   /// 而不是把已正则过的文本再喂给下一条规则。
   static String applyTo(String sourceKey, String input) =>
       TextRuleStore.applyFirstHit(input, rulesFor(sourceKey));

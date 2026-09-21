@@ -240,7 +240,7 @@ class AppScrollBar extends StatefulWidget {
   final double bottomPadding;
   final bool isNested;
 
-  /// Q5：强制视为瀑布流（隐藏滚动条）；不传则按就近显示模式自动判定
+  /// 强制视为瀑布流（隐藏滚动条）；不传则按就近显示模式自动判定
   final bool masonry;
 
   @override
@@ -385,7 +385,7 @@ class _AppScrollBarState extends State<AppScrollBar> {
 
   @override
   Widget build(BuildContext context) {
-    // Q5：瀑布流布局下不显示滚动条（瀑布流的错位滚动会导致滚动条抽搐、
+    // 瀑布流布局下不显示滚动条（瀑布流的错位滚动会导致滚动条抽搐、
     // 拖拽位移被破坏）。按就近的显示模式作用域自动判定：探索页多层嵌套，
     // 每个子页面的 AnimeDisplayModeScope 独立生效；可在设置里关闭此行为。
     final mode =

@@ -69,7 +69,7 @@ Widget appSelectionContextMenu(
             ContextMenuController.removeAny();
             final text = selectedText().trim();
             if (text.isEmpty) return;
-            // Q23：用菜单所在上下文弹出，归属当前路由
+            // 用菜单所在上下文弹出，归属当前路由
             showTranslationSheet(context, text);
           },
         ),
@@ -80,13 +80,13 @@ Widget appSelectionContextMenu(
             ContextMenuController.removeAny();
             final text = selectedText().trim();
             if (text.isEmpty) return;
-            // Q23：此前用 App.rootContext，导致从搜索页内选中搜索时，
+            // 此前用 App.rootContext，导致从搜索页内选中搜索时，
             // 新页面被压在搜索页下面（被覆盖）。改用当前 context，
             // 保证覆盖在当前页之上
             context.to(() => SearchPage(keyword: text));
           },
         ),
-      // Q7：选中文本存入备忘录（剪贴板）
+      // 选中文本存入备忘录（剪贴板）
       if (hasSelection)
         ContextMenuButtonItem(
           label: t.memo,
@@ -210,11 +210,11 @@ Widget appEditableSelectionContextMenu(
           onPressed: () {
             ContextMenuController.removeAny();
             if (text.isEmpty) return;
-            // Q23：同上，用当前 context 导航
+            // 同上，用当前 context 导航
             context.to(() => SearchPage(keyword: text));
           },
         ),
-      // Q7：同上，存入备忘录
+      // 同上，存入备忘录
       if (hasSelection)
         ContextMenuButtonItem(
           label: t.memo,
@@ -237,7 +237,7 @@ Widget appEditableSelectionContextMenu(
 
 /// 翻译结果弹层（选中文本菜单的「翻译」与 AI 消息翻译共用）：
 /// 上方原文卡片、下方译文；加载中骨架屏，失败可重试，右上角可复制译文。
-/// Q23：用调用方传入的 [context] 弹出，保证归属当前路由而非根路由。
+/// 用调用方传入的 [context] 弹出，保证归属当前路由而非根路由。
 Future<void> showTranslationSheet(BuildContext context, String text) {
   return showModalBottomSheet<void>(
     context: context,

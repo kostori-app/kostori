@@ -644,7 +644,7 @@ class _ToolEntryGrid extends ConsumerWidget {
                     () => context.to(() => const DownloadPage()),
                     t.download,
                   ),
-                  // Q7：备忘录聚合入口（下载后面）
+                  // 备忘录聚合入口（下载后面）
                   _iconBlock(
                     context,
                     Icons.note_alt_outlined,

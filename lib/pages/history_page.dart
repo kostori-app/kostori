@@ -113,7 +113,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                 onTap: (a, heroID, [heroTag]) {
                   final h = a as History;
                   // 不先关弹层：让 Hero 从瓷砖飞入详情页，返回时回到弹层
-                  // Q24：带上卡片实际 heroTag，否则对不上没有 Hero 动画
+                  // 带上卡片实际 heroTag，否则对不上没有 Hero 动画
                   App.mainNavigatorKey?.currentContext?.to<dynamic>(
                     () => AnimePage(
                       id: h.id,

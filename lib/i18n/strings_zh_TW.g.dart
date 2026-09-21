@@ -249,7 +249,6 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get explore => '發現';
 	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條';
 	@override String exploreItemsCount({required Object count}) => '共 ${count} 條';
-	@override String exploreOverlayItemsSections({required Object items, required Object sections}) => '${items} 條 · ${sections} 分區';
 	@override String get hideScrollbarForMasonry => '瀑布流隱藏滾動條';
 	@override String get hideScrollbarForMasonryDesc => '瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐';
 	@override String get memo => '備忘錄';
@@ -3237,7 +3236,6 @@ extension on TranslationsZhTw {
 			'explore' => '發現',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條',
 			'exploreItemsCount' => ({required Object count}) => '共 ${count} 條',
-			'exploreOverlayItemsSections' => ({required Object items, required Object sections}) => '${items} 條 · ${sections} 分區',
 			'hideScrollbarForMasonry' => '瀑布流隱藏滾動條',
 			'hideScrollbarForMasonryDesc' => '瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐',
 			'memo' => '備忘錄',
@@ -3539,9 +3537,9 @@ extension on TranslationsZhTw {
 			'debugInfo' => '調試資訊',
 			'install' => '安裝',
 			'viewOnGithub' => '在 GitHub 上查看',
+			'noProxyOverrides' => '無代理覆寫',
 			_ => null,
 		} ?? switch (path) {
-			'noProxyOverrides' => '無代理覆寫',
 			'save' => '儲存',
 			'mirror' => '鏡像',
 			'result' => '結果',
@@ -4053,9 +4051,9 @@ extension on TranslationsZhTw {
 			'productField' => '產品',
 			'manufacturerField' => '製造商',
 			'versionReleaseField' => '版本發佈',
+			'versionSdkIntField' => 'SDK 版本',
 			_ => null,
 		} ?? switch (path) {
-			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '顯示',
 			'hardwareField' => '硬體',
 			'physicalRamSizeField' => '實體記憶體大小',
@@ -4567,9 +4565,9 @@ extension on TranslationsZhTw {
 			'noUsersAvailableToInvite' => '暫無可用邀請使用者',
 			'inviteToRoom' => '邀請加入房間',
 			'invite' => '邀請',
+			'invited' => '已邀請',
 			_ => null,
 		} ?? switch (path) {
-			'invited' => '已邀請',
 			'roomInvite' => '房間邀請',
 			'invitedYouTo' => '邀請你加入',
 			'acceptInvite' => '接受',
@@ -5081,9 +5079,9 @@ extension on TranslationsZhTw {
 			'requestFailed' => '請求失敗',
 			'allCopiedSuccess' => '全部複製成功',
 			'notBoundToBangumi' => '該動漫尚未綁定 Bangumi 條目',
+			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
 			_ => null,
 		} ?? switch (path) {
-			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
 			'applySuccess' => '應用成功',
 			'noChanges' => '沒有更改',
 			'applyFailed' => '應用失敗',
@@ -5595,9 +5593,9 @@ extension on TranslationsZhTw {
 			'supportsReasoning' => '支援推理',
 			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
+			'modelTypeImage' => '圖像',
 			_ => null,
 		} ?? switch (path) {
-			'modelTypeImage' => '圖像',
 			'modelTypeEmbedding' => '嵌入',
 			'modelTypeAudio' => '音訊',
 			'modelTypeRerank' => '重排序',

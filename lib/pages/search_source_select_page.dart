@@ -161,10 +161,10 @@ class _SearchSourceSheetState extends State<SearchSourceSheet> {
               _singleKey = selected.first;
             }
           });
-          // 单源模式点选即生效（Q6：切换分组不再走这里，不会自动退出）
+          // 单源模式点选即生效（切换分组不再走这里，不会自动退出）
           if (!_aggregated) _confirm();
         },
-        // Q6：切换源分组只更新分组，不触发确认退出
+        // 切换源分组只更新分组，不触发确认退出
         onGroupChanged: (group) {
           setState(() => _group = group);
         },
@@ -198,7 +198,7 @@ class SearchSourcePicker extends StatefulWidget {
   /// 选中变化 / 切换分组时回调 (selected, group)
   final void Function(Set<String> selected, String group) onChanged;
 
-  /// Q6：切换分组时的独立回调（只更新分组，不触发选中确认/退出）
+  /// 切换分组时的独立回调（只更新分组，不触发选中确认/退出）
   final void Function(String group)? onGroupChanged;
 
   final String initialGroup;
@@ -264,7 +264,7 @@ class _SearchSourcePickerState extends State<SearchSourcePicker> {
         if (sources.isNotEmpty) _selected = {sources.first.key};
       }
     });
-    // Q6：切换分组不走 onChanged（单源模式 onChanged 会直接 pop 退出），
+    // 切换分组不走 onChanged（单源模式 onChanged 会直接 pop 退出），
     // 只通知分组变化，由上层决定是否更新选中
     if (widget.onGroupChanged != null) {
       widget.onGroupChanged!(_group);

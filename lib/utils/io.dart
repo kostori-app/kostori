@@ -457,7 +457,7 @@ Future<int?> getFreeDiskBytes(String dir) async {
   }
 }
 
-/// Q9：指定目录所在分区的（剩余，全部）空间（字节）。
+/// 指定目录所在分区的（剩余，全部）空间（字节）。
 /// 一次原生往返同时拿总量 + 剩余；非 Android 或失败返回 null。
 Future<({int free, int total})?> getStorageInfo(String dir) async {
   try {

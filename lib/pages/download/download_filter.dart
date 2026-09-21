@@ -783,7 +783,7 @@ String resolveDownloadDir() {
   return '${App.dataPath}/downloads';
 }
 
-/// Q9：存储空间条（总量 + 剩余对比 + 进度条 + 按剩余比例变色）。
+/// 存储空间条（总量 + 剩余对比 + 进度条 + 按剩余比例变色）。
 /// 放在下载页外部与下载选择器内共用；刷新适度：
 /// 只在目录变化时自动查一次，其余靠右上角手动刷新（无轮询）。
 class StorageBar extends StatefulWidget {
