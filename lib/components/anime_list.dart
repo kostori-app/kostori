@@ -547,10 +547,38 @@ class AnimeListState extends State<AnimeList>
   double _navLift(BuildContext context) =>
       context.findAncestorStateOfType<NaviPaneState>()?.navBottomLift ?? 0;
 
-  /// Q17：滚动模式右下角加载指示器（当前已加载页数 + 条目数）：
-  /// 浮在右下角、悬浮按钮上方，不占内容流
+  /// Q3：连续模式展平缓存：build 每次都会来一次，页数×条目的全量拷贝
+  /// O(n) 分配是滑动掉帧的次因之一；_data[page] 只写入一次（refresh 除外），
+  /// 用（页数，总条数）做结构指纹命中缓存
+  List<Anime> _flatCache = const [];
+  int _flatPages = -1;
+  int _flatTotal = -1;
+
+  List<Anime> _flatAnimes() {
+    var total = 0;
+    for (final list in _data.values) {
+      total += list.length;
+    }
+    if (total == 0) {
+      _flatCache = const [];
+      _flatPages = _data.length;
+      _flatTotal = 0;
+      return _flatCache;
+    }
+    if (_flatPages == _data.length && _flatTotal == total) {
+      return _flatCache;
+    }
+    _flatCache = _data.values.expand((e) => e).toList();
+    _flatPages = _data.length;
+    _flatTotal = total;
+    return _flatCache;
+  }
+
+  /// Q17/Q1：滚动模式右下角加载指示器：两行短文本
+  /// （上面条目数、下面页数），备用导航高度置底，
+  /// 横向避开右下角悬浮按钮（right 76），不占内容流
   Widget _loadedProgressChip(BuildContext context) {
-    final total = _data.values.fold(0, (a, e) => a + e.length);
+    final total = _flatAnimes().length;
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -559,12 +587,19 @@ class AnimeListState extends State<AnimeList>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: cs.outlineVariant.toOpacity(0.6), width: 0.6),
       ),
-      child: Text(
-        t.exploreLoadedDetail(
-          pages: _data.length.toString(),
-          count: total.toString(),
-        ),
-        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            t.exploreOverlayItems(count: total.toString()),
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+          ),
+          Text(
+            t.exploreOverlayPages(pages: _data.length.toString()),
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+          ),
+        ],
       ),
     );
   }
@@ -579,8 +614,9 @@ class AnimeListState extends State<AnimeList>
               ? buildPagingMode(context)
               : buildContinuousMode(context),
         ),
+        // Q4：悬浮按钮与主导航悬浮栏保持同一高度（两种模式一致）
         Positioned(
-          bottom: 15,
+          bottom: _bottomNavInset(context) + 15,
           right: 10,
           child: widget.enableFloatingMenu
               ? FloatingMenu(
@@ -793,7 +829,7 @@ class AnimeListState extends State<AnimeList>
               if (widget.leadingSlivers != null) ...widget.leadingSlivers!,
               if (widget.leadingSliver != null) widget.leadingSliver!,
               SliverGridAnimes(
-                animes: _data.values.expand((element) => element).toList(),
+                animes: _flatAnimes(),
                 menuBuilder: widget.menuBuilder,
                 onLastItemBuild: () {
                   if (_error == null &&
@@ -871,11 +907,12 @@ class AnimeListState extends State<AnimeList>
               ),
             ),
           ),
-        // Q17：滚动模式右下角页数/条目指示器（悬浮按钮上方）
+        // Q1：滚动模式右下角页数/条目指示器（与底部转圈同高置底，
+        // 横向避开悬浮按钮）
         if (_error == null && _data.isNotEmpty)
           Positioned(
-            right: 12,
-            bottom: 84,
+            right: 76,
+            bottom: _bottomNavInset(context) + 12 + _navLift(context),
             child: _loadedProgressChip(context),
           ),
       ],

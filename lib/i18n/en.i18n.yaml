@@ -220,6 +220,16 @@ explorePages: Explore Pages
 explore: Explore
 exploreLoadedDetail: "Loaded ${pages} pages · ${count} items"
 exploreItemsCount: "${count} items"
+exploreOverlayItems: "Items ${count}"
+exploreOverlayPages: "Page ${pages}"
+exploreOverlaySections: "Sections ${count}"
+hideScrollbarForMasonry: "Hide scrollbar in masonry"
+hideScrollbarForMasonryDesc: "Hide the side scrollbar in masonry layout to avoid jitter"
+memo: "Memos"
+memoHint: "New memo…"
+memoEmpty: "No memos yet"
+memoSaved: "Saved to memos"
+quickNav: "Quick nav"
 exportAppData: Export App Data
 export: Export
 failedToImport: Failed to import

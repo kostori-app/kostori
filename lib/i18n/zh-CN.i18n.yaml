@@ -209,6 +209,16 @@ explorePages: 探索页面
 explore: 探索
 exploreLoadedDetail: "已加载 ${pages} 页 · 共 ${count} 条"
 exploreItemsCount: "共 ${count} 条"
+exploreOverlayItems: "条目 ${count} 条"
+exploreOverlayPages: "页 ${pages} 页"
+exploreOverlaySections: "分区 ${count} 个"
+hideScrollbarForMasonry: "瀑布流隐藏滚动条"
+hideScrollbarForMasonryDesc: "瀑布流布局下不显示右侧滚动条，避免滚动条抽搐"
+memo: "备忘录"
+memoHint: "输入备忘内容…"
+memoEmpty: "暂无备忘"
+memoSaved: "已存入备忘录"
+quickNav: "快捷导航"
 exportAppData: 导出应用数据
 export: 导出
 failedToImport: 导入失败

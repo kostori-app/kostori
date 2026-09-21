@@ -60,6 +60,13 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                     title: t.horizontalLayout,
                     settingKey: "exploreHorizontalLayout",
                   ),
+                  // Q5：瀑布流下隐藏滚动条（默认开）
+                  _SwitchSetting(
+                    title: t.hideScrollbarForMasonry,
+                    subtitle: t.hideScrollbarForMasonryDesc,
+                    settingKey: "hideScrollbarForMasonry",
+                    defaultValue: true,
+                  ),
 
                   SelectSetting(
                     title: t.defaultSearchTarget,

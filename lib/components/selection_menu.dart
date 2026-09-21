@@ -86,6 +86,23 @@ Widget appSelectionContextMenu(
             context.to(() => SearchPage(keyword: text));
           },
         ),
+      // Q7：选中文本存入备忘录（剪贴板）
+      if (hasSelection)
+        ContextMenuButtonItem(
+          label: t.memo,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            final text = selectedText().trim();
+            if (text.isEmpty) return;
+            unawaited(
+              MemoStore.instance.add(text).then((id) {
+                if (id != null && context.mounted) {
+                  context.showMessage(message: t.memoSaved);
+                }
+              }),
+            );
+          },
+        ),
       ...appSelectionLinkItems(selectedText()),
     ],
   );
@@ -195,6 +212,22 @@ Widget appEditableSelectionContextMenu(
             if (text.isEmpty) return;
             // Q23：同上，用当前 context 导航
             context.to(() => SearchPage(keyword: text));
+          },
+        ),
+      // Q7：同上，存入备忘录
+      if (hasSelection)
+        ContextMenuButtonItem(
+          label: t.memo,
+          onPressed: () {
+            ContextMenuController.removeAny();
+            if (text.isEmpty) return;
+            unawaited(
+              MemoStore.instance.add(text).then((id) {
+                if (id != null && context.mounted) {
+                  context.showMessage(message: t.memoSaved);
+                }
+              }),
+            );
           },
         ),
       ...appSelectionLinkItems(text),

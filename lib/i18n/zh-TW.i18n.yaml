@@ -208,6 +208,16 @@ explorePages: 發現頁面
 explore: 發現
 exploreLoadedDetail: "已載入 ${pages} 頁 · 共 ${count} 條"
 exploreItemsCount: "共 ${count} 條"
+exploreOverlayItems: "條目 ${count} 條"
+exploreOverlayPages: "頁 ${pages} 頁"
+exploreOverlaySections: "分區 ${count} 個"
+hideScrollbarForMasonry: "瀑布流隱藏滾動條"
+hideScrollbarForMasonryDesc: "瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐"
+memo: "備忘錄"
+memoHint: "輸入備忘內容…"
+memoEmpty: "暫無備忘"
+memoSaved: "已存入備忘錄"
+quickNav: "快捷導航"
 exportAppData: 匯出應用數據
 export: 匯出
 failedToImport: 匯入失敗

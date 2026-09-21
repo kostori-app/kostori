@@ -1,5 +1,7 @@
 // ignore_for_file: collection_methods_unrelated_type
 
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -518,11 +520,37 @@ class TextRuleTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// 剪贴板/备忘录（与播放历史同库，随 history.db 同步）
+class MemoTable extends Table {
+  @override
+  String get tableName => 'memos';
+
+  TextColumn get id => text()();
+
+  TextColumn get content => text()();
+
+  IntColumn get createdAt => integer().named('createdAt')();
+
+  IntColumn get updatedAt =>
+      integer().named('updatedAt').withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // ═══════════════════════════════════════════════════════════
 // 数据库
 // ═══════════════════════════════════════════════════════════
 
-@DriftDatabase(tables: [HistoryTable, ProgressTable, PluginEventTable, TextRuleTable])
+@DriftDatabase(
+  tables: [
+    HistoryTable,
+    ProgressTable,
+    PluginEventTable,
+    TextRuleTable,
+    MemoTable,
+  ],
+)
 class _HistoryDb extends _$_HistoryDb {
   _HistoryDb() : super(_openConn());
 
@@ -565,6 +593,17 @@ CREATE TABLE IF NOT EXISTS text_rules (
 /// 老库补列（表已存在但无 updatedAt 时）；列已存在会抛错，忽略即可
 const String _alterTextRulesUpdatedAtSql =
     'ALTER TABLE text_rules ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0';
+
+/// 物理建表（v1 无迁移）：幂等，确保 history.db 里有 memos 表
+const String _createMemosSql = '''
+CREATE TABLE IF NOT EXISTS memos (
+  id TEXT NOT NULL,
+  content TEXT NOT NULL DEFAULT '',
+  createdAt INTEGER NOT NULL,
+  updatedAt INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (id)
+)
+''';
 
 LazyDatabase _openConn() => openWalDb('history.db');
 
@@ -784,6 +823,33 @@ class HistoryManager with ChangeNotifier {
     _rebuildBangumiBest();
     notifyListeners();
   });
+
+  /// Q6：静默刷新已存条目的封面/标题（列表再次刷到该条目时调用）：
+  /// 仅字段确实变化时写库并通知；无变化返回 false，不打扰 UI
+  bool refreshStored(
+    String id,
+    AnimeType type, {
+    String? cover,
+    String? title,
+  }) {
+    try {
+      final h = find(id, type);
+      if (h == null) return false;
+      var changed = false;
+      if (cover != null && cover.isNotEmpty && h.cover != cover) {
+        h.cover = cover;
+        changed = true;
+      }
+      if (title != null && title.isNotEmpty && h.title != title) {
+        h.title = title;
+        changed = true;
+      }
+      if (changed) unawaited(addHistory(h));
+      return changed;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<void> remove(String id, AnimeType type) => _guard(() async {
     await (_db.delete(_db.historyTable)..where((t) => t.id.equals(id))).go();
@@ -1139,6 +1205,7 @@ extension ProgressHelper on HistoryManager {
     try {
       await _db.customStatement(_createPluginEventsSql);
       await _db.customStatement(_createTextRulesSql);
+      await _db.customStatement(_createMemosSql);
       // ignore: empty_catches
     } catch (_) {}
     try {
@@ -1351,6 +1418,62 @@ extension ProgressHelper on HistoryManager {
           }
         });
       });
+
+  // ─── 剪贴板/备忘录 ─────────────────────────────
+
+  /// 全部备忘（按更新时间倒序）
+  Future<List<Map<String, dynamic>>> getMemos() => _guard(() async {
+    await _ensureDb();
+    final rows =
+        await (_db.select(_db.memoTable)
+              ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+            .get();
+    return rows
+        .map(
+          (r) => {
+            'id': r.id,
+            'content': r.content,
+            'createdAt': r.createdAt,
+            'updatedAt': r.updatedAt,
+          },
+        )
+        .toList();
+  });
+
+  /// 新增一条备忘，返回 id
+  Future<String> addMemo(String content) => _guard(() async {
+    await _ensureDb();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final id = '${now}_${content.hashCode}';
+    await _db
+        .into(_db.memoTable)
+        .insert(
+          MemoTableCompanion.insert(
+            id: id,
+            content: content,
+            createdAt: now,
+            updatedAt: Value(now),
+          ),
+        );
+    return id;
+  });
+
+  /// 更新备忘内容（updatedAt 同步刷新，用于排序与多端合并）
+  Future<void> updateMemo(String id, String content) => _guard(() async {
+    await _ensureDb();
+    await (_db.update(_db.memoTable)..where((t) => t.id.equals(id))).write(
+      MemoTableCompanion(
+        content: Value(content),
+        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
+  });
+
+  /// 删除一条备忘
+  Future<void> deleteMemo(String id) => _guard(() async {
+    await _ensureDb();
+    await (_db.delete(_db.memoTable)..where((t) => t.id.equals(id))).go();
+  });
 }
 
 // ═══════════════════════════════════════════════════════════

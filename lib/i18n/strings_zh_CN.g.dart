@@ -250,6 +250,16 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get explore => '探索';
 	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条';
 	@override String exploreItemsCount({required Object count}) => '共 ${count} 条';
+	@override String exploreOverlayItems({required Object count}) => '条目 ${count} 条';
+	@override String exploreOverlayPages({required Object pages}) => '页 ${pages} 页';
+	@override String exploreOverlaySections({required Object count}) => '分区 ${count} 个';
+	@override String get hideScrollbarForMasonry => '瀑布流隐藏滚动条';
+	@override String get hideScrollbarForMasonryDesc => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐';
+	@override String get memo => '备忘录';
+	@override String get memoHint => '输入备忘内容…';
+	@override String get memoEmpty => '暂无备忘';
+	@override String get memoSaved => '已存入备忘录';
+	@override String get quickNav => '快捷导航';
 	@override String get exportAppData => '导出应用数据';
 	@override String get export => '导出';
 	@override String get failedToImport => '导入失败';
@@ -3229,6 +3239,16 @@ extension on TranslationsZhCn {
 			'explore' => '探索',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条',
 			'exploreItemsCount' => ({required Object count}) => '共 ${count} 条',
+			'exploreOverlayItems' => ({required Object count}) => '条目 ${count} 条',
+			'exploreOverlayPages' => ({required Object pages}) => '页 ${pages} 页',
+			'exploreOverlaySections' => ({required Object count}) => '分区 ${count} 个',
+			'hideScrollbarForMasonry' => '瀑布流隐藏滚动条',
+			'hideScrollbarForMasonryDesc' => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐',
+			'memo' => '备忘录',
+			'memoHint' => '输入备忘内容…',
+			'memoEmpty' => '暂无备忘',
+			'memoSaved' => '已存入备忘录',
+			'quickNav' => '快捷导航',
 			'exportAppData' => '导出应用数据',
 			'export' => '导出',
 			'failedToImport' => '导入失败',
@@ -3520,6 +3540,8 @@ extension on TranslationsZhCn {
 			'cameo' => '客串',
 			'idleCorner' => '闲角',
 			'unknown' => '未知',
+			_ => null,
+		} ?? switch (path) {
 			'debugInfo' => '调试信息',
 			'install' => '安装',
 			'viewOnGithub' => '在 GitHub 上查看',
@@ -3530,8 +3552,6 @@ extension on TranslationsZhCn {
 			'all' => '全部',
 			'cloudflareVerificationRequired' => '需要 Cloudflare 验证',
 			'reloadConfigs' => '重新加载配置',
-			_ => null,
-		} ?? switch (path) {
 			'invalidUrlConfig' => '无效的 URL 配置',
 			'inconsistentVersions' => '版本不一致',
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
@@ -4034,6 +4054,8 @@ extension on TranslationsZhCn {
 			'productField' => '产品',
 			'manufacturerField' => '制造商',
 			'versionReleaseField' => '版本发布',
+			_ => null,
+		} ?? switch (path) {
 			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '显示',
 			'hardwareField' => '硬件',
@@ -4044,8 +4066,6 @@ extension on TranslationsZhCn {
 			'isPhysicalDeviceField' => '是否为实体设备',
 			'systemNameField' => '系统名称',
 			'systemVersionField' => '系统版本',
-			_ => null,
-		} ?? switch (path) {
 			'modelNameField' => '型号名称',
 			'identifierForVendorField' => '供应商识别符',
 			'sysnameField' => '系统名称',
@@ -4548,6 +4568,8 @@ extension on TranslationsZhCn {
 			'noUsersAvailableToInvite' => '暂无可用邀请的用户',
 			'inviteToRoom' => '邀请加入房间',
 			'invite' => '邀请',
+			_ => null,
+		} ?? switch (path) {
 			'invited' => '已邀请',
 			'roomInvite' => '房间邀请',
 			'invitedYouTo' => '邀请你加入',
@@ -4558,8 +4580,6 @@ extension on TranslationsZhCn {
 			'blockedInvitesList' => '邀请屏蔽列表',
 			'allowMemberInvites' => '允许成员邀请',
 			'letAllMembersInviteOthers' => '允许所有成员邀请其他人加入房间',
-			_ => null,
-		} ?? switch (path) {
 			'declineAndBlock' => '拒绝并屏蔽',
 			'memes' => '表情包',
 			'memeSaved' => '已保存到表情包',
@@ -5062,6 +5082,8 @@ extension on TranslationsZhCn {
 			'pleaseEnableAtLeastOneAddress' => '请先开启至少一个地址',
 			'requestFailed' => '请求失败',
 			'allCopiedSuccess' => '全部复制成功',
+			_ => null,
+		} ?? switch (path) {
 			'bindBangumiIdSuccess' => '绑定Bangumi ID成功',
 			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			'applySuccess' => '应用成功',
@@ -5072,8 +5094,6 @@ extension on TranslationsZhCn {
 			'queryFailed' => '查询失败',
 			'screenshotSuccess' => '截图成功',
 			'screenshotFailed' => '截图失败',
-			_ => null,
-		} ?? switch (path) {
 			'noRecordForMonth' => ({required Object month}) => '${month}暂无记录',
 			'screenshotFailedPleaseRetry' => '截图失败，请重试',
 			'shareFailed' => '分享失败',
@@ -5576,6 +5596,8 @@ extension on TranslationsZhCn {
 			'inputModality' => '输入模态',
 			'outputModality' => '输出模态',
 			'supportsReasoning' => '支持推理',
+			_ => null,
+		} ?? switch (path) {
 			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '图像',
@@ -5586,8 +5608,6 @@ extension on TranslationsZhCn {
 			'modalityText' => '文本',
 			'modalityImage' => '图片',
 			'modalityAudio' => '音频',
-			_ => null,
-		} ?? switch (path) {
 			'modalityVideo' => '视频',
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',

@@ -72,6 +72,49 @@ void setSourceDisplayMode(String sourceKey, String? mode, [String? subKey]) {
   App.forceRebuild();
 }
 
+/// Q6：列表刷到条目时静默更新收藏/历史里存的封面与标题：
+/// id + sourceKey 特征吻合且内容变化才写；同 key 10 分钟只检查一次，
+/// 单次最多写 5 条；调用方应在 build 之后（microtask）触发，全程吞错。
+final Map<String, int> _storedRefreshLast = {};
+
+void maybeRefreshStoredCovers(List<Anime> animes) {
+  try {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    var handled = 0;
+    for (final a in animes) {
+      if (handled >= 5) break;
+      if (a.id.isEmpty) continue;
+      final key = '${a.sourceKey}|${a.id}';
+      if (now - (_storedRefreshLast[key] ?? 0) < 10 * 60 * 1000) continue;
+      _storedRefreshLast[key] = now;
+      try {
+        final type = AnimeType(a.sourceKey.hashCode);
+        var changed = HistoryManager().refreshStored(
+          a.id,
+          type,
+          cover: a.cover,
+          title: a.title,
+        );
+        if (LocalFavoritesManager().refreshStored(
+          a.id,
+          type,
+          cover: a.cover,
+          title: a.title,
+        )) {
+          changed = true;
+        }
+        if (changed) handled++;
+      } catch (_) {}
+    }
+    if (_storedRefreshLast.length > 2000) {
+      final keys = _storedRefreshLast.keys.toList();
+      for (var i = 0; i < keys.length - 2000; i++) {
+        _storedRefreshLast.remove(keys[i]);
+      }
+    }
+  } catch (_) {}
+}
+
 /// 内容顶部的番剧卡片布局切换条（探索页同款分段控件）：
 /// 简洁 / 详细 / 瀑布流 / 海报；覆盖了该页显示模式时右侧出现「恢复默认」。
 class AnimeSourceLayoutBar extends StatelessWidget {
@@ -1756,6 +1799,9 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   void didUpdateWidget(covariant SliverGridAnimes oldWidget) {
     if (!oldWidget.animes.isEqualTo(widget.animes)) {
       animes = _buildAnimes();
+      // Q6：数据变化后（build 结束后）静默刷新收藏/历史封面
+      final snapshot = List<Anime>.of(animes);
+      unawaited(Future(() => maybeRefreshStoredCovers(snapshot)));
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -1763,6 +1809,8 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   @override
   void initState() {
     animes = _buildAnimes();
+    final snapshot = List<Anime>.of(animes);
+    unawaited(Future(() => maybeRefreshStoredCovers(snapshot)));
     super.initState();
   }
 

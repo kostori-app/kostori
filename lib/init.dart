@@ -25,6 +25,7 @@ import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/text_rule.dart';
+import 'package:kostori/foundation/memo_store.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -83,6 +84,8 @@ Future<void> init() async {
   JsEngine.registerWorkerBridgeHandler();
   // 加载持久化的文本规则（history.db 的 text_rules 表）
   await TextRuleStore.load();
+  // 加载备忘录（history.db 的 memos 表，随历史同步）
+  await MemoStore.instance.load();
   SkillRegistry.instance.registerAll([
     OpenUrlSkill(),
     DeviceInfoSkill(),

@@ -24,6 +24,7 @@ import 'package:kostori/pages/download/download_page.dart';
 import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
+import 'package:kostori/pages/memo/memo_page.dart';
 import 'package:kostori/pages/me/me_page_plugins.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
@@ -642,6 +643,13 @@ class _ToolEntryGrid extends ConsumerWidget {
                     Icons.download_outlined,
                     () => context.to(() => const DownloadPage()),
                     t.download,
+                  ),
+                  // Q7：备忘录聚合入口（下载后面）
+                  _iconBlock(
+                    context,
+                    Icons.note_alt_outlined,
+                    () => context.to(() => const MemoPage()),
+                    t.memo,
                   ),
                   // 已连接服务器时显示聊天室快捷入口（聚合入口内）
                   if (connected)

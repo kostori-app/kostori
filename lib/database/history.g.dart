@@ -2219,6 +2219,314 @@ class TextRuleTableCompanion extends UpdateCompanion<TextRuleTableData> {
   }
 }
 
+class $MemoTableTable extends MemoTable
+    with TableInfo<$MemoTableTable, MemoTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MemoTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'createdAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, content, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'memos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MemoTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('createdAt')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['createdAt']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MemoTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MemoTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}createdAt'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
+    );
+  }
+
+  @override
+  $MemoTableTable createAlias(String alias) {
+    return $MemoTableTable(attachedDatabase, alias);
+  }
+}
+
+class MemoTableData extends DataClass implements Insertable<MemoTableData> {
+  final String id;
+  final String content;
+  final int createdAt;
+  final int updatedAt;
+  const MemoTableData({
+    required this.id,
+    required this.content,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['content'] = Variable<String>(content);
+    map['createdAt'] = Variable<int>(createdAt);
+    map['updatedAt'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  MemoTableCompanion toCompanion(bool nullToAbsent) {
+    return MemoTableCompanion(
+      id: Value(id),
+      content: Value(content),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory MemoTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MemoTableData(
+      id: serializer.fromJson<String>(json['id']),
+      content: serializer.fromJson<String>(json['content']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'content': serializer.toJson<String>(content),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  MemoTableData copyWith({
+    String? id,
+    String? content,
+    int? createdAt,
+    int? updatedAt,
+  }) => MemoTableData(
+    id: id ?? this.id,
+    content: content ?? this.content,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  MemoTableData copyWithCompanion(MemoTableCompanion data) {
+    return MemoTableData(
+      id: data.id.present ? data.id.value : this.id,
+      content: data.content.present ? data.content.value : this.content,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemoTableData(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, content, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MemoTableData &&
+          other.id == this.id &&
+          other.content == this.content &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MemoTableCompanion extends UpdateCompanion<MemoTableData> {
+  final Value<String> id;
+  final Value<String> content;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const MemoTableCompanion({
+    this.id = const Value.absent(),
+    this.content = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MemoTableCompanion.insert({
+    required String id,
+    required String content,
+    required int createdAt,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       content = Value(content),
+       createdAt = Value(createdAt);
+  static Insertable<MemoTableData> custom({
+    Expression<String>? id,
+    Expression<String>? content,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (content != null) 'content': content,
+      if (createdAt != null) 'createdAt': createdAt,
+      if (updatedAt != null) 'updatedAt': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MemoTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? content,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return MemoTableCompanion(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (createdAt.present) {
+      map['createdAt'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemoTableCompanion(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$_HistoryDb extends GeneratedDatabase {
   _$_HistoryDb(QueryExecutor e) : super(e);
   $_HistoryDbManager get managers => $_HistoryDbManager(this);
@@ -2228,6 +2536,7 @@ abstract class _$_HistoryDb extends GeneratedDatabase {
     this,
   );
   late final $TextRuleTableTable textRuleTable = $TextRuleTableTable(this);
+  late final $MemoTableTable memoTable = $MemoTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2237,6 +2546,7 @@ abstract class _$_HistoryDb extends GeneratedDatabase {
     progressTable,
     pluginEventTable,
     textRuleTable,
+    memoTable,
   ];
 }
 
@@ -3393,6 +3703,194 @@ typedef $$TextRuleTableTableProcessedTableManager =
       TextRuleTableData,
       PrefetchHooks Function()
     >;
+typedef $$MemoTableTableCreateCompanionBuilder = MemoTableCompanion Function({
+  required String id,
+  required String content,
+  required int createdAt,
+  Value<int> updatedAt,
+  Value<int> rowid,
+});
+typedef $$MemoTableTableUpdateCompanionBuilder = MemoTableCompanion Function({
+  Value<String> id,
+  Value<String> content,
+  Value<int> createdAt,
+  Value<int> updatedAt,
+  Value<int> rowid,
+});
+
+class $$MemoTableTableFilterComposer
+    extends Composer<_$_HistoryDb, $MemoTableTable> {
+  $$MemoTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MemoTableTableOrderingComposer
+    extends Composer<_$_HistoryDb, $MemoTableTable> {
+  $$MemoTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MemoTableTableAnnotationComposer
+    extends Composer<_$_HistoryDb, $MemoTableTable> {
+  $$MemoTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MemoTableTableTableManager
+    extends
+        RootTableManager<
+          _$_HistoryDb,
+          $MemoTableTable,
+          MemoTableData,
+          $$MemoTableTableFilterComposer,
+          $$MemoTableTableOrderingComposer,
+          $$MemoTableTableAnnotationComposer,
+          $$MemoTableTableCreateCompanionBuilder,
+          $$MemoTableTableUpdateCompanionBuilder,
+          (
+            MemoTableData,
+            BaseReferences<_$_HistoryDb, $MemoTableTable, MemoTableData>,
+          ),
+          MemoTableData,
+          PrefetchHooks Function()
+        > {
+  $$MemoTableTableTableManager(_$_HistoryDb db, $MemoTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MemoTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MemoTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MemoTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MemoTableCompanion(
+                id: id,
+                content: content,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String content,
+                required int createdAt,
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MemoTableCompanion.insert(
+                id: id,
+                content: content,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MemoTableTable, MemoTableData>(table),
+                  BaseReferences<_$_HistoryDb, $MemoTableTable, MemoTableData>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MemoTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$_HistoryDb,
+      $MemoTableTable,
+      MemoTableData,
+      $$MemoTableTableFilterComposer,
+      $$MemoTableTableOrderingComposer,
+      $$MemoTableTableAnnotationComposer,
+      $$MemoTableTableCreateCompanionBuilder,
+      $$MemoTableTableUpdateCompanionBuilder,
+      (
+        MemoTableData,
+        BaseReferences<_$_HistoryDb, $MemoTableTable, MemoTableData>,
+      ),
+      MemoTableData,
+      PrefetchHooks Function()
+    >;
 
 class $_HistoryDbManager {
   final _$_HistoryDb _db;
@@ -3405,4 +3903,6 @@ class $_HistoryDbManager {
       $$PluginEventTableTableTableManager(_db, _db.pluginEventTable);
   $$TextRuleTableTableTableManager get textRuleTable =>
       $$TextRuleTableTableTableManager(_db, _db.textRuleTable);
+  $$MemoTableTableTableManager get memoTable =>
+      $$MemoTableTableTableManager(_db, _db.memoTable);
 }

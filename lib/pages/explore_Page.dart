@@ -888,6 +888,22 @@ class _MixedExplorePageState
     // 结构保持稳定（始终同一 Stack），避免加载指示器出现时重建 scroll
     // 导致滚动位置被重置跳回顶部；加载下一页时才显示底部悬浮转圈
     final showLoader = isLoading && !isFirstLoading;
+    // Q4：与 AnimeList 连续模式同高（导航栏高度 + 12），两种模式不一边高一边低
+    final navi = context.findAncestorStateOfType<NaviPaneState>();
+    final baseBottom =
+        (navi?.bottomBarHeight ?? MediaQuery.paddingOf(context).bottom) + 12;
+    // Q1：条目总数 + 分区数（两行短文本，与 AnimeList 覆盖层同式样）
+    var items = 0;
+    for (final part in data) {
+      if (part is ExplorePagePart) {
+        items += part.animes.length;
+      } else if (part is ExploreGridPart) {
+        items += part.animes.length;
+      } else if (part is List<Anime>) {
+        items += part.length;
+      }
+    }
+    final cs = Theme.of(context).colorScheme;
     return Stack(
       children: [
         scroll,
@@ -895,7 +911,7 @@ class _MixedExplorePageState
           Positioned(
             left: 0,
             right: 0,
-            bottom: MediaQuery.paddingOf(context).bottom + 12,
+            bottom: baseBottom,
             child: IgnorePointer(
               child: SizedBox(
                 height: 64,
@@ -903,6 +919,35 @@ class _MixedExplorePageState
               ),
             ),
           ),
+        Positioned(
+          right: 76,
+          bottom: baseBottom,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.toOpacity(0.9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: cs.outlineVariant.toOpacity(0.6),
+                width: 0.6,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  t.exploreOverlayItems(count: items.toString()),
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+                Text(
+                  t.exploreOverlaySections(count: data.length.toString()),
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

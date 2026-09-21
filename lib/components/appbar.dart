@@ -102,14 +102,7 @@ class _AppbarState extends State<Appbar> {
             Row(
               children: [
                 const SizedBox(width: 8),
-                widget.leading ??
-                    Tooltip(
-                      message: t.back,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new),
-                        onPressed: () => Navigator.maybePop(context),
-                      ),
-                    ),
+                widget.leading ?? const AppBackButton(),
                 const SizedBox(width: 16),
                 Expanded(
                   child: DefaultTextStyle(
@@ -232,13 +225,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             const SizedBox(width: 8),
             leading ??
                 (Navigator.of(context).canPop()
-                    ? Tooltip(
-                        message: t.back,
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_new),
-                          onPressed: () => Navigator.maybePop(context),
-                        ),
-                      )
+                    ? const AppBackButton()
                     : const SizedBox()),
             const SizedBox(width: 8),
             Expanded(
@@ -892,10 +879,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
       child: Row(
         children: [
           const SizedBox(width: 8),
-          IconButton(
-            onPressed: () => Navigator.maybePop(context),
-            icon: const Icon(Icons.arrow_back_ios_new),
-          ),
+          const AppBackButton(withTooltip: false),
           if (bangumiPage)
             IconButton(
               onPressed: () async {
@@ -921,6 +905,16 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
                   hintText: t.search,
                   border: InputBorder.none,
                 ),
+                // Q8：点击输入框外部失去焦点，避免移动端输入法收起后
+                // 焦点仍在框内、返回页面时输入法又弹起
+                onTapOutside: (_) {
+                  final node = focusNode;
+                  if (node != null) {
+                    node.unfocus();
+                  } else {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  }
+                },
                 onSubmitted: (text) {
                   controller.onSearch?.call(text);
                 },
@@ -1016,10 +1010,7 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
       child: Row(
         children: [
           const SizedBox(width: 8),
-          IconButton(
-            onPressed: () => Navigator.maybePop(context),
-            icon: const Icon(Icons.arrow_back_ios_new),
-          ),
+          const AppBackButton(withTooltip: false),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1029,6 +1020,9 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
                   hintText: t.search,
                   border: InputBorder.none,
                 ),
+                // Q8：同 SliverSearchBar，点击外部失焦
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
                 onSubmitted: (text) {
                   _controller.onSearch?.call(text);
                 },
@@ -1109,4 +1103,115 @@ class TabActionButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Q7：项目统一返回按钮：点击返回，长按从左侧弹出快捷抽屉
+/// （设置 / 搜索 / 分类 / 翻译 / 下载 / 备忘录）。
+class AppBackButton extends StatelessWidget {
+  const AppBackButton({super.key, this.withTooltip = true});
+
+  final bool withTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final btn = GestureDetector(
+      // 长按与点击共存：超时未松手走抽屉，松手早走返回
+      onLongPress: () => openQuickDrawer(context),
+      child: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new),
+        onPressed: () => Navigator.maybePop(context),
+      ),
+    );
+    if (!withTooltip) return btn;
+    return Tooltip(message: t.back, child: btn);
+  }
+}
+
+/// Q7：左侧快捷抽屉（左侧滑入的浮层，非 Scaffold.drawer，
+/// 各页无需改造即可长按返回键使用）
+Future<void> openQuickDrawer(BuildContext context) {
+  final entries = <({IconData icon, String label, Widget page})>[
+    (icon: Icons.settings_outlined, label: t.settings, page: const SettingsPage()),
+    (icon: Icons.search, label: t.search, page: SearchPage()),
+    (icon: Icons.category_outlined, label: t.categoryPages, page: const CategoriesPage()),
+    (
+      icon: Icons.translate,
+      label: t.translation,
+      page: const ManualTranslationPage()
+    ),
+    (
+      icon: Icons.download_outlined,
+      label: t.download,
+      page: const DownloadPage()
+    ),
+    (icon: Icons.note_alt_outlined, label: t.memo, page: const MemoPage()),
+  ];
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: t.close,
+    barrierColor: Colors.black54,
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (ctx, _, _) {
+      final cs = Theme.of(ctx).colorScheme;
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Material(
+          color: cs.surface,
+          borderRadius: const BorderRadius.horizontal(
+            right: Radius.circular(16),
+          ),
+          child: SizedBox(
+            width: 280,
+            height: double.infinity,
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      t.quickNav,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        for (final e in entries)
+                          ListTile(
+                            leading: Icon(e.icon, color: cs.primary),
+                            title: Text(e.label),
+                            onTap: () {
+                              Navigator.of(ctx).pop();
+                              context.to(() => e.page);
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (ctx, anim, _, child) {
+      final offset =
+          Tween<Offset>(
+            begin: const Offset(-1, 0),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: anim, curve: Curves.easeOut),
+          );
+      return SlideTransition(position: offset, child: child);
+    },
+  );
 }

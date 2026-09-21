@@ -1159,6 +1159,40 @@ class LocalFavoritesManager with ChangeNotifier {
     _schedulePersist();
   }
 
+  /// Q6：静默刷新所有文件夹中该条目的封面/标题（列表再次刷到时调用）：
+  /// 仅字段确实变化时通知并落盘；无变化返回 false，不打扰 UI
+  bool refreshStored(
+    String id,
+    AnimeType type, {
+    String? cover,
+    String? title,
+  }) {
+    try {
+      var changed = false;
+      for (final folder in _folderOrder) {
+        for (final e in _byFolder[folder] ?? const []) {
+          if (e.item.id == id && e.item.type == type) {
+            if (cover != null && cover.isNotEmpty && e.item.coverPath != cover) {
+              e.item.coverPath = cover;
+              changed = true;
+            }
+            if (title != null && title.isNotEmpty && e.item.name != title) {
+              e.item.name = title;
+              changed = true;
+            }
+          }
+        }
+      }
+      if (changed) {
+        _notify();
+        _schedulePersist();
+      }
+      return changed;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void updateRecentlyWatched(String id, AnimeType type) {
     if (!isExist(id, type)) return;
     final now = _getTimeString(DateTime.now());

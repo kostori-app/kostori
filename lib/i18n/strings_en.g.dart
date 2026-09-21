@@ -695,6 +695,36 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${count} items'
 	String exploreItemsCount({required Object count}) => '${count} items';
 
+	/// en: 'Items ${count}'
+	String exploreOverlayItems({required Object count}) => 'Items ${count}';
+
+	/// en: 'Page ${pages}'
+	String exploreOverlayPages({required Object pages}) => 'Page ${pages}';
+
+	/// en: 'Sections ${count}'
+	String exploreOverlaySections({required Object count}) => 'Sections ${count}';
+
+	/// en: 'Hide scrollbar in masonry'
+	String get hideScrollbarForMasonry => 'Hide scrollbar in masonry';
+
+	/// en: 'Hide the side scrollbar in masonry layout to avoid jitter'
+	String get hideScrollbarForMasonryDesc => 'Hide the side scrollbar in masonry layout to avoid jitter';
+
+	/// en: 'Memos'
+	String get memo => 'Memos';
+
+	/// en: 'New memo…'
+	String get memoHint => 'New memo…';
+
+	/// en: 'No memos yet'
+	String get memoEmpty => 'No memos yet';
+
+	/// en: 'Saved to memos'
+	String get memoSaved => 'Saved to memos';
+
+	/// en: 'Quick nav'
+	String get quickNav => 'Quick nav';
+
 	/// en: 'Export App Data'
 	String get exportAppData => 'Export App Data';
 
@@ -9137,6 +9167,16 @@ extension on Translations {
 			'explore' => 'Explore',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => 'Loaded ${pages} pages · ${count} items',
 			'exploreItemsCount' => ({required Object count}) => '${count} items',
+			'exploreOverlayItems' => ({required Object count}) => 'Items ${count}',
+			'exploreOverlayPages' => ({required Object pages}) => 'Page ${pages}',
+			'exploreOverlaySections' => ({required Object count}) => 'Sections ${count}',
+			'hideScrollbarForMasonry' => 'Hide scrollbar in masonry',
+			'hideScrollbarForMasonryDesc' => 'Hide the side scrollbar in masonry layout to avoid jitter',
+			'memo' => 'Memos',
+			'memoHint' => 'New memo…',
+			'memoEmpty' => 'No memos yet',
+			'memoSaved' => 'Saved to memos',
+			'quickNav' => 'Quick nav',
 			'exportAppData' => 'Export App Data',
 			'export' => 'Export',
 			'failedToImport' => 'Failed to import',
@@ -9421,6 +9461,8 @@ extension on Translations {
 			'characterIntroduction' => 'Character Introduction',
 			'voiceActorC' => ({required Object c}) => 'Voice Actor: ${c}',
 			'episodeEN' => ({required Object e, required Object n}) => 'Episode ${e}: ${n}',
+			_ => null,
+		} ?? switch (path) {
 			'hotspot' => 'hotspot',
 			'completed' => 'Completed',
 			'mainCharacter' => 'Main character',
@@ -9431,8 +9473,6 @@ extension on Translations {
 			'debugInfo' => 'Debug Info',
 			'install' => 'Install',
 			'viewOnGithub' => 'View on GitHub',
-			_ => null,
-		} ?? switch (path) {
 			'noProxyOverrides' => 'No Proxy Overrides',
 			'save' => 'Save',
 			'mirror' => 'Mirror',
@@ -9935,6 +9975,8 @@ extension on Translations {
 			'deviceField' => 'device',
 			'productField' => 'product',
 			'manufacturerField' => 'manufacturer',
+			_ => null,
+		} ?? switch (path) {
 			'versionReleaseField' => 'version_release',
 			'versionSdkIntField' => 'version_sdkInt',
 			'displayField' => 'display',
@@ -9945,8 +9987,6 @@ extension on Translations {
 			'totalDiskSizeField' => 'totalDiskSize',
 			'isPhysicalDeviceField' => 'isPhysicalDevice',
 			'systemNameField' => 'systemName',
-			_ => null,
-		} ?? switch (path) {
 			'systemVersionField' => 'systemVersion',
 			'modelNameField' => 'modelName',
 			'identifierForVendorField' => 'identifierForVendor',
@@ -10449,6 +10489,8 @@ extension on Translations {
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} removed reaction ${o}',
 			'noUsersAvailableToInvite' => 'No users available to invite',
 			'inviteToRoom' => 'Invite to Room',
+			_ => null,
+		} ?? switch (path) {
 			'invite' => 'Invite',
 			'invited' => 'invited',
 			'roomInvite' => 'Room Invite',
@@ -10459,8 +10501,6 @@ extension on Translations {
 			'blockedYourInvites' => 'blocked your invites',
 			'blockedInvitesList' => 'Blocked Invites',
 			'allowMemberInvites' => 'Allow Member Invites',
-			_ => null,
-		} ?? switch (path) {
 			'letAllMembersInviteOthers' => 'Let all members invite others',
 			'declineAndBlock' => 'Decline & Block',
 			'memes' => 'Memes',
@@ -10963,6 +11003,8 @@ extension on Translations {
 			'allCopiedSuccess' => 'All copied success',
 			'bindBangumiIdSuccess' => 'Bangumi ID bound successfully',
 			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
+			_ => null,
+		} ?? switch (path) {
 			'applySuccess' => 'Apply success',
 			'noChanges' => 'No changes',
 			'applyFailed' => 'Apply failed',
@@ -10973,8 +11015,6 @@ extension on Translations {
 			'screenshotFailed' => 'Screenshot failed',
 			'noRecordForMonth' => ({required Object month}) => 'No record for ${month}',
 			'screenshotFailedPleaseRetry' => 'Screenshot failed, please retry',
-			_ => null,
-		} ?? switch (path) {
 			'shareFailed' => 'Share failed',
 			'connectionFailed' => 'Connection failed',
 			'copySuccess' => 'Copy success',
@@ -11477,6 +11517,8 @@ extension on Translations {
 			'inputModality' => 'Input modalities',
 			'outputModality' => 'Output modalities',
 			'supportsReasoning' => 'Supports reasoning',
+			_ => null,
+		} ?? switch (path) {
 			'capabilities' => 'Capabilities',
 			'modelTypeChat' => 'Chat',
 			'modelTypeImage' => 'Image',
@@ -11487,8 +11529,6 @@ extension on Translations {
 			'modalityText' => 'Text',
 			'modalityImage' => 'Image',
 			'modalityAudio' => 'Audio',
-			_ => null,
-		} ?? switch (path) {
 			'modalityVideo' => 'Video',
 			'capabilityTools' => 'Tools',
 			'capabilityReasoning' => 'Reasoning',

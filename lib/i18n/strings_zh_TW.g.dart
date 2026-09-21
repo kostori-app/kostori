@@ -249,6 +249,16 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get explore => '發現';
 	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條';
 	@override String exploreItemsCount({required Object count}) => '共 ${count} 條';
+	@override String exploreOverlayItems({required Object count}) => '條目 ${count} 條';
+	@override String exploreOverlayPages({required Object pages}) => '頁 ${pages} 頁';
+	@override String exploreOverlaySections({required Object count}) => '分區 ${count} 個';
+	@override String get hideScrollbarForMasonry => '瀑布流隱藏滾動條';
+	@override String get hideScrollbarForMasonryDesc => '瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐';
+	@override String get memo => '備忘錄';
+	@override String get memoHint => '輸入備忘內容…';
+	@override String get memoEmpty => '暫無備忘';
+	@override String get memoSaved => '已存入備忘錄';
+	@override String get quickNav => '快捷導航';
 	@override String get exportAppData => '匯出應用數據';
 	@override String get export => '匯出';
 	@override String get failedToImport => '匯入失敗';
@@ -3227,6 +3237,16 @@ extension on TranslationsZhTw {
 			'explore' => '發現',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條',
 			'exploreItemsCount' => ({required Object count}) => '共 ${count} 條',
+			'exploreOverlayItems' => ({required Object count}) => '條目 ${count} 條',
+			'exploreOverlayPages' => ({required Object pages}) => '頁 ${pages} 頁',
+			'exploreOverlaySections' => ({required Object count}) => '分區 ${count} 個',
+			'hideScrollbarForMasonry' => '瀑布流隱藏滾動條',
+			'hideScrollbarForMasonryDesc' => '瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐',
+			'memo' => '備忘錄',
+			'memoHint' => '輸入備忘內容…',
+			'memoEmpty' => '暫無備忘',
+			'memoSaved' => '已存入備忘錄',
+			'quickNav' => '快捷導航',
 			'exportAppData' => '匯出應用數據',
 			'export' => '匯出',
 			'failedToImport' => '匯入失敗',
@@ -3519,6 +3539,8 @@ extension on TranslationsZhTw {
 			'idleCorner' => '閒角',
 			'unknown' => '未知',
 			'debugInfo' => '調試資訊',
+			_ => null,
+		} ?? switch (path) {
 			'install' => '安裝',
 			'viewOnGithub' => '在 GitHub 上查看',
 			'noProxyOverrides' => '無代理覆寫',
@@ -3529,8 +3551,6 @@ extension on TranslationsZhTw {
 			'cloudflareVerificationRequired' => '需要 Cloudflare 驗證',
 			'reloadConfigs' => '重載配置',
 			'invalidUrlConfig' => '無效的 URL 設定',
-			_ => null,
-		} ?? switch (path) {
 			'inconsistentVersions' => '版本不一致',
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
 			'checkUpdateFailed' => '檢查更新失敗...',
@@ -4033,6 +4053,8 @@ extension on TranslationsZhTw {
 			'deviceField' => '設備',
 			'productField' => '產品',
 			'manufacturerField' => '製造商',
+			_ => null,
+		} ?? switch (path) {
 			'versionReleaseField' => '版本發佈',
 			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '顯示',
@@ -4043,8 +4065,6 @@ extension on TranslationsZhTw {
 			'totalDiskSizeField' => '總磁碟空間',
 			'isPhysicalDeviceField' => '是否為實體機',
 			'systemNameField' => '系統名稱',
-			_ => null,
-		} ?? switch (path) {
 			'systemVersionField' => '系統版本',
 			'modelNameField' => '型號名稱',
 			'identifierForVendorField' => '供應商識別碼',
@@ -4547,6 +4567,8 @@ extension on TranslationsZhTw {
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} 移除了回應 ${o}',
 			'noUsersAvailableToInvite' => '暫無可用邀請使用者',
 			'inviteToRoom' => '邀請加入房間',
+			_ => null,
+		} ?? switch (path) {
 			'invite' => '邀請',
 			'invited' => '已邀請',
 			'roomInvite' => '房間邀請',
@@ -4557,8 +4579,6 @@ extension on TranslationsZhTw {
 			'blockedYourInvites' => '封鎖了你的邀請',
 			'blockedInvitesList' => '邀請封鎖列表',
 			'allowMemberInvites' => '允許成員邀請',
-			_ => null,
-		} ?? switch (path) {
 			'letAllMembersInviteOthers' => '允許所有成員邀請其他人加入房間',
 			'declineAndBlock' => '拒絕並封鎖',
 			'memes' => '表情包',
@@ -5061,6 +5081,8 @@ extension on TranslationsZhTw {
 			'pleaseEnableAtLeastOneAddress' => '請先啟用至少一個位址',
 			'requestFailed' => '請求失敗',
 			'allCopiedSuccess' => '全部複製成功',
+			_ => null,
+		} ?? switch (path) {
 			'notBoundToBangumi' => '該動漫尚未綁定 Bangumi 條目',
 			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
 			'applySuccess' => '應用成功',
@@ -5071,8 +5093,6 @@ extension on TranslationsZhTw {
 			'queryFailed' => '查詢失敗',
 			'screenshotSuccess' => '擷圖成功',
 			'screenshotFailed' => '擷圖失敗',
-			_ => null,
-		} ?? switch (path) {
 			'noRecordForMonth' => ({required Object month}) => '${month}暫無記錄',
 			'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
 			'shareFailed' => '分享失敗',
@@ -5575,6 +5595,8 @@ extension on TranslationsZhTw {
 			'outputModality' => '輸出模態',
 			'supportsReasoning' => '支援推理',
 			'capabilities' => '能力',
+			_ => null,
+		} ?? switch (path) {
 			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '圖像',
 			'modelTypeEmbedding' => '嵌入',
@@ -5585,8 +5607,6 @@ extension on TranslationsZhTw {
 			'modalityImage' => '圖片',
 			'modalityAudio' => '音訊',
 			'modalityVideo' => '影片',
-			_ => null,
-		} ?? switch (path) {
 			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
 			'apiFormat' => '介面格式',
