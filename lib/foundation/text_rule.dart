@@ -160,7 +160,10 @@ class TextRuleStore {
     return const [];
   }
 
-  /// 按顺序把规则应用到文本
+  /// 按顺序把规则应用到文本（叠加语义：后规则看到前规则处理过的文本）。
+  /// 注意：跨规则默认请用 [applyFirstHit]（单一应用，命中即停）；
+  /// 本方法保留给“一条规则内部多步骤”（[TextRule.steps] 本来就是多步）
+  /// 与明确需要叠加的调用方。
   static String apply(String input, Iterable<TextRule> rules) {
     var text = input;
     for (final rule in rules) {
@@ -169,6 +172,39 @@ class TextRuleStore {
       }
     }
     return text;
+  }
+
+  /// 单一应用：按优先级顺序（列表顺序）逐条试，第一条命中（改变文本）的规则
+  /// 生效后即停，后续规则不再作用于已被正则过的文本。
+  /// 未命中任何规则时返回原文。
+  static String applyFirstHit(String input, Iterable<TextRule> rules) {
+    for (final rule in rules) {
+      var text = input;
+      var changed = false;
+      for (final step in rule.steps) {
+        final next = _applyStep(text, step);
+        if (next != text) changed = true;
+        text = next;
+      }
+      if (changed) return text;
+    }
+    return input;
+  }
+
+  /// 返回首个命中的规则在 [rules] 中的下标，未命中返回 -1。
+  /// 供测试弹窗展示“命中了几条/命中后文本是什么”。
+  static int firstHitIndex(String input, List<TextRule> rules) {
+    for (var i = 0; i < rules.length; i++) {
+      var text = input;
+      var changed = false;
+      for (final step in rules[i].steps) {
+        final next = _applyStep(text, step);
+        if (next != text) changed = true;
+        text = next;
+      }
+      if (changed) return i;
+    }
+    return -1;
   }
 
   static String _applyStep(String input, TextRuleStep step) {
@@ -398,8 +434,10 @@ class SourceTextRuleConfig {
 
   static bool hasRules(String sourceKey) => rulesFor(sourceKey).isNotEmpty;
 
+  /// 源内应用：单一应用语义（Q10）——按优先级顺序，第一条命中的规则生效即停，
+  /// 而不是把已正则过的文本再喂给下一条规则。
   static String applyTo(String sourceKey, String input) =>
-      TextRuleStore.apply(input, rulesFor(sourceKey));
+      TextRuleStore.applyFirstHit(input, rulesFor(sourceKey));
 
   /// 有多少个番源选用了该规则
   static int countSourcesUsing(String ruleId) =>

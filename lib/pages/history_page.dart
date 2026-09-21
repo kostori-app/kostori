@@ -110,9 +110,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
               sliver: SliverGridAnimes(
                 animes: items,
                 disableMasonry: true,
-                onTap: (a, heroID) {
+                onTap: (a, heroID, [heroTag]) {
                   final h = a as History;
                   // 不先关弹层：让 Hero 从瓷砖飞入详情页，返回时回到弹层
+                  // Q24：带上卡片实际 heroTag，否则对不上没有 Hero 动画
                   App.mainNavigatorKey?.currentContext?.to<dynamic>(
                     () => AnimePage(
                       id: h.id,
@@ -120,6 +121,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                       cover: h.cover,
                       title: h.title,
                       heroID: heroID,
+                      heroTag: heroTag,
                     ),
                   );
                 },
@@ -348,7 +350,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                       disableMasonry: true,
                       onLongPressed: null,
                       onTap: multiSelectMode
-                          ? (c, heroID) {
+                          ? (c, heroID, [heroTag]) {
                               setState(() {
                                 if (selectedAnimes.containsKey(c as History)) {
                                   selectedAnimes.remove(c);
@@ -360,7 +362,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                 }
                               });
                             }
-                          : (a, heroID) async {
+                          : (a, heroID, [heroTag]) async {
                               if (a.viewMore != null) {
                                 final ctx =
                                     App.mainNavigatorKey!.currentContext!;
@@ -374,6 +376,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                       cover: a.cover,
                                       title: a.title,
                                       heroID: heroID,
+                                      heroTag: heroTag,
                                     ),
                                   )
                                   .then((_) {

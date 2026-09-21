@@ -53,6 +53,9 @@
                 android:layout_gravity="center_vertical"
                 android:paddingStart="8dp"
                 android:paddingEnd="2dp"
+                android:minWidth="44dp"
+                android:gravity="end"
+                android:singleLine="true"
                 android:text="0%"/>
         </LinearLayout>
     </LinearLayout>
@@ -92,6 +95,9 @@
                 android:layout_gravity="center_vertical"
                 android:paddingStart="8dp"
                 android:paddingEnd="2dp"
+                android:minWidth="44dp"
+                android:gravity="end"
+                android:singleLine="true"
                 android:text="0%"/>
         </LinearLayout>
     </LinearLayout>
@@ -131,6 +137,9 @@
                 android:layout_gravity="center_vertical"
                 android:paddingStart="8dp"
                 android:paddingEnd="2dp"
+                android:minWidth="44dp"
+                android:gravity="end"
+                android:singleLine="true"
                 android:text="0%"/>
         </LinearLayout>
     </LinearLayout>

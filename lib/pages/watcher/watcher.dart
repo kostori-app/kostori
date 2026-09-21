@@ -23,6 +23,7 @@ import 'package:kostori/foundation/m3u8_proxy_server.dart';
 import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
@@ -383,6 +384,7 @@ class _WatcherState extends State<Watcher>
     required int episodeIndex,
     required int road,
     String? localPath,
+    bool cfRetried = false,
   }) async {
     // 一起看成员：禁止手动切换集数，只能跟随房主（房主同步会临时解锁放行）
     if (playerController.syncLocked) return;
@@ -516,6 +518,26 @@ class _WatcherState extends State<Watcher>
       PlayLog.error("_loadEpisode", "$e\n$s");
       // 已切走或播放器已退出：过期任务（被取消的 WebView 解析）的报错静默丢弃
       if (gen != _loadGen || !mounted) return;
+      // Q4：loadEp 里触发 CF 验证（视频链接请求被 challenge 拦截）时，
+      // 弹验证页让用户过一次，通过后自动重试本集（仅重试一次，避免循环）
+      CloudflareException? cfe;
+      if (e is CloudflareException) {
+        cfe = e;
+      } else {
+        cfe = CloudflareException.fromString(e.toString());
+      }
+      if (cfe != null && !cfRetried && localPath == null) {
+        playerController.isParsing = false;
+        passCloudflare(cfe, () {
+          if (!mounted) return;
+          _loadEpisode(
+            episodeIndex: episodeIndex,
+            road: road,
+            cfRetried: true,
+          );
+        });
+        return;
+      }
       // 解析异常也要复位，否则覆盖层会一直显示"正在解析"
       playerController.isParsing = false;
     }

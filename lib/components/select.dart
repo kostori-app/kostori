@@ -475,6 +475,10 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   /// 横向滚动控制器（[SlidingSegmentedBar.scrollable] 时用于自动滚到选中项）
   final ScrollController _scrollController = ScrollController();
 
+  /// 上次已自动滚动到的下标：避免动画每一帧都触发 animateTo 导致互相打架卡死
+  /// （Q1：选中 tab 卡在屏幕外不动的潜在根因）
+  int _lastScrolledIndex = -1;
+
   @override
   void initState() {
     super.initState();
@@ -508,12 +512,15 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   }
 
   void _syncKeys() {
+    final oldLen = _childKeys.length;
     while (_childKeys.length < widget.children.length) {
       _childKeys.add(GlobalKey());
     }
     if (_childKeys.length > widget.children.length) {
       _childKeys.removeRange(widget.children.length, _childKeys.length);
     }
+    // 选项数量变化时允许重新定位，避免旧下标缓存导致新选中项不滚动
+    if (oldLen != widget.children.length) _lastScrolledIndex = -1;
   }
 
   /// 布局后测量所有选项，供指示块定位/插值（换行、滚动时也能跟随），
@@ -538,23 +545,36 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   }
 
   /// 选中项不在可视区时滚动过去（对齐 TabBar 的自动滚动行为）
+  /// Q25：内容够长时尽量让选中项居中（可看清两边）；
+  /// 在最左/最右时自然贴边（clamp 到滚动范围）。
+  /// Q1：只在下标变化时滚动一次，避免动画帧反复 animateTo 卡死。
   void _scrollSelectedIntoView(double value, List<Rect> rects) {
-    if (!widget.autoScroll) return;
+    if (!widget.autoScroll || !widget.scrollable) return;
     if (rects.isEmpty || !_scrollController.hasClients) return;
     final index = value.round().clamp(0, rects.length - 1);
+    if (index == _lastScrolledIndex) return;
     final rect = rects[index];
     final position = _scrollController.position;
     final offset = position.pixels;
     final viewport = position.viewportDimension;
-    double? target;
-    if (rect.left < offset) {
-      target = rect.left;
-    } else if (rect.right > offset + viewport) {
-      target = rect.right - viewport;
+    if (viewport <= 0) return;
+    if (position.maxScrollExtent <= 0) {
+      _lastScrolledIndex = index;
+      return;
     }
-    if (target == null) return;
+    // 已完全可见就不动，避免无意义抖动
+    if (rect.left >= offset && rect.right <= offset + viewport) {
+      _lastScrolledIndex = index;
+      return;
+    }
+    // 居中目标：选中项中心 - 视口一半，贴边时 clamp 自动处理
+    var target = rect.center.dx - viewport / 2;
     target = target.clamp(position.minScrollExtent, position.maxScrollExtent);
-    if ((target - offset).abs() < 0.5) return;
+    if ((target - offset).abs() < 0.5) {
+      _lastScrolledIndex = index;
+      return;
+    }
+    _lastScrolledIndex = index;
     _scrollController.animateTo(
       target,
       duration: widget.duration,

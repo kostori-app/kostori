@@ -44,11 +44,6 @@ class _DownloadPageState extends State<DownloadPage>
 
   bool get _isRecordsTab => _tabCtrl.index == 1;
 
-  /// 设置弹层里下载目录的剩余空间查询（按目录缓存 Future，目录不变不重查；
-  /// 非 Android 返回 null，UI 不占位）
-  String? _freeSpaceDir;
-  Future<int?>? _freeSpaceFuture;
-
   @override
   void initState() {
     super.initState();
@@ -202,45 +197,12 @@ class _DownloadPageState extends State<DownloadPage>
                   ListTile(
                     leading: const Icon(Icons.folder_outlined),
                     title: Text(t.downloadDir),
-                    subtitle: Builder(
-                      builder: (ctx) {
-                        final dir = _currentDownloadDir();
-                        // 目录变化才重新查询，原生 StatFs 很快但也没必要每帧查
-                        if (_freeSpaceDir != dir) {
-                          _freeSpaceDir = dir;
-                          _freeSpaceFuture = getFreeDiskBytes(dir);
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              dir,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            FutureBuilder<int?>(
-                              future: _freeSpaceFuture,
-                              builder: (ctx, snap) {
-                                final free = snap.data;
-                                // 加载中/不支持/失败都不占位，查到才显示一行
-                                if (free == null) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Text(
-                                  '${t.downloadFreeSpace}：${bytesToReadableString(free)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(
-                                      ctx,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        );
-                      },
+                    // Q9：剩余/总量空间已移到页面外部 StorageBar 常驻显示，
+                    // 这里只保留目录本身
+                    subtitle: Text(
+                      _currentDownloadDir(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     onTap: () async {
                       final dir = await selectDirectory();
@@ -301,17 +263,25 @@ class _DownloadPageState extends State<DownloadPage>
           onExistsFilter: _setRecordExistsFilter,
         ),
       ),
-      body: TabBarView(
-        controller: _tabCtrl,
+      body: Column(
         children: [
-          _ActiveTab(
-            filter: _taskFilter,
-            onFilter: _setTaskFilter,
-            onMove: _moveTaskToGroup,
-          ),
-          _RecordsTab(
-            key: _recordsKey,
-            existsFilter: _recordExistsFilter,
+          // Q9：剩余/全部存储移到页面外部常驻（设置弹窗里不再重复显示）
+          const StorageBar(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabCtrl,
+              children: [
+                _ActiveTab(
+                  filter: _taskFilter,
+                  onFilter: _setTaskFilter,
+                  onMove: _moveTaskToGroup,
+                ),
+                _RecordsTab(
+                  key: _recordsKey,
+                  existsFilter: _recordExistsFilter,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -479,53 +449,103 @@ class _ActiveTab extends StatelessWidget {
     }
 
     final filtered = _sortTasks(_filterTasks(unfinished));
+    // Q19：序号按任务创建时间全局稳定编号（新任务排末尾），
+    // 不随筛选/排序重置，避免“1 下完了下一个又变 1”
+    final ordered = [...tasks]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final globalIndex = <String, int>{
+      for (var i = 0; i < ordered.length; i++) ordered[i].id: i + 1,
+    };
     return Column(
       children: [
-        DownloadFilterBar(
-          builtins: [
-            (key: 'all', label: t.all),
-            (key: 'downloading', label: t.downloading),
-            (key: 'paused', label: t.paused),
-            (key: 'failed', label: t.failed),
-          ],
-          selected: filter,
-          onSelected: onFilter,
-        ),
+        // Q16：正在下载条目计数
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              IconTileButton(
-                icon: const Icon(Icons.refresh),
-                label: t.redownload,
-                onTap: () {
-                  manager.retryFailed();
-                },
+              Text(
+                '${t.all} (${unfinished.length})',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(width: 4),
-              IconTileButton(
-                icon: const Icon(Icons.play_arrow),
-                label: t.startAll,
-                onTap: () {
-                  manager.resumeAll();
-                },
+            ],
+          ),
+        ),
+        // Q21：总任务进度（完成数/失败数双色单条；完成后保留到手动关闭）
+        if (manager.batchVisible) _BatchProgressBar(manager: manager),
+        // Q18：筛选胶囊 + 4 个批量操作放在同一行可横滑；
+        // 操作按钮用项目分段胶囊样式，只显示 icon，文字放 tooltip
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+          child: Row(
+            children: [
+              DownloadFilterBar(
+                builtins: [
+                  (key: 'all', label: t.all),
+                  (key: 'downloading', label: t.downloading),
+                  (key: 'paused', label: t.paused),
+                  (key: 'failed', label: t.failed),
+                ],
+                selected: filter,
+                onSelected: onFilter,
+                padding: EdgeInsets.zero,
               ),
-              const SizedBox(width: 4),
-              IconTileButton(
-                icon: const Icon(Icons.pause),
-                label: t.pauseAll,
-                onTap: () {
-                  manager.pauseAll();
-                },
-              ),
-              const SizedBox(width: 4),
-              IconTileButton(
-                icon: const Icon(Icons.delete_outline),
-                label: t.cancelAll,
-                onTap: () {
-                  manager.cancelAll();
-                },
+              const SizedBox(width: 8),
+              CapsuleButtonBar(
+                padding: EdgeInsets.zero,
+                children: [
+                  Tooltip(
+                    message: t.redownload,
+                    child: CapsuleButton(
+                      flat: true,
+                      leading: const Icon(Icons.refresh),
+                      onTap: () => manager.retryFailed(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: t.startAll,
+                    child: CapsuleButton(
+                      flat: true,
+                      leading: const Icon(Icons.play_arrow),
+                      onTap: () => manager.resumeAll(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: t.pauseAll,
+                    child: CapsuleButton(
+                      flat: true,
+                      leading: const Icon(Icons.pause),
+                      onTap: () => manager.pauseAll(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: t.cancelAll,
+                    child: CapsuleButton(
+                      flat: true,
+                      leading: const Icon(Icons.delete_outline),
+                      onTap: () => manager.cancelAll(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -543,9 +563,9 @@ class _ActiveTab extends StatelessWidget {
                 : ListView(
                   padding: const EdgeInsets.only(bottom: 16),
                   children: [
-                    for (final (i, task) in filtered.indexed)
+                    for (final task in filtered)
                       _DownloadTile(
-                        index: i + 1,
+                        index: globalIndex[task.id] ?? 0,
                         task: task,
                         onLongPress: () => onMove(task),
                       ),
@@ -554,6 +574,96 @@ class _ActiveTab extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Q21：总任务进度条（按任务完成数计数，失败也计数）：
+/// 单条双色（完成=主题色，失败=错误色），初始为 0 不显示，
+/// 完成后保留显示直到用户手动关闭；内部 try/catch 保底，绝不崩列表。
+class _BatchProgressBar extends StatelessWidget {
+  const _BatchProgressBar({required this.manager});
+
+  final DownloadManager manager;
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      final total = manager.batchTotal;
+      if (total <= 0) return const SizedBox.shrink();
+      final done = manager.batchDoneView;
+      final failed = manager.batchFailedView;
+      final rest = (total - done - failed).clamp(0, total);
+      final cs = Theme.of(context).colorScheme;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: cs.outlineVariant, width: 0.6),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      failed > 0
+                          ? '${t.downloadCompleted} $done/$total · ${t.failed} $failed'
+                          : '${t.downloadCompleted} $done/$total',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: SizedBox(
+                        height: 6,
+                        child: Row(
+                          children: [
+                            if (done > 0)
+                              Expanded(
+                                flex: done,
+                                child: ColoredBox(color: cs.primary),
+                              ),
+                            if (failed > 0)
+                              Expanded(
+                                flex: failed,
+                                child: ColoredBox(color: cs.error),
+                              ),
+                            if (rest > 0)
+                              Expanded(
+                                flex: rest,
+                                child: ColoredBox(
+                                  color: cs.surfaceContainerHighest,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: t.close,
+                visualDensity: VisualDensity.compact,
+                iconSize: 18,
+                icon: const Icon(Icons.close),
+                onPressed: () => manager.dismissBatch(),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
   }
 }
 
@@ -935,9 +1045,11 @@ class _RecordsTabState extends State<_RecordsTab> {
             ? ''
             : (AnimeSource.find(sourceKey)?.name ?? sourceKey);
         final exists = _exists[fp] ?? false;
-        final time = (r['time'] as String? ?? '')
+        // Q15：时间精确到秒（YYYY-MM-DD HH:MM:SS）
+        var time = (r['time'] as String? ?? '')
             .replaceAll('T', ' ')
             .replaceAll('.000', '');
+        if (time.length > 19) time = time.substring(0, 19);
 
         Widget chip(String text, {Color? textColor, Color? boxColor}) {
           return Container(
@@ -1213,17 +1325,17 @@ class _DownloadTile extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(child: child),
-            // 左上角圆形序号徽章
+            // 左上角序号徽章：Q16 支持 3 位数（自适应宽度，两位数内圆形，更多变胶囊）
             Positioned(
               left: 4,
               top: 4,
               child: Container(
-                width: 18,
-                height: 18,
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: colorScheme.surface.withValues(alpha: 0.85),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(9),
                   border: Border.all(
                     color: colorScheme.outlineVariant,
                     width: 0.6,
@@ -1412,19 +1524,43 @@ class _DownloadTile extends StatelessWidget {
   }
 
   /// 来源元信息行（无来源时隐藏；分辨率在状态行左侧展示，避免重复）
+  /// Q13：右侧追加“下载到哪个文件组”，最多一行省略
   Widget _buildMetaRow(BuildContext context) {
     final String? src = task.sourceKey == null
         ? null
         : AnimeSource.find(task.sourceKey!)?.name;
-    if (src == null || src.isEmpty) return const SizedBox.shrink();
-    return Text(
-      src,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        fontSize: 11,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
+    final group = task.group.trim();
+    if ((src == null || src.isEmpty) && group.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final style = TextStyle(
+      fontSize: 11,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    return Row(
+      children: [
+        if (src != null && src.isNotEmpty)
+          Expanded(
+            child: Text(
+              src,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style,
+            ),
+          ),
+        if (src != null && src.isNotEmpty && group.isNotEmpty)
+          const SizedBox(width: 8),
+        if (group.isNotEmpty)
+          Expanded(
+            child: Text(
+              group,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: style,
+            ),
+          ),
+      ],
     );
   }
 
@@ -1451,7 +1587,15 @@ class _DownloadTile extends StatelessWidget {
           ],
         );
       }
-      final pct = (task.progress * 100).clamp(0.0, 100.0).toStringAsFixed(0);
+      // Q12：m3u8 未下完时百分比封顶 99%，避免 79/80 显示 100% 误导
+      // （已完成/合并态不受影响）
+      var pctValue = (task.progress * 100).clamp(0.0, 100.0);
+      if (task.segTotal > 0 &&
+          task.segDone < task.segTotal &&
+          pctValue >= 100) {
+        pctValue = 99;
+      }
+      final pct = pctValue.toStringAsFixed(0);
       final speed = formatSpeed(task.downloadSpeed, zeroText: '');
       final res = task.resolution?.trim();
       final hasRes = res != null && res.isNotEmpty;

@@ -412,24 +412,30 @@ String bytesToReadableString(int bytes) {
   }
 }
 
-/// 短字节格式（1 位小数、上限 MB）：下载页与图片预览共用，
+/// 短字节格式（1 位小数，支持到 GB）：下载页与图片预览共用，
 /// 替代两处逐字相同的私有 _formatBytes/_formatFileSize
 String formatBytesShort(int bytes) {
   if (bytes < 1024) return '$bytes B';
   if (bytes < 1024 * 1024) {
     return '${(bytes / 1024).toStringAsFixed(1)} KB';
   }
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  if (bytes < 1024 * 1024 * 1024) {
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 
 /// 网速格式（下载页与系统状态 widget 共用）：
 /// 零/负值时的显示由 [zeroText] 决定（下载页传 '' 表示隐藏，状态页默认 '0 B/s'）
+/// Q2：速度极小（<1 B/s，如 0.1 取整会显示“0 B/s”）也按 0 处理，直接隐藏/显示 zeroText
 String formatSpeed(num bytesPerSec, {String zeroText = '0 B/s'}) {
-  if (bytesPerSec <= 0) return zeroText;
+  if (bytesPerSec < 1) return zeroText;
   if (bytesPerSec < 1024) {
     final v = bytesPerSec is int
         ? bytesPerSec.toString()
         : bytesPerSec.toStringAsFixed(0);
+    // 四舍五入后为 0（如 0.4 B/s）同样按 0 处理，避免“0 B/s”闪现
+    if (v == '0') return zeroText;
     return '$v B/s';
   }
   if (bytesPerSec < 1024 * 1024) {
@@ -447,6 +453,26 @@ Future<int?> getFreeDiskBytes(String dir) async {
     final v = await channel.invokeMethod<int>('getFreeSpace', {'path': dir});
     if (v == null || v < 0) return null;
     return v;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Q9：指定目录所在分区的（剩余，全部）空间（字节）。
+/// 一次原生往返同时拿总量 + 剩余；非 Android 或失败返回 null。
+Future<({int free, int total})?> getStorageInfo(String dir) async {
+  try {
+    if (!Platform.isAndroid) return null;
+    const channel = MethodChannel('kostori/storage');
+    final v = await channel.invokeMapMethod<String, Object?>(
+      'getStorageInfo',
+      {'path': dir},
+    );
+    if (v == null) return null;
+    final free = (v['free'] as num?)?.toInt() ?? -1;
+    final total = (v['total'] as num?)?.toInt() ?? -1;
+    if (free < 0 || total <= 0) return null;
+    return (free: free, total: total);
   } catch (_) {
     return null;
   }

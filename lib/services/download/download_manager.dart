@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
@@ -160,6 +161,161 @@ class DownloadManager extends ChangeNotifier {
   DateTime? _lastKeepAlive;
   bool _keepAliveStarted = false;
 
+  // Q21：总任务进度（按任务完成数计数，失败也计入；单条双色）。
+  // - 初始为 0 时不显示；完成后继续显示，直到用户手动关闭或应用退出。
+  // - 意外退出（崩溃/杀进程）且还有未完成任务时，下次启动恢复显示。
+  // - 全部逻辑 try/catch 包底：计数绝不能把下载主流程搞崩。
+  static const _batchPersistKey = 'downloadBatchProgress';
+  int batchTotal = 0;
+  int batchDone = 0;
+  int batchFailed = 0;
+  bool _batchVisible = false;
+  bool get batchVisible => _batchVisible && batchTotal > 0;
+  final Set<String> _batchCounted = {};
+
+  int get batchDoneView => batchDone.clamp(0, batchTotal);
+  int get batchFailedView =>
+      batchFailed.clamp(0, (batchTotal - batchDoneView).clamp(0, batchTotal));
+
+  void _saveBatch() {
+    try {
+      final unfinished = _tasks
+          .where((t) => t.status != DownloadStatus.completed)
+          .length;
+      // 已全部完成：横幅只活在内存（手动关闭/退出即消失），不落盘
+      if (unfinished == 0 && batchDoneView + batchFailedView >= batchTotal) {
+        appdata.implicitData.remove(_batchPersistKey);
+      } else {
+        appdata.implicitData[_batchPersistKey] = {
+          'total': batchTotal,
+          'done': batchDone,
+          'failed': batchFailed,
+          'counted': _batchCounted.toList(),
+          'visible': _batchVisible,
+        };
+      }
+      appdata.writeImplicitData();
+    } catch (_) {}
+  }
+
+  void _loadBatch() {
+    try {
+      batchTotal = 0;
+      batchDone = 0;
+      batchFailed = 0;
+      _batchVisible = false;
+      _batchCounted.clear();
+      final raw = appdata.implicitData[_batchPersistKey];
+      if (raw is Map) {
+        batchTotal = (raw['total'] as num?)?.toInt() ?? 0;
+        batchDone = (raw['done'] as num?)?.toInt() ?? 0;
+        batchFailed = (raw['failed'] as num?)?.toInt() ?? 0;
+        _batchVisible = raw['visible'] == true;
+        final counted = raw['counted'];
+        if (counted is List) {
+          _batchCounted.addAll(counted.map((e) => e.toString()));
+        }
+      }
+      final unfinished = _tasks
+          .where((t) => t.status != DownloadStatus.completed)
+          .length;
+      // 保底重建：有未完成任务但计数丢了（如崩溃时没落盘），按未完成数重建
+      if (unfinished > 0 && batchTotal <= 0) {
+        batchTotal = unfinished;
+        batchDone = 0;
+        batchFailed = 0;
+        _batchVisible = true;
+        _saveBatch();
+      }
+      if (batchTotal <= 0) {
+        _batchVisible = false;
+        batchTotal = 0;
+        batchDone = 0;
+        batchFailed = 0;
+        _batchCounted.clear();
+      }
+    } catch (_) {
+      // 保底：读坏了就隐藏，绝不影响下载列表
+      _batchVisible = false;
+    }
+  }
+
+  void _batchAdd() {
+    try {
+      batchTotal++;
+      if (batchTotal == 1) _batchVisible = true;
+      if (batchDoneView + batchFailedView > batchTotal) {
+        batchFailed = (batchTotal - batchDoneView).clamp(0, batchTotal);
+      }
+      _saveBatch();
+    } catch (_) {}
+  }
+
+  void _batchDone(DownloadTask task) {
+    try {
+      if (!_batchCounted.add(task.id)) return;
+      if (batchTotal <= 0) batchTotal = 1;
+      batchDone++;
+      _batchVisible = true;
+      _saveBatch();
+    } catch (_) {}
+  }
+
+  void _batchFailed(DownloadTask task) {
+    try {
+      if (!_batchCounted.add(task.id)) return;
+      if (batchTotal <= 0) batchTotal = 1;
+      batchFailed++;
+      _batchVisible = true;
+      _saveBatch();
+    } catch (_) {}
+  }
+
+  /// 失败任务被重新排队：取消之前的失败计数（任务仍在总数里）
+  void _batchUncount(DownloadTask task) {
+    try {
+      if (_batchCounted.remove(task.id)) {
+        batchFailed = (batchFailed - 1).clamp(0, batchTotal);
+        _saveBatch();
+      }
+    } catch (_) {}
+  }
+
+  /// 任务被删除/取消：从总数中剔除（已计数的同步扣减）
+  void _batchRemove(DownloadTask task) {
+    try {
+      if (_batchCounted.remove(task.id)) {
+        if (batchFailed > 0 && batchDoneView + batchFailed > batchTotal - 1) {
+          batchFailed = (batchFailed - 1).clamp(0, batchTotal);
+        } else if (batchDone > 0) {
+          batchDone = (batchDone - 1).clamp(0, batchTotal);
+        }
+      }
+      batchTotal = (batchTotal - 1).clamp(0, 1 << 30);
+      if (batchTotal <= 0) {
+        batchTotal = 0;
+        batchDone = 0;
+        batchFailed = 0;
+        _batchVisible = false;
+        _batchCounted.clear();
+      }
+      _saveBatch();
+    } catch (_) {}
+  }
+
+  /// 用户手动关闭总进度条
+  void dismissBatch() {
+    try {
+      _batchVisible = false;
+      batchTotal = 0;
+      batchDone = 0;
+      batchFailed = 0;
+      _batchCounted.clear();
+      _saveBatch();
+      notifyListeners();
+    } catch (_) {}
+  }
+
   /// 同步前台服务通知（节流 1s）：有下载任务时保活，无任务时停止
   void _syncKeepAlive({bool force = false}) {
     if (!Platform.isAndroid) return;
@@ -184,10 +340,14 @@ class DownloadManager extends ChangeNotifier {
       return;
     }
     _lastKeepAlive = now;
+    // Q20：剩余任务数 = 全部未完成（下载中/排队/暂停/失败），进度条只列当前传输中的
+    final remaining =
+        _tasks.where((t) => t.status != DownloadStatus.completed).length;
     DownloadKeepAlive.update(
       tasks: active
           .map((t) => (title: t.title, progress: t.progress))
           .toList(),
+      remaining: remaining,
     );
   }
 
@@ -231,6 +391,8 @@ class DownloadManager extends ChangeNotifier {
       }
       Directory(_downloadDir).createSync(recursive: true);
       _persist();
+      // Q21：恢复总进度计数（崩溃/杀进程后有未完成任务时重建显示）
+      _loadBatch();
       notifyListeners();
       unawaited(_refreshDownloadedKeys());
       // 兜底：清理残留分片（已完成/失败/孤儿任务的分片目录），
@@ -381,6 +543,7 @@ class DownloadManager extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     _tasks.add(task);
+    _batchAdd();
     _persist();
     notifyListeners();
     _schedule();
@@ -497,9 +660,12 @@ class DownloadManager extends ChangeNotifier {
       await _writeRecord(task);
       // 合并完成即清理分片，避免 TS 切片残留占用体积
       await _cleanupSegments(taskDir);
+      _batchDone(task);
       try {
+        // Q22：下载完成的提示固定显示在顶部
         App.rootContext.showMessage(
           message: '${t.downloadCompleted}: ${task.title}',
+          style: ToastStyle.top,
         );
       } catch (_) {}
     } catch (e, s) {
@@ -618,6 +784,7 @@ class DownloadManager extends ChangeNotifier {
 
   /// 永久失败时提示原因（签名过期/网络/403 等），便于用户判断
   void _notifyDownloadFailed(DownloadTask task, Object e) {
+    _batchFailed(task);
     try {
       var reason = e.toString().replaceFirst('Exception: ', '');
       reason = reason.split('\n').first.trim();
@@ -877,6 +1044,10 @@ class DownloadManager extends ChangeNotifier {
                   options: Options(
                     headers: task.headers,
                     responseType: ResponseType.stream,
+                    // Q12：分片 hanging 会导致 79/80 卡住不动（Future.wait 永不结束），
+                    // 显式超时让尾部分片失败走重试/报错，而不是静默卡死
+                    sendTimeout: const Duration(seconds: 30),
+                    receiveTimeout: const Duration(seconds: 30),
                     extra: const {'httpVersion11': true},
                   ),
                 );
@@ -949,6 +1120,11 @@ class DownloadManager extends ChangeNotifier {
     if (errors.isNotEmpty) {
       // 完整列出每个失败分片的编号与原因，便于定位（不省略、不截断）
       throw Exception('部分分片下载失败（${errors.length} 个）：\n${errors.join('\n')}');
+    }
+    // Q12 防御：无报错但计数对不上（如下完前被暂停又未正确取消），
+    // 绝不拿缺片去合并，否则得到缺尾的视频还显示成功
+    if (completed != segUrls.length) {
+      throw Exception('分片计数异常（$completed/${segUrls.length}），请重试');
     }
 
     // 3. ffmpeg 合并 ts → mp4（合并进度实时反映到 task.progress）。
@@ -1156,11 +1332,13 @@ class DownloadManager extends ChangeNotifier {
       await _writeRecord(task);
       // 强合完成后同样清理分片
       await _cleanupSegments(taskDir);
+      _batchDone(task);
       _persist();
       notifyListeners();
       try {
         App.rootContext.showMessage(
           message: '${t.downloadCompleted}: ${task.title}',
+          style: ToastStyle.top,
         );
       } catch (_) {}
     } catch (e, s) {
@@ -1169,6 +1347,7 @@ class DownloadManager extends ChangeNotifier {
       task.status = DownloadStatus.failed;
       task.isMerging = false;
       task.error = e.toString();
+      _batchFailed(task);
       await _deleteQuiet(File(tmpPath));
       _persist();
       notifyListeners();
@@ -1226,6 +1405,7 @@ class DownloadManager extends ChangeNotifier {
       if (t.status == DownloadStatus.failed) {
         t.status = DownloadStatus.queued;
         t.error = null;
+        _batchUncount(t);
         changed = true;
       }
     }
@@ -1317,6 +1497,7 @@ class DownloadManager extends ChangeNotifier {
     final idx = _tasks.indexWhere((t) => t.id == id);
     if (idx < 0) return;
     final t = _tasks.removeAt(idx);
+    _batchRemove(t);
     if (t.filePath != null) {
       await _deleteQuiet(File(t.filePath!));
     }

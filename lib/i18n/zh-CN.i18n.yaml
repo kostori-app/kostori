@@ -207,6 +207,8 @@ exitMultiSelect: 退出多选
 exit: 退出
 explorePages: 探索页面
 explore: 探索
+exploreLoadedDetail: "已加载 ${pages} 页 · 共 ${count} 条"
+exploreItemsCount: "共 ${count} 条"
 exportAppData: 导出应用数据
 export: 导出
 failedToImport: 导入失败
@@ -2817,6 +2819,8 @@ loadingStepParse: "解析视频地址"
 loadingStepInit: "初始化播放器"
 loadingStepLoad: "加载媒体数据"
 loadingStepBuffer: "缓冲播放"
+downloadStepLoadingInfo: "正在加载详情…"
+downloadStepResolving: "正在解析分集…"
 downloadEpisode: "选择要下载的剧集"
 downloadNotYet: "暂无选集可下载"
 downloadSelectedCount: "下载 ${n} 集"

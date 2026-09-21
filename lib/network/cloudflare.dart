@@ -7,6 +7,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/webview.dart';
 
@@ -264,6 +265,26 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       () => AppWebview(
         initialUrl: url,
         singlePage: true,
+        // Q8：自动检测偶发不退出（已过 CF 但 cookie/标题判断没跟上），
+        // 右上角手动确认强制提取一次并关闭
+        confirmLabel: t.confirm,
+        onConfirm: (controller) async {
+          if (finished) return true;
+          final success = await _trySaveCookies(controller, url, uri);
+          if (!success) {
+            NetLog.info("Cloudflare", "manual confirm: no cf_clearance yet");
+            return false;
+          }
+          final ua = await controller.getUA();
+          if (ua != null) {
+            appdata.implicitData['ua'] = ua;
+            appdata.writeImplicitData();
+          }
+          NetLog.info("Cloudflare", "manual confirm: cookies saved");
+          stopPoller();
+          finishOnce();
+          return true;
+        },
         onStarted: (controller) async {
           lastController = controller;
           final ua = await controller.getUA();

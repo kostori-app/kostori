@@ -40,6 +40,8 @@ class DownloadKeepAlive {
 
   static Future<void> update({
     required List<({String title, double progress})> tasks,
+    // Q20：通知栏标题显示剩余任务数（未完成总数），而非当前传输中的任务数
+    required int remaining,
   }) async {
     if (!Platform.isAndroid || !_active) return;
     try {
@@ -47,6 +49,7 @@ class DownloadKeepAlive {
         'tasks': tasks
             .map((t) => {'title': t.title, 'progress': t.progress})
             .toList(),
+        'remaining': remaining,
       });
     } catch (_) {}
   }

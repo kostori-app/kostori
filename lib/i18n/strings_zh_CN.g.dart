@@ -248,6 +248,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get exit => '退出';
 	@override String get explorePages => '探索页面';
 	@override String get explore => '探索';
+	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条';
+	@override String exploreItemsCount({required Object count}) => '共 ${count} 条';
 	@override String get exportAppData => '导出应用数据';
 	@override String get export => '导出';
 	@override String get failedToImport => '导入失败';
@@ -2793,6 +2795,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get loadingStepInit => '初始化播放器';
 	@override String get loadingStepLoad => '加载媒体数据';
 	@override String get loadingStepBuffer => '缓冲播放';
+	@override String get downloadStepLoadingInfo => '正在加载详情…';
+	@override String get downloadStepResolving => '正在解析分集…';
 	@override String get downloadEpisode => '选择要下载的剧集';
 	@override String get downloadNotYet => '暂无选集可下载';
 	@override String downloadSelectedCount({required Object n}) => '下载 ${n} 集';
@@ -3223,6 +3227,8 @@ extension on TranslationsZhCn {
 			'exit' => '退出',
 			'explorePages' => '探索页面',
 			'explore' => '探索',
+			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条',
+			'exploreItemsCount' => ({required Object count}) => '共 ${count} 条',
 			'exportAppData' => '导出应用数据',
 			'export' => '导出',
 			'failedToImport' => '导入失败',
@@ -3524,10 +3530,10 @@ extension on TranslationsZhCn {
 			'all' => '全部',
 			'cloudflareVerificationRequired' => '需要 Cloudflare 验证',
 			'reloadConfigs' => '重新加载配置',
-			'invalidUrlConfig' => '无效的 URL 配置',
-			'inconsistentVersions' => '版本不一致',
 			_ => null,
 		} ?? switch (path) {
+			'invalidUrlConfig' => '无效的 URL 配置',
+			'inconsistentVersions' => '版本不一致',
 			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
 			'checkUpdateFailed' => '检查更新失败...',
 			'downloadFailed' => '下载失败',
@@ -4038,10 +4044,10 @@ extension on TranslationsZhCn {
 			'isPhysicalDeviceField' => '是否为实体设备',
 			'systemNameField' => '系统名称',
 			'systemVersionField' => '系统版本',
-			'modelNameField' => '型号名称',
-			'identifierForVendorField' => '供应商识别符',
 			_ => null,
 		} ?? switch (path) {
+			'modelNameField' => '型号名称',
+			'identifierForVendorField' => '供应商识别符',
 			'sysnameField' => '系统名称',
 			'nodenameField' => '节点名称',
 			'releaseField' => '发布版本',
@@ -4552,10 +4558,10 @@ extension on TranslationsZhCn {
 			'blockedInvitesList' => '邀请屏蔽列表',
 			'allowMemberInvites' => '允许成员邀请',
 			'letAllMembersInviteOthers' => '允许所有成员邀请其他人加入房间',
-			'declineAndBlock' => '拒绝并屏蔽',
-			'memes' => '表情包',
 			_ => null,
 		} ?? switch (path) {
+			'declineAndBlock' => '拒绝并屏蔽',
+			'memes' => '表情包',
 			'memeSaved' => '已保存到表情包',
 			'networkInfo' => '网络信息',
 			'netLogMeta' => '仅概要',
@@ -5066,10 +5072,10 @@ extension on TranslationsZhCn {
 			'queryFailed' => '查询失败',
 			'screenshotSuccess' => '截图成功',
 			'screenshotFailed' => '截图失败',
-			'noRecordForMonth' => ({required Object month}) => '${month}暂无记录',
-			'screenshotFailedPleaseRetry' => '截图失败，请重试',
 			_ => null,
 		} ?? switch (path) {
+			'noRecordForMonth' => ({required Object month}) => '${month}暂无记录',
+			'screenshotFailedPleaseRetry' => '截图失败，请重试',
 			'shareFailed' => '分享失败',
 			'connectionFailed' => '连接失败',
 			'copySuccess' => '复制成功',
@@ -5580,10 +5586,10 @@ extension on TranslationsZhCn {
 			'modalityText' => '文本',
 			'modalityImage' => '图片',
 			'modalityAudio' => '音频',
-			'modalityVideo' => '视频',
-			'capabilityTools' => '工具',
 			_ => null,
 		} ?? switch (path) {
+			'modalityVideo' => '视频',
+			'capabilityTools' => '工具',
 			'capabilityReasoning' => '推理',
 			'apiFormat' => '接口格式',
 			'apiFormatOpenai' => 'OpenAI（chat）',
@@ -5820,6 +5826,8 @@ extension on TranslationsZhCn {
 			'loadingStepInit' => '初始化播放器',
 			'loadingStepLoad' => '加载媒体数据',
 			'loadingStepBuffer' => '缓冲播放',
+			'downloadStepLoadingInfo' => '正在加载详情…',
+			'downloadStepResolving' => '正在解析分集…',
 			'downloadEpisode' => '选择要下载的剧集',
 			'downloadNotYet' => '暂无选集可下载',
 			'downloadSelectedCount' => ({required Object n}) => '下载 ${n} 集',

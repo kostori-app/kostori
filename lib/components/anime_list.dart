@@ -21,6 +21,7 @@ class AnimeList extends StatefulWidget {
     this.loadPage,
     this.loadNext,
     this.leadingSliver,
+    this.leadingSlivers,
     this.trailingSliver,
     this.errorLeading,
     this.menuBuilder,
@@ -35,6 +36,10 @@ class AnimeList extends StatefulWidget {
   final Future<Res<List<Anime>>> Function(String? next)? loadNext;
 
   final Widget? leadingSliver;
+
+  /// Q3：多个头部 sliver（逐个加入滚动视图，各自的 pinned 才能生效；
+  /// 包在 SliverMainAxisGroup 里时内部 pinned 不起作用，搜索栏就钉不住）
+  final List<Widget>? leadingSlivers;
 
   final Widget? trailingSliver;
 
@@ -214,7 +219,7 @@ class AnimeListState extends State<AnimeList>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString()),
+                '${t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString())} · ${t.exploreItemsCount(count: (_data[_page] ?? const []).length)}',
               ),
             ),
           ),
@@ -354,10 +359,7 @@ class AnimeListState extends State<AnimeList>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    t.pagePM(
-                      p: _page.toString(),
-                      m: (_maxPage ?? '?').toString(),
-                    ),
+                    '${t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString())} · ${t.exploreItemsCount(count: (_data[_page] ?? const []).length)}',
                   ),
                 ),
               ),
@@ -545,6 +547,28 @@ class AnimeListState extends State<AnimeList>
   double _navLift(BuildContext context) =>
       context.findAncestorStateOfType<NaviPaneState>()?.navBottomLift ?? 0;
 
+  /// Q17：滚动模式右下角加载指示器（当前已加载页数 + 条目数）：
+  /// 浮在右下角、悬浮按钮上方，不占内容流
+  Widget _loadedProgressChip(BuildContext context) {
+    final total = _data.values.fold(0, (a, e) => a + e.length);
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.toOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.toOpacity(0.6), width: 0.6),
+      ),
+      child: Text(
+        t.exploreLoadedDetail(
+          pages: _data.length.toString(),
+          count: total.toString(),
+        ),
+        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var type = appdata.settings['animeListDisplayMode'];
@@ -687,6 +711,7 @@ class AnimeListState extends State<AnimeList>
             key: enablePageStorage ? PageStorageKey('scroll$_page') : null,
             controller: widget.controller ?? scrollController,
             slivers: [
+              if (widget.leadingSlivers != null) ...widget.leadingSlivers!,
               if (widget.leadingSliver != null) widget.leadingSliver!,
               SliverGridAnimes(
                 animes: _data[_page] ?? const [],
@@ -765,6 +790,7 @@ class AnimeListState extends State<AnimeList>
             key: enablePageStorage ? PageStorageKey('scroll$_page') : null,
             controller: widget.controller ?? scrollController,
             slivers: [
+              if (widget.leadingSlivers != null) ...widget.leadingSlivers!,
               if (widget.leadingSliver != null) widget.leadingSliver!,
               SliverGridAnimes(
                 animes: _data.values.expand((element) => element).toList(),
@@ -844,6 +870,13 @@ class AnimeListState extends State<AnimeList>
                 child: Center(child: PolygonRefreshIndicator(size: 44)),
               ),
             ),
+          ),
+        // Q17：滚动模式右下角页数/条目指示器（悬浮按钮上方）
+        if (_error == null && _data.isNotEmpty)
+          Positioned(
+            right: 12,
+            bottom: 84,
+            child: _loadedProgressChip(context),
           ),
       ],
     );

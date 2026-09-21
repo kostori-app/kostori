@@ -247,6 +247,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get exit => '退出';
 	@override String get explorePages => '發現頁面';
 	@override String get explore => '發現';
+	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條';
+	@override String exploreItemsCount({required Object count}) => '共 ${count} 條';
 	@override String get exportAppData => '匯出應用數據';
 	@override String get export => '匯出';
 	@override String get failedToImport => '匯入失敗';
@@ -2792,6 +2794,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get loadingStepInit => '初始化播放器';
 	@override String get loadingStepLoad => '載入媒體資料';
 	@override String get loadingStepBuffer => '緩衝播放';
+	@override String get downloadStepLoadingInfo => '正在載入詳情…';
+	@override String get downloadStepResolving => '正在解析分集…';
 	@override String get downloadEpisode => '選擇要下載的集數';
 	@override String get downloadNotYet => '暫無集數可下載';
 	@override String downloadSelectedCount({required Object n}) => '下載 ${n} 集';
@@ -3221,6 +3225,8 @@ extension on TranslationsZhTw {
 			'exit' => '退出',
 			'explorePages' => '發現頁面',
 			'explore' => '發現',
+			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條',
+			'exploreItemsCount' => ({required Object count}) => '共 ${count} 條',
 			'exportAppData' => '匯出應用數據',
 			'export' => '匯出',
 			'failedToImport' => '匯入失敗',
@@ -3523,10 +3529,10 @@ extension on TranslationsZhTw {
 			'cloudflareVerificationRequired' => '需要 Cloudflare 驗證',
 			'reloadConfigs' => '重載配置',
 			'invalidUrlConfig' => '無效的 URL 設定',
-			'inconsistentVersions' => '版本不一致',
-			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
 			_ => null,
 		} ?? switch (path) {
+			'inconsistentVersions' => '版本不一致',
+			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
 			'checkUpdateFailed' => '檢查更新失敗...',
 			'downloadFailed' => '下載失敗',
 			'failedToCheckTheHashValuePleaseTryAgain' => '檢查雜湊值失敗，請重試',
@@ -4037,10 +4043,10 @@ extension on TranslationsZhTw {
 			'totalDiskSizeField' => '總磁碟空間',
 			'isPhysicalDeviceField' => '是否為實體機',
 			'systemNameField' => '系統名稱',
-			'systemVersionField' => '系統版本',
-			'modelNameField' => '型號名稱',
 			_ => null,
 		} ?? switch (path) {
+			'systemVersionField' => '系統版本',
+			'modelNameField' => '型號名稱',
 			'identifierForVendorField' => '供應商識別碼',
 			'sysnameField' => '核心名稱',
 			'nodenameField' => '節點名稱',
@@ -4551,10 +4557,10 @@ extension on TranslationsZhTw {
 			'blockedYourInvites' => '封鎖了你的邀請',
 			'blockedInvitesList' => '邀請封鎖列表',
 			'allowMemberInvites' => '允許成員邀請',
-			'letAllMembersInviteOthers' => '允許所有成員邀請其他人加入房間',
-			'declineAndBlock' => '拒絕並封鎖',
 			_ => null,
 		} ?? switch (path) {
+			'letAllMembersInviteOthers' => '允許所有成員邀請其他人加入房間',
+			'declineAndBlock' => '拒絕並封鎖',
 			'memes' => '表情包',
 			'memeSaved' => '已儲存到表情包',
 			'networkInfo' => '網路資訊',
@@ -5065,10 +5071,10 @@ extension on TranslationsZhTw {
 			'queryFailed' => '查詢失敗',
 			'screenshotSuccess' => '擷圖成功',
 			'screenshotFailed' => '擷圖失敗',
-			'noRecordForMonth' => ({required Object month}) => '${month}暫無記錄',
-			'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
 			_ => null,
 		} ?? switch (path) {
+			'noRecordForMonth' => ({required Object month}) => '${month}暫無記錄',
+			'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
 			'shareFailed' => '分享失敗',
 			'connectionFailed' => '連線失敗',
 			'copySuccess' => '複製成功',
@@ -5579,10 +5585,10 @@ extension on TranslationsZhTw {
 			'modalityImage' => '圖片',
 			'modalityAudio' => '音訊',
 			'modalityVideo' => '影片',
-			'capabilityTools' => '工具',
-			'capabilityReasoning' => '推理',
 			_ => null,
 		} ?? switch (path) {
+			'capabilityTools' => '工具',
+			'capabilityReasoning' => '推理',
 			'apiFormat' => '介面格式',
 			'apiFormatOpenai' => 'OpenAI（chat）',
 			'apiFormatOpenaiResponses' => 'OpenAI Responses',
@@ -5818,6 +5824,8 @@ extension on TranslationsZhTw {
 			'loadingStepInit' => '初始化播放器',
 			'loadingStepLoad' => '載入媒體資料',
 			'loadingStepBuffer' => '緩衝播放',
+			'downloadStepLoadingInfo' => '正在載入詳情…',
+			'downloadStepResolving' => '正在解析分集…',
 			'downloadEpisode' => '選擇要下載的集數',
 			'downloadNotYet' => '暫無集數可下載',
 			'downloadSelectedCount' => ({required Object n}) => '下載 ${n} 集',

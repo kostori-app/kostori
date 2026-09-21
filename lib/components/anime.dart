@@ -1579,7 +1579,9 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  final void Function(Anime, int heroID)? onTap;
+  // Q24：透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
+  // （如历史页）跳转详情时带上才能对上 Hero 动画；老的两参写法仍兼容
+  final void Function(Anime, int heroID, [String? heroTag])? onTap;
 
   final void Function(Anime, int heroID)? onLongPressed;
 
@@ -1640,7 +1642,9 @@ class SliverMasonryAnimes extends ConsumerStatefulWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  final void Function(Anime, int heroID)? onTap;
+  // Q24：透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
+  // （如历史页）跳转详情时带上才能对上 Hero 动画；老的两参写法仍兼容
+  final void Function(Anime, int heroID, [String? heroTag])? onTap;
 
   final void Function(Anime, int heroID)? onLongPressed;
 
@@ -1684,7 +1688,11 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
           menuOptions: widget.menuBuilder?.call(anime),
           onTap: widget.onTap == null
               ? null
-              : () => widget.onTap!(anime, _SliverGridAnimes.heroIDOf(anime)),
+              : () => widget.onTap!(
+                  anime,
+                  _SliverGridAnimes.heroIDOf(anime),
+                  "cover${_heroSeed}_h${_SliverGridAnimes.heroIDOf(anime)}",
+                ),
           onLongPressed: widget.onLongPressed == null
               ? null
               : () =>
@@ -1864,7 +1872,9 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  final void Function(Anime, int heroID)? onTap;
+  // Q24：透出卡片实际使用的 heroTag（带列表种子后缀），自定义 onTap
+  // （如历史页）跳转详情时带上才能对上 Hero 动画；老的两参写法仍兼容
+  final void Function(Anime, int heroID, [String? heroTag])? onTap;
 
   final void Function(Anime, int heroID)? onLongPressed;
 
@@ -1997,6 +2007,7 @@ class _SliverGridAnimes extends StatelessWidget {
                 ? () => onTap!(
                     animes[index],
                     _SliverGridAnimes.heroIDOf(animes[index]),
+                    "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
                   )
                 : null,
             onLongPressed: onLongPressed != null
@@ -2062,6 +2073,7 @@ class _SliverGridAnimes extends StatelessWidget {
                 ? () => onTap!(
                     animes[index],
                     _SliverGridAnimes.heroIDOf(animes[index]),
+                    "cover${_SliverGridAnimes.heroIDOf(animes[index])}_$heroSeed",
                   )
                 : null,
             onLongPressed: onLongPressed != null

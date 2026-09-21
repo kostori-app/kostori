@@ -28,6 +28,7 @@ class DownloadForegroundService : Service() {
         private const val ACTION_STOP = "com.axlmly.kostori.STOP_DOWNLOAD"
         private const val ACTION_UPDATE = "com.axlmly.kostori.UPDATE_DOWNLOAD"
         private const val EXTRA_TASKS = "tasks"
+        private const val EXTRA_REMAINING = "remaining"
         private const val EXTRA_TITLE = "title"
         private const val EXTRA_PROGRESS = "progress"
 
@@ -58,7 +59,7 @@ class DownloadForegroundService : Service() {
             context.startService(intent)
         }
 
-        fun update(context: Context, tasks: List<Map<String, Any>>) {
+        fun update(context: Context, tasks: List<Map<String, Any>>, remaining: Int = tasks.size) {
             val bundles = ArrayList<Bundle>(tasks.size)
             for (t in tasks) {
                 bundles.add(
@@ -71,6 +72,7 @@ class DownloadForegroundService : Service() {
             val intent = Intent(context, DownloadForegroundService::class.java)
                 .setAction(ACTION_UPDATE)
                 .putParcelableArrayListExtra(EXTRA_TASKS, bundles)
+                .putExtra(EXTRA_REMAINING, remaining)
             context.startService(intent)
         }
     }
@@ -102,11 +104,12 @@ class DownloadForegroundService : Service() {
                     stopSelfInternal()
                     return START_NOT_STICKY
                 }
-                showNotification(tasks)
+                val remaining = intent.getIntExtra(EXTRA_REMAINING, tasks.size)
+                showNotification(tasks, remaining)
                 return START_STICKY
             }
             else -> {
-                showNotification(arrayListOf())
+                showNotification(arrayListOf(), 0)
                 return START_STICKY
             }
         }
@@ -165,11 +168,12 @@ class DownloadForegroundService : Service() {
         )
     }
 
-    private fun showNotification(tasks: List<Bundle>) {
+    private fun showNotification(tasks: List<Bundle>, remaining: Int = tasks.size) {
         ensureChannel()
         val rv = RemoteViews(packageName, R.layout.download_notification)
         val count = tasks.size
-        rv.setTextViewText(R.id.notif_count, "下载中 $count 个任务")
+        // Q20：标题显示剩余任务数（未完成总数），而非当前传输中的任务数
+        rv.setTextViewText(R.id.notif_count, "还剩 $remaining 个任务")
 
         for (i in 0 until MAX_VISIBLE) {
             if (i < count) {
@@ -186,8 +190,8 @@ class DownloadForegroundService : Service() {
             }
         }
 
-        if (count > MAX_VISIBLE) {
-            rv.setTextViewText(R.id.notif_more, "另有 ${count - MAX_VISIBLE} 个任务")
+        if (remaining > MAX_VISIBLE) {
+            rv.setTextViewText(R.id.notif_more, "另有 ${remaining - MAX_VISIBLE} 个任务")
             rv.setViewVisibility(R.id.notif_more, View.VISIBLE)
         } else {
             rv.setViewVisibility(R.id.notif_more, View.GONE)

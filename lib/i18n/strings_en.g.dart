@@ -689,6 +689,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Explore'
 	String get explore => 'Explore';
 
+	/// en: 'Loaded ${pages} pages · ${count} items'
+	String exploreLoadedDetail({required Object pages, required Object count}) => 'Loaded ${pages} pages · ${count} items';
+
+	/// en: '${count} items'
+	String exploreItemsCount({required Object count}) => '${count} items';
+
 	/// en: 'Export App Data'
 	String get exportAppData => 'Export App Data';
 
@@ -8302,6 +8308,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Buffering'
 	String get loadingStepBuffer => 'Buffering';
 
+	/// en: 'Loading details…'
+	String get downloadStepLoadingInfo => 'Loading details…';
+
+	/// en: 'Resolving episodes…'
+	String get downloadStepResolving => 'Resolving episodes…';
+
 	/// en: 'Select episode to download'
 	String get downloadEpisode => 'Select episode to download';
 
@@ -9123,6 +9135,8 @@ extension on Translations {
 			'exit' => 'Exit',
 			'explorePages' => 'Explore Pages',
 			'explore' => 'Explore',
+			'exploreLoadedDetail' => ({required Object pages, required Object count}) => 'Loaded ${pages} pages · ${count} items',
+			'exploreItemsCount' => ({required Object count}) => '${count} items',
 			'exportAppData' => 'Export App Data',
 			'export' => 'Export',
 			'failedToImport' => 'Failed to import',
@@ -9417,10 +9431,10 @@ extension on Translations {
 			'debugInfo' => 'Debug Info',
 			'install' => 'Install',
 			'viewOnGithub' => 'View on GitHub',
-			'noProxyOverrides' => 'No Proxy Overrides',
-			'save' => 'Save',
 			_ => null,
 		} ?? switch (path) {
+			'noProxyOverrides' => 'No Proxy Overrides',
+			'save' => 'Save',
 			'mirror' => 'Mirror',
 			'result' => 'Result',
 			'all' => 'All',
@@ -9931,10 +9945,10 @@ extension on Translations {
 			'totalDiskSizeField' => 'totalDiskSize',
 			'isPhysicalDeviceField' => 'isPhysicalDevice',
 			'systemNameField' => 'systemName',
-			'systemVersionField' => 'systemVersion',
-			'modelNameField' => 'modelName',
 			_ => null,
 		} ?? switch (path) {
+			'systemVersionField' => 'systemVersion',
+			'modelNameField' => 'modelName',
 			'identifierForVendorField' => 'identifierForVendor',
 			'sysnameField' => 'sysname',
 			'nodenameField' => 'nodename',
@@ -10445,10 +10459,10 @@ extension on Translations {
 			'blockedYourInvites' => 'blocked your invites',
 			'blockedInvitesList' => 'Blocked Invites',
 			'allowMemberInvites' => 'Allow Member Invites',
-			'letAllMembersInviteOthers' => 'Let all members invite others',
-			'declineAndBlock' => 'Decline & Block',
 			_ => null,
 		} ?? switch (path) {
+			'letAllMembersInviteOthers' => 'Let all members invite others',
+			'declineAndBlock' => 'Decline & Block',
 			'memes' => 'Memes',
 			'memeSaved' => 'Meme saved',
 			'networkInfo' => 'Network Info',
@@ -10959,10 +10973,10 @@ extension on Translations {
 			'screenshotFailed' => 'Screenshot failed',
 			'noRecordForMonth' => ({required Object month}) => 'No record for ${month}',
 			'screenshotFailedPleaseRetry' => 'Screenshot failed, please retry',
-			'shareFailed' => 'Share failed',
-			'connectionFailed' => 'Connection failed',
 			_ => null,
 		} ?? switch (path) {
+			'shareFailed' => 'Share failed',
+			'connectionFailed' => 'Connection failed',
 			'copySuccess' => 'Copy success',
 			'addToFavoritesSuccess' => 'Add to favorites success',
 			'deleteFailed' => 'Delete failed',
@@ -11473,10 +11487,10 @@ extension on Translations {
 			'modalityText' => 'Text',
 			'modalityImage' => 'Image',
 			'modalityAudio' => 'Audio',
-			'modalityVideo' => 'Video',
-			'capabilityTools' => 'Tools',
 			_ => null,
 		} ?? switch (path) {
+			'modalityVideo' => 'Video',
+			'capabilityTools' => 'Tools',
 			'capabilityReasoning' => 'Reasoning',
 			'apiFormat' => 'API format',
 			'apiFormatOpenai' => 'OpenAI (chat)',
@@ -11713,6 +11727,8 @@ extension on Translations {
 			'loadingStepInit' => 'Initializing player',
 			'loadingStepLoad' => 'Loading media',
 			'loadingStepBuffer' => 'Buffering',
+			'downloadStepLoadingInfo' => 'Loading details…',
+			'downloadStepResolving' => 'Resolving episodes…',
 			'downloadEpisode' => 'Select episode to download',
 			'downloadNotYet' => 'No episodes available to download',
 			'downloadSelectedCount' => ({required Object n}) => 'Download ${n} episodes',

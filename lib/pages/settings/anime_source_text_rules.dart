@@ -70,6 +70,16 @@ class _TextRulesManagerPageState extends State<_TextRulesManagerPage> {
     return PopUpWidgetScaffold(
       title: t.textRules,
       tailing: [
+        // Q10：测试按钮（在添加按钮左边，icon 风格）：输入一段文本，
+        // 看多条规则各命中几处、首条命中后的文本是什么
+        IconButton(
+          icon: const Icon(Icons.science_outlined),
+          tooltip: t.preview,
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => const _TextRuleTestDialog(),
+          ),
+        ),
         IconButton(
           icon: const Icon(Icons.add),
           tooltip: t.textRuleAdd,
@@ -382,7 +392,8 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
     final applied = TextRuleStore.rules
         .where((r) => sel.contains(r.id))
         .toList();
-    return TextRuleStore.apply(_sampleCtrl.text, applied);
+    // Q10：源内预览同样单一应用语义（首条命中即停）
+    return TextRuleStore.applyFirstHit(_sampleCtrl.text, applied);
   }
 
   void _save() =>
@@ -828,6 +839,158 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
         ),
       ),
       actions: [Button.filled(onPressed: _save, child: Text(t.confirm))],
+    );
+  }
+}
+
+/// Q10：文本规则测试弹窗：输入一段文本，勾选一条或多条规则，
+/// 展示每条规则的命中情况（命中几处/未命中/正则无效）与
+/// 按优先级单一应用后的最终文本（首条命中即停）。
+class _TextRuleTestDialog extends StatefulWidget {
+  const _TextRuleTestDialog();
+
+  @override
+  State<_TextRuleTestDialog> createState() => _TextRuleTestDialogState();
+}
+
+class _TextRuleTestDialogState extends State<_TextRuleTestDialog> {
+  late final TextEditingController _inputCtrl;
+  late Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _inputCtrl = TextEditingController(text: kTextRulePreviewDefault);
+    _selected = TextRuleStore.rules.map((e) => e.id).toSet();
+  }
+
+  @override
+  void dispose() {
+    _inputCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final rules = TextRuleStore.rules
+        .where((r) => _selected.contains(r.id))
+        .toList();
+    final input = _inputCtrl.text;
+    // 每条规则在原文上的 dryRun（互不干扰，只看各命中几处）
+    final reports = <String, List<TextRuleStepReport>>{
+      for (final r in rules) r.id: TextRuleStore.dryRun(input, r.steps),
+    };
+    final hitRuleIds = <String>{
+      for (final r in rules)
+        if (reports[r.id]!.any((e) => e.state == TextRuleStepState.hit))
+          r.id,
+    };
+    final winner = TextRuleStore.firstHitIndex(input, rules);
+    final result = TextRuleStore.applyFirstHit(input, rules);
+    return ContentDialog(
+      title: t.preview,
+      content: SizedBox(
+        width: double.infinity,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _inputCtrl,
+                  maxLines: null,
+                  minLines: 1,
+                  keyboardType: TextInputType.multiline,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: t.textRulePreviewInput,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (TextRuleStore.rules.isEmpty)
+                  Text(
+                    t.textRuleNone,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  )
+                else
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      for (final r in TextRuleStore.rules)
+                        FilterChip(
+                          label: Text(
+                            r.name.isEmpty ? t.textRuleName : r.name,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          selected: _selected.contains(r.id),
+                          onSelected: (v) => setState(() {
+                            if (v) {
+                              _selected.add(r.id);
+                            } else {
+                              _selected.remove(r.id);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                Text(
+                  t.textRulePreviewResult,
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: 2),
+                SelectableText(
+                  contextMenuBuilder: appEditableSelectionContextMenu,
+                  result,
+                  style: const TextStyle(fontSize: 14, height: 1.4),
+                ),
+                const SizedBox(height: 6),
+                for (var i = 0; i < rules.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      () {
+                        final r = rules[i];
+                        final reps = reports[r.id]!;
+                        final hits = reps
+                            .where((e) => e.state == TextRuleStepState.hit)
+                            .fold(0, (a, e) => a + e.hits);
+                        final name = r.name.isEmpty ? t.textRuleName : r.name;
+                        final marks = StringBuffer(name);
+                        if (i == winner) marks.write(' ✓');
+                        if (reps.any(
+                          (e) => e.state == TextRuleStepState.invalid,
+                        )) {
+                          return '$marks · ${t.textRuleStepInvalid}';
+                        }
+                        if (!hitRuleIds.contains(r.id)) {
+                          return '$marks · ${t.textRuleStepMiss}';
+                        }
+                        return '$marks · ${t.textRuleStepHit(n: hits)}';
+                      }(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: i == winner ? cs.primary : cs.onSurfaceVariant,
+                        fontWeight: i == winner
+                            ? FontWeight.w700
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [Button.filled(onPressed: () => Navigator.pop(context), child: Text(t.confirm))],
     );
   }
 }

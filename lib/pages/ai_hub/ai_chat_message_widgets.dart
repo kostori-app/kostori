@@ -1332,7 +1332,7 @@ class _ChatBubble extends StatelessWidget {
 
   Future<void> _translate(BuildContext context) async {
     // 与选中文本菜单共用同一个翻译结果弹层
-    await showTranslationSheet(content);
+    await showTranslationSheet(context, content);
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/services/download/download_manager.dart';
+import 'package:kostori/utils/io.dart';
 
 /// 下载筛选/分组。
 ///
@@ -771,6 +772,128 @@ class _DownloadGroupItemPickerState extends State<_DownloadGroupItemPicker> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 当前下载根目录（用户设置 > 默认 dataPath/downloads）
+String resolveDownloadDir() {
+  final dir = appdata.implicitData['downloadDir'] as String?;
+  if (dir != null && dir.isNotEmpty) return dir;
+  return '${App.dataPath}/downloads';
+}
+
+/// Q9：存储空间条（总量 + 剩余对比 + 进度条 + 按剩余比例变色）。
+/// 放在下载页外部与下载选择器内共用；刷新适度：
+/// 只在目录变化时自动查一次，其余靠右上角手动刷新（无轮询）。
+class StorageBar extends StatefulWidget {
+  const StorageBar({super.key, this.dir, this.dense = false});
+
+  /// null = 当前下载根目录
+  final String? dir;
+
+  /// 下载选择器内用更紧凑的边距
+  final bool dense;
+
+  @override
+  State<StorageBar> createState() => _StorageBarState();
+}
+
+class _StorageBarState extends State<StorageBar> {
+  String? _loadedDir;
+  Future<({int free, int total})?>? _future;
+
+  void _ensure() {
+    final dir = widget.dir ?? resolveDownloadDir();
+    if (_loadedDir != dir) {
+      _loadedDir = dir;
+      _future = getStorageInfo(dir);
+    }
+  }
+
+  void _refresh() {
+    final dir = widget.dir ?? resolveDownloadDir();
+    setState(() {
+      _loadedDir = dir;
+      _future = getStorageInfo(dir);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _ensure();
+    final cs = Theme.of(context).colorScheme;
+    return FutureBuilder<({int free, int total})?>(
+      future: _future,
+      builder: (context, snap) {
+        final info = snap.data;
+        // 非 Android / 查不到：不占位
+        if (snap.connectionState == ConnectionState.done && info == null) {
+          return const SizedBox.shrink();
+        }
+        final free = info?.free ?? 0;
+        final total = info?.total ?? 0;
+        final ratio = total > 0 ? free / total : 1.0;
+        // 剩余比例颜色：充足主题色，偏低橙色告警，极低红色
+        final color = !snap.hasData
+            ? cs.outlineVariant
+            : ratio > 0.2
+                ? cs.primary
+                : ratio > 0.1
+                    ? Colors.orange
+                    : cs.error;
+        final text = !snap.hasData
+            ? '${t.downloadFreeSpace} …'
+            : '${t.downloadFreeSpace}: ${bytesToReadableString(free)} / ${bytesToReadableString(total)}';
+        return Padding(
+          padding: widget.dense
+              ? const EdgeInsets.only(bottom: 8)
+              : const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Row(
+            children: [
+              Icon(Icons.sd_storage_outlined, size: 16, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      text,
+                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: SizedBox(
+                        height: 4,
+                        child: snap.hasData && total > 0
+                            ? LinearProgressIndicator(
+                                value: ((total - free) / total).clamp(0.0, 1.0),
+                                color: color,
+                                backgroundColor: cs.surfaceContainerHighest,
+                              )
+                            : LinearProgressIndicator(
+                                backgroundColor: cs.surfaceContainerHighest,
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: t.refresh,
+                visualDensity: VisualDensity.compact,
+                iconSize: 16,
+                icon: const Icon(Icons.refresh),
+                onPressed: _refresh,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

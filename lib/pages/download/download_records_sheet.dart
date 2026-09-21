@@ -62,7 +62,13 @@ class DownloadRecordsSheet extends StatelessWidget {
                         : title,
                   ),
                   subtitle: Text(
-                    (r['time'] as String? ?? '').replaceAll('T', ' ').substring(0, 16),
+                    () {
+                      var time = (r['time'] as String? ?? '')
+                          .replaceAll('T', ' ')
+                          .replaceAll('.000', '');
+                      if (time.length > 19) time = time.substring(0, 19);
+                      return time;
+                    }(),
                     style: const TextStyle(fontSize: 11),
                   ),
                   trailing: IconButton(

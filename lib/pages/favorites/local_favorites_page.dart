@@ -703,7 +703,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     _cancel();
   }
 
-  void _onAnimeTap(Anime a, int heroID) {
+  void _onAnimeTap(Anime a, int heroID, [String? heroTag]) {
     if (a.viewMore != null && a.viewMore?.attributes != null) {
       var context = App.mainNavigatorKey!.currentContext!;
       a.viewMore!.jump(context);
@@ -721,6 +721,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
             cover: a.cover,
             title: a.title,
             heroID: heroID,
+            heroTag: heroTag,
           ),
         )
         .then((_) {
@@ -860,7 +861,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     // 非多选：长按由 AnimeTile 在位置弹菜单（含"多选"入口）
                     menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
                     onTap: multiSelectMode
-                        ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
+                        ? (a, heroID, [heroTag]) =>
+                            _onAnimeMultiTap(a, heroID, name)
                         : _onAnimeTap,
                     // 多选模式下长按保留范围选择
                     onLongPressed: multiSelectMode

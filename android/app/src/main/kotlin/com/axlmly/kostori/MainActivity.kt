@@ -198,7 +198,8 @@ class MainActivity : AudioServiceFragmentActivity() {
 
                 "updateDownloadForeground" -> {
                     val rawTasks = call.argument<List<Map<String, Any>>>("tasks") ?: emptyList()
-                    DownloadForegroundService.update(applicationContext, rawTasks)
+                    val remaining = (call.argument<Number>("remaining")?.toInt()) ?: rawTasks.size
+                    DownloadForegroundService.update(applicationContext, rawTasks, remaining)
                     res.success(null)
                 }
 
@@ -280,7 +281,18 @@ class MainActivity : AudioServiceFragmentActivity() {
 
         val storageChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "kostori/storage")
         storageChannel.setMethodCallHandler { call, res ->
-            if (call.method == "getFreeSpace") {
+            if (call.method == "getStorageInfo") {
+                // Q9：下载目录所在分区总量 + 剩余（一次往返，避免两次 StatFs）
+                try {
+                    val rawPath = call.argument<String>("path")
+                    var dir = if (rawPath.isNullOrEmpty()) filesDir else File(rawPath)
+                    if (!dir.exists()) dir = filesDir
+                    val stat = StatFs(dir.absolutePath)
+                    res.success(mapOf("free" to stat.availableBytes, "total" to stat.totalBytes))
+                } catch (e: Exception) {
+                    res.error("STATFS_FAIL", e.message, null)
+                }
+            } else if (call.method == "getFreeSpace") {
                 // 下载目录剩余空间（StatFs，字节）：目录不存在时按 App 私有目录兜底
                 try {
                     val rawPath = call.argument<String>("path")

@@ -264,8 +264,22 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   late String _animeTitle;
   late final TextEditingController _titleCtrl;
 
-  /// 该源选用的文本规则
-  late final List<TextRule> _rules;
+  /// 该源默认选用的文本规则（源内配置）
+  late final List<TextRule> _defaultRules;
+
+  /// Q10：手动选择的文本规则 id（null = 用源内默认）；
+  /// 下载选择器内可手动指定一条规则覆盖源内配置
+  String? _manualRuleId;
+
+  /// 实际生效的规则：手动选择优先，否则源内默认
+  List<TextRule> get _rules {
+    final manual = _manualRuleId;
+    if (manual != null) {
+      final r = TextRuleStore.byId(manual);
+      return r == null ? const [] : [r];
+    }
+    return _defaultRules;
+  }
 
   /// 原始番剧标题（未套用规则）
   late final String _originalTitle;
@@ -302,10 +316,11 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     _ => t.downloading,
   };
 
-  /// 套用该源选中的文本规则（开关关闭或无规则时原样返回）
+  /// 套用文本规则（开关关闭或无规则时原样返回）；
+  /// Q10 单一应用：多条规则按优先级，第一条命中即停
   String _applyRules(String input) =>
       (_useRules && _rules.isNotEmpty)
-      ? TextRuleStore.apply(input, _rules)
+      ? TextRuleStore.applyFirstHit(input, _rules)
       : input;
 
   /// 规则是否至少命中了一处（主标题或任一条目）：开关开着但零匹配时，
@@ -336,9 +351,9 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
     super.initState();
     // 默认不选择任何集，避免误下载整部（尤其是大批量番剧）
     selected = <String>{};
-    _rules = SourceTextRuleConfig.rulesFor(widget.sourceKey);
+    _defaultRules = SourceTextRuleConfig.rulesFor(widget.sourceKey);
     _originalTitle = widget.animeTitle;
-    _useRules = _rules.isNotEmpty;
+    _useRules = _defaultRules.isNotEmpty;
     _animeTitle = _computedTitle();
     _titleCtrl = TextEditingController(text: _animeTitle);
     _group = readDownloadFilter(kDownloadDefaultGroupKey, '');
@@ -598,21 +613,61 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 prefixIcon: const Icon(Icons.title, size: 18),
-                // 一键切换是否套用文本规则；无规则时不显示
-                suffixIcon: _rules.isEmpty
+                // 一键切换是否套用文本规则；Q10：可手动指定一条规则覆盖源内默认
+                suffixIcon: TextRuleStore.rules.isEmpty
                     ? null
-                    : IconButton(
-                        tooltip: _useRules
-                            ? t.textRuleApplied
-                            : t.textRuleNotApplied,
-                        icon: Icon(
-                          Icons.rule,
-                          size: 20,
-                          color: _useRules
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        onPressed: _toggleRules,
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PopupMenuButton<String?>(
+                            tooltip: t.textRuleApply,
+                            icon: Icon(
+                              Icons.rule_folder_outlined,
+                              size: 20,
+                              color: _manualRuleId != null
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                            ),
+                            onSelected: (v) => setState(() {
+                              _manualRuleId = v;
+                              _useRules = _rules.isNotEmpty;
+                              _animeTitle = _computedTitle();
+                              _titleCtrl.text = _animeTitle;
+                            }),
+                            itemBuilder: (_) => [
+                              PopupMenuItem<String?>(
+                                value: null,
+                                child: Text(
+                                  '${t.textRuleApply} (${_defaultRules.length})',
+                                ),
+                              ),
+                              for (final r in TextRuleStore.rules)
+                                PopupMenuItem<String?>(
+                                  value: r.id,
+                                  child: Text(
+                                    r.name.isEmpty ? t.textRuleName : r.name,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          IconButton(
+                            tooltip: _useRules
+                                ? t.textRuleApplied
+                                : t.textRuleNotApplied,
+                            icon: Icon(
+                              Icons.rule,
+                              size: 20,
+                              color: _useRules
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: _toggleRules,
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -652,6 +707,8 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
               ),
             ),
           ),
+          // Q9：当前下载目录存储空间（总量/剩余 + 进度条）
+          const StorageBar(dense: true),
           // 筛选：全部 / 未下载 / 下载中 / 已下载
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -1142,31 +1199,36 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
   bool gone() => cancelled || loading.closed;
   try {
     AnimeDetails? data;
+    Object? infoError;
+    // Q7：加载 Massively 展示当前步骤
+    loading.setMessage('${anime.title} · ${t.downloadStepLoadingInfo}');
     try {
       data = (await source.loadAnimeInfo?.call(anime.id))?.dataOrNull;
-    } catch (_) {}
+    } catch (e) {
+      infoError = e;
+    }
     if (gone()) return;
     if (data == null) {
-      context.showMessage(message: t.downloadFailed);
+      // Q7：错误也要有报告（原因写进提示，而不是只有“下载失败”）
+      final detail = infoError?.toString().split('\n').first ?? '';
+      context.showMessage(
+        message: detail.isEmpty
+            ? t.downloadFailed
+            : '${t.downloadFailed}: $detail',
+        level: LogLevel.error,
+      );
       return;
     }
-    // 写历史：入口封面兜底（详情接口可能不返 cover），之后历史页可回找
-    try {
-      final history = History.fromModel(model: data);
-      if (history.cover.isEmpty && anime.cover.isNotEmpty) {
-        history.cover = anime.cover;
-      }
-      history.time = DateTime.now();
-      await HistoryManager().addHistory(history);
-    } catch (_) {}
     if (gone()) return;
     final episode = data.episode;
     if (episode == null || episode.isEmpty || episode.values.first.isEmpty) {
+      loading.setMessage('${data.title} · ${t.downloadStepResolving}');
       await _openSeriesDownloadPicker(
         context,
         source,
         data,
         anime.id,
+        coverFallback: anime.cover,
         isCancelled: gone,
       );
       return;
@@ -1189,6 +1251,10 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
           );
         }(),
     ];
+    // Q7：历史推后到分集解析完成、选择器打开前再写，
+    // 此时已知集数信息，避免早写导致历史条目内容为空（0/0）
+    await _writeDownloadHistory(data, anime.cover);
+    if (gone()) return;
     await _openAnimeDownloadPicker(
       context,
       source: source,
@@ -1204,12 +1270,26 @@ Future<void> openAnimeDownloadPicker(Anime anime) async {
   }
 }
 
+/// 卡片入口下载流程写历史（推后到分集就绪后调用）：
+/// 入口封面兜底（详情接口可能不返 cover），之后历史页可回找。
+Future<void> _writeDownloadHistory(AnimeDetails data, String coverFallback) async {
+  try {
+    final history = History.fromModel(model: data);
+    if (history.cover.isEmpty && coverFallback.isNotEmpty) {
+      history.cover = coverFallback;
+    }
+    history.time = DateTime.now();
+    await HistoryManager().addHistory(history);
+  } catch (_) {}
+}
+
 /// 卡片入口的系列模式：与详情页 `_onDownloadSeries` 同逻辑
 Future<void> _openSeriesDownloadPicker(
   BuildContext context,
   AnimeSource source,
   AnimeDetails data,
   String animeId, {
+  String coverFallback = '',
   bool Function()? isCancelled,
 }) async {
   if (source.loadSeries == null) {
@@ -1261,6 +1341,8 @@ Future<void> _openSeriesDownloadPicker(
         sourceKey: source.key,
       ),
   ];
+  await _writeDownloadHistory(data, coverFallback);
+  if (isCancelled?.call() ?? false) return;
   await _openAnimeDownloadPicker(
     context,
     source: source,

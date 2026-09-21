@@ -111,18 +111,18 @@ class _SearchResultPageState extends State<SearchResultPage> {
           ],
         ),
         // 搜索栏下方、内容上方：布局切换条
-        leadingSliver: SliverMainAxisGroup(
-          slivers: [
-            SliverSearchBar(controller: controller, action: buildAction()),
-            SliverToBoxAdapter(
-              child: AnimeSourceLayoutBar(
-                sourceKey: widget.sourceKey,
-                subKey: 'search',
-                crossAxisAlignment: CrossAxisAlignment.center,
-              ),
+        // Q3：搜索栏必须是滚动视图直属 sliver 才能 pinned 钉住头部，
+        // 包在 SliverMainAxisGroup 里时 pinned 不生效
+        leadingSlivers: [
+          SliverSearchBar(controller: controller, action: buildAction()),
+          SliverToBoxAdapter(
+            child: AnimeSourceLayoutBar(
+              sourceKey: widget.sourceKey,
+              subKey: 'search',
+              crossAxisAlignment: CrossAxisAlignment.center,
             ),
-          ],
-        ),
+          ),
+        ],
         loadPage: source!.searchPageData!.loadPage == null
             ? null
             : (i) {

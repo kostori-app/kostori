@@ -62,6 +62,8 @@ class AppWebview extends StatefulWidget {
     this.onStarted,
     this.onLoadStop,
     this.onClose,
+    this.confirmLabel,
+    this.onConfirm,
     super.key,
   });
 
@@ -79,6 +81,13 @@ class AppWebview extends StatefulWidget {
 
   /// webview 关闭时回调（用于清理/结束等待）
   final VoidCallback? onClose;
+
+  /// Q8：右上角手动确认按钮文案（CF 验证页等场景：自动检测没退出时
+  /// 用户点一下强制提取 cookie 并关闭）；null 则不显示
+  final String? confirmLabel;
+
+  /// 手动确认回调（返回 true 表示已处理，调用方负责弹栈关闭）
+  final Future<bool> Function(InAppWebViewController controller)? onConfirm;
 
   final bool singlePage;
 
@@ -131,6 +140,20 @@ class _AppWebviewState extends State<AppWebview> {
   @override
   Widget build(BuildContext context) {
     final actions = [
+      // Q8：手动确认（CF 已过但自动检测没退出时兜底）
+      if (widget.confirmLabel != null && widget.onConfirm != null)
+        Tooltip(
+          message: widget.confirmLabel!,
+          child: IconButton(
+            icon: const Icon(Icons.check_circle_outline),
+            onPressed: () async {
+              final c = controller;
+              if (c == null) return;
+              final handled = await widget.onConfirm!(c);
+              if (handled && context.mounted) Navigator.of(context).pop();
+            },
+          ),
+        ),
       Tooltip(
         message: t.more,
         child: IconButton(

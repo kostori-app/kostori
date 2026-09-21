@@ -218,6 +218,8 @@ exitMultiSelect: Exit Multi-Select
 exit: Exit
 explorePages: Explore Pages
 explore: Explore
+exploreLoadedDetail: "Loaded ${pages} pages · ${count} items"
+exploreItemsCount: "${count} items"
 exportAppData: Export App Data
 export: Export
 failedToImport: Failed to import
@@ -2818,6 +2820,8 @@ loadingStepParse: "Resolving video address"
 loadingStepInit: "Initializing player"
 loadingStepLoad: "Loading media"
 loadingStepBuffer: "Buffering"
+downloadStepLoadingInfo: "Loading details…"
+downloadStepResolving: "Resolving episodes…"
 downloadEpisode: "Select episode to download"
 downloadNotYet: "No episodes available to download"
 downloadSelectedCount: "Download ${n} episodes"
