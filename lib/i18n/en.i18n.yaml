@@ -220,9 +220,8 @@ explorePages: Explore Pages
 explore: Explore
 exploreLoadedDetail: "Loaded ${pages} pages · ${count} items"
 exploreItemsCount: "${count} items"
-exploreOverlayItems: "Items ${count}"
-exploreOverlayPages: "Page ${pages}"
-exploreOverlaySections: "Sections ${count}"
+exploreOverlayItemsPages: "${items} items · ${pages} pages"
+exploreOverlayItemsSections: "${items} items · ${sections} sections"
 hideScrollbarForMasonry: "Hide scrollbar in masonry"
 hideScrollbarForMasonryDesc: "Hide the side scrollbar in masonry layout to avoid jitter"
 memo: "Memos"

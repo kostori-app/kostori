@@ -494,124 +494,123 @@ class _ExplorePageState extends State<ExplorePage>
           ),
         ),
         Positioned(top: 0, left: 0, right: 0, child: sourceTabBar),
-        AnimatedBuilder(
-          animation: _fbController,
-          builder: (_, _) => Positioned(
-            bottom: 30,
-            right: 10,
-            child: FadeTransition(
+        // 注意：Positioned 必须是 Stack 的直接子节点，包在 AnimatedBuilder
+        // 里会失效（按钮被当普通 child 排到左上角）——所以 Positioned 在外、
+        // 动画在内。bottom 用主导航高度对齐，紧贴悬浮导航栏上方
+        Positioned(
+          bottom: _fbBottom(context),
+          right: 10,
+          child: AnimatedBuilder(
+            animation: _fbController,
+            builder: (_, _) => FadeTransition(
               opacity: _fbFade,
               child: IgnorePointer(
                 ignoring: !_showFB,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 20, right: 0),
-                  child: GridSpeedDial(
-                    icon: Icons.menu,
-                    activeIcon: Icons.close,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    // 与 FloatingMenu 一致的紧凑圆形 + 磨砂玻璃
-                    frosted: true,
-                    mini: true,
-                    elevation: 0,
-                    buttonSize: const Size(40, 40),
-                    childrenButtonSize: const Size(40, 40),
-                    shape: const CircleBorder(),
-                    iconTheme: const IconThemeData(size: 20),
-                    animatedIconTheme: const IconThemeData(size: 20),
-                    spacing: 6,
-                    spaceBetweenChildren: 4,
-                    direction: SpeedDialDirection.up,
-                    childPadding: const EdgeInsets.all(2),
-                    childrens: [
-                      [
-                        SpeedDialChild(
-                          child: const Icon(Icons.refresh),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: refresh,
-                        ),
-                      ],
-                      [
-                        SpeedDialChild(
-                          child: const Icon(Icons.vertical_align_top),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: () {
-                            String currentSource =
-                                sources[sourceController.index];
-                            int pageIndex =
-                                pageControllers[currentSource]?.index ?? 0;
-                            String currentPageId =
-                                sourcePages[currentSource]![pageIndex];
-                            GlobalState.findOrNull<_SingleExplorePageState>(
-                              _explorePageStateKey(
-                                currentSource,
-                                currentPageId,
-                              ),
-                            )?.toTop();
-                          },
-                        ),
-                      ],
-                      [
-                        SpeedDialChild(
-                          child:
+                child: GridSpeedDial(
+                  icon: Icons.menu,
+                  activeIcon: Icons.close,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  // 与 FloatingMenu 一致的紧凑圆形 + 磨砂玻璃
+                  frosted: true,
+                  mini: true,
+                  elevation: 0,
+                  buttonSize: const Size(40, 40),
+                  childrenButtonSize: const Size(40, 40),
+                  shape: const CircleBorder(),
+                  iconTheme: const IconThemeData(size: 20),
+                  animatedIconTheme: const IconThemeData(size: 20),
+                  spacing: 6,
+                  spaceBetweenChildren: 4,
+                  direction: SpeedDialDirection.up,
+                  childPadding: const EdgeInsets.all(2),
+                  childrens: [
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.refresh),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: refresh,
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.vertical_align_top),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () {
+                          String currentSource =
+                              sources[sourceController.index];
+                          int pageIndex =
+                              pageControllers[currentSource]?.index ?? 0;
+                          String currentPageId =
+                              sourcePages[currentSource]![pageIndex];
+                          GlobalState.findOrNull<_SingleExplorePageState>(
+                            _explorePageStateKey(
+                              currentSource,
+                              currentPageId,
+                            ),
+                          )?.toTop();
+                        },
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child:
+                            appdata.settings['animeListDisplayMode'] == 'paging'
+                            ? Icon(Icons.view_cozy_outlined)
+                            : Icon(Icons.menu),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () {
+                          appdata.settings['animeListDisplayMode'] =
                               appdata.settings['animeListDisplayMode'] ==
                                   'paging'
-                              ? Icon(Icons.view_cozy_outlined)
-                              : Icon(Icons.menu),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: () {
-                            appdata.settings['animeListDisplayMode'] =
-                                appdata.settings['animeListDisplayMode'] ==
-                                    'paging'
-                                ? 'continuous'
-                                : 'paging';
-                            appdata.saveData();
-                            refresh();
-                            setState(() {});
-                          },
-                        ),
-                      ],
-                      [
-                        SpeedDialChild(
-                          child:
-                              appdata.settings.s.exploreHorizontalLayout == true
-                              ? Icon(Icons.view_week)
-                              : Icon(Icons.view_module),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: () {
-                            appdata.settings.update(
-                              (s) => s.copyWith(
-                                exploreHorizontalLayout:
-                                    !appdata.settings.s.exploreHorizontalLayout,
-                              ),
-                            );
-                            appdata.saveData();
-                            setState(() {});
-                          },
-                        ),
-                      ],
+                              ? 'continuous'
+                              : 'paging';
+                          appdata.saveData();
+                          refresh();
+                          setState(() {});
+                        },
+                      ),
                     ],
-                  ),
+                    [
+                      SpeedDialChild(
+                        child:
+                            appdata.settings.s.exploreHorizontalLayout == true
+                            ? Icon(Icons.view_week)
+                            : Icon(Icons.view_module),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () {
+                          appdata.settings.update(
+                            (s) => s.copyWith(
+                              exploreHorizontalLayout:
+                                  !appdata.settings.s.exploreHorizontalLayout,
+                            ),
+                          );
+                          appdata.saveData();
+                          setState(() {});
+                        },
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -619,6 +618,14 @@ class _ExplorePageState extends State<ExplorePage>
         ),
       ],
     );
+  }
+
+  /// 悬浮按钮底距：主导航高度（含安全区）+ 间距，紧贴导航栏上方
+  double _fbBottom(BuildContext context) {
+    final navi = context.findAncestorStateOfType<NaviPaneState>();
+    final inset =
+        navi?.bottomBarHeight ?? MediaQuery.paddingOf(context).bottom;
+    return inset + 15;
   }
 
   @override
@@ -888,11 +895,11 @@ class _MixedExplorePageState
     // 结构保持稳定（始终同一 Stack），避免加载指示器出现时重建 scroll
     // 导致滚动位置被重置跳回顶部；加载下一页时才显示底部悬浮转圈
     final showLoader = isLoading && !isFirstLoading;
-    // Q4：与 AnimeList 连续模式同高（导航栏高度 + 12），两种模式不一边高一边低
+    // 与 AnimeList 一致：悬浮按钮底距 = 主导航高度 + 15
     final navi = context.findAncestorStateOfType<NaviPaneState>();
-    final baseBottom =
-        (navi?.bottomBarHeight ?? MediaQuery.paddingOf(context).bottom) + 12;
-    // Q1：条目总数 + 分区数（两行短文本，与 AnimeList 覆盖层同式样）
+    final navInset =
+        navi?.bottomBarHeight ?? MediaQuery.paddingOf(context).bottom;
+    // 条目总数 + 分区数（单行紧凑小圆片，图二风格）
     var items = 0;
     for (final part in data) {
       if (part is ExplorePagePart) {
@@ -911,7 +918,7 @@ class _MixedExplorePageState
           Positioned(
             left: 0,
             right: 0,
-            bottom: baseBottom,
+            bottom: navInset + 15,
             child: IgnorePointer(
               child: SizedBox(
                 height: 64,
@@ -920,8 +927,8 @@ class _MixedExplorePageState
             ),
           ),
         Positioned(
-          right: 76,
-          bottom: baseBottom,
+          right: 62,
+          bottom: navInset + 15,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
@@ -932,16 +939,16 @@ class _MixedExplorePageState
                 width: 0.6,
               ),
             ),
-            child: Column(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                Icon(Icons.info_outline, size: 13, color: cs.onSurfaceVariant),
+                const SizedBox(width: 5),
                 Text(
-                  t.exploreOverlayItems(count: items.toString()),
-                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                ),
-                Text(
-                  t.exploreOverlaySections(count: data.length.toString()),
+                  t.exploreOverlayItemsSections(
+                    items: items.toString(),
+                    sections: data.length.toString(),
+                  ),
                   style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                 ),
               ],

@@ -208,9 +208,8 @@ explorePages: 發現頁面
 explore: 發現
 exploreLoadedDetail: "已載入 ${pages} 頁 · 共 ${count} 條"
 exploreItemsCount: "共 ${count} 條"
-exploreOverlayItems: "條目 ${count} 條"
-exploreOverlayPages: "頁 ${pages} 頁"
-exploreOverlaySections: "分區 ${count} 個"
+exploreOverlayItemsPages: "${items} 條 · ${pages} 頁"
+exploreOverlayItemsSections: "${items} 條 · ${sections} 分區"
 hideScrollbarForMasonry: "瀑布流隱藏滾動條"
 hideScrollbarForMasonryDesc: "瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐"
 memo: "備忘錄"

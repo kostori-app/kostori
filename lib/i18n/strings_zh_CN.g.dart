@@ -250,9 +250,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get explore => '探索';
 	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条';
 	@override String exploreItemsCount({required Object count}) => '共 ${count} 条';
-	@override String exploreOverlayItems({required Object count}) => '条目 ${count} 条';
-	@override String exploreOverlayPages({required Object pages}) => '页 ${pages} 页';
-	@override String exploreOverlaySections({required Object count}) => '分区 ${count} 个';
+	@override String exploreOverlayItemsPages({required Object items, required Object pages}) => '${items} 条 · ${pages} 页';
+	@override String exploreOverlayItemsSections({required Object items, required Object sections}) => '${items} 条 · ${sections} 分区';
 	@override String get hideScrollbarForMasonry => '瀑布流隐藏滚动条';
 	@override String get hideScrollbarForMasonryDesc => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐';
 	@override String get memo => '备忘录';
@@ -3241,9 +3240,8 @@ extension on TranslationsZhCn {
 			'explore' => '探索',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条',
 			'exploreItemsCount' => ({required Object count}) => '共 ${count} 条',
-			'exploreOverlayItems' => ({required Object count}) => '条目 ${count} 条',
-			'exploreOverlayPages' => ({required Object pages}) => '页 ${pages} 页',
-			'exploreOverlaySections' => ({required Object count}) => '分区 ${count} 个',
+			'exploreOverlayItemsPages' => ({required Object items, required Object pages}) => '${items} 条 · ${pages} 页',
+			'exploreOverlayItemsSections' => ({required Object items, required Object sections}) => '${items} 条 · ${sections} 分区',
 			'hideScrollbarForMasonry' => '瀑布流隐藏滚动条',
 			'hideScrollbarForMasonryDesc' => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐',
 			'memo' => '备忘录',
@@ -3542,9 +3540,9 @@ extension on TranslationsZhCn {
 			'cameo' => '客串',
 			'idleCorner' => '闲角',
 			'unknown' => '未知',
+			'debugInfo' => '调试信息',
 			_ => null,
 		} ?? switch (path) {
-			'debugInfo' => '调试信息',
 			'install' => '安装',
 			'viewOnGithub' => '在 GitHub 上查看',
 			'noProxyOverrides' => '无代理覆写',
@@ -4056,9 +4054,9 @@ extension on TranslationsZhCn {
 			'deviceField' => '设备',
 			'productField' => '产品',
 			'manufacturerField' => '制造商',
+			'versionReleaseField' => '版本发布',
 			_ => null,
 		} ?? switch (path) {
-			'versionReleaseField' => '版本发布',
 			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '显示',
 			'hardwareField' => '硬件',
@@ -4570,9 +4568,9 @@ extension on TranslationsZhCn {
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} 取消了回应 ${o}',
 			'noUsersAvailableToInvite' => '暂无可用邀请的用户',
 			'inviteToRoom' => '邀请加入房间',
+			'invite' => '邀请',
 			_ => null,
 		} ?? switch (path) {
-			'invite' => '邀请',
 			'invited' => '已邀请',
 			'roomInvite' => '房间邀请',
 			'invitedYouTo' => '邀请你加入',
@@ -5084,9 +5082,9 @@ extension on TranslationsZhCn {
 			'addressAlreadyExists' => '地址已存在',
 			'pleaseEnableAtLeastOneAddress' => '请先开启至少一个地址',
 			'requestFailed' => '请求失败',
+			'allCopiedSuccess' => '全部复制成功',
 			_ => null,
 		} ?? switch (path) {
-			'allCopiedSuccess' => '全部复制成功',
 			'bindBangumiIdSuccess' => '绑定Bangumi ID成功',
 			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			'applySuccess' => '应用成功',
@@ -5598,9 +5596,9 @@ extension on TranslationsZhCn {
 			'modelType' => '模型类型',
 			'inputModality' => '输入模态',
 			'outputModality' => '输出模态',
+			'supportsReasoning' => '支持推理',
 			_ => null,
 		} ?? switch (path) {
-			'supportsReasoning' => '支持推理',
 			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '图像',

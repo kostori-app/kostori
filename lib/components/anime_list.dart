@@ -574,9 +574,8 @@ class AnimeListState extends State<AnimeList>
     return _flatCache;
   }
 
-  /// Q17/Q1：滚动模式右下角加载指示器：两行短文本
-  /// （上面条目数、下面页数），备用导航高度置底，
-  /// 横向避开右下角悬浮按钮（right 76），不占内容流
+  /// 滚动模式右下角加载指示器：单行紧凑小圆片（ⓘ 条目数 · 页数），
+  /// 与右下角悬浮按钮同一底距、位于其左侧（图二风格）
   Widget _loadedProgressChip(BuildContext context) {
     final total = _flatAnimes().length;
     final cs = Theme.of(context).colorScheme;
@@ -587,16 +586,16 @@ class AnimeListState extends State<AnimeList>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: cs.outlineVariant.toOpacity(0.6), width: 0.6),
       ),
-      child: Column(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          Icon(Icons.info_outline, size: 13, color: cs.onSurfaceVariant),
+          const SizedBox(width: 5),
           Text(
-            t.exploreOverlayItems(count: total.toString()),
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-          ),
-          Text(
-            t.exploreOverlayPages(pages: _data.length.toString()),
+            t.exploreOverlayItemsPages(
+              items: total.toString(),
+              pages: _data.length.toString(),
+            ),
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
           ),
         ],
@@ -907,12 +906,11 @@ class AnimeListState extends State<AnimeList>
               ),
             ),
           ),
-        // Q1：滚动模式右下角页数/条目指示器（与底部转圈同高置底，
-        // 横向避开悬浮按钮）
+        // 滚动模式右下角指示器：与悬浮按钮同一底距（右下角、按钮左侧）
         if (_error == null && _data.isNotEmpty)
           Positioned(
-            right: 76,
-            bottom: _bottomNavInset(context) + 12 + _navLift(context),
+            right: 62,
+            bottom: _bottomNavInset(context) + 15,
             child: _loadedProgressChip(context),
           ),
       ],

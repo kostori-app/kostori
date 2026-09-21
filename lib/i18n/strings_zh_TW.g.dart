@@ -249,9 +249,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get explore => '發現';
 	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條';
 	@override String exploreItemsCount({required Object count}) => '共 ${count} 條';
-	@override String exploreOverlayItems({required Object count}) => '條目 ${count} 條';
-	@override String exploreOverlayPages({required Object pages}) => '頁 ${pages} 頁';
-	@override String exploreOverlaySections({required Object count}) => '分區 ${count} 個';
+	@override String exploreOverlayItemsPages({required Object items, required Object pages}) => '${items} 條 · ${pages} 頁';
+	@override String exploreOverlayItemsSections({required Object items, required Object sections}) => '${items} 條 · ${sections} 分區';
 	@override String get hideScrollbarForMasonry => '瀑布流隱藏滾動條';
 	@override String get hideScrollbarForMasonryDesc => '瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐';
 	@override String get memo => '備忘錄';
@@ -3239,9 +3238,8 @@ extension on TranslationsZhTw {
 			'explore' => '發現',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已載入 ${pages} 頁 · 共 ${count} 條',
 			'exploreItemsCount' => ({required Object count}) => '共 ${count} 條',
-			'exploreOverlayItems' => ({required Object count}) => '條目 ${count} 條',
-			'exploreOverlayPages' => ({required Object pages}) => '頁 ${pages} 頁',
-			'exploreOverlaySections' => ({required Object count}) => '分區 ${count} 個',
+			'exploreOverlayItemsPages' => ({required Object items, required Object pages}) => '${items} 條 · ${pages} 頁',
+			'exploreOverlayItemsSections' => ({required Object items, required Object sections}) => '${items} 條 · ${sections} 分區',
 			'hideScrollbarForMasonry' => '瀑布流隱藏滾動條',
 			'hideScrollbarForMasonryDesc' => '瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐',
 			'memo' => '備忘錄',
@@ -3541,9 +3539,9 @@ extension on TranslationsZhTw {
 			'idleCorner' => '閒角',
 			'unknown' => '未知',
 			'debugInfo' => '調試資訊',
+			'install' => '安裝',
 			_ => null,
 		} ?? switch (path) {
-			'install' => '安裝',
 			'viewOnGithub' => '在 GitHub 上查看',
 			'noProxyOverrides' => '無代理覆寫',
 			'save' => '儲存',
@@ -4055,9 +4053,9 @@ extension on TranslationsZhTw {
 			'modelField' => '型號',
 			'deviceField' => '設備',
 			'productField' => '產品',
+			'manufacturerField' => '製造商',
 			_ => null,
 		} ?? switch (path) {
-			'manufacturerField' => '製造商',
 			'versionReleaseField' => '版本發佈',
 			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '顯示',
@@ -4569,9 +4567,9 @@ extension on TranslationsZhTw {
 			'pReactedWithO' => ({required Object p, required Object o}) => '${p} 對訊息回應了 ${o}',
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} 移除了回應 ${o}',
 			'noUsersAvailableToInvite' => '暫無可用邀請使用者',
+			'inviteToRoom' => '邀請加入房間',
 			_ => null,
 		} ?? switch (path) {
-			'inviteToRoom' => '邀請加入房間',
 			'invite' => '邀請',
 			'invited' => '已邀請',
 			'roomInvite' => '房間邀請',
@@ -5083,9 +5081,9 @@ extension on TranslationsZhTw {
 			'addressAlreadyExists' => '地址已存在',
 			'pleaseEnableAtLeastOneAddress' => '請先啟用至少一個位址',
 			'requestFailed' => '請求失敗',
+			'allCopiedSuccess' => '全部複製成功',
 			_ => null,
 		} ?? switch (path) {
-			'allCopiedSuccess' => '全部複製成功',
 			'notBoundToBangumi' => '該動漫尚未綁定 Bangumi 條目',
 			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
 			'applySuccess' => '應用成功',
@@ -5597,9 +5595,9 @@ extension on TranslationsZhTw {
 			'inputModality' => '輸入模態',
 			'outputModality' => '輸出模態',
 			'supportsReasoning' => '支援推理',
+			'capabilities' => '能力',
 			_ => null,
 		} ?? switch (path) {
-			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '圖像',
 			'modelTypeEmbedding' => '嵌入',

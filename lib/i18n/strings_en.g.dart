@@ -695,14 +695,11 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${count} items'
 	String exploreItemsCount({required Object count}) => '${count} items';
 
-	/// en: 'Items ${count}'
-	String exploreOverlayItems({required Object count}) => 'Items ${count}';
+	/// en: '${items} items · ${pages} pages'
+	String exploreOverlayItemsPages({required Object items, required Object pages}) => '${items} items · ${pages} pages';
 
-	/// en: 'Page ${pages}'
-	String exploreOverlayPages({required Object pages}) => 'Page ${pages}';
-
-	/// en: 'Sections ${count}'
-	String exploreOverlaySections({required Object count}) => 'Sections ${count}';
+	/// en: '${items} items · ${sections} sections'
+	String exploreOverlayItemsSections({required Object items, required Object sections}) => '${items} items · ${sections} sections';
 
 	/// en: 'Hide scrollbar in masonry'
 	String get hideScrollbarForMasonry => 'Hide scrollbar in masonry';
@@ -9173,9 +9170,8 @@ extension on Translations {
 			'explore' => 'Explore',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => 'Loaded ${pages} pages · ${count} items',
 			'exploreItemsCount' => ({required Object count}) => '${count} items',
-			'exploreOverlayItems' => ({required Object count}) => 'Items ${count}',
-			'exploreOverlayPages' => ({required Object pages}) => 'Page ${pages}',
-			'exploreOverlaySections' => ({required Object count}) => 'Sections ${count}',
+			'exploreOverlayItemsPages' => ({required Object items, required Object pages}) => '${items} items · ${pages} pages',
+			'exploreOverlayItemsSections' => ({required Object items, required Object sections}) => '${items} items · ${sections} sections',
 			'hideScrollbarForMasonry' => 'Hide scrollbar in masonry',
 			'hideScrollbarForMasonryDesc' => 'Hide the side scrollbar in masonry layout to avoid jitter',
 			'memo' => 'Memos',
@@ -9467,9 +9463,9 @@ extension on Translations {
 			'characterIntroduction' => 'Character Introduction',
 			'voiceActorC' => ({required Object c}) => 'Voice Actor: ${c}',
 			'episodeEN' => ({required Object e, required Object n}) => 'Episode ${e}: ${n}',
+			'hotspot' => 'hotspot',
 			_ => null,
 		} ?? switch (path) {
-			'hotspot' => 'hotspot',
 			'completed' => 'Completed',
 			'mainCharacter' => 'Main character',
 			'supportingCharacter' => 'Supporting character',
@@ -9981,9 +9977,9 @@ extension on Translations {
 			'modelField' => 'model',
 			'deviceField' => 'device',
 			'productField' => 'product',
+			'manufacturerField' => 'manufacturer',
 			_ => null,
 		} ?? switch (path) {
-			'manufacturerField' => 'manufacturer',
 			'versionReleaseField' => 'version_release',
 			'versionSdkIntField' => 'version_sdkInt',
 			'displayField' => 'display',
@@ -10495,9 +10491,9 @@ extension on Translations {
 			'pReactedWithO' => ({required Object p, required Object o}) => '${p} reacted with ${o}',
 			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} removed reaction ${o}',
 			'noUsersAvailableToInvite' => 'No users available to invite',
+			'inviteToRoom' => 'Invite to Room',
 			_ => null,
 		} ?? switch (path) {
-			'inviteToRoom' => 'Invite to Room',
 			'invite' => 'Invite',
 			'invited' => 'invited',
 			'roomInvite' => 'Room Invite',
@@ -11009,9 +11005,9 @@ extension on Translations {
 			'requestFailed' => 'Request failed',
 			'allCopiedSuccess' => 'All copied success',
 			'bindBangumiIdSuccess' => 'Bangumi ID bound successfully',
+			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
 			_ => null,
 		} ?? switch (path) {
-			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
 			'applySuccess' => 'Apply success',
 			'noChanges' => 'No changes',
 			'applyFailed' => 'Apply failed',
@@ -11523,9 +11519,9 @@ extension on Translations {
 			'modelType' => 'Model type',
 			'inputModality' => 'Input modalities',
 			'outputModality' => 'Output modalities',
+			'supportsReasoning' => 'Supports reasoning',
 			_ => null,
 		} ?? switch (path) {
-			'supportsReasoning' => 'Supports reasoning',
 			'capabilities' => 'Capabilities',
 			'modelTypeChat' => 'Chat',
 			'modelTypeImage' => 'Image',
