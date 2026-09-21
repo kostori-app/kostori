@@ -622,8 +622,7 @@ class ParamCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                title,
+              AppSelectableText(title,
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -635,8 +634,7 @@ class ParamCard extends StatelessWidget {
                   .map(
                     (e) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SelectableText.rich(contextMenuBuilder: appEditableSelectionContextMenu,
-                        TextSpan(
+                      child: AppSelectableText.rich(TextSpan(
                           children: [
                             TextSpan(
                               text: '${e.key}: ',
@@ -985,15 +983,13 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                          t.source,
+                        AppSelectableText(t.source,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           scrollPhysics: const NeverScrollableScrollPhysics(),
                         ),
                         const SizedBox(height: 8),
-                        SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                          'URI: ${widget.source.videoUrl}',
+                        AppSelectableText('URI: ${widget.source.videoUrl}',
                           style: Theme.of(context).textTheme.bodyMedium,
                           scrollPhysics: const NeverScrollableScrollPhysics(),
                         ),
@@ -1044,8 +1040,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                t.requestHeaders,
+              AppSelectableText(t.requestHeaders,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -1053,8 +1048,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               ),
               const SizedBox(height: 8),
               if (entries.isEmpty)
-                SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                  t.playerNoRequestHeaders,
+                AppSelectableText(t.playerNoRequestHeaders,
                   style: Theme.of(context).textTheme.bodyMedium,
                   scrollPhysics: const NeverScrollableScrollPhysics(),
                 )
@@ -1062,8 +1056,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 ...entries.map(
                   (e) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                      '${e.key}: ${e.value}',
+                    child: AppSelectableText('${e.key}: ${e.value}',
                       style: Theme.of(context).textTheme.bodySmall,
                       scrollPhysics: const NeverScrollableScrollPhysics(),
                     ),
@@ -1291,8 +1284,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                         ),
                       ),
                       Expanded(
-                        child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                          row.value.isEmpty ? '-' : row.value,
+                        child: AppSelectableText(row.value.isEmpty ? '-' : row.value,
                           style: const TextStyle(fontSize: 12),
                         ),
                       ),

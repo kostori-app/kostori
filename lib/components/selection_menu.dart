@@ -27,6 +27,76 @@ class _AppSelectionAreaState extends State<AppSelectionArea> {
   }
 }
 
+/// 复用项目自定义选中菜单的 [SelectableText]：固定挂
+/// [appEditableSelectionContextMenu]，调用点无需再重复传 contextMenuBuilder。
+class AppSelectableText extends SelectableText {
+  const AppSelectableText(
+    super.data, {
+    super.key,
+    super.focusNode,
+    super.style,
+    super.strutStyle,
+    super.textAlign,
+    super.textDirection,
+    super.textScaler,
+    super.showCursor,
+    super.autofocus,
+    super.minLines,
+    super.maxLines,
+    super.cursorWidth,
+    super.cursorHeight,
+    super.cursorRadius,
+    super.cursorColor,
+    super.selectionColor,
+    super.selectionHeightStyle,
+    super.selectionWidthStyle,
+    super.dragStartBehavior,
+    super.enableInteractiveSelection,
+    super.selectionControls,
+    super.onTap,
+    super.scrollPhysics,
+    super.scrollBehavior,
+    super.semanticsLabel,
+    super.textHeightBehavior,
+    super.textWidthBasis,
+    super.onSelectionChanged,
+    super.magnifierConfiguration,
+  }) : super(contextMenuBuilder: appEditableSelectionContextMenu);
+
+  const AppSelectableText.rich(
+    super.textSpan, {
+    super.key,
+    super.focusNode,
+    super.style,
+    super.strutStyle,
+    super.textAlign,
+    super.textDirection,
+    super.textScaler,
+    super.showCursor,
+    super.autofocus,
+    super.minLines,
+    super.maxLines,
+    super.cursorWidth,
+    super.cursorHeight,
+    super.cursorRadius,
+    super.cursorColor,
+    super.selectionColor,
+    super.selectionHeightStyle,
+    super.selectionWidthStyle,
+    super.dragStartBehavior,
+    super.enableInteractiveSelection,
+    super.selectionControls,
+    super.onTap,
+    super.scrollPhysics,
+    super.scrollBehavior,
+    super.semanticsLabel,
+    super.textHeightBehavior,
+    super.textWidthBasis,
+    super.onSelectionChanged,
+    super.magnifierConfiguration,
+  }) : super.rich(contextMenuBuilder: appEditableSelectionContextMenu);
+}
+
 /// 框架默认项过滤：`state.contextMenuButtonItems` 在 Android 上还会带上
 /// 其他 App 注册的 `ACTION_PROCESS_TEXT` 项（如词典/其他客户端的“在XX内打开”），
 /// 用户没装过也会觉得莫名其妙。这里只保留系统基础项，其余一律丢掉，
@@ -326,7 +396,7 @@ class _TranslationSheetState extends State<_TranslationSheet> {
                 width: 0.6,
               ),
             ),
-            child: SelectableText(
+            child: AppSelectableText(
               widget.source,
               style: TextStyle(
                 fontSize: 13,
@@ -354,7 +424,7 @@ class _TranslationSheetState extends State<_TranslationSheet> {
               ],
             ),
             const SizedBox(height: 10),
-            SelectableText(
+            AppSelectableText(
               result,
               style: const TextStyle(fontSize: 15, height: 1.7),
             ),

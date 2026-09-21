@@ -267,7 +267,7 @@ class _GenericPluginCard extends StatelessWidget {
         context: App.rootContext,
         builder: (_) => ContentDialog(
           title: label.isEmpty ? plugin.name : label,
-          content: SingleChildScrollView(child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, text)),
+          content: SingleChildScrollView(child: AppSelectableText(text)),
           actions: [
             Button.filled(
               onPressed: () => Navigator.of(App.rootContext).pop(),
@@ -979,8 +979,7 @@ class _ImageTextSectionState extends State<_ImageTextSection> {
           if (image.isNotEmpty && text.isNotEmpty) const SizedBox(height: 8),
           if (text.isNotEmpty)
             // 可选中复制
-            SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-              text,
+            AppSelectableText(text,
               style: const TextStyle(fontSize: 13, height: 1.5),
             ),
           if (text.isNotEmpty)

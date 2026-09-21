@@ -146,9 +146,7 @@ class _MemoPageState extends State<MemoPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SelectableText(
-                                  contextMenuBuilder:
-                                      appEditableSelectionContextMenu,
+                                AppSelectableText(
                                   memo.content,
                                   style: const TextStyle(
                                     fontSize: 14,

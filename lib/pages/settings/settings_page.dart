@@ -1092,8 +1092,7 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                      child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                        result,
+                      child: AppSelectableText(result,
                         style: const TextStyle(fontSize: 15, height: 1.6),
                       ),
                     ),

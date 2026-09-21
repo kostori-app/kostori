@@ -163,8 +163,7 @@ class CustomMarkdownWidget extends StatelessWidget {
       markdown = selectable ? AppSelectionArea(child: column) : column;
     } catch (_) {
       markdown = AppSelectionArea(
-        child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-          data,
+        child: AppSelectableText(data,
           style: TextStyle(color: textColor, fontSize: 14, height: 1.6),
         ),
       );

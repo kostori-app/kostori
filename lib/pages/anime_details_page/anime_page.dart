@@ -730,8 +730,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   ),
                                 ),
                                 if (anime.subTitle != null)
-                                  SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                                    anime.subTitle!,
+                                  AppSelectableText(anime.subTitle!,
                                     style: ts.s14,
                                     maxLines: 2,
                                     scrollPhysics:
@@ -1294,7 +1293,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             ListTile(title: Text(t.myRating)),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, commentRecord!.comment!)
+              child: AppSelectableText(commentRecord!.comment!)
                   .fixWidth(double.infinity),
             ),
           ],

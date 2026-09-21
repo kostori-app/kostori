@@ -1499,8 +1499,7 @@ class _DownloadTile extends StatelessWidget {
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 360),
           child: SingleChildScrollView(
-            child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-              buf.toString(),
+            child: AppSelectableText(buf.toString(),
               style: const TextStyle(fontSize: 12),
             ),
           ),
@@ -1519,8 +1518,7 @@ class _DownloadTile extends StatelessWidget {
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 320),
           child: SingleChildScrollView(
-            child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-              task.error ?? '',
+            child: AppSelectableText(task.error ?? '',
               style: const TextStyle(fontSize: 12),
             ),
           ),

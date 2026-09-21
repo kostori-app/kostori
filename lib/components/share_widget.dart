@@ -427,8 +427,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                             children: [
                               Text(anime.title, style: ts.s20),
                               if (anime.subTitle != null)
-                                SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                                  anime.subTitle!,
+                                AppSelectableText(anime.subTitle!,
                                   style: ts.s14,
                                   scrollPhysics:
                                       const NeverScrollableScrollPhysics(),
@@ -461,8 +460,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     vertical: 16,
                     horizontal: 16,
                   ),
-                  child: SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                    anime.description!,
+                  child: AppSelectableText(anime.description!,
                   ).fixWidth(double.infinity),
                 ),
                 ShareQrCode(

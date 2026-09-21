@@ -290,8 +290,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                     ),
                                               ),
                                             ),
-                                            SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                                              characterFullItem.infobox
+                                            AppSelectableText(characterFullItem.infobox
                                                   .map(
                                                     (item) =>
                                                         '${item.key}: ${item.values.map((v) => v.value).join(", ")}',

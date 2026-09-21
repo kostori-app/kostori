@@ -487,8 +487,7 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  SelectableText(contextMenuBuilder: appEditableSelectionContextMenu,
-                    _preview,
+                  AppSelectableText(_preview,
                     style: const TextStyle(fontSize: 14, height: 1.4),
                   ),
                 ],
@@ -718,7 +717,7 @@ class _TextRuleEditorDialogState extends State<_TextRuleEditorDialog> {
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 2),
-          SelectableText(contextMenuBuilder: appEditableSelectionContextMenu, result, style: const TextStyle(fontSize: 13)),
+          AppSelectableText(result, style: const TextStyle(fontSize: 13)),
           const SizedBox(height: 6),
           for (var i = 0; i < reports.length; i++)
             if (reports[i].state != TextRuleStepState.skipped)
@@ -947,8 +946,7 @@ class _TextRuleTestDialogState extends State<_TextRuleTestDialog> {
                   style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                 ),
                 const SizedBox(height: 2),
-                SelectableText(
-                  contextMenuBuilder: appEditableSelectionContextMenu,
+                AppSelectableText(
                   result,
                   style: const TextStyle(fontSize: 14, height: 1.4),
                 ),
