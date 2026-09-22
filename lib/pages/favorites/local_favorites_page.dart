@@ -167,10 +167,34 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         : effectiveFolders[newIndex];
     favoritesController.setIndex(newIndex);
 
+    // 记录当前各分组滚动位置：内层滚动视图的 key 含内容签名(sig)，
+    // 列表重排（如从详情页返回后标记"最近观看"）会换 key 重建、导致回到顶部，
+    // 这里在重建后把滚动位置还原回去。
+    final savedOffsets = <ScrollController, double>{
+      for (final c in _folderControllers.values)
+        if (c.hasClients) c: c.offset,
+    };
+
     setState(() {
       favoritesController.setAnimes(result);
       favoritesController.setFolder(newFolder);
     });
+
+    if (savedOffsets.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        savedOffsets.forEach((controller, offset) {
+          if (!controller.hasClients) return;
+          final target = offset.clamp(
+            0.0,
+            controller.position.maxScrollExtent,
+          );
+          if ((controller.offset - target).abs() > 0.5) {
+            controller.jumpTo(target);
+          }
+        });
+      });
+    }
 
     favPage.setFolder(false, newFolder.isEmpty ? null : newFolder);
     favoritesController.setIsRefreshEnabled(false);
