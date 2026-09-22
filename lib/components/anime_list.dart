@@ -853,19 +853,38 @@ class AnimeListState extends State<AnimeList>
     );
 
     if (_error != null && _data.isEmpty) {
-      return Column(
+      return Stack(
         children: [
-          if (widget.errorLeading != null) widget.errorLeading!,
-          pageSelecto,
-          Expanded(
-            child: NetworkError(
-              withAppbar: false,
-              message: _error!,
-              retry: () {
-                setState(() {
-                  _error = null;
-                });
-              },
+          Positioned.fill(
+            child: Column(
+              children: [
+                if (widget.errorLeading != null) widget.errorLeading!,
+                Expanded(
+                  child: NetworkError(
+                    withAppbar: false,
+                    message: _error!,
+                    retry: () {
+                      setState(() {
+                        _error = null;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 翻页条贴底（与分页模式一致），别顶到顶部状态栏下方
+          Positioned(
+            right: 0,
+            left: 0,
+            bottom: 0,
+            child: ClipRect(
+              child: BlurEffect(
+                child: Container(
+                  color: Theme.of(context).colorScheme.surface.toOpacity(0.85),
+                  child: pageSelecto,
+                ),
+              ),
             ),
           ),
         ],
