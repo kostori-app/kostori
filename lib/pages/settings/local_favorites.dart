@@ -37,7 +37,7 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   help: t.longPressOnTheFavoriteButtonToQuicklyAddToThisFolder,
                   optionTranslation: {
                     for (var e in LocalFavoritesManager().folderNames)
-                      if (!['_default','default','默认'].contains(e)) e: e,
+                      if (!['_default', 'default', '默认'].contains(e)) e: e,
                   },
                 ),
                 SelectSetting(
@@ -47,7 +47,8 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
-                      if (!['_default','default','默认'].contains(e) && !excludeSet.contains(e) ||
+                      if (!['_default', 'default', '默认'].contains(e) &&
+                              !excludeSet.contains(e) ||
                           e == appdata.settings.s.favoriteTypeWish)
                         e: e,
                   },
@@ -59,7 +60,8 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
-                      if (!['_default','default','默认'].contains(e) && !excludeSet.contains(e) ||
+                      if (!['_default', 'default', '默认'].contains(e) &&
+                              !excludeSet.contains(e) ||
                           e == appdata.settings.s.favoriteTypeDoing)
                         e: e,
                   },
@@ -71,7 +73,8 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
-                      if (!['_default','default','默认'].contains(e) && !excludeSet.contains(e) ||
+                      if (!['_default', 'default', '默认'].contains(e) &&
+                              !excludeSet.contains(e) ||
                           e == appdata.settings.s.favoriteTypeCollect)
                         e: e,
                   },
@@ -83,7 +86,8 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
-                      if (!['_default','default','默认'].contains(e) && !excludeSet.contains(e) ||
+                      if (!['_default', 'default', '默认'].contains(e) &&
+                              !excludeSet.contains(e) ||
                           e == appdata.settings.s.favoriteTypeOnHold)
                         e: e,
                   },
@@ -95,7 +99,8 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
-                      if (!['_default','default','默认'].contains(e) && !excludeSet.contains(e) ||
+                      if (!['_default', 'default', '默认'].contains(e) &&
+                              !excludeSet.contains(e) ||
                           e == appdata.settings.s.favoriteTypeDropped)
                         e: e,
                   },

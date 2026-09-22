@@ -6,9 +6,8 @@ Widget _statsSourceChip(BuildContext context, String text) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
-      color: Theme.of(
-        context,
-      ).colorScheme.secondaryContainer.withValues(alpha: 0.6),
+      color: Theme.of(context).colorScheme.secondaryContainer
+          .withValues(alpha: 0.6),
       borderRadius: BorderRadius.circular(8),
     ),
     child: Text(
@@ -76,7 +75,9 @@ class _StatItemWidgetState extends State<StatItemWidget> {
     if (primary.bangumiId != null) {
       final item = await resolveStatDisplay(primary);
       // bangumi.db 缺失时 resolveStatDisplay 会用统计自带字段兜底
-      if (mounted) setState(() => _bangumiItem = item ?? primary.toBangumiItem());
+      if (mounted) {
+        setState(() => _bangumiItem = item ?? primary.toBangumiItem());
+      }
     }
   }
 
@@ -157,9 +158,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(text, style: const TextStyle(fontSize: 14)),
-              ),
+              Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
             ],
           ),
           const SizedBox(height: 4),
@@ -192,9 +191,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(text, style: const TextStyle(fontSize: 14)),
-              ),
+              Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
             ],
           ),
           const SizedBox(height: 4),
@@ -249,9 +246,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(text, style: const TextStyle(fontSize: 14)),
-            ),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
           ],
         ),
         const SizedBox(height: 4),
@@ -264,14 +259,9 @@ class _StatItemWidgetState extends State<StatItemWidget> {
             const SizedBox(width: 4),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 8),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 2,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer,
+                color: Theme.of(context).colorScheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(Utils.getRatingLabel(record.rating!)),
@@ -315,14 +305,9 @@ class _StatItemWidgetState extends State<StatItemWidget> {
             const SizedBox(width: 4),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 8),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 2,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer,
+                color: Theme.of(context).colorScheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(Utils.getRatingLabel(rating.rating!)),
@@ -475,9 +460,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
 
     Color dotFor(DailyEventType type) => switch (type) {
       DailyEventType.rating => Theme.of(context).colorScheme.primary,
-      DailyEventType.favorite => Theme.of(
-        context,
-      ).colorScheme.tertiary,
+      DailyEventType.favorite => Theme.of(context).colorScheme.tertiary,
       _ => Theme.of(context).colorScheme.secondary,
     };
 
@@ -491,7 +474,8 @@ class _StatItemWidgetState extends State<StatItemWidget> {
       if (canMergeRatingComment && i + 1 < allRecords.length) {
         final next = allRecords[i + 1];
         final nextType = next['type'] as DailyEventType;
-        final pair = (type == DailyEventType.rating &&
+        final pair =
+            (type == DailyEventType.rating &&
                 nextType == DailyEventType.comment) ||
             (type == DailyEventType.comment &&
                 nextType == DailyEventType.rating);
@@ -516,9 +500,8 @@ class _StatItemWidgetState extends State<StatItemWidget> {
     }
 
     // 左侧贯穿时间轴
-    final railColor = Theme.of(
-      context,
-    ).colorScheme.outlineVariant.withValues(alpha: 0.7);
+    final railColor = Theme.of(context).colorScheme.outlineVariant
+        .withValues(alpha: 0.7);
     return buildMaterialWidget(
       context: context,
       widget: Stack(
@@ -529,10 +512,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
             bottom: 6,
             child: Container(width: 1.5, color: railColor),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: rows,
-          ),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows),
         ],
       ),
     );
@@ -929,8 +909,6 @@ class _StatItemWidgetState extends State<StatItemWidget> {
   }
 }
 
-
-
 // 点击统计记录卡片后展示的条目历史（弹层界面）
 class StatsTimelineView extends StatefulWidget {
   const StatsTimelineView({super.key, required this.group});
@@ -981,7 +959,6 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
       StatsLog.error('StatsTimelineView._loadRelatedStats', e.toString());
     }
   }
-
 
   String _favoriteActionText(PlatformEventRecord record) {
     switch (record.favoriteAction) {
@@ -1040,10 +1017,7 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(message, style: const TextStyle(fontSize: 14)),
-              if (below != null) ...[
-                const SizedBox(height: 4),
-                below,
-              ],
+              if (below != null) ...[const SizedBox(height: 4), below],
             ],
           ),
         ),
@@ -1062,11 +1036,10 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
       final isComment = type == DailyEventType.comment;
       for (int dailyIndex = 0; dailyIndex < dailyList.length; dailyIndex++) {
         final records = dailyList[dailyIndex].platformEventRecords;
-        for (int recordIndex = 0;
-            recordIndex < records.length;
-            recordIndex++) {
+        for (int recordIndex = 0; recordIndex < records.length; recordIndex++) {
           final record = records[recordIndex];
-          final time = record.date ??
+          final time =
+              record.date ??
               dailyList[dailyIndex].date.add(const Duration(hours: 12));
           final bool isCreated = dailyIndex == 0 && recordIndex == 0;
           final String message;
@@ -1091,8 +1064,9 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
                 : t.statsTimelineRatingUpdated(n: n);
           }
           final int? rating = record.rating;
-          final String? commentText =
-              record.comment?.isNotEmpty == true ? record.comment : null;
+          final String? commentText = record.comment?.isNotEmpty == true
+              ? record.comment
+              : null;
           final Widget? below;
           if (!isComment && rating != null) {
             final cs = Theme.of(context).colorScheme;
@@ -1152,14 +1126,8 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
     }
 
     for (final stat in _group) {
-      addCommentOrRating(
-        type: DailyEventType.comment,
-        dailyList: stat.comment,
-      );
-      addCommentOrRating(
-        type: DailyEventType.rating,
-        dailyList: stat.rating,
-      );
+      addCommentOrRating(type: DailyEventType.comment, dailyList: stat.comment);
+      addCommentOrRating(type: DailyEventType.rating, dailyList: stat.rating);
       for (final daily in stat.favorite) {
         for (final record in daily.platformEventRecords) {
           if (record.favoriteAction == null && record.favorite == null) {
@@ -1182,17 +1150,15 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
         required String Function(int) labelOf,
       }) {
         for (final daily in list) {
-          final records =
-              daily.platformEventRecords
-                  .where((r) => totalOf(r) > 0)
-                  .toList();
+          final records = daily.platformEventRecords
+              .where((r) => totalOf(r) > 0)
+              .toList();
           if (records.isEmpty) continue;
           int total = 0;
           DateTime? last;
           for (final r in records) {
             total += totalOf(r);
-            if (r.date != null &&
-                (last == null || r.date!.isAfter(last))) {
+            if (r.date != null && (last == null || r.date!.isAfter(last))) {
               last = r.date;
             }
           }
@@ -1206,8 +1172,7 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
       addDailyTotal(
         stat.totalWatchDurations,
         totalOf: (r) => r.value,
-        labelOf: (v) =>
-            t.statsTimelineWatch(duration: Utils.formatHMS(v)),
+        labelOf: (v) => t.statsTimelineWatch(duration: Utils.formatHMS(v)),
       );
       addDailyTotal(
         stat.totalClickCount,
@@ -1248,10 +1213,7 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
           Expanded(
             child: Text(
               _title(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1349,7 +1311,6 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
         );
       }
 
-
       final yearNodes = <Widget>[];
       for (var y = 0; y < years.length; y++) {
         final year = years[y];
@@ -1385,7 +1346,11 @@ class _StatsTimelineViewState extends State<StatsTimelineView> {
                   isLast: i == yearMonths.length - 1,
                   childrenIndent: 30,
                   children: [
-                    for (var j = 0; j < daysOf['$year-${yearMonths[i]}']!.length; j++)
+                    for (
+                      var j = 0;
+                      j < daysOf['$year-${yearMonths[i]}']!.length;
+                      j++
+                    )
                       dayNode(daysOf['$year-${yearMonths[i]}']![j]),
                   ],
                 ),

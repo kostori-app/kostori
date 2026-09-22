@@ -303,9 +303,8 @@ class _AnimeRecognizePageState extends State<AnimeRecognizePage> {
           if (_isDragging)
             Positioned.fill(
               child: Container(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.08),
+                color: Theme.of(context).colorScheme.primary
+                    .withValues(alpha: 0.08),
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(

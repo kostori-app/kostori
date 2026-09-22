@@ -110,6 +110,7 @@ class WebViewResolver {
     }
     return [];
   }
+
   /// 主 isolate 上注册 webview 任务处理器（应用启动时调用）
   static void registerMainIsolateHandler() {
     MainIsolateRunner.registerHandler('webview', (payload) async {
@@ -230,99 +231,99 @@ class WebViewResolver {
     return _serial(() async {
       debugPrint('[WebViewResolver] 开始嗅探: $url');
       Log.info('WebViewResolver', '嗅探: $url');
-    final controller = await _getController();
-    final results = <dynamic>[];
-    final seen = <String>{};
-    var sawCf = false;
-    final completer = Completer<List<dynamic>>();
-    Timer? timer;
+      final controller = await _getController();
+      final results = <dynamic>[];
+      final seen = <String>{};
+      var sawCf = false;
+      final completer = Completer<List<dynamic>>();
+      Timer? timer;
 
-    void cancelNow() {
-      if (_cancelled) {
-        _cancelled = false;
-        try {
-          controller.unloadPage();
-        } catch (_) {}
+      void cancelNow() {
+        if (_cancelled) {
+          _cancelled = false;
+          try {
+            controller.unloadPage();
+          } catch (_) {}
+        }
+        if (!completer.isCompleted) completer.complete(results);
       }
-      if (!completer.isCompleted) completer.complete(results);
-    }
 
-    void arm([int? ms]) {
-      timer?.cancel();
-      timer = Timer(Duration(milliseconds: ms ?? waitMs), () {
+      void arm([int? ms]) {
+        timer?.cancel();
+        timer = Timer(Duration(milliseconds: ms ?? waitMs), () {
+          if (_cancelled) {
+            cancelNow();
+            return;
+          }
+          if (!completer.isCompleted) completer.complete(results);
+        });
+      }
+
+      void onItem(Map<String, dynamic> item) {
         if (_cancelled) {
           cancelNow();
           return;
         }
-        if (!completer.isCompleted) completer.complete(results);
+        final type = item['type'];
+        if (type == WebviewResultType.cf) {
+          sawCf = true;
+          // Cloudflare 挑战：延长等待，给挑战页自动重载留时间
+          arm(waitMs + 15000);
+          return;
+        }
+        final urlValue = item['url']?.toString() ?? '';
+        final key = '$type:$urlValue';
+        if (seen.contains(key)) return;
+        seen.add(key);
+        results.add(item);
+        debugPrint('[WebViewResolver] 上报 $type: $urlValue');
+        if (type == WebviewResultType.video ||
+            type == WebviewResultType.hlsNative) {
+          if (!completer.isCompleted) completer.complete(results);
+        }
+      }
+
+      final sub = controller.onResult.listen(onItem);
+      final logSub = controller.onLog.listen((msg) {
+        debugPrint('[WebViewResolver] $msg');
       });
-    }
+      final loadStopSub = controller.onLoadStop.listen((_) {
+        // 每次导航/重载完成都重置等待计时，避免慢页面/重定向提前返回空；
+        // 若已识别 CF 挑战则保持延长
+        if (_cancelled) {
+          cancelNow();
+          return;
+        }
+        arm(sawCf ? waitMs + 15000 : waitMs);
+      });
 
-    void onItem(Map<String, dynamic> item) {
-      if (_cancelled) {
-        cancelNow();
-        return;
-      }
-      final type = item['type'];
-      if (type == WebviewResultType.cf) {
-        sawCf = true;
-        // Cloudflare 挑战：延长等待，给挑战页自动重载留时间
-        arm(waitMs + 15000);
-        return;
-      }
-      final urlValue = item['url']?.toString() ?? '';
-      final key = '$type:$urlValue';
-      if (seen.contains(key)) return;
-      seen.add(key);
-      results.add(item);
-      debugPrint('[WebViewResolver] 上报 $type: $urlValue');
-      if (type == WebviewResultType.video ||
-          type == WebviewResultType.hlsNative) {
-        if (!completer.isCompleted) completer.complete(results);
-      }
-    }
-
-    final sub = controller.onResult.listen(onItem);
-    final logSub = controller.onLog.listen((msg) {
-      debugPrint('[WebViewResolver] $msg');
-    });
-    final loadStopSub = controller.onLoadStop.listen((_) {
-      // 每次导航/重载完成都重置等待计时，避免慢页面/重定向提前返回空；
-      // 若已识别 CF 挑战则保持延长
-      if (_cancelled) {
-        cancelNow();
-        return;
-      }
-      arm(sawCf ? waitMs + 15000 : waitMs);
-    });
-
-    try {
-      await controller.loadUrl(
-        url,
-        headers: headers,
-        script: script,
-        scan: scan,
-      );
-      arm();
-      if (_cancelled) cancelNow();
-
-      final finalResults = await completer.future.timeout(
-        Duration(milliseconds: waitMs + 15000),
-        onTimeout: () => results,
-      );
-      debugPrint('[WebViewResolver] 嗅探结束，结果: $finalResults');
-      Log.info('WebViewResolver', '嗅探结束: $finalResults');
-      return cleanWebviewResults(finalResults);
-    } finally {
-      timer?.cancel();
-      await sub.cancel();
-      await logSub.cancel();
-      await loadStopSub.cancel();
-      // 卸载页面（保留引擎实例供下次复用）
       try {
-        await controller.unloadPage();
-      } catch (_) {}
-    }
+        await controller.loadUrl(
+          url,
+          headers: headers,
+          script: script,
+          scan: scan,
+        );
+        arm();
+        if (_cancelled) cancelNow();
+
+        final finalResults = await completer.future.timeout(
+          Duration(milliseconds: waitMs + 15000),
+          onTimeout: () => results,
+        );
+        debugPrint('[WebViewResolver] 嗅探结束，结果: $finalResults');
+        Log.info('WebViewResolver', '嗅探结束: $finalResults');
+        return cleanWebviewResults(finalResults);
+      } finally {
+        timer?.cancel();
+        await sub.cancel();
+        await logSub.cancel();
+        await loadStopSub.cancel();
+        // 卸载页面（保留引擎实例供下次复用）
+        try {
+          await controller.unloadPage();
+        } catch (_) {}
+      }
     });
   }
 }

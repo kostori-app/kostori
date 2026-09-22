@@ -127,7 +127,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
                           t.groupChatEmpty,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -302,15 +304,17 @@ class _GroupChatEditorState extends State<_GroupChatEditor> {
       );
       return;
     }
-    final chat = (widget.chat ?? GroupChat(id: 'group_${DateTime.now().microsecondsSinceEpoch}'))
-        .copyWith(
-          name: _nameCtrl.text.trim(),
-          memberIds: _memberIds,
-          scenario: _scenarioCtrl.text.trim(),
-          systemExtra: _extraCtrl.text.trim(),
-          order: _order,
-          autoMode: _auto,
-        );
+    final chat =
+        (widget.chat ??
+                GroupChat(id: 'group_${DateTime.now().microsecondsSinceEpoch}'))
+            .copyWith(
+              name: _nameCtrl.text.trim(),
+              memberIds: _memberIds,
+              scenario: _scenarioCtrl.text.trim(),
+              systemExtra: _extraCtrl.text.trim(),
+              order: _order,
+              autoMode: _auto,
+            );
     // 编辑器在 PopUpWidget 的嵌套 Navigator 里，必须 pop 根 Navigator 才能返回结果
     Navigator.of(App.rootContext, rootNavigator: true).pop(chat);
   }
@@ -502,9 +506,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     } else {
       setState(() {
         _sessionId = chat.sessionId;
-        _messagesStream = AiConversationService().watchMessages(
-          chat.sessionId,
-        );
+        _messagesStream = AiConversationService().watchMessages(chat.sessionId);
         _booting = false;
       });
     }
@@ -669,7 +671,10 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _sending = false);
-        App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
+        App.rootContext.showMessage(
+          message: e.toString(),
+          level: LogLevel.error,
+        );
       }
       return;
     } finally {
@@ -870,10 +875,7 @@ class _GroupChatRoomPageState extends State<GroupChatRoomPage> {
             ),
           ],
           if (isLastModel)
-            action(
-              Icons.replay_outlined,
-              _sending ? null : _regenerate,
-            ),
+            action(Icons.replay_outlined, _sending ? null : _regenerate),
         ],
       ),
     );

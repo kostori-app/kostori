@@ -104,9 +104,8 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   }
 
   void _showWebAdminSettingsPage(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const _WebAdminSettingsPage()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const _WebAdminSettingsPage()));
   }
 
   // ── 订阅管理 ──────────────────────────────────────────────────────────────
@@ -1108,9 +1107,8 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                             style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'monospace',
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.toOpacity(0.6),
+                              color: Theme.of(context).colorScheme.onSurface
+                                  .toOpacity(0.6),
                             ),
                           ),
                         );
@@ -1432,9 +1430,8 @@ class _SatoriBotEditPageState extends ConsumerState<_SatoriBotEditPage> {
       final bytes = await picked.readAsBytes();
       final savedAddress = _hubClient.savedAddress;
       if (savedAddress == null || savedAddress.isEmpty) return;
-      final httpBase = HubImageUploader.httpUrlOf(
-        savedAddress,
-      ).replaceAll(RegExp(r'/hub/?$'), '');
+      final httpBase = HubImageUploader.httpUrlOf(savedAddress)
+          .replaceAll(RegExp(r'/hub/?$'), '');
       final token = _hubClient.savedToken;
       final resp = await AppDio().request(
         '$httpBase/hub/upload/config',
@@ -1614,7 +1611,8 @@ class _SatoriBotEditPageState extends ConsumerState<_SatoriBotEditPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: AppSelectableText(_profile.token,
+                      child: AppSelectableText(
+                        _profile.token,
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),
@@ -1657,7 +1655,6 @@ class _SatoriBotEditPageState extends ConsumerState<_SatoriBotEditPage> {
     );
   }
 }
-
 
 /// Web 管理后台设置二级页面：说明 + 开关 + 端口 + 打开
 class _WebAdminSettingsPage extends ConsumerStatefulWidget {

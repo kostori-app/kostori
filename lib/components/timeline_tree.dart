@@ -76,10 +76,7 @@ class TimelineTreeNode extends StatelessWidget {
           )
         : Padding(
             padding: EdgeInsets.only(left: titleIndent),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: title,
-            ),
+            child: Align(alignment: Alignment.centerLeft, child: title),
           );
 
     final double dotX = titleIndent / 2;
@@ -158,18 +155,10 @@ class _TreeBranchPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     if (drawTop) {
-      canvas.drawLine(
-        Offset(dotX, 0),
-        Offset(dotX, dotY),
-        paint,
-      );
+      canvas.drawLine(Offset(dotX, 0), Offset(dotX, dotY), paint);
     }
     if (drawBottom) {
-      canvas.drawLine(
-        Offset(dotX, dotY),
-        Offset(dotX, size.height),
-        paint,
-      );
+      canvas.drawLine(Offset(dotX, dotY), Offset(dotX, size.height), paint);
     }
     canvas.drawCircle(
       Offset(dotX, dotY),

@@ -31,9 +31,7 @@ class AiImageGenConfig {
     this.apiKey = '',
   });
 
-  static String defaultProvider() => OpenAiProviderRegistry
-      .allProviders
-      .keys
+  static String defaultProvider() => OpenAiProviderRegistry.allProviders.keys
       .firstWhere((_) => true, orElse: () => 'siliconFlow');
 
   static AiImageGenConfig load() {

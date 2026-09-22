@@ -234,9 +234,7 @@ class _WatcherState extends State<Watcher>
       // 等用户手动选集数再播放
       final autoPlayOnEnter =
           appdata.implicitData['playerAutoPlayOnEnter'] != false;
-      if (!_isWatchMember &&
-          autoPlayOnEnter &&
-          history.lastWatchEpisode != 0) {
+      if (!_isWatchMember && autoPlayOnEnter && history.lastWatchEpisode != 0) {
         loadInfo(history.lastWatchEpisode!, history.lastRoad!.toInt());
       } else if (_isWatchMember) {
         // 一起看成员：先加载默认集数（临时解锁，否则初始加载会被 syncLocked 拦截），
@@ -357,11 +355,7 @@ class _WatcherState extends State<Watcher>
     required int episodeIndex,
     required int road,
   }) async {
-    await _loadEpisode(
-      episodeIndex: episodeIndex,
-      road: road,
-      localPath: path,
-    );
+    await _loadEpisode(episodeIndex: episodeIndex, road: road, localPath: path);
   }
 
   /// 重载当前集：绕过「同集重复加载」检查，强制重新解析视频链接
@@ -530,11 +524,7 @@ class _WatcherState extends State<Watcher>
         playerController.isParsing = false;
         passCloudflare(cfe, () {
           if (!mounted) return;
-          _loadEpisode(
-            episodeIndex: episodeIndex,
-            road: road,
-            cfRetried: true,
-          );
+          _loadEpisode(episodeIndex: episodeIndex, road: road, cfRetried: true);
         });
         return;
       }
@@ -580,7 +570,9 @@ class _WatcherState extends State<Watcher>
       await playerController.player.open(
         Media(
           actualPlayUrl,
-          httpHeaders: isDirect && !local ? (playHeaders ?? const {}) : const {},
+          httpHeaders: isDirect && !local
+              ? (playHeaders ?? const {})
+              : const {},
         ),
       );
     } catch (e, s) {
@@ -617,9 +609,7 @@ class _WatcherState extends State<Watcher>
       if (direct.isNotEmpty) return direct;
       final referer = headers?['Referer'] ?? headers?['referer'];
       final refUri = referer == null ? null : Uri.tryParse(referer);
-      if (refUri != null &&
-          refUri.host.isNotEmpty &&
-          refUri.host != uri.host) {
+      if (refUri != null && refUri.host.isNotEmpty && refUri.host != uri.host) {
         return await jar.loadForRequestCookieHeader(refUri);
       }
     } catch (_) {}
@@ -727,8 +717,9 @@ class _WatcherState extends State<Watcher>
   Future<void> updateHistory() async {
     history.lastWatchEpisode = epIndex;
     // 系列条目互相独立（每条目一个独立视频）：历史按单集记录，不把系列当多集
-    history.allEpisode =
-        _isSeries ? 1 : _episodeCount(playerController.currentRoad);
+    history.allEpisode = _isSeries
+        ? 1
+        : _episodeCount(playerController.currentRoad);
     if (anime.cover.trim().isNotEmpty) {
       history.cover = anime.cover;
     }
@@ -939,4 +930,3 @@ class _WatcherState extends State<Watcher>
     }
   }
 }
-

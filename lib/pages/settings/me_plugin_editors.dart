@@ -51,9 +51,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
 
   int? _activeIndexOf(List<Map<String, dynamic>> list) {
     final v = widget.plugin.dataValue(_activeKey);
-    final idx = v is num
-        ? v.toInt()
-        : (v is String ? int.tryParse(v) : null);
+    final idx = v is num ? v.toInt() : (v is String ? int.tryParse(v) : null);
     if (idx == null || idx < 0 || idx >= list.length) return null;
     return idx;
   }
@@ -135,10 +133,9 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       final data = m?['data']?.toString() ?? '';
       if (data.isEmpty) {
         setState(() {
-          _error =
-              m?['error']?.toString().isNotEmpty == true
-                  ? m!['error'].toString()
-                  : t.invalidCookieHash;
+          _error = m?['error']?.toString().isNotEmpty == true
+              ? m!['error'].toString()
+              : t.invalidCookieHash;
         });
         return;
       }
@@ -167,8 +164,11 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       _busy = true;
       _error = null;
     });
-    final res = await widget.plugin
-        .invoke(_method('login'), [email, password, verify]);
+    final res = await widget.plugin.invoke(_method('login'), [
+      email,
+      password,
+      verify,
+    ]);
     if (!mounted) return;
     final m = res is Map ? res.map((k, v) => MapEntry('$k', v)) : null;
     setState(() => _busy = false);
@@ -186,10 +186,9 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       await _sync();
     } else {
       setState(() {
-        _error =
-            m?['message']?.toString().isNotEmpty == true
-                ? m!['message'].toString()
-                : t.loginFailed;
+        _error = m?['message']?.toString().isNotEmpty == true
+            ? m!['message'].toString()
+            : t.loginFailed;
       });
       await _refreshCaptcha();
     }
@@ -208,10 +207,9 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
     if (m == null || m['items'] is! List) {
       if (mounted) {
         setState(() {
-          _error =
-              m?['error']?.toString().isNotEmpty == true
-                  ? m!['error'].toString()
-                  : t.noData;
+          _error = m?['error']?.toString().isNotEmpty == true
+              ? m!['error'].toString()
+              : t.noData;
         });
       }
       return;
@@ -261,9 +259,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       oldActive = list[oldIdx]['userhash']?.toString();
     }
     for (final item in incoming) {
-      final idx = list.indexWhere(
-        (e) => e['userhash'] == item['userhash'],
-      );
+      final idx = list.indexWhere((e) => e['userhash'] == item['userhash']);
       if (idx >= 0) {
         list[idx] = item;
       } else {
@@ -274,7 +270,9 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
         ? list.indexWhere((e) => e['userhash'] == oldActive)
         : (list.isNotEmpty ? 0 : -1);
     if (active < 0 && incoming.isNotEmpty) {
-      active = list.indexWhere((e) => e['userhash'] == incoming.first['userhash']);
+      active = list.indexWhere(
+        (e) => e['userhash'] == incoming.first['userhash'],
+      );
     }
     widget.plugin.setDataValue(_listKey, list);
     widget.plugin.setDataValue(
@@ -282,7 +280,10 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
       active >= 0 && active < list.length ? active : null,
     );
     if (active >= 0 && active < list.length) {
-      widget.plugin.setConfigValue(_configKey, list[active]['userhash']!.toString());
+      widget.plugin.setConfigValue(
+        _configKey,
+        list[active]['userhash']!.toString(),
+      );
     } else {
       widget.plugin.setConfigValue(_configKey, '');
     }
@@ -431,10 +432,7 @@ class _PluginAccountEditorState extends State<_PluginAccountEditor> {
         ),
         const SizedBox(height: 4),
         if (_error != null) ...[
-          Text(
-            _error!,
-            style: TextStyle(fontSize: 12, color: cs.error),
-          ),
+          Text(_error!, style: TextStyle(fontSize: 12, color: cs.error)),
           const SizedBox(height: 8),
         ],
         FilledButton.icon(
@@ -569,7 +567,8 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
     if (idx < 0 || idx >= list.length) return;
     _commit(list, idx);
     App.rootContext.showMessage(
-      message: '${list[idx]['name'] ?? list[idx]['userhash']} · '
+      message:
+          '${list[idx]['name'] ?? list[idx]['userhash']} · '
           '${_txt('active', '用于浏览')}',
     );
   }
@@ -635,11 +634,7 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
                   return;
                 }
                 Navigator.pop(ctx, true);
-                _addEntry(
-                  name: name,
-                  hash: hash,
-                  note: noteCtrl.text.trim(),
-                );
+                _addEntry(name: name, hash: hash, note: noteCtrl.text.trim());
               },
               child: Text(_txt('save', t.confirm)),
             ),
@@ -662,10 +657,7 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
         final map = decoded.map((k, v) => MapEntry('$k', v));
         name = map['name']?.toString() ?? '';
         hash =
-            _normalizeCookieUserhash(
-              map['cookie']?.toString() ?? '',
-            ) ??
-            hash;
+            _normalizeCookieUserhash(map['cookie']?.toString() ?? '') ?? hash;
       }
     } catch (_) {}
     if (hash == null) {
@@ -787,8 +779,7 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
                 color: i == _active() ? cs.primary : cs.onSurfaceVariant,
               ),
               title: Text(
-                (list[i]['name']?.toString() ?? '')
-                    .isEmpty
+                (list[i]['name']?.toString() ?? '').isEmpty
                     ? (list[i]['userhash']?.toString() ?? '')
                     : list[i]['name']!.toString(),
                 style: const TextStyle(fontWeight: FontWeight.w500),
@@ -805,11 +796,7 @@ class _PluginCookiesEditorState extends State<_PluginCookiesEditor> {
               trailing: IconButton(
                 tooltip: t.delete,
                 visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: cs.error,
-                ),
+                icon: Icon(Icons.delete_outline, size: 18, color: cs.error),
                 onPressed: () => _remove(i),
               ),
               onTap: () => _select(i),
@@ -1032,10 +1019,7 @@ class _PluginConfigEditorState extends State<_PluginConfigEditor> {
 /// 插件登录：与番剧源设置页的登录模块一致——账号/密码表单，
 /// 提交后调用插件 `login(username, password)`（JS 内自行发请求、存 Cookie）
 class _PluginLoginPage extends StatefulWidget {
-  const _PluginLoginPage({
-    required this.plugin,
-    this.initialUsername = '',
-  });
+  const _PluginLoginPage({required this.plugin, this.initialUsername = ''});
 
   final MePagePlugin plugin;
   final String initialUsername;
@@ -1103,7 +1087,10 @@ class _PluginLoginPageState extends State<_PluginLoginPage> {
               Text(
                 t.login,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 24),
               TextField(

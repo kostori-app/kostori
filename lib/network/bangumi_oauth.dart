@@ -133,9 +133,7 @@ Future<void> bangumiOAuthLogin(BuildContext context) async {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         child: Material(
@@ -214,9 +212,8 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
       );
       final data = res.data;
       if (data is String) {
-        final m = RegExp(
-          r'<input type="hidden" name="formhash" value="(.+?)">',
-        ).firstMatch(data);
+        final m = RegExp(r'<input type="hidden" name="formhash" value="(.+?)">')
+            .firstMatch(data);
         _loginFormhash = m?.group(1) ?? '';
       }
       Log.info('BangumiLogin', '登录页 formhash=$_loginFormhash');
@@ -277,9 +274,8 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
   /// 判断是否为「授权应用访问」表单页
   bool _isAuthPage(String html) =>
       html.contains('授权应用访问') &&
-      RegExp(
-        r'<input type="hidden" name="formhash" value="(.+?)">',
-      ).hasMatch(html);
+      RegExp(r'<input type="hidden" name="formhash" value="(.+?)">')
+          .hasMatch(html);
 
   /// 第三步：登录并换取 OAuth code → access_token
   Future<void> _login() async {
@@ -414,9 +410,9 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
 
       // 3. 提取授权页 formhash
       _oauthFormhash =
-          RegExp(
-            r'<input type="hidden" name="formhash" value="(.+?)">',
-          ).firstMatch(authData)?.group(1) ??
+          RegExp(r'<input type="hidden" name="formhash" value="(.+?)">')
+              .firstMatch(authData)
+              ?.group(1) ??
           '';
       Log.info('BangumiLogin', '授权页 oauthFormhash=$_oauthFormhash');
 
@@ -451,9 +447,9 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
         code = RegExp(r'[?&]code=([^&]+)').firstMatch(location)?.group(1) ?? '';
         if (code.isEmpty && authRes.data is String) {
           code =
-              RegExp(
-                r'[?&]code=([^&]+)',
-              ).firstMatch(authRes.data as String)?.group(1) ??
+              RegExp(r'[?&]code=([^&]+)')
+                  .firstMatch(authRes.data as String)
+                  ?.group(1) ??
               '';
         }
         Log.info(
@@ -670,4 +666,3 @@ class _BangumiLoginPageState extends State<BangumiLoginPage> {
     );
   }
 }
-

@@ -25,11 +25,8 @@ class FavoriteFolders extends Table {
 /// display_order 表示组内顺序（非全局）。
 @DataClassName('FavoriteItemRow')
 class FavoriteItems extends Table {
-  TextColumn get folderId => text().references(
-    FavoriteFolders,
-    #id,
-    onDelete: KeyAction.cascade,
-  )();
+  TextColumn get folderId =>
+      text().references(FavoriteFolders, #id, onDelete: KeyAction.cascade)();
 
   TextColumn get id => text()();
 
@@ -64,9 +61,7 @@ class FavoriteDatabase extends _$FavoriteDatabase {
 
   /// 统一打开入口：与收藏旧库同一路径（local_favorite.db）
   factory FavoriteDatabase.open(String dbPath) {
-    return FavoriteDatabase(
-      NativeDatabase.createInBackground(File(dbPath)),
-    );
+    return FavoriteDatabase(NativeDatabase.createInBackground(File(dbPath)));
   }
 
   static String defaultPath() => p.join(App.dataPath, 'local_favorite.db');
@@ -95,12 +90,12 @@ class FavoriteDatabase extends _$FavoriteDatabase {
   Future<void> _migrateLegacyMultiTableSchema() async {
     final tables = (await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-    ).get())
-        .map((r) => r.read<String>('name'))
-        .toList();
+    ).get()).map((r) => r.read<String>('name')).toList();
     final own = {'favorite_folders', 'favorite_items'};
     final legacyFolders = tables
-        .where((n) => !own.contains(n) && n != 'folder_order' && n != 'folder_sync')
+        .where(
+          (n) => !own.contains(n) && n != 'folder_order' && n != 'folder_sync',
+        )
         .toList();
     if (legacyFolders.isEmpty) return;
 

@@ -242,9 +242,7 @@ class _TextRulePickSheetState extends State<_TextRulePickSheet> {
   final _searchCtrl = TextEditingController();
   String _keyword = '';
 
-  _TextRulePickSheetState()
-    : _manualId = null,
-      _useRules = false;
+  _TextRulePickSheetState() : _manualId = null, _useRules = false;
 
   @override
   void initState() {
@@ -280,9 +278,8 @@ class _TextRulePickSheetState extends State<_TextRulePickSheet> {
     }).toList();
   }
 
-  void _confirm() => Navigator.of(
-    context,
-  ).pop((manualId: _manualId, useRules: _useRules && _effective.isNotEmpty));
+  void _confirm() => Navigator.of(context)
+      .pop((manualId: _manualId, useRules: _useRules && _effective.isNotEmpty));
 
   @override
   Widget build(BuildContext context) {
@@ -477,11 +474,11 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   _DownloadFilter _filter = _DownloadFilter.all;
 
   bool _isDownloaded(_DownloadItem item) =>
-      widget.downloadedFiles.containsKey('${item.animeId}|${_itemName(item)}') ||
-      // 规则开关/改名后：记录里同时存了原始名，按原始名也能命中
       widget.downloadedFiles.containsKey(
-        '${item.animeId}|${item.episodeName}',
-      );
+        '${item.animeId}|${_itemName(item)}',
+      ) ||
+      // 规则开关/改名后：记录里同时存了原始名，按原始名也能命中
+      widget.downloadedFiles.containsKey('${item.animeId}|${item.episodeName}');
 
   /// 该条目是否已经在下载列表里（避免重复下载）：
   /// 任务存的是确认瞬间的集名，规则开关/改名后按下当前名查不到，
@@ -501,8 +498,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
 
   /// 套用文本规则（开关关闭或无规则时原样返回）；
   /// Q10 单一应用：多条规则按优先级，第一条命中即停
-  String _applyRules(String input) =>
-      (_useRules && _rules.isNotEmpty)
+  String _applyRules(String input) => (_useRules && _rules.isNotEmpty)
       ? TextRuleStore.applyFirstHit(input, _rules)
       : input;
 
@@ -695,48 +691,46 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
         .where((i) => selected.contains(i.key))
         .toList();
     // 并发（上限 4）：避免逐个串行过慢，同时不至于一次打太多请求
-    final picks = await _mapConcurrent<_DownloadPick>(
-      selectedItems,
-      4,
-      (item) async {
-        var url = _resolutionByKey[item.key];
-        var resLabel = _resolutionLabelByKey[item.key];
-        // 未手动选清晰度：默认选最高清晰度（而非第一个）
-        if (url == null) {
-          final best = await _bestStream(item);
-          if (best != null) {
-            url = best.url;
-            if (best.label.isNotEmpty) resLabel = best.label;
-          }
+    final picks = await _mapConcurrent<_DownloadPick>(selectedItems, 4, (
+      item,
+    ) async {
+      var url = _resolutionByKey[item.key];
+      var resLabel = _resolutionLabelByKey[item.key];
+      // 未手动选清晰度：默认选最高清晰度（而非第一个）
+      if (url == null) {
+        final best = await _bestStream(item);
+        if (best != null) {
+          url = best.url;
+          if (best.label.isNotEmpty) resLabel = best.label;
         }
-        // 系列条目：单独访问其详情取自身标题，避免全部用当前番剧标题命名
-        String? itemTitle;
-        final resolver = widget.resolveAnimeTitle;
-        if (resolver != null) {
-          try {
-            itemTitle = await resolver(item.key);
-          } catch (_) {}
-        }
-        final resolvedTitle = (itemTitle != null && itemTitle.trim().isNotEmpty)
-            // 系列条目取到的是源里的原始标题：同样要套用文本规则，
-            // 否则加了规则后文件名仍是清洗前的标题
-            ? _applyRules(itemTitle.trim())
-            : (_animeTitle.trim().isEmpty ? null : _animeTitle.trim());
-        return _DownloadPick(
-          key: item.key,
-          animeId: item.animeId,
-          // 用户编辑过标题时用它（用于文件名），否则用集名（套用规则后）
-          episodeName: _itemName(item),
-          // 原始集名一并带上：记录双键，规则开关/改名后仍判已下载
-          episodeRaw: item.episodeName,
-          animeTitle: resolvedTitle,
-          episodeNo: item.episodeNo,
-          url: url,
-          resolution: resLabel,
-          group: _group,
-        );
-      },
-    );
+      }
+      // 系列条目：单独访问其详情取自身标题，避免全部用当前番剧标题命名
+      String? itemTitle;
+      final resolver = widget.resolveAnimeTitle;
+      if (resolver != null) {
+        try {
+          itemTitle = await resolver(item.key);
+        } catch (_) {}
+      }
+      final resolvedTitle = (itemTitle != null && itemTitle.trim().isNotEmpty)
+          // 系列条目取到的是源里的原始标题：同样要套用文本规则，
+          // 否则加了规则后文件名仍是清洗前的标题
+          ? _applyRules(itemTitle.trim())
+          : (_animeTitle.trim().isEmpty ? null : _animeTitle.trim());
+      return _DownloadPick(
+        key: item.key,
+        animeId: item.animeId,
+        // 用户编辑过标题时用它（用于文件名），否则用集名（套用规则后）
+        episodeName: _itemName(item),
+        // 原始集名一并带上：记录双键，规则开关/改名后仍判已下载
+        episodeRaw: item.episodeName,
+        animeTitle: resolvedTitle,
+        episodeNo: item.episodeNo,
+        url: url,
+        resolution: resLabel,
+        group: _group,
+      );
+    });
     if (!mounted) return;
     Navigator.of(context).pop(picks);
   }
@@ -825,9 +819,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
                           size: 20,
                           color: _useRules && _rules.isNotEmpty
                               ? Theme.of(context).colorScheme.primary
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         onPressed: _pickRule,
                       ),
@@ -877,10 +869,7 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
             child: SegmentedButton<_DownloadFilter>(
               showSelectedIcon: false,
               segments: [
-                ButtonSegment(
-                  value: _DownloadFilter.all,
-                  label: Text(t.all),
-                ),
+                ButtonSegment(value: _DownloadFilter.all, label: Text(t.all)),
                 ButtonSegment(
                   value: _DownloadFilter.notDownloaded,
                   label: Text(t.downloadNotDownloaded),
@@ -1293,9 +1282,7 @@ Future<DownloadTask?> enqueueAnimeEpisode({
     epKey: epKey,
     url: url,
   );
-  if (targetUrl == null ||
-      targetUrl.isEmpty ||
-      targetUrl.startsWith('blob:')) {
+  if (targetUrl == null || targetUrl.isEmpty || targetUrl.startsWith('blob:')) {
     App.rootContext.showMessage(message: t.downloadFailed);
     return null;
   }
@@ -1525,11 +1512,7 @@ Future<void> _openSeriesDownloadPicker(
         sourceKey: source.key,
       ),
   ];
-  await _writeDownloadHistory(
-    data,
-    coverFallback,
-    allEpisode: items.length,
-  );
+  await _writeDownloadHistory(data, coverFallback, allEpisode: items.length);
   if (isCancelled?.call() ?? false) return;
   await _openAnimeDownloadPicker(
     context,

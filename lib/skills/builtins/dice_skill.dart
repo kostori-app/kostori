@@ -23,10 +23,7 @@ class DiceSkill extends Skill {
     'type': 'object',
     'properties': {
       'label': {'type': 'string', 'description': '判定名，如「力量检定」'},
-      'dice': {
-        'type': 'string',
-        'description': '骰子记法，如 1d20 / 2d6，默认 1d20',
-      },
+      'dice': {'type': 'string', 'description': '骰子记法，如 1d20 / 2d6，默认 1d20'},
       'modifier': {'type': 'integer', 'description': '修正值，默认 0'},
       'dc': {'type': 'integer', 'description': '难度 DC，可省略'},
     },

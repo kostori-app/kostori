@@ -396,8 +396,7 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
     return TextRuleStore.applyFirstHit(_sampleCtrl.text, applied);
   }
 
-  void _save() =>
-      SourceTextRuleConfig.setRuleIds(widget.source.key, _selected);
+  void _save() => SourceTextRuleConfig.setRuleIds(widget.source.key, _selected);
 
   Future<void> _edit([TextRule? rule]) async {
     final result = await showDialog<TextRule>(
@@ -487,7 +486,8 @@ class _SourceTextRulesPageState extends State<_SourceTextRulesPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  AppSelectableText(_preview,
+                  AppSelectableText(
+                    _preview,
                     style: const TextStyle(fontSize: 14, height: 1.4),
                   ),
                 ],
@@ -882,8 +882,7 @@ class _TextRuleTestDialogState extends State<_TextRuleTestDialog> {
     };
     final hitRuleIds = <String>{
       for (final r in rules)
-        if (reports[r.id]!.any((e) => e.state == TextRuleStepState.hit))
-          r.id,
+        if (reports[r.id]!.any((e) => e.state == TextRuleStepState.hit)) r.id,
     };
     final winner = TextRuleStore.firstHitIndex(input, rules);
     final result = TextRuleStore.applyFirstHit(input, rules);
@@ -988,7 +987,12 @@ class _TextRuleTestDialogState extends State<_TextRuleTestDialog> {
           ),
         ),
       ),
-      actions: [Button.filled(onPressed: () => Navigator.pop(context), child: Text(t.confirm))],
+      actions: [
+        Button.filled(
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.confirm),
+        ),
+      ],
     );
   }
 }

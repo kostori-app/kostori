@@ -106,9 +106,8 @@ class _AppbarState extends State<Appbar> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: DefaultTextStyle(
-                    style: DefaultTextStyle.of(
-                      context,
-                    ).style.copyWith(fontSize: 20),
+                    style: DefaultTextStyle.of(context).style
+                        .copyWith(fontSize: 20),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     child: widget.title,
@@ -230,9 +229,8 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             const SizedBox(width: 8),
             Expanded(
               child: DefaultTextStyle(
-                style: DefaultTextStyle.of(
-                  context,
-                ).style.copyWith(fontSize: 20),
+                style: DefaultTextStyle.of(context).style
+                    .copyWith(fontSize: 20),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 child: title,
@@ -498,8 +496,10 @@ class _AppTabBarState extends State<AppTabBar> {
   }
 }
 
-typedef _TabRenderCallback =
-    void Function(List<double> offsets, double itemHeight);
+typedef _TabRenderCallback = void Function(
+  List<double> offsets,
+  double itemHeight,
+);
 
 class _TabRow extends Row {
   const _TabRow({required this.callback, required super.children});
@@ -1130,18 +1130,26 @@ class AppBackButton extends StatelessWidget {
 /// 各页无需改造即可长按返回键使用）
 Future<void> openQuickDrawer(BuildContext context) {
   final entries = <({IconData icon, String label, Widget page})>[
-    (icon: Icons.settings_outlined, label: t.settings, page: const SettingsPage()),
+    (
+      icon: Icons.settings_outlined,
+      label: t.settings,
+      page: const SettingsPage(),
+    ),
     (icon: Icons.search, label: t.search, page: SearchPage()),
-    (icon: Icons.category_outlined, label: t.categoryPages, page: const CategoriesPage()),
+    (
+      icon: Icons.category_outlined,
+      label: t.categoryPages,
+      page: const CategoriesPage(),
+    ),
     (
       icon: Icons.translate,
       label: t.translation,
-      page: const ManualTranslationPage()
+      page: const ManualTranslationPage(),
     ),
     (
       icon: Icons.download_outlined,
       label: t.download,
-      page: const DownloadPage()
+      page: const DownloadPage(),
     ),
     (icon: Icons.note_alt_outlined, label: t.memo, page: const MemoPage()),
   ];
@@ -1203,13 +1211,10 @@ Future<void> openQuickDrawer(BuildContext context) {
       );
     },
     transitionBuilder: (ctx, anim, _, child) {
-      final offset =
-          Tween<Offset>(
-            begin: const Offset(-1, 0),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: anim, curve: Curves.easeOut),
-          );
+      final offset = Tween<Offset>(
+        begin: const Offset(-1, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut));
       return SlideTransition(position: offset, child: child);
     },
   );

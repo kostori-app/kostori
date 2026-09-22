@@ -288,9 +288,8 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.toOpacity(0.72),
+                      color: Theme.of(context).colorScheme.primary
+                          .toOpacity(0.72),
                       width: 1.0,
                     ),
                   ),
@@ -427,7 +426,8 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                             children: [
                               Text(anime.title, style: ts.s20),
                               if (anime.subTitle != null)
-                                AppSelectableText(anime.subTitle!,
+                                AppSelectableText(
+                                  anime.subTitle!,
                                   style: ts.s14,
                                   scrollPhysics:
                                       const NeverScrollableScrollPhysics(),
@@ -460,8 +460,8 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     vertical: 16,
                     horizontal: 16,
                   ),
-                  child: AppSelectableText(anime.description!,
-                  ).fixWidth(double.infinity),
+                  child: AppSelectableText(anime.description!)
+                      .fixWidth(double.infinity),
                 ),
                 ShareQrCode(
                   type: KostoriRouteType.anime,
@@ -791,9 +791,9 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -1060,24 +1060,23 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               width: 0.5,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.toOpacity(0.3),
+                              color: Theme.of(context).colorScheme.outline
+                                  .toOpacity(0.3),
                             ),
                           ),
                           child: Text(
                             '${keyList.length}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -1200,9 +1199,9 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text('${keyList.length}', style: ts.s12),
@@ -1311,9 +1310,8 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                   ),
                   child: Text(
                     characterFullItem.nameCN,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(color: Colors.grey[700]),
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(color: Colors.grey[700]),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1324,9 +1322,8 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                   ),
                   child: Text(
                     t.profileInformation,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Padding(
@@ -1351,9 +1348,8 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     children: [
                       Text(
                         t.characterIntroduction,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const Spacer(),
                       TranslateIconButton(

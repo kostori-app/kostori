@@ -587,7 +587,10 @@ class _PluginModulePageState extends ConsumerState<PluginModulePage> {
                 const SizedBox(height: 2),
                 Text(
                   plugin.description,
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ],
               if (plugin.tags.isNotEmpty) ...[
@@ -1078,9 +1081,8 @@ class _HubModuleCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -1110,12 +1112,14 @@ class _HubModuleCard extends StatelessWidget {
 // ─────────────────────────────────────────────
 
 mixin _AnimeDataMixin {
-  Future<({
-    List<BangumiItem> likedItems,
-    String animeNames,
-    String topTags,
-    List<Map<String, dynamic>> tagData,
-  })>
+  Future<
+    ({
+      List<BangumiItem> likedItems,
+      String animeNames,
+      String topTags,
+      List<Map<String, dynamic>> tagData,
+    })
+  >
   loadAnimeData() async {
     final allStats = await StatsManager().getStatsAll();
     final seenIds = <int>{};
@@ -1356,7 +1360,8 @@ class _StoryBubble extends StatelessWidget {
                     color: scheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: AppSelectableText(content,
+                  child: AppSelectableText(
+                    content,
                     style: TextStyle(
                       color: scheme.onSecondaryContainer,
                       fontSize: 14,
@@ -1495,9 +1500,7 @@ class _StoryText extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: scheme.surfaceContainerLow.withValues(alpha: 0.5),
-            border: Border(
-              left: BorderSide(color: scheme.primary, width: 3),
-            ),
+            border: Border(left: BorderSide(color: scheme.primary, width: 3)),
             borderRadius: const BorderRadius.only(
               topRight: Radius.circular(8),
               bottomRight: Radius.circular(8),
@@ -1638,7 +1641,10 @@ class _StoryCheckCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.teal.withValues(alpha: 0.1),
-        border: Border.all(color: Colors.teal.withValues(alpha: 0.4), width: 0.8),
+        border: Border.all(
+          color: Colors.teal.withValues(alpha: 0.4),
+          width: 0.8,
+        ),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1658,7 +1664,10 @@ class _StoryCheckCard extends StatelessWidget {
                   check.reason.isEmpty
                       ? check.notation
                       : '${check.notation} · ${check.reason}',
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -1974,9 +1983,8 @@ class _SessionDetailDialog extends StatelessWidget {
               maxHeight: MediaQuery.sizeOf(context).height * 0.7,
             ),
             child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(
-                context,
-              ).copyWith(scrollbars: false),
+              behavior: ScrollConfiguration.of(context)
+                  .copyWith(scrollbars: false),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(

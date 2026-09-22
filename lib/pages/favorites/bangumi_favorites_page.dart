@@ -24,7 +24,13 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
 
   String get name => favState.bangumiUserName;
 
-  final List<String> tab = [t.dropped, t.wantToWatch, t.watching, t.onHold, t.completed];
+  final List<String> tab = [
+    t.dropped,
+    t.wantToWatch,
+    t.watching,
+    t.onHold,
+    t.completed,
+  ];
 
   bool get useBriefMode => _layoutMode == 'brief';
 
@@ -161,7 +167,10 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
     }
   }
 
-  Widget _bangumiListSliver(BuildContext context, List<BangumiItem> bangumiItems) {
+  Widget _bangumiListSliver(
+    BuildContext context,
+    List<BangumiItem> bangumiItems,
+  ) {
     if (_layoutMode == 'detailed') {
       return SliverGrid(
         delegate: SliverChildBuilderDelegate((context, index) {
@@ -174,8 +183,10 @@ class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
       );
     }
     if (!useBriefMode) {
-      final columns =
-          ((MediaQuery.sizeOf(context).width / 140).floor()).clamp(2, 6);
+      final columns = ((MediaQuery.sizeOf(context).width / 140).floor()).clamp(
+        2,
+        6,
+      );
       return SliverMasonryGrid.count(
         crossAxisCount: columns,
         mainAxisSpacing: 4,

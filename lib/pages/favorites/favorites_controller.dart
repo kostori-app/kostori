@@ -97,10 +97,9 @@ class FavoritesController extends Notifier<FavoritesState> {
       // 若过滤后为空（完全无收藏），保留 default 作为可选中项
       final filtered = mgr.folderNames.where((name) {
         if (name == kUnassignedFolder) {
-          return mgr.getAllAnimes(
-            kUnassignedFolder,
-            FavoriteSortType.nameAsc,
-          ).isNotEmpty;
+          return mgr
+              .getAllAnimes(kUnassignedFolder, FavoriteSortType.nameAsc)
+              .isNotEmpty;
         }
         return true;
       }).toList();

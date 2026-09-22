@@ -30,9 +30,8 @@ class DeviceInfo {
           content: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: 500.0),
             child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(
-                context,
-              ).copyWith(scrollbars: false, overscroll: false),
+              behavior: ScrollConfiguration.of(context)
+                  .copyWith(scrollbars: false, overscroll: false),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +55,9 @@ class DeviceInfo {
                                   text: '${entry.key}: ${entry.value}',
                                 ),
                               );
-                              App.rootContext.showMessage(message: t.copySuccess);
+                              App.rootContext.showMessage(
+                                message: t.copySuccess,
+                              );
                             },
                             onTap: () {},
                             child: ListTile(
@@ -79,7 +80,7 @@ class DeviceInfo {
             ),
           ),
           actions: [
-              FilledButton(
+            FilledButton(
               onPressed: () {
                 final allText = infoMap.entries
                     .map((e) => '${e.key}: ${e.value}')

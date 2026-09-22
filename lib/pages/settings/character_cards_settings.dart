@@ -108,114 +108,118 @@ class _CharacterCardsSettingsPageState
           Column(
             children: [
               Appbar(
-          title: Text(t.characterCards),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            tooltip: t.back,
-            onPressed: () => context.canPop() ? context.pop() : App.pop(),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.file_open_outlined),
-              tooltip: t.importEntries,
-              onPressed: _import,
-            ),
-            IconButton(
-              icon: const Icon(Icons.auto_awesome),
-              tooltip: t.cardAiCreate,
-              onPressed: _aiCreate,
-            ),
-            IconButton(
-              icon: const Icon(Icons.add),
-              tooltip: t.storyAddCharacter,
-              onPressed: () => _edit(null),
-            ),
-          ],
-        ),
-        Expanded(
-          child: ListenableBuilder(
-            listenable: store,
-            builder: (context, _) {
-              final cards = store.cards;
-              if (cards.isEmpty) {
-                return Center(
-                  child: Text(
-                    t.characterCardsEmpty,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                title: Text(t.characterCards),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new),
+                  tooltip: t.back,
+                  onPressed: () => context.canPop() ? context.pop() : App.pop(),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.file_open_outlined),
+                    tooltip: t.importEntries,
+                    onPressed: _import,
                   ),
-                );
-              }
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  for (final c in cards)
-                    _SettingCard(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        ListTile(
-                          leading: CharacterAvatar(
-                            name: c.displayName,
-                            avatar: c.avatar,
-                            radius: 20,
+                  IconButton(
+                    icon: const Icon(Icons.auto_awesome),
+                    tooltip: t.cardAiCreate,
+                    onPressed: _aiCreate,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    tooltip: t.storyAddCharacter,
+                    onPressed: () => _edit(null),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: store,
+                  builder: (context, _) {
+                    final cards = store.cards;
+                    if (cards.isEmpty) {
+                      return Center(
+                        child: Text(
+                          t.characterCardsEmpty,
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
-                          title: Text(c.displayName),
-                          subtitle: c.tags.isNotEmpty
-                              ? Text(
-                                  c.tags.join(' · '),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : (c.description.isEmpty
-                                    ? null
-                                    : Text(
-                                        c.description,
+                        ),
+                      );
+                    }
+                    return ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        for (final c in cards)
+                          _SettingCard(
+                            padding: EdgeInsets.zero,
+                            children: [
+                              ListTile(
+                                leading: CharacterAvatar(
+                                  name: c.displayName,
+                                  avatar: c.avatar,
+                                  radius: 20,
+                                ),
+                                title: Text(c.displayName),
+                                subtitle: c.tags.isNotEmpty
+                                    ? Text(
+                                        c.tags.join(' · '),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                      )),
-                          onTap: () => showCharacterCardView(context, c),
-                          trailing: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, size: 20),
-                            onSelected: (v) {
-                              if (v == 'edit') _edit(c);
-                              if (v == 'export_v3') _export(c, 3);
-                              if (v == 'export_v2') _export(c, 2);
-                              if (v == 'delete') store.remove(c.id);
-                            },
-                            itemBuilder: (_) => [
-                              PopupMenuItem(value: 'edit', child: Text(t.edit)),
-                              PopupMenuItem(
-                                value: 'export_v3',
-                                child: Text(t.characterExportV3),
-                              ),
-                              PopupMenuItem(
-                                value: 'export_v2',
-                                child: Text(t.characterExportV2),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text(t.delete),
+                                      )
+                                    : (c.description.isEmpty
+                                          ? null
+                                          : Text(
+                                              c.description,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            )),
+                                onTap: () => showCharacterCardView(context, c),
+                                trailing: PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert, size: 20),
+                                  onSelected: (v) {
+                                    if (v == 'edit') _edit(c);
+                                    if (v == 'export_v3') _export(c, 3);
+                                    if (v == 'export_v2') _export(c, 2);
+                                    if (v == 'delete') store.remove(c.id);
+                                  },
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(
+                                      value: 'edit',
+                                      child: Text(t.edit),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'export_v3',
+                                      child: Text(t.characterExportV3),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'export_v2',
+                                      child: Text(t.characterExportV2),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(t.delete),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
                       ],
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
           if (_dragOver)
             Positioned.fill(
               child: IgnorePointer(
                 child: Container(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.scrim.withValues(alpha: 0.45),
+                  color: Theme.of(context).colorScheme.scrim
+                      .withValues(alpha: 0.45),
                   alignment: Alignment.center,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

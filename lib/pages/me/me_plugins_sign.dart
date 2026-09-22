@@ -14,11 +14,7 @@ class _PluginSignManagerPageState extends State<PluginSignManagerPage> {
     final manager = MePagePluginManager();
     return manager
         .all()
-        .where(
-          (p) =>
-              manager.isEnabled(p.key) &&
-              p.signinAvailable,
-        )
+        .where((p) => manager.isEnabled(p.key) && p.signinAvailable)
         .toList();
   }
 
@@ -266,6 +262,7 @@ class _SignCard extends StatelessWidget {
     );
   }
 }
+
 Map<String, dynamic> _asMap2(dynamic v) {
   if (v is Map) {
     return v.map((k, val) => MapEntry(k.toString(), val));

@@ -93,13 +93,7 @@ class QuestItem {
       '已结束',
       '成功',
     };
-    const failed = {
-      'failed',
-      'fail',
-      'failure',
-      '已失败',
-      '失败',
-    };
+    const failed = {'failed', 'fail', 'failure', '已失败', '失败'};
     if (done.contains(s)) return 'done';
     if (failed.contains(s)) return 'failed';
     return 'active';
@@ -313,7 +307,8 @@ class StoryVariable {
     min: (json['min'] as num?)?.toInt(),
     max: (json['max'] as num?)?.toInt(),
     unit: json['unit']?.toString() ?? '',
-    options: (json['options'] as List?)?.map((e) => e.toString()).toList() ??
+    options:
+        (json['options'] as List?)?.map((e) => e.toString()).toList() ??
         const [],
   );
 
@@ -391,10 +386,7 @@ class VarOp {
 }
 
 /// 把变量增量叠加到现有变量表
-Map<String, String> applyVarOps(
-  Map<String, String> vars,
-  List<VarOp> ops,
-) {
+Map<String, String> applyVarOps(Map<String, String> vars, List<VarOp> ops) {
   final out = Map<String, String>.from(vars);
   for (final op in ops) {
     if (op.name.trim().isEmpty) continue;
@@ -500,13 +492,10 @@ const kStoryRegexPhases = <String>['display', 'send', 'both'];
 /// 用变量值替换 {{var:名称}}（未定义时原样保留）
 String replaceStoryVars(String text, Map<String, String> vars) {
   if (vars.isEmpty || !text.contains('{{')) return text;
-  return text.replaceAllMapped(
-    RegExp(r'\{\{\s*var:\s*([^}]+?)\s*\}\}'),
-    (m) {
-      final key = m.group(1)!.trim();
-      return vars.containsKey(key) ? vars[key]! : m.group(0)!;
-    },
-  );
+  return text.replaceAllMapped(RegExp(r'\{\{\s*var:\s*([^}]+?)\s*\}\}'), (m) {
+    final key = m.group(1)!.trim();
+    return vars.containsKey(key) ? vars[key]! : m.group(0)!;
+  });
 }
 
 /// 按阶段对文本做正则替换；[depth] 为相对最新消息的距离（-1 表示未知，跳过深度过滤）
@@ -545,11 +534,7 @@ class StorySegment {
   final String name;
   final String text;
 
-  const StorySegment({
-    required this.type,
-    this.name = '',
-    required this.text,
-  });
+  const StorySegment({required this.type, this.name = '', required this.text});
 }
 
 /// 玩家 persona（用户本人）：仅描述"你是谁"，AI 不得扮演
@@ -558,14 +543,9 @@ class StoryPersona {
   final String avatar;
   final String description;
 
-  const StoryPersona({
-    this.name = '',
-    this.avatar = '',
-    this.description = '',
-  });
+  const StoryPersona({this.name = '', this.avatar = '', this.description = ''});
 
-  bool get isEmpty =>
-      name.trim().isEmpty && description.trim().isEmpty;
+  bool get isEmpty => name.trim().isEmpty && description.trim().isEmpty;
 
   factory StoryPersona.fromJson(Map<String, dynamic> json) {
     final avatar = json['avatar']?.toString() ?? '';
@@ -662,10 +642,9 @@ class StoryCheck {
   });
 
   factory StoryCheck.fromJson(Map<String, dynamic> json) {
-    final rawAdv =
-        (json['advantage'] ?? json['take'] ?? json['rollMode'])
-            ?.toString()
-            .toLowerCase();
+    final rawAdv = (json['advantage'] ?? json['take'] ?? json['rollMode'])
+        ?.toString()
+        .toLowerCase();
     final advantage = switch (rawAdv) {
       'high' || 'adv' || 'advantage' || '高' || '优势' => 'high',
       'low' || 'dis' || 'disadvantage' || '低' || '劣势' => 'low',
@@ -754,9 +733,7 @@ class DiceRoll {
     buf.write(' = $total');
     if (dc != null) {
       final ge = success == true;
-      final cmp = direction == 'low'
-          ? (ge ? '≤' : '>')
-          : (ge ? '≥' : '<');
+      final cmp = direction == 'low' ? (ge ? '≤' : '>') : (ge ? '≥' : '<');
       buf.write(' $cmp $dc');
       buf.write(' → $outcomeLabel');
     }
@@ -778,26 +755,22 @@ DiceRoll rollDice(
   String direction = 'high',
 }) {
   final base = RegExp(r'(\d*)\s*[dD]\s*(\d+)').firstMatch(notation);
-  final count = (base == null
-          ? 1
-          : (int.tryParse(base.group(1) ?? '') ?? 1))
+  final count = (base == null ? 1 : (int.tryParse(base.group(1) ?? '') ?? 1))
       .clamp(1, 100);
-  final sides = (base == null
-          ? 20
-          : (int.tryParse(base.group(2) ?? '') ?? 20))
+  final sides = (base == null ? 20 : (int.tryParse(base.group(2) ?? '') ?? 20))
       .clamp(2, 1000);
 
   // 取高/取低：k h/l N 或 取高/取低 N（默认取 1 颗）
-  final keepMatch = RegExp(
-    r'(?:k\s*([hHlL])\s*(\d*)|取\s*([高低])\s*(\d*))',
-  ).firstMatch(notation);
+  final keepMatch = RegExp(r'(?:k\s*([hHlL])\s*(\d*)|取\s*([高低])\s*(\d*))')
+      .firstMatch(notation);
   String? keepMode;
   var keepCount = 1;
   if (keepMatch != null) {
     final letter = keepMatch.group(1)?.toLowerCase();
     final cn = keepMatch.group(3);
     keepMode = (letter == 'h' || cn == '高') ? 'high' : 'low';
-    keepCount = int.tryParse(
+    keepCount =
+        int.tryParse(
           (letter != null ? keepMatch.group(2) : keepMatch.group(4)) ?? '',
         ) ??
         1;
@@ -1187,11 +1160,7 @@ class TitleState {
   final int stacks;
   final bool equipped;
 
-  const TitleState({
-    required this.key,
-    this.stacks = 1,
-    this.equipped = false,
-  });
+  const TitleState({required this.key, this.stacks = 1, this.equipped = false});
 
   TitleState copyWith({int? stacks, bool? equipped}) => TitleState(
     key: key,
@@ -1267,11 +1236,7 @@ class JobState {
     exp: (json['exp'] as num?)?.toInt() ?? 0,
   );
 
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'level': level,
-    'exp': exp,
-  };
+  Map<String, dynamic> toJson() => {'name': name, 'level': level, 'exp': exp};
 }
 
 /// 据点设施（运行状态）
@@ -1478,7 +1443,9 @@ class GameState {
     final rawAttr = json['attributes'];
     if (rawAttr is Map) {
       for (final e in rawAttr.entries) {
-        if (e.value is num) attributes[e.key.toString()] = (e.value as num).toInt();
+        if (e.value is num) {
+          attributes[e.key.toString()] = (e.value as num).toInt();
+        }
       }
     }
     // 过滤模型偶尔塞进清单的“整句”（如「修lepink取得…。」），只保留条目名
@@ -1500,14 +1467,12 @@ class GameState {
       attributes: attributes,
       skills: strs(json['skills']),
       inventory: strs(json['inventory']),
-      quests:
-          (json['quests'] is List)
+      quests: (json['quests'] is List)
           ? (json['quests'] as List).map(QuestItem.fromJson).toList()
           : const [],
       time: json['time']?.toString() ?? '',
       location: json['location']?.toString() ?? '',
-      codex:
-          (json['codex'] is List)
+      codex: (json['codex'] is List)
           ? [
               for (final e in json['codex'] as List)
                 if (e is Map)
@@ -1522,12 +1487,12 @@ class GameState {
                 e.key.toString(): e.value?.toString() ?? '',
             }
           : const {},
-      present: (json['present'] as List?)?.whereType<String>().toList() ?? const [],
+      present:
+          (json['present'] as List?)?.whereType<String>().toList() ?? const [],
       npcs: (json['npcs'] is List)
           ? [
               for (final e in json['npcs'] as List)
-                if (e is Map)
-                  NpcState.fromJson(e.cast<String, dynamic>()),
+                if (e is Map) NpcState.fromJson(e.cast<String, dynamic>()),
             ]
           : const [],
       titles: (json['titles'] is List)
@@ -1550,7 +1515,9 @@ class GameState {
           : const BaseState(),
       equipped: strs(json['equipped']),
       combat: json['combat'] is Map
-          ? CombatState.fromJson((json['combat'] as Map).cast<String, dynamic>())
+          ? CombatState.fromJson(
+              (json['combat'] as Map).cast<String, dynamic>(),
+            )
           : CombatState.idle,
       achievements:
           (json['achievements'] as List?)?.whereType<String>().toList() ??
@@ -1703,9 +1670,7 @@ Map<String, String> parseStoryFixedHints(String worldBook) {
 
 /// 从一行里解析触发词：`触发：a、b` / `触发:a/b` / `关键词:a,b`
 List<String> _worldBookTriggers(String line) {
-  final m = RegExp(
-    r'(?:触发|关键词|keys?)\s*[:：]\s*([^\n）)】]*)',
-  ).firstMatch(line);
+  final m = RegExp(r'(?:触发|关键词|keys?)\s*[:：]\s*([^\n）)】]*)').firstMatch(line);
   if (m == null) return const [];
   return m
       .group(1)!
@@ -2063,7 +2028,9 @@ class Story {
   );
 
   factory Story.fromJson(Map<String, dynamic> json) => Story(
-    id: (json['id'] as String?) ?? 'story_${DateTime.now().millisecondsSinceEpoch}',
+    id:
+        (json['id'] as String?) ??
+        'story_${DateTime.now().millisecondsSinceEpoch}',
     key: (json['key'] as String?) ?? '',
     version: (json['version'] as String?) ?? '',
     name: (json['name'] as String?) ?? '',
@@ -2086,12 +2053,14 @@ class Story {
               if (e is Map) StoryAction.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
-    worldBookIds: (json['worldBookIds'] as List?)?.whereType<String>().toList() ??
+    worldBookIds:
+        (json['worldBookIds'] as List?)?.whereType<String>().toList() ??
         const [],
-    injectionIds: (json['injectionIds'] as List?)?.whereType<String>().toList() ??
+    injectionIds:
+        (json['injectionIds'] as List?)?.whereType<String>().toList() ??
         const [],
-    settingIds: (json['settingIds'] as List?)?.whereType<String>().toList() ??
-        const [],
+    settingIds:
+        (json['settingIds'] as List?)?.whereType<String>().toList() ?? const [],
     panels: json['panels'] is List
         ? [
             for (final e in json['panels'] as List)
@@ -2123,7 +2092,8 @@ class Story {
     achievements: json['achievements'] is List
         ? [
             for (final e in json['achievements'] as List)
-              if (e is Map) StoryAchievement.fromJson(e.cast<String, dynamic>()),
+              if (e is Map)
+                StoryAchievement.fromJson(e.cast<String, dynamic>()),
           ]
         : const [],
     codex: json['codex'] is List
@@ -2166,10 +2136,14 @@ class Story {
     maxTokens: (json['maxTokens'] as num?)?.toInt(),
     contextBudgetChars: (json['contextBudgetChars'] as num?)?.toInt(),
     persona: json['persona'] is Map
-        ? StoryPersona.fromJson((json['persona'] as Map).cast<String, dynamic>())
+        ? StoryPersona.fromJson(
+            (json['persona'] as Map).cast<String, dynamic>(),
+          )
         : const StoryPersona(),
     initialState: json['initialState'] is Map
-        ? GameState.fromJson((json['initialState'] as Map).cast<String, dynamic>())
+        ? GameState.fromJson(
+            (json['initialState'] as Map).cast<String, dynamic>(),
+          )
         : GameState.empty,
     isBuiltin: (json['isBuiltin'] as bool?) ?? false,
   );
@@ -2211,8 +2185,7 @@ class Story {
     if (temperature != null) 'temperature': temperature,
     if (topP != null) 'topP': topP,
     if (maxTokens != null) 'maxTokens': maxTokens,
-    if (contextBudgetChars != null)
-      'contextBudgetChars': contextBudgetChars,
+    if (contextBudgetChars != null) 'contextBudgetChars': contextBudgetChars,
     'persona': persona.toJson(),
     'initialState': initialState.toJson(),
     'isBuiltin': isBuiltin,
@@ -2308,7 +2281,8 @@ class Story {
     final attrExample = initialState.attributes.isEmpty
         ? '{"属性名": 5}'
         : '{${initialState.attributes.entries.map((e) => '"${e.key}": ${e.value}').join(', ')}}';
-    buf.writeln('''
+    buf.writeln(
+      '''
 【输出格式要求】
 每次回复必须严格分为两部分：
 1. 先以第二人称描写场景、行动结果与对话（叙事正文，可用 Markdown）。
@@ -2378,7 +2352,8 @@ class Story {
   只有以下情况才值得 check：对手/目标有真实且对等的抵抗，隐藏与危险并存的尝试（潜行绕过警觉的守卫、撬开有机关的锁、说服敌对且固执的 NPC、战斗中闪避致命一击等）。判定前先自问「失败会不会带来有意思的后果」，答案为否就不要判定。
 - **判定方向**：本故事为${checkDirection == 'low' ? '取低——总值 ≤ DC 为成功（越高越容易失败）' : '取高——总值 ≥ DC 为成功（越低越容易失败）'}；请按此设置 DC。
 - **优势 / 劣势**：check 可加 `advantage:"high"`（优势，取高）或 `"low"`（劣势，取低），系统会掷两次取对应值；不加则正常掷一次。骰子记法也支持 `2d20kh1`（取高）/`2d20kl1`（取低）。
-- **骰子工具**：也可以直接调用 `roll_dice` 工具（参数 label / dice / modifier / dc）让系统掷骰，NPC 或剧情需要判定时同样用它；除 `roll_dice` 外不要调用其它工具。''');
+- **骰子工具**：也可以直接调用 `roll_dice` 工具（参数 label / dice / modifier / dc）让系统掷骰，NPC 或剧情需要判定时同样用它；除 `roll_dice` 外不要调用其它工具。''',
+    );
     // 叙事风格：默认沉浸式小说笔法；故事可用 `## 叙事风格` 覆盖
     if (narrationStyle.trim().isNotEmpty) {
       buf.writeln();
@@ -2728,6 +2703,7 @@ class StoryStore extends ChangeNotifier {
       } catch (_) {}
       return const [];
     }
+
     List<T> mapList<T>(String section, T Function(Map<String, dynamic>) f) {
       final raw = _section(text, section);
       if (raw == null) return <T>[];
@@ -2742,6 +2718,7 @@ class StoryStore extends ChangeNotifier {
       } catch (_) {}
       return <T>[];
     }
+
     final panels = mapList('面板', StoryPanel.fromJson);
     // 致命资源：列表（默认 any）或对象 {mode, resources}
     var deathRes = (mode: 'any', resources: <String>[]);
@@ -3168,9 +3145,8 @@ class StorySessionStore extends ChangeNotifier {
   Future<void> _writeSession(String storyId, StorySession session) async {
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File(
-      '$dirPath/$storyId.json',
-    ).writeAsString(jsonEncode(session.toJson()));
+    await File('$dirPath/$storyId.json')
+        .writeAsString(jsonEncode(session.toJson()));
   }
 
   /// 已存档的 storyId 列表（供选择性同步）

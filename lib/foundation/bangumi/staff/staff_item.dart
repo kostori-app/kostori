@@ -2,10 +2,7 @@ class StaffFullItem {
   final Staff staff;
   final List<Position> positions;
 
-  StaffFullItem({
-    required this.staff,
-    required this.positions,
-  });
+  StaffFullItem({required this.staff, required this.positions});
 
   factory StaffFullItem.fromJson(Map<String, dynamic> json) {
     return StaffFullItem(
@@ -120,12 +117,7 @@ class Images {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'large': large,
-      'medium': medium,
-      'small': small,
-      'grid': grid,
-    };
+    return {'large': large, 'medium': medium, 'small': small, 'grid': grid};
   }
 }
 
@@ -151,11 +143,7 @@ class Position {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'type': type.toJson(),
-      'summary': summary,
-      'appearEps': appearEps,
-    };
+    return {'type': type.toJson(), 'summary': summary, 'appearEps': appearEps};
   }
 }
 
@@ -182,20 +170,10 @@ class PositionType {
   }
 
   factory PositionType.fromTemplate() {
-    return PositionType(
-      id: 0,
-      en: '',
-      cn: '',
-      jp: '',
-    );
+    return PositionType(id: 0, en: '', cn: '', jp: '');
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'en': en,
-      'cn': cn,
-      'jp': jp,
-    };
+    return {'id': id, 'en': en, 'cn': cn, 'jp': jp};
   }
 }

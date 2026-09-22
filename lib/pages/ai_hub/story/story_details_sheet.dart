@@ -144,10 +144,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
             const SizedBox(height: 12),
             Text(
               t.storyDefinition,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
@@ -228,9 +225,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
             ),
             ListTile(
               leading: Icon(
-                equipped
-                    ? Icons.remove_circle_outline
-                    : Icons.shield_outlined,
+                equipped ? Icons.remove_circle_outline : Icons.shield_outlined,
               ),
               title: Text(equipped ? t.storyUnequip : t.storyEquip),
               onTap: () {
@@ -268,7 +263,9 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onLongPress: onLongPress,
-      onSecondaryTapDown: onSecondaryTap == null ? null : (_) => onSecondaryTap(),
+      onSecondaryTapDown: onSecondaryTap == null
+          ? null
+          : (_) => onSecondaryTap(),
       child: ActionChip(
         avatar: Icon(_iconFor(label, kind), size: 16),
         label: Row(
@@ -337,46 +334,46 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(_codexIcon(d.kind), size: 20),
-      title: Row(
-        children: [
-          Flexible(child: Text(d.name)),
-          if (status != null) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: owned == true
-                    ? scheme.primaryContainer
-                    : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                status.$1,
-                style: TextStyle(
-                  fontSize: 10,
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(_codexIcon(d.kind), size: 20),
+        title: Row(
+          children: [
+            Flexible(child: Text(d.name)),
+            if (status != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
                   color: owned == true
-                      ? scheme.onPrimaryContainer
-                      : scheme.onSurfaceVariant,
+                      ? scheme.primaryContainer
+                      : scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  status.$1,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: owned == true
+                        ? scheme.onPrimaryContainer
+                        : scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
-      ),
-      subtitle: Text(
-        d.display.isEmpty ? d.mechanics : d.display,
-        style: TextStyle(
-          fontSize: 12,
-          color: owned == false
-              ? scheme.onSurfaceVariant.withValues(alpha: 0.7)
-              : null,
         ),
-      ),
-      onTap: () =>
-          d.kind == 'skill' ? _skillMenu(d.name) : _inspect(d.name, d.kind),
+        subtitle: Text(
+          d.display.isEmpty ? d.mechanics : d.display,
+          style: TextStyle(
+            fontSize: 12,
+            color: owned == false
+                ? scheme.onSurfaceVariant.withValues(alpha: 0.7)
+                : null,
+          ),
+        ),
+        onTap: () =>
+            d.kind == 'skill' ? _skillMenu(d.name) : _inspect(d.name, d.kind),
       ),
     );
   }
@@ -517,8 +514,10 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${r.name}  ${r.cur}/${r.max}',
-                      style: const TextStyle(fontSize: 12)),
+                  Text(
+                    '${r.name}  ${r.cur}/${r.max}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   const SizedBox(height: 4),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
@@ -592,7 +591,10 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
       case 'quests':
         if (state.quests.isEmpty) return const [];
         return [
-          _sectionTitle(panel.title.isEmpty ? t.storyQuests : panel.title, icon),
+          _sectionTitle(
+            panel.title.isEmpty ? t.storyQuests : panel.title,
+            icon,
+          ),
           for (final q in state.quests)
             ListTile(
               dense: true,
@@ -838,9 +840,7 @@ class _StoryDetailsSheetState extends State<_StoryDetailsSheet> {
               dense: true,
               contentPadding: EdgeInsets.zero,
               leading: Icon(
-                e.kind == 'debuff'
-                    ? Icons.trending_down
-                    : Icons.trending_up,
+                e.kind == 'debuff' ? Icons.trending_down : Icons.trending_up,
                 size: 20,
                 color: e.kind == 'debuff' ? Colors.redAccent : Colors.teal,
               ),

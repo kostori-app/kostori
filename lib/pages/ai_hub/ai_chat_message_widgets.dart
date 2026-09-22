@@ -362,7 +362,8 @@ class _StepContent extends StatelessWidget {
           ),
         if (step.args != null && step.args!.isNotEmpty) ...[
           const SizedBox(height: 4),
-          AppSelectableText(const JsonEncoder.withIndent('  ').convert(step.args),
+          AppSelectableText(
+            const JsonEncoder.withIndent('  ').convert(step.args),
             style: TextStyle(
               fontSize: 11,
               fontFamily: 'monospace',
@@ -372,7 +373,8 @@ class _StepContent extends StatelessWidget {
         ],
         if (step.result != null && step.result!.isNotEmpty) ...[
           const SizedBox(height: 4),
-          AppSelectableText(step.result!,
+          AppSelectableText(
+            step.result!,
             style: TextStyle(
               fontSize: 11,
               color: scheme.onSurfaceVariant,
@@ -433,7 +435,8 @@ class _ThinkingContentState extends State<_ThinkingContent> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final text = AppSelectableText(widget.text,
+    final text = AppSelectableText(
+      widget.text,
       style: const TextStyle(fontSize: 12, height: 1.5),
     );
 
@@ -1057,7 +1060,8 @@ class _ChatBubble extends StatelessWidget {
                   color: scheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: AppSelectableText(content,
+                child: AppSelectableText(
+                  content,
                   style: TextStyle(
                     color: scheme.onSecondaryContainer,
                     fontSize: 14,
@@ -1405,8 +1409,7 @@ class ChatComposer extends StatelessWidget {
               children: [
                 Expanded(
                   child: Focus(
-                    onKeyEvent:
-                        onKeyEvent ?? (_, _) => KeyEventResult.ignored,
+                    onKeyEvent: onKeyEvent ?? (_, _) => KeyEventResult.ignored,
                     child: TextField(
                       controller: controller,
                       focusNode: focusNode,

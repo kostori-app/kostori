@@ -134,11 +134,7 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                           children: [
                             Text(t.airTimeLabel(time: episode.airDate)),
                             const SizedBox(width: 8),
-                            Text(
-                              t.durationLabel(
-                                duration: episode.duration,
-                              ),
-                            ),
+                            Text(t.durationLabel(duration: episode.duration)),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -162,9 +158,9 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text('${episode.comment}', style: ts.s12),
@@ -189,41 +185,40 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                     ),
                   )
                 : commentsQueryTimeout
-                      ? SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: _commentsLoadFailed
-                              ? ErrorState(
-                                  message: t.failedToLoadPleaseTryAgain,
-                                  retry: () => loadComments(episode.id),
-                                  retryText: t.reload,
-                                )
-                              : EmptyState(
-                                  message: t.nobodysPostedAnythingYet,
-                                  retry: () => loadComments(episode.id),
-                                  retryText: t.reload,
-                                ),
-                        )
-                      : SliverList.builder(
-                          itemCount: 4,
-                          itemBuilder: (context, _) {
-                            return SafeArea(
-                              top: false,
-                              bottom: false,
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: SizedBox(
-                                    width: MediaQuery.sizeOf(context).width >
-                                            950
-                                        ? 950
-                                        : MediaQuery.sizeOf(context).width - 32,
-                                    child: EpisodeCommentsCard.bone(),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                ? SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _commentsLoadFailed
+                        ? ErrorState(
+                            message: t.failedToLoadPleaseTryAgain,
+                            retry: () => loadComments(episode.id),
+                            retryText: t.reload,
+                          )
+                        : EmptyState(
+                            message: t.nobodysPostedAnythingYet,
+                            retry: () => loadComments(episode.id),
+                            retryText: t.reload,
+                          ),
+                  )
+                : SliverList.builder(
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: EpisodeCommentsCard.bone(),
+                            ),
+                          ),
                         ),
+                      );
+                    },
+                  ),
           ],
         ),
       ),

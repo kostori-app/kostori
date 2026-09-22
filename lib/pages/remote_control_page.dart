@@ -539,9 +539,9 @@ class _CurrentAnimeCard extends StatelessWidget {
                     return Container(
                       width: 60,
                       height: 80,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
                       child: const Icon(Icons.image_not_supported),
                     );
                   },

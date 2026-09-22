@@ -477,8 +477,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
 
   /// 拼一段角色设定，供翻译时判断性别 / 气质 / 译法
   String _nameTranslateContext() {
-    String clip(String s, int max) =>
-        s.length > max ? s.substring(0, max) : s;
+    String clip(String s, int max) => s.length > max ? s.substring(0, max) : s;
     final parts = <String>[];
     final tags = _tagsCtrl.text.trim();
     if (tags.isNotEmpty) parts.add('标签：$tags');
@@ -525,7 +524,10 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
         if (out.isNotEmpty) return out;
       }
     }
-    final res = await TranslationService().translate(name, targetLanguage: lang);
+    final res = await TranslationService().translate(
+      name,
+      targetLanguage: lang,
+    );
     return _cleanName(res.dataOrNull ?? '');
   }
 
@@ -642,7 +644,8 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
       groupOnlyGreetings: _lines(_groupGreetingsCtrl),
       creationDate: widget.card?.creationDate,
       modificationDate: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      creatorNotesMultilingual: widget.card?.creatorNotesMultilingual ?? const {},
+      creatorNotesMultilingual:
+          widget.card?.creatorNotesMultilingual ?? const {},
       assets: widget.card?.assets ?? const [],
       extensions: widget.card?.extensions ?? const {},
       characterBook: _bookEntries.isEmpty
@@ -766,11 +769,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
     children: [
       _field(t.characterFirstMessage, _firstCtrl, multiline: true),
       _field(t.characterExampleDialogue, _exampleCtrl, multiline: true),
-      _field(
-        t.characterGroupGreetings,
-        _groupGreetingsCtrl,
-        multiline: true,
-      ),
+      _field(t.characterGroupGreetings, _groupGreetingsCtrl, multiline: true),
     ],
   );
 
@@ -778,11 +777,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
     children: [
       _field(t.characterSystemPrompt, _systemCtrl, multiline: true),
       _field(t.characterPostHistory, _postCtrl, multiline: true),
-      _field(
-        t.characterCreatorNotes,
-        _creatorNotesCtrl,
-        multiline: true,
-      ),
+      _field(t.characterCreatorNotes, _creatorNotesCtrl, multiline: true),
       _field(t.characterSource, _sourceCtrl, multiline: true),
     ],
   );
@@ -800,8 +795,7 @@ class _CharacterCardEditorState extends State<CharacterCardEditor>
               style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
             ),
           ),
-        for (var i = 0; i < _bookEntries.length; i++)
-          _bookEntryTile(i, scheme),
+        for (var i = 0; i < _bookEntries.length; i++) _bookEntryTile(i, scheme),
         const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerLeft,
@@ -1088,7 +1082,8 @@ class _CharacterCardViewState extends State<CharacterCardView>
             ],
           ),
           const SizedBox(height: 4),
-          AppSelectableText(content.trim(),
+          AppSelectableText(
+            content.trim(),
             style: const TextStyle(fontSize: 13, height: 1.5),
           ),
           TranslationOutput(
@@ -1118,9 +1113,7 @@ class _CharacterCardViewState extends State<CharacterCardView>
           Row(
             children: [
               Icon(
-                e.constant
-                    ? Icons.push_pin_outlined
-                    : Icons.menu_book_outlined,
+                e.constant ? Icons.push_pin_outlined : Icons.menu_book_outlined,
                 size: 15,
                 color: scheme.primary,
               ),
@@ -1152,16 +1145,14 @@ class _CharacterCardViewState extends State<CharacterCardView>
               padding: const EdgeInsets.only(top: 2, left: 21),
               child: Text(
                 '${t.storyLoreKeys}: ${e.keys.join('、')}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
               ),
             ),
           if (e.content.trim().isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4, left: 21),
-              child: AppSelectableText(e.content.trim(),
+              child: AppSelectableText(
+                e.content.trim(),
                 style: const TextStyle(fontSize: 13, height: 1.5),
               ),
             ),
@@ -1397,17 +1388,10 @@ Future<Uint8List?> renderCharacterCardImage(
 }
 
 /// 导出角色卡为 PNG（内嵌 chara 块），酒馆可直接导入
-Future<void> exportCharacterCardPng(
-  CharacterCard card, {
-  int spec = 3,
-}) async {
-  final base =
-      card.decodeAvatarImage() ?? await renderCharacterCardImage(card);
+Future<void> exportCharacterCardPng(CharacterCard card, {int spec = 3}) async {
+  final base = card.decodeAvatarImage() ?? await renderCharacterCardImage(card);
   if (base == null) return;
-  final png = CharacterCard.embedCharaChunk(
-    base,
-    card.toCharaText(spec: spec),
-  );
+  final png = CharacterCard.embedCharaChunk(base, card.toCharaText(spec: spec));
   await saveFile(data: png, filename: '${card.name}.png');
 }
 

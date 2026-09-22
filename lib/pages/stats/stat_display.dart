@@ -23,13 +23,8 @@ class StatEntryCard extends StatelessWidget {
         color: color,
         elevation: 4,
         shadowColor: Theme.of(context).colorScheme.shadow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          child: child,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(onTap: onTap, child: child),
       ),
     );
   }

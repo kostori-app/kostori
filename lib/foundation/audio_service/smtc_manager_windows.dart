@@ -121,11 +121,11 @@ class SMTCManagerWindows {
   /// Only calls the native API when something actually changed,
   /// and guards every nullable field before touching SMTC.
   void _pushMetadataIfChanged() {
-try {
-  if (_controller == null) return;
+    try {
+      if (_controller == null) return;
 
-  final title = _controller!.animeTitle;
-  final artist = _controller!.currentSetName;
+      final title = _controller!.animeTitle;
+      final artist = _controller!.currentSetName;
 
       // Sanitise thumbnail: empty string → null so SMTC gets no URI
       // rather than an empty one, which is what triggers the panic.

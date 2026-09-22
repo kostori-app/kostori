@@ -3,11 +3,13 @@
 import 'package:antlr4/antlr4.dart';
 
 class BBCodeLexer extends Lexer {
-  static final checkVersion =
-      () => RuntimeMetaData.checkVersion('4.13.2', RuntimeMetaData.VERSION);
+  static final checkVersion = () =>
+      RuntimeMetaData.checkVersion('4.13.2', RuntimeMetaData.VERSION);
 
   static final List<DFA> _decisionToDFA = List.generate(
-      _ATN.numberOfDecisions, (i) => DFA(_ATN.getDecisionState(i), i));
+    _ATN.numberOfDecisions,
+    (i) => DFA(_ATN.getDecisionState(i), i),
+  );
   static final PredictionContextCache _sharedContextCache =
       PredictionContextCache();
   static const int TOKEN_T__0 = 1,
@@ -73,7 +75,7 @@ class BBCodeLexer extends Lexer {
     'T__24',
     'T__25',
     'T__26',
-    'STRING'
+    'STRING',
   ];
 
   static final List<String?> _LITERAL_NAMES = [
@@ -104,7 +106,7 @@ class BBCodeLexer extends Lexer {
     "'(=///=)'",
     "'(=.,=)'",
     "'(:P)'",
-    "'(LOL)'"
+    "'(LOL)'",
   ];
   static final List<String?> _SYMBOLIC_NAMES = [
     null,
@@ -135,10 +137,12 @@ class BBCodeLexer extends Lexer {
     null,
     null,
     null,
-    "STRING"
+    "STRING",
   ];
-  static final Vocabulary VOCABULARY =
-      VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+  static final Vocabulary VOCABULARY = VocabularyImpl(
+    _LITERAL_NAMES,
+    _SYMBOLIC_NAMES,
+  );
 
   @override
   Vocabulary get vocabulary {
@@ -146,8 +150,12 @@ class BBCodeLexer extends Lexer {
   }
 
   BBCodeLexer(CharStream input) : super(input) {
-    interpreter = LexerATNSimulator(_ATN, _decisionToDFA, _sharedContextCache,
-        recog: this);
+    interpreter = LexerATNSimulator(
+      _ATN,
+      _decisionToDFA,
+      _sharedContextCache,
+      recog: this,
+    );
   }
 
   @override
@@ -2084,7 +2092,7 @@ class BBCodeLexer extends Lexer {
     2,
     0,
     228,
-    0
+    0,
   ];
 
   static final ATN _ATN = ATNDeserializer().deserialize(_serializedATN);

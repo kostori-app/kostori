@@ -35,7 +35,6 @@ part 'favorite_actions.dart';
 
 part 'favorite_bangumi_page.dart';
 
-
 part 'local_favorites_page.dart';
 
 const _kLeftBarWidth = 256.0;
@@ -269,9 +268,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
             top: 0,
             bottom: 0,
             duration: const Duration(milliseconds: 200),
-            child: _LeftBar(
-              favoritesController: favoritesController,
-            ).fixWidth(_kLeftBarWidth),
+            child: _LeftBar(favoritesController: favoritesController)
+                .fixWidth(_kLeftBarWidth),
           ),
           Positioned(
             top: 0,
@@ -552,7 +550,9 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: Material(
-        color: selected ? cs.primaryContainer.toOpacity(0.36) : Colors.transparent,
+        color: selected
+            ? cs.primaryContainer.toOpacity(0.36)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),

@@ -259,10 +259,7 @@ class MePagePlugin {
   }
 
   /// 通用插件方法调用（供通用设置模块调插件 JS 的会话/账号等能力）
-  Future<dynamic> invoke(
-    String method, [
-    List<Object?> args = const [],
-  ]) async {
+  Future<dynamic> invoke(String method, [List<Object?> args = const []]) async {
     try {
       final argsJs = args.map((a) => _jsJson(a as Object)).join(', ');
       final res = await JsEngine().runCode("""
@@ -404,9 +401,11 @@ class MePagePlugin {
       );
       if (res is List) {
         return res
-            .map((e) => (e is Map)
-                ? e.map((k, v) => MapEntry(k.toString(), v.toString()))
-                : const <String, dynamic>{})
+            .map(
+              (e) => (e is Map)
+                  ? e.map((k, v) => MapEntry(k.toString(), v.toString()))
+                  : const <String, dynamic>{},
+            )
             .toList();
       }
     } catch (e, s) {
@@ -478,9 +477,7 @@ class MePagePlugin {
         final raw = data['pageCache_$name'];
         if (raw is List && raw.isNotEmpty) {
           return raw.map((e) {
-            return e is Map
-                ? e.map((k, v) => MapEntry(k.toString(), v))
-                : e;
+            return e is Map ? e.map((k, v) => MapEntry(k.toString(), v)) : e;
           }).toList();
         }
       }
@@ -495,9 +492,7 @@ class MePagePlugin {
   void _writePageCache(String name, List<dynamic> modules) {
     try {
       data['pageCache_$name'] = modules
-          .map((e) => e is Map
-              ? e.map((k, v) => MapEntry(k.toString(), v))
-              : e)
+          .map((e) => e is Map ? e.map((k, v) => MapEntry(k.toString(), v)) : e)
           .toList();
       data['pageCacheAt_$name'] = DateTime.now().toIso8601String();
       data['pageCacheVer_$name'] = version;
@@ -615,8 +610,7 @@ class MePagePluginManager with ChangeNotifier, Init {
   }
 
   /// 全局“启动时自动签到”总开关（默认开）
-  bool get autoSigninMaster =>
-      appdata.implicitData['meAutoSignin'] != false;
+  bool get autoSigninMaster => appdata.implicitData['meAutoSignin'] != false;
 
   /// 自动签到候选：启用 + 在自动名单 + 已登录 + 有签到入口 + 今天还没签
   List<MePagePlugin> autoCandidates() {
@@ -641,10 +635,19 @@ class MePagePluginManager with ChangeNotifier, Init {
       };
       p._saveData();
       if (ok) p.markSignedToday();
-      return {'key': p.key, 'name': p.name, 'ok': ok, 'message': res['message'] ?? ''};
+      return {
+        'key': p.key,
+        'name': p.name,
+        'ok': ok,
+        'message': res['message'] ?? '',
+      };
     } catch (e, s) {
       SourceLog.error('MePagePlugin.runSignin', '${p.name}: $e\n$s');
-      p.data['lastSign'] = {'ok': false, 'message': '$e', 'time': DateTime.now().toIso8601String()};
+      p.data['lastSign'] = {
+        'ok': false,
+        'message': '$e',
+        'time': DateTime.now().toIso8601String(),
+      };
       p._saveData();
       return {'key': p.key, 'name': p.name, 'ok': false, 'message': '$e'};
     }
@@ -671,7 +674,10 @@ class MePagePluginManager with ChangeNotifier, Init {
     for (final p in autoCandidates()) {
       final r = await runSignin(p);
       if (!r['ok']) {
-        SourceLog.warning('MePagePlugin.autoSignin', '${p.name}: ${r['message']}');
+        SourceLog.warning(
+          'MePagePlugin.autoSignin',
+          '${p.name}: ${r['message']}',
+        );
       }
     }
   }
@@ -688,7 +694,10 @@ class MePagePluginManager with ChangeNotifier, Init {
     var dio = AppDio();
     final list = await dio.get<List<dynamic>>(
       url,
-      options: Options(method: 'GET', receiveTimeout: const Duration(seconds: 30)),
+      options: Options(
+        method: 'GET',
+        receiveTimeout: const Duration(seconds: 30),
+      ),
     );
     final items = list.data;
     if (items is! List) return 0;
@@ -774,7 +783,8 @@ class MePagePluginParser {
             .runCode("globalThis.__me_plugins[${_jsStr(key)}]?.description")
             ?.toString() ??
         '';
-    final referer = JsEngine()
+    final referer =
+        JsEngine()
             .runCode("globalThis.__me_plugins[${_jsStr(key)}]?.referer")
             ?.toString() ??
         '';
@@ -800,9 +810,11 @@ class MePagePluginParser {
       );
       if (raw is List) {
         settingsCache = raw
-            .map((e) => (e is Map)
-                ? e.map((k, v) => MapEntry(k.toString(), v))
-                : const <String, dynamic>{})
+            .map(
+              (e) => (e is Map)
+                  ? e.map((k, v) => MapEntry(k.toString(), v))
+                  : const <String, dynamic>{},
+            )
             .toList();
       }
     } catch (_) {}

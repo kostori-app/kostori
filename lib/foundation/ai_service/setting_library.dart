@@ -93,9 +93,8 @@ class SettingEntry {
   );
 
   /// 解析为词条定义
-  StoryDefinition? toCodex() => type == SettingTypes.codex
-      ? StoryDefinition.fromJson(payload)
-      : null;
+  StoryDefinition? toCodex() =>
+      type == SettingTypes.codex ? StoryDefinition.fromJson(payload) : null;
 
   /// 解析为称号定义
   StoryTitle? toTitle() =>
@@ -226,9 +225,7 @@ class SettingLibraryStore extends ChangeNotifier {
         final prev = merged[e.id];
         merged[e.id] = prev == null
             ? e
-            : prev.copyWith(
-                bookIds: {...prev.bookIds, ...e.bookIds}.toList(),
-              );
+            : prev.copyWith(bookIds: {...prev.bookIds, ...e.bookIds}.toList());
       }
     }
     _books = [
@@ -260,7 +257,9 @@ class SettingLibraryStore extends ChangeNotifier {
       final book = SettingBook(
         id: bookId,
         name: group.key.isEmpty ? '设定库' : group.key,
-        entries: [for (final e in group.value) e.copyWith(bookIds: [bookId])],
+        entries: [
+          for (final e in group.value) e.copyWith(bookIds: [bookId]),
+        ],
       );
       _books.add(book);
       await _writeBook(book);
@@ -278,9 +277,8 @@ class SettingLibraryStore extends ChangeNotifier {
   Future<void> _writeBook(SettingBook book) async {
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File(
-      '$dirPath/${book.id}.json',
-    ).writeAsString(jsonEncode(book.toJson()));
+    await File('$dirPath/${book.id}.json')
+        .writeAsString(jsonEncode(book.toJson()));
   }
 
   void _deleteBookFile(String bookId) {
@@ -469,7 +467,6 @@ class SettingLibraryStore extends ChangeNotifier {
     notifyListeners();
   }
 }
-
 
 /// 把设定库中选中的条目并入故事（词条 / 称号 / 职业 / 据点）
 Story mergeSettingLibrary(Story story, Iterable<SettingEntry> entries) {

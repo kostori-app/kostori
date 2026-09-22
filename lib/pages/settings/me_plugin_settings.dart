@@ -31,8 +31,7 @@ class _PluginSettingsState extends State<PluginSettings> with RouteAware {
         return false;
       }
       if (_loginFilter == 'logged' && !p.isLogged) return false;
-      if (_loginFilter == 'notLogged' &&
-          (!p.hasLogin || p.isLogged)) {
+      if (_loginFilter == 'notLogged' && (!p.hasLogin || p.isLogged)) {
         return false;
       }
       if (_search.trim().isEmpty) return true;
@@ -48,16 +47,14 @@ class _PluginSettingsState extends State<PluginSettings> with RouteAware {
     }
     return list;
   }
+
   /// 从 .js 直链添加单个插件（与番剧源“添加源”一致）
   Future<void> _addPluginByUrl(String url) async {
     final trimmed = url.trim();
     if (trimmed.isEmpty) return;
     String fileName = trimmed.split('/').last.split('?').first;
     if (!fileName.toLowerCase().endsWith('.js')) {
-      App.rootContext.showMessage(
-        message: t.mustBeJs,
-        level: LogLevel.warning,
-      );
+      App.rootContext.showMessage(message: t.mustBeJs, level: LogLevel.warning);
       return;
     }
     try {
@@ -87,10 +84,7 @@ class _PluginSettingsState extends State<PluginSettings> with RouteAware {
       if (mounted) setState(() {});
       App.rootContext.showMessage(message: '${t.imported}: $safe');
     } catch (e) {
-      App.rootContext.showMessage(
-        message: e.toString(),
-        level: LogLevel.error,
-      );
+      App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
     }
   }
 
@@ -109,10 +103,7 @@ class _PluginSettingsState extends State<PluginSettings> with RouteAware {
       if (mounted) setState(() {});
       App.rootContext.showMessage(message: '${t.imported}: $safe');
     } catch (e) {
-      App.rootContext.showMessage(
-        message: e.toString(),
-        level: LogLevel.error,
-      );
+      App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
     }
   }
 
@@ -260,115 +251,118 @@ const plugin = {
             child: Stack(
               children: [
                 _SettingCard(
-            children: [
-              _SettingPartTitle(
-                title: t.pluginSourceUrl,
-                icon: Icons.widgets_outlined,
-              ),
-              TextField(
-                controller: _urlCtrl,
-                decoration: InputDecoration(
-                  hintText: 'https://example.com/plugin.js',
-                  border: const UnderlineInputBorder(),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                  suffix: IconButton(
-                    tooltip: t.add,
-                    onPressed: () => _addPluginByUrl(_urlCtrl.text),
-                    icon: const Icon(Icons.add),
-                  ),
-                ),
-                onSubmitted: (_) => _addPluginByUrl(_urlCtrl.text),
-              ).paddingHorizontal(16).paddingBottom(8),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
                   children: [
-                    IconTileButton(
-                      icon: const Icon(Icons.list_alt_outlined),
-                      label: t.pluginSourceList,
-                      onTap: () {
-                        showPopUpWidget(
-                          App.rootContext,
-                          const _PluginSourceList(),
-                        );
-                      },
+                    _SettingPartTitle(
+                      title: t.pluginSourceUrl,
+                      icon: Icons.widgets_outlined,
                     ),
-                    // 打开目录仅桌面端有意义（移动端无桌面文件管理器）
-                    if (App.isDesktop)
-                      IconTileButton(
-                        icon: const Icon(Icons.folder_open),
-                        label: t.openDir,
-                        onTap: _openDir,
+                    TextField(
+                      controller: _urlCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'https://example.com/plugin.js',
+                        border: const UnderlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                        ),
+                        suffix: IconButton(
+                          tooltip: t.add,
+                          onPressed: () => _addPluginByUrl(_urlCtrl.text),
+                          icon: const Icon(Icons.add),
+                        ),
                       ),
-                    IconTileButton(
-                      icon: const Icon(Icons.add),
-                      label: t.createPlugin,
-                      onTap: _create,
+                      onSubmitted: (_) => _addPluginByUrl(_urlCtrl.text),
+                    ).paddingHorizontal(16).paddingBottom(8),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          IconTileButton(
+                            icon: const Icon(Icons.list_alt_outlined),
+                            label: t.pluginSourceList,
+                            onTap: () {
+                              showPopUpWidget(
+                                App.rootContext,
+                                const _PluginSourceList(),
+                              );
+                            },
+                          ),
+                          // 打开目录仅桌面端有意义（移动端无桌面文件管理器）
+                          if (App.isDesktop)
+                            IconTileButton(
+                              icon: const Icon(Icons.folder_open),
+                              label: t.openDir,
+                              onTap: _openDir,
+                            ),
+                          IconTileButton(
+                            icon: const Icon(Icons.add),
+                            label: t.createPlugin,
+                            onTap: _create,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-            ),
-            if (_dragOver)
-              Positioned.fill(
-                child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
+                if (_dragOver)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary
+                              .withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 2,
+                          ),
                         ),
-                      ),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.file_download_outlined,
-                                size: 20,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  t.dropJsPluginHint,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Theme.of(context).colorScheme.primary,
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.file_download_outlined,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    t.dropJsPluginHint,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -402,9 +396,9 @@ const plugin = {
                                 ),
                           isDense: true,
                           filled: true,
-                          fillColor: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHigh,
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHigh,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 10,
@@ -482,18 +476,16 @@ const plugin = {
                               style: _sort == key
                                   ? TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                     )
                                   : null,
                             ),
                           ),
                       ],
                       icon: const Icon(Icons.sort, size: 20),
-                      iconColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant,
+                      iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -518,42 +510,39 @@ const plugin = {
           )
         else
           SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, i) {
-                final p = visible[i];
-                final manager = MePagePluginManager();
-                return _PluginSliverCard(
-                  key: ValueKey(p.key),
-                  plugin: p,
-                  enabled: manager.isEnabled(p.key),
-                  onToggle: (v) {
-                    manager.setEnabled(p.key, v);
-                    if (mounted) setState(() {});
-                  },
-                  account: p.hasLogin
-                      ? () async {
-                          await showPopUpWidget(
-                            App.rootContext,
-                            _PluginAccountPage(plugin: p),
-                          );
-                          if (mounted) setState(() {});
-                        }
-                      : null,
-                  settings: p.hasSettings
-                      ? () async {
-                          await showPopUpWidget(
-                            App.rootContext,
-                            _PluginSettingsPage(plugin: p),
-                          );
-                          if (mounted) setState(() {});
-                        }
-                      : null,
-                  edit: _edit,
-                  delete: _delete,
-                );
-              },
-              childCount: visible.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, i) {
+              final p = visible[i];
+              final manager = MePagePluginManager();
+              return _PluginSliverCard(
+                key: ValueKey(p.key),
+                plugin: p,
+                enabled: manager.isEnabled(p.key),
+                onToggle: (v) {
+                  manager.setEnabled(p.key, v);
+                  if (mounted) setState(() {});
+                },
+                account: p.hasLogin
+                    ? () async {
+                        await showPopUpWidget(
+                          App.rootContext,
+                          _PluginAccountPage(plugin: p),
+                        );
+                        if (mounted) setState(() {});
+                      }
+                    : null,
+                settings: p.hasSettings
+                    ? () async {
+                        await showPopUpWidget(
+                          App.rootContext,
+                          _PluginSettingsPage(plugin: p),
+                        );
+                        if (mounted) setState(() {});
+                      }
+                    : null,
+                edit: _edit,
+                delete: _delete,
+              );
+            }, childCount: visible.length),
           ),
         SliverPadding(
           padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
@@ -690,6 +679,7 @@ class _PluginSliverCard extends StatelessWidget {
     );
   }
 }
+
 /// 安装单个插件 JS（供源列表页使用）
 Future<void> _installPluginUrl(String url) async {
   final trimmed = url.trim();
@@ -883,7 +873,8 @@ class _PluginSourceListState extends State<_PluginSourceList> {
   String _resolveUrl(Map item) {
     final url = item['url']?.toString();
     if (url != null && url.isNotEmpty) return url;
-    final fileName = item['fileName']?.toString() ?? item['key']?.toString() ?? '';
+    final fileName =
+        item['fileName']?.toString() ?? item['key']?.toString() ?? '';
     if (fileName.isEmpty) return '';
     final base = _currentUrl;
     final clean = base.replaceFirst('https://', '').replaceFirst('http://', '');
@@ -1035,7 +1026,10 @@ class _PluginSourceListState extends State<_PluginSourceList> {
                 ],
               ),
           const SizedBox(height: 16),
-          _SettingPartTitle(title: t.pluginSourceList, icon: Icons.source_outlined),
+          _SettingPartTitle(
+            title: t.pluginSourceList,
+            icon: Icons.source_outlined,
+          ),
           if (loading)
             const Padding(
               padding: EdgeInsets.all(32),
@@ -1116,9 +1110,7 @@ class _PluginSettingsPageState extends State<_PluginSettingsPage> {
           }
           final modules = snap.data ?? const [];
           if (modules.isEmpty) {
-            return Center(
-              child: Text(t.noData),
-            );
+            return Center(child: Text(t.noData));
           }
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -1261,7 +1253,6 @@ String? _normalizeCookieUserhash(String raw) {
   if (!RegExp(r'^[0-9A-Za-z%._~-]{2,256}$').hasMatch(text)) return null;
   return text;
 }
-
 
 /// 分段筛选控件（与番剧源设置页 _FilterSegmented 同款式）
 class _PluginFilterSegmented extends StatelessWidget {

@@ -90,9 +90,9 @@ abstract class _StatsController with Store {
     final baseList = AnimeSource.allSources().map((a) => a.name).toList();
 
     final selectors = appdata.settings['statsSelectors'] ?? [];
-    final selectorList = List<int>.from(
-      selectors,
-    ).map((i) => AnimeType(i)).toList();
+    final selectorList = List<int>.from(selectors)
+        .map((i) => AnimeType(i))
+        .toList();
 
     final activeList = AnimeSource.allSources()
         .where(
@@ -130,19 +130,16 @@ abstract class _StatsController with Store {
                         });
                       },
                       backgroundColor: Colors.black.toOpacity(0.1),
-                      selectedColor: Theme.of(
-                        context,
-                      ).colorScheme.primary.toOpacity(0.2),
+                      selectedColor: Theme.of(context).colorScheme.primary
+                          .toOpacity(0.2),
                       checkmarkColor: Theme.of(context).colorScheme.primary,
                       shape: StadiumBorder(
                         side: BorderSide(
                           color: isActive
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.primary.toOpacity(0.7)
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.primary.withAlpha(30),
+                              ? Theme.of(context).colorScheme.primary
+                                    .toOpacity(0.7)
+                              : Theme.of(context).colorScheme.primary
+                                    .withAlpha(30),
                         ),
                       ),
                       showCheckmark: true,

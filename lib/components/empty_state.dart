@@ -95,7 +95,9 @@ class _CenteredState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: messageColor ?? Theme.of(context).textTheme.titleSmall?.color,
+                color:
+                    messageColor ??
+                    Theme.of(context).textTheme.titleSmall?.color,
               ),
             ),
           ),

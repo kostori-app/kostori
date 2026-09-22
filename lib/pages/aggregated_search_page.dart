@@ -152,9 +152,8 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
                 child: Text(
                   t.noSearchSources,
                   style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.toOpacity(0.5),
+                    color: Theme.of(context).colorScheme.onSurface
+                        .toOpacity(0.5),
                   ),
                 ),
               ),

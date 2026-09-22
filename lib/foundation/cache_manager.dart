@@ -74,9 +74,11 @@ class CacheManager {
       ),
     );
     // 启动即同步一次体积镜像并触发首次清理（原来 compute().then 同样逻辑）
-    _request('stats', const {}).then((res) {
-      if (res != null) checkCache();
-    }).catchError((Object _) {});
+    _request('stats', const {})
+        .then((res) {
+          if (res != null) checkCache();
+        })
+        .catchError((Object _) {});
   }
 
   void _onWorkerMessage(dynamic message) {
@@ -111,9 +113,7 @@ class CacheManager {
 
   /// set cache size limit in MB
   void setLimitSize(int size) {
-    _request('setLimit', {'size': size * 1024 * 1024}).catchError((
-      Object _,
-    ) {
+    _request('setLimit', {'size': size * 1024 * 1024}).catchError((Object _) {
       return null;
     });
   }
@@ -369,17 +369,15 @@ Future<void> _cacheDbMain(_CacheDbInit init) async {
             if (expires < now) {
               // 过期：删行 + 删文件（原来主线程做文件删除）
               db.execute('DELETE FROM cache WHERE key = ?', [key]);
-              deleteFile(
-                '${init.cachePath}/${rows.first[0]}/${rows.first[1]}',
-              );
+              deleteFile('${init.cachePath}/${rows.first[0]}/${rows.first[1]}');
               result = {'hit': false, 'size': size};
             } else {
               // 命中续期 7 天（与原来 findCache 语义一致）
               final newExpires = now + 7 * 24 * 60 * 60 * 1000;
-              db.execute(
-                'UPDATE cache SET expires = ? WHERE key = ?',
-                [newExpires, key],
-              );
+              db.execute('UPDATE cache SET expires = ? WHERE key = ?', [
+                newExpires,
+                key,
+              ]);
               result = {
                 'hit': true,
                 'dir': rows.first[0] as String,
@@ -423,10 +421,9 @@ Future<void> _cacheDbMain(_CacheDbInit init) async {
           result = {'dir': dir, 'name': name, 'expires': expires, 'size': size};
         case 'delete':
           final key = message.args['key'] as String;
-          final rows = db.select(
-            'SELECT dir, name FROM cache WHERE key = ?',
-            [key],
-          );
+          final rows = db.select('SELECT dir, name FROM cache WHERE key = ?', [
+            key,
+          ]);
           if (rows.isNotEmpty) {
             db.execute('DELETE FROM cache WHERE key = ?', [key]);
             deleteFile('${init.cachePath}/${rows.first[0]}/${rows.first[1]}');

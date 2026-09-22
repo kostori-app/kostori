@@ -180,9 +180,8 @@ class PromptInjectionStore extends ChangeNotifier {
   Future<void> _writeItem(PromptInjection item) async {
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File(
-      '$dirPath/${item.id}.json',
-    ).writeAsString(jsonEncode(item.toJson()));
+    await File('$dirPath/${item.id}.json')
+        .writeAsString(jsonEncode(item.toJson()));
   }
 
   void _deleteFile(String id) {
@@ -234,11 +233,10 @@ class PromptInjectionStore extends ChangeNotifier {
   }
 
   static List<PromptInjection> _sorted(Iterable<PromptInjection> source) {
-    return source.toList()
-      ..sort((a, b) {
-        final byPos = a.position.index.compareTo(b.position.index);
-        return byPos != 0 ? byPos : a.sortOrder.compareTo(b.sortOrder);
-      });
+    return source.toList()..sort((a, b) {
+      final byPos = a.position.index.compareTo(b.position.index);
+      return byPos != 0 ? byPos : a.sortOrder.compareTo(b.sortOrder);
+    });
   }
 
   Future<void> upsert(PromptInjection item) async {
@@ -573,7 +571,9 @@ class WorldBookStore extends ChangeNotifier {
           if (map['entries'] is List) {
             // 一本书（条目可能同时属于多本，文件间去重合并）
             final book = WorldBookBook.fromJson(map);
-            rawBooks.add(WorldBookBook(id: fileId, name: book.name, entries: book.entries));
+            rawBooks.add(
+              WorldBookBook(id: fileId, name: book.name, entries: book.entries),
+            );
           } else {
             // 旧格式：一条一个文件
             legacy.add(WorldBookEntry.fromJson(map));
@@ -592,9 +592,7 @@ class WorldBookStore extends ChangeNotifier {
         final prev = merged[e.id];
         merged[e.id] = prev == null
             ? e
-            : prev.copyWith(
-                bookIds: {...prev.bookIds, ...e.bookIds}.toList(),
-              );
+            : prev.copyWith(bookIds: {...prev.bookIds, ...e.bookIds}.toList());
       }
     }
     _books = [
@@ -627,7 +625,9 @@ class WorldBookStore extends ChangeNotifier {
       final book = WorldBookBook(
         id: bookId,
         name: group.key.isEmpty ? '世界书' : group.key,
-        entries: [for (final e in group.value) e.copyWith(bookIds: [bookId])],
+        entries: [
+          for (final e in group.value) e.copyWith(bookIds: [bookId]),
+        ],
       );
       _books.add(book);
       await _writeBook(book);
@@ -655,18 +655,13 @@ class WorldBookStore extends ChangeNotifier {
         for (final e in decoded) {
           if (e is Map) {
             entries.add(
-              WorldBookEntry.fromJson(
-                e.cast<String, dynamic>(),
-              ).copyWith(bookIds: [bookId]),
+              WorldBookEntry.fromJson(e.cast<String, dynamic>())
+                  .copyWith(bookIds: [bookId]),
             );
           }
         }
         if (entries.isNotEmpty) {
-          final book = WorldBookBook(
-            id: bookId,
-            name: '世界书',
-            entries: entries,
-          );
+          final book = WorldBookBook(id: bookId, name: '世界书', entries: entries);
           _books.add(book);
           await _writeBook(book);
         }
@@ -678,9 +673,8 @@ class WorldBookStore extends ChangeNotifier {
   Future<void> _writeBook(WorldBookBook book) async {
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File(
-      '$dirPath/${book.id}.json',
-    ).writeAsString(jsonEncode(book.toJson()));
+    await File('$dirPath/${book.id}.json')
+        .writeAsString(jsonEncode(book.toJson()));
   }
 
   void _deleteBookFile(String bookId) {
@@ -991,4 +985,3 @@ class WorldBookStore extends ChangeNotifier {
     notifyListeners();
   }
 }
-

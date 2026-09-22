@@ -33,8 +33,6 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     if (mounted) setState(() => _downloaded = loaded);
   }
 
-
-
   /// 系列模式：源无分集，加载与剧集平行的系列列表（复用 Anime 结构）
   List<Anime>? _series;
 
@@ -110,12 +108,13 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
       return const SizedBox.shrink();
     }
     // 排序：优先按标题尾部数字（集序），无数字保持原序
-    final items = List<Anime>.from(series)..sort((a, b) {
-      final ka = _seriesSortKey(a.title);
-      final kb = _seriesSortKey(b.title);
-      if (ka == 0 || kb == 0) return 0;
-      return _seriesAsc ? ka - kb : kb - ka;
-    });
+    final items = List<Anime>.from(series)
+      ..sort((a, b) {
+        final ka = _seriesSortKey(a.title);
+        final kb = _seriesSortKey(b.title);
+        if (ka == 0 || kb == 0) return 0;
+        return _seriesAsc ? ka - kb : kb - ka;
+      });
     // 当前播放的条目：按原始索引定位，排序后改用 id 匹配高亮
     final playingIndex = state.playerController.currentEpisoded - 1;
     final playingId = (playingIndex >= 0 && playingIndex < series.length)
@@ -290,9 +289,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                   ),
                 ),
                 Icon(
-                  downloaded
-                      ? Icons.download_done
-                      : Icons.play_circle_fill,
+                  downloaded ? Icons.download_done : Icons.play_circle_fill,
                   size: 44,
                   color: downloaded ? Colors.green : colorScheme.primary,
                 ),
@@ -357,19 +354,11 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
               children: [
                 Text(t.episodeN(n: p.episode + 1)),
                 Text(
-                  t.watchDurationLabel(
-                    duration: formatHMS(p.progressInMilli),
-                  ),
+                  t.watchDurationLabel(duration: formatHMS(p.progressInMilli)),
                 ),
-                Text(
-                  t.completedStatus(
-                    status: p.isCompleted ? t.yes : t.no,
-                  ),
-                ),
+                Text(t.completedStatus(status: p.isCompleted ? t.yes : t.no)),
                 if (p.startTime != null)
-                  Text(
-                    t.startTimeLabel(time: p.startTime.toString()),
-                  ),
+                  Text(t.startTimeLabel(time: p.startTime.toString())),
                 if (p.endTime != null)
                   Text(t.endTimeLabel(time: p.endTime.toString())),
               ],
@@ -527,9 +516,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                   ? Colors.green.withValues(alpha: 0.15)
                                   : (!visited
                                         ? context.colorScheme.surfaceContainer
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.primary.toOpacity(0.3)),
+                                        : Theme.of(context).colorScheme.primary
+                                              .toOpacity(0.3)),
                               borderRadius: const BorderRadius.all(
                                 Radius.circular(12),
                               ),
@@ -591,17 +579,17 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                               state.playerController.playing
                                                   ? Image.asset(
                                                       'assets/img/playing.gif',
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primary,
                                                       height: 16,
                                                     )
                                                   : Icon(
                                                       Icons.pause,
                                                       size: 16,
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primary,
                                                     ),
                                               const SizedBox(width: 6),
                                             ],
@@ -628,7 +616,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                                       : context
                                                             .colorScheme
                                                             .outline
-                                                  : null,
+                                                : null,
                                           ),
                                         ),
                                       ),

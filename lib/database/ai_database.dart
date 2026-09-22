@@ -395,7 +395,9 @@ class AiDatabase extends _$AiDatabase {
     'auxSettings': [
       for (final r in await select(aiAuxSettings).get()) r.toJson(),
     ],
-    'mcpServers': [for (final r in await select(aiMcpServers).get()) r.toJson()],
+    'mcpServers': [
+      for (final r in await select(aiMcpServers).get()) r.toJson(),
+    ],
   };
 
   /// 合并同步来的用户数据：同键取 `updatedAt` 较新的一方；
@@ -430,9 +432,8 @@ class AiDatabase extends _$AiDatabase {
         final r = AiCustomProvider.fromJson(m);
         final local = localCustom[r.provider];
         if (local == null || r.updatedAt.isAfter(local.updatedAt)) {
-          await into(
-            aiCustomProviders,
-          ).insertOnConflictUpdate(r.toCompanion(true));
+          await into(aiCustomProviders)
+              .insertOnConflictUpdate(r.toCompanion(true));
         }
       }
 
@@ -456,9 +457,8 @@ class AiDatabase extends _$AiDatabase {
         final r = AiMcpServer.fromJson(m);
         final local = localMcp[r.name];
         if (local == null) {
-          await into(
-            aiMcpServers,
-          ).insert(r.toCompanion(true).copyWith(id: const Value.absent()));
+          await into(aiMcpServers)
+              .insert(r.toCompanion(true).copyWith(id: const Value.absent()));
         } else if (r.updatedAt.isAfter(local.updatedAt)) {
           await into(aiMcpServers).insertOnConflictUpdate(
             r.toCompanion(true).copyWith(id: Value(local.id)),

@@ -210,22 +210,23 @@ class IsolateJsEngine {
       }
       engine.runCode(
         'AnimeSource.sources.$key = '
-        '(() => { ${task.sourceJs} return new $className(); })()',
+            '(() => { ${task.sourceJs} return new $className(); })()',
         'inline:$key',
       );
       loaded[key] = hash;
     }
     if (engine.runCode(
-      '(() => { try { return typeof AnimeSource.sources.$key.anime'
-      '.loadInlineImage === "function"; } catch (e) { return false; } })()',
-    ) != true) {
+          '(() => { try { return typeof AnimeSource.sources.$key.anime'
+          '.loadInlineImage === "function"; } catch (e) { return false; } })()',
+        ) !=
+        true) {
       throw Exception('loadInlineImage not found: $key');
     }
     // 与主线程原路径语义一致：方法调用（this 为 anime 实例），await Promise。
     // 同步段与桥接拷贝全在本 isolate，主线程只等结果。
     final dynamic res = await engine.runCode(
       'AnimeSource.sources.$key.anime'
-      '.loadInlineImage(${jsonEncode(task.token)})',
+          '.loadInlineImage(${jsonEncode(task.token)})',
       'inline:$key',
     );
     return _normalizeInlineResult(res);

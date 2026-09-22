@@ -228,9 +228,8 @@ class _StatsOverviewState extends State<StatsOverview> {
   }
 
   int _getTotalWatchTime(StatsDataImpl stat) {
-    return _getTimeRangeRecords(
-      stat.totalWatchDurations,
-    ).fold(0, (sum, r) => sum + r.value);
+    return _getTimeRangeRecords(stat.totalWatchDurations)
+        .fold(0, (sum, r) => sum + r.value);
   }
 
   List<DailyEvent> _mergeDailyEvents(List<DailyEvent> events) {
@@ -300,9 +299,9 @@ class _StatsOverviewState extends State<StatsOverview> {
             .where((s) => _calculateWeightedActivityScore(s) > 0)
             .toList()
           ..sort(
-            (a, b) => _calculateWeightedActivityScore(
-              b,
-            ).compareTo(_calculateWeightedActivityScore(a)),
+            (a, b) =>
+                _calculateWeightedActivityScore(b)
+                    .compareTo(_calculateWeightedActivityScore(a)),
           );
 
     return active
@@ -383,9 +382,8 @@ class _StatsOverviewState extends State<StatsOverview> {
           children: [
             Text(
               title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             child,
@@ -484,9 +482,8 @@ class _StatsOverviewState extends State<StatsOverview> {
         Center(
           child: Text(
             _timeRangeTitle(timeRange),
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(height: 16),
@@ -580,9 +577,9 @@ class _StatsOverviewState extends State<StatsOverview> {
 
         // ── 观看时长条形图（按条目）───────────────
         if (_deduplicatedStats.any(
-          (s) => _getTimeRangeRecords(
-            s.totalWatchDurations,
-          ).any((r) => r.value > 0),
+          (s) =>
+              _getTimeRangeRecords(s.totalWatchDurations)
+                  .any((r) => r.value > 0),
         )) ...[
           _section(
             context,
@@ -614,14 +611,12 @@ class _StatsOverviewState extends State<StatsOverview> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.1 + ratio * 0.3),
+                    color: Theme.of(context).colorScheme.primary
+                        .withValues(alpha: 0.1 + ratio * 0.3),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: ratio * 0.5),
+                      color: Theme.of(context).colorScheme.primary
+                          .withValues(alpha: ratio * 0.5),
                     ),
                   ),
                   child: Text(
@@ -886,9 +881,8 @@ class _ActivityHeatmap extends StatelessWidget {
                     weekLabels[i],
                     style: TextStyle(
                       fontSize: 9,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                      color: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.5),
                     ),
                   ),
                 );
@@ -1092,9 +1086,8 @@ class _WatchPieChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final watchMap = <String, int>{};
     for (final s in stats) {
-      final seconds = getRecords(
-        s.totalWatchDurations,
-      ).fold(0, (sum, r) => sum + r.value);
+      final seconds = getRecords(s.totalWatchDurations)
+          .fold(0, (sum, r) => sum + r.value);
       if (seconds > 0) watchMap[s.title ?? s.id] = seconds;
     }
     if (watchMap.isEmpty) return const SizedBox.shrink();
@@ -1272,9 +1265,8 @@ class _WatchTrendChart extends StatelessWidget {
                       label,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   );

@@ -232,8 +232,7 @@ class NaviPaneState extends State<NaviPane>
 
   @override
   void initState() {
-    _sidebarOpen =
-        appdata.implicitData[_kSidebarCollapsedKey] != true;
+    _sidebarOpen = appdata.implicitData[_kSidebarCollapsedKey] != true;
     _loadedPages.add(_currentPage);
     controller = AnimationController(
       duration: const Duration(milliseconds: 250),
@@ -416,10 +415,8 @@ class NaviPaneState extends State<NaviPane>
       tween: Tween(begin: _slideInOffset, end: 0),
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
-      builder: (context, value, child) => FractionalTranslation(
-        translation: Offset(value, 0),
-        child: child,
-      ),
+      builder: (context, value, child) =>
+          FractionalTranslation(translation: Offset(value, 0), child: child),
       child: stack,
     );
   }
@@ -517,14 +514,11 @@ class NaviPaneState extends State<NaviPane>
 
   /// 悬浮主导航（含两端内边距）的估算宽度
   double get floatingNavWidth =>
-      16 +
-      widget.paneItems.length * 44 +
-      (widget.paneItems.length - 1) * 4;
+      16 + widget.paneItems.length * 44 + (widget.paneItems.length - 1) * 4;
 
   /// 动作坞估算宽度
   double get floatingActionWidth =>
-      widget.paneActions.length * 44 +
-      (widget.paneActions.length - 1) * 2;
+      widget.paneActions.length * 44 + (widget.paneActions.length - 1) * 2;
 
   /// 搜索/分类/设置等动作的悬浮操作坞（与窄屏悬浮导航同风格，
   /// 通常紧挨在主悬浮导航右侧一起出现）
@@ -1178,7 +1172,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
         ],
       );
       final bottomPad =
-        MediaQuery.paddingOf(context).bottom + 12 + state.navBottomLift;
+          MediaQuery.paddingOf(context).bottom + 12 + state.navBottomLift;
       // 完整态：主悬浮导航居中 + 动作坞紧贴其右侧（不合并成整行居中）
       final Widget fullBars = SizedBox(
         height: NaviPaneState._kBottomBarHeight,
@@ -1191,10 +1185,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
             dockLeft = math.min(dockLeft, math.max(0.0, maxLeft));
             return Stack(
               children: [
-                Align(
-                  alignment: Alignment.center,
-                  child: state.buildBottom(),
-                ),
+                Align(alignment: Alignment.center, child: state.buildBottom()),
                 Positioned(
                   left: dockLeft,
                   top: (constraints.maxHeight - 44) / 2,

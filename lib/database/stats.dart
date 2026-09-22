@@ -592,14 +592,11 @@ class StatsManager with ChangeNotifier {
 
   /// 把 WAL 里的改动写回主库文件（导出整库副本前调用）
   Future<void> checkpoint() => walCheckpoint(
-    () => _guard(
-      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-    ),
+    () => _guard(() => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);')),
   );
 
   /// 通知“按天事件”缓存失效（外部直接改库后可调用）
-  void invalidateEventMapCache() {
-  }
+  void invalidateEventMapCache() {}
 
   // ─── 工具 ──────────────────────────────────
 
@@ -1348,7 +1345,6 @@ class StatsAllNotifier extends StreamNotifier<List<StatsDataImpl>> {
     yield* manager.watchAll();
   }
 }
-
 
 /// 统计记录 → 占位 BangumiItem：bangumi.db 数据缺失（重建/清空）时，
 /// 用统计里自带的 title/cover 兜底展示，避免统计页条目消失

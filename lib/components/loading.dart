@@ -103,9 +103,7 @@ class SliverListLoadingIndicator extends StatelessWidget {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     return SliverMainAxisGroup(
       slivers: [
-        SliverList.list(
-          children: const [SizedBox(), ListLoadingIndicator()],
-        ),
+        SliverList.list(children: const [SizedBox(), ListLoadingIndicator()]),
         if (bottomPad > 0)
           SliverToBoxAdapter(child: SizedBox(height: bottomPad)),
       ],

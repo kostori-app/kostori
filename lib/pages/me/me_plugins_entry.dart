@@ -175,9 +175,8 @@ class _MePagePluginModulesState extends ConsumerState<MePagePluginModules> {
                   ),
                   itemCount: _navPlugins.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (context, i) => _PluginShellEntry(
-                    plugin: _navPlugins[i],
-                  ),
+                  itemBuilder: (context, i) =>
+                      _PluginShellEntry(plugin: _navPlugins[i]),
                 ),
               ),
             ],

@@ -186,7 +186,6 @@ class AiConversationService {
 
   AiTaskDao get _taskDao => AiTaskDatabase.instance.aiTaskDao;
 
-
   // ─── 会话管理 ──────────────────────────────
 
   /// 创建新会话，返回 sessionId
@@ -234,10 +233,10 @@ class AiConversationService {
       _sessionDao.setFollowUps(sessionId, items);
 
   /// 启用中的技能
-    Future<List<AiSkillEntry>> getEnabledSkills() async {
-      await AiSkillStore.instance.ensureLoaded();
-      return AiSkillStore.instance.enabled;
-    }
+  Future<List<AiSkillEntry>> getEnabledSkills() async {
+    await AiSkillStore.instance.ensureLoaded();
+    return AiSkillStore.instance.enabled;
+  }
 
   /// 会话已选技能 keys
   static List<String> parseSkillKeys(String? json) {
@@ -301,7 +300,9 @@ class AiConversationService {
 
     final provider = providerOverride ?? session.provider;
     final ai = AiFactory.create(provider);
-    if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
+    if (ai == null) {
+      return Res.error(t.unknownServiceProvider(provider: provider));
+    }
 
     // 1. 读取历史消息构建上下文
     var history = await _taskDao.getMessages(sessionId);
@@ -434,7 +435,9 @@ class AiConversationService {
     );
     sw.stop();
     SkillRegistry.instance.setContextImage(null);
-    final loggedUsage = result.subData is AiUsage ? result.subData as AiUsage : null;
+    final loggedUsage = result.subData is AiUsage
+        ? result.subData as AiUsage
+        : null;
     unawaited(
       AiRequestLogService.instance.add(
         AiRequestLogEntry(
@@ -507,7 +510,9 @@ class AiConversationService {
     final provider = providerOverride ?? session.provider;
     final ai = AiFactory.create(provider);
     if (ai == null) {
-      yield AiChatUpdate(errorMessage: t.unknownServiceProvider(provider: provider));
+      yield AiChatUpdate(
+        errorMessage: t.unknownServiceProvider(provider: provider),
+      );
       return;
     }
 
@@ -626,9 +631,7 @@ class AiConversationService {
         final built = SkillRegistry.instance.buildTools();
         if (toolNames != null) {
           // 只放行白名单里的工具（例如酒馆只允许 roll_dice）
-          tools = built.tools
-              .where((t) => toolNames.contains(t.name))
-              .toList();
+          tools = built.tools.where((t) => toolNames.contains(t.name)).toList();
           final inner = built.handler;
           toolHandler = (name, args) {
             if (!toolNames.contains(name)) {
@@ -645,10 +648,7 @@ class AiConversationService {
           final meta = loadToolsDefinition(allTools);
           tools = [meta];
           refreshTools = () {
-            tools = [
-              meta,
-              ...allTools.where((t) => loaded.contains(t.name)),
-            ];
+            tools = [meta, ...allTools.where((t) => loaded.contains(t.name))];
           };
           toolHandler = (name, args) async {
             if (name == kLoadToolsName) {
@@ -1035,7 +1035,9 @@ class AiConversationService {
 
     final provider = providerOverride ?? session.provider;
     final ai = AiFactory.create(provider);
-    if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
+    if (ai == null) {
+      return Res.error(t.unknownServiceProvider(provider: provider));
+    }
 
     // 该模型消息之前的上下文
     final history = await _taskDao.getMessages(sessionId);
@@ -1105,7 +1107,9 @@ class AiConversationService {
     final aux = await loadAuxConfig('compress');
     final provider = aux.provider.isEmpty ? session.provider : aux.provider;
     final ai = AiFactory.create(provider);
-    if (ai == null) return Res.error(t.unknownServiceProvider(provider: provider));
+    if (ai == null) {
+      return Res.error(t.unknownServiceProvider(provider: provider));
+    }
 
     final history = await _taskDao.getMessages(sessionId);
     final contextMessages = history
@@ -1174,14 +1178,11 @@ class AiConversationService {
     for (final e in hits) {
       if (e.content.trim().isEmpty) continue;
       final idx = (messages.length - e.depth).clamp(0, messages.length);
-      messages.insert(
-        idx,
-        switch (e.role) {
-          'user' => AiUserMessage(content: e.content),
-          'assistant' => AiAssistantMessage(content: e.content),
-          _ => AiSystemMessage(content: e.content),
-        },
-      );
+      messages.insert(idx, switch (e.role) {
+        'user' => AiUserMessage(content: e.content),
+        'assistant' => AiAssistantMessage(content: e.content),
+        _ => AiSystemMessage(content: e.content),
+      });
     }
   }
 
@@ -1318,8 +1319,9 @@ class AiConversationService {
   // ─── 私有 ─────────────────────────────────
 
   /// 读取辅助任务的模型配置；未配置时返回空 provider（表示跟随会话）
-  Future<({String provider, String? model, double? temperature})>
-  loadAuxConfig(String taskKey) async {
+  Future<({String provider, String? model, double? temperature})> loadAuxConfig(
+    String taskKey,
+  ) async {
     final (providerKey, modelKey, tempKey) = switch (taskKey) {
       'compress' => (
         _kAuxCompressProvider,
@@ -1493,9 +1495,7 @@ class AiConversationService {
         ];
       }
       // 世界书绑定过滤：绑定了角色/标签的条目需与当前角色上下文有交集
-      final boundTags = <String>{
-        for (final c in characterCards) ...c.tags,
-      };
+      final boundTags = <String>{for (final c in characterCards) ...c.tags};
       worldHits = worldHits
           .where(
             (e) => e.matchesBinding(profile.characterIds.toSet(), boundTags),
@@ -1549,8 +1549,8 @@ class AiConversationService {
       );
       final skillKeys = parseSkillKeys(session.skillKeys);
       if (skillKeys.isNotEmpty) {
-          final skills = AiSkillStore.instance.enabled;
-          final byKey = {for (final s in skills) s.key: s};
+        final skills = AiSkillStore.instance.enabled;
+        final byKey = {for (final s in skills) s.key: s};
         for (final key in skillKeys) {
           final skill = byKey[key];
           if (skill != null && skill.systemPrompt.isNotEmpty) {

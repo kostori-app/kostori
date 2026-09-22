@@ -61,16 +61,13 @@ class DownloadRecordsSheet extends StatelessWidget {
                               '${resolution.isNotEmpty ? ' · $resolution' : ''}'
                         : title,
                   ),
-                  subtitle: Text(
-                    () {
-                      var time = (r['time'] as String? ?? '')
-                          .replaceAll('T', ' ')
-                          .replaceAll('.000', '');
-                      if (time.length > 19) time = time.substring(0, 19);
-                      return time;
-                    }(),
-                    style: const TextStyle(fontSize: 11),
-                  ),
+                  subtitle: Text(() {
+                    var time = (r['time'] as String? ?? '')
+                        .replaceAll('T', ' ')
+                        .replaceAll('.000', '');
+                    if (time.length > 19) time = time.substring(0, 19);
+                    return time;
+                  }(), style: const TextStyle(fontSize: 11)),
                   trailing: IconButton(
                     tooltip: t.openWithOtherPlayer,
                     icon: Icon(Icons.open_in_new, color: colorScheme.primary),

@@ -327,8 +327,9 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
     if (imageList.length > 1) {
       // 本地多图：按屏幕长边 1.5×（≤3072）限幅解码，避免翻页整幅原图解码卡顿
       final mq = MediaQuery.of(context);
-      final maxLogical =
-          mq.size.width > mq.size.height ? mq.size.width : mq.size.height;
+      final maxLogical = mq.size.width > mq.size.height
+          ? mq.size.width
+          : mq.size.height;
       final t = (maxLogical * mq.devicePixelRatio * 1.5).round();
       final decodeWidth = t < 200 ? 200 : (t > 3072 ? 3072 : t);
       return PhotoViewGallery.builder(

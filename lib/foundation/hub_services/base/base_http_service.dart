@@ -1,7 +1,9 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-typedef WsHandler =
-    Future<void> Function(WebSocket socket, HttpRequest request);
+typedef WsHandler = Future<void> Function(
+  WebSocket socket,
+  HttpRequest request,
+);
 
 abstract class BaseHttpService implements BaseService {
   final _binder = ServerBinder();

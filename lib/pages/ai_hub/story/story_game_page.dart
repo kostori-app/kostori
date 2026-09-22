@@ -43,6 +43,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     _genTimer?.cancel();
     _genTimer = null;
   }
+
   CancelToken? _cancelToken;
   int _lastMessageCount = 0;
 
@@ -89,55 +90,59 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         borderRadius: BorderRadius.circular(14),
         child: BlurEffect(
           child: Material(
-        color: cs.surfaceContainerHigh.withValues(alpha: 0.7),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 2, 2, 0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    t.suggestions,
-                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    tooltip: t.collapse,
-                    onPressed: () => setState(() => _suggestExpanded = false),
-                  ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    for (final c in choices)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: _FollowUpChip(
-                          text: c,
-                          onTap: _sending
-                              ? () {}
-                              : () {
-                                  setState(() => _suggestExpanded = false);
-                                  _send(c);
-                                },
+            color: cs.surfaceContainerHigh.withValues(alpha: 0.7),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 2, 2, 0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        t.suggestions,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
-                  ],
+                      IconButton(
+                        icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                        visualDensity: VisualDensity.compact,
+                        tooltip: t.collapse,
+                        onPressed: () =>
+                            setState(() => _suggestExpanded = false),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        for (final c in choices)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: _FollowUpChip(
+                              text: c,
+                              onTap: _sending
+                                  ? () {}
+                                  : () {
+                                      setState(() => _suggestExpanded = false);
+                                      _send(c);
+                                    },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        ),
+          ),
         ),
       ),
     );
@@ -296,9 +301,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       final delta = after - beforeExtent;
       if (delta == 0) return;
       // reverse 列表：把这一帧的增长量加回 offset，保持阅读位置不动
-      _scrollController.jumpTo(
-        (position.pixels + delta).clamp(0.0, after),
-      );
+      _scrollController.jumpTo((position.pixels + delta).clamp(0.0, after));
     });
   }
 
@@ -332,8 +335,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       // 回调排队期间用户可能已上滑，重新确认，避免把用户拽回底部
       if (!force && !_isFollowing) return;
       // 用户正在拖动/惯性滚动时不抢滚动，交给用户（RikkaHub 思路）
-      if (!force &&
-          _scrollController.position.isScrollingNotifier.value) {
+      if (!force && _scrollController.position.isScrollingNotifier.value) {
         return;
       }
       if (animate) {
@@ -540,9 +542,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       buf.write('\n\n【开局场景（请从这里开始叙事）】\n${sub(story.opening.trim())}');
     }
     if (story.deathResources.isNotEmpty) {
-      final rule = story.deathMode == 'all'
-          ? '全部归零才结束'
-          : '任意一个归零即结束';
+      final rule = story.deathMode == 'all' ? '全部归零才结束' : '任意一个归零即结束';
       buf.write(
         '\n\n【致命资源（$rule，请在归零前给出收尾叙事）】'
         '${story.deathResources.join('、')}',
@@ -646,8 +646,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       // 在场角色给完整人设；未登场的只给一行（名字+性格），登场后再补全，省 token
       final presentNames = state.present;
       bool onStage(CharacterCard c) =>
-          presentNames.isEmpty ||
-          presentNames.any((n) => _isNameFor(c, n));
+          presentNames.isEmpty || presentNames.any((n) => _isNameFor(c, n));
       buf.write('\n\n【角色设定（需分别扮演，保持各自语气与人设）】');
       for (final c in story.characters) {
         if (onStage(c)) {
@@ -685,7 +684,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (state.combat.active) {
       buf.write('\n\n【战斗中 · 第${state.combat.round}回合】');
       for (final e in state.combat.enemies) {
-        buf.write('\n- ${e.name} ${e.hp}/${e.maxHp}${e.note.isEmpty ? '' : '（${e.note}）'}');
+        buf.write(
+          '\n- ${e.name} ${e.hp}/${e.maxHp}${e.note.isEmpty ? '' : '（${e.note}）'}',
+        );
       }
     }
     if (vars.isNotEmpty) {
@@ -757,9 +758,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     // 绑定过滤：绑定了角色卡 / 标签的条目，需与故事角色有交集；
     // at_depth 条目不进系统提示词，改由发送时插进对话历史
     final boundIds = {for (final c in story.characters) c.id};
-    final boundTags = <String>{
-      for (final c in story.characters) ...c.tags,
-    };
+    final boundTags = <String>{for (final c in story.characters) ...c.tags};
     // 世界书按触发词命中注入（对齐 ST）：常驻条目始终注入，未显式选择则不注入
     final allWorldBook = story.worldBookIds.isEmpty
         ? const <WorldBookEntry>[]
@@ -966,7 +965,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           _pendingUserText = null;
           _lastFailed = true;
         });
-        App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
+        App.rootContext.showMessage(
+          message: e.toString(),
+          level: LogLevel.error,
+        );
       }
     } finally {
       _stallTimer?.cancel();
@@ -1038,11 +1040,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     if (sessionId == null) return;
     await StorySessionStore.instance.put(
       story.id,
-      StorySession(
-        sessionId: sessionId,
-        state: state,
-        setup: _setupSelections,
-      ),
+      StorySession(sessionId: sessionId, state: state, setup: _setupSelections),
     );
   }
 
@@ -1061,7 +1059,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
   /// 找出背包里未在 codex 登记的道具（按基础名归一，宽松包含匹配）
   List<String> _unregisteredFrom(GameState state) {
     final registered = <String>{
-      for (final d in state.codex.where((d) => d.kind == 'item')) ...[d.key, d.name],
+      for (final d in state.codex.where((d) => d.kind == 'item')) ...[
+        d.key,
+        d.name,
+      ],
     };
     bool isRegistered(String item) {
       final base = item.split(' x').first.split('×').first.trim();
@@ -1112,9 +1113,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               leading: const Icon(Icons.monitor_heart_outlined),
               title: Text(t.storyNpcStatus),
               subtitle: Text(
-                t.storyNpcAffinity(
-                  value: '${_npcState(c)?.affinity ?? 0}',
-                ),
+                t.storyNpcAffinity(value: '${_npcState(c)?.affinity ?? 0}'),
               ),
               onTap: () {
                 Navigator.of(ctx).pop();
@@ -1247,10 +1246,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
           const Spacer(),
           Text(
             '${npc.affinity}',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: tierColor,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600, color: tierColor),
           ),
         ],
       ),
@@ -2056,9 +2052,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       }
       final codex = [..._state.codex];
       for (final d in defs) {
-        final idx = codex.indexWhere(
-          (x) => x.kind == d.kind && x.key == d.key,
-        );
+        final idx = codex.indexWhere((x) => x.kind == d.kind && x.key == d.key);
         if (idx >= 0) {
           codex[idx] = d;
         } else {
@@ -2174,7 +2168,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               stream: AiConversationService().watchMessages(sessionId),
               builder: (context, snap) {
                 final messages = snap.data ?? [];
-                final choices = _lastAiReply(messages)?.choices ?? const <String>[];
+                final choices =
+                    _lastAiReply(messages)?.choices ?? const <String>[];
                 final showPendingUser =
                     _pendingUserText != null &&
                     (messages.isEmpty ||
@@ -2193,264 +2188,288 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                         children: [
                           Positioned.fill(
                             child: NotificationListener<ScrollNotification>(
-                        onNotification: _onUserScroll,
-                        // 列表铺满整宽，内容用左右留白居中：
-                        // 这样鼠标滚轮/拖动在两侧空白处也能滚动
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final maxW = _chatContentMaxWidth(context);
-                            final side = constraints.maxWidth > maxW
-                                ? (constraints.maxWidth - maxW) / 2
-                                : 12.0;
-                            return ListView.builder(
-                              controller: _scrollController,
-                              reverse: true,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: side,
-                                vertical: 12,
-                              ),
-                              itemCount:
-                                  messages.length +
-                                  (showPendingUser ? 1 : 0) +
-                                  (_showStreamBubble ? 1 : 0),
-                              itemBuilder: (context, raw) {
-                              final i =
-                                  messages.length +
-                                  (showPendingUser ? 1 : 0) +
-                                  (_showStreamBubble ? 1 : 0) -
-                                  1 -
-                                  raw;
-                              if (showPendingUser && i == messages.length) {
-                                final persona = story.persona;
-                                // 骰子/检定结果：乐观显示时就直接用专用组件，
-                                // 不用等消息落库后才变成卡片
-                                if (_pendingUserText!.startsWith(
-                                  kStoryDiceMarker,
-                                )) {
-                                  return _DiceResultCard(
-                                    text: _pendingUserText!.substring(
-                                      kStoryDiceMarker.length,
-                                    ),
-                                  );
-                                }
-                                return _StoryBubble(
-                                  content: _pendingUserText!,
-                                  isUser: true,
-                                  headerName: persona.name.trim().isEmpty
-                                      ? t.storyPersona
-                                      : persona.name.trim(),
-                                  // 玩家消息显示游戏内时间，而不是现实时间
-                                  headerTime: _state.time,
-                                  headerAvatar: persona.avatar,
-                                );
-                              }
-                              if (i ==
-                                  messages.length + (showPendingUser ? 1 : 0)) {
-                                final streamNarrative = applyStoryRegex(
-                                  _parseReply(_streamText).narrative,
-                                  story.regexes,
-                                  'display',
-                                );
-                                if (streamNarrative.trim().isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
+                              onNotification: _onUserScroll,
+                              // 列表铺满整宽，内容用左右留白居中：
+                              // 这样鼠标滚轮/拖动在两侧空白处也能滚动
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final maxW = _chatContentMaxWidth(context);
+                                  final side = constraints.maxWidth > maxW
+                                      ? (constraints.maxWidth - maxW) / 2
+                                      : 12.0;
+                                  return ListView.builder(
+                                    controller: _scrollController,
+                                    reverse: true,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: side,
                                       vertical: 12,
                                     ),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: PolygonRefreshIndicator(),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            '${_genElapsed.toStringAsFixed(1)}s',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
+                                    itemCount:
+                                        messages.length +
+                                        (showPendingUser ? 1 : 0) +
+                                        (_showStreamBubble ? 1 : 0),
+                                    itemBuilder: (context, raw) {
+                                      final i =
+                                          messages.length +
+                                          (showPendingUser ? 1 : 0) +
+                                          (_showStreamBubble ? 1 : 0) -
+                                          1 -
+                                          raw;
+                                      if (showPendingUser &&
+                                          i == messages.length) {
+                                        final persona = story.persona;
+                                        // 骰子/检定结果：乐观显示时就直接用专用组件，
+                                        // 不用等消息落库后才变成卡片
+                                        if (_pendingUserText!.startsWith(
+                                          kStoryDiceMarker,
+                                        )) {
+                                          return _DiceResultCard(
+                                            text: _pendingUserText!.substring(
+                                              kStoryDiceMarker.length,
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _streamLabel ?? t.storyThinking,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
+                                          );
+                                        }
+                                        return _StoryBubble(
+                                          content: _pendingUserText!,
+                                          isUser: true,
+                                          headerName:
+                                              persona.name.trim().isEmpty
+                                              ? t.storyPersona
+                                              : persona.name.trim(),
+                                          // 玩家消息显示游戏内时间，而不是现实时间
+                                          headerTime: _state.time,
+                                          headerAvatar: persona.avatar,
+                                        );
+                                      }
+                                      if (i ==
+                                          messages.length +
+                                              (showPendingUser ? 1 : 0)) {
+                                        final streamNarrative = applyStoryRegex(
+                                          _parseReply(_streamText).narrative,
+                                          story.regexes,
+                                          'display',
+                                        );
+                                        if (streamNarrative.trim().isEmpty) {
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 12,
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }
-                                return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    for (final b in _blocksFromNarrative(
-                                      streamNarrative,
-                                    ))
-                                      _buildBlock(b, depth: 0),
-                                    // 事件/检定卡片要等 JSON 生成完才出现，这里提示仍在生成
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                            child: Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child:
+                                                        PolygonRefreshIndicator(),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    '${_genElapsed.toStringAsFixed(1)}s',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    _streamLabel ??
+                                                        t.storyThinking,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
                                           children: [
-                                            const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: PolygonRefreshIndicator(),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              t.storyAssemblingData,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
+                                            for (final b
+                                                in _blocksFromNarrative(
+                                                  streamNarrative,
+                                                ))
+                                              _buildBlock(b, depth: 0),
+                                            // 事件/检定卡片要等 JSON 生成完才出现，这里提示仍在生成
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const SizedBox(
+                                                      width: 16,
+                                                      height: 16,
+                                                      child:
+                                                          PolygonRefreshIndicator(),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      t.storyAssemblingData,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }
-                              final m = messages[i];
-                              final isUser = m.role == 'user';
-                              final parsed = isUser
-                                  ? null
-                                  : _parseReply(m.outputContent ?? '');
-                              final check = parsed?.check;
-                              final variants = isUser
-                                  ? const <String>[]
-                                  : AiConversationService.variantsOf(m);
-                              final showCheck =
-                                  !isUser &&
-                                  check != null &&
-                                  i == messages.length - 1 &&
-                                  !_sending;
-                              final persona = story.persona;
-                              final blocks =
-                                  parsed?.blocks ?? const <StoryBlock>[];
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  GestureDetector(
-                                    onLongPress: () => _messageMenu(m),
-                                    child: isUser
-                                        ? (m.inputContent.startsWith(
-                                                kStoryDiceMarker,
-                                              )
-                                              ? _DiceResultCard(
-                                                  text: m.inputContent
-                                                      .substring(
-                                                        kStoryDiceMarker.length,
-                                                      ),
-                                                )
-                                              : Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  children: [
-                                                    _StoryBubble(
-                                                      content: m.inputContent
-                                                              .startsWith(
-                                                                kStoryCheckMarker,
-                                                              )
-                                                          ? m.inputContent
-                                                                .substring(
-                                                                  kStoryCheckMarker
-                                                                      .length,
-                                                                )
-                                                          : m.inputContent,
-                                                      isUser: true,
-                                                      headerName: persona.name
-                                                              .trim()
-                                                              .isEmpty
-                                                          ? t.storyPersona
-                                                          : persona.name.trim(),
-                                                      headerTime: _state.time,
-                                                      headerAvatar:
-                                                          persona.avatar,
-                                                    ),
-                                                    if (m.inputContent
-                                                        .startsWith(
-                                                          kStoryCheckMarker,
-                                                        ))
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                              top: 2,
-                                                              right: 4,
-                                                            ),
-                                                        child: Row(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            Icon(
-                                                              Icons.bolt,
-                                                              size: 12,
-                                                              color: Theme.of(
-                                                                context,
-                                                              ).colorScheme.tertiary,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 3,
-                                                            ),
-                                                            Text(
-                                                              t.storySpecialCheck,
-                                                              style: TextStyle(
-                                                                fontSize: 10,
-                                                                color: Theme.of(
-                                                                  context,
-                                                                ).colorScheme.tertiary,
+                                        );
+                                      }
+                                      final m = messages[i];
+                                      final isUser = m.role == 'user';
+                                      final parsed = isUser
+                                          ? null
+                                          : _parseReply(m.outputContent ?? '');
+                                      final check = parsed?.check;
+                                      final variants = isUser
+                                          ? const <String>[]
+                                          : AiConversationService.variantsOf(m);
+                                      final showCheck =
+                                          !isUser &&
+                                          check != null &&
+                                          i == messages.length - 1 &&
+                                          !_sending;
+                                      final persona = story.persona;
+                                      final blocks =
+                                          parsed?.blocks ??
+                                          const <StoryBlock>[];
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          GestureDetector(
+                                            onLongPress: () => _messageMenu(m),
+                                            child: isUser
+                                                ? (m.inputContent.startsWith(
+                                                        kStoryDiceMarker,
+                                                      )
+                                                      ? _DiceResultCard(
+                                                          text: m.inputContent
+                                                              .substring(
+                                                                kStoryDiceMarker
+                                                                    .length,
                                                               ),
+                                                        )
+                                                      : Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .end,
+                                                          children: [
+                                                            _StoryBubble(
+                                                              content:
+                                                                  m.inputContent
+                                                                      .startsWith(
+                                                                        kStoryCheckMarker,
+                                                                      )
+                                                                  ? m.inputContent.substring(
+                                                                      kStoryCheckMarker
+                                                                          .length,
+                                                                    )
+                                                                  : m.inputContent,
+                                                              isUser: true,
+                                                              headerName:
+                                                                  persona.name
+                                                                      .trim()
+                                                                      .isEmpty
+                                                                  ? t.storyPersona
+                                                                  : persona.name
+                                                                        .trim(),
+                                                              headerTime:
+                                                                  _state.time,
+                                                              headerAvatar:
+                                                                  persona
+                                                                      .avatar,
                                                             ),
+                                                            if (m.inputContent
+                                                                .startsWith(
+                                                                  kStoryCheckMarker,
+                                                                ))
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(
+                                                                      top: 2,
+                                                                      right: 4,
+                                                                    ),
+                                                                child: Row(
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .min,
+                                                                  children: [
+                                                                    Icon(
+                                                                      Icons
+                                                                          .bolt,
+                                                                      size: 12,
+                                                                      color: Theme.of(
+                                                                        context,
+                                                                      ).colorScheme.tertiary,
+                                                                    ),
+                                                                    const SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Text(
+                                                                      t.storySpecialCheck,
+                                                                      style: TextStyle(
+                                                                        fontSize:
+                                                                            10,
+                                                                        color: Theme.of(
+                                                                          context,
+                                                                        ).colorScheme.tertiary,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
                                                           ],
+                                                        ))
+                                                : Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .stretch,
+                                                    children: [
+                                                      // 内容块：旁白 / 对白 / 事件 / 检定
+                                                      for (final b in blocks)
+                                                        _buildBlock(
+                                                          b,
+                                                          depth:
+                                                              messages.length -
+                                                              1 -
+                                                              i,
+                                                          showCheck: showCheck,
                                                         ),
-                                                      ),
-                                                  ],
-                                                ))
-                                        : Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              // 内容块：旁白 / 对白 / 事件 / 检定
-                                              for (final b in blocks)
-                                                _buildBlock(
-                                                  b,
-                                                  depth: messages.length - 1 - i,
-                                                  showCheck: showCheck,
-                                                ),
-                                              AiUsageMeta(task: m),
-                                            ],
+                                                      AiUsageMeta(task: m),
+                                                    ],
+                                                  ),
                                           ),
-                                  ),
-                                  _messageFooter(m),
-                                  if (variants.length > 1)
-                                    _variantNav(m, variants),
-                                ],
-                              );
-                            },
-                          );
-                          },
+                                          _messageFooter(m),
+                                          if (variants.length > 1)
+                                            _variantNav(m, variants),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
                           ),
                           // 展开时点其它地方即收起
                           if (choices.isNotEmpty &&
@@ -2459,9 +2478,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                             Positioned.fill(
                               child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
-                                onTap: () => setState(
-                                  () => _suggestExpanded = false,
-                                ),
+                                onTap: () =>
+                                    setState(() => _suggestExpanded = false),
                               ),
                             ),
                           // 追问建议：浮在对话内容之上（不占内容区高度）
@@ -2600,70 +2618,70 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                       _gameOverBar(context)
                     else
                       _AiComposerBar(
-                      controller: _input,
-                      focusNode: _inputFocus,
-                      onSend: _sendInput,
-                      sending: _sending,
-                      onStop: () => _cancelToken?.cancel(),
-                      hintText: t.storyInput,
-                      bottomLeading: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _ModelSelector(
-                            provider: aiHubProvider(),
-                            onProviderChanged: (p) {
-                              setAiHubProvider(p);
-                              setState(() {});
-                            },
-                          ),
-                          // 已选择「特殊判定」：在模型图标旁显示，点击可取消
-                          if (_pendingCheck)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 2),
-                              child: ActionChip(
-                                avatar: const Icon(Icons.bolt, size: 14),
-                                label: Text(
-                                  t.storySpecialCheck,
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                onPressed: () =>
-                                    setState(() => _pendingCheck = false),
-                              ),
-                            ),
-                        ],
-                      ),
-                      bottomTrailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (!_isFollowing)
-                            IconButton(
-                              icon: const Icon(Icons.arrow_downward),
-                              iconSize: 20,
-                              visualDensity: VisualDensity.compact,
-                              tooltip: t.jumpToBottom,
-                              onPressed: () {
-                                setState(() => _isFollowing = true);
-                                _scrollToBottom(force: true);
+                        controller: _input,
+                        focusNode: _inputFocus,
+                        onSend: _sendInput,
+                        sending: _sending,
+                        onStop: () => _cancelToken?.cancel(),
+                        hintText: t.storyInput,
+                        bottomLeading: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ModelSelector(
+                              provider: aiHubProvider(),
+                              onProviderChanged: (p) {
+                                setAiHubProvider(p);
+                                setState(() {});
                               },
                             ),
-                          IconButton(
-                            icon: const Icon(Icons.auto_stories_outlined),
-                            iconSize: 20,
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.storyDetails,
-                            onPressed: _showDetailsSheet,
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.more_horiz),
-                            iconSize: 20,
-                            visualDensity: VisualDensity.compact,
-                            tooltip: t.storyMore,
-                            onPressed: _showMore,
-                          ),
-                        ],
+                            // 已选择「特殊判定」：在模型图标旁显示，点击可取消
+                            if (_pendingCheck)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 2),
+                                child: ActionChip(
+                                  avatar: const Icon(Icons.bolt, size: 14),
+                                  label: Text(
+                                    t.storySpecialCheck,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () =>
+                                      setState(() => _pendingCheck = false),
+                                ),
+                              ),
+                          ],
+                        ),
+                        bottomTrailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!_isFollowing)
+                              IconButton(
+                                icon: const Icon(Icons.arrow_downward),
+                                iconSize: 20,
+                                visualDensity: VisualDensity.compact,
+                                tooltip: t.jumpToBottom,
+                                onPressed: () {
+                                  setState(() => _isFollowing = true);
+                                  _scrollToBottom(force: true);
+                                },
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.auto_stories_outlined),
+                              iconSize: 20,
+                              visualDensity: VisualDensity.compact,
+                              tooltip: t.storyDetails,
+                              onPressed: _showDetailsSheet,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.more_horiz),
+                              iconSize: 20,
+                              visualDensity: VisualDensity.compact,
+                              tooltip: t.storyMore,
+                              onPressed: _showMore,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 );
               },
@@ -2752,8 +2770,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
         for (final p in nums) {
           final min = p.min ?? 1;
           final max = p.max ?? min;
-          _numberValues[p.key] =
-              max > min ? min + rng.nextInt(max - min + 1) : min;
+          _numberValues[p.key] = max > min
+              ? min + rng.nextInt(max - min + 1)
+              : min;
         }
         return;
       }
@@ -2838,10 +2857,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               icon: const Icon(Icons.play_arrow_rounded),
               label: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text(
-                  t.storyStart,
-                  style: const TextStyle(fontSize: 15),
-                ),
+                child: Text(t.storyStart, style: const TextStyle(fontSize: 15)),
               ),
             ),
           ),
@@ -2857,7 +2873,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     List<StorySetupPart> parts,
   ) {
     final scheme = Theme.of(context).colorScheme;
-    final visible = [for (final p in parts) if (_partVisible(p)) p];
+    final visible = [
+      for (final p in parts)
+        if (_partVisible(p)) p,
+    ];
     if (visible.isEmpty) return const SizedBox.shrink();
     final pool = _groupPool(parts);
     final hasNumber = parts.any((p) => p.type == 'number');
@@ -3282,7 +3301,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     bool showCheck = false,
   }) {
     final s = story;
-    String rx(String t) => applyStoryRegex(t, s.regexes, 'display', depth: depth);
+    String rx(String t) =>
+        applyStoryRegex(t, s.regexes, 'display', depth: depth);
     switch (b.type) {
       case 'dialogue':
         return _NpcBubble(
@@ -3425,7 +3445,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
     final npcBuf = <String>[];
     void flush() {
       if (npcBuf.isEmpty) return;
-      segments.add(StorySegment(type: 'npc', name: name, text: npcBuf.join(' ')));
+      segments.add(
+        StorySegment(type: 'npc', name: name, text: npcBuf.join(' ')),
+      );
       npcBuf.clear();
     }
 
@@ -3584,13 +3606,9 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                     const Spacer(),
                     Select(
                       current: s.quoteGlyph.label,
-                      values: [
-                        for (final g in StoryQuoteGlyph.values) g.label,
-                      ],
+                      values: [for (final g in StoryQuoteGlyph.values) g.label],
                       onTap: (idx) => store.update(
-                        s.copyWith(
-                          quoteGlyph: StoryQuoteGlyph.values[idx],
-                        ),
+                        s.copyWith(quoteGlyph: StoryQuoteGlyph.values[idx]),
                       ),
                     ),
                   ],
@@ -3649,7 +3667,8 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
                         max: 1.6,
                         divisions: 8,
                         label: '${(s.fontScale * 100).round()}%',
-                        onChanged: (v) => store.update(s.copyWith(fontScale: v)),
+                        onChanged: (v) =>
+                            store.update(s.copyWith(fontScale: v)),
                       ),
                     ),
                   ],
@@ -3682,10 +3701,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          FilledButton(
-            onPressed: _restartGame,
-            child: Text(t.storyRestart),
-          ),
+          FilledButton(onPressed: _restartGame, child: Text(t.storyRestart)),
         ],
       ),
     );
@@ -3858,7 +3874,10 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       crits: story.crits,
       direction: story.checkDirection,
     );
-    await _showRollResult(roll, check.label.isEmpty ? t.storyRoll : check.label);
+    await _showRollResult(
+      roll,
+      check.label.isEmpty ? t.storyRoll : check.label,
+    );
     if (!mounted) return;
     await _send(
       '$kStoryDiceMarker${t.storyCmdCheckResult(label: check.label, detail: roll.detail)}',
@@ -3899,10 +3918,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (story.dice.isNotEmpty) ...[
-                Text(
-                  t.storyDiceLibrary,
-                  style: const TextStyle(fontSize: 12),
-                ),
+                Text(t.storyDiceLibrary, style: const TextStyle(fontSize: 12)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,

@@ -24,9 +24,9 @@ class _CategoriesPageState extends State<CategoriesPage>
   late TabController controller;
 
   void onSettingsChanged() {
-    var categories = List.from(
-      appdata.settings["categories"],
-    ).whereType<String>().toList();
+    var categories = List.from(appdata.settings["categories"])
+        .whereType<String>()
+        .toList();
     var allCategories = AnimeSource.all()
         .map((e) => e.categoryData?.key)
         .where((element) => element != null)
@@ -51,9 +51,9 @@ class _CategoriesPageState extends State<CategoriesPage>
   @override
   void initState() {
     super.initState();
-    var categories = List.from(
-      appdata.settings["categories"],
-    ).whereType<String>().toList();
+    var categories = List.from(appdata.settings["categories"])
+        .whereType<String>()
+        .toList();
     var allCategories = AnimeSource.all()
         .map((e) => e.categoryData?.key)
         .where((element) => element != null)

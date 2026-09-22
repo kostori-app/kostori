@@ -99,10 +99,7 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                         value:
                             appdata.implicitData['bangumiDisplayMode'] ??
                             'brief',
-                        options: [
-                          ('brief', t.brief),
-                          ('masonry', t.masonry),
-                        ],
+                        options: [('brief', t.brief), ('masonry', t.masonry)],
                         onChanged: (v) {
                           appdata.implicitData['bangumiDisplayMode'] = v;
                           appdata.writeImplicitData();

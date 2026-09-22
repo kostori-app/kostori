@@ -129,9 +129,8 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
     _extraBodyCtrl = TextEditingController(
       text: (p?.request.extraBodyFields ?? const {}).isNotEmpty
-          ? const JsonEncoder.withIndent(
-              '  ',
-            ).convert(p!.request.extraBodyFields)
+          ? const JsonEncoder.withIndent('  ')
+                .convert(p!.request.extraBodyFields)
           : '',
     );
     _stopCtrl = TextEditingController(
@@ -385,7 +384,8 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 320),
         child: SingleChildScrollView(
-          child: AppSelectableText(prompt,
+          child: AppSelectableText(
+            prompt,
             style: const TextStyle(fontSize: 12, height: 1.5),
           ),
         ),

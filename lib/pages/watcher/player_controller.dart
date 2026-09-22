@@ -443,10 +443,12 @@ abstract class _PlayerController with Store {
       currentSetName = entry?.title ?? '';
       videoUrl = entry?.id ?? '';
     } else {
-      currentSetName = AnimeDetails.episodeTitleOf(anime.episode!.values
-          .elementAt(currentRoad)
-          .values
-          .elementAt(newEpisode - 1));
+      currentSetName = AnimeDetails.episodeTitleOf(
+        anime.episode!.values
+            .elementAt(currentRoad)
+            .values
+            .elementAt(newEpisode - 1),
+      );
       videoUrl = anime.episode!.values
           .elementAt(currentRoad)
           .keys

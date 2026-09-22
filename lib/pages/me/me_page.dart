@@ -588,10 +588,8 @@ class _ToolEntryGrid extends ConsumerWidget {
                     message: t.connectToHub,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () => showPopUpWidget(
-                        context,
-                        const HubClientDetailPage(),
-                      ),
+                      onTap: () =>
+                          showPopUpWidget(context, const HubClientDetailPage()),
                       child: Padding(
                         padding: const EdgeInsets.all(6),
                         child: Icon(

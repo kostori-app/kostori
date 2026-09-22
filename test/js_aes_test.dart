@@ -21,9 +21,7 @@ Uint8List _aesCbcEncrypt(Uint8List data, Uint8List key, Uint8List iv) {
 void main() {
   final key = Uint8List.fromList(List.generate(16, (i) => i));
   final iv = Uint8List.fromList(List.generate(16, (i) => 15 - i));
-  final plain = Uint8List.fromList(
-    List.generate(64, (i) => (i * 7) & 0xff),
-  );
+  final plain = Uint8List.fromList(List.generate(64, (i) => (i * 7) & 0xff));
 
   test('aesDecryptBytes 能解出原文（AES-128-CBC）', () {
     final cipherText = _aesCbcEncrypt(plain, key, iv);
@@ -37,7 +35,8 @@ void main() {
   test('aesDecryptBytes 可在后台 isolate 里执行', () async {
     final cipherText = _aesCbcEncrypt(plain, key, iv);
     final out = await Isolate.run(
-      () => aesDecryptBytes(mode: 'aes-cbc', data: cipherText, key: key, iv: iv),
+      () =>
+          aesDecryptBytes(mode: 'aes-cbc', data: cipherText, key: key, iv: iv),
     );
     expect(out, plain);
   });

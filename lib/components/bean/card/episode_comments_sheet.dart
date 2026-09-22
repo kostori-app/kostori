@@ -264,9 +264,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
 
                 final episode = int.tryParse(inputText) ?? 0;
                 if (episode <= 0 || episode > 999) {
-                  App.rootContext.showMessage(
-                    message: t.invalidEpisodeNumber,
-                  );
+                  App.rootContext.showMessage(message: t.invalidEpisodeNumber);
                   return;
                 }
 

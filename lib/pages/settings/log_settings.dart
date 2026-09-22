@@ -246,13 +246,11 @@ String _prettyLogContent(String raw) {
     } catch (_) {}
   }
   // 含 HTML 标签 → 轻量缩进美化
-  if (s.contains('<') &&
-      RegExp(r'</?[a-zA-Z][\w-]*(\s[^>]*)?>').hasMatch(s)) {
+  if (s.contains('<') && RegExp(r'</?[a-zA-Z][\w-]*(\s[^>]*)?>').hasMatch(s)) {
     return _prettyHtml(s);
   }
   // 类 Dart Map/List.toString()（键/字符串无引号）→ 结构缩进美化
-  if (s.contains('{') &&
-      RegExp(r'\{[^{}]*:[^{}]*(?:,|})').hasMatch(s)) {
+  if (s.contains('{') && RegExp(r'\{[^{}]*:[^{}]*(?:,|})').hasMatch(s)) {
     return _prettyDartish(s);
   }
   return s;
@@ -327,8 +325,20 @@ String _prettyDartish(String raw) {
 /// 轻量 HTML 美化：标签逐行、按嵌套缩进（文本段保留在当前行）
 String _prettyHtml(String raw) {
   const voidTags = {
-    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link',
-    'meta', 'param', 'source', 'track', 'wbr',
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'param',
+    'source',
+    'track',
+    'wbr',
   };
   final buf = StringBuffer();
   final tagRe = RegExp(r'<[^>]*>');
@@ -412,9 +422,7 @@ class _LogsPageState extends State<LogsPage> {
             Row(
               children: [
                 Expanded(child: CapsuleTabBar(labels: labels)),
-                _LogMenuButton(
-                  onClear: () => setState(() => Log.clear()),
-                ),
+                _LogMenuButton(onClear: () => setState(() => Log.clear())),
               ],
             ),
             Expanded(child: _buildLogs()),
@@ -428,11 +436,7 @@ class _LogsPageState extends State<LogsPage> {
         appBar: Appbar(
           title: Text(t.logs),
           bottom: CapsuleTabBar(labels: labels),
-          actions: [
-            _LogMenuButton(
-              onClear: () => setState(() => Log.clear()),
-            ),
-          ],
+          actions: [_LogMenuButton(onClear: () => setState(() => Log.clear()))],
         ),
         body: _buildLogs(),
       ),
@@ -460,128 +464,127 @@ class _LogsPageState extends State<LogsPage> {
           }
 
           return ListView.builder(
-              reverse: true,
-              padding: const EdgeInsets.all(12),
-              itemCount: logs.length,
-              itemBuilder: (context, index) {
-                index = logs.length - index - 1;
-                final log = logs[index];
-                // 过长日志截断展示，避免长卡片拖慢滑动；查看详情仍可看全文
-                final isLong = _isLongLog(log);
+            reverse: true,
+            padding: const EdgeInsets.all(12),
+            itemCount: logs.length,
+            itemBuilder: (context, index) {
+              index = logs.length - index - 1;
+              final log = logs[index];
+              // 过长日志截断展示，避免长卡片拖慢滑动；查看详情仍可看全文
+              final isLong = _isLongLog(log);
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Material(
-                    elevation: 2,
-                    color: Theme.of(context).brightness == Brightness.light
-                        ? Colors.white.toOpacity(0.85)
-                        : const Color(0xFF1E1E1E).toOpacity(0.85),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: AppSelectionArea(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                if (log.source.icon != null) ...[
-                                  Icon(log.source.icon!, size: 14),
-                                  const SizedBox(width: 6),
-                                ],
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                    horizontal: 6,
-                                  ),
-                                  child: Text(log.title),
-                                ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Material(
+                  elevation: 2,
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? Colors.white.toOpacity(0.85)
+                      : const Color(0xFF1E1E1E).toOpacity(0.85),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: AppSelectionArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (log.source.icon != null) ...[
+                                Icon(log.source.icon!, size: 14),
                                 const SizedBox(width: 6),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: [
-                                      Theme.of(context).colorScheme.error,
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.errorContainer,
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer,
-                                    ][log.level.index],
-                                    borderRadius: BorderRadius.circular(16),
+                              ],
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                  horizontal: 6,
+                                ),
+                                child: Text(log.title),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: [
+                                    Theme.of(context).colorScheme.error,
+                                    Theme.of(context)
+                                        .colorScheme
+                                        .errorContainer,
+                                    Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer,
+                                  ][log.level.index],
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                  horizontal: 6,
+                                ),
+                                child: Text(
+                                  log.level.name,
+                                  style: TextStyle(
+                                    color: log.level.index == 0
+                                        ? Colors.white
+                                        : Colors.black,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                    horizontal: 6,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _prettyLogContentCached(log),
+                            maxLines: isLong ? 10 : null,
+                            overflow: isLong
+                                ? TextOverflow.ellipsis
+                                : TextOverflow.clip,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            log.time.toString().replaceAll(
+                              RegExp(r"\.\w+"),
+                              "",
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isLong)
+                                  TextButton(
+                                    onPressed: () => _openLogDetail(log),
+                                    child: Text(t.details),
                                   ),
-                                  child: Text(
-                                    log.level.name,
-                                    style: TextStyle(
-                                      color: log.level.index == 0
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                TextButton(
+                                  onPressed: () {
+                                    Clipboard.setData(
+                                      ClipboardData(text: log.content),
+                                    );
+                                    App.rootContext.showMessage(
+                                      message: t.copySuccess,
+                                    );
+                                  },
+                                  child: Text(t.copy),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _prettyLogContentCached(log),
-                              maxLines: isLong ? 10 : null,
-                              overflow: isLong
-                                  ? TextOverflow.ellipsis
-                                  : TextOverflow.clip,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              log.time.toString().replaceAll(
-                                RegExp(r"\.\w+"),
-                                "",
-                              ),
-                            ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (isLong)
-                                    TextButton(
-                                      onPressed: () =>
-                                          _openLogDetail(log),
-                                      child: Text(t.details),
-                                    ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Clipboard.setData(
-                                        ClipboardData(text: log.content),
-                                      );
-                                      App.rootContext.showMessage(
-                                        message: t.copySuccess,
-                                      );
-                                    },
-                                    child: Text(t.copy),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                );
-              },
-            );
+                ),
+              );
+            },
+          );
         }
 
         return TabBarView(
@@ -633,11 +636,7 @@ class _LogDetailPage extends StatelessWidget {
         child: AppSelectionArea(
           child: Text(
             _prettyLogContentCached(log),
-            style: TextStyle(
-              fontSize: 13.5,
-              height: 1.6,
-              color: cs.onSurface,
-            ),
+            style: TextStyle(fontSize: 13.5, height: 1.6, color: cs.onSurface),
           ),
         ),
       ),

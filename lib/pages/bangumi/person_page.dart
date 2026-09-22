@@ -187,14 +187,14 @@ class _PersonPageState extends ConsumerState<PersonPage>
           PreferredSize(
             preferredSize: const Size.fromHeight(kToolbarHeight),
             child: Material(
-            child: CapsuleTabBar(
-              controller: _tabController,
-              labels: [
-                widget.fromStaff ? t.personTabStaffInfo : t.personTabVoice,
-                t.personTabChat,
-                widget.fromStaff ? t.personTabWorks : t.personTabRelation,
-              ],
-            ),
+              child: CapsuleTabBar(
+                controller: _tabController,
+                labels: [
+                  widget.fromStaff ? t.personTabStaffInfo : t.personTabVoice,
+                  t.personTabChat,
+                  widget.fromStaff ? t.personTabWorks : t.personTabRelation,
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -350,7 +350,8 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                       ),
                                                 ),
                                               ),
-                                              AppSelectableText(characterFullItem.infobox
+                                              AppSelectableText(
+                                                characterFullItem.infobox
                                                     .map(
                                                       (item) =>
                                                           '${item.key}: ${item.values.map((v) => v.value).join(", ")}',

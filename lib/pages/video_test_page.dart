@@ -418,8 +418,10 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
     final s = ref.read(videoTestProvider);
     final scale = 180000 / MediaQuery.sizeOf(context).width;
     final base = _seekPreview ?? s.position;
-    final ms = (base.inMilliseconds + (details.delta.dx * scale).round())
-        .clamp(0, s.duration.inMilliseconds);
+    final ms = (base.inMilliseconds + (details.delta.dx * scale).round()).clamp(
+      0,
+      s.duration.inMilliseconds,
+    );
     setState(() => _seekPreview = Duration(milliseconds: ms));
   }
 
@@ -444,8 +446,9 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
       final result = (_brightness - delta / (h * 2)).clamp(0.0, 1.0);
       _brightness = result;
       try {
-        await ScreenBrightnessPlatform.instance
-            .setApplicationScreenBrightness(result);
+        await ScreenBrightnessPlatform.instance.setApplicationScreenBrightness(
+          result,
+        );
       } catch (_) {}
     } else {
       setState(() => _showVolume = true);
@@ -578,7 +581,8 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
                 state.playing ? Icons.pause : Icons.play_arrow,
                 size: 30,
               ),
-              onPressed: () => ref.read(videoTestProvider.notifier).togglePlay(),
+              onPressed: () =>
+                  ref.read(videoTestProvider.notifier).togglePlay(),
             ),
             Expanded(
               child: ProgressBar(
@@ -1549,9 +1553,7 @@ class _HeaderSheetState extends State<_HeaderSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1582,7 +1584,9 @@ class _HeaderSheetState extends State<_HeaderSheet> {
           const Divider(height: 1),
           Expanded(
             child: _rows.isEmpty
-                ? Center(child: Text(t.vtNoHeaders, textAlign: TextAlign.center))
+                ? Center(
+                    child: Text(t.vtNoHeaders, textAlign: TextAlign.center),
+                  )
                 : ListView.separated(
                     controller: widget.scrollController,
                     padding: const EdgeInsets.symmetric(

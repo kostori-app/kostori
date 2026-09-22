@@ -158,11 +158,12 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: layoutMode == key
-                      ? cs.surface
-                      : Colors.transparent,
+                  color: layoutMode == key ? cs.surface : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   boxShadow: layoutMode == key
                       ? [
@@ -455,9 +456,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                           fontSize: 13,
                                           color: isSelected
                                               ? color
-                                              : Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
+                                              : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface,
                                           fontWeight: isSelected
                                               ? FontWeight.w500
                                               : FontWeight.normal,
@@ -483,9 +484,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                 icon: const Icon(Icons.clear_all, size: 16),
                                 label: Text(t.clear),
                                 style: TextButton.styleFrom(
-                                  foregroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.error,
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .error,
                                 ),
                               ),
                             const Spacer(),
@@ -686,9 +687,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: isSelected
-              ? Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer.toOpacity(0.72)
+              ? Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72)
               : null,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -712,9 +711,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: isSelected
-              ? Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer.toOpacity(0.72)
+              ? Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72)
               : null,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -741,8 +738,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     if (layoutMode == 'masonry') {
       final width = MediaQuery.sizeOf(context).width;
       final perRow = fixedCrossAxisCount;
-      final cols =
-          perRow ?? (width / 140).floor().clamp(2, 6);
+      final cols = perRow ?? (width / 140).floor().clamp(2, 6);
       return SliverMasonryGrid.count(
         crossAxisCount: cols,
         mainAxisSpacing: 4,
@@ -844,9 +840,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -886,9 +882,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
+                                      : Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 alignment: Alignment.center,
@@ -896,9 +892,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                   t.searchMonthSuffix(month: month),
                                   style: TextStyle(
                                     color: isSelected
-                                        ? Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimary
+                                        ? Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary
                                         : null,
                                     fontWeight: isSelected
                                         ? FontWeight.bold
@@ -960,9 +956,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                           d,
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outline,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outline,
                                           ),
                                         ),
                                       ),
@@ -997,9 +993,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                     duration: const Duration(milliseconds: 150),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
+                                          ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
                                           : null,
                                       shape: BoxShape.circle,
                                     ),
@@ -1009,9 +1005,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: isSelected
-                                            ? Theme.of(
-                                                context,
-                                              ).colorScheme.onPrimary
+                                            ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimary
                                             : null,
                                         fontWeight: isSelected
                                             ? FontWeight.bold
@@ -1163,9 +1159,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -1563,9 +1559,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                         children: [
                           Text(
                             item.keyword,
-                            style: ts.s14.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: ts.s14.copyWith(fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 4),
                           Row(

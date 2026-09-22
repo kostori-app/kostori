@@ -86,8 +86,7 @@ class _CharacterCardCreatorPageState extends State<CharacterCardCreatorPage> {
   String _systemPrompt() {
     final lang = creatorLanguage();
     return switch (_mode) {
-      'brainstorm' =>
-        '$cardBrainstormPrompt\n请始终用$lang与用户交流。',
+      'brainstorm' => '$cardBrainstormPrompt\n请始终用$lang与用户交流。',
       'refine' => buildCardRefineSystemPrompt(
         _card ?? CharacterCard(id: 'tmp', name: ''),
         summary: _summary,
@@ -141,7 +140,10 @@ class _CharacterCardCreatorPageState extends State<CharacterCardCreatorPage> {
       }
     } catch (e) {
       if (mounted && !cancelToken.isCancelled) {
-        App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
+        App.rootContext.showMessage(
+          message: e.toString(),
+          level: LogLevel.error,
+        );
       }
       return null;
     } finally {
@@ -198,9 +200,7 @@ class _CharacterCardCreatorPageState extends State<CharacterCardCreatorPage> {
       }
       _card = card;
       _mode = 'refine';
-      _messages.add(
-        _CreatorMessage('assistant', t.cardAiGeneratedNote),
-      );
+      _messages.add(_CreatorMessage('assistant', t.cardAiGeneratedNote));
     });
     _scrollToBottom();
   }
@@ -355,11 +355,13 @@ class _CharacterCardCreatorPageState extends State<CharacterCardCreatorPage> {
                     ),
                   ),
                 if (_mode == 'brainstorm' && _messages.isNotEmpty)
-                  Expanded(child: TextButton.icon(
-                    onPressed: _sending ? null : _generate,
-                    icon: const Icon(Icons.auto_awesome, size: 18),
-                    label: Text(t.cardAiGenerate),
-                  )),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: _sending ? null : _generate,
+                      icon: const Icon(Icons.auto_awesome, size: 18),
+                      label: Text(t.cardAiGenerate),
+                    ),
+                  ),
               ],
             ),
           ),

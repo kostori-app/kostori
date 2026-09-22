@@ -129,10 +129,10 @@ Future<void> migrateAiTasksToOwnDb() async {
 
   final dstCount =
       ((await dst
-                  .customSelect('SELECT COUNT(*) AS c FROM ai_tasks')
-                  .getSingle())
-              .data['c']
-          as num?)
+                      .customSelect('SELECT COUNT(*) AS c FROM ai_tasks')
+                      .getSingle())
+                  .data['c']
+              as num?)
           ?.toInt() ??
       0;
 

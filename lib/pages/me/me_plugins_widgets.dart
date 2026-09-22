@@ -87,9 +87,7 @@ class _ModuleView {
               icon: const Icon(Icons.forum_outlined),
               label: m['title']?.toString() ?? '',
               onTap: () {
-                context.to(
-                  () => PluginBoardPage(plugin: plugin, meta: m),
-                );
+                context.to(() => PluginBoardPage(plugin: plugin, meta: m));
               },
             ),
           ),
@@ -100,7 +98,9 @@ class _ModuleView {
           child: _PluginForm(plugin: plugin, m: m),
         );
       case 'button':
-        return _PluginCard(child: _Button(plugin: plugin, m: m));
+        return _PluginCard(
+          child: _Button(plugin: plugin, m: m),
+        );
       case 'groupPage':
         return _PluginGroupList(
           plugin: plugin,
@@ -412,7 +412,9 @@ class _Status extends StatelessWidget {
     final raw = items is List ? items as List : const [];
     final parsed = raw
         .map((e) {
-          final m = e is Map ? e.map((k, v) => MapEntry(k.toString(), v)) : <String, dynamic>{};
+          final m = e is Map
+              ? e.map((k, v) => MapEntry(k.toString(), v))
+              : <String, dynamic>{};
           return (
             label: (m['label'] ?? m['key'] ?? m['name'] ?? '').toString(),
             value: (m['value'] ?? m['text'] ?? '').toString(),
@@ -471,7 +473,9 @@ class _ConfigFieldsState extends State<_ConfigFields> {
     final list = <Map<String, dynamic>>[];
     if (raw is List) {
       for (final f in raw) {
-        final fm = f is Map ? f.map((k, v) => MapEntry(k.toString(), v)) : <String, dynamic>{};
+        final fm = f is Map
+            ? f.map((k, v) => MapEntry(k.toString(), v))
+            : <String, dynamic>{};
         if ((fm['key'] ?? '').toString().isNotEmpty) list.add(fm);
       }
     }
@@ -564,7 +568,10 @@ class _SignInButtonState extends State<_SignInButton> {
   Future<void> _onPressed() async {
     final url = widget.m['url']?.toString() ?? '';
     if (url.isEmpty) {
-      App.rootContext.showMessage(message: t.missingUrl, level: LogLevel.warning);
+      App.rootContext.showMessage(
+        message: t.missingUrl,
+        level: LogLevel.warning,
+      );
       return;
     }
     setState(() => _loading = true);
@@ -587,11 +594,10 @@ class _SignInButtonState extends State<_SignInButton> {
             body = rawBody.substring(cdStart + 9, cdEnd);
           }
         }
-        body = body
-            .replaceAll(RegExp(r'<[^>]+>'), '')
-            .trim();
+        body = body.replaceAll(RegExp(r'<[^>]+>'), '').trim();
         if (body.isEmpty) body = rawBody.trim();
-        final needLogin = body.contains('未登录') ||
+        final needLogin =
+            body.contains('未登录') ||
             body.contains('请登录') ||
             body.contains('需要登录') ||
             body.contains('登录后才能');
@@ -599,10 +605,7 @@ class _SignInButtonState extends State<_SignInButton> {
             ? (body.isEmpty ? t.success : body)
             : successText;
         if (needLogin) {
-          App.rootContext.showMessage(
-            message: show,
-            level: LogLevel.error,
-          );
+          App.rootContext.showMessage(message: show, level: LogLevel.error);
         } else {
           widget.plugin.markSignedToday();
           App.rootContext.showMessage(message: show);
@@ -615,9 +618,9 @@ class _SignInButtonState extends State<_SignInButton> {
       }
     } catch (e) {
       App.rootContext.showMessage(
-          message: t.requestFailedDetail(error: e),
-          level: LogLevel.error,
-        );
+        message: t.requestFailedDetail(error: e),
+        level: LogLevel.error,
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -663,12 +666,7 @@ class _Button extends StatelessWidget {
     final onTap = m['onTap'];
     return FilledButton.tonal(
       onPressed: page != null && page.isNotEmpty
-          ? () => _pushPluginPage(
-                context,
-                plugin,
-                page,
-                _paramsOf(m),
-              )
+          ? () => _pushPluginPage(context, plugin, page, _paramsOf(m))
           : onTap is JSInvokable
           ? () {
               try {
@@ -731,7 +729,9 @@ class _PluginListRow extends StatelessWidget {
     final image = m['image']?.toString();
     final page = m['page']?.toString();
     final params = m['params'] is Map
-        ? (m['params'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()))
+        ? (m['params'] as Map).map(
+            (k, v) => MapEntry(k.toString(), v.toString()),
+          )
         : const <String, dynamic>{};
     if (m['url'] != null) params['url'] = m['url'].toString();
 
@@ -845,8 +845,7 @@ class _PluginFormState extends State<_PluginForm> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: TextField(
-                        controller:
-                            ctrls[f['key']?.toString() ?? ''],
+                        controller: ctrls[f['key']?.toString() ?? ''],
                         obscureText: f['kind'] == 'password',
                         keyboardType: f['kind'] == 'number'
                             ? TextInputType.number
@@ -944,5 +943,3 @@ Map<String, dynamic> _paramsOf(Map<String, dynamic> m) {
   }
   return p;
 }
-
-

@@ -168,10 +168,7 @@ class _FavoriteDialogState extends State<FavoriteDialog> {
     if (source != null) {
       // 本地收藏页：含来源文件夹的多选 = 移动；只选来源 = 取消收藏；否则新增到选中项
       if (selectedFolders.length > 1 && selectedFolders.contains(source)) {
-        final targets = [
-          ...selectedFolders.where((f) => f != source),
-          source,
-        ];
+        final targets = [...selectedFolders.where((f) => f != source), source];
         for (final f in targets) {
           manager.batchMoveFavorites(source, f, widget.items);
         }
@@ -214,11 +211,7 @@ class _FavoriteDialogState extends State<FavoriteDialog> {
         : 0;
     final counts = widget.sourceFolder == null
         ? t.aToAddBToRemove(a: '$adding', b: '$removing')
-        : t.aToAddBToRemoveCToMove(
-            a: '$adding',
-            b: '$removing',
-            c: '$moving',
-          );
+        : t.aToAddBToRemoveCToMove(a: '$adding', b: '$removing', c: '$moving');
 
     return ContentDialog(
       title: t.favorite,

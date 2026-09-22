@@ -259,9 +259,8 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                     scrolledUnderElevation: 0.0,
                     // 半透明底：即使磨砂层在静止/触底时采不到背景，
                     // 头部也不会变成完全透明
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.surface.withValues(alpha: 0.55),
+                    backgroundColor: Theme.of(context).colorScheme.surface
+                        .withValues(alpha: 0.55),
                     leading: IconButton(
                       onPressed: () {
                         Navigator.maybePop(context);
@@ -313,9 +312,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                         ClipRect(
                           child: BlurEffect(
                             child: Container(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surface
+                              color: Theme.of(context).colorScheme.surface
                                   .withValues(alpha: 0.15),
                             ),
                           ),
@@ -323,40 +320,41 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                         FlexibleSpaceBar(
                           collapseMode: CollapseMode.pin,
                           background: Consumer(
-                        builder: (context, ref, _) {
-                          return Stack(
-                            children: [
-                              // No background image when loading to make loading looks better
-                              if (!isInfoLoading)
-                                Positioned.fill(
-                                  bottom: kTextTabBarHeight,
-                                  child: IgnorePointer(
-                                    child: Opacity(
-                                      opacity: 0.4,
-                                      child: LayoutBuilder(
-                                        builder: (context, boxConstraints) {
-                                          // 缓存模糊结果：页面数据回填会多次重建，
-                                          // RepaintBoundary 避免每帧重做大半径高斯模糊
-                                          return RepaintBoundary(
-                                            child: ImageFiltered(
-                                              imageFilter: ImageFilter.blur(
-                                                sigmaX: 15.0,
-                                                sigmaY: 15.0,
-                                              ),
-                                              child: ShaderMask(
-                                                shaderCallback: (Rect bounds) {
-                                                  return const LinearGradient(
-                                                    begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                    colors: [
-                                                      Colors.white,
-                                                      Colors.transparent,
-                                                    ],
-                                                    stops: [0.8, 1],
-                                                  ).createShader(bounds);
-                                                },
-                                                child:
-                                                    BangumiWidget.kostoriImage(
+                            builder: (context, ref, _) {
+                              return Stack(
+                                children: [
+                                  // No background image when loading to make loading looks better
+                                  if (!isInfoLoading)
+                                    Positioned.fill(
+                                      bottom: kTextTabBarHeight,
+                                      child: IgnorePointer(
+                                        child: Opacity(
+                                          opacity: 0.4,
+                                          child: LayoutBuilder(
+                                            builder: (context, boxConstraints) {
+                                              // 缓存模糊结果：页面数据回填会多次重建，
+                                              // RepaintBoundary 避免每帧重做大半径高斯模糊
+                                              return RepaintBoundary(
+                                                child: ImageFiltered(
+                                                  imageFilter: ImageFilter.blur(
+                                                    sigmaX: 15.0,
+                                                    sigmaY: 15.0,
+                                                  ),
+                                                  child: ShaderMask(
+                                                    shaderCallback: (Rect bounds) {
+                                                      return const LinearGradient(
+                                                        begin:
+                                                            Alignment.topCenter,
+                                                        end: Alignment
+                                                            .bottomCenter,
+                                                        colors: [
+                                                          Colors.white,
+                                                          Colors.transparent,
+                                                        ],
+                                                        stops: [0.8, 1],
+                                                      ).createShader(bounds);
+                                                    },
+                                                    child: BangumiWidget.kostoriImage(
                                                       context,
                                                       loadedItem
                                                               .images['large'] ??
@@ -369,46 +367,46 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                                       // 避免全屏原图解码 + 大半径模糊造成卡顿
                                                       cacheWidth: 96,
                                                     ),
-                                              ),
-                                            ),
-                                          );
-                                        },
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  SafeArea(
+                                    bottom: false,
+                                    child: Align(
+                                      alignment: Alignment.topCenter,
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          kToolbarHeight,
+                                          16,
+                                          0,
+                                        ),
+                                        child: BangumiInfoCardV(
+                                          bangumiItem: loadedItem,
+                                          isLoading: isInfoLoading,
+                                          heroTag: widget.heroTag,
+                                          infoController: infoController,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              SafeArea(
-                                bottom: false,
-                                child: Align(
-                                  alignment: Alignment.topCenter,
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      16,
-                                      kToolbarHeight,
-                                      16,
-                                      0,
-                                    ),
-                                    child: BangumiInfoCardV(
-                                      bangumiItem: loadedItem,
-                                      isLoading: isInfoLoading,
-                                      heroTag: widget.heroTag,
-                                      infoController: infoController,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
                     forceElevated: innerBoxIsScrolled,
-            bottom: CapsuleTabBar(
-              controller: infoTabController,
-              labels: infoController.tabs,
-            ),
+                    bottom: CapsuleTabBar(
+                      controller: infoTabController,
+                      labels: infoController.tabs,
+                    ),
                   ),
                 ),
               ];

@@ -818,7 +818,8 @@ class _PluginThreadPageState extends State<PluginThreadPage> {
         .join('\n');
     final urls = <String>[];
     final spans = _linkSpans(src, cs.primary, urls);
-    final rich = AppSelectableText.rich(TextSpan(
+    final rich = AppSelectableText.rich(
+      TextSpan(
         style: TextStyle(fontSize: fontSize, height: height, color: color),
         children: spans,
       ),

@@ -180,8 +180,8 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
     this.hasNewUpdate,
     int? lastCheckTime,
   ) : lastCheckTime = lastCheckTime == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(lastCheckTime),
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(lastCheckTime),
       super(
         id: item.id,
         name: item.name,
@@ -250,7 +250,8 @@ class LocalFavoritesManager with ChangeNotifier {
 
   int get totalAnimes => _hashedIds.length;
 
-  int folderAnimes(String folder) => _byFolder[_resolveFolder(folder)]?.length ?? 0;
+  int folderAnimes(String folder) =>
+      _byFolder[_resolveFolder(folder)]?.length ?? 0;
 
   List<String> get folderNames => List.unmodifiable(_folderOrder);
 
@@ -260,7 +261,8 @@ class LocalFavoritesManager with ChangeNotifier {
     }
     // 历史数据里 `default` 曾指未分类；若用户还没真的建过叫 default 的
     // 自定义分组，仍把它当未分类兼容；建过则以自定义组为准
-    if (folder == kUnassignedLegacy && !_byFolder.containsKey(kUnassignedLegacy)) {
+    if (folder == kUnassignedLegacy &&
+        !_byFolder.containsKey(kUnassignedLegacy)) {
       return kUnassignedFolder;
     }
     return folder ?? kUnassignedFolder;
@@ -285,34 +287,38 @@ class LocalFavoritesManager with ChangeNotifier {
     const legacy = ['default', '默认'];
     try {
       await db.transaction(() async {
-        final canonicalExists = await (db.selectOnly(db.favoriteFolders)
-              ..addColumns([db.favoriteFolders.id])
-              ..where(db.favoriteFolders.id.equals(kUnassignedFolder)))
-            .get()
-            .then((r) => r.isNotEmpty);
+        final canonicalExists =
+            await (db.selectOnly(db.favoriteFolders)
+                  ..addColumns([db.favoriteFolders.id])
+                  ..where(db.favoriteFolders.id.equals(kUnassignedFolder)))
+                .get()
+                .then((r) => r.isNotEmpty);
         if (!canonicalExists) {
           var order = 0;
-          final oldOrder = await (db.selectOnly(db.favoriteFolders)
-                ..addColumns([db.favoriteFolders.sortOrder])
-                ..where(db.favoriteFolders.id.isIn(legacy)))
-              .get();
+          final oldOrder =
+              await (db.selectOnly(db.favoriteFolders)
+                    ..addColumns([db.favoriteFolders.sortOrder])
+                    ..where(db.favoriteFolders.id.isIn(legacy)))
+                  .get();
           if (oldOrder.isNotEmpty) {
             order = oldOrder.first.read(db.favoriteFolders.sortOrder) ?? 0;
           }
-          await db.into(db.favoriteFolders).insert(
-            FavoriteFoldersCompanion.insert(
-              id: kUnassignedFolder,
-              name: kUnassignedFolder,
-              sortOrder: order,
-            ),
-          );
+          await db
+              .into(db.favoriteFolders)
+              .insert(
+                FavoriteFoldersCompanion.insert(
+                  id: kUnassignedFolder,
+                  name: kUnassignedFolder,
+                  sortOrder: order,
+                ),
+              );
         }
         await (db.update(db.favoriteItems)
               ..where((t) => t.folderId.isIn(legacy)))
             .write(FavoriteItemsCompanion(folderId: Value(kUnassignedFolder)));
-        await (db.delete(db.favoriteFolders)..where(
-          (t) => t.id.isIn(legacy),
-        )).go();
+        await (db.delete(
+          db.favoriteFolders,
+        )..where((t) => t.id.isIn(legacy))).go();
       });
     } catch (e) {
       Log.error('FavoriteMigrate', 'unassigned token migration failed: $e');
@@ -320,20 +326,18 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   Future<void> _loadFromDrift(FavoriteDatabase db) async {
-    final folders = await (db.select(db.favoriteFolders)
-          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-        .get();
+    final folders = await (db.select(
+      db.favoriteFolders,
+    )..orderBy([(t) => OrderingTerm.asc(t.sortOrder)])).get();
     for (final f in folders) {
-      final rows = await (db.select(db.favoriteItems)
-            ..where((t) => t.folderId.equals(f.id))
-            ..orderBy([(t) => OrderingTerm.asc(t.displayOrder)]))
-          .get();
+      final rows =
+          await (db.select(db.favoriteItems)
+                ..where((t) => t.folderId.equals(f.id))
+                ..orderBy([(t) => OrderingTerm.asc(t.displayOrder)]))
+              .get();
       _byFolder[f.name] = [
         for (final r in rows)
-          _FavEntry(
-            _rowToFavoriteItem(r),
-            r.recentlyWatched,
-          ),
+          _FavEntry(_rowToFavoriteItem(r), r.recentlyWatched),
       ];
       _folderOrder.add(f.name);
     }
@@ -404,36 +408,42 @@ class LocalFavoritesManager with ChangeNotifier {
         await db.delete(db.favoriteFolders).go();
         var orderIndex = 0;
         for (final folder in _folderOrder) {
-          await db.into(db.favoriteFolders).insert(
-            FavoriteFoldersCompanion.insert(
-              id: folder,
-              name: folder,
-              sortOrder: orderIndex++,
-            ),
-          );
+          await db
+              .into(db.favoriteFolders)
+              .insert(
+                FavoriteFoldersCompanion.insert(
+                  id: folder,
+                  name: folder,
+                  sortOrder: orderIndex++,
+                ),
+              );
           final entries = _byFolder[folder] ?? const [];
           for (var i = 0; i < entries.length; i++) {
             final e = entries[i];
             final it = e.item;
-            await db.into(db.favoriteItems).insert(
-              FavoriteItemsCompanion.insert(
-                folderId: folder,
-                id: it.id,
-                name: it.name,
-                author: Value(it.author.isEmpty ? null : it.author),
-                type: it.type.value,
-                tags: Value(it.tags.isEmpty ? null : it.tags.join(',')),
-                coverPath: Value(it.coverPath.isEmpty ? null : it.coverPath),
-                time: Value(it.time),
-                displayOrder: Value(i),
-                recentlyWatched: Value(e.recentlyWatched),
-                viewMore: Value(
-                  it.viewMore is PageJumpTarget
-                      ? (it.viewMore as PageJumpTarget).toJsonString()
-                      : null,
-                ),
-              ),
-            );
+            await db
+                .into(db.favoriteItems)
+                .insert(
+                  FavoriteItemsCompanion.insert(
+                    folderId: folder,
+                    id: it.id,
+                    name: it.name,
+                    author: Value(it.author.isEmpty ? null : it.author),
+                    type: it.type.value,
+                    tags: Value(it.tags.isEmpty ? null : it.tags.join(',')),
+                    coverPath: Value(
+                      it.coverPath.isEmpty ? null : it.coverPath,
+                    ),
+                    time: Value(it.time),
+                    displayOrder: Value(i),
+                    recentlyWatched: Value(e.recentlyWatched),
+                    viewMore: Value(
+                      it.viewMore is PageJumpTarget
+                          ? (it.viewMore as PageJumpTarget).toJsonString()
+                          : null,
+                    ),
+                  ),
+                );
           }
         }
       });
@@ -460,9 +470,10 @@ class LocalFavoritesManager with ChangeNotifier {
     FavoriteSortType sortType = FavoriteSortType.displayOrderAsc,
   ]) {
     final list = _byFolder[_resolveFolder(folder)] ?? const [];
-    return _sortEntries(list, sortType)
-        .map((e) => e.item)
-        .toList(growable: false);
+    return _sortEntries(
+      list,
+      sortType,
+    ).map((e) => e.item).toList(growable: false);
   }
 
   List<FavoriteItem> getAllFavoriteItemsForMerge() {
@@ -720,10 +731,8 @@ class LocalFavoritesManager with ChangeNotifier {
     return res;
   }
 
-  Future<List<String>> findWithModel(FavoriteItem item) async => find(
-    item.id,
-    item.type,
-  );
+  Future<List<String>> findWithModel(FavoriteItem item) async =>
+      find(item.id, item.type);
 
   List<FavoriteItemWithFolderInfo> allAnimes() {
     final res = <FavoriteItemWithFolderInfo>[];
@@ -804,9 +813,7 @@ class LocalFavoritesManager with ChangeNotifier {
     var result = items;
     for (final w in words) {
       final k = w.toLowerCase();
-      result = result
-          .where((e) => _matches(e, k))
-          .toList();
+      result = result.where((e) => _matches(e, k)).toList();
     }
     return result;
   }
@@ -950,9 +957,7 @@ class LocalFavoritesManager with ChangeNotifier {
   void removeFavoriteFromFolder(String folder, String id, AnimeType type) {
     final list = _byFolder[_resolveFolder(folder)];
     if (list == null) return;
-    list.removeWhere(
-      (e) => e.item.id == id && e.item.type == type,
-    );
+    list.removeWhere((e) => e.item.id == id && e.item.type == type);
   }
 
   void moveFavorite(
@@ -1172,7 +1177,9 @@ class LocalFavoritesManager with ChangeNotifier {
       for (final folder in _folderOrder) {
         for (final e in _byFolder[folder] ?? const []) {
           if (e.item.id == id && e.item.type == type) {
-            if (cover != null && cover.isNotEmpty && e.item.coverPath != cover) {
+            if (cover != null &&
+                cover.isNotEmpty &&
+                e.item.coverPath != cover) {
               e.item.coverPath = cover;
               changed = true;
             }

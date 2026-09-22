@@ -97,9 +97,7 @@ class _TasteRadarPageState extends ConsumerState<TasteRadarPage>
                     RadarChartData(
                       radarShape: RadarShape.polygon,
                       radarBackgroundColor: Colors.transparent,
-                      radarBorderData: BorderSide(
-                        color: scheme.outlineVariant,
-                      ),
+                      radarBorderData: BorderSide(color: scheme.outlineVariant),
                       gridBorderData: BorderSide(
                         color: scheme.outlineVariant,
                         width: 0.6,

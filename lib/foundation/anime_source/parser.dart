@@ -843,9 +843,7 @@ class AnimeSourceParser {
             ? (res['animes'] ?? res['series'] ?? [])
             : (res ?? []);
         return Res(
-          List<Anime>.from(
-            (raw as List).map((e) => Anime.fromJson(e, _key!)),
-          ),
+          List<Anime>.from((raw as List).map((e) => Anime.fromJson(e, _key!))),
         );
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");

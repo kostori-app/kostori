@@ -37,9 +37,8 @@ class _DownloadHttpError implements Exception {
   required int contentLength,
 }) {
   if (status == 206 && contentRange != null) {
-    final match = RegExp(
-      r'bytes\s+(\d+)-(\d+)\s*/\s*(\d+|\*)',
-    ).firstMatch(contentRange);
+    final match = RegExp(r'bytes\s+(\d+)-(\d+)\s*/\s*(\d+|\*)')
+        .firstMatch(contentRange);
     if (match != null) {
       return (
         start: int.tryParse(match.group(1) ?? '') ?? -1,
@@ -153,8 +152,7 @@ class DownloadManager extends ChangeNotifier {
   String _taskDirPath(DownloadTask task) =>
       p.join(groupDir(task.group), _safeTaskName(task));
 
-  static String get _persistFile =>
-      p.join(App.dataPath, 'download_tasks.json');
+  static String get _persistFile => p.join(App.dataPath, 'download_tasks.json');
 
   bool _loaded = false;
 
@@ -368,12 +366,11 @@ class DownloadManager extends ChangeNotifier {
     }
     _lastKeepAlive = now;
     // 剩余任务数 = 全部未完成（下载中/排队/暂停/失败），进度条只列当前传输中的
-    final remaining =
-        _tasks.where((t) => t.status != DownloadStatus.completed).length;
+    final remaining = _tasks
+        .where((t) => t.status != DownloadStatus.completed)
+        .length;
     DownloadKeepAlive.update(
-      tasks: active
-          .map((t) => (title: t.title, progress: t.progress))
-          .toList(),
+      tasks: active.map((t) => (title: t.title, progress: t.progress)).toList(),
       remaining: remaining,
     );
   }
@@ -385,9 +382,7 @@ class DownloadManager extends ChangeNotifier {
     try {
       while (!cancelToken.isCancelled) {
         final results = await Connectivity().checkConnectivity();
-        final wifi = results.any(
-          (r) => r == ConnectivityResult.wifi,
-        );
+        final wifi = results.any((r) => r == ConnectivityResult.wifi);
         if (wifi) return;
         await Future.delayed(const Duration(seconds: 3));
       }
@@ -405,7 +400,9 @@ class DownloadManager extends ChangeNotifier {
         final list = jsonDecode(await f.readAsString()) as List;
         for (final e in list) {
           try {
-            _tasks.add(DownloadTask.fromJson(Map<String, dynamic>.from(e as Map)));
+            _tasks.add(
+              DownloadTask.fromJson(Map<String, dynamic>.from(e as Map)),
+            );
           } catch (_) {}
         }
       }
@@ -535,8 +532,7 @@ class DownloadManager extends ChangeNotifier {
     if (dlUri != null && (dlUri.scheme == 'http' || dlUri.scheme == 'https')) {
       try {
         final jar = SingleInstanceCookieJar.instance;
-        var cookieHeader =
-            await jar?.loadForRequestCookieHeader(dlUri) ?? '';
+        var cookieHeader = await jar?.loadForRequestCookieHeader(dlUri) ?? '';
         if (cookieHeader.isEmpty) {
           final referer =
               effectiveHeaders['Referer'] ?? effectiveHeaders['referer'];
@@ -544,8 +540,7 @@ class DownloadManager extends ChangeNotifier {
           if (refUri != null &&
               refUri.host.isNotEmpty &&
               refUri.host != dlUri.host) {
-            cookieHeader =
-                await jar?.loadForRequestCookieHeader(refUri) ?? '';
+            cookieHeader = await jar?.loadForRequestCookieHeader(refUri) ?? '';
           }
         }
         if (cookieHeader.isNotEmpty) {
@@ -598,13 +593,11 @@ class DownloadManager extends ChangeNotifier {
   /// 老版本持久化任务无 seq：按创建时间补上（只补未完成），保持显示稳定
   void _backfillTaskSeq() {
     try {
-      final pending = _tasks
-          .where(
-            (t) =>
-                t.status != DownloadStatus.completed && t.seq <= 0,
-          )
-          .toList()
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      final pending =
+          _tasks
+              .where((t) => t.status != DownloadStatus.completed && t.seq <= 0)
+              .toList()
+            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
       if (pending.isEmpty) return;
       var maxSeq = 0;
       for (final t in _tasks) {
@@ -657,8 +650,7 @@ class DownloadManager extends ChangeNotifier {
 
   void _schedule() {
     for (final t in _tasks) {
-      if (t.status == DownloadStatus.queued &&
-          _activeCount < _maxConcurrent) {
+      if (t.status == DownloadStatus.queued && _activeCount < _maxConcurrent) {
         unawaited(_runTask(t));
       }
     }
@@ -757,8 +749,7 @@ class DownloadManager extends ChangeNotifier {
           // 指数退避后回到队列（有并发位则自动开始，未占满立即续传）
           unawaited(() async {
             await Future.delayed(Duration(seconds: n * 3));
-            if (_tasks.contains(task) &&
-                task.status == DownloadStatus.queued) {
+            if (_tasks.contains(task) && task.status == DownloadStatus.queued) {
               _schedule();
             }
           }());
@@ -807,8 +798,7 @@ class DownloadManager extends ChangeNotifier {
         anyDownloading = true;
         if (t.downloadSpeed == 0) continue;
         final last = _speedSampleTime[t.id];
-        if (last == null ||
-            now.difference(last).inMilliseconds > 1500) {
+        if (last == null || now.difference(last).inMilliseconds > 1500) {
           t.downloadSpeed = 0;
           changed = true;
         }
@@ -999,7 +989,9 @@ class DownloadManager extends ChangeNotifier {
           // 第一次下没事、第二次 410、过会又能下就是这个特征。
           // 续传请求被拒时先回退整段重试一次；仍失败则退避重试，
           // 耗尽才报链接失效（不再像以前直接判死）
-          if ((status == 410 || status == 429) && downloaded > 0 && !retriedFull) {
+          if ((status == 410 || status == 429) &&
+              downloaded > 0 &&
+              !retriedFull) {
             retriedFull = true;
             await _deleteQuiet(tmp);
             task.downloadedBytes = 0;
@@ -1189,9 +1181,7 @@ class DownloadManager extends ChangeNotifier {
                   ),
                 );
                 final expect =
-                    int.tryParse(
-                      resp.headers.value('content-length') ?? '',
-                    ) ??
+                    int.tryParse(resp.headers.value('content-length') ?? '') ??
                     -1;
                 final sink = segFile.openWrite();
                 var got = 0;
@@ -1240,9 +1230,7 @@ class DownloadManager extends ChangeNotifier {
             task.downloadedBytes += received;
             completed++;
           }
-          task.progress = segUrls.isEmpty
-              ? 1
-              : completed / segUrls.length;
+          task.progress = segUrls.isEmpty ? 1 : completed / segUrls.length;
           task.segDone = completed;
           _updateDownloadProgress(task);
         } catch (e) {
@@ -1424,13 +1412,14 @@ class DownloadManager extends ChangeNotifier {
       App.rootContext.showMessage(message: t.downloadFailed);
       return;
     }
-    final segPaths = Directory(segDir)
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.ts') && f.lengthSync() > 0)
-        .map((f) => f.path)
-        .toList()
-      ..sort();
+    final segPaths =
+        Directory(segDir)
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.ts') && f.lengthSync() > 0)
+            .map((f) => f.path)
+            .toList()
+          ..sort();
     if (segPaths.isEmpty) {
       App.rootContext.showMessage(message: t.downloadFailed);
       return;
@@ -1674,10 +1663,7 @@ class DownloadManager extends ChangeNotifier {
 
   /// 清空已完成/失败任务
   Future<void> clearFinished() async {
-    final finished = _tasks
-        .where((t) => !t.isActive)
-        .map((t) => t.id)
-        .toList();
+    final finished = _tasks.where((t) => !t.isActive).map((t) => t.id).toList();
     for (final id in finished) {
       await delete(id);
     }
@@ -1703,9 +1689,7 @@ class DownloadManager extends ChangeNotifier {
   }
 
   static String _sanitize(String name) {
-    var cleaned = name
-        .replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_')
-        .trim();
+    var cleaned = name.replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_').trim();
     // Windows：尾点尾空格非法，直接砍掉
     while (cleaned.endsWith('.')) {
       cleaned = cleaned.substring(0, cleaned.length - 1);
@@ -1737,9 +1721,28 @@ class DownloadManager extends ChangeNotifier {
   }
 
   static const _windowsReservedNames = {
-    'CON', 'PRN', 'AUX', 'NUL',
-    'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-    'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
+    'COM1',
+    'COM2',
+    'COM3',
+    'COM4',
+    'COM5',
+    'COM6',
+    'COM7',
+    'COM8',
+    'COM9',
+    'LPT1',
+    'LPT2',
+    'LPT3',
+    'LPT4',
+    'LPT5',
+    'LPT6',
+    'LPT7',
+    'LPT8',
+    'LPT9',
   };
 
   /// 分组名按段净化：分组支持 `/` 子层级，只能净化每一段；
@@ -1762,7 +1765,8 @@ class DownloadManager extends ChangeNotifier {
 
   /// 每源标题格式：源配置覆盖 → 全局默认 → 内置默认
   String _formatFor(String? sourceKey) {
-    final per = (appdata.implicitData['downloadTitleFormats'] as Map?)?[sourceKey];
+    final per =
+        (appdata.implicitData['downloadTitleFormats'] as Map?)?[sourceKey];
     if (per is String && per.isNotEmpty) return per;
     final global = appdata.implicitData['downloadTitleFormat'] as String?;
     if (global != null && global.isNotEmpty) return global;
@@ -1773,8 +1777,8 @@ class DownloadManager extends ChangeNotifier {
   String _fileBaseName(DownloadTask task) {
     final format = _formatFor(task.sourceKey);
     // “不使用集标题”：直接不在文件名中使用集标题（含集号），不做额外检测
-    final ignoreTitle = appdata.implicitData['downloadIgnoreEpisodeTitle'] ==
-        true;
+    final ignoreTitle =
+        appdata.implicitData['downloadIgnoreEpisodeTitle'] == true;
     final episodeText = ignoreTitle ? '' : (task.episode ?? '');
     var name = format
         .replaceAll('{title}', task.animeTitle ?? task.title)
@@ -1806,24 +1810,19 @@ class DownloadManager extends ChangeNotifier {
     }
     // 只按文件路径去重：同一集名（重名集/系列同名条目）下载到不同文件时
     // 各自的记录都要保留，不能按 (animeId, episode, sourceKey) 互相覆盖
-    records.removeWhere(
-      (e) => e is Map && e['filePath'] == task.filePath,
-    );
-    records.insert(
-      0,
-      {
-        'animeId': task.animeId,
-        'sourceKey': task.sourceKey,
-        'title': task.title,
-        'episode': task.episode,
-        'episodeRaw': task.episodeRaw,
-        'resolution': task.resolution,
-        'group': task.group,
-        'filePath': task.filePath,
-        'totalBytes': task.totalBytes,
-        'time': DateTime.now().toIso8601String(),
-      },
-    );
+    records.removeWhere((e) => e is Map && e['filePath'] == task.filePath);
+    records.insert(0, {
+      'animeId': task.animeId,
+      'sourceKey': task.sourceKey,
+      'title': task.title,
+      'episode': task.episode,
+      'episodeRaw': task.episodeRaw,
+      'resolution': task.resolution,
+      'group': task.group,
+      'filePath': task.filePath,
+      'totalBytes': task.totalBytes,
+      'time': DateTime.now().toIso8601String(),
+    });
     try {
       await file.writeAsString(jsonEncode(records));
     } catch (e, s) {
@@ -1898,10 +1897,7 @@ class DownloadManager extends ChangeNotifier {
     if (!await file.exists()) return [];
     try {
       final list = jsonDecode(await file.readAsString()) as List;
-      return list
-          .whereType<Map>()
-          .map(Map<String, dynamic>.from)
-          .toList();
+      return list.whereType<Map>().map(Map<String, dynamic>.from).toList();
     } catch (_) {
       return [];
     }
@@ -1911,9 +1907,7 @@ class DownloadManager extends ChangeNotifier {
     try {
       final f = File(_persistFile);
       await f.create(recursive: true);
-      await f.writeAsString(
-        jsonEncode(_tasks.map((t) => t.toJson()).toList()),
-      );
+      await f.writeAsString(jsonEncode(_tasks.map((t) => t.toJson()).toList()));
     } catch (e, s) {
       Log.error('DownloadManager.persist', '$e\n$s');
     }
@@ -1971,9 +1965,7 @@ class DownloadManager extends ChangeNotifier {
   /// 分组及其所有子孙分组
   static List<String> groupWithDescendants(String name) {
     final prefix = '$name$groupSeparator';
-    return groups()
-        .where((g) => g == name || g.startsWith(prefix))
-        .toList();
+    return groups().where((g) => g == name || g.startsWith(prefix)).toList();
   }
 
   /// 任务 id 自增序号：避免「同一毫秒 + 同一 URL」时 id 冲突
@@ -2091,8 +2083,7 @@ class DownloadManager extends ChangeNotifier {
   /// 删除分组：移除分组名（含子组）；组内条目回到未分组（磁盘目录/文件保留）
   Future<void> deleteGroup(String name) async {
     final removed = groupWithDescendants(name).toSet();
-    final list = groups()
-      ..removeWhere((g) => removed.contains(g));
+    final list = groups()..removeWhere((g) => removed.contains(g));
     _saveGroups(list);
     for (final t in _tasks) {
       if (removed.contains(t.group)) t.group = '';

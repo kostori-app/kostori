@@ -178,8 +178,7 @@ class HubWebAdminService extends BaseHttpService {
     try {
       html = await rootBundle.loadString('assets/hub_admin.html');
     } catch (_) {
-      html =
-          '<!DOCTYPE html><html><body><h1>Hub Admin</h1><p>页面资源缺失</p></body></html>';
+      html = '<!DOCTYPE html><html><body><h1>Hub Admin</h1><p>页面资源缺失</p></body></html>';
     }
     await sendHtml(request, html);
   }

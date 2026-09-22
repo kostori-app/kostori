@@ -133,9 +133,10 @@ class _ParamRoute {
   _ParamRoute._(this.pattern, this.entry, this._regex, this._paramNames);
 
   factory _ParamRoute(String pattern, RouteEntry entry) {
-    final paramNames = RegExp(
-      r':(\w+)',
-    ).allMatches(pattern).map((m) => m.group(1)!).toList();
+    final paramNames = RegExp(r':(\w+)')
+        .allMatches(pattern)
+        .map((m) => m.group(1)!)
+        .toList();
 
     // 先处理好pattern，再拼接正则字符串
     final regexPattern = pattern.replaceAll(RegExp(r':(\w+)'), r'([^/]+)');

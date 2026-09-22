@@ -334,15 +334,13 @@ Future<bool> _isChallenging(dynamic controller, String url) async {
     } else {
       head =
           await (controller as InAppWebViewController).evaluateJavascript(
-                source: "document.head ? document.head.innerHTML : ''",
-              )
-              as String? ??
+            source: "document.head ? document.head.innerHTML : ''",
+          ) as String? ??
           '';
       body =
           await (controller).evaluateJavascript(
-                source: "document.body ? document.body.innerHTML : ''",
-              )
-              as String? ??
+            source: "document.body ? document.body.innerHTML : ''",
+          ) as String? ??
           '';
     }
   } catch (e) {

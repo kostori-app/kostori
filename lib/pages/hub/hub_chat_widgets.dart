@@ -677,7 +677,9 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                 ? '${s.fromName}: '
                                 : '';
                             return TextSpan(
-                              text: preview.isEmpty ? t.replyBracket : '$label$preview',
+                              text: preview.isEmpty
+                                  ? t.replyBracket
+                                  : '$label$preview',
                               style: TextStyle(
                                 fontSize: 12,
                                 height: 1.4,
@@ -1124,8 +1126,9 @@ class _MessageActionMenuState extends State<_MessageActionMenu>
                                     label: t.memes,
                                     onTap: () {
                                       widget.onDismiss();
-                                      for (final seg in widget.entry.segments
-                                          .whereType<ImageSegment>()) {
+                                      for (final seg
+                                          in widget.entry.segments
+                                              .whereType<ImageSegment>()) {
                                         HubStickerManager.add(
                                           HubSticker(url: seg.url),
                                         );
@@ -1363,10 +1366,9 @@ class _BubbleLinkCard extends StatelessWidget {
               : cs.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: (isMe
-                    ? Colors.white
-                    : cs.outlineVariant)
-                .withValues(alpha: 0.35),
+            color: (isMe ? Colors.white : cs.outlineVariant).withValues(
+              alpha: 0.35,
+            ),
           ),
         ),
         child: Column(

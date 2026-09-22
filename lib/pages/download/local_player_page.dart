@@ -83,7 +83,8 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
       ref.read(localPlayerControllerProvider(widget.filePath).notifier);
 
   /// 当前状态（方法里访问，build 内用 ref.watch 的 state）
-  LocalPlayerState get st => ref.read(localPlayerControllerProvider(widget.filePath));
+  LocalPlayerState get st =>
+      ref.read(localPlayerControllerProvider(widget.filePath));
 
   @override
   void initState() {
@@ -171,8 +172,10 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     final scale = 180000 / MediaQuery.sizeOf(context).width;
     // 基于上次 seekPreview 累积，避免只反映最后一段位移
     final base = st.seekPreview ?? st.position;
-    final ms = (base.inMilliseconds + (details.delta.dx * scale).round())
-        .clamp(0, st.duration.inMilliseconds);
+    final ms = (base.inMilliseconds + (details.delta.dx * scale).round()).clamp(
+      0,
+      st.duration.inMilliseconds,
+    );
     ctrl.setSeekPreview(Duration(milliseconds: ms));
   }
 
@@ -297,10 +300,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         ),
         // 控件层（面板）
         if (state.showControls)
-          FadeTransition(
-            opacity: fadeAnimation,
-            child: _buildPanel(state),
-          ),
+          FadeTransition(opacity: fadeAnimation, child: _buildPanel(state)),
         // 滑动手势层：位于面板之上
         // translucent：加入 hit path 但不短路，让下层 tap 层也能收事件。
         // bottom 避开底部控制面板，避免面板内横向拖动（进度条等）误触发 seek
@@ -348,11 +348,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   /// 控件层面板：侧边栏/顶部/底部，全屏透明 Stack
   Widget _buildPanel(LocalPlayerState state) {
     return Stack(
-      children: [
-        _buildSideBar(),
-        _buildTopBar(state),
-        _buildBottomBar(state),
-      ],
+      children: [_buildSideBar(), _buildTopBar(state), _buildBottomBar(state)],
     );
   }
 
@@ -421,8 +417,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
           const SizedBox(width: 8),
           NetworkStatusWidget(),
           const SizedBox(width: 6),
-          if (App.isAndroid)
-            SizedBox(width: 32, child: SpeedMonitorWidget()),
+          if (App.isAndroid) SizedBox(width: 32, child: SpeedMonitorWidget()),
           if (App.isAndroid) const SizedBox(width: 8),
         ],
       ),
@@ -788,16 +783,11 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   }
 
   /// 亮度/音量 HUD：顶部居中，磨砂玻璃 + 等级图标 + 进度条 + 数值
-  Widget _buildLevelHUD(
-    LocalPlayerState state, {
-    required bool isBrightness,
-  }) {
+  Widget _buildLevelHUD(LocalPlayerState state, {required bool isBrightness}) {
     final accent = isBrightness
         ? const Color(0xFFF5A623)
         : const Color(0xFF4DB6FF);
-    final value = isBrightness
-        ? state.brightness * 100
-        : state.volume * 100;
+    final value = isBrightness ? state.brightness * 100 : state.volume * 100;
     final icon = isBrightness
         ? Icons.brightness_7_rounded
         : (value <= 0
@@ -886,10 +876,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    AnimatedPlayIconWave(
-                      size: 14,
-                      count: state.speed.toInt(),
-                    ),
+                    AnimatedPlayIconWave(size: 14, count: state.speed.toInt()),
                     const SizedBox(width: 4),
                     Text(
                       '${state.speed.toInt()}X',
@@ -930,4 +917,3 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 }
-

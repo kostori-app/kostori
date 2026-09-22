@@ -2,13 +2,7 @@
 library;
 
 /// 下载状态
-enum DownloadStatus {
-  queued,
-  downloading,
-  paused,
-  completed,
-  failed,
-}
+enum DownloadStatus { queued, downloading, paused, completed, failed }
 
 /// 单个视频下载任务（mp4 直链或 m3u8/HLS）
 class DownloadTask {
@@ -36,7 +30,7 @@ class DownloadTask {
   final String? episode;
 
   /// 纯集号（如 "5"），用于开启“不使用集标题”时替代无意义的集标题做文件名
-  final   String? episodeNo;
+  final String? episodeNo;
 
   /// 集名的原始值（套用文本规则/手动重命名之前）：下载记录同时存它，
   /// 规则开关/改名后仍能按原始名命中“已下载”，不再重复下载
@@ -119,8 +113,7 @@ class DownloadTask {
   }
 
   bool get isActive =>
-      status == DownloadStatus.queued ||
-      status == DownloadStatus.downloading;
+      status == DownloadStatus.queued || status == DownloadStatus.downloading;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -153,7 +146,8 @@ class DownloadTask {
     subtitle: json['subtitle'] as String?,
     cover: json['cover'] as String?,
     url: json['url'] as String? ?? '',
-    headers: (json['headers'] as Map?)?.map(
+    headers:
+        (json['headers'] as Map?)?.map(
           (k, v) => MapEntry(k.toString(), v.toString()),
         ) ??
         const {},
@@ -176,7 +170,6 @@ class DownloadTask {
     filePath: json['filePath'] as String?,
     error: json['error'] as String?,
     createdAt:
-        DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-        DateTime.now(),
+        DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
   );
 }

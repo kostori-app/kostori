@@ -1,8 +1,10 @@
 part of "components.dart";
 
 void showMenuX(BuildContext context, Offset location, List<MenuEntry> entries) {
-  Navigator.of(context, rootNavigator: true)
-      .push(_MenuRoute(entries, location));
+  Navigator.of(
+    context,
+    rootNavigator: true,
+  ).push(_MenuRoute(entries, location));
 }
 
 class _MenuRoute<T> extends PopupRoute<T> {
@@ -24,8 +26,11 @@ class _MenuRoute<T> extends PopupRoute<T> {
   double get entryHeight => App.isMobile ? 42 : 36;
 
   @override
-  Widget buildPage(BuildContext context, Animation<double> animation,
-      Animation<double> secondaryAnimation) {
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
     var width = entries.first.icon == null ? 146.0 : 172.0;
     final size = MediaQuery.sizeOf(context);
     var left = location.dx;
@@ -66,18 +71,21 @@ class _MenuRoute<T> extends PopupRoute<T> {
                 borderRadius: BorderRadius.circular(4),
                 child: Container(
                   width: width,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 6,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children:
-                        entries.map((e) => buildEntry(e, context)).toList(),
+                    children: entries
+                        .map((e) => buildEntry(e, context))
+                        .toList(),
                   ),
                 ),
               ),
             ),
           ),
-        )
+        ),
       ],
     );
   }
@@ -113,11 +121,16 @@ class _MenuRoute<T> extends PopupRoute<T> {
   Duration get transitionDuration => const Duration(milliseconds: 200);
 
   @override
-  Widget buildTransitions(BuildContext context, Animation<double> animation,
-      Animation<double> secondaryAnimation, Widget child) {
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
     return FadeTransition(
-      opacity: animation.drive(Tween<double>(begin: 0, end: 1)
-          .chain(CurveTween(curve: Curves.ease))),
+      opacity: animation.drive(
+        Tween<double>(begin: 0, end: 1).chain(CurveTween(curve: Curves.ease)),
+      ),
       child: child,
     );
   }
@@ -130,10 +143,11 @@ class MenuEntry {
   final Color? color;
   final void Function() onClick;
 
-  MenuEntry(
-      {required this.text,
-      this.icon,
-      this.endIcon,
-      this.color,
-      required this.onClick});
+  MenuEntry({
+    required this.text,
+    this.icon,
+    this.endIcon,
+    this.color,
+    required this.onClick,
+  });
 }

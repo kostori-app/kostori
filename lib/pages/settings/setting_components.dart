@@ -160,9 +160,9 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
                   builder: (context) {
                     return ContentDialog(
                       title: t.help,
-                      content: Text(
-                        widget.help!,
-                      ).paddingHorizontal(16).fixWidth(double.infinity),
+                      content: Text(widget.help!)
+                          .paddingHorizontal(16)
+                          .fixWidth(double.infinity),
                       actions: [
                         Button.filled(
                           onPressed: context.pop,
@@ -261,9 +261,9 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
                   builder: (context) {
                     return ContentDialog(
                       title: t.help,
-                      content: Text(
-                        widget.help!,
-                      ).paddingHorizontal(16).fixWidth(double.infinity),
+                      content: Text(widget.help!)
+                          .paddingHorizontal(16)
+                          .fixWidth(double.infinity),
                       actions: [
                         Button.filled(
                           onPressed: context.pop,
@@ -980,7 +980,8 @@ class _DisplayModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final modes = options ??
+    final modes =
+        options ??
         [
           ('brief', t.brief),
           ('detailed', t.detailed),
@@ -1138,9 +1139,8 @@ class _SettingRow extends StatelessWidget {
                         subtitle!,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.toOpacity(0.5),
+                          color: Theme.of(context).colorScheme.onSurface
+                              .toOpacity(0.5),
                         ),
                       ),
                     ],

@@ -632,13 +632,11 @@ class Bangumi {
     }
   }
 
-Future<void> getBangumiData() async {
+  Future<void> getBangumiData() async {
     try {
       final response = await _dio.request(
         Api.bangumiDataUrl,
-        options: Options(method: 'GET', headers: {
-          'user-agent': webUA,
-        }),
+        options: Options(method: 'GET', headers: {'user-agent': webUA}),
       );
 
       final responseData = response.data;

@@ -20,32 +20,32 @@ class Creator {
   });
 
   factory Creator.fromJson(Map<String, dynamic> json) => Creator(
-        avatar: Avatar.fromJson(json['avatar']),
-        group: json['group'] ?? 0,
-        id: json['id'] ?? 0,
-        joinedAt: json['joinedAt'] ?? 0,
-        nickname: json['nickname'] ?? '',
-        sign: json['sign'] ?? '',
-        username: json['username'] ?? '',
-      );
+    avatar: Avatar.fromJson(json['avatar']),
+    group: json['group'] ?? 0,
+    id: json['id'] ?? 0,
+    joinedAt: json['joinedAt'] ?? 0,
+    nickname: json['nickname'] ?? '',
+    sign: json['sign'] ?? '',
+    username: json['username'] ?? '',
+  );
 
   factory Creator.empty() => Creator(
-        id: 0,
-        username: '',
-        nickname: '',
-        avatar: Avatar.empty(),
-        group: 0,
-        sign: '',
-        joinedAt: 0,
-      );
+    id: 0,
+    username: '',
+    nickname: '',
+    avatar: Avatar.empty(),
+    group: 0,
+    sign: '',
+    joinedAt: 0,
+  );
 
   Map<String, dynamic> toJson() => {
-        'avatar': avatar.toJson(),
-        'group': group,
-        'id': id,
-        'joinedAt': joinedAt,
-        'nickname': nickname,
-        'sign': sign,
-        'username': username,
-      };
+    'avatar': avatar.toJson(),
+    'group': group,
+    'id': id,
+    'joinedAt': joinedAt,
+    'nickname': nickname,
+    'sign': sign,
+    'username': username,
+  };
 }

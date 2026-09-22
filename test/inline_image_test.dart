@@ -14,7 +14,10 @@ const String _kPng =
 void main() {
   group('InlineImageStore', () {
     test('识别 base64 / data URL', () {
-      expect(InlineImageStore.looksLikeBase64('data:image/png;base64,$_kPng'), isTrue);
+      expect(
+        InlineImageStore.looksLikeBase64('data:image/png;base64,$_kPng'),
+        isTrue,
+      );
       expect(InlineImageStore.looksLikeBase64('a' * 200), isTrue);
       expect(InlineImageStore.looksLikeBase64('https://a.com/b.jpg'), isFalse);
       expect(InlineImageStore.looksLikeBase64('/data/a.jpg'), isFalse);
@@ -29,7 +32,10 @@ void main() {
       expect(InlineImageStore.refOf(url), ref);
       expect(InlineImageStore.isRef(ref), isTrue);
       // 非 base64 原样返回，不会被改写
-      expect(InlineImageStore.refOfBase64('https://a.com/b.jpg'), 'https://a.com/b.jpg');
+      expect(
+        InlineImageStore.refOfBase64('https://a.com/b.jpg'),
+        'https://a.com/b.jpg',
+      );
     });
 
     test('looksLikeImage 只认真实图片魔数', () {
@@ -38,10 +44,7 @@ void main() {
         InlineImageStore.looksLikeImage([0xFF, 0xD8, 0xFF, 0xE0, 0, 0, 0, 0]),
         isTrue,
       );
-      expect(
-        InlineImageStore.looksLikeImage(utf8.encode('GIF89a...')),
-        isTrue,
-      );
+      expect(InlineImageStore.looksLikeImage(utf8.encode('GIF89a...')), isTrue);
       // 解密失败/HTML 错误页/截断内容 → 不当作图片
       expect(
         InlineImageStore.looksLikeImage(utf8.encode('<html>error</html>')),
@@ -87,7 +90,9 @@ void main() {
 
     // 注意：真机/真异步环境下的落盘往返（testWidgets 是假异步，文件 IO 不会完成）
     test('转存后可读回，未转存则读不到', () async {
-      final tempPath = Directory.systemTemp.createTempSync('kostori_inline_').path;
+      final tempPath = Directory.systemTemp
+          .createTempSync('kostori_inline_')
+          .path;
       App.dataPath = tempPath;
       App.cachePath = tempPath;
 

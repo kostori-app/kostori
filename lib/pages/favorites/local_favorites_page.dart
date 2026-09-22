@@ -185,10 +185,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         if (!mounted) return;
         savedOffsets.forEach((controller, offset) {
           if (!controller.hasClients) return;
-          final target = offset.clamp(
-            0.0,
-            controller.position.maxScrollExtent,
-          );
+          final target = offset.clamp(0.0, controller.position.maxScrollExtent);
           if ((controller.offset - target).abs() > 0.5) {
             controller.jumpTo(target);
           }
@@ -886,7 +883,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     menuBuilder: multiSelectMode ? null : _buildLongPressMenu,
                     onTap: multiSelectMode
                         ? (a, heroID, [heroTag]) =>
-                            _onAnimeMultiTap(a, heroID, name)
+                              _onAnimeMultiTap(a, heroID, name)
                         : _onAnimeTap,
                     // 多选模式下长按保留范围选择
                     onLongPressed: multiSelectMode

@@ -15,13 +15,13 @@ class Comment {
     if (value == null) return null;
     if (value is int) {
       if (value < 10000000000) {
-        return DateTime.fromMillisecondsSinceEpoch(
-          value * 1000,
-        ).toString().substring(0, 19);
+        return DateTime.fromMillisecondsSinceEpoch(value * 1000)
+            .toString()
+            .substring(0, 19);
       } else {
-        return DateTime.fromMillisecondsSinceEpoch(
-          value,
-        ).toString().substring(0, 19);
+        return DateTime.fromMillisecondsSinceEpoch(value)
+            .toString()
+            .substring(0, 19);
       }
     }
     return value.toString();
@@ -132,10 +132,12 @@ class Anime {
   /// - `List<Map>`：每项 `{ text, color }`（可指定该行展示颜色）
   static String normalizeDescription(dynamic value) {
     if (value is List) {
-      return value.map((e) {
-        if (e is Map) return (e['text'] ?? '').toString();
-        return e.toString();
-      }).join('\n');
+      return value
+          .map((e) {
+            if (e is Map) return (e['text'] ?? '').toString();
+            return e.toString();
+          })
+          .join('\n');
     }
     return value?.toString() ?? '';
   }
@@ -191,8 +193,9 @@ class AnimeID {
 
 class AnimeDetails with HistoryMixin {
   /// 兼容旧 episode 格式：value 可为 String（集名）或 Map（携带 title/cover 等）
-  static String episodeTitleOf(dynamic value) =>
-      value is Map ? (value['title'] as String? ?? '') : (value?.toString() ?? '');
+  static String episodeTitleOf(dynamic value) => value is Map
+      ? (value['title'] as String? ?? '')
+      : (value?.toString() ?? '');
 
   static String? episodeCoverOf(dynamic value) =>
       value is Map ? (value['cover'] as String?) : null;
@@ -348,7 +351,8 @@ class PageJumpTarget {
     if (value is Map) {
       if (value['page'] != null) {
         // 兼容源在跳转目标里附带网页地址：attributes['url'] 供二级页打开
-        final attrs = (value["attributes"] as Map?)?.map(
+        final attrs =
+            (value["attributes"] as Map?)?.map(
               (k, v) => MapEntry(k.toString(), v),
             ) ??
             <String, dynamic>{};

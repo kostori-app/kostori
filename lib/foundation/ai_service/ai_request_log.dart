@@ -31,8 +31,8 @@ class AiRequestLogEntry {
 
   factory AiRequestLogEntry.fromJson(Map<String, dynamic> json) =>
       AiRequestLogEntry(
-        time: DateTime.tryParse(json['time']?.toString() ?? '') ??
-            DateTime.now(),
+        time:
+            DateTime.tryParse(json['time']?.toString() ?? '') ?? DateTime.now(),
         provider: json['provider']?.toString() ?? '',
         model: json['model']?.toString(),
         taskType: json['taskType']?.toString() ?? 'chat',
@@ -81,7 +81,8 @@ class AiRequestLogService extends ChangeNotifier {
         if (decoded is List) {
           _entries = [
             for (final e in decoded)
-              if (e is Map) AiRequestLogEntry.fromJson(e.cast<String, dynamic>()),
+              if (e is Map)
+                AiRequestLogEntry.fromJson(e.cast<String, dynamic>()),
           ];
         }
       }
@@ -114,9 +115,8 @@ class AiRequestLogService extends ChangeNotifier {
     }
     notifyListeners();
     try {
-      await File(
-        _path,
-      ).writeAsString(jsonEncode([for (final e in _entries) e.toJson()]));
+      await File(_path)
+          .writeAsString(jsonEncode([for (final e in _entries) e.toJson()]));
     } catch (_) {}
   }
 

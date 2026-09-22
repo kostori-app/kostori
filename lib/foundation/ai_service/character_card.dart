@@ -159,15 +159,16 @@ class CharacterCard {
     Map<String, dynamic> mapOf(Object? v) =>
         v is Map ? v.cast<String, dynamic>() : const <String, dynamic>{};
     final multilingual = <String, String>{};
-    final rawMulti = json['creatorNotesMultilingual'] ??
-        json['creator_notes_multilingual'];
+    final rawMulti =
+        json['creatorNotesMultilingual'] ?? json['creator_notes_multilingual'];
     if (rawMulti is Map) {
       for (final e in rawMulti.entries) {
         multilingual[e.key.toString()] = e.value?.toString() ?? '';
       }
     }
     return CharacterCard(
-      id: (json['id'] as String?) ??
+      id:
+          (json['id'] as String?) ??
           'card_${DateTime.now().microsecondsSinceEpoch}',
       name: (json['name'] as String?) ?? '',
       avatar: _cleanAvatar(json['avatar']),
@@ -183,7 +184,9 @@ class CharacterCard {
       exampleDialogue:
           (json['exampleDialogue'] ?? json['mes_example'])?.toString() ?? '',
       creatorNotes:
-          (json['creatorNotes'] ?? json['creator_notes'] ?? json['creatorcomment'])
+          (json['creatorNotes'] ??
+                  json['creator_notes'] ??
+                  json['creatorcomment'])
               ?.toString() ??
           '',
       systemPrompt:
@@ -197,8 +200,7 @@ class CharacterCard {
       ),
       tags: strList(json['tags']),
       creator: (json['creator'] as String?) ?? '',
-      version:
-          (json['version'] ?? json['character_version'])?.toString() ?? '',
+      version: (json['version'] ?? json['character_version'])?.toString() ?? '',
       nickname: (json['nickname'] as String?) ?? '',
       creatorNotesMultilingual: multilingual,
       source: strList(json['source']),
@@ -254,8 +256,9 @@ class CharacterCard {
 
   /// 解析角色卡 JSON（V1 扁平 / V2、V3 data 包裹 / character、char 等变体均支持）
   factory CharacterCard.fromSillyTavernJson(Map<String, dynamic> json) {
-    final spec = (json['spec_version'] ?? json['specVersion'] ?? json['spec'] ?? '')
-        .toString();
+    final spec =
+        (json['spec_version'] ?? json['specVersion'] ?? json['spec'] ?? '')
+            .toString();
     Map<String, dynamic>? unwrap(Map<String, dynamic> m) {
       for (final key in const ['data', 'character', 'char', 'card']) {
         final v = m[key];
@@ -314,9 +317,8 @@ class CharacterCard {
   }
 
   /// 酒馆角色卡文本：默认 V3 JSON 的 base64
-  String toCharaText({int spec = 3}) => base64.encode(
-    utf8.encode(jsonEncode(toSillyTavernJson(spec: spec))),
-  );
+  String toCharaText({int spec = 3}) =>
+      base64.encode(utf8.encode(jsonEncode(toSillyTavernJson(spec: spec))));
 
   /// 头像若为图片 data URL 则解码出原始字节
   Uint8List? decodeAvatarImage() {
@@ -449,9 +451,7 @@ class CharacterCard {
     var offset = 8;
     while (offset + 12 <= bytes.length) {
       final length = _readUint32(bytes, offset);
-      final type = String.fromCharCodes(
-        bytes.sublist(offset + 4, offset + 8),
-      );
+      final type = String.fromCharCodes(bytes.sublist(offset + 4, offset + 8));
       final dataStart = offset + 8;
       final dataEnd = dataStart + length;
       if (length < 0 || dataEnd + 4 > bytes.length) break;
@@ -512,9 +512,7 @@ class CharacterCard {
       final decoded = utf8.decode(base64.decode(normalized));
       final json = jsonDecode(decoded);
       if (json is Map) {
-        return CharacterCard.fromSillyTavernJson(
-          json.cast<String, dynamic>(),
-        );
+        return CharacterCard.fromSillyTavernJson(json.cast<String, dynamic>());
       }
       // ignore: empty_catches
     } catch (_) {}
@@ -522,9 +520,7 @@ class CharacterCard {
     try {
       final json = jsonDecode(text.trim());
       if (json is Map) {
-        return CharacterCard.fromSillyTavernJson(
-          json.cast<String, dynamic>(),
-        );
+        return CharacterCard.fromSillyTavernJson(json.cast<String, dynamic>());
       }
       // ignore: empty_catches
     } catch (_) {}
@@ -572,7 +568,10 @@ class CharacterCardStore extends ChangeNotifier {
           );
         } catch (e) {
           // 单张坏卡只跳过该文件（记文件名，方便用户定位）
-          DebugLog.warning('CharacterCard', 'skip corrupt card ${entity.path}: $e');
+          DebugLog.warning(
+            'CharacterCard',
+            'skip corrupt card ${entity.path}: $e',
+          );
         }
       }
     } catch (e) {

@@ -82,9 +82,7 @@ class LocalPlayerState {
       speed: speed ?? this.speed,
       fullscreen: fullscreen ?? this.fullscreen,
       error: error ?? this.error,
-      seekPreview: clearSeekPreview
-          ? null
-          : seekPreview ?? this.seekPreview,
+      seekPreview: clearSeekPreview ? null : seekPreview ?? this.seekPreview,
       showSeekTime: showSeekTime ?? this.showSeekTime,
       showVolume: showVolume ?? this.showVolume,
       showBrightness: showBrightness ?? this.showBrightness,
@@ -218,8 +216,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
 
   // ---- seek 预览 / 音量 / 亮度 HUD（对齐 watcher 手势）----
 
-  void setSeekPreview(Duration? d) =>
-      _update(state.copyWith(seekPreview: d));
+  void setSeekPreview(Duration? d) => _update(state.copyWith(seekPreview: d));
 
   void setShowSeekTime(bool v) =>
       _update(state.copyWith(showSeekTime: v, clearSeekPreview: !v));
@@ -237,8 +234,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     _update(state.copyWith(volume: v));
   }
 
-  void setShowVolume(bool v) =>
-      _update(state.copyWith(showVolume: v));
+  void setShowVolume(bool v) => _update(state.copyWith(showVolume: v));
 
   Future<void> setBrightness(double b) async {
     b = b.clamp(0.0, 1.0);
@@ -248,8 +244,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     _update(state.copyWith(brightness: b));
   }
 
-  void setShowBrightness(bool v) =>
-      _update(state.copyWith(showBrightness: v));
+  void setShowBrightness(bool v) => _update(state.copyWith(showBrightness: v));
 
   /// 长按倍速（watcher 交互：按住 2x，松开恢复）
   void startSpeedBoost() {
@@ -326,12 +321,8 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       }
       final dot = title.lastIndexOf('.');
       final base = dot > 0 ? title.substring(0, dot) : title;
-      final filename =
-          '${base}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final file = await ImageSaver.writeFile(
-        bytes: data,
-        filename: filename,
-      );
+      final filename = '${base}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = await ImageSaver.writeFile(bytes: data, filename: filename);
       if (file == null) return;
       App.rootContext.showMessage(
         message: '${t.screenshotSuccess}: ${file.path}',
@@ -357,8 +348,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
 }
 
 /// 本地播放器 provider（页面退出时 autoDispose 销毁 Player）
-final localPlayerControllerProvider = NotifierProvider.autoDispose.family<
-  LocalPlayerController,
-  LocalPlayerState,
-  String
->((filePath) => LocalPlayerController(filePath));
+final localPlayerControllerProvider = NotifierProvider.autoDispose
+    .family<LocalPlayerController, LocalPlayerState, String>(
+      (filePath) => LocalPlayerController(filePath),
+    );

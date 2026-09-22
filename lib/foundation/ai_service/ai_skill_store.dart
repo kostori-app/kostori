@@ -125,9 +125,8 @@ class AiSkillStore extends ChangeNotifier {
   Future<void> upsert(AiSkillEntry entry) async {
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File(
-      '$dirPath/${entry.key}.json',
-    ).writeAsString(jsonEncode(entry.toJson()));
+    await File('$dirPath/${entry.key}.json')
+        .writeAsString(jsonEncode(entry.toJson()));
     final idx = _items.indexWhere((s) => s.key == entry.key);
     if (idx >= 0) {
       _items[idx] = entry;

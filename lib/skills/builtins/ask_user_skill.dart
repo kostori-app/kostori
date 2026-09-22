@@ -41,8 +41,7 @@ class AskUserSkill extends Skill {
             'selection_type': {
               'type': 'string',
               'enum': ['text', 'single', 'multi'],
-              'description':
-                  '回答类型：text=自由输入（默认）；single=单选；multi=多选（可补充自定义文本）',
+              'description': '回答类型：text=自由输入（默认）；single=单选；multi=多选（可补充自定义文本）',
             },
           },
           'required': ['id', 'question'],
@@ -102,9 +101,7 @@ class _AskQuestion {
 }
 
 /// 弹出问答对话框；返回 问题 id → 回答（多选用「、」连接），取消返回 null
-Future<Map<String, String>?> showAskUserDialog(
-  List<_AskQuestion> questions,
-) {
+Future<Map<String, String>?> showAskUserDialog(List<_AskQuestion> questions) {
   return showDialog<Map<String, String>>(
     context: App.rootContext,
     builder: (_) => _AskUserDialog(questions: questions),
@@ -148,7 +145,9 @@ class _AskUserDialogState extends State<_AskUserDialog> {
         final parts = [..._picked[i], if (custom.isNotEmpty) custom];
         result[q.id] = parts.join('、');
       } else if (q.type == 'single') {
-        result[q.id] = custom.isNotEmpty ? custom : (_picked[i].firstOrNull ?? '');
+        result[q.id] = custom.isNotEmpty
+            ? custom
+            : (_picked[i].firstOrNull ?? '');
       } else {
         result[q.id] = custom;
       }
@@ -231,10 +230,7 @@ class _AskUserDialogState extends State<_AskUserDialog> {
         ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: FilledButton(
-            onPressed: _submit,
-            child: Text(t.confirm),
-          ),
+          child: FilledButton(onPressed: _submit, child: Text(t.confirm)),
         ),
       ],
     );

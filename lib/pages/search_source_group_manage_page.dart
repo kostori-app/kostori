@@ -50,9 +50,7 @@ class _SearchSourceGroupManagePageState
   }
 
   Future<void> _create() async {
-    final result = await _pickGroupSources(
-      creating: true,
-    );
+    final result = await _pickGroupSources(creating: true);
     if (result == null) return;
     final (name, selected) = result;
     final n = name.trim();
@@ -269,9 +267,8 @@ class _GroupSourcesPickerState extends State<_GroupSourcesPicker> {
   }
 
   void _submit() {
-    Navigator.of(
-      context,
-    ).pop((_nameCtrl.text.trim(), Set<String>.from(_selected)));
+    Navigator.of(context)
+        .pop((_nameCtrl.text.trim(), Set<String>.from(_selected)));
   }
 
   @override
@@ -283,9 +280,7 @@ class _GroupSourcesPickerState extends State<_GroupSourcesPicker> {
       child: Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -307,7 +302,10 @@ class _GroupSourcesPickerState extends State<_GroupSourcesPicker> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
               child: Text(
                 widget.creating ? t.newGroup : (widget.title ?? t.manageGroups),
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             if (widget.creating)
@@ -383,7 +381,8 @@ class _GroupSourcesPickerState extends State<_GroupSourcesPicker> {
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: () {
-                          if (widget.creating && _nameCtrl.text.trim().isEmpty) {
+                          if (widget.creating &&
+                              _nameCtrl.text.trim().isEmpty) {
                             App.rootContext.showMessage(
                               message: t.thisFieldCannotBeEmpty,
                             );

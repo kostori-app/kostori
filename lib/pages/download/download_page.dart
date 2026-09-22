@@ -44,9 +44,9 @@ class _DownloadPageState extends State<DownloadPage>
 
   bool get _isRecordsTab =>
       (_tabCtrl.animation?.value ?? _tabCtrl.index.toDouble()).round().clamp(
-            0,
-            1,
-          ) ==
+        0,
+        1,
+      ) ==
       1;
 
   @override
@@ -72,8 +72,9 @@ class _DownloadPageState extends State<DownloadPage>
 
   void _setRecordExistsFilter(String value) {
     // 作为筛选能力可以不选：再次点击已选中的筛选项即取消（回到「全部」）
-    final next =
-        (value == _recordExistsFilter && value != 'all') ? 'all' : value;
+    final next = (value == _recordExistsFilter && value != 'all')
+        ? 'all'
+        : value;
     setState(() => _recordExistsFilter = next);
     saveDownloadFilter(_recordFilterKey, next);
   }
@@ -107,9 +108,12 @@ class _DownloadPageState extends State<DownloadPage>
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
-          final concurrent = appdata.implicitData['downloadConcurrent'] as int? ?? 2;
-          final segment = appdata.implicitData['downloadSegmentConcurrent'] as int? ?? 4;
-          final wifiOnly = appdata.implicitData['downloadWifiOnly'] as bool? ?? false;
+          final concurrent =
+              appdata.implicitData['downloadConcurrent'] as int? ?? 2;
+          final segment =
+              appdata.implicitData['downloadSegmentConcurrent'] as int? ?? 4;
+          final wifiOnly =
+              appdata.implicitData['downloadWifiOnly'] as bool? ?? false;
           final ignoreEpisodeTitle =
               appdata.implicitData['downloadIgnoreEpisodeTitle'] as bool? ??
               false;
@@ -262,8 +266,9 @@ class _DownloadPageState extends State<DownloadPage>
           IconButton(
             tooltip: t.manageGroups,
             icon: const Icon(Icons.tune),
-            onPressed: () =>
-                _isRecordsTab ? _recordsKey.currentState?.manage() : _manageTaskGroups(),
+            onPressed: () => _isRecordsTab
+                ? _recordsKey.currentState?.manage()
+                : _manageTaskGroups(),
           ),
           IconButton(
             tooltip: t.downloadSettings,
@@ -434,9 +439,8 @@ class _ActiveTab extends StatelessWidget {
 
   List<DownloadTask> _sortTasks(List<DownloadTask> list) {
     if (!_sortByName) return list;
-    return [...list]..sort(
-      (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-    );
+    return [...list]
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
   }
 
   @override
@@ -580,7 +584,7 @@ class _ActiveTab extends StatelessWidget {
                     ),
                   ),
                 )
-                : ListView(
+              : ListView(
                   padding: const EdgeInsets.only(bottom: 16),
                   children: [
                     for (final task in filtered)
@@ -847,9 +851,7 @@ class _RecordsTabState extends State<_RecordsTab> {
           (b['title'] as String? ?? '').toLowerCase(),
         );
       }
-      return (b['time'] as String? ?? '').compareTo(
-        a['time'] as String? ?? '',
-      );
+      return (b['time'] as String? ?? '').compareTo(a['time'] as String? ?? '');
     });
   }
 
@@ -1039,140 +1041,154 @@ class _RecordsTabState extends State<_RecordsTab> {
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
                   itemCount: filtered.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final r = filtered[index];
-        final title = r['title'] as String? ?? '';
-        final episode = r['episode'] as String? ?? '';
-        final resolution = r['resolution'] as String? ?? '';
-        final fp = r['filePath'] as String? ?? '';
-        final sourceKey = r['sourceKey'] as String? ?? '';
-        final sourceName = sourceKey.isEmpty
-            ? ''
-            : (AnimeSource.find(sourceKey)?.name ?? sourceKey);
-        final exists = _exists[fp] ?? false;
-        // 时间精确到秒（YYYY-MM-DD HH:MM:SS）
-        var time = (r['time'] as String? ?? '')
-            .replaceAll('T', ' ')
-            .replaceAll('.000', '');
-        if (time.length > 19) time = time.substring(0, 19);
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final r = filtered[index];
+                    final title = r['title'] as String? ?? '';
+                    final episode = r['episode'] as String? ?? '';
+                    final resolution = r['resolution'] as String? ?? '';
+                    final fp = r['filePath'] as String? ?? '';
+                    final sourceKey = r['sourceKey'] as String? ?? '';
+                    final sourceName = sourceKey.isEmpty
+                        ? ''
+                        : (AnimeSource.find(sourceKey)?.name ?? sourceKey);
+                    final exists = _exists[fp] ?? false;
+                    // 时间精确到秒（YYYY-MM-DD HH:MM:SS）
+                    var time = (r['time'] as String? ?? '')
+                        .replaceAll('T', ' ')
+                        .replaceAll('.000', '');
+                    if (time.length > 19) time = time.substring(0, 19);
 
-        Widget chip(String text, {Color? textColor, Color? boxColor}) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: boxColor ??
-                  (exists
-                      ? colorScheme.surfaceContainerHighest
-                      : colorScheme.errorContainer),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: exists
-                    ? colorScheme.outlineVariant
-                    : colorScheme.error.withValues(alpha: 0.5),
-                width: 0.6,
-              ),
-            ),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 11,
-                color: textColor ??
-                    (exists
-                        ? colorScheme.onSurfaceVariant
-                        : colorScheme.error),
-              ),
-            ),
-          );
-        }
-
-        final subtitleText = title;
-        return Material(
-          color: exists
-              ? colorScheme.surfaceContainerLow
-              : colorScheme.errorContainer.withValues(alpha: 0.25),
-          borderRadius: BorderRadius.circular(12),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              if (!exists) {
-                App.rootContext.showMessage(message: t.fileNotFound);
-                return;
-              }
-              _play(r);
-            },
-            onLongPress: () => _moveToGroup(r),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    episode.isNotEmpty
-                        ? '$subtitleText · $episode'
-                            '${resolution.isNotEmpty ? ' · $resolution' : ''}'
-                        : subtitleText,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: exists ? null : colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      if (time.isNotEmpty) chip(time),
-                      if (sourceName.isNotEmpty) chip(sourceName),
-                      if (exists)
-                        chip(formatBytesShort(_sizes[fp] ?? 0))
-                      else
-                        chip(t.deleted, textColor: colorScheme.onError),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  // 操作按钮：靠右
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (exists)
-                        IconButton(
-                          tooltip: t.openWithOtherPlayer,
-                          visualDensity: VisualDensity.compact,
-                          icon: Icon(
-                            Icons.open_in_new,
-                            color: colorScheme.primary,
+                    Widget chip(
+                      String text, {
+                      Color? textColor,
+                      Color? boxColor,
+                    }) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              boxColor ??
+                              (exists
+                                  ? colorScheme.surfaceContainerHighest
+                                  : colorScheme.errorContainer),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: exists
+                                ? colorScheme.outlineVariant
+                                : colorScheme.error.withValues(alpha: 0.5),
+                            width: 0.6,
                           ),
-                          onPressed: () => _openExternal(r),
                         ),
-                      IconButton(
-                        tooltip: t.rename,
-                        visualDensity: VisualDensity.compact,
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          color: colorScheme.primary,
+                        child: Text(
+                          text,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                textColor ??
+                                (exists
+                                    ? colorScheme.onSurfaceVariant
+                                    : colorScheme.error),
+                          ),
                         ),
-                        onPressed: () => _rename(r),
+                      );
+                    }
+
+                    final subtitleText = title;
+                    return Material(
+                      color: exists
+                          ? colorScheme.surfaceContainerLow
+                          : colorScheme.errorContainer.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          if (!exists) {
+                            App.rootContext.showMessage(
+                              message: t.fileNotFound,
+                            );
+                            return;
+                          }
+                          _play(r);
+                        },
+                        onLongPress: () => _moveToGroup(r),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                episode.isNotEmpty
+                                    ? '$subtitleText · $episode'
+                                          '${resolution.isNotEmpty ? ' · $resolution' : ''}'
+                                    : subtitleText,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: exists ? null : colorScheme.error,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  if (time.isNotEmpty) chip(time),
+                                  if (sourceName.isNotEmpty) chip(sourceName),
+                                  if (exists)
+                                    chip(formatBytesShort(_sizes[fp] ?? 0))
+                                  else
+                                    chip(
+                                      t.deleted,
+                                      textColor: colorScheme.onError,
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              // 操作按钮：靠右
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (exists)
+                                    IconButton(
+                                      tooltip: t.openWithOtherPlayer,
+                                      visualDensity: VisualDensity.compact,
+                                      icon: Icon(
+                                        Icons.open_in_new,
+                                        color: colorScheme.primary,
+                                      ),
+                                      onPressed: () => _openExternal(r),
+                                    ),
+                                  IconButton(
+                                    tooltip: t.rename,
+                                    visualDensity: VisualDensity.compact,
+                                    icon: Icon(
+                                      Icons.edit_outlined,
+                                      color: colorScheme.primary,
+                                    ),
+                                    onPressed: () => _rename(r),
+                                  ),
+                                  IconButton(
+                                    tooltip: t.delete,
+                                    visualDensity: VisualDensity.compact,
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      color: colorScheme.error,
+                                    ),
+                                    onPressed: () => _delete(r),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      IconButton(
-                        tooltip: t.delete,
-                        visualDensity: VisualDensity.compact,
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: colorScheme.error,
-                        ),
-                        onPressed: () => _delete(r),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+                    );
+                  },
                 ),
         ),
       ],
@@ -1197,7 +1213,8 @@ class _DownloadTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final error = task.status == DownloadStatus.failed &&
+    final error =
+        task.status == DownloadStatus.failed &&
             task.error != null &&
             task.error!.isNotEmpty
         ? task.error!
@@ -1213,95 +1230,102 @@ class _DownloadTile extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 顶部：横封面（含序号） + 右侧：标题 + 来源/分辨率 + 状态
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCover(context),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          task.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 顶部：横封面（含序号） + 右侧：标题 + 来源/分辨率 + 状态
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCover(context),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            task.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          _buildMetaRow(context),
+                          const SizedBox(height: 6),
+                          _buildStateLine(context),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                // 底部：合并中显示矩形进度框，否则进度条 + 下载进度信息
+                if (task.isMerging)
+                  _buildMergingIndicator(context)
+                else ...[
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: task.progress,
+                    borderRadius: BorderRadius.circular(4),
+                    minHeight: 4,
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _buildProgressInfo(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        _buildMetaRow(context),
-                        const SizedBox(height: 6),
-                        _buildStateLine(context),
+                      ),
+                      // 操作按钮放在下载进度信息这一行的最右边（删除用 ×）
+                      _buildInlineActions(context),
+                    ],
+                  ),
+                ],
+                // 错误信息行（与上方下载进度信息之间用分割线隔开）
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  const Divider(height: 1),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () => _showError(context),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 14,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            _formatError(error),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.error,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ],
                     ),
                   ),
                 ],
-              ),
-              // 底部：合并中显示矩形进度框，否则进度条 + 下载进度信息
-              if (task.isMerging)
-                _buildMergingIndicator(context)
-              else ...[
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: task.progress,
-                  borderRadius: BorderRadius.circular(4),
-                  minHeight: 4,
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _buildProgressInfo(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    // 操作按钮放在下载进度信息这一行的最右边（删除用 ×）
-                    _buildInlineActions(context),
-                  ],
-                ),
               ],
-              // 错误信息行（与上方下载进度信息之间用分割线隔开）
-              if (error != null) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                const SizedBox(height: 6),
-                InkWell(
-                  onTap: () => _showError(context),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, size: 14, color: colorScheme.error),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          _formatError(error),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, color: colorScheme.error),
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right,
-                        size: 14,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -1499,7 +1523,8 @@ class _DownloadTile extends StatelessWidget {
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 360),
           child: SingleChildScrollView(
-            child: AppSelectableText(buf.toString(),
+            child: AppSelectableText(
+              buf.toString(),
               style: const TextStyle(fontSize: 12),
             ),
           ),
@@ -1518,7 +1543,8 @@ class _DownloadTile extends StatelessWidget {
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 320),
           child: SingleChildScrollView(
-            child: AppSelectableText(task.error ?? '',
+            child: AppSelectableText(
+              task.error ?? '',
               style: const TextStyle(fontSize: 12),
             ),
           ),
@@ -1593,10 +1619,7 @@ class _DownloadTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.secondaryContainer.withValues(alpha: 0.22),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: colorScheme.outlineVariant,
-            width: 0.6,
-          ),
+          border: Border.all(color: colorScheme.outlineVariant, width: 0.6),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1634,10 +1657,7 @@ class _DownloadTile extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '·  $speed',
-            style: TextStyle(
-              fontSize: 11,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
           ),
           const Spacer(),
         ],

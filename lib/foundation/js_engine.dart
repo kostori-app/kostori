@@ -1020,9 +1020,7 @@ Uint8List aesDecryptBytes({
   };
   cipher.init(
     false,
-    iv != null
-        ? ParametersWithIV(KeyParameter(key), iv)
-        : KeyParameter(key),
+    iv != null ? ParametersWithIV(KeyParameter(key), iv) : KeyParameter(key),
   );
   final out = Uint8List(data.length);
   var offset = 0;

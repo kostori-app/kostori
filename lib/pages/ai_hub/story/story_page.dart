@@ -112,7 +112,10 @@ class _StoryPageState extends ConsumerState<StoryPage> {
       }
     } catch (e) {
       Log.error('importStory', e.toString());
-      App.rootContext.showMessage(message: t.importFailed, level: LogLevel.error);
+      App.rootContext.showMessage(
+        message: t.importFailed,
+        level: LogLevel.error,
+      );
     }
   }
 
@@ -213,8 +216,7 @@ class _StoryPageState extends ConsumerState<StoryPage> {
                     IconButton(
                       icon: const Icon(Icons.groups_outlined),
                       tooltip: t.groupChat,
-                      onPressed: () =>
-                          context.to(() => const GroupChatPage()),
+                      onPressed: () => context.to(() => const GroupChatPage()),
                     ),
                     IconButton(
                       icon: const Icon(Icons.file_open_outlined),
@@ -257,9 +259,8 @@ class _StoryPageState extends ConsumerState<StoryPage> {
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Container(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.scrim.withValues(alpha: 0.45),
+                      color: Theme.of(context).colorScheme.scrim
+                          .withValues(alpha: 0.45),
                       alignment: Alignment.center,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

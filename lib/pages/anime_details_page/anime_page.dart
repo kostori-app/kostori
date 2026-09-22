@@ -730,7 +730,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   ),
                                 ),
                                 if (anime.subTitle != null)
-                                  AppSelectableText(anime.subTitle!,
+                                  AppSelectableText(
+                                    anime.subTitle!,
                                     style: ts.s14,
                                     maxLines: 2,
                                     scrollPhysics:

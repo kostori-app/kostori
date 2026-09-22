@@ -52,9 +52,8 @@ class _TranslatedContentState extends State<TranslatedContent> {
     final poweredName = TranslationService.getPoweredName();
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest
+            .withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(12),
@@ -83,9 +82,8 @@ class _TranslatedContentState extends State<TranslatedContent> {
                   'Powered by $poweredName',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.8),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -189,9 +187,8 @@ class _TranslationWidgetState extends State<TranslationWidget> {
     final primary = Theme.of(dialogContext).colorScheme.primary;
     final outlineVariant = Theme.of(dialogContext).colorScheme.outlineVariant;
     return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(
-        dialogContext,
-      ).copyWith(scrollbars: false),
+      behavior: ScrollConfiguration.of(dialogContext)
+          .copyWith(scrollbars: false),
       child: SingleChildScrollView(
         child: RadioGroup<SortId>(
           groupValue: selectedLanguage.id,
@@ -234,9 +231,8 @@ class _TranslationWidgetState extends State<TranslationWidget> {
     final currentSource =
         (appdata.settings['translationSource'] as String?) ?? 'bing';
     return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(
-        dialogContext,
-      ).copyWith(scrollbars: false),
+      behavior: ScrollConfiguration.of(dialogContext)
+          .copyWith(scrollbars: false),
       child: SingleChildScrollView(
         child: RadioGroup<String>(
           groupValue: currentSource,
@@ -512,9 +508,8 @@ class TranslationOutput extends StatelessWidget {
           child: Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             padding: const EdgeInsets.all(12),
@@ -546,9 +541,8 @@ class TranslationOutput extends StatelessWidget {
                         'Powered by ${TranslationService.getPoweredName()}',
                         style: TextStyle(
                           fontSize: 10,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.8),
                           fontWeight: FontWeight.w500,
                         ),
                       ),

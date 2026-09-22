@@ -56,12 +56,12 @@ class _CookieDb extends _$_CookieDb {
 
 LazyDatabase _openConn(String dbPath) => LazyDatabase(() async {
   return NativeDatabase(
-  File(dbPath),
-  setup: (db) {
-    db.execute('PRAGMA journal_mode = WAL;');
-    db.execute('PRAGMA synchronous = NORMAL;');
-  },
-);
+    File(dbPath),
+    setup: (db) {
+      db.execute('PRAGMA journal_mode = WAL;');
+      db.execute('PRAGMA synchronous = NORMAL;');
+    },
+  );
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -282,9 +282,8 @@ class CookieJarSql {
 
   /// 把 WAL 里的改动写回主库文件（导出整库前调用）
   Future<void> checkpoint() => walCheckpoint(
-    () => _withDb(
-      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-    ),
+    () =>
+        _withDb(() => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);')),
   );
 
   /// 跨端合并 Cookie：

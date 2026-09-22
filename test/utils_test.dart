@@ -38,7 +38,14 @@ Uint8List _tinyPng() {
   final idat = zlib.encode(<int>[0, 255, 255, 255]);
   final ihdr = <int>[0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0];
   return Uint8List.fromList([
-    137, 80, 78, 71, 13, 10, 26, 10,
+    137,
+    80,
+    78,
+    71,
+    13,
+    10,
+    26,
+    10,
     ...chunk('IHDR', ihdr),
     ...chunk('IDAT', idat),
     ...chunk('IEND', const []),
@@ -73,7 +80,14 @@ Uint8List _tinyPngWithChunk(String type, List<int> chunkData) {
   final idat = zlib.encode(<int>[0, 255, 255, 255]);
   final ihdr = <int>[0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0];
   return Uint8List.fromList([
-    137, 80, 78, 71, 13, 10, 26, 10,
+    137,
+    80,
+    78,
+    71,
+    13,
+    10,
+    26,
+    10,
     ...chunk('IHDR', ihdr),
     ...chunk(type, chunkData),
     ...chunk('IDAT', idat),
@@ -136,8 +150,14 @@ void main() {
     });
 
     test('month / quarter / half year / year', () {
-      expect(Utils.isSameMonth(DateTime(2026, 1, 1), DateTime(2026, 1, 31)), isTrue);
-      expect(Utils.isSameMonth(DateTime(2026, 1, 1), DateTime(2026, 2, 1)), isFalse);
+      expect(
+        Utils.isSameMonth(DateTime(2026, 1, 1), DateTime(2026, 1, 31)),
+        isTrue,
+      );
+      expect(
+        Utils.isSameMonth(DateTime(2026, 1, 1), DateTime(2026, 2, 1)),
+        isFalse,
+      );
       expect(
         Utils.isSameQuarter(DateTime(2026, 1, 1), DateTime(2026, 3, 31)),
         isTrue,
@@ -154,8 +174,14 @@ void main() {
         Utils.isSameHalfYear(DateTime(2026, 6, 30), DateTime(2026, 7, 1)),
         isFalse,
       );
-      expect(Utils.isSameYear(DateTime(2026, 1, 1), DateTime(2026, 12, 31)), isTrue);
-      expect(Utils.isSameYear(DateTime(2026, 12, 31), DateTime(2027, 1, 1)), isFalse);
+      expect(
+        Utils.isSameYear(DateTime(2026, 1, 1), DateTime(2026, 12, 31)),
+        isTrue,
+      );
+      expect(
+        Utils.isSameYear(DateTime(2026, 12, 31), DateTime(2027, 1, 1)),
+        isFalse,
+      );
     });
   });
 
@@ -186,10 +212,7 @@ void main() {
         tags: const ['test', 'demo'],
       );
       final png = _tinyPng();
-      final embedded = CharacterCard.embedCharaChunk(
-        png,
-        card.toCharaText(),
-      );
+      final embedded = CharacterCard.embedCharaChunk(png, card.toCharaText());
       expect(embedded.length, greaterThan(png.length));
 
       final parsed = CharacterCard.fromPngBytes(embedded);
@@ -322,11 +345,11 @@ void main() {
       ],
     })!;
 
-    List<String> contents(String text, {int turn = 1}) => CharacterLorebookResolver
-        .instance
-        .resolve(book(), [text], cardId: 'x', turn: turn)
-        .map((e) => e.content)
-        .toList();
+    List<String> contents(String text, {int turn = 1}) =>
+        CharacterLorebookResolver.instance
+            .resolve(book(), [text], cardId: 'x', turn: turn)
+            .map((e) => e.content)
+            .toList();
 
     test('constant entry always activates', () {
       expect(contents('无关'), contains('常驻设定。'));
@@ -348,10 +371,7 @@ void main() {
 
     test('orders by insertion_order', () {
       final list = contents('龙 剑 银');
-      expect(
-        list.indexOf('常驻设定。'),
-        lessThan(list.indexOf('龙是古代生物。')),
-      );
+      expect(list.indexOf('常驻设定。'), lessThan(list.indexOf('龙是古代生物。')));
     });
   });
 
@@ -368,26 +388,29 @@ void main() {
   });
 
   group('story system prompt', () {
-    test('uses the declared resources and attributes in the output example', () {
-      const story = Story(
-        id: 't',
-        name: 't',
-        initialState: GameState(
-          resources: [
-            StatBar(name: '体力', cur: 100, max: 100),
-            StatBar(name: '进食', cur: 80, max: 100),
-          ],
-          attributes: {'耐力': 7},
-        ),
-      );
-      final prompt = story.buildSystemPrompt();
-      expect(prompt.contains('"体力"'), isTrue);
-      expect(prompt.contains('"进食"'), isTrue);
-      expect(prompt.contains('"耐力"'), isTrue);
-      // 不应再写死示例里的名称
-      expect(prompt.contains('"生命"'), isFalse);
-      expect(prompt.contains('"精神"'), isFalse);
-    });
+    test(
+      'uses the declared resources and attributes in the output example',
+      () {
+        const story = Story(
+          id: 't',
+          name: 't',
+          initialState: GameState(
+            resources: [
+              StatBar(name: '体力', cur: 100, max: 100),
+              StatBar(name: '进食', cur: 80, max: 100),
+            ],
+            attributes: {'耐力': 7},
+          ),
+        );
+        final prompt = story.buildSystemPrompt();
+        expect(prompt.contains('"体力"'), isTrue);
+        expect(prompt.contains('"进食"'), isTrue);
+        expect(prompt.contains('"耐力"'), isTrue);
+        // 不应再写死示例里的名称
+        expect(prompt.contains('"生命"'), isFalse);
+        expect(prompt.contains('"精神"'), isFalse);
+      },
+    );
 
     test('includes story-defined titles / job / facilities', () {
       const story = Story(
@@ -395,7 +418,12 @@ void main() {
         name: 't',
         titleMode: 'equipped',
         titles: [
-          StoryTitle(key: 'brave', name: '勇者', effects: '力量+2', stackable: true),
+          StoryTitle(
+            key: 'brave',
+            name: '勇者',
+            effects: '力量+2',
+            stackable: true,
+          ),
         ],
         job: StoryJob(
           name: '游侠',
@@ -714,7 +742,12 @@ void main() {
           id: '1',
           type: SettingTypes.codex,
           name: '剑',
-          payload: {'kind': 'item', 'key': 'sword', 'name': '剑', 'mechanics': '攻击+3'},
+          payload: {
+            'kind': 'item',
+            'key': 'sword',
+            'name': '剑',
+            'mechanics': '攻击+3',
+          },
         ),
         SettingEntry(
           id: '2',

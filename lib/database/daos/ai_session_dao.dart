@@ -63,14 +63,13 @@ class AiSessionDao extends DatabaseAccessor<AiDatabase>
     String sessionId,
     String content,
     int? lastMessageId,
-  ) =>
-      (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
-        AiSessionsCompanion(
-          compressedContent: Value(content),
-          summaryMessageId: Value(lastMessageId),
-          updatedAt: Value(DateTime.now()),
-        ),
-      );
+  ) => (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
+    AiSessionsCompanion(
+      compressedContent: Value(content),
+      summaryMessageId: Value(lastMessageId),
+      updatedAt: Value(DateTime.now()),
+    ),
+  );
 
   Future<void> setSkillKeys(String sessionId, List<String> keys) =>
       (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(

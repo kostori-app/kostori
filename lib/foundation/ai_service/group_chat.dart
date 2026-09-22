@@ -50,7 +50,9 @@ class GroupChat {
     List<String> strList(Object? v) =>
         v is List ? v.whereType<String>().toList() : const <String>[];
     return GroupChat(
-      id: json['id']?.toString() ?? 'group_${DateTime.now().microsecondsSinceEpoch}',
+      id:
+          json['id']?.toString() ??
+          'group_${DateTime.now().microsecondsSinceEpoch}',
       name: json['name']?.toString() ?? '',
       memberIds: strList(json['memberIds']),
       scenario: json['scenario']?.toString() ?? '',
@@ -156,9 +158,8 @@ class GroupChatStore extends ChangeNotifier {
     }
     final dir = Directory(dirPath);
     await dir.create(recursive: true);
-    await File(
-      '$dirPath/${chat.id}.json',
-    ).writeAsString(jsonEncode(chat.toJson()));
+    await File('$dirPath/${chat.id}.json')
+        .writeAsString(jsonEncode(chat.toJson()));
     notifyListeners();
   }
 

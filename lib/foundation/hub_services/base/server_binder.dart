@@ -175,9 +175,9 @@ class ServerBinder {
   void _checkCertificateChain(String certificatePath) {
     try {
       final content = File(certificatePath).readAsStringSync();
-      final blocks = RegExp(
-        r'-----BEGIN CERTIFICATE-----',
-      ).allMatches(content).length;
+      final blocks = RegExp(r'-----BEGIN CERTIFICATE-----')
+          .allMatches(content)
+          .length;
       if (blocks <= 1) {
         HubLog.warning(
           'ServerBinder',

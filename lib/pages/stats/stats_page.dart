@@ -192,11 +192,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                       },
                       menuChildren: [
                         MenuItemButton(
-                          onPressed: () => context.to(
-                            () => const AllStatsTimelineScreen(),
-                          ),
+                          onPressed: () =>
+                              context.to(() => const AllStatsTimelineScreen()),
                           child: ListTile(
-                            leading: Icon(Icons.account_tree_outlined, size: 20),
+                            leading: Icon(
+                              Icons.account_tree_outlined,
+                              size: 20,
+                            ),
                             title: Text(t.statsAllTimelineTitle),
                           ),
                         ),
@@ -380,15 +382,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                     ),
                     calendarStyle: CalendarStyle(
                       selectedDecoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.toOpacity(0.72),
+                        color: Theme.of(context).colorScheme.primary
+                            .toOpacity(0.72),
                         shape: BoxShape.circle,
                       ),
                       todayDecoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.secondary.toOpacity(0.3),
+                        color: Theme.of(context).colorScheme.secondary
+                            .toOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
                       markerDecoration: BoxDecoration(
@@ -446,9 +446,10 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                       todayBuilder: (context, day, focusedDay) {
                         return DayCell(
                           day: day,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.secondary.toOpacity(0.36),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .secondary
+                              .toOpacity(0.36),
                           onSelected: (d) {
                             setState(() {
                               controller.selectedDay = d;
@@ -460,9 +461,8 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                       selectedBuilder: (context, day, focusedDay) {
                         return DayCell(
                           day: day,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary.toOpacity(0.48),
+                          backgroundColor: Theme.of(context).colorScheme.primary
+                              .toOpacity(0.48),
                           onSelected: (d) {
                             setState(() {
                               controller.selectedDay = d;
@@ -509,9 +509,9 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.secondaryContainer,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -570,16 +570,19 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 8,
                                   ),
-                  child: StatEntryCard(
-                    onTap: () => showPopUpWidget(
-                      context,
-                      PopUpWidgetScaffold(
-                        title: statGroup.first.title ??
-                            statGroup.first.id,
-                        body: StatsTimelineView(group: statGroup),
-                      ),
-                    ),
-                    child: StatItemWidget(
+                                  child: StatEntryCard(
+                                    onTap: () => showPopUpWidget(
+                                      context,
+                                      PopUpWidgetScaffold(
+                                        title:
+                                            statGroup.first.title ??
+                                            statGroup.first.id,
+                                        body: StatsTimelineView(
+                                          group: statGroup,
+                                        ),
+                                      ),
+                                    ),
+                                    child: StatItemWidget(
                                       statsGroup: statGroup,
                                       selectedDay:
                                           controller.selectedDay ??

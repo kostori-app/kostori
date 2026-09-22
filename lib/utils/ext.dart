@@ -86,8 +86,9 @@ extension StringExt on String {
 
   bool _isURL() {
     final regex = RegExp(
-        r'^((http|https|ftp)://)[\w-]+(\.[\w-]+)+([\w.,@?^=%&:/~+#-|]*[\w@?^=%&/~+#-])?$',
-        caseSensitive: false);
+      r'^((http|https|ftp)://)[\w-]+(\.[\w-]+)+([\w.,@?^=%&:/~+#-|]*[\w@?^=%&/~+#-])?$',
+      caseSensitive: false,
+    );
     return regex.hasMatch(this);
   }
 
@@ -113,10 +114,7 @@ abstract class MapOrNull {
 extension FutureExt<T> on Future<T> {
   /// Wrap the future to make sure it will return at least the duration.
   Future<T> minTime(Duration duration) async {
-    var res = await Future.wait([
-      this,
-      Future.delayed(duration),
-    ]);
+    var res = await Future.wait([this, Future.delayed(duration)]);
     return res[0];
   }
 }

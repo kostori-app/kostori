@@ -101,11 +101,11 @@ class PlayerAudioHandler extends BaseAudioHandler {
     final title = _controller!.currentSetName;
     final artUri = _controller!.animeImg;
 
-mediaItem.add(
-  MediaItem(
-    id: _controller!.videoUrl,
-    title: _controller!.animeTitle,
-    artUri: artUri.isNotEmpty ? Uri.parse(artUri) : null,
+    mediaItem.add(
+      MediaItem(
+        id: _controller!.videoUrl,
+        title: _controller!.animeTitle,
+        artUri: artUri.isNotEmpty ? Uri.parse(artUri) : null,
         artist: title,
         duration: _controller!.duration,
         album: '',

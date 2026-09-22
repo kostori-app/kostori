@@ -269,12 +269,12 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
               [
                 SpeedDialChild(
                   child: const Icon(Icons.refresh),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
+                  foregroundColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer,
                   onTap: () async {
                     await resetBangumiTrend();
                   },
@@ -283,12 +283,12 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
               [
                 SpeedDialChild(
                   child: const Icon(Icons.vertical_align_top),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
+                  foregroundColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer,
                   onTap: () => scrollToTop(),
                 ),
               ],
@@ -338,9 +338,9 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
                             t.itemsCount(n: bangumiItems.length),
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
                                   fontSize: 10,
                                 ),
                           ),
@@ -420,8 +420,11 @@ class _SearchBar extends StatelessWidget {
                 ),
                 if (context.width > changePoint) ...[
                   const SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios,
-                      size: 14, color: cs.onSurfaceVariant),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: cs.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 12),
                 ],
               ],

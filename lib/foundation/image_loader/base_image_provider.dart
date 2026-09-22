@@ -187,9 +187,8 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
         if (data.length < 2 * 1024) {
           // data is too short, it's likely that the data is text, not image
           try {
-            var text = const Utf8Codec(
-              allowMalformed: false,
-            ).decoder.convert(data);
+            var text = const Utf8Codec(allowMalformed: false).decoder
+                .convert(data);
             throw Exception("Expected image data, but got text: $text");
           } catch (e) {
             // ignore
@@ -197,9 +196,7 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
         }
         // 非图片/损坏数据：返回 1×1 透明占位，避免 Invalid image data 刷屏
         try {
-          final fallback = await ImmutableBuffer.fromUint8List(
-            kTransparentPng,
-          );
+          final fallback = await ImmutableBuffer.fromUint8List(kTransparentPng);
           return await decode(fallback);
         } catch (_) {
           rethrow;

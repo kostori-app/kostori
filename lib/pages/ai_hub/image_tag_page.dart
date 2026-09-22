@@ -164,8 +164,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
   Future<void> _saveGeneratedImage() async {
     final bytes = _imageBytes;
     if (bytes == null) return;
-    final filename =
-        'kostori_ai_${DateTime.now().millisecondsSinceEpoch}.png';
+    final filename = 'kostori_ai_${DateTime.now().millisecondsSinceEpoch}.png';
     // 保存到 Kostori 文件夹（图片操作页扫描的目录），而非仅分享/复制
     final file = await ImageSaver.writeFile(bytes: bytes, filename: filename);
     if (!mounted) return;
@@ -235,8 +234,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
       final result = await AiConversationService().runTask(
         provider: _source,
         taskType: 'image_tag',
-        prompt:
-            '请根据我的番剧品味生成 $_count 个${_stylePrompts[_style]}，用英文逗号分隔',
+        prompt: '请根据我的番剧品味生成 $_count 个${_stylePrompts[_style]}，用英文逗号分隔',
         systemPrompt: systemPrompt,
         sessionTitle: 'AI Tag ${DateTime.now().toString().substring(0, 10)}',
       );
@@ -376,18 +374,18 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .secondaryContainer,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           tag,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSecondaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
                           ),
                         ),
                       ),
@@ -461,9 +459,10 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final s in (isSd
-                  ? ['512x512', '768x768', '1024x1024']
-                  : ['auto', '1024x1024', '1024x1536', '1536x1024']))
+              for (final s
+                  in (isSd
+                      ? ['512x512', '768x768', '1024x1024']
+                      : ['auto', '1024x1024', '1024x1536', '1536x1024']))
                 ChoiceChip(
                   label: Text(s),
                   selected: _imageConfig.size == s,

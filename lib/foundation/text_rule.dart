@@ -33,15 +33,12 @@ class TextRuleStep {
     caseSensitive: m['caseSensitive'] == true,
   );
 
-  TextRuleStep copyWith({
-    String? find,
-    String? replace,
-    bool? caseSensitive,
-  }) => TextRuleStep(
-    find: find ?? this.find,
-    replace: replace ?? this.replace,
-    caseSensitive: caseSensitive ?? this.caseSensitive,
-  );
+  TextRuleStep copyWith({String? find, String? replace, bool? caseSensitive}) =>
+      TextRuleStep(
+        find: find ?? this.find,
+        replace: replace ?? this.replace,
+        caseSensitive: caseSensitive ?? this.caseSensitive,
+      );
 }
 
 /// 一条文本规则：若干步骤按顺序执行
@@ -440,8 +437,7 @@ class SourceTextRuleConfig {
       TextRuleStore.applyFirstHit(input, rulesFor(sourceKey));
 
   /// 有多少个番源选用了该规则
-  static int countSourcesUsing(String ruleId) =>
-      sourcesUsing(ruleId).length;
+  static int countSourcesUsing(String ruleId) => sourcesUsing(ruleId).length;
 
   /// 选用该规则的所有番源 key
   static Set<String> sourcesUsing(String ruleId) {

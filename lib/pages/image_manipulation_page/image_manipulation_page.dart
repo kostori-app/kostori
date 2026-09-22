@@ -829,9 +829,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
     final innerBorderWidth = ref.watch(innerBorderWidthProvider);
 
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1053,10 +1051,7 @@ class _ColorPickerFieldState extends State<_ColorPickerField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         ColorPicker(
           pickerColor: pickerColor,

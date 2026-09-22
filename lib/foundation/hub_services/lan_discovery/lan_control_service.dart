@@ -792,5 +792,7 @@ abstract class LanPlayerControlHandler {
   CurrentAnime? getCurrentAnime();
 }
 
-typedef LanNavigationHandler =
-    Future<void> Function(NavigateTarget target, Map<String, dynamic>? params);
+typedef LanNavigationHandler = Future<void> Function(
+  NavigateTarget target,
+  Map<String, dynamic>? params,
+);

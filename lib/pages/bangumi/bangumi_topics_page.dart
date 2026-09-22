@@ -193,9 +193,10 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.titleLarge?.color,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.color,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -290,9 +291,9 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                                   const SizedBox(width: 4),
                                   Text(
                                     Utils.dateFormat(topicsInfoItem!.createdAt),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall,
                                   ),
                                 ],
                               ),
@@ -362,9 +363,9 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.secondaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -377,9 +378,9 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                             ],
                           )
                         : isLoading
-                            ? Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Column(
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Skeletonizer.zone(
@@ -467,11 +468,11 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                               ],
                             ),
                           )
-                          : EmptyState(
-                              message: t.failedToLoadPleaseTryAgain,
-                              retry: () => queryBangumiTopicsInfoByID(id),
-                              retryText: t.reload,
-                            ),
+                        : EmptyState(
+                            message: t.failedToLoadPleaseTryAgain,
+                            retry: () => queryBangumiTopicsInfoByID(id),
+                            retryText: t.reload,
+                          ),
                   ),
                 ),
               ),

@@ -35,11 +35,13 @@ class ReviewsCommentsItem {
       relatedID: json['relatedID'],
       state: json['state'],
       user: InfoUser.fromJson(json['user']),
-      reactions: (json['reactions'] as List?)
+      reactions:
+          (json['reactions'] as List?)
               ?.map((e) => Reaction.fromJson(e))
               .toList() ??
           [],
-      replies: (json['replies'] as List?)
+      replies:
+          (json['replies'] as List?)
               ?.map((e) => ReviewsCommentsItem.fromJson(e))
               .toList() ??
           [],
@@ -71,10 +73,7 @@ class Reaction {
   final int value;
   final List<User> users;
 
-  Reaction({
-    required this.value,
-    required this.users,
-  });
+  Reaction({required this.value, required this.users});
 
   factory Reaction.fromJson(Map<String, dynamic> json) {
     return Reaction(
@@ -86,9 +85,6 @@ class Reaction {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'value': value,
-      'users': users.map((e) => e.toJson()).toList(),
-    };
+    return {'value': value, 'users': users.map((e) => e.toJson()).toList()};
   }
 }

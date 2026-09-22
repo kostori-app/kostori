@@ -126,13 +126,13 @@ class _SearchResultPageState extends State<SearchResultPage> {
         loadPage: source!.searchPageData!.loadPage == null
             ? null
             : (i) {
-          return source.searchPageData!.loadPage!(text, i, options);
-        },
+                return source.searchPageData!.loadPage!(text, i, options);
+              },
         loadNext: source.searchPageData!.loadNext == null
             ? null
             : (i) {
-          return source.searchPageData!.loadNext!(text, i, options);
-        },
+                return source.searchPageData!.loadNext!(text, i, options);
+              },
       ),
     );
   }
@@ -160,9 +160,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 builder: (context) {
                   return _SearchSettingsDialog(state: this);
@@ -291,7 +289,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog>
 
     final searchOptions =
         AnimeSource.find(searchTarget)!.searchPageData!.searchOptions ??
-            <SearchOptions>[];
+        <SearchOptions>[];
     if (searchOptions.length != options.length) {
       options = searchOptions.map((e) => e.defaultValue).toList();
     }

@@ -38,9 +38,7 @@ Future<Uint8List?> _resolveInlineImage(String url, String? sourceKey) async {
         : AnimeSource.find(sourceKey)?.loadInlineImage;
     if (loader == null) return null;
     try {
-      final data = await loader(
-        url.substring(InlineImageStore.prefix.length),
-      );
+      final data = await loader(url.substring(InlineImageStore.prefix.length));
       if (data == null || data.isEmpty) return null;
       // loader 已在 parser 侧把大转换搬到后台，这里避免二次全量拷贝：
       // Uint8List 直接用；普通 List 大图才走一次 isolate 拷贝，
@@ -172,8 +170,7 @@ abstract class ImageDownloader {
   ]) async* {
     // 站内 base64 / 转存短引用：没有 URL 可请求，直接用 inline 缓存/回源，
     // 不必再拿几百 KB 的 data URL 去 CacheManager 里算 md5 + 查库
-    if (InlineImageStore.looksLikeBase64(url) ||
-        InlineImageStore.isRef(url)) {
+    if (InlineImageStore.looksLikeBase64(url) || InlineImageStore.isRef(url)) {
       final bytes = await resolveInlineImage(url, sourceKey);
       if (bytes == null) {
         yield ImageDownloadProgress(
@@ -218,10 +215,7 @@ abstract class ImageDownloader {
     }
     // 调用方显式传入的请求头（如 me-plugin 的 referer / cookie）优先
     if (headers != null && headers.isNotEmpty) {
-      configs['headers'] = {
-        ...(configs['headers'] as Map? ?? {}),
-        ...headers,
-      };
+      configs['headers'] = {...(configs['headers'] as Map? ?? {}), ...headers};
     }
     configs['headers'] ??= {};
     if (configs['headers']['user-agent'] == null &&
@@ -230,9 +224,7 @@ abstract class ImageDownloader {
     }
 
     final resolvedUrl = (configs['url'] as String?) ?? url;
-    if (resolvedUrl.startsWith('cover.') &&
-        sourceKey != null &&
-        aid != null) {
+    if (resolvedUrl.startsWith('cover.') && sourceKey != null && aid != null) {
       final cover = await _resolveCoverPlaceholder(sourceKey, aid);
       if (cover != null) {
         yield* loadThumbnail(cover, sourceKey);

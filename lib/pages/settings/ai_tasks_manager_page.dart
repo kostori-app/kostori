@@ -91,7 +91,9 @@ class _AiTasksManagerPageState extends State<AiTasksManagerPage> {
       context: App.rootContext,
       builder: (ctx) => ContentDialog(
         title: t.delete,
-        content: Text('${t.areYouSureYouWantToClearYourHistory}\n(${items.length})'),
+        content: Text(
+          '${t.areYouSureYouWantToClearYourHistory}\n(${items.length})',
+        ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -220,7 +222,8 @@ class _AiTasksManagerPageState extends State<AiTasksManagerPage> {
             const SizedBox(height: 4),
             SizedBox(
               width: double.infinity,
-              child: AppSelectableText(task.inputContent,
+              child: AppSelectableText(
+                task.inputContent,
                 style: const TextStyle(fontSize: 12),
               ),
             ),
@@ -240,7 +243,8 @@ class _AiTasksManagerPageState extends State<AiTasksManagerPage> {
               const SizedBox(height: 4),
               SizedBox(
                 width: double.infinity,
-                child: AppSelectableText(output,
+                child: AppSelectableText(
+                  output,
                   style: const TextStyle(fontSize: 12),
                 ),
               ),

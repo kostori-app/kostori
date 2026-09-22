@@ -60,9 +60,7 @@ void main() {
       _host(
         ContentDialog(
           content: const Text('内容'),
-          actions: [
-            Button.filled(onPressed: () {}, child: const Text('项目按钮')),
-          ],
+          actions: [Button.filled(onPressed: () {}, child: const Text('项目按钮'))],
         ),
       ),
     );
@@ -77,12 +75,7 @@ void main() {
       _host(
         ContentDialog(
           content: const Text('内容'),
-          actions: [
-            FilledButton(
-              onPressed: null,
-              child: const Text('禁用'),
-            ),
-          ],
+          actions: [FilledButton(onPressed: null, child: const Text('禁用'))],
         ),
       ),
     );

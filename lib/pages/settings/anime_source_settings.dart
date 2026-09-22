@@ -610,9 +610,8 @@ class _BodyState extends State<_Body> with RouteAware {
                 child: IgnorePointer(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.14),
+                      color: Theme.of(context).colorScheme.primary
+                          .withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: Theme.of(context).colorScheme.primary,
@@ -1589,10 +1588,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                   icon: const Icon(Icons.rule),
                   label: t.rules,
                   onTap: () {
-                    showPopUpWidget(
-                      context,
-                      _SourceRulesPage(source: source),
-                    );
+                    showPopUpWidget(context, _SourceRulesPage(source: source));
                   },
                 ),
               ],
@@ -1708,7 +1704,6 @@ class _DownloadFormatDialogState extends State<_DownloadFormatDialog> {
     );
   }
 }
-
 
 class _LoginPage extends StatefulWidget {
   const _LoginPage({required this.config, required this.source});

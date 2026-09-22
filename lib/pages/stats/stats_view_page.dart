@@ -444,9 +444,8 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
         icon: Icons.tag,
         headerTrailing: Text(
           t.statsItemCountSuffix(n: items.length),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.outline,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: Theme.of(context).colorScheme.outline),
         ),
         builder: (context, sc) => SmoothCustomScrollView(
           controller: sc,

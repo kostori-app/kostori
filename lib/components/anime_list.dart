@@ -262,9 +262,8 @@ class AnimeListState extends State<AnimeList>
               margin: EdgeInsets.zero,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest
+                    .toOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -402,9 +401,8 @@ class AnimeListState extends State<AnimeList>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest
+                        .toOpacity(0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -688,24 +686,24 @@ class AnimeListState extends State<AnimeList>
                     [
                       SpeedDialChild(
                         child: const Icon(Icons.refresh),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer,
                         onTap: refresh,
                       ),
                     ],
                     [
                       SpeedDialChild(
                         child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer,
                         onTap: scrollToTop,
                       ),
                     ],
@@ -714,12 +712,12 @@ class AnimeListState extends State<AnimeList>
                         child: type == 'paging'
                             ? Icon(Icons.view_cozy_outlined)
                             : Icon(Icons.menu),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer,
                         onTap: () {
                           appdata.settings['animeListDisplayMode'] =
                               type == 'paging' ? 'continuous' : 'paging';
@@ -780,9 +778,8 @@ class AnimeListState extends State<AnimeList>
                 ClipRect(
                   child: BlurEffect(
                     child: Container(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surface.toOpacity(0.85),
+                      color: Theme.of(context).colorScheme.surface
+                          .toOpacity(0.85),
                       child: pageSelecto,
                     ),
                   ),
@@ -817,7 +814,9 @@ class AnimeListState extends State<AnimeList>
                 menuBuilder: widget.menuBuilder,
               ),
               if (widget.trailingSliver != null) widget.trailingSliver!,
-              SliverPadding(padding: EdgeInsets.only(bottom: contentBottom + 4)),
+              SliverPadding(
+                padding: EdgeInsets.only(bottom: contentBottom + 4),
+              ),
             ],
           ),
         ),
@@ -830,9 +829,8 @@ class AnimeListState extends State<AnimeList>
               ClipRect(
                 child: BlurEffect(
                   child: Container(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surface.toOpacity(0.85),
+                    color: Theme.of(context).colorScheme.surface
+                        .toOpacity(0.85),
                     child: pageSelecto,
                   ),
                 ),
@@ -1007,9 +1005,8 @@ class LoadedInfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final style = Theme.of(
-      context,
-    ).textTheme.bodyMedium?.copyWith(color: cs.onSurface, fontSize: 10);
+    final style = Theme.of(context).textTheme.bodyMedium
+        ?.copyWith(color: cs.onSurface, fontSize: 10);
     return Transform.scale(
       scale: 1.2,
       alignment: alignment,

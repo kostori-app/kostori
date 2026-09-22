@@ -31,10 +31,13 @@ class PendingRequests<T> {
     TimeoutException Function() onTimeout,
   ) {
     final rec = register();
-    final future = rec.future.timeout(timeout, onTimeout: () {
-      _map.remove(rec.id);
-      throw onTimeout();
-    });
+    final future = rec.future.timeout(
+      timeout,
+      onTimeout: () {
+        _map.remove(rec.id);
+        throw onTimeout();
+      },
+    );
     return (id: rec.id, future: future);
   }
 

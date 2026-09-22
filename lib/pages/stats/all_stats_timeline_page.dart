@@ -69,8 +69,9 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
       for (final group in units) {
         final master =
             group.where((s) => s.isBangumi).firstOrNull ?? group.first;
-        final title =
-            master.title?.isNotEmpty == true ? master.title! : master.id;
+        final title = master.title?.isNotEmpty == true
+            ? master.title!
+            : master.id;
         final unitKey = master.bangumiId != null
             ? 'bgm:${master.bangumiId}'
             : '${master.id}\u0000${master.type}';
@@ -163,7 +164,11 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
     }
 
     if (u.watchSeconds > 0) {
-      add(Icons.schedule, Utils.formatHMS(u.watchSeconds), colorScheme.tertiary);
+      add(
+        Icons.schedule,
+        Utils.formatHMS(u.watchSeconds),
+        colorScheme.tertiary,
+      );
     }
     if (u.clicks > 0) add(Icons.touch_app_outlined, '${u.clicks}');
     if (u.ratingCount > 0) {
@@ -274,12 +279,7 @@ class _AllStatsTimelineScreenState extends State<AllStatsTimelineScreen> {
       final specs = <_RowSpec>[];
       for (final year in years) {
         specs.add(
-          _RowSpec(
-            type: _RowType.year,
-            depth: 0,
-            open: const [0],
-            year: year,
-          ),
+          _RowSpec(type: _RowType.year, depth: 0, open: const [0], year: year),
         );
         final yearMonths = monthsOf[year]!;
         for (final month in yearMonths) {
@@ -435,12 +435,7 @@ class _TimelineFlatRow extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: EdgeInsets.fromLTRB(
-            contentLeft,
-            7,
-            14,
-            depth == 3 ? 8 : 3,
-          ),
+          padding: EdgeInsets.fromLTRB(contentLeft, 7, 14, depth == 3 ? 8 : 3),
           child: SizedBox(width: double.infinity, child: child),
         ),
       ],
@@ -491,6 +486,7 @@ class _FlatRowPainter extends CustomPainter {
       oldDelegate.ownY != ownY ||
       oldDelegate.ownColor != ownColor;
 }
+
 enum _RowType { year, month, day, card }
 
 class _RowSpec {

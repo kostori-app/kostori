@@ -137,8 +137,7 @@ class AnimeSourceManager with ChangeNotifier, Init {
     final localAt = appdata.implicitData[_disabledAtKey] as int? ?? 0;
     if (remoteAt <= localAt) return false;
     final remote =
-        (map['disabled'] as List?)?.whereType<String>().toSet() ??
-        <String>{};
+        (map['disabled'] as List?)?.whereType<String>().toSet() ?? <String>{};
     appdata.implicitData[_disabledKey] = remote.toList();
     appdata.implicitData[_disabledAtKey] = remoteAt;
     appdata.writeImplicitData();
@@ -250,8 +249,9 @@ class AnimeSourceManager with ChangeNotifier, Init {
 typedef AnimeListBuilder = Future<Res<List<Anime>>> Function(int page);
 
 /// build Anime list with next param, [Res.subData] should be next page param or null if there is no next page.
-typedef AnimeListBuilderWithNext =
-    Future<Res<List<Anime>>> Function(String? next);
+typedef AnimeListBuilderWithNext = Future<Res<List<Anime>>> Function(
+  String? next,
+);
 
 typedef LoginFunction = Future<Res<bool>> Function(String, String);
 
@@ -264,61 +264,63 @@ typedef LoadAnimePagesFunc<T> = Future<T> Function(String id, String? ep);
 /// [anime] 为加载完成的 AnimeDetails；返回的每条目复用 [Anime] 结构。
 typedef SeriesLoader = Future<Res<List<Anime>>> Function(AnimeDetails anime);
 
-typedef CommentsLoader =
-    Future<Res<List<Comment>>> Function(
-      String id,
-      String? subId,
-      int page,
-      String? replyTo,
-    );
+typedef CommentsLoader = Future<Res<List<Comment>>> Function(
+  String id,
+  String? subId,
+  int page,
+  String? replyTo,
+);
 
-typedef SendCommentFunc =
-    Future<Res<bool>> Function(
-      String id,
-      String? subId,
-      String content,
-      String? replyTo,
-    );
+typedef SendCommentFunc = Future<Res<bool>> Function(
+  String id,
+  String? subId,
+  String content,
+  String? replyTo,
+);
 
-typedef GetImageLoadingConfigFunc =
-    Future<Map<String, dynamic>> Function(
-      String imageKey,
-      String animeId,
-      String epId,
-    )?;
+typedef GetImageLoadingConfigFunc = Future<Map<String, dynamic>> Function(
+  String imageKey,
+  String animeId,
+  String epId,
+)?;
 
-typedef GetThumbnailLoadingConfigFunc =
-    Map<String, dynamic> Function(String imageKey)?;
+typedef GetThumbnailLoadingConfigFunc = Map<String, dynamic> Function(
+  String imageKey,
+)?;
 
-typedef AnimeThumbnailLoader =
-    Future<Res<List<String>>> Function(String animeId, String? next);
+typedef AnimeThumbnailLoader = Future<Res<List<String>>> Function(
+  String animeId,
+  String? next,
+);
 
-typedef LikeOrUnlikeAnimeFunc =
-    Future<Res<bool>> Function(String animeId, bool isLiking);
+typedef LikeOrUnlikeAnimeFunc = Future<Res<bool>> Function(
+  String animeId,
+  bool isLiking,
+);
 
 /// [isLiking] is true if the user is liking the comment, false if unliking.
 /// return the new likes count or null.
-typedef LikeCommentFunc =
-    Future<Res<int?>> Function(
-      String animeId,
-      String? subId,
-      String commentId,
-      bool isLiking,
-    );
+typedef LikeCommentFunc = Future<Res<int?>> Function(
+  String animeId,
+  String? subId,
+  String commentId,
+  bool isLiking,
+);
 
 /// [isUp] is true if the user is upvoting the comment, false if downvoting.
 /// return the new vote count or null.
-typedef VoteCommentFunc =
-    Future<Res<int?>> Function(
-      String animeId,
-      String? subId,
-      String commentId,
-      bool isUp,
-      bool isCancel,
-    );
+typedef VoteCommentFunc = Future<Res<int?>> Function(
+  String animeId,
+  String? subId,
+  String commentId,
+  bool isUp,
+  bool isCancel,
+);
 
-typedef HandleClickTagEvent =
-    PageJumpTarget? Function(String namespace, String tag);
+typedef HandleClickTagEvent = PageJumpTarget? Function(
+  String namespace,
+  String tag,
+);
 
 /// [rating] is the rating value, 0-10. 1 represents 0.5 star.
 typedef StarRatingFunc = Future<Res<bool>> Function(String animeId, int rating);
@@ -559,8 +561,8 @@ class AnimeSource {
     required this.idMatcher,
     required this.translations,
     required this.handleClickTagEvent,
-      required this.linkHandler,
-      required this.linkResolveTarget,
+    required this.linkHandler,
+    required this.linkResolveTarget,
     required this.enableTagsSuggestions,
     required this.enableTagsTranslate,
     this.tagClickable = true,
@@ -677,19 +679,17 @@ enum ExplorePageType {
   override,
 }
 
-typedef SearchFunction =
-    Future<Res<List<Anime>>> Function(
-      String keyword,
-      int page,
-      List<String> searchOption,
-    );
+typedef SearchFunction = Future<Res<List<Anime>>> Function(
+  String keyword,
+  int page,
+  List<String> searchOption,
+);
 
-typedef SearchNextFunction =
-    Future<Res<List<Anime>>> Function(
-      String keyword,
-      String? next,
-      List<String> searchOption,
-    );
+typedef SearchNextFunction = Future<Res<List<Anime>>> Function(
+  String keyword,
+  String? next,
+  List<String> searchOption,
+);
 
 class SearchPageData {
   /// If this is not null, the default value of search options will be first element.
@@ -716,13 +716,12 @@ class SearchOptions {
   String get defaultValue => defaultVal ?? options.keys.first;
 }
 
-typedef CategoryAnimesLoader =
-    Future<Res<List<Anime>>> Function(
-      String category,
-      String? param,
-      List<String> options,
-      int page,
-    );
+typedef CategoryAnimesLoader = Future<Res<List<Anime>>> Function(
+  String category,
+  String? param,
+  List<String> options,
+  int page,
+);
 
 typedef CategoryOptionsLoader =
     Future<Res<List<CategoryAnimesOptions>>> Function(

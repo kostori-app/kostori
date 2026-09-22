@@ -303,9 +303,8 @@ class _InfoTabViewState extends State<InfoTabView>
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12.0),
                                 border: Border.all(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primary.toOpacity(intensity),
+                                  color: Theme.of(context).colorScheme.primary
+                                      .toOpacity(intensity),
                                   width: 2.0,
                                 ),
                               ),
@@ -490,9 +489,9 @@ class _InfoTabViewState extends State<InfoTabView>
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.secondaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Center(
@@ -681,15 +680,15 @@ class _InfoTabViewState extends State<InfoTabView>
                   }
                   if (widget.commentsQueryTimeout) {
                     return SliverFillRemaining(
-        child: EmptyState(
-          message: t.nobodysPostedAnythingYet,
-          retry: () {
-            widget.loadMoreComments(
-              offset: widget.commentsList.length,
-            );
-          },
-          retryText: t.reload,
-        ),
+                      child: EmptyState(
+                        message: t.nobodysPostedAnythingYet,
+                        retry: () {
+                          widget.loadMoreComments(
+                            offset: widget.commentsList.length,
+                          );
+                        },
+                        retryText: t.reload,
+                      ),
                     );
                   }
                   return SliverList.builder(
@@ -776,11 +775,11 @@ class _InfoTabViewState extends State<InfoTabView>
                   }
                   if (widget.topicsQueryTimeout) {
                     return SliverFillRemaining(
-        child: EmptyState(
-          message: t.nobodysPostedAnythingYet,
-          retry: widget.loadMoreTopics,
-          retryText: t.reload,
-        ),
+                      child: EmptyState(
+                        message: t.nobodysPostedAnythingYet,
+                        retry: widget.loadMoreTopics,
+                        retryText: t.reload,
+                      ),
                     );
                   }
                   return SliverList.builder(
@@ -863,11 +862,11 @@ class _InfoTabViewState extends State<InfoTabView>
                   }
                   if (widget.reviewsQueryTimeout) {
                     return SliverFillRemaining(
-        child: EmptyState(
-          message: t.nobodysPostedAnythingYet,
-          retry: widget.loadMoreReviews,
-          retryText: t.reload,
-        ),
+                      child: EmptyState(
+                        message: t.nobodysPostedAnythingYet,
+                        retry: widget.loadMoreReviews,
+                        retryText: t.reload,
+                      ),
                     );
                   }
                   return SliverList.builder(

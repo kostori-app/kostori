@@ -28,9 +28,8 @@ Future<T?> showHubFormDialog<T>({
             subtitle,
             style: TextStyle(
               fontSize: 13,
-              color: Theme.of(
-                App.rootContext,
-              ).colorScheme.onSurface.toOpacity(0.5),
+              color: Theme.of(App.rootContext).colorScheme.onSurface
+                  .toOpacity(0.5),
             ),
           ),
           const SizedBox(height: 16),

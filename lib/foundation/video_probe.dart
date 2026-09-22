@@ -47,8 +47,7 @@ extension VideoUrlKindX on VideoUrlKind {
   };
 
   /// 是否是播放列表（需要再解析才能拿到真实分片）
-  bool get playlist =>
-      this == VideoUrlKind.hls || this == VideoUrlKind.dash;
+  bool get playlist => this == VideoUrlKind.hls || this == VideoUrlKind.dash;
 }
 
 /// 地址探测结果：只回答「能不能拿到、是不是视频、是什么类型」这类调试问题，
@@ -325,8 +324,7 @@ VideoUrlKind _classifySample(Uint8List? bytes) {
   if (startsWith([0x1A, 0x45, 0xDF, 0xA3])) return VideoUrlKind.mkv;
   if (startsWith([0x46, 0x4C, 0x56])) return VideoUrlKind.flv;
   if (bytes[0] == 0x47) return VideoUrlKind.mpegts;
-  if (startsWith([0x89, 0x50, 0x4E, 0x47]) ||
-      startsWith([0xFF, 0xD8, 0xFF])) {
+  if (startsWith([0x89, 0x50, 0x4E, 0x47]) || startsWith([0xFF, 0xD8, 0xFF])) {
     return VideoUrlKind.image;
   }
   if (head.startsWith('ID3') || (bytes[0] == 0xFF && bytes[1] == 0xFB)) {

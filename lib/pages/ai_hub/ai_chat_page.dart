@@ -773,11 +773,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 13),
                             ),
-                            onTap: () => closeThen(
-                              () => _switchSession(s.sessionId),
-                            ),
-                            onLongPress: () =>
-                                _confirmDeleteSession(ctx, s),
+                            onTap: () =>
+                                closeThen(() => _switchSession(s.sessionId)),
+                            onLongPress: () => _confirmDeleteSession(ctx, s),
                           ),
                       ],
                     ],
@@ -1451,8 +1449,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                                                           bottom: 6,
                                                         ),
                                                     child: Align(
-                                                      alignment: Alignment
-                                                          .centerRight,
+                                                      alignment:
+                                                          Alignment.centerRight,
                                                       child: TextButton.icon(
                                                         onPressed: () =>
                                                             _retryMessage(m),
@@ -1527,9 +1525,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                                       : t.generatingReply),
                             style: TextStyle(
                               fontSize: 11,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -1612,9 +1610,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               Positioned.fill(
                 child: IgnorePointer(
                   child: Container(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withValues(alpha: 0.6),
+                    color: Theme.of(context).colorScheme.primaryContainer
+                        .withValues(alpha: 0.6),
                     alignment: Alignment.center,
                     child: Container(
                       padding: const EdgeInsets.symmetric(

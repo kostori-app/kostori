@@ -151,8 +151,20 @@ class VideoWebviewInAppWebviewImpl
     final range = headers['Range'] ?? headers['range'];
     if (range == null || !range.startsWith('bytes=')) return false;
     const skip = [
-      '.js', '.css', '.html', '.json', '.png', '.jpg', '.jpeg', '.gif',
-      '.svg', '.woff', '.woff2', '.wasm', '.ico', '.webp',
+      '.js',
+      '.css',
+      '.html',
+      '.json',
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.gif',
+      '.svg',
+      '.woff',
+      '.woff2',
+      '.wasm',
+      '.ico',
+      '.webp',
     ];
     for (final s in skip) {
       if (lower.endsWith(s)) return false;
@@ -170,8 +182,19 @@ class VideoWebviewInAppWebviewImpl
   /// 明显静态资源：跳过拦截与检测（图片 / js / css / 字体等）
   bool _isStaticResource(String lower) {
     const skip = [
-      '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg',
-      '.woff', '.woff2', '.wasm', '.ico', '.webp', '.html',
+      '.js',
+      '.css',
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.gif',
+      '.svg',
+      '.woff',
+      '.woff2',
+      '.wasm',
+      '.ico',
+      '.webp',
+      '.html',
     ];
     for (final s in skip) {
       if (lower.endsWith(s)) return true;
@@ -184,9 +207,22 @@ class VideoWebviewInAppWebviewImpl
     if (_isAdUrl(lower)) return false;
     // 排除明显静态资源（m3u8/mp4 已在 shouldInterceptRequest 直接上报，无需重取）
     const skip = [
-      '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg',
-      '.woff', '.woff2', '.wasm', '.ico', '.webp', '.html', '.json',
-      '.m3u8', '.mp4',
+      '.js',
+      '.css',
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.gif',
+      '.svg',
+      '.woff',
+      '.woff2',
+      '.wasm',
+      '.ico',
+      '.webp',
+      '.html',
+      '.json',
+      '.m3u8',
+      '.mp4',
     ];
     for (final s in skip) {
       if (lower.endsWith(s)) return false;
@@ -213,10 +249,7 @@ class VideoWebviewInAppWebviewImpl
         options: Options(
           method: 'GET',
           responseType: ResponseType.plain,
-          headers: {
-            ...?headers,
-            'Range': 'bytes=0-1048575',
-          },
+          headers: {...?headers, 'Range': 'bytes=0-1048575'},
           validateStatus: (s) => s != null && s < 400,
           receiveTimeout: const Duration(seconds: 6),
         ),

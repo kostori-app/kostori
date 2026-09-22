@@ -200,7 +200,9 @@ class GeminiAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        yield AiStreamChunk(errorMessage: t.apiKeyNotConfigured(source: 'Gemini'));
+        yield AiStreamChunk(
+          errorMessage: t.apiKeyNotConfigured(source: 'Gemini'),
+        );
         return;
       }
       final config = buildConfig(keyRow, modelOverride: modelOverride);

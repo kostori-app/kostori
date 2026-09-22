@@ -183,11 +183,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           Expanded(
                             child: LayoutBuilder(
                               builder: (context, constraints) {
-                final text =
-                    providerContainer
-                        .read(watcherControllerProvider)
-                        .anime!
-                        .title;
+                                final text = providerContainer
+                                    .read(watcherControllerProvider)
+                                    .anime!
+                                    .title;
                                 const style = TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -261,9 +260,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                         snapshot.data ?? '--:--:--',
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: Theme.of(
-                                            context,
-                                          ).textTheme.titleMedium!.fontSize,
+                                          fontSize: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium!
+                                              .fontSize,
                                         ),
                                       );
                                     },
@@ -634,10 +634,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               ),
                             // 字幕选择
                             if ((playerController
-                                        .playResult
-                                        ?.subtitleTracks
-                                        .isNotEmpty ??
-                                    false))
+                                    .playResult
+                                    ?.subtitleTracks
+                                    .isNotEmpty ??
+                                false))
                               PopupMenuButton<int>(
                                 tooltip: t.subtitle,
                                 onSelected: (i) =>
@@ -791,9 +791,7 @@ class _QuickChatInputState extends ConsumerState<_QuickChatInput> {
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
       // 跟随软键盘上移，避免输入法遮挡输入框
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         height: 34,
         padding: const EdgeInsets.only(left: 12, right: 2),

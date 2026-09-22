@@ -79,7 +79,9 @@ class CharacterLoreEntry {
       selective: e['selective'] as bool? ?? false,
       selectiveLogic: intOf(e['selectiveLogic'], e['selective_logic'], 0),
       caseSensitive:
-          (e['case_sensitive'] as bool?) ?? (e['caseSensitive'] as bool?) ?? false,
+          (e['case_sensitive'] as bool?) ??
+          (e['caseSensitive'] as bool?) ??
+          false,
       matchWholeWords: e['matchWholeWords'] as bool? ?? false,
       insertionOrder: intOf(e['insertion_order'], e['insertionOrder'], 100),
       position: (e['position'] ?? 'after_char').toString(),
@@ -117,7 +119,9 @@ class CharacterLoreBook {
       for (var i = 0; i < raw.length; i++) {
         final e = raw[i];
         if (e is Map) {
-          entries.add(CharacterLoreEntry.fromJson(i, e.cast<String, dynamic>()));
+          entries.add(
+            CharacterLoreEntry.fromJson(i, e.cast<String, dynamic>()),
+          );
         }
       }
     }

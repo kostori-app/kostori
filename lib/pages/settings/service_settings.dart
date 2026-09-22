@@ -325,9 +325,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                 ),
                 _SettingRow(
                   title: t.enableTls,
-                  subtitle: _tlsEnabled
-                      ? t.tlsEnabledDesc
-                      : t.tlsDisabledDesc,
+                  subtitle: _tlsEnabled ? t.tlsEnabledDesc : t.tlsDisabledDesc,
                   trailing: CustomSwitch(
                     value: _tlsEnabled,
                     onChanged: (val) {

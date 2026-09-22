@@ -80,18 +80,18 @@ class DownloadFilterBar extends StatelessWidget {
         alignment: alignment,
         scrollable: true,
         children: [
-            for (final b in builtins)
-              CapsuleOption(
-                text: b.label,
-                isSelected: selected == b.key,
-                onTap: () => onSelected(b.key),
-              ),
-            for (final name in groups)
-              CapsuleOption(
-                text: _groupLabel(name),
-                isSelected: selected == '$kDownloadGroupPrefix$name',
-                onTap: () => onSelected('$kDownloadGroupPrefix$name'),
-              ),
+          for (final b in builtins)
+            CapsuleOption(
+              text: b.label,
+              isSelected: selected == b.key,
+              onTap: () => onSelected(b.key),
+            ),
+          for (final name in groups)
+            CapsuleOption(
+              text: _groupLabel(name),
+              isSelected: selected == '$kDownloadGroupPrefix$name',
+              onTap: () => onSelected('$kDownloadGroupPrefix$name'),
+            ),
         ],
       ),
     );
@@ -133,10 +133,8 @@ Future<void> showDownloadGroupPicker(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: (_) => _DownloadGroupPicker(
-      current: current,
-      onSelected: onSelected,
-    ),
+    builder: (_) =>
+        _DownloadGroupPicker(current: current, onSelected: onSelected),
   );
 }
 
@@ -575,7 +573,9 @@ class _DownloadGroupManageSheetState extends State<_DownloadGroupManageSheet> {
                 '${name.substring(0, name.lastIndexOf(DownloadManager.groupSeparator))}'
           : t.itemsCount(n: count),
       leading: Icon(
-        isSub ? Icons.subdirectory_arrow_right : Icons.create_new_folder_outlined,
+        isSub
+            ? Icons.subdirectory_arrow_right
+            : Icons.create_new_folder_outlined,
         size: 20,
         color: cs.primary,
       ),
@@ -838,10 +838,10 @@ class _StorageBarState extends State<StorageBar> {
         final color = !snap.hasData
             ? cs.outlineVariant
             : ratio > 0.2
-                ? cs.primary
-                : ratio > 0.1
-                    ? Colors.orange
-                    : cs.error;
+            ? cs.primary
+            : ratio > 0.1
+            ? Colors.orange
+            : cs.error;
         final text = !snap.hasData
             ? '${t.downloadFreeSpace} …'
             : '${t.downloadFreeSpace}: ${bytesToReadableString(free)} / ${bytesToReadableString(total)}';
@@ -860,7 +860,10 @@ class _StorageBarState extends State<StorageBar> {
                   children: [
                     Text(
                       text,
-                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

@@ -282,7 +282,9 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     final height = MediaQuery.sizeOf(context).height;
 
     // 自顶部到底部的主色线性渐变：浅色顶部略作着色，深色顶部保持底色
-    final topColor = isDark ? cs.primary.toOpacity(0.0) : cs.primary.toOpacity(0.1);
+    final topColor = isDark
+        ? cs.primary.toOpacity(0.0)
+        : cs.primary.toOpacity(0.1);
     final bottomColor = cs.primary.toOpacity(isDark ? 0.24 : 0.42);
 
     final base = SizedBox(
@@ -766,8 +768,7 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
   }
 
   Future<void> _showSourceSelector() async {
-    final current =
-        appdata.settings['translationSource'] as String? ?? 'bing';
+    final current = appdata.settings['translationSource'] as String? ?? 'bing';
     await showDialog<String>(
       context: context,
       builder: (ctx) => ContentDialog(
@@ -791,7 +792,8 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                         style: const TextStyle(fontSize: 12),
                       ),
                       trailing: Radio<String>(
-                        value: translationSourceDisplayMap[entry.key] ?? entry.key,
+                        value:
+                            translationSourceDisplayMap[entry.key] ?? entry.key,
                       ),
                       onTap: () {
                         final source =
@@ -820,20 +822,20 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                           AiDatabase.instance.aiApiKeyDao
                               .getByProvider(source)
                               .then((keyRow) {
-                            if (keyRow == null ||
-                                keyRow.apiKey.isEmpty ||
-                                !keyRow.isEnabled) {
-                              App.rootContext.showMessage(
-                                message:
-                                    t.pleaseConfigureApiKeyInAiSettingsFirst,
-                              );
-                              return;
-                            }
-                            appdata.settings['translationSource'] = source;
-                            appdata.saveData();
-                            if (ctx.mounted) Navigator.pop(ctx);
-                            App.rootContext.showMessage(message: t.saved);
-                          });
+                                if (keyRow == null ||
+                                    keyRow.apiKey.isEmpty ||
+                                    !keyRow.isEnabled) {
+                                  App.rootContext.showMessage(
+                                    message: t
+                                        .pleaseConfigureApiKeyInAiSettingsFirst,
+                                  );
+                                  return;
+                                }
+                                appdata.settings['translationSource'] = source;
+                                appdata.saveData();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                App.rootContext.showMessage(message: t.saved);
+                              });
                         } else {
                           appdata.settings['translationSource'] = source;
                           appdata.saveData();
@@ -947,10 +949,7 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                         const Spacer(),
                         Text(
                           _currentSourceName,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: scheme.primary,
-                          ),
+                          style: TextStyle(fontSize: 13, color: scheme.primary),
                         ),
                         const Icon(Icons.chevron_right, size: 18),
                       ],
@@ -1092,7 +1091,8 @@ class _ManualTranslationPageState extends State<ManualTranslationPage> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                      child: AppSelectableText(result,
+                      child: AppSelectableText(
+                        result,
                         style: const TextStyle(fontSize: 15, height: 1.6),
                       ),
                     ),

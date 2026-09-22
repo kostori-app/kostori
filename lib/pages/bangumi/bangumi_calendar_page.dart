@@ -133,7 +133,9 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           final infoAir = DateTime.tryParse(info.airDate);
           final tooOld =
               infoAir != null &&
-              infoAir.isBefore(DateTime.now().subtract(const Duration(days: 400)));
+              infoAir.isBefore(
+                DateTime.now().subtract(const Duration(days: 400)),
+              );
           if (tooOld ||
               (begin != null &&
                   infoAir != null &&
@@ -412,10 +414,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
         .toList();
     const batchSize = 6;
     for (var i = 0; i < urls.length; i += batchSize) {
-      final batch = urls.sublist(
-        i,
-        (i + batchSize).clamp(0, urls.length),
-      );
+      final batch = urls.sublist(i, (i + batchSize).clamp(0, urls.length));
       await Future.wait(
         batch.map((url) async {
           try {
@@ -431,10 +430,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
 
   /// 全部番剧数量（一周总和）
   int _allCount() {
-    return bangumiCalendar.fold<int>(
-      0,
-      (sum, day) => sum + day.length,
-    );
+    return bangumiCalendar.fold<int>(0, (sum, day) => sum + day.length);
   }
 
   List<String> getTabs() {
@@ -610,12 +606,13 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
             if (!didPop) context.pop();
           },
           child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(
-              context,
-            ).copyWith(scrollbars: false),
+            behavior: ScrollConfiguration.of(context)
+                .copyWith(scrollbars: false),
             child: Scaffold(
               appBar: Appbar(
-                title: Text(t.timetableCount(timetable: t.timetable, count: _allCount())),
+                title: Text(
+                  t.timetableCount(timetable: t.timetable, count: _allCount()),
+                ),
                 actions: [
                   IconButton(
                     onPressed: () {
@@ -638,10 +635,10 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
                     tooltip: t.calScreenshotSave,
                   ),
                 ],
-          bottom: CapsuleTabBar(
-            controller: controller,
-            labels: getTabs(),
-          ),
+                bottom: CapsuleTabBar(
+                  controller: controller,
+                  labels: getTabs(),
+                ),
               ),
               body: Center(
                 child: ConstrainedBox(
@@ -701,11 +698,7 @@ class _BangumiCalendarCard extends StatelessWidget {
         width: imageWidth,
         height: imageHeight,
         color: colorScheme.surfaceContainerHighest,
-        child: Icon(
-          Icons.movie_outlined,
-          size: 36,
-          color: colorScheme.outline,
-        ),
+        child: Icon(Icons.movie_outlined, size: 36, color: colorScheme.outline),
       );
     }
     return BangumiWidget.kostoriImage(

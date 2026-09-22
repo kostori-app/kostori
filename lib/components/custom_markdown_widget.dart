@@ -163,7 +163,8 @@ class CustomMarkdownWidget extends StatelessWidget {
       markdown = selectable ? AppSelectionArea(child: column) : column;
     } catch (_) {
       markdown = AppSelectionArea(
-        child: AppSelectableText(data,
+        child: AppSelectableText(
+          data,
           style: TextStyle(color: textColor, fontSize: 14, height: 1.6),
         ),
       );
@@ -171,9 +172,8 @@ class CustomMarkdownWidget extends StatelessWidget {
 
     if (textScaleFactor != null) {
       markdown = MediaQuery(
-        data: MediaQuery.of(
-          context,
-        ).copyWith(textScaler: TextScaler.linear(textScaleFactor!)),
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(textScaleFactor!)),
         child: markdown,
       );
     }
@@ -195,10 +195,7 @@ class CustomMarkdownWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: cs.outlineVariant.toOpacity(0.5),
-          width: 0.6,
-        ),
+        border: Border.all(color: cs.outlineVariant.toOpacity(0.5), width: 0.6),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

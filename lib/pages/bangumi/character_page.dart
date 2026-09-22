@@ -135,14 +135,14 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
           PreferredSize(
             preferredSize: const Size.fromHeight(kToolbarHeight),
             child: Material(
-            child: CapsuleTabBar(
-              controller: _tabController,
-              labels: [
-                t.personTabProfile,
-                t.personTabChat,
-                t.personTabRelation,
-              ],
-            ),
+              child: CapsuleTabBar(
+                controller: _tabController,
+                labels: [
+                  t.personTabProfile,
+                  t.personTabChat,
+                  t.personTabRelation,
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -290,7 +290,8 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                     ),
                                               ),
                                             ),
-                                            AppSelectableText(characterFullItem.infobox
+                                            AppSelectableText(
+                                              characterFullItem.infobox
                                                   .map(
                                                     (item) =>
                                                         '${item.key}: ${item.values.map((v) => v.value).join(", ")}',

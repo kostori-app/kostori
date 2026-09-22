@@ -569,7 +569,8 @@ class _LoadingInfoCard extends StatelessWidget {
         // 显示条件：真正在缓冲，或正在解析视频地址。
         // 不用「未播放且步骤<3」——解析失败或暂停时 step 停留会导致误导。
         // loadFailed 时隐藏（失败后 buffering 快照可能仍为 true）
-        final showOverlay = !playerController.loadFailed &&
+        final showOverlay =
+            !playerController.loadFailed &&
             (buffering || (step == 0 && playerController.isParsing));
         if (!showOverlay) return const SizedBox.shrink();
 
@@ -588,10 +589,7 @@ class _LoadingInfoCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   loadingText,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -779,12 +777,10 @@ class _SeekProgressBarState extends State<_SeekProgressBar> {
           thumbRadius: 6 * value,
           thumbGlowRadius: 0,
           barHeight: 2 + 2 * value,
-          progressBarColor: Theme.of(
-            context,
-          ).colorScheme.primary.toOpacity(0.72),
-          bufferedBarColor: Theme.of(
-            context,
-          ).colorScheme.primary.toOpacity(0.36),
+          progressBarColor: Theme.of(context).colorScheme.primary
+              .toOpacity(0.72),
+          bufferedBarColor: Theme.of(context).colorScheme.primary
+              .toOpacity(0.36),
           baseBarColor: Theme.of(context).colorScheme.primary.toOpacity(0.2),
           timeLabelLocation: TimeLabelLocation.none,
           progress: widget.currentPosition,

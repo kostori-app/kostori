@@ -561,10 +561,10 @@ class _LanDiscoveryPageState extends ConsumerState<LanDiscoveryPage>
             tooltip: t.settings,
           ),
         ],
-          bottom: CapsuleTabBar(
-            controller: _tabController,
-            labels: [t.lanDiscoverDevices, t.lanRemoteControl],
-          ),
+        bottom: CapsuleTabBar(
+          controller: _tabController,
+          labels: [t.lanDiscoverDevices, t.lanRemoteControl],
+        ),
       ),
       body: TabBarView(
         controller: _tabController,

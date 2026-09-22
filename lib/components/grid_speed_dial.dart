@@ -162,7 +162,8 @@ class AnimatedChild extends AnimatedWidget {
               heroTag: heroTag,
               onPressed: performAction,
               backgroundColor:
-                  backgroundColor ?? (dark ? Colors.grey[800] : Colors.grey[50]),
+                  backgroundColor ??
+                  (dark ? Colors.grey[800] : Colors.grey[50]),
               foregroundColor:
                   foregroundColor ?? (dark ? Colors.white : Colors.black),
               elevation: elevation ?? 6.0,
@@ -504,8 +505,9 @@ extension EnumExtension on SpeedDialDirection {
   bool get isRight => this == SpeedDialDirection.right;
 }
 
-typedef AsyncChildrenBuilder =
-    Future<List<SpeedDialChild>> Function(BuildContext context);
+typedef AsyncChildrenBuilder = Future<List<SpeedDialChild>> Function(
+  BuildContext context,
+);
 
 /// 一个自定义的 SpeedDial 组件，支持子按钮的网格布局。
 class GridSpeedDial extends StatefulWidget {

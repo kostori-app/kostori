@@ -346,7 +346,10 @@ class FfmpegEncoder {
             e.toString().contains('Error seeking')) {
           // 加密 HLS 的 input seek 不可靠，降级为 output seek
           final fallback = buildCmd(inputSeek: false);
-          Log.warning('FfmpegEncoder', 'HLS input seek failed, fallback: $fallback');
+          Log.warning(
+            'FfmpegEncoder',
+            'HLS input seek failed, fallback: $fallback',
+          );
           await run(fallback);
         } else {
           rethrow;
@@ -475,9 +478,7 @@ class FfmpegEncoder {
       }
     } else {
       // fMP4：concat protocol 字节拼接（分片路径用 | 分隔，须不含 | 字符）
-      final concatInput = tsPaths
-          .map((p) => p.replaceAll('\\', '/'))
-          .join('|');
+      final concatInput = tsPaths.map((p) => p.replaceAll('\\', '/')).join('|');
       cmd = '-y -i "concat:$concatInput" -c copy "$safeOutput"';
       await _run(cmd, outputPath, onProgress, cancelToken);
     }
@@ -709,9 +710,8 @@ class FfmpegEncoder {
     double? fps;
     String? vCodec, aCodec;
 
-    final durM = RegExp(
-      r'Duration:\s*(\d+):(\d+):(\d+\.\d+)',
-    ).firstMatch(stderr);
+    final durM = RegExp(r'Duration:\s*(\d+):(\d+):(\d+\.\d+)')
+        .firstMatch(stderr);
     if (durM != null) {
       try {
         duration =
@@ -737,9 +737,8 @@ class FfmpegEncoder {
       fps = double.tryParse(videoM.group(4) ?? '');
     }
 
-    final audioM = RegExp(
-      r'Stream #\d+:\d+(?:\(\w+\))?:\s*Audio:\s*(\w+)',
-    ).firstMatch(stderr);
+    final audioM = RegExp(r'Stream #\d+:\d+(?:\(\w+\))?:\s*Audio:\s*(\w+)')
+        .firstMatch(stderr);
     if (audioM != null) {
       aCodec = audioM.group(1);
     }

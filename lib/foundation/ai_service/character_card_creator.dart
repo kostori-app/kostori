@@ -116,9 +116,7 @@ CharacterCard? parseCardJsonFromText(String text) {
 
 /// 提取 `## 角色摘要` 段落
 String? extractCardSummary(String text) {
-  final m = RegExp(
-    r'##\s*角色摘要\s*\n([\s\S]*?)(?=\n##|\z)',
-  ).firstMatch(text);
+  final m = RegExp(r'##\s*角色摘要\s*\n([\s\S]*?)(?=\n##|\z)').firstMatch(text);
   return m?.group(1)?.trim();
 }
 
@@ -268,7 +266,9 @@ String buildCardRefineSystemPrompt(
   String extra = cardRefinePrompt,
 }) {
   final buf = StringBuffer('当前角色卡数据（JSON）：\n');
-  buf.writeln(const JsonEncoder.withIndent('  ').convert(card.toSillyTavernJson(spec: 2)));
+  buf.writeln(
+    const JsonEncoder.withIndent('  ').convert(card.toSillyTavernJson(spec: 2)),
+  );
   if (summary != null && summary.trim().isNotEmpty) {
     buf.writeln('\n角色摘要：\n${summary.trim()}');
   }

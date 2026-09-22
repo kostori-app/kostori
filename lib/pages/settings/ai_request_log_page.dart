@@ -53,96 +53,94 @@ class _AiRequestLogPageState extends State<AiRequestLogPage> {
         ),
       ],
       body: ListenableBuilder(
-            listenable: AiRequestLogService.instance,
-            builder: (context, _) {
-              final entries = AiRequestLogService.instance.entries;
-              if (entries.isEmpty) {
-                return Center(
-                  child: Text(
-                    t.noHistoryYet,
-                    style: TextStyle(color: scheme.onSurfaceVariant),
-                  ),
-                );
-              }
-              return ListView(
-                padding: const EdgeInsets.all(12),
-                children: [
-                  for (final e in entries)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _SettingCard(
-                        padding: EdgeInsets.zero,
+        listenable: AiRequestLogService.instance,
+        builder: (context, _) {
+          final entries = AiRequestLogService.instance.entries;
+          if (entries.isEmpty) {
+            return Center(
+              child: Text(
+                t.noHistoryYet,
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              for (final e in entries)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _SettingCard(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                        title: Text(
+                          '${e.taskType} · ${e.provider}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          [
+                            _fmt(e.time),
+                            if (e.model != null && e.model!.isNotEmpty)
+                              e.model!,
+                            '${e.durationMs}ms',
+                            if (e.tokens != null) '${e.tokens} tok',
+                            if (e.error != null) e.error!,
+                          ].join(' · '),
+                          style: const TextStyle(fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        childrenPadding: const EdgeInsets.fromLTRB(
+                          16,
+                          0,
+                          16,
+                          12,
+                        ),
                         children: [
-                          ExpansionTile(
-                            tilePadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                            ),
-                            title: Text(
-                              '${e.taskType} · ${e.provider}',
-                              style: const TextStyle(
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              t.aiLogRequest,
+                              style: TextStyle(
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
+                                color: scheme.primary,
                               ),
                             ),
-                            subtitle: Text(
-                              [
-                                _fmt(e.time),
-                                if (e.model != null && e.model!.isNotEmpty)
-                                  e.model!,
-                                '${e.durationMs}ms',
-                                if (e.tokens != null) '${e.tokens} tok',
-                                if (e.error != null) e.error!,
-                              ].join(' · '),
-                              style: const TextStyle(fontSize: 11),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          AppSelectableText(
+                            e.request,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              t.aiLogResponse,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.primary,
+                              ),
                             ),
-                            childrenPadding: const EdgeInsets.fromLTRB(
-                              16,
-                              0,
-                              16,
-                              12,
-                            ),
-                            children: [
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  t.aiLogRequest,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: scheme.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              AppSelectableText(e.request,
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              const SizedBox(height: 12),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  t.aiLogResponse,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: scheme.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              AppSelectableText(e.response,
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          AppSelectableText(
+                            e.response,
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ],
                       ),
-                    ),
-                ],
-              );
-            },
-          ),
+                    ],
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

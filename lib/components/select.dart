@@ -770,7 +770,7 @@ class CapsuleTabBar extends StatelessWidget implements PreferredSizeWidget {
   const CapsuleTabBar({
     super.key,
     this.controller,
-    required     this.labels,
+    required this.labels,
     this.icons,
     this.badges,
     this.padding = const EdgeInsets.fromLTRB(12, 6, 12, 6),
@@ -841,10 +841,7 @@ class CapsuleTabBar extends StatelessWidget implements PreferredSizeWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 15),
-            const SizedBox(width: 4),
-          ],
+          if (icon != null) ...[Icon(icon, size: 15), const SizedBox(width: 4)],
           Text(labels[i]),
           if (badge > 0) ...[
             const SizedBox(width: 4),

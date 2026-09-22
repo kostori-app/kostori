@@ -80,7 +80,9 @@ List<_Seg> _parsePath(String path) {
     if (m == null) {
       segs.add(_Seg(part.trim(), null));
     } else {
-      segs.add(_Seg(m.group(1)!, m.group(2) == null ? null : int.parse(m.group(2)!)));
+      segs.add(
+        _Seg(m.group(1)!, m.group(2) == null ? null : int.parse(m.group(2)!)),
+      );
     }
   }
   return segs;

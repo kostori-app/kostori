@@ -86,9 +86,8 @@ class _SheetHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               if (trailing != null) trailing!,
@@ -332,21 +331,21 @@ class _QrCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-          _BackgroundLayer(config: config),
-          // 复用统一二维码卡片组件（标题 + 二维码 + 副标题 + 水印）
-          KostoriQrCard(
-            content: config.content,
-            title: config.title,
-            subtitle: config.subtitle,
-            showTitle: config.showTitle,
-            showSubtitle: config.showSubtitle,
-            qrBackground: config.qrBackground,
+              _BackgroundLayer(config: config),
+              // 复用统一二维码卡片组件（标题 + 二维码 + 副标题 + 水印）
+              KostoriQrCard(
+                content: config.content,
+                title: config.title,
+                subtitle: config.subtitle,
+                showTitle: config.showTitle,
+                showSubtitle: config.showSubtitle,
+                qrBackground: config.qrBackground,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 }
 
@@ -376,9 +375,7 @@ class _BackgroundLayer extends StatelessWidget {
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => _GradientBg(color: config.themeColor),
             ),
-          BlurEffect(
-            child: Container(color: Colors.black.toOpacity(0.35)),
-          ),
+          BlurEffect(child: Container(color: Colors.black.toOpacity(0.35))),
         ],
       );
     }
@@ -621,10 +618,10 @@ class ParamCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppSelectableText(title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              AppSelectableText(
+                title,
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
                 scrollPhysics: const NeverScrollableScrollPhysics(),
               ),
               const SizedBox(height: 8),
@@ -633,7 +630,8 @@ class ParamCard extends StatelessWidget {
                   .map(
                     (e) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: AppSelectableText.rich(TextSpan(
+                      child: AppSelectableText.rich(
+                        TextSpan(
                           children: [
                             TextSpan(
                               text: '${e.key}: ',
@@ -792,9 +790,8 @@ class MediaWidget extends StatelessWidget {
             children: [
               Text(
                 t.media,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(media.uri, style: Theme.of(context).textTheme.bodyMedium),
@@ -982,13 +979,15 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppSelectableText(t.source,
+                        AppSelectableText(
+                          t.source,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           scrollPhysics: const NeverScrollableScrollPhysics(),
                         ),
                         const SizedBox(height: 8),
-                        AppSelectableText('URI: ${widget.source.videoUrl}',
+                        AppSelectableText(
+                          'URI: ${widget.source.videoUrl}',
                           style: Theme.of(context).textTheme.bodyMedium,
                           scrollPhysics: const NeverScrollableScrollPhysics(),
                         ),
@@ -1039,15 +1038,16 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppSelectableText(t.requestHeaders,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              AppSelectableText(
+                t.requestHeaders,
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
                 scrollPhysics: const NeverScrollableScrollPhysics(),
               ),
               const SizedBox(height: 8),
               if (entries.isEmpty)
-                AppSelectableText(t.playerNoRequestHeaders,
+                AppSelectableText(
+                  t.playerNoRequestHeaders,
                   style: Theme.of(context).textTheme.bodyMedium,
                   scrollPhysics: const NeverScrollableScrollPhysics(),
                 )
@@ -1055,7 +1055,8 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 ...entries.map(
                   (e) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: AppSelectableText('${e.key}: ${e.value}',
+                    child: AppSelectableText(
+                      '${e.key}: ${e.value}',
                       style: Theme.of(context).textTheme.bodySmall,
                       scrollPhysics: const NeverScrollableScrollPhysics(),
                     ),
@@ -1094,7 +1095,8 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                   probe.reachable ? t.vtProbeReachable : t.vtProbeUnreachable,
                   probe.reachable
                       ? '${probe.statusCode ?? '-'} '
-                            '${probe.statusMessage ?? ''}'.trim()
+                                '${probe.statusMessage ?? ''}'
+                            .trim()
                       : probe.error ?? '-',
                 ),
                 MapEntry(t.vtVideoType, probe.kind.label),
@@ -1106,10 +1108,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 ),
                 MapEntry(t.vtContentType, probe.contentTypeLabel),
                 MapEntry(t.vtContentLength, probe.sizeLabel),
-                MapEntry(
-                  t.vtAcceptRanges,
-                  probe.acceptRanges ?? '-',
-                ),
+                MapEntry(t.vtAcceptRanges, probe.acceptRanges ?? '-'),
                 MapEntry(t.vtElapsed, '${probe.elapsedMs} ms'),
                 if (probe.redirects.length > 1)
                   MapEntry(
@@ -1152,12 +1151,11 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                 t.vtPlaybackResult,
                 widget.playbackOk == null
                     ? t.vtPlaybackPending
-                    : (widget.playbackOk! ? t.vtPlaybackOk : t.vtPlaybackFailed),
+                    : (widget.playbackOk!
+                          ? t.vtPlaybackOk
+                          : t.vtPlaybackFailed),
               ),
-              MapEntry(
-                t.vtFirstFrame,
-                widget.firstFrame ? '✓' : '✗',
-              ),
+              MapEntry(t.vtFirstFrame, widget.firstFrame ? '✓' : '✗'),
               MapEntry(
                 t.media,
                 '${widget.source.medias.length} · '
@@ -1177,16 +1175,15 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               onPressed: _loadMpvProperties,
             ),
             rows: [
-              MapEntry(
-                t.vtHwAccelCurrent,
-                switch (isHardwareDecoding(_mpvProperties)) {
-                  true =>
-                    '${t.vtHwAccelOn}'
-                        '${_mpvProperties['hwdec-current']?.isNotEmpty == true ? ' (${_mpvProperties['hwdec-current']})' : ''}',
-                  false => t.vtHwAccelOff,
-                  _ => t.vtHwAccelUnknown,
-                },
-              ),
+              MapEntry(t.vtHwAccelCurrent, switch (isHardwareDecoding(
+                _mpvProperties,
+              )) {
+                true =>
+                  '${t.vtHwAccelOn}'
+                      '${_mpvProperties['hwdec-current']?.isNotEmpty == true ? ' (${_mpvProperties['hwdec-current']})' : ''}',
+                false => t.vtHwAccelOff,
+                _ => t.vtHwAccelUnknown,
+              }),
               MapEntry(t.vtHwAccelRequested, _mpvProperties['hwdec'] ?? '-'),
               MapEntry(
                 t.hwPixelFormat,
@@ -1283,7 +1280,8 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                         ),
                       ),
                       Expanded(
-                        child: AppSelectableText(row.value.isEmpty ? '-' : row.value,
+                        child: AppSelectableText(
+                          row.value.isEmpty ? '-' : row.value,
                           style: const TextStyle(fontSize: 12),
                         ),
                       ),
@@ -1400,9 +1398,9 @@ class _LogEntryCardState extends State<_LogEntryCard> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   padding: const EdgeInsets.symmetric(

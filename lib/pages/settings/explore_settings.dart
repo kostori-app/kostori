@@ -427,9 +427,9 @@ class _SourcePagesListState extends State<_SourcePagesList> {
 
   void _showAddDialog() {
     var allPages =
-        AnimeSource.find(
-          widget.sourceKey,
-        )?.explorePages.map((e) => e.title).toList() ??
+        AnimeSource.find(widget.sourceKey)?.explorePages
+            .map((e) => e.title)
+            .toList() ??
         [];
     var canAdd = allPages.where((p) => !_pages.contains(p)).toList();
     var source = AnimeSource.find(widget.sourceKey);

@@ -102,39 +102,37 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
         icon: Icons.history,
         initialSize: 0.7,
         builder: (context, sc) {
-        return CustomScrollView(
-          controller: sc,
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
-              sliver: SliverGridAnimes(
-                animes: items,
-                disableMasonry: true,
-                onTap: (a, heroID, [heroTag]) {
-                  final h = a as History;
-                  // 不先关弹层：让 Hero 从瓷砖飞入详情页，返回时回到弹层
-                  // 带上卡片实际 heroTag，否则对不上没有 Hero 动画
-                  App.mainNavigatorKey?.currentContext?.to<dynamic>(
-                    () => AnimePage(
-                      id: h.id,
-                      sourceKey: h.sourceKey,
-                      cover: h.cover,
-                      title: h.title,
-                      heroID: heroID,
-                      heroTag: heroTag,
-                    ),
-                  );
-                },
+          return CustomScrollView(
+            controller: sc,
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+                sliver: SliverGridAnimes(
+                  animes: items,
+                  disableMasonry: true,
+                  onTap: (a, heroID, [heroTag]) {
+                    final h = a as History;
+                    // 不先关弹层：让 Hero 从瓷砖飞入详情页，返回时回到弹层
+                    // 带上卡片实际 heroTag，否则对不上没有 Hero 动画
+                    App.mainNavigatorKey?.currentContext?.to<dynamic>(
+                      () => AnimePage(
+                        id: h.id,
+                        sourceKey: h.sourceKey,
+                        cover: h.cover,
+                        title: h.title,
+                        heroID: heroID,
+                        heroTag: heroTag,
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
       ),
     );
   }
-
-
 
   void scrollToTop() {
     if (scrollController.hasClients) {
@@ -369,20 +367,20 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                 a.viewMore!.jump(ctx);
                               } else {
                                 App.mainNavigatorKey?.currentContext
-                                  ?.to<dynamic>(
-                                    () => AnimePage(
-                                      id: a.id,
-                                      sourceKey: a.sourceKey,
-                                      cover: a.cover,
-                                      title: a.title,
-                                      heroID: heroID,
-                                      heroTag: heroTag,
-                                    ),
-                                  )
-                                  .then((_) {
-                                    // 从详情页/播放器返回后刷新历史（进度/集数可能已变）
-                                    if (mounted) onUpdate();
-                                  });
+                                    ?.to<dynamic>(
+                                      () => AnimePage(
+                                        id: a.id,
+                                        sourceKey: a.sourceKey,
+                                        cover: a.cover,
+                                        title: a.title,
+                                        heroID: heroID,
+                                        heroTag: heroTag,
+                                      ),
+                                    )
+                                    .then((_) {
+                                      // 从详情页/播放器返回后刷新历史（进度/集数可能已变）
+                                      if (mounted) onUpdate();
+                                    });
                                 final stats = StatsManager();
                                 if (!await stats.isExistAsync(
                                   a.id,
@@ -495,24 +493,24 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
               [
                 SpeedDialChild(
                   child: const Icon(Icons.refresh),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
+                  foregroundColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer,
                   onTap: onUpdate,
                 ),
               ],
               [
                 SpeedDialChild(
                   child: const Icon(Icons.vertical_align_top),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
+                  foregroundColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer,
                   onTap: scrollToTop,
                 ),
               ],
@@ -724,10 +722,10 @@ class _YearActivityHeatmap extends StatelessWidget {
     final colStep = cell + gap;
 
     final maxCount = dayEntries.values
-            .map((l) => l.length)
-            .fold(0, (a, b) => a > b ? a : b)
-            .clamp(1, 2147483647)
-            .toInt();
+        .map((l) => l.length)
+        .fold(0, (a, b) => a > b ? a : b)
+        .clamp(1, 2147483647)
+        .toInt();
 
     DateTime dayOf(int col, int row) {
       final d = first.add(Duration(days: (col * 7 + row) - leading));
@@ -756,36 +754,38 @@ class _YearActivityHeatmap extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             for (var i = 0; i < months.length; i++)
-              Builder(builder: (context) {
-                final m = months[i];
-                final col = monthStartCol[m]!;
-                final endCol = i + 1 < months.length
-                    ? monthStartCol[months[i + 1]]!
-                    : colCount;
-                final span = (endCol - col).clamp(1, colCount);
-                final left = gutter + col * colStep;
-                final width = span * colStep - gap;
-                return Positioned(
-                  left: left,
-                  top: 0,
-                  width: width < 10 ? 10 : width,
-                  child: SizedBox(
-                    height: topLabel,
-                    child: Center(
-                      child: Text(
-                        monthName(context, m),
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurfaceVariant,
+              Builder(
+                builder: (context) {
+                  final m = months[i];
+                  final col = monthStartCol[m]!;
+                  final endCol = i + 1 < months.length
+                      ? monthStartCol[months[i + 1]]!
+                      : colCount;
+                  final span = (endCol - col).clamp(1, colCount);
+                  final left = gutter + col * colStep;
+                  final width = span * colStep - gap;
+                  return Positioned(
+                    left: left,
+                    top: 0,
+                    width: width < 10 ? 10 : width,
+                    child: SizedBox(
+                      height: topLabel,
+                      child: Center(
+                        child: Text(
+                          monthName(context, m),
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                },
+              ),
           ],
         ),
       );
@@ -797,7 +797,8 @@ class _YearActivityHeatmap extends StatelessWidget {
       final items = dayEntries[d];
       final count = items?.length ?? 0;
       String two(int v) => v.toString().padLeft(2, '0');
-      final tip = '${d.year}-${two(d.month)}-${two(d.day)}'
+      final tip =
+          '${d.year}-${two(d.month)}-${two(d.day)}'
           '${count > 0 ? ' · $count' : ''}';
       return Tooltip(
         message: tip,

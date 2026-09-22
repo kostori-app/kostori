@@ -26,7 +26,9 @@ void main() {
     );
     expect(track, findsOneWidget);
 
-    final bodyWidth = tester.getSize(find.byType(DownloadGroupPickerBody)).width;
+    final bodyWidth = tester
+        .getSize(find.byType(DownloadGroupPickerBody))
+        .width;
     final trackSize = tester.getSize(track);
     final trackCenter = tester.getCenter(track);
     expect(trackSize.width, lessThan(bodyWidth));

@@ -114,9 +114,9 @@ class RemotePlay {
                           isSearching ? t.searchingDevices : t.noDevicesFound,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
                         ),
                       ],

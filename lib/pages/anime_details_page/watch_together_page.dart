@@ -351,9 +351,9 @@ class _WatchTogetherPageState extends ConsumerState<WatchTogetherPage>
       final prev = pc.syncLocked;
       pc.syncLocked = false;
       try {
-          if (sync.episode != pc.currentEpisoded) {
-            await pc.playEpisode(sync.episode, pc.currentRoad);
-          }
+        if (sync.episode != pc.currentEpisoded) {
+          await pc.playEpisode(sync.episode, pc.currentRoad);
+        }
         // 延迟补偿：房主在播时，按「距收到广播的时间」补上进度，减少成员固有落后。
         // 用本机收到时间（ownerSyncSentAt）而非房主 sentAt，避免两端时钟不同步导致跳变。
         var targetMs = sync.positionMs;

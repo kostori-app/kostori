@@ -84,10 +84,7 @@ void main() {
       ),
     ]);
     expect(
-      manager
-          .getAllAnimes('在看', FavoriteSortType.recentlyWatchedDesc)
-          .first
-          .id,
+      manager.getAllAnimes('在看', FavoriteSortType.recentlyWatchedDesc).first.id,
       'b',
     );
   });

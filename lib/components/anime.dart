@@ -802,10 +802,7 @@ class AnimeTile extends ConsumerWidget {
         );
 
         if (heroID != null) {
-          image = KostoriHero(
-            tag: heroTag ?? "cover$heroID",
-            child: image,
-          );
+          image = KostoriHero(tag: heroTag ?? "cover$heroID", child: image);
         }
 
         Offset pressPosition = Offset.zero;
@@ -832,9 +829,8 @@ class AnimeTile extends ConsumerWidget {
                     tags: anime.tags,
                     maxLines: 2,
                     enableTranslate:
-                        AnimeSource.find(
-                          anime.sourceKey,
-                        )?.enableTagsTranslate ??
+                        AnimeSource.find(anime.sourceKey)
+                            ?.enableTagsTranslate ??
                         false,
                     rating: anime.stars,
                   ),
@@ -892,9 +888,7 @@ class AnimeTile extends ConsumerWidget {
                 fontSize: fontSize,
                 height: 1.1,
                 color: color ?? Colors.white,
-                shadows: const [
-                  Shadow(color: Colors.black54, blurRadius: 2),
-                ],
+                shadows: const [Shadow(color: Colors.black54, blurRadius: 2)],
               ),
               textAlign: TextAlign.right,
               maxLines: 1,
@@ -972,10 +966,7 @@ class AnimeTile extends ConsumerWidget {
           );
 
           if (heroID != null) {
-            image = KostoriHero(
-              tag: heroTag ?? "cover$heroID",
-              child: image,
-            );
+            image = KostoriHero(tag: heroTag ?? "cover$heroID", child: image);
           }
 
           final title = anime.title.replaceAll('\n', '');
@@ -1063,10 +1054,7 @@ class AnimeTile extends ConsumerWidget {
           );
 
           if (heroID != null) {
-            image = KostoriHero(
-              tag: heroTag ?? "cover$heroID",
-              child: image,
-            );
+            image = KostoriHero(tag: heroTag ?? "cover$heroID", child: image);
           }
 
           final title = anime.title.replaceAll('\n', '');
@@ -1128,10 +1116,7 @@ class AnimeTile extends ConsumerWidget {
           );
 
           if (heroID != null) {
-            image = KostoriHero(
-              tag: heroTag ?? "cover$heroID",
-              child: image,
-            );
+            image = KostoriHero(tag: heroTag ?? "cover$heroID", child: image);
           }
 
           final title = anime.title.replaceAll('\n', '');
@@ -1519,9 +1504,9 @@ class _AnimeDescription extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: s == "Unavailable"
                                 ? Theme.of(context).colorScheme.errorContainer
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.secondaryContainer,
+                                : Theme.of(context)
+                                      .colorScheme
+                                      .secondaryContainer,
                             borderRadius: const BorderRadius.all(
                               Radius.circular(8),
                             ),
@@ -1738,8 +1723,10 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
                 ),
           onLongPressed: widget.onLongPressed == null
               ? null
-              : () =>
-                    widget.onLongPressed!(anime, _SliverGridAnimes.heroIDOf(anime)),
+              : () => widget.onLongPressed!(
+                  anime,
+                  _SliverGridAnimes.heroIDOf(anime),
+                ),
           heroID: _SliverGridAnimes.heroIDOf(anime),
           heroTag: "cover${_heroSeed}_h${_SliverGridAnimes.heroIDOf(anime)}",
           // 统一封面比例（与简洁布局接近，不再错落排列），
@@ -1752,9 +1739,8 @@ class _SliverMasonryAnimesState extends ConsumerState<SliverMasonryAnimes> {
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).colorScheme.secondaryContainer.toOpacity(
-                    0.72,
-                  )
+                ? Theme.of(context).colorScheme.secondaryContainer
+                      .toOpacity(0.72)
                 : null,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -2017,9 +2003,8 @@ class _SliverGridAnimes extends StatelessWidget {
                     duration: const Duration(milliseconds: 150),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer.toOpacity(0.72)
+                          ? Theme.of(context).colorScheme.secondaryContainer
+                                .toOpacity(0.72)
                           : null,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -2074,9 +2059,8 @@ class _SliverGridAnimes extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
               color: isSelected
-                  ? Theme.of(
-                      context,
-                    ).colorScheme.secondaryContainer.toOpacity(0.72)
+                  ? Theme.of(context).colorScheme.secondaryContainer
+                        .toOpacity(0.72)
                   : null,
               borderRadius: BorderRadius.circular(12),
             ),
@@ -2139,9 +2123,8 @@ class _SliverGridAnimes extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
               color: isSelected
-                  ? Theme.of(
-                      context,
-                    ).colorScheme.secondaryContainer.toOpacity(0.72)
+                  ? Theme.of(context).colorScheme.secondaryContainer
+                        .toOpacity(0.72)
                   : null,
               borderRadius: BorderRadius.circular(12),
             ),

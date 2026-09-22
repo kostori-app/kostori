@@ -581,10 +581,7 @@ class SearchHistory extends ConsumerWidget {
             },
             onSecondaryTapUp: (details) => showMenu(details.globalPosition),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -595,17 +592,11 @@ class SearchHistory extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
-                        Icons.repeat,
-                        size: 14,
-                        color: cs.onSurfaceVariant,
-                      ),
+                      Icon(Icons.repeat, size: 14, color: cs.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         t.searchUseCount(n: item.useCount),
-                        style: ts.s12.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
+                        style: ts.s12.copyWith(color: cs.onSurfaceVariant),
                       ),
                       const SizedBox(width: 12),
                       Icon(
@@ -616,9 +607,7 @@ class SearchHistory extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Text(
                         Utils.formatTime(item.lastUsedAt),
-                        style: ts.s12.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
+                        style: ts.s12.copyWith(color: cs.onSurfaceVariant),
                       ),
                     ],
                   ),

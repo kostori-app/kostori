@@ -297,9 +297,8 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     if (savedAddress == null || savedAddress.isEmpty) return (null, null);
 
     // 把 ws:// → http://、wss:// → https://，无协议时补 http://；去掉尾部 /hub
-    final httpBase = HubImageUploader.httpUrlOf(
-      savedAddress,
-    ).replaceAll(RegExp(r'/hub/?$'), '');
+    final httpBase = HubImageUploader.httpUrlOf(savedAddress)
+        .replaceAll(RegExp(r'/hub/?$'), '');
 
     try {
       final token = client.savedToken;

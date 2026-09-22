@@ -200,7 +200,9 @@ class BangumiBriefCard extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: backdropFilter(_buildScore(context)),
+                                      child: backdropFilter(
+                                        _buildScore(context),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -239,7 +241,9 @@ class BangumiBriefCard extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: backdropFilter(_buildScore(context)),
+                                      child: backdropFilter(
+                                        _buildScore(context),
+                                      ),
                                     ),
                                   ],
                                 ),

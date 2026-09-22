@@ -53,9 +53,9 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.secondaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .secondaryContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(t.topicsPoster),
@@ -227,12 +227,12 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.secondaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-child: Text(t.postOwner),
+                                    child: Text(t.postOwner),
                                   ),
                                 if (reply.creatorID == widget.id)
                                   Container(
@@ -244,9 +244,9 @@ child: Text(t.postOwner),
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.secondaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(t.floorOwner),
@@ -276,7 +276,9 @@ child: Text(t.postOwner),
               children: [
                 TextButton(
                   onPressed: () => setState(() => _showAll = !_showAll),
-                  child: Text(_showAll ? t.collapse : t.expandCount(total: total)),
+                  child: Text(
+                    _showAll ? t.collapse : t.expandCount(total: total),
+                  ),
                 ),
               ],
             ),

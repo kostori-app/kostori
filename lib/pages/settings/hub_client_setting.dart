@@ -924,9 +924,8 @@ Future<String?> _uploadHubImageForClient(
 ) async {
   final savedAddress = client.savedAddress;
   if (savedAddress == null || savedAddress.isEmpty) return null;
-  final httpBase = HubImageUploader.httpUrlOf(
-    savedAddress,
-  ).replaceAll(RegExp(r'/hub/?$'), '');
+  final httpBase = HubImageUploader.httpUrlOf(savedAddress)
+      .replaceAll(RegExp(r'/hub/?$'), '');
   try {
     final resp = await AppDio().request(
       '$httpBase/hub/upload/config',

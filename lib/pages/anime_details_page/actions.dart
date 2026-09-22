@@ -168,10 +168,9 @@ abstract mixin class _AnimePageActions {
 
   void openFavPanel() {
     // 与本地收藏页共用同一个收藏弹窗（样式与操作逻辑一致）
-    FavoriteDialog.show(
-      App.rootContext,
-      items: [_toFavoriteItem()],
-    ).then((changed) {
+    FavoriteDialog.show(App.rootContext, items: [_toFavoriteItem()]).then((
+      changed,
+    ) {
       if (changed != true) return;
       isAddToLocalFav = LocalFavoritesManager().isExist(
         anime.id,
@@ -314,12 +313,10 @@ abstract mixin class _AnimePageActions {
             onTap: () {
               Navigator.pop(context, item);
             },
-            splashColor: Theme.of(
-              context,
-            ).colorScheme.secondaryContainer.toOpacity(0.72),
-            highlightColor: Theme.of(
-              context,
-            ).colorScheme.secondaryContainer.toOpacity(0.72),
+            splashColor: Theme.of(context).colorScheme.secondaryContainer
+                .toOpacity(0.72),
+            highlightColor: Theme.of(context).colorScheme.secondaryContainer
+                .toOpacity(0.72),
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),

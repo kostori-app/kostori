@@ -177,11 +177,11 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
                   }
                   if (queryTimeout) {
                     return SliverFillRemaining(
-        child: EmptyState(
-          message: t.nobodysPostedAnythingYet,
-          retry: onReload,
-          retryText: t.reload,
-        ),
+                      child: EmptyState(
+                        message: t.nobodysPostedAnythingYet,
+                        retry: onReload,
+                        retryText: t.reload,
+                      ),
                     );
                   }
                   return SliverList.builder(
@@ -221,10 +221,10 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
       child: Scaffold(
         appBar: Appbar(
           title: Text(t.hotspot),
-            bottom: CapsuleTabBar(
-              controller: infoTabController,
-              labels: [t.topicsLatest, t.topicsTrending],
-            ),
+          bottom: CapsuleTabBar(
+            controller: infoTabController,
+            labels: [t.topicsLatest, t.topicsTrending],
+          ),
         ),
         body: TabBarView(
           controller: infoTabController,
@@ -273,24 +273,24 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
                   [
                     SpeedDialChild(
                       child: const Icon(Icons.refresh),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer,
+                      foregroundColor: Theme.of(context)
+                          .colorScheme
+                          .onPrimaryContainer,
                       onTap: () async => await resetBangumiTrend(),
                     ),
                   ],
                   [
                     SpeedDialChild(
                       child: const Icon(Icons.vertical_align_top),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer,
+                      foregroundColor: Theme.of(context)
+                          .colorScheme
+                          .onPrimaryContainer,
                       onTap: () => scrollToTop(),
                     ),
                   ],

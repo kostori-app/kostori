@@ -116,9 +116,8 @@ class _PluginImagesSheetState extends State<_PluginImagesSheet> {
                   vertical: 12,
                 ),
                 itemCount: images.length,
-                itemBuilder: (context, i) => KeepAliveWrapper(
-                  child: _page(title, images[i], h),
-                ),
+                itemBuilder: (context, i) =>
+                    KeepAliveWrapper(child: _page(title, images[i], h)),
               );
             },
           );
@@ -223,7 +222,10 @@ class _GenericPluginCard extends StatelessWidget {
     return single.isNotEmpty ? [single] : const [];
   }
 
-  Future<void> _buttonTap(BuildContext context, Map<String, dynamic> btn) async {
+  Future<void> _buttonTap(
+    BuildContext context,
+    Map<String, dynamic> btn,
+  ) async {
     final label = btn['label']?.toString() ?? '';
     // 按钮可跳转到插件子页（如按需解析预览图）
     final page = btn['page']?.toString() ?? '';
@@ -376,9 +378,8 @@ class _GenericPluginCard extends StatelessWidget {
     final cover = _str('cover');
     final title = _str('title');
     final subtitle = _str('subtitle');
-    final description = item['description']?.toString() ??
-        item['summary']?.toString() ??
-        '';
+    final description =
+        item['description']?.toString() ?? item['summary']?.toString() ?? '';
     final badge = _str('badge');
     final tags = _list('tags');
     final meta = _list('meta');
@@ -400,10 +401,7 @@ class _GenericPluginCard extends StatelessWidget {
               width: 104,
               height: 140,
               color: cs.surfaceContainerHighest,
-              child: Icon(
-                Icons.image_outlined,
-                color: cs.onSurfaceVariant,
-              ),
+              child: Icon(Icons.image_outlined, color: cs.onSurfaceVariant),
             ),
     );
 
@@ -744,7 +742,8 @@ class _SelectorSectionState extends State<_SelectorSection> {
           _SelectorState(
             key: sm['key']?.toString() ?? 'selection',
             options: opts,
-            selected: sm['selected']?.toString() ?? opts.first['key'].toString(),
+            selected:
+                sm['selected']?.toString() ?? opts.first['key'].toString(),
             arrows: sm['arrows'] == true,
           ),
         );
@@ -961,9 +960,9 @@ class _ImageTextSectionState extends State<_ImageTextSection> {
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     width: double.infinity,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
                     alignment: Alignment.center,
                     // 完整显示且尽量放大
                     child: _siteImage(
@@ -979,7 +978,8 @@ class _ImageTextSectionState extends State<_ImageTextSection> {
           if (image.isNotEmpty && text.isNotEmpty) const SizedBox(height: 8),
           if (text.isNotEmpty)
             // 可选中复制
-            AppSelectableText(text,
+            AppSelectableText(
+              text,
               style: const TextStyle(fontSize: 13, height: 1.5),
             ),
           if (text.isNotEmpty)

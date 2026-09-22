@@ -25,38 +25,33 @@ extension Navigation on BuildContext {
 
   Future<T?> to<T>(Widget Function() builder) {
     _unfocusBeforeNavigate();
-    return Navigator.of(
-      this,
-    ).push<T>(AppPageRoute(builder: (context) => builder()));
+    return Navigator.of(this)
+        .push<T>(AppPageRoute(builder: (context) => builder()));
   }
 
   Future<void> toReplacement<T>(Widget Function() builder) {
     _unfocusBeforeNavigate();
-    return Navigator.of(
-      this,
-    ).pushReplacement(AppPageRoute(builder: (context) => builder()));
+    return Navigator.of(this)
+        .pushReplacement(AppPageRoute(builder: (context) => builder()));
   }
 
   Future<T?> toBlurFade<T>(Widget Function() builder) {
     _unfocusBeforeNavigate();
-    return Navigator.of(
-      this,
-    ).push<T>(BlurFadeRoute(builder: (context) => builder()));
+    return Navigator.of(this)
+        .push<T>(BlurFadeRoute(builder: (context) => builder()));
   }
 
   /// 底部弹层式页面（视觉是 sheet，本质是 PageRoute，可与目标页做 Hero 转场）
   Future<T?> toSheet<T>(Widget Function() builder) {
     _unfocusBeforeNavigate();
-    return Navigator.of(
-      this,
-    ).push<T>(SheetPageRoute(builder: (context) => builder()));
+    return Navigator.of(this)
+        .push<T>(SheetPageRoute(builder: (context) => builder()));
   }
 
   Future<T?> toFadeScale<T>(Widget Function() builder) {
     _unfocusBeforeNavigate();
-    return Navigator.of(
-      this,
-    ).push<T>(FadeScalePageRoute<T>(builder: (_) => builder()));
+    return Navigator.of(this)
+        .push<T>(FadeScalePageRoute<T>(builder: (_) => builder()));
   }
 
   double get width => MediaQuery.sizeOf(this).width;

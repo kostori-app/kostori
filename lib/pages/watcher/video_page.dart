@@ -351,15 +351,15 @@ class _VideoPageState extends State<VideoPage>
     );
   }
 
-/// 当前观看的番剧（从全局 providerContainer 读取，与 AnimePage 同一容器，
-/// 避免 widget 树容器与 init 容器实例不一致导致 anime 为 null）
-AnimeDetails get _panelAnime =>
-    providerContainer.read(watcherControllerProvider).anime!;
+  /// 当前观看的番剧（从全局 providerContainer 读取，与 AnimePage 同一容器，
+  /// 避免 widget 树容器与 init 容器实例不一致导致 anime 为 null）
+  AnimeDetails get _panelAnime =>
+      providerContainer.read(watcherControllerProvider).anime!;
 
-/// 系列模式判断：无分集（episode 为空）且源提供 loadSeries
-bool get _isSeries =>
-    (_panelAnime.episode == null || _panelAnime.episode!.isEmpty) &&
-    AnimeSource.find(_panelAnime.sourceKey)?.loadSeries != null;
+  /// 系列模式判断：无分集（episode 为空）且源提供 loadSeries
+  bool get _isSeries =>
+      (_panelAnime.episode == null || _panelAnime.episode!.isEmpty) &&
+      AnimeSource.find(_panelAnime.sourceKey)?.loadSeries != null;
 
   /// 面板内统一的分区标题
   Widget _sectionTitle(String text) {
@@ -521,9 +521,7 @@ bool get _isSeries =>
                     padding: WidgetStateProperty.all(EdgeInsets.zero),
                   ),
                   onPressed: () {
-                    controller.isOpen
-                        ? controller.close()
-                        : controller.open();
+                    controller.isOpen ? controller.close() : controller.open();
                   },
                   child: Text(
                     _panelAnime.episode!.keys.elementAt(currentRoad),

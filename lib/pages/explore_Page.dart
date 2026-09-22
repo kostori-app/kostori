@@ -589,24 +589,24 @@ class _ExplorePageState extends State<ExplorePage>
                     [
                       SpeedDialChild(
                         child: const Icon(Icons.refresh),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer,
                         onTap: refresh,
                       ),
                     ],
                     [
                       SpeedDialChild(
                         child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer,
                         onTap: () {
                           String currentSource =
                               sources[sourceController.index];
@@ -615,10 +615,7 @@ class _ExplorePageState extends State<ExplorePage>
                           String currentPageId =
                               sourcePages[currentSource]![pageIndex];
                           GlobalState.findOrNull<_SingleExplorePageState>(
-                            _explorePageStateKey(
-                              currentSource,
-                              currentPageId,
-                            ),
+                            _explorePageStateKey(currentSource, currentPageId),
                           )?.toTop();
                         },
                       ),
@@ -629,12 +626,12 @@ class _ExplorePageState extends State<ExplorePage>
                             appdata.settings['animeListDisplayMode'] == 'paging'
                             ? Icon(Icons.view_cozy_outlined)
                             : Icon(Icons.menu),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer,
                         onTap: () {
                           appdata.settings['animeListDisplayMode'] =
                               appdata.settings['animeListDisplayMode'] ==
@@ -654,12 +651,12 @@ class _ExplorePageState extends State<ExplorePage>
                             appdata.settings.s.exploreHorizontalLayout == true
                             ? Icon(Icons.view_week)
                             : Icon(Icons.view_module),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer,
                         onTap: () {
                           appdata.settings.update(
                             (s) => s.copyWith(
@@ -743,7 +740,8 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   }
 
   void onScroll() {
-    final canScroll = scrollController.hasClients &&
+    final canScroll =
+        scrollController.hasClients &&
         scrollController.position.maxScrollExtent > 0;
     // 内容不可滚动时也显示浮动按钮
     final shouldShow = !canScroll || scrollController.offset > 50;
@@ -1278,5 +1276,3 @@ class ExploreSourceDisplayMode {
   static void set(String sourceKey, String? mode) =>
       setSourceDisplayMode(sourceKey, mode);
 }
-
-

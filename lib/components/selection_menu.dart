@@ -18,8 +18,7 @@ class _AppSelectionAreaState extends State<AppSelectionArea> {
   @override
   Widget build(BuildContext context) {
     return SelectionArea(
-      onSelectionChanged: (content) =>
-          _selectedText = content?.plainText ?? '',
+      onSelectionChanged: (content) => _selectedText = content?.plainText ?? '',
       contextMenuBuilder: (context, state) =>
           appSelectionContextMenu(context, state, () => _selectedText),
       child: widget.child,
@@ -209,11 +208,13 @@ List<ContextMenuButtonItem> appSelectionLinkItems(String selectedText) {
 String? firstUrlInSelection(String text) {
   final match = RegExp(r'https?://[^\s]+').firstMatch(text.trim());
   if (match == null) return null;
-  final url = match.group(0)!.replaceAll(
-    // 结尾常见的半角/全角标点（中英文句号、引号、括号等）
-    RegExp(r'''[)\]}>）】」』》〉，。；、,.;:!?'"”’]+$'''),
-    '',
-  );
+  final url = match
+      .group(0)!
+      .replaceAll(
+        // 结尾常见的半角/全角标点（中英文句号、引号、括号等）
+        RegExp(r'''[)\]}>）】」』》〉，。；、,.;:!?'"”’]+$'''),
+        '',
+      );
   // 协议后面必须还有内容，否则视为无效
   final uri = Uri.tryParse(url);
   if (uri == null || uri.host.isEmpty) return null;
@@ -238,7 +239,10 @@ Future<void> _openSelectedUrl(String url, {required bool nonBrowser}) async {
     ok = false;
   }
   if (!ok) {
-    App.rootContext.showMessage(message: t.failedToOpen, level: LogLevel.warning);
+    App.rootContext.showMessage(
+      message: t.failedToOpen,
+      level: LogLevel.warning,
+    );
   }
 }
 

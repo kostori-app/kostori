@@ -5,11 +5,7 @@ class ReviewsItem {
   final int id;
   final InfoUser user;
 
-  ReviewsItem({
-    required this.entry,
-    required this.id,
-    required this.user,
-  });
+  ReviewsItem({required this.entry, required this.id, required this.user});
 
   factory ReviewsItem.fromJson(Map<String, dynamic> json) {
     return ReviewsItem(
@@ -20,11 +16,7 @@ class ReviewsItem {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'entry': entry.toJson(),
-      'id': id,
-      'user': user.toJson(),
-    };
+    return {'entry': entry.toJson(), 'id': id, 'user': user.toJson()};
   }
 
   @override

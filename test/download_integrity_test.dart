@@ -35,7 +35,11 @@ void main() {
 
     test('206 缺少或无法解析 Content-Range 时不臆测大小', () {
       expect(
-        parseDownloadRange(status: 206, contentRange: null, contentLength: 1000),
+        parseDownloadRange(
+          status: 206,
+          contentRange: null,
+          contentLength: 1000,
+        ),
         (start: -1, total: -1),
       );
       expect(
@@ -88,7 +92,10 @@ void main() {
     });
 
     test('直播列表（无 PLAYLIST-TYPE）不误判', () {
-      expect(isTruncatedHlsPlaylist('#EXTM3U\n#EXTINF:10.0,\nseg0.ts\n'), isFalse);
+      expect(
+        isTruncatedHlsPlaylist('#EXTM3U\n#EXTINF:10.0,\nseg0.ts\n'),
+        isFalse,
+      );
     });
   });
 }

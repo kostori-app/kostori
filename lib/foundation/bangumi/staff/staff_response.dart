@@ -4,10 +4,7 @@ class StaffResponse {
   final List<StaffFullItem> data;
   final int total;
 
-  StaffResponse({
-    required this.data,
-    required this.total,
-  });
+  StaffResponse({required this.data, required this.total});
 
   factory StaffResponse.fromJson(Map<String, dynamic> json) {
     return StaffResponse(
@@ -19,16 +16,10 @@ class StaffResponse {
   }
 
   factory StaffResponse.fromTemplate() {
-    return StaffResponse(
-      data: [],
-      total: 0,
-    );
+    return StaffResponse(data: [], total: 0);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'data': data.map((item) => item.toJson()).toList(),
-      'total': total,
-    };
+    return {'data': data.map((item) => item.toJson()).toList(), 'total': total};
   }
 }

@@ -99,8 +99,8 @@ class MyLogInterceptor extends Interceptor {
             : LogLevel.error,
         '← Network',
         '${response.statusCode} ${response.realUri}'
-        '${len.isNotEmpty ? ' · $len B' : ''}'
-        '${costMs != null ? ' · ${costMs}ms' : ''}',
+            '${len.isNotEmpty ? ' · $len B' : ''}'
+            '${costMs != null ? ' · ${costMs}ms' : ''}',
       );
       handler.next(response);
       return;
@@ -407,8 +407,7 @@ class RHttpAdapter implements HttpClientAdapter {
       302 => "Found",
       400 => "Invalid Status Code 400: The Request is invalid.",
       401 => "Invalid Status Code 401: The Request is unauthorized.",
-      403 =>
-        "Invalid Status Code 403: No permission to access the resource. Check your account or network.",
+      403 => "Invalid Status Code 403: No permission to access the resource. Check your account or network.",
       404 => "Invalid Status Code 404: Not found.",
       429 =>
         "Invalid Status Code 429: Too many requests. Please try again later.",

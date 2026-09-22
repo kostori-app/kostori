@@ -206,8 +206,7 @@ class _AppSettingsState extends State<AppSettings> {
                   _CallbackSetting(
                     title: t.selectFile,
                     subtitle: () {
-                      final p =
-                          appdata.implicitData['ffmpegPath'] as String?;
+                      final p = appdata.implicitData['ffmpegPath'] as String?;
                       if (p == null || p.trim().isEmpty) {
                         return t.notSet;
                       }
@@ -1130,9 +1129,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     final remote = <String, Map<String, RemoteFileInfo>>{};
     for (final kind in _kinds) {
       final res = await sync.listRemoteEntries(dir: kind);
-      remote[kind] = res.success
-          ? {for (final e in res.data) e.name: e}
-          : {};
+      remote[kind] = res.success ? {for (final e in res.data) e.name: e} : {};
     }
     final manifest = await sync.readManifest();
     if (!mounted) return;
@@ -1528,8 +1525,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
   /// 长按条目：选择删除本地 / 云端 / 两者
   Future<void> _confirmDelete(String kind, String id) async {
     final hasLocal = _localFile(kind, id).existsSync();
-    final hasRemote =
-        (_remote[kind] ?? const {})['$id${_ext(kind)}'] != null;
+    final hasRemote = (_remote[kind] ?? const {})['$id${_ext(kind)}'] != null;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1608,9 +1604,9 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
       await StorySessionStore.instance.reload();
       await PromptInjectionStore.instance.reload();
       await WorldBookStore.instance.reload();
-    await SettingLibraryStore.instance.reload();
-    await StoryCharacterStore.instance.reload();
-    await AiSkillStore.instance.reload();
+      await SettingLibraryStore.instance.reload();
+      await StoryCharacterStore.instance.reload();
+      await AiSkillStore.instance.reload();
     } finally {
       if (mounted) {
         setState(() {
@@ -1629,9 +1625,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
     final sync = DataSync();
     // 用最新的远端列表，避免拿过期文件名去下载（404）
     final res = await sync.listRemoteEntries(dir: kind);
-    final names = res.success
-        ? {for (final e in res.data) e.name}
-        : <String>{};
+    final names = res.success ? {for (final e in res.data) e.name} : <String>{};
     Log.info(
       'SelectiveSync',
       'download $kind: remote=[${res.dataOrNull?.map((e) => '${e.name}(${e.size})').join(', ') ?? names.join(', ')}]',
@@ -1764,7 +1758,9 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
       return Center(
         child: Text(
           empty,
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -1774,9 +1770,7 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
         Positioned.fill(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 72),
-            children: [
-              for (final id in ids) _buildItem(kind, id, selected),
-            ],
+            children: [for (final id in ids) _buildItem(kind, id, selected)],
           ),
         ),
         Positioned(
@@ -1907,5 +1901,4 @@ class _SelectiveSyncPageState extends State<_SelectiveSyncPage>
       ),
     );
   }
-
 }

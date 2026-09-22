@@ -151,8 +151,10 @@ class AiToolDefinition {
 }
 
 /// 工具调用回调，返回工具执行结果字符串
-typedef AiToolHandler =
-    Future<String> Function(String name, Map<String, dynamic> arguments);
+typedef AiToolHandler = Future<String> Function(
+  String name,
+  Map<String, dynamic> arguments,
+);
 
 /// 渐进式工具加载的元工具名
 const kLoadToolsName = 'load_tools';

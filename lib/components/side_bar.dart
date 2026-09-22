@@ -6,12 +6,15 @@ part of 'components.dart';
 /// 大于600显示为右侧的侧边栏
 /// 小于600显示为从侧边划入的页面
 class SideBarRoute<T> extends PopupRoute<T> {
-  SideBarRoute(this.title, this.widget,
-      {this.showBarrier = true,
-      this.useSurfaceTintColor = false,
-      required this.width,
-      this.addBottomPadding = true,
-      this.addTopPadding = true});
+  SideBarRoute(
+    this.title,
+    this.widget, {
+    this.showBarrier = true,
+    this.useSurfaceTintColor = false,
+    required this.width,
+    this.addBottomPadding = true,
+    this.addTopPadding = true,
+  });
 
   ///标题
   final String? title;
@@ -42,8 +45,11 @@ class SideBarRoute<T> extends PopupRoute<T> {
   String? get barrierLabel => "exit";
 
   @override
-  Widget buildPage(BuildContext context, Animation<double> animation,
-      Animation<double> secondaryAnimation) {
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
     Widget body = SidebarBody(
       title: title,
       widget: widget,
@@ -127,9 +133,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
               child: Material(
                 child: ClipRect(
                   clipBehavior: Clip.antiAlias,
-                  child: Container(
-                    child: body,
-                  ),
+                  child: Container(child: body),
                 ),
               ),
             ),
@@ -144,11 +148,12 @@ class SideBarRoute<T> extends PopupRoute<T> {
 }
 
 class SidebarBody extends StatefulWidget {
-  const SidebarBody(
-      {required this.title,
-      required this.widget,
-      required this.autoChangeTitleBarColor,
-      super.key});
+  const SidebarBody({
+    required this.title,
+    required this.widget,
+    required this.autoChangeTitleBarColor,
+    super.key,
+  });
 
   final String? title;
   final Widget widget;
@@ -198,9 +203,7 @@ class _SidebarBodyState extends State<SidebarBody> {
             padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
             child: Row(
               children: [
-                const SizedBox(
-                  width: 8,
-                ),
+                const SizedBox(width: 8),
                 Tooltip(
                   message: t.back,
                   child: IconButton(
@@ -209,28 +212,26 @@ class _SidebarBodyState extends State<SidebarBody> {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
-                const SizedBox(
-                  width: 10,
-                ),
-                Text(
-                  widget.title!,
-                  style: const TextStyle(fontSize: 22),
-                )
+                const SizedBox(width: 10),
+                Text(widget.title!, style: const TextStyle(fontSize: 22)),
               ],
             ),
           ),
-        body
+        body,
       ],
     );
   }
 }
 
-Future<void> showSideBar(BuildContext context, Widget widget,
-    {String? title,
-    bool showBarrier = true,
-    bool useSurfaceTintColor = false,
-    double width = 500,
-    bool addTopPadding = false}) {
+Future<void> showSideBar(
+  BuildContext context,
+  Widget widget, {
+  String? title,
+  bool showBarrier = true,
+  bool useSurfaceTintColor = false,
+  double width = 500,
+  bool addTopPadding = false,
+}) {
   return Navigator.of(context).push(
     SideBarRoute(
       title,

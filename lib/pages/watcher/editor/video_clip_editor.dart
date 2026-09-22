@@ -2037,9 +2037,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                 const SizedBox(height: 4),
                 Text(
                   t.vceCropDragHint,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: cs.onSurfaceVariant),
                 ),
               ],
             ],
@@ -2118,9 +2117,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   _exportStatus,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: cs.onSurfaceVariant),
                 ),
               ),
             ],
@@ -2179,9 +2177,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   Widget _label(String text) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
+      style: Theme.of(context).textTheme.bodySmall
+          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
     );
   }
 }

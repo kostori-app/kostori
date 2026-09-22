@@ -968,7 +968,9 @@ class _ModelListSectionState extends State<_ModelListSection> {
   void initState() {
     super.initState();
     if (widget.scrollable) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _autoScrollToDefault());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _autoScrollToDefault(),
+      );
     }
   }
 
@@ -1951,8 +1953,6 @@ class _AssistantProfileTile extends StatelessWidget {
   }
 }
 
-
-
 // ─────────────────────────────────────────────
 // 助手档案 编辑弹窗
 // ─────────────────────────────────────────────
@@ -2177,9 +2177,8 @@ class _AuxModelEditorState extends State<_AuxModelEditor> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                 child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(
-                    context,
-                  ).copyWith(scrollbars: false),
+                  behavior: ScrollConfiguration.of(context)
+                      .copyWith(scrollbars: false),
                   child: SingleChildScrollView(
                     child: _SettingCard(
                       children: [
@@ -2247,9 +2246,8 @@ class _AuxModelEditorState extends State<_AuxModelEditor> {
                             child: Text(
                               t.auxFollowSessionHint,
                               style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.toOpacity(0.5),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .toOpacity(0.5),
                                 fontSize: 13,
                               ),
                             ),
@@ -2404,8 +2402,7 @@ class _SkillEditorState extends State<_SkillEditor> {
         isBuiltin: _isBuiltin,
         isEnabled: widget.skill?.isEnabled ?? true,
         createdAt:
-            widget.skill?.createdAt ??
-            DateTime.now().millisecondsSinceEpoch,
+            widget.skill?.createdAt ?? DateTime.now().millisecondsSinceEpoch,
       ),
     );
     if (mounted) {
@@ -2624,8 +2621,7 @@ class _GlobalContextBudgetCardState extends State<_GlobalContextBudgetCard> {
         ),
         actions: [
           FilledButton(
-            onPressed: () =>
-                Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
+            onPressed: () => Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
             child: Text(t.apply),
           ),
         ],

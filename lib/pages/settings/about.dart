@@ -47,9 +47,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
           children: [
             const SizedBox(height: 8),
             Text("V${App.version}", style: const TextStyle(fontSize: 16)),
-            Text(
-              t.kostoriIsAFreeAndOpenSourceAppForAnimeWatching,
-            ),
+            Text(t.kostoriIsAFreeAndOpenSourceAppForAnimeWatching),
             const SizedBox(height: 8),
           ],
         ).toSliver(),
@@ -242,9 +240,8 @@ Future<void> showDeviceInfoDialog() async {
         content: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: 500.0),
           child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(
-              context,
-            ).copyWith(scrollbars: false, overscroll: false),
+            behavior: ScrollConfiguration.of(context)
+                .copyWith(scrollbars: false, overscroll: false),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,16 +375,15 @@ Future<void> updateLog(BuildContext context) async {
     releases = response.data as List;
   } on DioException catch (e) {
     final message =
-        e.response?.data?['message']?.toString() ?? e.message ?? t.networkRequestFailed;
+        e.response?.data?['message']?.toString() ??
+        e.message ??
+        t.networkRequestFailed;
 
     App.rootContext.showMessage(message: message, level: LogLevel.warning);
 
     return;
   } catch (e) {
-    App.rootContext.showMessage(
-      message: e.toString(),
-      level: LogLevel.warning,
-    );
+    App.rootContext.showMessage(message: e.toString(), level: LogLevel.warning);
     return;
   }
   if (!context.mounted) return;
@@ -791,9 +787,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  t.discoverTheNewVersionV(v: value.values),
-                ),
+                Text(t.discoverTheNewVersionV(v: value.values)),
                 const SizedBox(height: 12),
                 if (isDownloading)
                   Column(

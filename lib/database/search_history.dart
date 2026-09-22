@@ -165,8 +165,9 @@ class SearchHistoryManager with ChangeNotifier {
   }
 
   /// 把 WAL 里的改动写回主库文件（整库导出/覆盖前调用）
-  Future<void> checkpoint() =>
-      walCheckpoint(() => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'));
+  Future<void> checkpoint() => walCheckpoint(
+    () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
+  );
 
   Future<void> deleteSearch(String keyword) async {
     await (_db.delete(

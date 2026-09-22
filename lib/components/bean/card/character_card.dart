@@ -168,9 +168,8 @@ class _ActorChip extends StatelessWidget {
               if (actor.avator.grid.isNotEmpty) const SizedBox(width: 6),
               Text(
                 actor.name,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSecondaryContainer,
-                ),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: scheme.onSecondaryContainer),
               ),
             ],
           ),

@@ -185,7 +185,9 @@ class OpenRouterAi extends AiBase {
     try {
       final keyRow = await getKeyRow();
       if (keyRow == null || !keyRow.isEnabled) {
-        yield AiStreamChunk(errorMessage: t.apiKeyNotConfigured(source: sourceName));
+        yield AiStreamChunk(
+          errorMessage: t.apiKeyNotConfigured(source: sourceName),
+        );
         return;
       }
       final config = buildConfig(keyRow, modelOverride: modelOverride);

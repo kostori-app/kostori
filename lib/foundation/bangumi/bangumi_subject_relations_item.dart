@@ -34,7 +34,7 @@ class BangumiSRI {
               "common": '',
               "medium": '',
               "small": '',
-              "grid": ''
+              "grid": '',
             },
       ),
     );

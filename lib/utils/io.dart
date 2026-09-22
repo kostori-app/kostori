@@ -463,10 +463,9 @@ Future<({int free, int total})?> getStorageInfo(String dir) async {
   try {
     if (!Platform.isAndroid) return null;
     const channel = MethodChannel('kostori/storage');
-    final v = await channel.invokeMapMethod<String, Object?>(
-      'getStorageInfo',
-      {'path': dir},
-    );
+    final v = await channel.invokeMapMethod<String, Object?>('getStorageInfo', {
+      'path': dir,
+    });
     if (v == null) return null;
     final free = (v['free'] as num?)?.toInt() ?? -1;
     final total = (v['total'] as num?)?.toInt() ?? -1;

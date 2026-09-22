@@ -72,7 +72,9 @@ void main() {
       tester.view.physicalSize = const Size(400, 600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final tempPath = Directory.systemTemp.createTempSync('kostori_test_').path;
+      final tempPath = Directory.systemTemp
+          .createTempSync('kostori_test_')
+          .path;
       App.dataPath = tempPath;
       App.cachePath = tempPath;
       appdata.settings['animeListDisplayMode'] = 'continuous';

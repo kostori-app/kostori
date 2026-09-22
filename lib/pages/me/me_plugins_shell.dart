@@ -17,22 +17,19 @@ Future<void> _pushPluginPage(
         pluginKey: plugin.key,
         kind: 'open',
         itemKey: 'thread:${tid ?? row['tid'] ?? row['title']}',
-        title:
-            (row['title']?.toString().isNotEmpty ?? false)
+        title: (row['title']?.toString().isNotEmpty ?? false)
             ? row['title'].toString()
             : (params['title']?.toString() ?? plugin.name),
         subtitle: [
-          if (row['name']?.toString().isNotEmpty ?? false) row['name'].toString(),
-          if (row['time']?.toString().isNotEmpty ?? false) row['time'].toString(),
+          if (row['name']?.toString().isNotEmpty ?? false)
+            row['name'].toString(),
+          if (row['time']?.toString().isNotEmpty ?? false)
+            row['time'].toString(),
         ].join(' · '),
         coverUrl: (images is List && images.isNotEmpty)
             ? images.first.toString()
             : (row['cover']?.toString() ?? ''),
-        extraJson: jsonEncode({
-          'page': name,
-          'params': params,
-          'item': row,
-        }),
+        extraJson: jsonEncode({'page': name, 'params': params, 'item': row}),
       ),
     );
   }
@@ -108,29 +105,20 @@ class _PluginSubPageState extends State<PluginSubPage> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(
-              child: PolygonRefreshIndicator(size: 28),
-            );
+            return const Center(child: PolygonRefreshIndicator(size: 28));
           }
           if (snap.hasError) {
             return _PluginRetry(
               message: '${snap.error}',
               onRetry: () {
                 setState(() {
-                  _future = widget.plugin.page(
-                    widget.name,
-                    widget.params,
-                  );
+                  _future = widget.plugin.page(widget.name, widget.params);
                 });
               },
             );
           }
           final modules = snap.data ?? const [];
-          return _contentOrBoard(
-            widget.plugin,
-            modules,
-            topPadding: topInset,
-          );
+          return _contentOrBoard(widget.plugin, modules, topPadding: topInset);
         },
       ),
     );
@@ -216,11 +204,7 @@ class PluginShellPage extends StatefulWidget {
   /// 打开时定位的初始页 key（如 'login'），null 时取第一个导航页
   final String? initialPageKey;
 
-  const PluginShellPage({
-    super.key,
-    required this.plugin,
-    this.initialPageKey,
-  });
+  const PluginShellPage({super.key, required this.plugin, this.initialPageKey});
 
   @override
   State<PluginShellPage> createState() => _PluginShellPageState();
@@ -257,9 +241,7 @@ class _PluginShellPageState extends State<PluginShellPage>
       _nav = nav;
       int start = 0;
       if (widget.initialPageKey != null) {
-        final found = nav.indexWhere(
-          (n) => n['key'] == widget.initialPageKey,
-        );
+        final found = nav.indexWhere((n) => n['key'] == widget.initialPageKey);
         if (found >= 0) start = found;
       }
       _index = start;
@@ -307,8 +289,9 @@ class _PluginShellPageState extends State<PluginShellPage>
       _errors[index] = null;
     });
     try {
-      final modules =
-          await widget.plugin.page(_nav[index]['key']?.toString() ?? '');
+      final modules = await widget.plugin.page(
+        _nav[index]['key']?.toString() ?? '',
+      );
       if (!mounted || token != _reqToken) return;
       // 板块页：解析分类信息并（重新）创建外壳托管的分类控制器
       ({List<Map<String, dynamic>> tabs, String listPage})? info;
@@ -396,9 +379,7 @@ class _PluginShellPageState extends State<PluginShellPage>
               tooltip: t.search,
               icon: const Icon(Icons.search),
               onPressed: () {
-                context.to(
-                  () => PluginSearchPage(plugin: widget.plugin),
-                );
+                context.to(() => PluginSearchPage(plugin: widget.plugin));
               },
             ),
           IconButton(
@@ -449,10 +430,7 @@ class _PluginShellPageState extends State<PluginShellPage>
                   left: 0,
                   right: 0,
                   top: 0,
-                  child: Container(
-                    key: _headerKey,
-                    child: header,
-                  ),
+                  child: Container(key: _headerKey, child: header),
                 ),
             ],
           );
@@ -478,8 +456,7 @@ class _PluginShellPageState extends State<PluginShellPage>
     final showBig = _nav.length > 1;
     final info = _index < _boardInfos.length ? _boardInfos[_index] : null;
     final ctrl = _index < _boardCtrls.length ? _boardCtrls[_index] : null;
-    final showSub =
-        info != null && ctrl != null && info.tabs.isNotEmpty;
+    final showSub = info != null && ctrl != null && info.tabs.isNotEmpty;
     if (!showBig && !showSub) return null;
 
     final rows = <Widget>[
@@ -489,15 +466,9 @@ class _PluginShellPageState extends State<PluginShellPage>
           child: Align(
             alignment: Alignment.center,
             child: _CapsuleBar(
-              keys: _nav
-                  .map((n) => n['key']?.toString() ?? '')
-                  .toList(),
-              titles: _nav
-                  .map((n) => n['title']?.toString() ?? '')
-                  .toList(),
-              icons: _nav
-                  .map((n) => n['icon']?.toString() ?? '')
-                  .toList(),
+              keys: _nav.map((n) => n['key']?.toString() ?? '').toList(),
+              titles: _nav.map((n) => n['title']?.toString() ?? '').toList(),
+              icons: _nav.map((n) => n['icon']?.toString() ?? '').toList(),
               selected: _index < _nav.length
                   ? (_nav[_index]['key']?.toString() ?? '')
                   : '',
@@ -508,18 +479,11 @@ class _PluginShellPageState extends State<PluginShellPage>
         ),
       if (showSub)
         Padding(
-          padding: EdgeInsets.fromLTRB(
-            12,
-            showBig ? 2 : 6,
-            12,
-            6,
-          ),
+          padding: EdgeInsets.fromLTRB(12, showBig ? 2 : 6, 12, 6),
           child: Align(
             alignment: Alignment.center,
             child: _CapsuleBar(
-              keys: info.tabs
-                  .map((t) => t['key']?.toString() ?? '')
-                  .toList(),
+              keys: info.tabs.map((t) => t['key']?.toString() ?? '').toList(),
               titles: info.tabs
                   .map((t) => t['title']?.toString() ?? '')
                   .toList(),
@@ -532,7 +496,9 @@ class _PluginShellPageState extends State<PluginShellPage>
           ),
         ),
     ];
-    return _GlassBar(child: Column(mainAxisSize: MainAxisSize.min, children: rows));
+    return _GlassBar(
+      child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+    );
   }
 
   Widget _pageBody(int index) {
@@ -957,8 +923,11 @@ class _PluginHistoryPageState extends State<PluginHistoryPage> {
                     : (item.coverUrl.isNotEmpty
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: _genericPluginImage(item.coverUrl,
-                                  width: 40, height: 40),
+                              child: _genericPluginImage(
+                                item.coverUrl,
+                                width: 40,
+                                height: 40,
+                              ),
                             )
                           : CircleAvatar(
                               radius: 18,

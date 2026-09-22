@@ -688,8 +688,6 @@ class AssistantProfileStore extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -702,8 +700,9 @@ class AssistantProfileStore extends ChangeNotifier {
   }
 
   /// 导出全部助手档案（跨端同步用）
-  List<Map<String, dynamic>> exportMergeData() =>
-      [for (final p in _profiles) p.toJson()];
+  List<Map<String, dynamic>> exportMergeData() => [
+    for (final p in _profiles) p.toJson(),
+  ];
 
   /// 合并同步来的助手档案：本机没有的 id 直接补充，已有的保留本机版本
   /// （档案没有更新时间列，纯增量合并最安全；当前选中档案仍由本机决定）

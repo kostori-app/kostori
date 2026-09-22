@@ -21,12 +21,7 @@ class ActorAvator {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'small': small,
-      'medium': medium,
-      'grid': grid,
-      'large': large,
-    };
+    return {'small': small, 'medium': medium, 'grid': grid, 'large': large};
   }
 }
 

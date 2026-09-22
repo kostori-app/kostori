@@ -123,8 +123,8 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                   ? Expanded(
                                       child: LayoutBuilder(
                                         builder: (context, constraints) {
-                final text =
-                    '${providerContainer.read(watcherControllerProvider).anime!.title} ${playerController.currentSetName}';
+                                          final text =
+                                              '${providerContainer.read(watcherControllerProvider).anime!.title} ${playerController.currentSetName}';
                                           const style = TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
@@ -286,9 +286,10 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                             snapshot.data ?? '--:--:--',
                                             style: TextStyle(
                                               color: Colors.white,
-                                              fontSize: Theme.of(
-                                                context,
-                                              ).textTheme.titleMedium!.fontSize,
+                                              fontSize: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium!
+                                                  .fontSize,
                                             ),
                                           );
                                         },

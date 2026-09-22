@@ -54,7 +54,9 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
     try {
       reviewsInfoItem = await Bangumi.instance.getReviewsInfoByID(id);
       reviewsCommentsItem = await Bangumi.instance.getReviewsCommentsByID(id);
-      bangumiReviewsSubjects = await Bangumi.instance.getReviewsSubjectsByID(id);
+      bangumiReviewsSubjects = await Bangumi.instance.getReviewsSubjectsByID(
+        id,
+      );
     } catch (_) {
       reviewsInfoItem = null;
     }
@@ -175,9 +177,10 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.titleLarge?.color,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.color,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -296,9 +299,9 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.secondaryContainer,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondaryContainer,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -311,9 +314,9 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                             ],
                           )
                         : isLoading
-                            ? Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Column(
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 /// 顶部标题区域骨架
@@ -407,12 +410,12 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                               ],
                             ),
                           )
-                          : ErrorState(
-                              message: t.failedToLoadPleaseTryAgain,
-                              retry: () =>
-                                  queryBangumiReviewsByID(reviewsItem.entry.id),
-                              retryText: t.reload,
-                            ),
+                        : ErrorState(
+                            message: t.failedToLoadPleaseTryAgain,
+                            retry: () =>
+                                queryBangumiReviewsByID(reviewsItem.entry.id),
+                            retryText: t.reload,
+                          ),
                   ),
                 ),
               ),

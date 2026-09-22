@@ -418,5 +418,3 @@ class ThemePreviewCard extends StatelessWidget {
     );
   }
 }
-
-

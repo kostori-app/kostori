@@ -762,9 +762,7 @@ class BangumiManager with ChangeNotifier {
 
   /// 把 WAL 里的改动写回主库文件（导出整库前调用）
   Future<void> checkpoint() => walCheckpoint(
-    () => _guard(
-      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-    ),
+    () => _guard(() => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);')),
   );
 
   // ─── bangumi_AllEpInfo ─────────────────────

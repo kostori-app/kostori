@@ -21,11 +21,7 @@ class PromptManagementSettingsPage extends StatelessWidget {
               onPressed: () => context.canPop() ? context.pop() : App.pop(),
             ),
             bottom: CapsuleTabBar(
-              labels: [
-                t.promptInjection,
-                t.worldBook,
-                t.storySettingLibrary,
-              ],
+              labels: [t.promptInjection, t.worldBook, t.storySettingLibrary],
             ),
           ),
           const Expanded(
@@ -100,9 +96,7 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
               for (final b in store.books)
                 ListTile(
                   leading: const Icon(Icons.menu_book_outlined),
-                  title: Text(
-                    b.name.isEmpty ? t.storySettingLibrary : b.name,
-                  ),
+                  title: Text(b.name.isEmpty ? t.storySettingLibrary : b.name),
                   trailing: Text('${b.entries.length}'),
                   onTap: () => Navigator.of(ctx).pop(b.id),
                 ),
@@ -111,9 +105,7 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
         ),
       );
       if (choice == null || !mounted) return;
-      bookId = choice == '__new__'
-          ? (await store.createBook()).id
-          : choice;
+      bookId = choice == '__new__' ? (await store.createBook()).id : choice;
     }
     final type = await showModalBottomSheet<String>(
       context: context,
@@ -162,8 +154,7 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
     SettingTypes.job =>
       '{"name":"职业名","description":"简介",'
           '"levels":[{"level":1,"name":"阶段名","bonus":"加成"}]}',
-    SettingTypes.facility =>
-      '{"name":"设施名","description":"说明","maxLevel":3}',
+    SettingTypes.facility => '{"name":"设施名","description":"说明","maxLevel":3}',
     _ => '{"name":"名称","description":"说明"}',
   };
 
@@ -274,10 +265,7 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
       try {
         await _importBytes(
           await f.readAsBytes(),
-          name: f.name.replaceAll(
-            RegExp(r'\.json$', caseSensitive: false),
-            '',
-          ),
+          name: f.name.replaceAll(RegExp(r'\.json$', caseSensitive: false), ''),
         );
       } catch (e) {
         Log.error('dropSettingLibrary', e.toString());
@@ -422,7 +410,10 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
               Expanded(
                 child: Text(
                   t.storySettingLibraryHint,
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               IconButton(
@@ -433,10 +424,9 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
               IconButton(
                 icon: const Icon(Icons.save_alt),
                 tooltip: t.exportEntries,
-                onPressed: () => _exportJson(
-                  [for (final e in store.items) e.toJson()],
-                  'setting_library.json',
-                ),
+                onPressed: () => _exportJson([
+                  for (final e in store.items) e.toJson(),
+                ], 'setting_library.json'),
               ),
               IconButton(
                 icon: const Icon(Icons.add),
@@ -552,66 +542,66 @@ class _SettingLibraryPanelState extends State<_SettingLibraryPanel> {
                     ),
                     if (_expandedBooks.contains(book.id))
                       for (final e in book.entries)
-                      _SettingCard(
-                        children: [
-                          ListTile(
-                            dense: true,
-                            leading: Icon(_typeIcon(e.type), size: 20),
-                            title: Text(
-                              e.name.isEmpty ? e.id : e.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              [
-                                if (e.group.trim().isNotEmpty) e.group.trim(),
-                                _entrySummary(e),
-                              ].join(' · '),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  iconSize: 18,
-                                  tooltip: t.worldBookGroups,
-                                  icon: const Icon(
-                                    Icons.folder_outlined,
-                                    size: 18,
+                        _SettingCard(
+                          children: [
+                            ListTile(
+                              dense: true,
+                              leading: Icon(_typeIcon(e.type), size: 20),
+                              title: Text(
+                                e.name.isEmpty ? e.id : e.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                [
+                                  if (e.group.trim().isNotEmpty) e.group.trim(),
+                                  _entrySummary(e),
+                                ].join(' · '),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    iconSize: 18,
+                                    tooltip: t.worldBookGroups,
+                                    icon: const Icon(
+                                      Icons.folder_outlined,
+                                      size: 18,
+                                    ),
+                                    onPressed: () => _moveEntry(e),
                                   ),
-                                  onPressed: () => _moveEntry(e),
-                                ),
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  iconSize: 18,
-                                  tooltip: t.edit,
-                                  icon: const Icon(Icons.edit_note, size: 18),
-                                  onPressed: () => _edit(e),
-                                ),
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  iconSize: 18,
-                                  tooltip: t.delete,
-                                  icon: Icon(
-                                    Icons.delete_outline,
-                                    size: 18,
-                                    color: scheme.error,
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    iconSize: 18,
+                                    tooltip: t.edit,
+                                    icon: const Icon(Icons.edit_note, size: 18),
+                                    onPressed: () => _edit(e),
                                   ),
-                                  onPressed: () async {
-                                    await SettingLibraryStore.instance.remove(
-                                      e.id,
-                                    );
-                                    if (mounted) setState(() {});
-                                  },
-                                ),
-                              ],
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    iconSize: 18,
+                                    tooltip: t.delete,
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: scheme.error,
+                                    ),
+                                    onPressed: () async {
+                                      await SettingLibraryStore.instance.remove(
+                                        e.id,
+                                      );
+                                      if (mounted) setState(() {});
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                   ],
                 ],
               );
@@ -686,9 +676,9 @@ Future<List<Map<String, dynamic>>?> showAiEntryStudio({
     rootPop: hostContext == null,
   );
   if (hostContext != null) {
-    return Navigator.of(
-      hostContext,
-    ).push<List<Map<String, dynamic>>?>(MaterialPageRoute(builder: (_) => page));
+    return Navigator.of(hostContext).push<List<Map<String, dynamic>>?>(
+      MaterialPageRoute(builder: (_) => page),
+    );
   }
   return showPopUpWidget<List<Map<String, dynamic>>?>(App.rootContext, page);
 }
@@ -777,7 +767,10 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
       }
     } catch (e) {
       if (mounted && !cancel.isCancelled) {
-        App.rootContext.showMessage(message: e.toString(), level: LogLevel.error);
+        App.rootContext.showMessage(
+          message: e.toString(),
+          level: LogLevel.error,
+        );
       }
       return null;
     } finally {
@@ -815,12 +808,18 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
           itemCount: _items.length,
           itemBuilder: (_, i) {
             final m = _items[i];
-            final name =
-                (m['name'] ?? m['key'] ?? m['title'] ?? '条目 ${i + 1}')
-                    .toString();
-            final triggers = (m['triggers'] as List?)?.map((e) => e.toString()).toList() ?? const <String>[];
+            final name = (m['name'] ?? m['key'] ?? m['title'] ?? '条目 ${i + 1}')
+                .toString();
+            final triggers =
+                (m['triggers'] as List?)?.map((e) => e.toString()).toList() ??
+                const <String>[];
             final content =
-                (m['content'] ?? m['mechanics'] ?? m['display'] ?? m['effects'] ?? m['description'] ?? '')
+                (m['content'] ??
+                        m['mechanics'] ??
+                        m['display'] ??
+                        m['effects'] ??
+                        m['description'] ??
+                        '')
                     .toString();
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
@@ -844,9 +843,9 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(
-                                ctx,
-                              ).colorScheme.secondaryContainer,
+                              color: Theme.of(ctx)
+                                  .colorScheme
+                                  .secondaryContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -859,7 +858,8 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
                   ],
                   if (content.trim().isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    AppSelectableText(content.trim(),
+                    AppSelectableText(
+                      content.trim(),
                       style: const TextStyle(fontSize: 13, height: 1.5),
                     ),
                   ],
@@ -1037,20 +1037,18 @@ class _AiEntryStudioState extends State<_AiEntryStudio> {
               : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: AppSelectableText(body,
+        child: AppSelectableText(
+          body,
           style: TextStyle(
             fontSize: 13,
             height: 1.4,
-            color: text.isEmpty && !streaming
-                ? scheme.onSurfaceVariant
-                : null,
+            color: text.isEmpty && !streaming ? scheme.onSurfaceVariant : null,
           ),
         ),
       ),
     );
   }
 }
-
 
 /// 设定库触发词输入（「、,，/／|」或换行分隔）→ 列表
 List<String> _splitSettingTriggers(String s) => s
@@ -1338,7 +1336,8 @@ Future<Object?> _showSettingEntryDialog(SettingEntry entry) async {
                   minLines: 2,
                   maxLines: 6,
                   decoration: InputDecoration(
-                    labelText: '${t.storyJobLevel}｜${t.storyCharacterName}｜${t.storyJobBonus}',
+                    labelText:
+                        '${t.storyJobLevel}｜${t.storyCharacterName}｜${t.storyJobBonus}',
                     alignLabelWithHint: true,
                     isDense: true,
                     border: const OutlineInputBorder(),
@@ -1416,7 +1415,10 @@ String _injectionPositionLabel(PromptInjectionPosition position) =>
 // 世界书 / 提示词注入 导入导出
 // ─────────────────────────────────────────────
 
-Future<void> _exportJson(List<Map<String, dynamic>> items, String filename) async {
+Future<void> _exportJson(
+  List<Map<String, dynamic>> items,
+  String filename,
+) async {
   await saveFile(data: utf8.encode(jsonEncode(items)), filename: filename);
 }
 
@@ -1476,11 +1478,12 @@ List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
         2 => 'assistant',
         _ => 'system',
       },
-      final Object s when const {
-        'system',
-        'user',
-        'assistant',
-      }.contains(s.toString().toLowerCase()) =>
+      final Object s
+          when const {
+            'system',
+            'user',
+            'assistant',
+          }.contains(s.toString().toLowerCase()) =>
         s.toString().toLowerCase(),
       _ => 'system',
     };
@@ -1489,7 +1492,7 @@ List<WorldBookEntry> _parseWorldBookEntries(dynamic decoded) {
         id: _stableImportId(
           'wb_',
           '${m['name'] ?? m['comment'] ?? 'Entry'}\u0000$content\u0000'
-          '${triggers.join(',')}\u0000${m['group'] ?? ''}',
+              '${triggers.join(',')}\u0000${m['group'] ?? ''}',
         ),
         name: (m['name'] ?? m['comment'] ?? 'Entry').toString(),
         group: (m['group'] as String?) ?? '',
@@ -1556,10 +1559,9 @@ Future<void> _importWorldBook() async {
 
 /// 从 JSON 字节导入世界书（拖拽 / 选择文件共用）：每次生成一本新书（内含全部条目）
 Future<void> importWorldBookBytes(List<int> bytes, {String name = ''}) async {
-  final entries =
-      _parseWorldBookEntries(jsonDecode(utf8.decode(bytes)))
-          .map((e) => e.copyWith(bookIds: const []))
-          .toList();
+  final entries = _parseWorldBookEntries(jsonDecode(utf8.decode(bytes)))
+      .map((e) => e.copyWith(bookIds: const []))
+      .toList();
   if (entries.isEmpty) throw 'empty';
   final book = await WorldBookStore.instance.createBook(name: name);
   await WorldBookStore.instance.upsertBook(
@@ -1642,10 +1644,9 @@ class _PromptInjectionPanelState extends State<_PromptInjectionPanel> {
               IconButton(
                 icon: const Icon(Icons.save_alt),
                 tooltip: t.exportEntries,
-                onPressed: () => _exportJson(
-                  [for (final i in store.items) i.toJson()],
-                  'prompt_injections.json',
-                ),
+                onPressed: () => _exportJson([
+                  for (final i in store.items) i.toJson(),
+                ], 'prompt_injections.json'),
               ),
               IconButton(
                 icon: const Icon(Icons.add),
@@ -2036,10 +2037,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
       try {
         await importWorldBookBytes(
           await f.readAsBytes(),
-          name: f.name.replaceAll(
-            RegExp(r'\.json$', caseSensitive: false),
-            '',
-          ),
+          name: f.name.replaceAll(RegExp(r'\.json$', caseSensitive: false), ''),
         );
       } catch (e) {
         Log.error('dropWorldBook', e.toString());
@@ -2063,10 +2061,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
               spacing: 8,
               children: [
                 for (final l in ['中文', 'English', '日本語', '한국어'])
-                  ActionChip(
-                    label: Text(l),
-                    onPressed: () => ctrl.text = l,
-                  ),
+                  ActionChip(label: Text(l), onPressed: () => ctrl.text = l),
               ],
             ),
             const SizedBox(height: 8),
@@ -2119,10 +2114,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
       for (var i = 0; i < total; i += batch) {
         loading.setMessage(t.loreTriggerGenProgress(done: i, total: total));
         loading.setProgress(i / total);
-        final slice = book.entries.sublist(
-          i,
-          (i + batch).clamp(0, total),
-        );
+        final slice = book.entries.sublist(i, (i + batch).clamp(0, total));
         final items = [
           for (final e in slice)
             {
@@ -2207,8 +2199,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
     final items = await showAiEntryStudio(
       title: t.aiGenerate,
       systemPrompt: t.worldBookAiSystem,
-      schemaHint:
-          '{"name":"条目名","triggers":["触发词1","触发词2"],"content":"条目内容"}',
+      schemaHint: '{"name":"条目名","triggers":["触发词1","触发词2"],"content":"条目内容"}',
       multiple: true,
     );
     if (items == null || !mounted) return;
@@ -2389,10 +2380,9 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
               IconButton(
                 icon: const Icon(Icons.save_alt),
                 tooltip: t.exportEntries,
-                onPressed: () => _exportJson(
-                  [for (final e in store.entries) e.toJson()],
-                  'world_info.json',
-                ),
+                onPressed: () => _exportJson([
+                  for (final e in store.entries) e.toJson(),
+                ], 'world_info.json'),
               ),
               IconButton(
                 icon: const Icon(Icons.add),
@@ -2433,9 +2423,7 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           icon: Icon(
-                            expanded
-                                ? Icons.expand_more
-                                : Icons.chevron_right,
+                            expanded ? Icons.expand_more : Icons.chevron_right,
                             size: 20,
                           ),
                           onPressed: toggle,
@@ -2457,9 +2445,9 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                           '${book.entries.length}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
                         ),
                         IconButton(
@@ -2491,8 +2479,14 @@ class _WorldBookPanelState extends State<_WorldBookPanel> {
                             if (v == 'delete') store.removeBook(book.id);
                           },
                           itemBuilder: (_) => [
-                            PopupMenuItem(value: 'rename', child: Text(t.rename)),
-                            PopupMenuItem(value: 'delete', child: Text(t.delete)),
+                            PopupMenuItem(
+                              value: 'rename',
+                              child: Text(t.rename),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(t.delete),
+                            ),
                           ],
                         ),
                       ],
@@ -2714,16 +2708,14 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
       if (_nameCtrl.text.trim().isNotEmpty) 'name': _nameCtrl.text.trim(),
       if (_contentCtrl.text.trim().isNotEmpty)
         'content': _contentCtrl.text.trim(),
-      if (_triggerCtrl.text.trim().isNotEmpty)
-        'triggers': _lines(_triggerCtrl),
+      if (_triggerCtrl.text.trim().isNotEmpty) 'triggers': _lines(_triggerCtrl),
     };
     final items = await showAiEntryStudio(
       // 在当前弹窗导航器内打开，避免叠一层弹窗
       hostContext: context,
       title: existing.isEmpty ? t.aiGenerate : t.aiRefine,
       systemPrompt: t.worldBookAiSystem,
-      schemaHint:
-          '{"name":"条目名","triggers":["触发词1","触发词2"],"content":"条目内容"}',
+      schemaHint: '{"name":"条目名","triggers":["触发词1","触发词2"],"content":"条目内容"}',
       previous: existing.isEmpty ? const [] : [existing],
       multiple: false,
     );
@@ -2818,8 +2810,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                             const SizedBox(height: 6),
                             CapsuleChipGroup(
                               children: [
-                                for (final b
-                                    in WorldBookStore.instance.books)
+                                for (final b in WorldBookStore.instance.books)
                                   CapsuleChip(
                                     text: b.name.isEmpty ? t.worldBook : b.name,
                                     isSelected: _bookIds.contains(b.id),
@@ -2911,8 +2902,8 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                             const Spacer(),
                             Select(
                               current: switch (_position) {
-                                'before_char' || 'before' =>
-                                  t.worldBookPositionBefore,
+                                'before_char' ||
+                                'before' => t.worldBookPositionBefore,
                                 'at_depth' => t.worldBookPositionAtDepth,
                                 _ => t.worldBookPositionAfter,
                               },
@@ -2941,11 +2932,7 @@ class _WorldBookEditorState extends State<_WorldBookEditor> {
                               const Spacer(),
                               Select(
                                 current: _role,
-                                values: const [
-                                  'system',
-                                  'user',
-                                  'assistant',
-                                ],
+                                values: const ['system', 'user', 'assistant'],
                                 onTap: (i) => setState(
                                   () => _role = const [
                                     'system',

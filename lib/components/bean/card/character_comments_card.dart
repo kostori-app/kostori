@@ -166,9 +166,9 @@ class _CharacterChildRepliesListState
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondaryContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(t.floorOwner),
@@ -193,7 +193,9 @@ class _CharacterChildRepliesListState
               children: [
                 TextButton(
                   onPressed: () => setState(() => _showAll = !_showAll),
-                  child: Text(_showAll ? t.collapse : t.expandCount(total: total)),
+                  child: Text(
+                    _showAll ? t.collapse : t.expandCount(total: total),
+                  ),
                 ),
               ],
             ),

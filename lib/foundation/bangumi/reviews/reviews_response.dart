@@ -6,22 +6,17 @@ class ReviewsResponse {
   ReviewsResponse({required this.reviewsList});
 
   factory ReviewsResponse.fromJson(List list) {
-    List<ReviewsItem> resTopicsList =
-        list.map((i) => ReviewsItem.fromJson(i)).toList();
-    return ReviewsResponse(
-      reviewsList: resTopicsList,
-    );
+    List<ReviewsItem> resTopicsList = list
+        .map((i) => ReviewsItem.fromJson(i))
+        .toList();
+    return ReviewsResponse(reviewsList: resTopicsList);
   }
 
   factory ReviewsResponse.fromTemplate() {
-    return ReviewsResponse(
-      reviewsList: [],
-    );
+    return ReviewsResponse(reviewsList: []);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'reviewsList': reviewsList.map((e) => e.toJson()).toList(),
-    };
+    return {'reviewsList': reviewsList.map((e) => e.toJson()).toList()};
   }
 }

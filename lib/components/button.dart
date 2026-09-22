@@ -319,7 +319,10 @@ class _IconButtonState extends State<_IconButton> {
       child: widget.icon,
     );
     if (widget.isLoading) {
-      icon = const PolygonRefreshIndicator().paddingAll(2).fixWidth(iconSize).fixHeight(iconSize);
+      icon = const PolygonRefreshIndicator()
+          .paddingAll(2)
+          .fixWidth(iconSize)
+          .fixHeight(iconSize);
     }
     return MouseRegion(
       onEnter: (_) => setState(() => isHover = true),
@@ -537,8 +540,7 @@ class _CapsuleButtonState extends State<CapsuleButton> {
                   ? cs.primary
                   : cs.surfaceContainerHighest.withValues(alpha: 0.6));
     final fg =
-        widget.fgColor ??
-        (widget.primary ? cs.onPrimary : cs.onSurfaceVariant);
+        widget.fgColor ?? (widget.primary ? cs.onPrimary : cs.onSurfaceVariant);
     final enabled = widget.enabled && !widget.isLoading;
     return Material(
       color: enabled ? bg : bg.withValues(alpha: 0.4),
@@ -632,11 +634,12 @@ class CapsuleButtonBar extends StatelessWidget {
 }
 
 class FlyoutTextButton extends StatefulWidget {
-  const FlyoutTextButton(
-      {super.key,
-      required this.child,
-      required this.flyoutBuilder,
-      this.navigator});
+  const FlyoutTextButton({
+    super.key,
+    required this.child,
+    required this.flyoutBuilder,
+    this.navigator,
+  });
 
   final Widget child;
 
@@ -654,24 +657,26 @@ class _FlyoutTextButtonState extends State<FlyoutTextButton> {
   @override
   Widget build(BuildContext context) {
     return Flyout(
-        controller: _controller,
-        flyoutBuilder: widget.flyoutBuilder,
-        navigator: widget.navigator,
-        child: TextButton(
-          onPressed: () {
-            _controller.show();
-          },
-          child: widget.child,
-        ));
+      controller: _controller,
+      flyoutBuilder: widget.flyoutBuilder,
+      navigator: widget.navigator,
+      child: TextButton(
+        onPressed: () {
+          _controller.show();
+        },
+        child: widget.child,
+      ),
+    );
   }
 }
 
 class FlyoutIconButton extends StatefulWidget {
-  const FlyoutIconButton(
-      {super.key,
-      required this.icon,
-      required this.flyoutBuilder,
-      this.navigator});
+  const FlyoutIconButton({
+    super.key,
+    required this.icon,
+    required this.flyoutBuilder,
+    this.navigator,
+  });
 
   final Widget icon;
 
@@ -689,24 +694,26 @@ class _FlyoutIconButtonState extends State<FlyoutIconButton> {
   @override
   Widget build(BuildContext context) {
     return Flyout(
-        controller: _controller,
-        flyoutBuilder: widget.flyoutBuilder,
-        navigator: widget.navigator,
-        child: IconButton(
-          onPressed: () {
-            _controller.show();
-          },
-          icon: widget.icon,
-        ));
+      controller: _controller,
+      flyoutBuilder: widget.flyoutBuilder,
+      navigator: widget.navigator,
+      child: IconButton(
+        onPressed: () {
+          _controller.show();
+        },
+        icon: widget.icon,
+      ),
+    );
   }
 }
 
 class FlyoutFilledButton extends StatefulWidget {
-  const FlyoutFilledButton(
-      {super.key,
-      required this.child,
-      required this.flyoutBuilder,
-      this.navigator});
+  const FlyoutFilledButton({
+    super.key,
+    required this.child,
+    required this.flyoutBuilder,
+    this.navigator,
+  });
 
   final Widget child;
 
@@ -724,14 +731,15 @@ class _FlyoutFilledButtonState extends State<FlyoutFilledButton> {
   @override
   Widget build(BuildContext context) {
     return Flyout(
-        controller: _controller,
-        flyoutBuilder: widget.flyoutBuilder,
-        navigator: widget.navigator,
-        child: ElevatedButton(
-          onPressed: () {
-            _controller.show();
-          },
-          child: widget.child,
-        ));
+      controller: _controller,
+      flyoutBuilder: widget.flyoutBuilder,
+      navigator: widget.navigator,
+      child: ElevatedButton(
+        onPressed: () {
+          _controller.show();
+        },
+        child: widget.child,
+      ),
+    );
   }
 }

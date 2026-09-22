@@ -487,7 +487,8 @@ class PluginEventTable extends Table {
 
   TextColumn get subtitle => text().withDefault(const Constant(''))();
 
-  TextColumn get coverUrl => text().named('coverUrl').withDefault(const Constant(''))();
+  TextColumn get coverUrl =>
+      text().named('coverUrl').withDefault(const Constant(''))();
 
   /// 用于恢复原页的 JSON（page/params/item）
   TextColumn get extraJson =>
@@ -779,9 +780,7 @@ class HistoryManager with ChangeNotifier {
 
   /// 把 WAL 里的改动写回主库文件（导出整库副本前调用）
   Future<void> checkpoint() => walCheckpoint(
-    () => _guard(
-      () => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);'),
-    ),
+    () => _guard(() => _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE);')),
   );
 
   Future<void> reinit([Future<void> Function()? between]) async {
@@ -1030,18 +1029,19 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   });
 
-  Future<void> batchDeleteHistories(List<AnimeID> histories) => _guard(() async {
-    if (histories.isEmpty) return;
-    await _db.transaction(() async {
-      for (final h in histories) {
-        await (_db.delete(
-          _db.historyTable,
-        )..where((t) => t.id.equals(h.id))).go();
-      }
-    });
-    await _updateCache();
-    notifyListeners();
-  });
+  Future<void> batchDeleteHistories(List<AnimeID> histories) =>
+      _guard(() async {
+        if (histories.isEmpty) return;
+        await _db.transaction(() async {
+          for (final h in histories) {
+            await (_db.delete(
+              _db.historyTable,
+            )..where((t) => t.id.equals(h.id))).go();
+          }
+        });
+        await _updateCache();
+        notifyListeners();
+      });
 
   // ─── 查询 ──────────────────────────────────
 
@@ -1136,10 +1136,7 @@ class HistoryManager with ChangeNotifier {
       if (toDelete.isNotEmpty) {
         await _db.batch((batch) {
           for (final h in toDelete) {
-            batch.deleteWhere(
-              _db.historyTable,
-              (tbl) => tbl.id.equals(h.id),
-            );
+            batch.deleteWhere(_db.historyTable, (tbl) => tbl.id.equals(h.id));
             // 级联删除该历史关联的进度记录，避免残留
             batch.deleteWhere(
               _db.progressTable,
@@ -1373,27 +1370,30 @@ extension ProgressHelper on HistoryManager {
   }) => _guard(() async {
     await _ensureDb();
     final now = DateTime.now().millisecondsSinceEpoch;
-    await _db.into(_db.pluginEventTable).insertOnConflictUpdate(
-      PluginEventTableCompanion.insert(
-        pluginKey: pluginKey,
-        kind: kind,
-        itemKey: itemKey,
-        title: title,
-        subtitle: Value(subtitle),
-        coverUrl: Value(coverUrl),
-        extraJson: Value(extraJson),
-        createdAt: now,
-      ),
-    );
+    await _db
+        .into(_db.pluginEventTable)
+        .insertOnConflictUpdate(
+          PluginEventTableCompanion.insert(
+            pluginKey: pluginKey,
+            kind: kind,
+            itemKey: itemKey,
+            title: title,
+            subtitle: Value(subtitle),
+            coverUrl: Value(coverUrl),
+            extraJson: Value(extraJson),
+            createdAt: now,
+          ),
+        );
   });
 
   Future<List<PluginEventItem>> listPluginEvents(String pluginKey) =>
       _guard(() async {
         await _ensureDb();
-        final rows = await (_db.select(_db.pluginEventTable)
-              ..where((t) => t.pluginKey.equals(pluginKey))
-              ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-            .get();
+        final rows =
+            await (_db.select(_db.pluginEventTable)
+                  ..where((t) => t.pluginKey.equals(pluginKey))
+                  ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+                .get();
         return rows
             .map(
               (r) => PluginEventItem(
@@ -1413,9 +1413,9 @@ extension ProgressHelper on HistoryManager {
   /// 全量插件事件（供多端同步导出）
   Future<List<PluginEventItem>> getAllPluginEvents() => _guard(() async {
     await _ensureDb();
-    final rows = await (_db.select(_db.pluginEventTable)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-        .get();
+    final rows = await (_db.select(
+      _db.pluginEventTable,
+    )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
     return rows
         .map(
           (r) => PluginEventItem(
@@ -1470,18 +1470,17 @@ extension ProgressHelper on HistoryManager {
 
   Future<void> clearPluginEvents(String pluginKey) => _guard(() async {
     await _ensureDb();
-    await (_db.delete(_db.pluginEventTable)
-          ..where((t) => t.pluginKey.equals(pluginKey)))
-        .go();
+    await (_db.delete(
+      _db.pluginEventTable,
+    )..where((t) => t.pluginKey.equals(pluginKey))).go();
   });
 
   /// 读取全部文本规则（按 sort 升序，即应用顺序）
   Future<List<Map<String, dynamic>>> getTextRules() => _guard(() async {
     await _ensureDb();
-    final rows =
-        await (_db.select(_db.textRuleTable)
-              ..orderBy([(t) => OrderingTerm.asc(t.sort)]))
-            .get();
+    final rows = await (_db.select(
+      _db.textRuleTable,
+    )..orderBy([(t) => OrderingTerm.asc(t.sort)])).get();
     return rows
         .map(
           (r) => {
@@ -1558,9 +1557,7 @@ extension ProgressHelper on HistoryManager {
                   DateTime.now().millisecondsSinceEpoch,
               updatedAt: Value(remoteUpdated),
             );
-            await _db
-                .into(_db.textRuleTable)
-                .insertOnConflictUpdate(companion);
+            await _db.into(_db.textRuleTable).insertOnConflictUpdate(companion);
             sort++;
           }
         });
@@ -1571,10 +1568,9 @@ extension ProgressHelper on HistoryManager {
   /// 全部备忘（按更新时间倒序）
   Future<List<Map<String, dynamic>>> getMemos() => _guard(() async {
     await _ensureDb();
-    final rows =
-        await (_db.select(_db.memoTable)
-              ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
-            .get();
+    final rows = await (_db.select(
+      _db.memoTable,
+    )..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])).get();
     return rows
         .map(
           (r) => {

@@ -100,9 +100,7 @@ class KostoriQrCard extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
-                shadows: [
-                  Shadow(blurRadius: 8, color: Colors.black45),
-                ],
+                shadows: [Shadow(blurRadius: 8, color: Colors.black45)],
               ),
             ),
             const SizedBox(height: 12),

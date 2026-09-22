@@ -165,20 +165,11 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                 appdata.settings['proxy'] = toProxyStr();
                 appdata.saveData();
               },
-                child: Column(
+              child: Column(
                 children: [
-                  RadioListTile<String>(
-                    title: Text(t.direct),
-                    value: 'direct',
-                  ),
-                  RadioListTile<String>(
-                    title: Text(t.system),
-                    value: 'system',
-                  ),
-                  RadioListTile<String>(
-                    title: Text(t.manual),
-                    value: 'manual',
-                  ),
+                  RadioListTile<String>(title: Text(t.direct), value: 'direct'),
+                  RadioListTile<String>(title: Text(t.system), value: 'system'),
+                  RadioListTile<String>(title: Text(t.manual), value: 'manual'),
                 ],
               ),
             ),
@@ -355,10 +346,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
               title: t.enableDnsOverrides,
               settingKey: "enableDnsOverrides",
             ),
-            _SwitchSetting(
-              title: t.serverNameIndication,
-              settingKey: "sni",
-            ),
+            _SwitchSetting(title: t.serverNameIndication, settingKey: "sni"),
             const SizedBox(height: 8),
             Divider(color: context.colorScheme.outlineVariant, height: 1),
             for (var i = 0; i < overrides.length; i++) buildOverride(i),

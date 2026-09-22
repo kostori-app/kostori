@@ -422,10 +422,7 @@ class _AnimatedImageState extends State<AnimatedImage>
       final cs = Theme.of(context).colorScheme;
       result = ColoredBox(
         color: cs.surfaceContainerHighest,
-        child: SizedBox(
-          width: widget.width ?? 100,
-          height: widget.height,
-        ),
+        child: SizedBox(width: widget.width ?? 100, height: widget.height),
       );
     }
 

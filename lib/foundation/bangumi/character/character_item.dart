@@ -24,12 +24,7 @@ class CharacterAvator {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'small': small,
-      'medium': medium,
-      'grid': grid,
-      'large': large,
-    };
+    return {'small': small, 'medium': medium, 'grid': grid, 'large': large};
   }
 }
 
@@ -52,8 +47,9 @@ class CharacterItem {
 
   factory CharacterItem.fromJson(Map<String, dynamic> json) {
     var list = json['actors'] as List;
-    List<ActorItem> resActorList =
-        list.map((i) => ActorItem.fromJson(i)).toList();
+    List<ActorItem> resActorList = list
+        .map((i) => ActorItem.fromJson(i))
+        .toList();
     return CharacterItem(
       id: json['id'] ?? 0,
       type: json['type'] ?? 0,

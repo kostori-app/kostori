@@ -20,11 +20,7 @@ class BangumiTag {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'count': count,
-      'total_cont': totalCount,
-    };
+    return {'name': name, 'count': count, 'total_cont': totalCount};
   }
 
   @override

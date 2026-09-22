@@ -558,7 +558,8 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         return (v != null && v.trim().isNotEmpty) ? v.trim() : null;
       }
 
-      final title = firstMeta('meta[property="og:title"]') ??
+      final title =
+          firstMeta('meta[property="og:title"]') ??
           firstMeta('meta[name="twitter:title"]') ??
           doc.querySelector('title')?.text.trim();
 
@@ -967,13 +968,11 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           maxWidth: MediaQuery.sizeOf(context).width <= 600
               ? MediaQuery.sizeOf(context).width
               : App.isDesktop
-                  ? MediaQuery.sizeOf(context).width * 9 / 16
-                  : MediaQuery.sizeOf(context).width,
+              ? MediaQuery.sizeOf(context).width * 9 / 16
+              : MediaQuery.sizeOf(context).width,
         ),
-        builder: (_) => BottomInfo(
-          bangumiId: bangumiId,
-          infoController: infoController,
-        ),
+        builder: (_) =>
+            BottomInfo(bangumiId: bangumiId, infoController: infoController),
       );
     } catch (_) {
       App.rootContext.showMessage(

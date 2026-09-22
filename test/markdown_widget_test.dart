@@ -27,9 +27,7 @@ final x = 1;
       TranslationProvider(
         child: MaterialApp(
           home: Scaffold(
-            body: SingleChildScrollView(
-              child: CustomMarkdownWidget(data: md),
-            ),
+            body: SingleChildScrollView(child: CustomMarkdownWidget(data: md)),
           ),
         ),
       ),

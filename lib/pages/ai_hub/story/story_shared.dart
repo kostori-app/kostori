@@ -27,10 +27,7 @@ Widget _sectionTitle(String text, [IconData? icon]) => Padding(
   padding: const EdgeInsets.only(bottom: 8),
   child: Row(
     children: [
-      if (icon != null) ...[
-        Icon(icon, size: 16),
-        const SizedBox(width: 6),
-      ],
+      if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: 6)],
       Flexible(
         child: Text(
           text,
@@ -68,7 +65,11 @@ final List<StoryPanelSourceDef> storyPanelSources = [
   ),
   (id: 'quests', icon: Icons.flag_outlined, label: () => t.storyQuests),
   (id: 'effects', icon: Icons.auto_awesome, label: () => t.storyEffects),
-  (id: 'titles', icon: Icons.workspace_premium_outlined, label: () => t.storyTitles),
+  (
+    id: 'titles',
+    icon: Icons.workspace_premium_outlined,
+    label: () => t.storyTitles,
+  ),
   (id: 'job', icon: Icons.badge_outlined, label: () => t.storyJob),
   (id: 'base', icon: Icons.home_work_outlined, label: () => t.storyBase),
   (id: 'codex', icon: Icons.menu_book_outlined, label: () => t.storyCodex),

@@ -82,8 +82,7 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
     if (_progressTotal <= 1) {
       _progress = total > 0 ? frac : null;
     } else {
-      _progress =
-          (_progressDone + frac.clamp(0.0, 1.0)) / _progressTotal;
+      _progress = (_progressDone + frac.clamp(0.0, 1.0)) / _progressTotal;
     }
     notifyListeners();
   }
@@ -264,9 +263,7 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
       final bytes = await client.read(_manifestName);
       if (bytes.isEmpty) return const Res(null);
       final decoded = jsonDecode(utf8.decode(bytes));
-      return decoded is Map<String, dynamic>
-          ? Res(decoded)
-          : const Res(null);
+      return decoded is Map<String, dynamic> ? Res(decoded) : const Res(null);
     } catch (_) {
       return const Res(null);
     }
@@ -320,10 +317,7 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
   }
 
   /// 拉取远端各部分到本地（清单里的历史文件名优先，兼容旧的固定名）
-  Future<int> _pullParts(
-    Client client,
-    Map<String, dynamic> remoteMeta,
-  ) async {
+  Future<int> _pullParts(Client client, Map<String, dynamic> remoteMeta) async {
     final localHashes =
         (appdata.implicitData['syncPartHashes'] as Map?)
             ?.cast<String, dynamic>() ??
@@ -332,9 +326,7 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
     var downloaded = 0;
     // 只拉远端清单里有的部分；总数按实际要处理的部分算，
     // 跳过（哈希一致）和下完都各记一份，进度单调不闪回
-    final pending = _autoParts
-        .where((p) => remoteMeta[p.key] is Map)
-        .toList();
+    final pending = _autoParts.where((p) => remoteMeta[p.key] is Map).toList();
     _progressTotal = pending.isEmpty ? 1 : pending.length;
     _progressDone = 0;
     for (final part in pending) {
@@ -389,8 +381,7 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
       await prepareSyncPart(part.key);
       final hash = await partContentHash(part.key);
       final prevManifest = (await readManifest()).dataOrNull;
-      final remoteVersion =
-          (prevManifest?['version'] as num?)?.toInt() ?? 0;
+      final remoteVersion = (prevManifest?['version'] as num?)?.toInt() ?? 0;
       final version =
           (remoteVersion > _dataVersion ? remoteVersion : _dataVersion) + 1;
       final file = await exportPart(part.key);
@@ -598,8 +589,7 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
             await client.write(
               _join(dir, remoteName),
               bytes,
-              onProgress: (count, total) =>
-                  _reportFileProgress(count, total),
+              onProgress: (count, total) => _reportFileProgress(count, total),
             );
             partsMeta[part.key] = {
               'version': newVersion,
@@ -762,11 +752,7 @@ class DataSync with ChangeNotifier, WidgetsBindingObserver {
       return Res([
         for (final f in files)
           if (f.name != null && !f.name!.endsWith('.part'))
-            RemoteFileInfo(
-              name: f.name!,
-              size: f.size ?? 0,
-              modified: f.mTime,
-            ),
+            RemoteFileInfo(name: f.name!, size: f.size ?? 0, modified: f.mTime),
       ]);
     } catch (e, s) {
       // 目录不存在（404）视为空，不算错误

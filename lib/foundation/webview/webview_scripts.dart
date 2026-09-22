@@ -73,8 +73,7 @@ String buildEarlyScript(
       ..remove('User-Agent')
       ..remove('user-agent');
     if (filtered.isNotEmpty) {
-      String esc(String s) =>
-          s.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+      String esc(String s) => s.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
       final headersJs = filtered.entries
           .map((e) => '"${esc(e.key)}": "${esc(e.value)}"')
           .join(', ');

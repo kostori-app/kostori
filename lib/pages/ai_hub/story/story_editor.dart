@@ -32,10 +32,13 @@ class _StoryActionDraft {
   final TextEditingController prompt;
   final TextEditingController icon;
 
-  _StoryActionDraft({String labelText = '', String promptText = '', String iconText = ''})
-    : label = TextEditingController(text: labelText),
-      prompt = TextEditingController(text: promptText),
-      icon = TextEditingController(text: iconText);
+  _StoryActionDraft({
+    String labelText = '',
+    String promptText = '',
+    String iconText = '',
+  }) : label = TextEditingController(text: labelText),
+       prompt = TextEditingController(text: promptText),
+       icon = TextEditingController(text: iconText);
 
   void dispose() {
     label.dispose();
@@ -347,9 +350,10 @@ class _StoryEditorState extends State<_StoryEditor>
       ),
   ];
   late final List<_StoryPanelDraft> _panels = [
-    for (final p in (widget.story?.panels.isNotEmpty == true
-        ? widget.story!.panels
-        : Story.defaultPanels))
+    for (final p
+        in (widget.story?.panels.isNotEmpty == true
+            ? widget.story!.panels
+            : Story.defaultPanels))
       _StoryPanelDraft(
         titleText: p.title,
         source: p.source,
@@ -414,6 +418,7 @@ class _StoryEditorState extends State<_StoryEditor>
       ),
   ];
   late String _titleMode = widget.story?.titleMode ?? 'all';
+
   /// 高级分区：当前选中的子 tab
   int _advIdx = 0;
   late final List<_StoryTitleDraft> _titles = [
@@ -891,7 +896,10 @@ class _StoryEditorState extends State<_StoryEditor>
     await CharacterCardStore.instance.ensureLoaded();
     final all = CharacterCardStore.instance.cards;
     final cards = excludeAdded
-        ? [for (final c in all) if (!_hasCharacter(c)) c]
+        ? [
+            for (final c in all)
+              if (!_hasCharacter(c)) c,
+          ]
         : all;
     if (cards.isEmpty) {
       App.rootContext.showMessage(
@@ -1193,7 +1201,9 @@ class _StoryEditorState extends State<_StoryEditor>
       }
       setState(() {
         final cur = _systemCtrl.text.trim();
-        _systemCtrl.text = cur.isEmpty ? prompt.trim() : '$cur\n\n${prompt.trim()}';
+        _systemCtrl.text = cur.isEmpty
+            ? prompt.trim()
+            : '$cur\n\n${prompt.trim()}';
       });
       App.rootContext.showMessage(message: t.imported);
     } catch (e) {
@@ -1393,9 +1403,8 @@ class _StoryEditorState extends State<_StoryEditor>
         final manage = Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            onPressed: () => App.rootContext.to(
-              () => const PromptManagementSettingsPage(),
-            ),
+            onPressed: () =>
+                App.rootContext.to(() => const PromptManagementSettingsPage()),
             icon: const Icon(Icons.settings_outlined, size: 18),
             label: Text(t.storyLibraryManage),
           ),
@@ -1484,9 +1493,8 @@ class _StoryEditorState extends State<_StoryEditor>
         final manage = Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            onPressed: () => App.rootContext.to(
-              () => const PromptManagementSettingsPage(),
-            ),
+            onPressed: () =>
+                App.rootContext.to(() => const PromptManagementSettingsPage()),
             icon: const Icon(Icons.settings_outlined, size: 18),
             label: Text(t.storyLibraryManage),
           ),
@@ -1497,10 +1505,7 @@ class _StoryEditorState extends State<_StoryEditor>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  t.storySettingLibraryEmpty,
-                  textAlign: TextAlign.center,
-                ),
+                Text(t.storySettingLibraryEmpty, textAlign: TextAlign.center),
                 const SizedBox(height: 8),
                 manage,
               ],
@@ -1526,9 +1531,7 @@ class _StoryEditorState extends State<_StoryEditor>
                   ),
                   onChanged: (v) => setState(() {
                     if (v) {
-                      _settingIds.addAll([
-                        for (final e in book.entries) e.id,
-                      ]);
+                      _settingIds.addAll([for (final e in book.entries) e.id]);
                     } else {
                       _settingIds.removeAll([
                         for (final e in book.entries) e.id,
@@ -1746,678 +1749,674 @@ class _StoryEditorState extends State<_StoryEditor>
           ),
         ),
         if (_advIdx == 0) ...[
-        sectionTitle(t.storyCodexDefs),
-        for (var i = 0; i < _codexDefs.length; i++)
-          card([
-            Row(
-              children: [
-                Select(
-                  current: _codexKindName(_codexDefs[i].kind),
-                  values: [for (final k in _codexKinds) _codexKindName(k)],
-                  onTap: (idx) => setState(
-                    () => _codexDefs[i].kind = _codexKinds[idx],
+          sectionTitle(t.storyCodexDefs),
+          for (var i = 0; i < _codexDefs.length; i++)
+            card([
+              Row(
+                children: [
+                  Select(
+                    current: _codexKindName(_codexDefs[i].kind),
+                    values: [for (final k in _codexKinds) _codexKindName(k)],
+                    onTap: (idx) =>
+                        setState(() => _codexDefs[i].kind = _codexKinds[idx]),
                   ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () =>
+                        setState(() => _codexDefs.removeAt(i).dispose()),
+                  ),
+                ],
+              ),
+              TextFormField(
+                controller: _codexDefs[i].name,
+                decoration: InputDecoration(
+                  labelText: t.storyCodexName,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () =>
-                      setState(() => _codexDefs.removeAt(i).dispose()),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _codexDefs[i].display,
+                decoration: InputDecoration(
+                  labelText: t.storyCodexDisplay,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
                 ),
-              ],
-            ),
-            TextFormField(
-              controller: _codexDefs[i].name,
-              decoration: InputDecoration(
-                labelText: t.storyCodexName,
-                isDense: true,
-                border: const OutlineInputBorder(),
               ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _codexDefs[i].display,
-              decoration: InputDecoration(
-                labelText: t.storyCodexDisplay,
-                isDense: true,
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _codexDefs[i].mechanics,
+                decoration: InputDecoration(
+                  labelText: t.storyCodexMechanics,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _codexDefs[i].mechanics,
-              decoration: InputDecoration(
-                labelText: t.storyCodexMechanics,
-                isDense: true,
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _codexDefs[i].triggers,
+                decoration: InputDecoration(
+                  labelText: t.worldBookTriggers,
+                  helperText: t.storyTriggersHint,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
               ),
+            ]),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () =>
+                  setState(() => _codexDefs.add(_StoryCodexDraft())),
+              icon: const Icon(Icons.add),
+              label: Text(t.storyAddEntry),
             ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _codexDefs[i].triggers,
-              decoration: InputDecoration(
-                labelText: t.worldBookTriggers,
-                helperText: t.storyTriggersHint,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ]),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => setState(() => _codexDefs.add(_StoryCodexDraft())),
-            icon: const Icon(Icons.add),
-            label: Text(t.storyAddEntry),
           ),
-        ),
-
         ],
         if (_advIdx == 1) ...[
-        // ── 称号 ──
-        sectionTitle(t.storyTitles),
-        Row(
-          children: [
-            Text(
-              '${t.storyTitleMode}: ',
-              style: const TextStyle(fontSize: 13),
-            ),
-            Select(
-              current: _titleMode == 'equipped'
-                  ? t.storyTitleModeEquipped
-                  : t.storyTitleModeAll,
-              values: [t.storyTitleModeAll, t.storyTitleModeEquipped],
-              onTap: (i) =>
-                  setState(() => _titleMode = i == 1 ? 'equipped' : 'all'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        for (var i = 0; i < _titles.length; i++)
-          card([
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _titles[i].name,
-                    decoration: InputDecoration(
-                      labelText: t.storyTitleName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
+          // ── 称号 ──
+          sectionTitle(t.storyTitles),
+          Row(
+            children: [
+              Text(
+                '${t.storyTitleMode}: ',
+                style: const TextStyle(fontSize: 13),
+              ),
+              Select(
+                current: _titleMode == 'equipped'
+                    ? t.storyTitleModeEquipped
+                    : t.storyTitleModeAll,
+                values: [t.storyTitleModeAll, t.storyTitleModeEquipped],
+                onTap: (i) =>
+                    setState(() => _titleMode = i == 1 ? 'equipped' : 'all'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          for (var i = 0; i < _titles.length; i++)
+            card([
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _titles[i].name,
+                      decoration: InputDecoration(
+                        labelText: t.storyTitleName,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () =>
-                      setState(() => _titles.removeAt(i).dispose()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _titles[i].effects,
-              decoration: InputDecoration(
-                labelText: t.storyCodexMechanics,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _titles[i].triggers,
-              decoration: InputDecoration(
-                labelText: t.worldBookTriggers,
-                helperText: t.storyTriggersHint,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(t.storyTitleStackable),
-                const Spacer(),
-                CustomSwitch(
-                  value: _titles[i].stackable,
-                  onChanged: (v) =>
-                      setState(() => _titles[i].stackable = v),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    t.storyTitlePassive,
-                    style: const TextStyle(fontSize: 13),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () =>
+                        setState(() => _titles.removeAt(i).dispose()),
                   ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _titles[i].effects,
+                decoration: InputDecoration(
+                  labelText: t.storyCodexMechanics,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
                 ),
-                CustomSwitch(
-                  value: _titles[i].passive,
-                  onChanged: (v) => setState(() => _titles[i].passive = v),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _titles[i].triggers,
+                decoration: InputDecoration(
+                  labelText: t.worldBookTriggers,
+                  helperText: t.storyTriggersHint,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
                 ),
-              ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(t.storyTitleStackable),
+                  const Spacer(),
+                  CustomSwitch(
+                    value: _titles[i].stackable,
+                    onChanged: (v) => setState(() => _titles[i].stackable = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      t.storyTitlePassive,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  CustomSwitch(
+                    value: _titles[i].passive,
+                    onChanged: (v) => setState(() => _titles[i].passive = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+            ]),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _titles.add(_StoryTitleDraft())),
+              icon: const Icon(Icons.add),
+              label: Text(t.storyAddEntry),
             ),
-            const SizedBox(height: 4),
-          ]),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => setState(() => _titles.add(_StoryTitleDraft())),
-            icon: const Icon(Icons.add),
-            label: Text(t.storyAddEntry),
           ),
-        ),
-
         ],
         if (_advIdx == 2) ...[
-        // ── 职业 ──
-        sectionTitle(t.storyJob),
-        TextFormField(
-          controller: _jobNameCtrl,
-          decoration: InputDecoration(
-            labelText: t.storyJobName,
-            isDense: true,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: _jobDescCtrl,
-          decoration: InputDecoration(
-            labelText: t.storyCodexDisplay,
-            isDense: true,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 6),
-        for (var i = 0; i < _jobLevels.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 56,
-                  child: TextFormField(
-                    controller: _jobLevels[i].level,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: t.storyJobLevel,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: TextFormField(
-                    controller: _jobLevels[i].name,
-                    decoration: InputDecoration(
-                      labelText: t.storyJobLevelName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: TextFormField(
-                    controller: _jobLevels[i].bonus,
-                    decoration: InputDecoration(
-                      labelText: t.storyJobBonus,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () =>
-                      setState(() => _jobLevels.removeAt(i).dispose()),
-                ),
-              ],
+          // ── 职业 ──
+          sectionTitle(t.storyJob),
+          TextFormField(
+            controller: _jobNameCtrl,
+            decoration: InputDecoration(
+              labelText: t.storyJobName,
+              isDense: true,
+              border: const OutlineInputBorder(),
             ),
           ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () =>
-                setState(() => _jobLevels.add(_StoryJobLevelDraft())),
-            icon: const Icon(Icons.add),
-            label: Text(t.storyAddEntry),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: _jobDescCtrl,
+            decoration: InputDecoration(
+              labelText: t.storyCodexDisplay,
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
           ),
-        ),
-
+          const SizedBox(height: 6),
+          for (var i = 0; i < _jobLevels.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 56,
+                    child: TextFormField(
+                      controller: _jobLevels[i].level,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: t.storyJobLevel,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _jobLevels[i].name,
+                      decoration: InputDecoration(
+                        labelText: t.storyJobLevelName,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _jobLevels[i].bonus,
+                      decoration: InputDecoration(
+                        labelText: t.storyJobBonus,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () =>
+                        setState(() => _jobLevels.removeAt(i).dispose()),
+                  ),
+                ],
+              ),
+            ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () =>
+                  setState(() => _jobLevels.add(_StoryJobLevelDraft())),
+              icon: const Icon(Icons.add),
+              label: Text(t.storyAddEntry),
+            ),
+          ),
         ],
         if (_advIdx == 3) ...[
-        // ── 据点 ──
-        sectionTitle(t.storyBase),
-        for (var i = 0; i < _facilities.length; i++)
-          card([
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _facilities[i].name,
-                    decoration: InputDecoration(
-                      labelText: t.storyFacilityName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
+          // ── 据点 ──
+          sectionTitle(t.storyBase),
+          for (var i = 0; i < _facilities.length; i++)
+            card([
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _facilities[i].name,
+                      decoration: InputDecoration(
+                        labelText: t.storyFacilityName,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                SizedBox(
-                  width: 72,
-                  child: TextFormField(
-                    controller: _facilities[i].maxLevel,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: t.storyBaseMaxLevel,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
+                  const SizedBox(width: 6),
+                  SizedBox(
+                    width: 72,
+                    child: TextFormField(
+                      controller: _facilities[i].maxLevel,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: t.storyBaseMaxLevel,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () =>
-                      setState(() => _facilities.removeAt(i).dispose()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _facilities[i].description,
-              decoration: InputDecoration(
-                labelText: t.storyCodexDisplay,
-                isDense: true,
-                border: const OutlineInputBorder(),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () =>
+                        setState(() => _facilities.removeAt(i).dispose()),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _facilities[i].triggers,
-              decoration: InputDecoration(
-                labelText: t.worldBookTriggers,
-                helperText: t.storyTriggersHint,
-                isDense: true,
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _facilities[i].description,
+                decoration: InputDecoration(
+                  labelText: t.storyCodexDisplay,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _facilities[i].triggers,
+                decoration: InputDecoration(
+                  labelText: t.worldBookTriggers,
+                  helperText: t.storyTriggersHint,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ]),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () =>
+                  setState(() => _facilities.add(_StoryFacilityDraft())),
+              icon: const Icon(Icons.add),
+              label: Text(t.storyAddEntry),
             ),
-          ]),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () =>
-                setState(() => _facilities.add(_StoryFacilityDraft())),
-            icon: const Icon(Icons.add),
-            label: Text(t.storyAddEntry),
           ),
-        ),
-
         ],
         if (_advIdx == 4) ...[
-        sectionTitle(t.storyCharacters),
-        for (var i = 0; i < _characters.length; i++)
-          card([
-            Row(
-              children: [
-                CharacterAvatar(
-                  name: _characters[i].displayName,
-                  avatar: _characters[i].avatar,
-                  radius: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _characters[i].displayName,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      if (_characters[i].tags.isNotEmpty)
-                        Text(
-                          _characters[i].tags.join(' · '),
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                    ],
+          sectionTitle(t.storyCharacters),
+          for (var i = 0; i < _characters.length; i++)
+            card([
+              Row(
+                children: [
+                  CharacterAvatar(
+                    name: _characters[i].displayName,
+                    avatar: _characters[i].avatar,
+                    radius: 18,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: t.edit,
-                  onPressed: () => _editCharacter(i),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.save_alt),
-                  tooltip: t.characterExport,
-                  onPressed: () => exportCharacterCardPng(_characters[i]),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => setState(() => _characters.removeAt(i)),
-                ),
-              ],
-            ),
-          ]),
-        Row(
-          children: [
-            TextButton.icon(
-              onPressed: () => _editCharacter(null),
-              icon: const Icon(Icons.add),
-              label: Text(t.storyAddCharacter),
-            ),
-            const SizedBox(width: 8),
-            TextButton.icon(
-              onPressed: _importCharacterCard,
-              icon: const Icon(Icons.file_open_outlined),
-              label: Text(t.importCharacter),
-            ),
-          ],
-        ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _characters[i].displayName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        if (_characters[i].tags.isNotEmpty)
+                          Text(
+                            _characters[i].tags.join(' · '),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: t.edit,
+                    onPressed: () => _editCharacter(i),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.save_alt),
+                    tooltip: t.characterExport,
+                    onPressed: () => exportCharacterCardPng(_characters[i]),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => setState(() => _characters.removeAt(i)),
+                  ),
+                ],
+              ),
+            ]),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () => _editCharacter(null),
+                icon: const Icon(Icons.add),
+                label: Text(t.storyAddCharacter),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: _importCharacterCard,
+                icon: const Icon(Icons.file_open_outlined),
+                label: Text(t.importCharacter),
+              ),
+            ],
+          ),
         ],
         if (_advIdx == 5) ...[
-        sectionTitle(t.storyVariables),
-        for (var i = 0; i < _variables.length; i++)
-          card([
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _variables[i].name,
-                    decoration: InputDecoration(
-                      labelText: t.storyVariableName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
+          sectionTitle(t.storyVariables),
+          for (var i = 0; i < _variables.length; i++)
+            card([
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _variables[i].name,
+                      decoration: InputDecoration(
+                        labelText: t.storyVariableName,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _variables[i].value,
-                    decoration: InputDecoration(
-                      labelText: t.storyVariableValue,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _variables[i].value,
+                      decoration: InputDecoration(
+                        labelText: t.storyVariableValue,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => setState(() {
+                      _variables[i].dispose();
+                      _variables.removeAt(i);
+                    }),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _variables[i].description,
+                decoration: InputDecoration(
+                  labelText: t.storyVariableDescription,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => setState(() {
-                    _variables[i].dispose();
-                    _variables.removeAt(i);
-                  }),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    '${t.storyVariableType}: ',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  Select(
+                    current: switch (_variables[i].type) {
+                      'number' => t.storyVarTypeNumber,
+                      'enum' => t.storyVarTypeEnum,
+                      _ => t.storyVarTypeText,
+                    },
+                    values: [
+                      t.storyVarTypeText,
+                      t.storyVarTypeNumber,
+                      t.storyVarTypeEnum,
+                    ],
+                    onTap: (idx) => setState(
+                      () => _variables[i].type = const [
+                        'text',
+                        'number',
+                        'enum',
+                      ][idx],
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_variables[i].type == 'number') ...[
+                    SizedBox(
+                      width: 68,
+                      child: TextFormField(
+                        controller: _variables[i].min,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: t.storyVariableMin,
+                          isDense: true,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 68,
+                      child: TextFormField(
+                        controller: _variables[i].max,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: t.storyVariableMax,
+                          isDense: true,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 68,
+                      child: TextFormField(
+                        controller: _variables[i].unit,
+                        decoration: InputDecoration(
+                          labelText: t.storyVariableUnit,
+                          isDense: true,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (_variables[i].type == 'enum') ...[
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _variables[i].options,
+                  decoration: InputDecoration(
+                    labelText: t.storyVariableOptions,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _variables[i].description,
-              decoration: InputDecoration(
-                labelText: t.storyVariableDescription,
-                isDense: true,
-                border: const OutlineInputBorder(),
+            ]),
+          TextButton.icon(
+            onPressed: () =>
+                setState(() => _variables.add(_StoryVariableDraft())),
+            icon: const Icon(Icons.add),
+            label: Text(t.storyAddVariable),
+          ),
+        ],
+        if (_advIdx == 6) ...[
+          sectionTitle(t.storyRegex),
+          for (var i = 0; i < _regexes.length; i++)
+            card([
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _regexes[i].name,
+                      decoration: InputDecoration(
+                        labelText: t.storyRegexName,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => setState(() {
+                      _regexes[i].dispose();
+                      _regexes.removeAt(i);
+                    }),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  '${t.storyVariableType}: ',
-                  style: const TextStyle(fontSize: 13),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _regexes[i].pattern,
+                decoration: InputDecoration(
+                  labelText: t.storyRegexPattern,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
                 ),
-                Select(
-                  current: switch (_variables[i].type) {
-                    'number' => t.storyVarTypeNumber,
-                    'enum' => t.storyVarTypeEnum,
-                    _ => t.storyVarTypeText,
-                  },
-                  values: [
-                    t.storyVarTypeText,
-                    t.storyVarTypeNumber,
-                    t.storyVarTypeEnum,
-                  ],
-                  onTap: (idx) => setState(
-                    () => _variables[i].type = const [
-                      'text',
-                      'number',
-                      'enum',
-                    ][idx],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _regexes[i].replacement,
+                decoration: InputDecoration(
+                  labelText: t.storyRegexReplacement,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Text(
+                    '${t.storyRegexPhase}: ',
+                    style: const TextStyle(fontSize: 13),
                   ),
-                ),
-                const Spacer(),
-                if (_variables[i].type == 'number') ...[
-                  SizedBox(
-                    width: 68,
+                  Select(
+                    current: switch (_regexes[i].phase) {
+                      'send' => t.storyRegexTargetUser,
+                      'both' => t.storyRegexTargetBoth,
+                      _ => t.storyRegexTargetAi,
+                    },
+                    values: [
+                      t.storyRegexTargetAi,
+                      t.storyRegexTargetUser,
+                      t.storyRegexTargetBoth,
+                    ],
+                    onTap: (idx) => setState(
+                      () => _regexes[i].phase = const [
+                        'display',
+                        'send',
+                        'both',
+                      ][idx],
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    t.storyRegexEnabled,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  CustomSwitch(
+                    value: _regexes[i].enabled,
+                    onChanged: (v) => setState(() => _regexes[i].enabled = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
                     child: TextFormField(
-                      controller: _variables[i].min,
+                      controller: _regexes[i].minDepth,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: t.storyVariableMin,
+                        labelText: t.storyRegexMinDepth,
                         isDense: true,
                         border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  SizedBox(
-                    width: 68,
+                  Expanded(
                     child: TextFormField(
-                      controller: _variables[i].max,
+                      controller: _regexes[i].maxDepth,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: t.storyVariableMax,
-                        isDense: true,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 68,
-                    child: TextFormField(
-                      controller: _variables[i].unit,
-                      decoration: InputDecoration(
-                        labelText: t.storyVariableUnit,
+                        labelText: t.storyRegexMaxDepth,
                         isDense: true,
                         border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
                 ],
-              ],
-            ),
-            if (_variables[i].type == 'enum') ...[
+              ),
+            ]),
+          TextButton.icon(
+            onPressed: () => setState(() => _regexes.add(_StoryRegexDraft())),
+            icon: const Icon(Icons.add),
+            label: Text(t.storyAddRegex),
+          ),
+        ],
+        if (_advIdx == 7) ...[
+          sectionTitle(t.storyAchievements),
+          for (var i = 0; i < _achievements.length; i++)
+            card([
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _achievements[i].key,
+                      decoration: InputDecoration(
+                        labelText: t.storyRegexName,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _achievements[i].name,
+                      decoration: InputDecoration(
+                        labelText: t.storyAchievementName,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => setState(() {
+                      _achievements[i].dispose();
+                      _achievements.removeAt(i);
+                    }),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
               TextFormField(
-                controller: _variables[i].options,
+                controller: _achievements[i].description,
                 decoration: InputDecoration(
-                  labelText: t.storyVariableOptions,
+                  labelText: t.storyCharacterDescription,
                   isDense: true,
                   border: const OutlineInputBorder(),
                 ),
               ),
-            ],
-          ]),
-        TextButton.icon(
-          onPressed: () => setState(() => _variables.add(_StoryVariableDraft())),
-          icon: const Icon(Icons.add),
-          label: Text(t.storyAddVariable),
-        ),
-        ],
-        if (_advIdx == 6) ...[
-        sectionTitle(t.storyRegex),
-        for (var i = 0; i < _regexes.length; i++)
-          card([
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _regexes[i].name,
-                    decoration: InputDecoration(
-                      labelText: t.storyRegexName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => setState(() {
-                    _regexes[i].dispose();
-                    _regexes.removeAt(i);
-                  }),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _regexes[i].pattern,
-              decoration: InputDecoration(
-                labelText: t.storyRegexPattern,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _regexes[i].replacement,
-              decoration: InputDecoration(
-                labelText: t.storyRegexReplacement,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  '${t.storyRegexPhase}: ',
-                  style: const TextStyle(fontSize: 13),
-                ),
-                Select(
-                  current: switch (_regexes[i].phase) {
-                    'send' => t.storyRegexTargetUser,
-                    'both' => t.storyRegexTargetBoth,
-                    _ => t.storyRegexTargetAi,
-                  },
-                  values: [
-                    t.storyRegexTargetAi,
-                    t.storyRegexTargetUser,
-                    t.storyRegexTargetBoth,
-                  ],
-                  onTap: (idx) => setState(
-                    () => _regexes[i].phase = const [
-                      'display',
-                      'send',
-                      'both',
-                    ][idx],
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  t.storyRegexEnabled,
-                  style: const TextStyle(fontSize: 13),
-                ),
-                CustomSwitch(
-                  value: _regexes[i].enabled,
-                  onChanged: (v) => setState(() => _regexes[i].enabled = v),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _regexes[i].minDepth,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: t.storyRegexMinDepth,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _regexes[i].maxDepth,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: t.storyRegexMaxDepth,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ]),
-        TextButton.icon(
-          onPressed: () => setState(() => _regexes.add(_StoryRegexDraft())),
-          icon: const Icon(Icons.add),
-          label: Text(t.storyAddRegex),
-        ),
-        ],
-        if (_advIdx == 7) ...[
-        sectionTitle(t.storyAchievements),
-        for (var i = 0; i < _achievements.length; i++)
-          card([
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _achievements[i].key,
-                    decoration: InputDecoration(
-                      labelText: t.storyRegexName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _achievements[i].name,
-                    decoration: InputDecoration(
-                      labelText: t.storyAchievementName,
-                      isDense: true,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => setState(() {
-                    _achievements[i].dispose();
-                    _achievements.removeAt(i);
-                  }),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _achievements[i].description,
-              decoration: InputDecoration(
-                labelText: t.storyCharacterDescription,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ]),
-        TextButton.icon(
-          onPressed: () =>
-              setState(() => _achievements.add(_StoryAchievementDraft())),
-          icon: const Icon(Icons.add),
-          label: Text(t.storyAddAction),
-        ),
+            ]),
+          TextButton.icon(
+            onPressed: () =>
+                setState(() => _achievements.add(_StoryAchievementDraft())),
+            icon: const Icon(Icons.add),
+            label: Text(t.storyAddAction),
+          ),
         ],
       ],
     );

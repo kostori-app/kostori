@@ -507,9 +507,9 @@ class BottomInfoState extends State<BottomInfo>
                                     : Icon(
                                         Icons.translate,
                                         size: 24,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                       ),
                               ),
                             ],
@@ -764,11 +764,11 @@ class BottomInfoState extends State<BottomInfo>
               }
               if (queryTimeout) {
                 return SliverFillRemaining(
-                child: EmptyState(
-                  message: t.nobodysPostedAnythingYet,
-                  retry: retry,
-                  retryText: t.reload,
-                ),
+                  child: EmptyState(
+                    message: t.nobodysPostedAnythingYet,
+                    retry: retry,
+                    retryText: t.reload,
+                  ),
                 );
               }
               return SliverList.builder(
@@ -886,18 +886,18 @@ class BottomInfoState extends State<BottomInfo>
             PreferredSize(
               preferredSize: Size.fromHeight(kToolbarHeight),
               child: Material(
-              child: CapsuleTabBar(
-                controller: infoTabController,
-                labels: [
-                  t.details,
-                  t.comments,
-                  t.comment,
-                  t.topics,
-                  t.reviews,
-                  t.characters,
-                  t.staffList,
-                ],
-              ),
+                child: CapsuleTabBar(
+                  controller: infoTabController,
+                  labels: [
+                    t.details,
+                    t.comments,
+                    t.comment,
+                    t.topics,
+                    t.reviews,
+                    t.characters,
+                    t.staffList,
+                  ],
+                ),
               ),
             ),
             Expanded(

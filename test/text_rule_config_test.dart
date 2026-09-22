@@ -131,10 +131,9 @@ void main() {
         final rep2 = TextRuleStore.dryRun('[无码破解]DVDMS-800 高清', [fixed]);
         expect(rep2.single.state, TextRuleStepState.hit);
         expect(
-          TextRuleStore.apply(
-            '[无码破解]DVDMS-800 高清',
-            [TextRule(id: 'x', name: 'jav', steps: [fixed])],
-          ),
+          TextRuleStore.apply('[无码破解]DVDMS-800 高清', [
+            TextRule(id: 'x', name: 'jav', steps: [fixed]),
+          ]),
           'DVDMS-800',
         );
       });

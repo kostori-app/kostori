@@ -328,7 +328,8 @@ class BangumiWidget {
   }) async {
     try {
       final isLocal = File(url).existsSync();
-      final initIndex = (galleryProviders != null && galleryProviders.isNotEmpty)
+      final initIndex =
+          (galleryProviders != null && galleryProviders.isNotEmpty)
           ? (initialIndex ?? 0).clamp(0, galleryProviders.length - 1)
           : _resolveInitIndex(url, allUrls, initialIndex);
       final pageController = PageController(initialPage: initIndex);
@@ -851,7 +852,6 @@ void _showBangumiMenu(
     ),
   ]);
 }
-
 
 /// 状态保存
 class KeepAliveWrapper extends StatefulWidget {

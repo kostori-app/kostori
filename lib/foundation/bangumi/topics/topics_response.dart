@@ -6,22 +6,17 @@ class TopicsResponse {
   TopicsResponse({required this.topicsList});
 
   factory TopicsResponse.fromJson(List list) {
-    List<TopicsItem> resTopicsList =
-        list.map((i) => TopicsItem.fromJson(i)).toList();
-    return TopicsResponse(
-      topicsList: resTopicsList,
-    );
+    List<TopicsItem> resTopicsList = list
+        .map((i) => TopicsItem.fromJson(i))
+        .toList();
+    return TopicsResponse(topicsList: resTopicsList);
   }
 
   factory TopicsResponse.fromTemplate() {
-    return TopicsResponse(
-      topicsList: [],
-    );
+    return TopicsResponse(topicsList: []);
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'topicsList': topicsList.map((e) => e.toJson()).toList(),
-    };
+    return {'topicsList': topicsList.map((e) => e.toJson()).toList()};
   }
 }

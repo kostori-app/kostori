@@ -319,10 +319,7 @@ class SimpleAnimeTile extends StatelessWidget {
     );
 
     if (heroID != null) {
-      child = KostoriHero(
-        tag: "cover$heroID",
-        child: child,
-      );
+      child = KostoriHero(tag: "cover$heroID", child: child);
     }
 
     child = AnimatedTapRegion(

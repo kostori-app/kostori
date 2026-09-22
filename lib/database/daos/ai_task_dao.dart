@@ -6,8 +6,7 @@ import 'package:kostori/database/ai_task_database.dart';
 part 'ai_task_dao.g.dart';
 
 @DriftAccessor(tables: [AiTasks])
-class AiTaskDao extends DatabaseAccessor<AiTaskDatabase>
-    with _$AiTaskDaoMixin {
+class AiTaskDao extends DatabaseAccessor<AiTaskDatabase> with _$AiTaskDaoMixin {
   AiTaskDao(super.db);
 
   Stream<List<AiTask>> watchAll() => (select(
@@ -48,7 +47,10 @@ class AiTaskDao extends DatabaseAccessor<AiTaskDatabase>
 
   /// 写入多候选回复并选中指定下标（同时同步 outputContent）
   Future<void> setVariants(int id, List<String> variants, int index) {
-    final safeIndex = index.clamp(0, variants.isEmpty ? 0 : variants.length - 1);
+    final safeIndex = index.clamp(
+      0,
+      variants.isEmpty ? 0 : variants.length - 1,
+    );
     return (update(aiTasks)..where((t) => t.id.equals(id))).write(
       AiTasksCompanion(
         outputVariants: Value(jsonEncode(variants)),

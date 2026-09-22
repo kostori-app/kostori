@@ -113,9 +113,8 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                               right: Radius.circular(20),
                             ),
                             border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.toOpacity(0.2),
+                              color: Theme.of(context).colorScheme.onSurface
+                                  .toOpacity(0.2),
                               width: 1.5,
                             ),
                             boxShadow: [
@@ -175,7 +174,11 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                                             const SizedBox(height: 8),
                                             Row(
                                               children: [
-                                                Text(t.airTimeLabel(time: episode.airDate)),
+                                                Text(
+                                                  t.airTimeLabel(
+                                                    time: episode.airDate,
+                                                  ),
+                                                ),
                                                 const SizedBox(width: 8),
                                                 Text(
                                                   t.durationLabel(

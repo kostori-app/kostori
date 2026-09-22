@@ -152,9 +152,8 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                     Expanded(
                       child: Text(
                         _isGlobal ? t.adminPanel : _room.roomName,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     if (_cantEditLobby)
@@ -1116,11 +1115,7 @@ class _InlineEditFieldState extends State<_InlineEditField> {
             children: [
               CapsuleButton(text: t.cancel, onTap: widget.onCancel),
               const SizedBox(width: 8),
-              CapsuleButton(
-                primary: true,
-                text: t.save,
-                onTap: widget.onSave,
-              ),
+              CapsuleButton(primary: true, text: t.save, onTap: widget.onSave),
             ],
           ),
         ],
