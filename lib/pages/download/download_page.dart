@@ -604,8 +604,8 @@ class _ActiveTab extends StatelessWidget {
 }
 
 /// 总任务进度条（按任务完成数计数，失败也计数）：
-/// 单条双色（完成=主题色，失败=错误色），初始为 0 不显示；
-/// 进度信息本身就是这条进度条（无文字行）；内部 try/catch 保底，绝不崩列表。
+/// 单条双色（完成=主题色，失败=错误色），右侧显示「已完成/总数」；
+/// 初始为 0 不显示；内部 try/catch 保底，绝不崩列表。
 class _BatchProgressBar extends StatelessWidget {
   const _BatchProgressBar({required this.manager});
 
@@ -623,7 +623,7 @@ class _BatchProgressBar extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
           decoration: BoxDecoration(
             color: cs.surfaceContainerLow,
             borderRadius: BorderRadius.circular(10),
@@ -633,9 +633,9 @@ class _BatchProgressBar extends StatelessWidget {
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(5),
                   child: SizedBox(
-                    height: 12,
+                    height: 10,
                     child: Row(
                       children: [
                         if (done > 0)
@@ -652,7 +652,8 @@ class _BatchProgressBar extends StatelessWidget {
                           Expanded(
                             flex: rest,
                             child: ColoredBox(
-                              color: cs.surfaceContainerHighest,
+                              // 比卡片底色明显，避免整条“看不见”
+                              color: cs.onSurface.withValues(alpha: 0.12),
                             ),
                           ),
                       ],
@@ -660,9 +661,18 @@ class _BatchProgressBar extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 10),
+              Text(
+                '${done + failed}/$total',
+                style: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(width: 2),
               IconButton(
                 tooltip: t.close,
                 visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 iconSize: 18,
                 icon: const Icon(Icons.close),
                 onPressed: () => manager.dismissBatch(),
