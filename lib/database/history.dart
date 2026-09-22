@@ -956,13 +956,11 @@ class HistoryManager with ChangeNotifier {
 
   /// 静默刷新已存条目的封面/标题（列表再次刷到该条目时调用）：
   /// 仅字段确实变化时写库并通知；无变化返回 false，不打扰 UI。
-  /// [sourceKey] 用于在源失效/变化时纠正条目的 type（sourceKey 由 type 派生）。
   bool refreshStored(
     String id,
     AnimeType type, {
     String? cover,
     String? title,
-    String? sourceKey,
   }) {
     try {
       final h = find(id, type);
@@ -975,15 +973,6 @@ class HistoryManager with ChangeNotifier {
       if (title != null && title.isNotEmpty && h.title != title) {
         h.title = title;
         changed = true;
-      }
-      if (sourceKey != null &&
-          sourceKey.isNotEmpty &&
-          !sourceKey.startsWith('Unknown')) {
-        final newType = AnimeType(sourceKey.hashCode);
-        if (h.type != newType) {
-          h.type = newType;
-          changed = true;
-        }
       }
       if (changed) unawaited(addHistory(h));
       return changed;

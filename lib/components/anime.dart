@@ -84,6 +84,10 @@ void maybeRefreshStoredCovers(List<Anime> animes) {
     for (final a in animes) {
       if (handled >= 5) break;
       if (a.id.isEmpty) continue;
+      // 收藏页/历史页展示的就是本地存储对象本身（FavoriteItem / History）。
+      // 用自身刷新自己是空操作，却会占用 10 分钟节流名额，
+      // 导致之后同一条目在搜索/探索里带着新数据出现时被跳过、永远刷不到。
+      if (a is History || a is FavoriteItem) continue;
       final key = '${a.sourceKey}|${a.id}';
       if (now - (_storedRefreshLast[key] ?? 0) < 10 * 60 * 1000) continue;
       _storedRefreshLast[key] = now;
@@ -94,14 +98,12 @@ void maybeRefreshStoredCovers(List<Anime> animes) {
           type,
           cover: a.cover,
           title: a.title,
-          sourceKey: a.sourceKey,
         );
         if (LocalFavoritesManager().refreshStored(
           a.id,
           type,
           cover: a.cover,
           title: a.title,
-          sourceKey: a.sourceKey,
         )) {
           changed = true;
         }

@@ -236,6 +236,10 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
         isLoading = false;
       });
       notify(list != null && list.isNotEmpty);
+      // 搜索结果带着最新封面/标题：触发收藏/历史里同一条目的静默刷新
+      if (list != null && list.isNotEmpty) {
+        maybeRefreshStoredCovers(list);
+      }
     }
 
     void applyError(String message) {
