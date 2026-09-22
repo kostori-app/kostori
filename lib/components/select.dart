@@ -479,9 +479,12 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
     keepScrollOffset: false,
   );
 
-  /// 上次已自动滚动到的下标：避免动画每一帧都触发 animateTo 导致互相打架卡死
-  /// （选中 tab 卡在屏幕外不动的潜在根因）
+  /// 上次已自动滚动到的下标 + 上次的滚动 position：
+  /// 两者都没变时不重复滚动（避免动画帧反复 animateTo，也避免把用户手动
+  /// 滚到屏幕外的旧选中项又拉回来）。
   int _lastScrolledIndex = -1;
+
+  ScrollPosition? _lastPosition;
 
   @override
   void initState() {
@@ -524,7 +527,10 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
       _childKeys.removeRange(widget.children.length, _childKeys.length);
     }
     // 选项数量变化时允许重新定位，避免旧下标缓存导致新选中项不滚动
-    if (oldLen != widget.children.length) _lastScrolledIndex = -1;
+    if (oldLen != widget.children.length) {
+      _lastScrolledIndex = -1;
+      _lastPosition = null;
+    }
   }
 
   /// 布局后测量所有选项，供指示块定位/插值（换行、滚动时也能跟随），
@@ -548,30 +554,27 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
     _scrollSelectedIntoView(value, rects);
   }
 
-  /// 选中项不在可视区时滚动过去（对齐 TabBar 的自动滚动行为）
-  /// 内容够长时尽量让选中项居中（可看清两边）；
-  /// 在最左/最右时自然贴边（clamp 到滚动范围）。
+  /// 把选中项滚到中间（内容够长时；最左/最右 clamp 贴边）。
+  ///
+  /// 只在「下标变化」或「横向 ScrollPosition 被重建」时触发：
+  /// - 用户手动滚动（下标与 position 都没变）时不干预，避免和用户打架，
+  ///   也避免把已滚到屏幕外的旧选中项又拉回来造成列表抽搐；
+  /// - 离开再回到页面时 position 会被重建，此时重新对齐选中项。
   void _scrollSelectedIntoView(double value, List<Rect> rects) {
     if (!widget.autoScroll || !widget.scrollable) return;
     if (rects.isEmpty || !_scrollController.hasClients) return;
     final position = _scrollController.position;
     final viewport = position.viewportDimension;
     if (viewport <= 0 || position.maxScrollExtent <= 0) return;
-    // 滚动动画进行中不要打断：每帧都会走到这里，反复 animateTo 会互相打架卡死
-    if (position.isScrollingNotifier.value) return;
     final index = value.round().clamp(0, rects.length - 1);
-    final rect = rects[index];
-    final offset = position.pixels;
-    final fullyVisible =
-        rect.left >= offset - 0.5 && rect.right <= offset + viewport + 0.5;
-    // 下标没变且选中项完全可见：不动，避免和用户手动滚动打架；
-    // 否则（切了 tab，或滚动位置与选中项不同步）就把它滚到中间。
-    if (index == _lastScrolledIndex && fullyVisible) return;
+    final positionChanged = !identical(position, _lastPosition);
+    _lastPosition = position;
+    if (!positionChanged && index == _lastScrolledIndex) return;
     _lastScrolledIndex = index;
     // 居中目标：选中项中心 - 视口一半，贴边时 clamp 自动处理
-    var target = rect.center.dx - viewport / 2;
+    var target = rects[index].center.dx - viewport / 2;
     target = target.clamp(position.minScrollExtent, position.maxScrollExtent);
-    if ((target - offset).abs() < 0.5) return;
+    if ((target - position.pixels).abs() < 0.5) return;
     _scrollController.animateTo(
       target,
       duration: widget.duration,
