@@ -164,6 +164,9 @@ class DownloadManager extends ChangeNotifier {
   // 总任务进度（按任务完成数计数，失败也计入；单条双色）。
   // - 初始为 0 时不显示；完成后继续显示，直到用户手动关闭或应用退出。
   // - 意外退出（崩溃/杀进程）且还有未完成任务时，下次启动恢复显示。
+  // - 计数用 done/failed 两个 id 集合维护，任务可在两态间迁移
+  //   （失败后重试成功 = failed→done），避免出现既不算完成也不算失败、
+  //   进度条永远差一截的灰色。
   // - 全部逻辑 try/catch 包底：计数绝不能把下载主流程搞崩。
   static const _batchPersistKey = 'downloadBatchProgress';
   int batchTotal = 0;
@@ -171,7 +174,8 @@ class DownloadManager extends ChangeNotifier {
   int batchFailed = 0;
   bool _batchVisible = false;
   bool get batchVisible => _batchVisible && batchTotal > 0;
-  final Set<String> _batchCounted = {};
+  final Set<String> _batchDoneIds = {};
+  final Set<String> _batchFailedIds = {};
 
   int get batchDoneView => batchDone.clamp(0, batchTotal);
   int get batchFailedView =>
@@ -190,7 +194,8 @@ class DownloadManager extends ChangeNotifier {
           'total': batchTotal,
           'done': batchDone,
           'failed': batchFailed,
-          'counted': _batchCounted.toList(),
+          'doneIds': _batchDoneIds.toList(),
+          'failedIds': _batchFailedIds.toList(),
           'visible': _batchVisible,
         };
       }
@@ -204,35 +209,45 @@ class DownloadManager extends ChangeNotifier {
       batchDone = 0;
       batchFailed = 0;
       _batchVisible = false;
-      _batchCounted.clear();
+      _batchDoneIds.clear();
+      _batchFailedIds.clear();
       final raw = appdata.implicitData[_batchPersistKey];
       if (raw is Map) {
         batchTotal = (raw['total'] as num?)?.toInt() ?? 0;
         batchDone = (raw['done'] as num?)?.toInt() ?? 0;
         batchFailed = (raw['failed'] as num?)?.toInt() ?? 0;
         _batchVisible = raw['visible'] == true;
-        final counted = raw['counted'];
-        if (counted is List) {
-          _batchCounted.addAll(counted.map((e) => e.toString()));
+        final doneIds = raw['doneIds'];
+        if (doneIds is List) {
+          _batchDoneIds.addAll(doneIds.map((e) => e.toString()));
+        }
+        final failedIds = raw['failedIds'];
+        if (failedIds is List) {
+          _batchFailedIds.addAll(failedIds.map((e) => e.toString()));
         }
       }
       final unfinished = _tasks
           .where((t) => t.status != DownloadStatus.completed)
           .length;
-      // 保底重建：有未完成任务但计数丢了（如崩溃时没落盘），按未完成数重建
-      if (unfinished > 0 && batchTotal <= 0) {
-        batchTotal = unfinished;
-        batchDone = 0;
-        batchFailed = 0;
+      if (unfinished > 0) {
+        // 有未完成任务但计数丢了（如崩溃时没落盘），按未完成数重建
+        if (batchTotal <= 0) {
+          batchTotal = unfinished;
+          batchDone = 0;
+          batchFailed = 0;
+          _saveBatch();
+        }
+        // 只要有未完成任务就必定显示：持久化的 visible 可能过期，
+        // 否则会出现 batchTotal>0 但进度条永不出现的情况
         _batchVisible = true;
-        _saveBatch();
-      }
-      if (batchTotal <= 0) {
+      } else {
+        // 无未完成任务：退出后不保留已完成的横幅
         _batchVisible = false;
         batchTotal = 0;
         batchDone = 0;
         batchFailed = 0;
-        _batchCounted.clear();
+        _batchDoneIds.clear();
+        _batchFailedIds.clear();
       }
     } catch (_) {
       // 保底：读坏了就隐藏，绝不影响下载列表
@@ -243,7 +258,8 @@ class DownloadManager extends ChangeNotifier {
   void _batchAdd() {
     try {
       batchTotal++;
-      if (batchTotal == 1) _batchVisible = true;
+      // 只要还在一轮里（有新任务入队）就必须显示，不能依赖 batchTotal==1
+      _batchVisible = true;
       if (batchDoneView + batchFailedView > batchTotal) {
         batchFailed = (batchTotal - batchDoneView).clamp(0, batchTotal);
       }
@@ -251,21 +267,32 @@ class DownloadManager extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// 任务完成：若此前算作失败则迁移到完成，避免任务从失败转成功后
+  /// 因去重而两边都不计数（进度条永远差一截灰色）
   void _batchDone(DownloadTask task) {
     try {
-      if (!_batchCounted.add(task.id)) return;
-      if (batchTotal <= 0) batchTotal = 1;
-      batchDone++;
+      if (_batchFailedIds.remove(task.id)) {
+        batchFailed = (batchFailed - 1).clamp(0, batchTotal);
+      }
+      if (_batchDoneIds.add(task.id)) {
+        if (batchTotal <= 0) batchTotal = 1;
+        batchDone++;
+      }
       _batchVisible = true;
       _saveBatch();
     } catch (_) {}
   }
 
+  /// 任务失败：若此前算作完成则迁移到失败
   void _batchFailed(DownloadTask task) {
     try {
-      if (!_batchCounted.add(task.id)) return;
-      if (batchTotal <= 0) batchTotal = 1;
-      batchFailed++;
+      if (_batchDoneIds.remove(task.id)) {
+        batchDone = (batchDone - 1).clamp(0, batchTotal);
+      }
+      if (_batchFailedIds.add(task.id)) {
+        if (batchTotal <= 0) batchTotal = 1;
+        batchFailed++;
+      }
       _batchVisible = true;
       _saveBatch();
     } catch (_) {}
@@ -274,7 +301,7 @@ class DownloadManager extends ChangeNotifier {
   /// 失败任务被重新排队：取消之前的失败计数（任务仍在总数里）
   void _batchUncount(DownloadTask task) {
     try {
-      if (_batchCounted.remove(task.id)) {
+      if (_batchFailedIds.remove(task.id)) {
         batchFailed = (batchFailed - 1).clamp(0, batchTotal);
         _saveBatch();
       }
@@ -284,12 +311,10 @@ class DownloadManager extends ChangeNotifier {
   /// 任务被删除/取消：从总数中剔除（已计数的同步扣减）
   void _batchRemove(DownloadTask task) {
     try {
-      if (_batchCounted.remove(task.id)) {
-        if (batchFailed > 0 && batchDoneView + batchFailed > batchTotal - 1) {
-          batchFailed = (batchFailed - 1).clamp(0, batchTotal);
-        } else if (batchDone > 0) {
-          batchDone = (batchDone - 1).clamp(0, batchTotal);
-        }
+      if (_batchFailedIds.remove(task.id)) {
+        batchFailed = (batchFailed - 1).clamp(0, batchTotal);
+      } else if (_batchDoneIds.remove(task.id)) {
+        batchDone = (batchDone - 1).clamp(0, batchTotal);
       }
       batchTotal = (batchTotal - 1).clamp(0, 1 << 30);
       if (batchTotal <= 0) {
@@ -297,7 +322,8 @@ class DownloadManager extends ChangeNotifier {
         batchDone = 0;
         batchFailed = 0;
         _batchVisible = false;
-        _batchCounted.clear();
+        _batchDoneIds.clear();
+        _batchFailedIds.clear();
       }
       _saveBatch();
     } catch (_) {}
@@ -310,7 +336,8 @@ class DownloadManager extends ChangeNotifier {
       batchTotal = 0;
       batchDone = 0;
       batchFailed = 0;
-      _batchCounted.clear();
+      _batchDoneIds.clear();
+      _batchFailedIds.clear();
       _saveBatch();
       notifyListeners();
     } catch (_) {}
