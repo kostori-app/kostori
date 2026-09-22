@@ -610,7 +610,9 @@ class AnimeTile extends ConsumerWidget {
           )
         : false;
 
-    final history = appdata.settings['showHistoryStatusOnTile']
+    // 二级卡片（viewMore）本身没有集数信息，不显示「当前集」覆盖层
+    final history =
+        appdata.settings['showHistoryStatusOnTile'] && anime.viewMore == null
         ? ref.watch(
             historyAllProvider.select((_) {
               // 只监听集数（稳定字符串）；lastWatchTime 每秒变但无需每秒刷新卡片

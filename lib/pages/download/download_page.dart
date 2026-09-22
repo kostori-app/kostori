@@ -622,64 +622,57 @@ class _BatchProgressBar extends StatelessWidget {
       final cs = Theme.of(context).colorScheme;
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: cs.outlineVariant, width: 0.6),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
-                  child: SizedBox(
-                    height: 10,
-                    child: Row(
-                      // 必须 stretch：ColoredBox 无固有高度，默认 center 会塌成 0 高（整条看不见）
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (done > 0)
-                          Expanded(
-                            flex: done,
-                            child: ColoredBox(color: cs.primary),
-                          ),
-                        if (failed > 0)
-                          Expanded(
-                            flex: failed,
-                            child: ColoredBox(color: cs.error),
-                          ),
-                        if (rest > 0)
-                          Expanded(
-                            flex: rest,
-                            child: ColoredBox(
-                              // 比卡片底色明显，避免整条“看不见”
-                              color: cs.onSurface.withValues(alpha: 0.12),
-                            ),
-                          ),
-                      ],
+        child: Material(
+          color: cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(10),
+          clipBehavior: Clip.antiAlias,
+          // 去掉关闭按钮与边框：点击整条即关闭
+          child: InkWell(
+            onTap: manager.dismissBatch,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: SizedBox(
+                        height: 8,
+                        child: Row(
+                          // 必须 stretch：ColoredBox 无固有高度，默认 center 会塌成 0 高（整条看不见）
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (done > 0)
+                              Expanded(
+                                flex: done,
+                                child: ColoredBox(color: cs.primary),
+                              ),
+                            if (failed > 0)
+                              Expanded(
+                                flex: failed,
+                                child: ColoredBox(color: cs.error),
+                              ),
+                            if (rest > 0)
+                              Expanded(
+                                flex: rest,
+                                child: ColoredBox(
+                                  color: cs.onSurface.withValues(alpha: 0.12),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${done + failed}/$total',
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Text(
-                '${done + failed}/$total',
-                style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              const SizedBox(width: 2),
-              IconButton(
-                tooltip: t.close,
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                iconSize: 18,
-                icon: const Icon(Icons.close),
-                onPressed: () => manager.dismissBatch(),
-              ),
-            ],
+            ),
           ),
         ),
       );
