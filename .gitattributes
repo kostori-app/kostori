@@ -1,0 +1,5 @@
+# 统一换行符为 LF，避免 Windows 下 CRLF 造成的无谓 diff
+*.dart text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
