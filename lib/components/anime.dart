@@ -94,12 +94,14 @@ void maybeRefreshStoredCovers(List<Anime> animes) {
           type,
           cover: a.cover,
           title: a.title,
+          sourceKey: a.sourceKey,
         );
         if (LocalFavoritesManager().refreshStored(
           a.id,
           type,
           cover: a.cover,
           title: a.title,
+          sourceKey: a.sourceKey,
         )) {
           changed = true;
         }
@@ -300,6 +302,20 @@ class AnimeTile extends ConsumerWidget {
       );
     } else if (anime.viewMore != null && anime.viewMore?.attributes != null) {
       var context = App.mainNavigatorKey!.currentContext!;
+      // 跳二级页不经过详情页，这里补记一条观看历史，否则永远不会进历史
+      unawaited(
+        HistoryManager().addHistory(
+          History(
+            id: anime.id,
+            type: _animeType,
+            title: anime.title,
+            subtitle: anime.subtitle ?? '',
+            cover: anime.cover,
+            viewMore: anime.viewMore,
+            time: DateTime.now(),
+          ),
+        ),
+      );
       anime.viewMore!.jump(context);
     } else {
       App.mainNavigatorKey?.currentContext?.to(

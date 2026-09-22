@@ -1164,33 +1164,44 @@ class LocalFavoritesManager with ChangeNotifier {
     _schedulePersist();
   }
 
-  /// 静默刷新所有文件夹中该条目的封面/标题（列表再次刷到时调用）：
-  /// 仅字段确实变化时通知并落盘；无变化返回 false，不打扰 UI
+  /// 静默刷新所有文件夹中该条目的封面/标题（列表再次刷到时调用）。
+  ///
+  /// 按 id 匹配，而不是 (id, type)：源被停用后条目 type 会与实际源不一致，
+  /// 用传入的 [sourceKey] 可把失效条目纠回可用的源。仅字段确实变化时通知并落盘。
   bool refreshStored(
     String id,
     AnimeType type, {
     String? cover,
     String? title,
+    String? sourceKey,
   }) {
     try {
+      final newType =
+          (sourceKey != null &&
+              sourceKey.isNotEmpty &&
+              !sourceKey.startsWith('Unknown'))
+          ? AnimeType(sourceKey.hashCode)
+          : null;
       var changed = false;
       for (final folder in _folderOrder) {
         for (final e in _byFolder[folder] ?? const []) {
-          if (e.item.id == id && e.item.type == type) {
-            if (cover != null &&
-                cover.isNotEmpty &&
-                e.item.coverPath != cover) {
-              e.item.coverPath = cover;
-              changed = true;
-            }
-            if (title != null && title.isNotEmpty && e.item.name != title) {
-              e.item.name = title;
-              changed = true;
-            }
+          if (e.item.id != id) continue;
+          if (cover != null && cover.isNotEmpty && e.item.coverPath != cover) {
+            e.item.coverPath = InlineImageStore.refOfBase64(cover);
+            changed = true;
+          }
+          if (title != null && title.isNotEmpty && e.item.name != title) {
+            e.item.name = title;
+            changed = true;
+          }
+          if (newType != null && e.item.type != newType) {
+            e.item.type = newType;
+            changed = true;
           }
         }
       }
       if (changed) {
+        _rebuildHashedIds();
         _notify();
         _schedulePersist();
       }
