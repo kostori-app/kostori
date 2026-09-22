@@ -610,9 +610,10 @@ class AnimeTile extends ConsumerWidget {
           )
         : false;
 
-    // 二级卡片（viewMore）本身没有集数信息，不显示「当前集」覆盖层
-    final history =
-        appdata.settings['showHistoryStatusOnTile'] && anime.viewMore == null
+    // 只有存在观看集数信息才显示「当前集」角标：
+    // 二级卡片（viewMore）补记的历史没有集数、没看过的条目也没有，
+    // 用是否有集数来判定，避免出现 0/0 的无意义覆盖层。
+    final history = appdata.settings['showHistoryStatusOnTile']
         ? ref.watch(
             historyAllProvider.select((_) {
               // 只监听集数（稳定字符串）；lastWatchTime 每秒变但无需每秒刷新卡片
@@ -620,7 +621,10 @@ class AnimeTile extends ConsumerWidget {
               if (h == null) return null;
               // 同一部番的其它来源进度更高时，角标也显示那个集数
               final aligned = HistoryManager().alignedHistory(h);
-              return '${aligned.displayEpisode} / ${aligned.allEpisode}';
+              final ep = aligned.displayEpisode;
+              final total = aligned.allEpisode ?? 0;
+              if (ep <= 0 && total <= 0) return null;
+              return '$ep / $total';
             }),
           )
         : null;

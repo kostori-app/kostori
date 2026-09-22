@@ -380,6 +380,13 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                 final ctx =
                                     App.mainNavigatorKey!.currentContext!;
                                 a.viewMore!.jump(ctx);
+                                // 二级页不写观看进度，但把这条历史的时间更新为现在，
+                                // 让它排到最新并刷新卡片历史
+                                if (a is History) {
+                                  a.time = DateTime.now();
+                                  await HistoryManager().addHistory(a);
+                                  if (mounted) onUpdate();
+                                }
                               } else {
                                 App.mainNavigatorKey?.currentContext
                                     ?.to<dynamic>(
