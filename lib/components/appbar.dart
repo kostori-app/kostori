@@ -131,7 +131,7 @@ class _AppbarState extends State<Appbar> {
       );
     } else {
       return BlurEffect(
-        blur: (widget.alwaysBlur || _scrolledUnder) ? 15 : 0,
+        enabled: widget.alwaysBlur || _scrolledUnder,
         child: content,
       );
     }
@@ -249,7 +249,6 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     if (style == AppbarStyle.blur) {
       return SizedBox.expand(
         child: BlurEffect(
-          blur: 15,
           child: Material(
             color: context.colorScheme.surface.toOpacity(0.72),
             elevation: 0,

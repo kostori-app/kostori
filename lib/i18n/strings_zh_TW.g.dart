@@ -1571,7 +1571,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get imported => '已導入';
 	@override String get invalidClipboardFormat => '無效的剪貼簿格式';
 	@override String get cannotModifySystemPreset => '無法修改系統預設';
-	@override String get animeCardUseBlur => '動漫卡片使用模糊背景';
+	@override String get enableBlurEffect => '啟用模糊效果';
+	@override String get blurStrength => '模糊強度';
 	@override String get showAnimeCardOverlay => '顯示動漫卡片覆蓋層';
 	@override String get tileTitleMarquee => '卡片標題滾動';
 	@override String get horizontalLayout => '水平佈局';
@@ -4606,7 +4607,8 @@ extension on TranslationsZhTw {
 			'imported' => '已導入',
 			'invalidClipboardFormat' => '無效的剪貼簿格式',
 			'cannotModifySystemPreset' => '無法修改系統預設',
-			'animeCardUseBlur' => '動漫卡片使用模糊背景',
+			'enableBlurEffect' => '啟用模糊效果',
+			'blurStrength' => '模糊強度',
 			'showAnimeCardOverlay' => '顯示動漫卡片覆蓋層',
 			'tileTitleMarquee' => '卡片標題滾動',
 			'horizontalLayout' => '水平佈局',
@@ -5079,9 +5081,9 @@ extension on TranslationsZhTw {
 			'requestFailed' => '請求失敗',
 			'allCopiedSuccess' => '全部複製成功',
 			'notBoundToBangumi' => '該動漫尚未綁定 Bangumi 條目',
-			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
 			_ => null,
 		} ?? switch (path) {
+			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
 			'applySuccess' => '應用成功',
 			'noChanges' => '沒有更改',
 			'applyFailed' => '應用失敗',
@@ -5593,9 +5595,9 @@ extension on TranslationsZhTw {
 			'supportsReasoning' => '支援推理',
 			'capabilities' => '能力',
 			'modelTypeChat' => '聊天',
-			'modelTypeImage' => '圖像',
 			_ => null,
 		} ?? switch (path) {
+			'modelTypeImage' => '圖像',
 			'modelTypeEmbedding' => '嵌入',
 			'modelTypeAudio' => '音訊',
 			'modelTypeRerank' => '重排序',

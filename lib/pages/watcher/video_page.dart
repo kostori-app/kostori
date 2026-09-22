@@ -319,8 +319,7 @@ class _VideoPageState extends State<VideoPage>
                         child: SizedBox(
                           width: double.infinity,
                           height: double.infinity,
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: BlurEffect(
                             child: Container(
                               color: Colors.black.toOpacity(0.2),
                             ),

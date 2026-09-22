@@ -14,32 +14,11 @@ class BangumiGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
     final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
 
-    Widget containerBackground(Widget child) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white.toOpacity(0.4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.6)
-                : Colors.black.toOpacity(0.6),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: child,
-        ),
-      );
-    }
-
     Widget backdropFilter(Widget child) {
-      return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      return BlurEffect(
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -125,32 +104,20 @@ class BangumiGridCard extends StatelessWidget {
                         if (bangumiItem.airDate.isNotEmpty)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: animeCardUseBlur
-                                ? backdropFilter(
-                                    Text(
-                                      bangumiItem.airDate,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  )
-                                : containerBackground(
-                                    Text(
-                                      bangumiItem.airDate,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
+                            child: backdropFilter(
+                              Text(
+                                bangumiItem.airDate,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
                         const SizedBox(height: 4),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: animeCardUseBlur
-                              ? backdropFilter(scoreWidget())
-                              : containerBackground(scoreWidget()),
+                          child: backdropFilter(scoreWidget()),
                         ),
                       ],
                     ),
@@ -252,35 +219,14 @@ class _BangumiCharacterCard extends StatelessWidget {
     final title = character.nameCN.isNotEmpty
         ? character.nameCN
         : character.name;
-    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
 
     Widget info() {
       return Text(character.info, style: const TextStyle(fontSize: 12.0));
     }
 
-    Widget containerBackground(Widget child) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white.toOpacity(0.4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.6)
-                : Colors.black.toOpacity(0.6),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: child,
-        ),
-      );
-    }
-
     Widget backdropFilter(Widget child) {
-      return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      return BlurEffect(
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -320,9 +266,7 @@ class _BangumiCharacterCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: animeCardUseBlur
-                          ? backdropFilter(info())
-                          : containerBackground(info()),
+                      child: backdropFilter(info()),
                     ),
                   ),
                 ),

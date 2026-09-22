@@ -1581,7 +1581,8 @@ importedAsNewConfig: Imported as new config
 imported: Imported
 invalidClipboardFormat: Invalid clipboard format
 cannotModifySystemPreset: Cannot modify system preset
-animeCardUseBlur: Anime Card Use Blur Background
+enableBlurEffect: Enable Blur Effect
+blurStrength: Blur Strength
 showAnimeCardOverlay: Show anime card overlay
 tileTitleMarquee: Card Title Marquee
 horizontalLayout: Horizontal Layout

@@ -43,7 +43,6 @@ class _FrostedCircleButton extends StatelessWidget {
       width: size,
       height: size,
       child: BlurEffect(
-        blur: 16,
         borderRadius: BorderRadius.circular(radius),
         child: Material(
           color: (tint ?? cs.surface).withValues(alpha: dark ? 0.45 : 0.6),

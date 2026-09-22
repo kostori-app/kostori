@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' show ImageFilter;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:floating/floating.dart';
@@ -1247,8 +1246,7 @@ class _PlayPauseIndicatorState extends State<_PlayPauseIndicator> {
               clipBehavior: Clip.antiAlias,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: BlurEffect(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.45),
                     alignment: Alignment.center,

@@ -83,6 +83,26 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
                     App.forceRebuild();
                   },
                 ),
+                _SwitchSetting(
+                  title: t.enableBlurEffect,
+                  settingKey: "blurEnabled",
+                  dataSource: SwitchDataSource.implicit,
+                  defaultValue: true,
+                  onChanged: () {
+                    setState(() {});
+                    App.forceRebuild();
+                  },
+                ),
+                if (appdata.implicitData['blurEnabled'] != false)
+                  _IntSliderSetting(
+                    title: t.blurStrength,
+                    settingsIndex: "blurStrength",
+                    options: [for (var i = 5; i <= 20; i++) i],
+                    dataSource: SwitchDataSource.implicit,
+                    onChanged: () {
+                      App.forceRebuild();
+                    },
+                  ),
                 if (!appdata.settings['dynamicColor'])
                   ThemePreviewScroller(seedColorMap: standardColorMap),
               ],

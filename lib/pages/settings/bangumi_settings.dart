@@ -8,9 +8,6 @@ class BangumiSettings extends StatefulWidget {
 }
 
 class _BangumiSettingsState extends State<BangumiSettings> {
-  bool get _showOverlay =>
-      appdata.implicitData['showAnimeCardOverlay'] != false;
-
   bool get _loggedIn => bangumiLoggedIn;
 
   String? _userId;
@@ -89,12 +86,6 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                       dataSource: SwitchDataSource.implicit,
                       onChanged: () => setState(() {}),
                     ),
-                    if (_showOverlay)
-                      _SwitchSetting(
-                        title: t.animeCardUseBlur,
-                        settingKey: "animeCardUseBlur",
-                        dataSource: SwitchDataSource.implicit,
-                      ),
                     _IntSliderSetting(
                       title: t.bangumiCardPerRow,
                       settingsIndex: "bangumiCardPerRow",

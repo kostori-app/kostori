@@ -311,8 +311,7 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                       children: [
                         // 磨砂玻璃底：模糊其下滚动的正文（收起时可见）
                         ClipRect(
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                          child: BlurEffect(
                             child: Container(
                               color: Theme.of(context)
                                   .colorScheme

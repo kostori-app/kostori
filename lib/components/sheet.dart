@@ -376,8 +376,7 @@ class _BackgroundLayer extends StatelessWidget {
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => _GradientBg(color: config.themeColor),
             ),
-          BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+          BlurEffect(
             child: Container(color: Colors.black.toOpacity(0.35)),
           ),
         ],

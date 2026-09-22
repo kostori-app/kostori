@@ -57,8 +57,7 @@ class _CenterOverlay extends StatelessWidget {
         alignment: Alignment.center,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: BlurEffect(
             child: Material(
               color: Colors.black.toOpacity(0.4),
               borderRadius: BorderRadius.circular(8),
@@ -433,7 +432,6 @@ class ContentDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: BlurEffect(
-          blur: 18,
           borderRadius: BorderRadius.circular(18),
           child: Container(
             decoration: BoxDecoration(

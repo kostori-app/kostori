@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -779,8 +778,7 @@ class AnimeListState extends State<AnimeList>
             child: Stack(
               children: [
                 ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: BlurEffect(
                     child: Container(
                       color: Theme.of(
                         context,
@@ -830,8 +828,7 @@ class AnimeListState extends State<AnimeList>
           child: Stack(
             children: [
               ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                child: BlurEffect(
                   child: Container(
                     color: Theme.of(
                       context,

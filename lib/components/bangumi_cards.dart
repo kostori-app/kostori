@@ -69,34 +69,11 @@ class BangumiBriefCard extends StatelessWidget {
         : bangumiItem.name;
     final style = const TextStyle(fontWeight: FontWeight.w500);
 
-    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
     final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
 
-    Widget containerBackground(Widget child) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white.toOpacity(0.4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.6)
-                : Colors.black.toOpacity(0.6),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: child,
-        ),
-      );
-    }
-
     Widget backdropFilter(Widget child) {
-      // blur 半径直接影响每帧合成开销：卡片滚动时覆盖层实时模糊下层，
-      // sigma 10 是滑动卡顿的主要来源，降到 4 视觉仍清晰
-      return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+      return BlurEffect(
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -210,34 +187,20 @@ class BangumiBriefCard extends StatelessWidget {
                                     if (bangumiItem.airDate.isNotEmpty)
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: animeCardUseBlur
-                                            ? backdropFilter(
-                                                Text(
-                                                  bangumiItem.airDate,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              )
-                                            : containerBackground(
-                                                Text(
-                                                  bangumiItem.airDate,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
+                                        child: backdropFilter(
+                                          Text(
+                                            bangumiItem.airDate,
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     const SizedBox(height: 4),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: animeCardUseBlur
-                                          ? backdropFilter(_buildScore(context))
-                                          : containerBackground(
-                                              _buildScore(context),
-                                            ),
+                                      child: backdropFilter(_buildScore(context)),
                                     ),
                                   ],
                                 ),
@@ -263,34 +226,20 @@ class BangumiBriefCard extends StatelessWidget {
                                     if (bangumiItem.airDate.isNotEmpty)
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: animeCardUseBlur
-                                            ? backdropFilter(
-                                                Text(
-                                                  bangumiItem.airDate,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              )
-                                            : containerBackground(
-                                                Text(
-                                                  bangumiItem.airDate,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
+                                        child: backdropFilter(
+                                          Text(
+                                            bangumiItem.airDate,
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     const SizedBox(height: 4),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: animeCardUseBlur
-                                          ? backdropFilter(_buildScore(context))
-                                          : containerBackground(
-                                              _buildScore(context),
-                                            ),
+                                      child: backdropFilter(_buildScore(context)),
                                     ),
                                   ],
                                 ),
@@ -651,37 +600,14 @@ class BangumiCharacterCard extends StatelessWidget {
         ? character.nameCN
         : character.name;
     final style = const TextStyle(fontWeight: FontWeight.w500);
-    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
 
     Widget info() {
       return Text(character.info, style: const TextStyle(fontSize: 12.0));
     }
 
-    Widget containerBackground(Widget child) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white.toOpacity(0.4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.6)
-                : Colors.black.toOpacity(0.6),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: child,
-        ),
-      );
-    }
-
     Widget backdropFilter(Widget child) {
-      // blur 半径直接影响每帧合成开销：卡片滚动时覆盖层实时模糊下层，
-      // sigma 10 是滑动卡顿的主要来源，降到 4 视觉仍清晰
-      return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+      return BlurEffect(
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -811,9 +737,7 @@ class BangumiCharacterCard extends StatelessWidget {
                             padding: const EdgeInsets.all(8),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: animeCardUseBlur
-                                  ? backdropFilter(info())
-                                  : containerBackground(info()),
+                              child: backdropFilter(info()),
                             ),
                           ),
                         ),
@@ -907,34 +831,11 @@ class _BangumiCardState extends State<BangumiCard> {
     String? image = widget.bangumiItem.cardImage.isNotEmpty
         ? widget.bangumiItem.cardImage
         : null;
-    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
     final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
     final useMarquee = appdata.settings['tileTitleMarquee'] == true;
-    Widget containerBackground(Widget child) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white.toOpacity(0.4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.6)
-                : Colors.black.toOpacity(0.6),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: child,
-        ),
-      );
-    }
-
     Widget backdropFilter(Widget child) {
-      // blur 半径直接影响每帧合成开销：卡片滚动时覆盖层实时模糊下层，
-      // sigma 10 是滑动卡顿的主要来源，降到 4 视觉仍清晰
-      return BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+      return BlurEffect(
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           color: context.brightness == Brightness.light
@@ -1041,34 +942,20 @@ class _BangumiCardState extends State<BangumiCard> {
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
-                                          child: animeCardUseBlur
-                                              ? backdropFilter(
-                                                  Text(
-                                                    bangumiItem.airDate,
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                )
-                                              : containerBackground(
-                                                  Text(
-                                                    bangumiItem.airDate,
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
+                                          child: backdropFilter(
+                                            Text(
+                                              bangumiItem.airDate,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       const SizedBox(height: 4),
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: animeCardUseBlur
-                                            ? backdropFilter(_score())
-                                            : containerBackground(_score()),
+                                        child: backdropFilter(_score()),
                                       ),
                                     ],
                                   ),

@@ -76,7 +76,6 @@ class _GlassBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return BlurEffect(
-      blur: 10,
       child: Container(
         decoration: BoxDecoration(color: cs.surface.toOpacity(0.85)),
         child: child,

@@ -160,6 +160,9 @@ class Appdata with Init {
         implicitDataFile.deleteIgnoreError();
       }
     }
+    // 磨砂玻璃效果默认值（外观设置）：默认开启、强度 15（范围 5~20）
+    implicitData['blurEnabled'] ??= true;
+    implicitData['blurStrength'] ??= 15;
   }
 }
 

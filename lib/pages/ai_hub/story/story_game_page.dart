@@ -87,8 +87,7 @@ class _StoryGamePageState extends ConsumerState<StoryGamePage> {
       // 磨砂玻璃背景
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: BlurEffect(
           child: Material(
         color: cs.surfaceContainerHigh.withValues(alpha: 0.7),
         child: Column(

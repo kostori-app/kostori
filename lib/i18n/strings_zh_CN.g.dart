@@ -1570,7 +1570,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get imported => '已导入';
 	@override String get invalidClipboardFormat => '剪贴板格式无效';
 	@override String get cannotModifySystemPreset => '不能修改系统预设';
-	@override String get animeCardUseBlur => '番剧卡片使用模糊背景';
+	@override String get enableBlurEffect => '启用模糊效果';
+	@override String get blurStrength => '模糊强度';
 	@override String get showAnimeCardOverlay => '显示番剧条目卡片覆盖层';
 	@override String get tileTitleMarquee => '卡片标题滚动';
 	@override String get horizontalLayout => '水平布局';
@@ -4606,7 +4607,8 @@ extension on TranslationsZhCn {
 			'imported' => '已导入',
 			'invalidClipboardFormat' => '剪贴板格式无效',
 			'cannotModifySystemPreset' => '不能修改系统预设',
-			'animeCardUseBlur' => '番剧卡片使用模糊背景',
+			'enableBlurEffect' => '启用模糊效果',
+			'blurStrength' => '模糊强度',
 			'showAnimeCardOverlay' => '显示番剧条目卡片覆盖层',
 			'tileTitleMarquee' => '卡片标题滚动',
 			'horizontalLayout' => '水平布局',
@@ -5080,9 +5082,9 @@ extension on TranslationsZhCn {
 			'requestFailed' => '请求失败',
 			'allCopiedSuccess' => '全部复制成功',
 			'bindBangumiIdSuccess' => '绑定Bangumi ID成功',
-			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			_ => null,
 		} ?? switch (path) {
+			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			'applySuccess' => '应用成功',
 			'noChanges' => '没有更改',
 			'applyFailed' => '应用失败',
@@ -5594,9 +5596,9 @@ extension on TranslationsZhCn {
 			'outputModality' => '输出模态',
 			'supportsReasoning' => '支持推理',
 			'capabilities' => '能力',
-			'modelTypeChat' => '聊天',
 			_ => null,
 		} ?? switch (path) {
+			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '图像',
 			'modelTypeEmbedding' => '嵌入',
 			'modelTypeAudio' => '音频',

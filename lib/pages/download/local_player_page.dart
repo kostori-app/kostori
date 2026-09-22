@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
@@ -684,8 +683,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         child: Center(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: BlurEffect(
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -911,8 +909,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   Widget _frostedGlass({required Widget child}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+      child: BlurEffect(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(

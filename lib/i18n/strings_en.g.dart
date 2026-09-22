@@ -4636,8 +4636,11 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Cannot modify system preset'
 	String get cannotModifySystemPreset => 'Cannot modify system preset';
 
-	/// en: 'Anime Card Use Blur Background'
-	String get animeCardUseBlur => 'Anime Card Use Blur Background';
+	/// en: 'Enable Blur Effect'
+	String get enableBlurEffect => 'Enable Blur Effect';
+
+	/// en: 'Blur Strength'
+	String get blurStrength => 'Blur Strength';
 
 	/// en: 'Show anime card overlay'
 	String get showAnimeCardOverlay => 'Show anime card overlay';
@@ -10526,7 +10529,8 @@ extension on Translations {
 			'imported' => 'Imported',
 			'invalidClipboardFormat' => 'Invalid clipboard format',
 			'cannotModifySystemPreset' => 'Cannot modify system preset',
-			'animeCardUseBlur' => 'Anime Card Use Blur Background',
+			'enableBlurEffect' => 'Enable Blur Effect',
+			'blurStrength' => 'Blur Strength',
 			'showAnimeCardOverlay' => 'Show anime card overlay',
 			'tileTitleMarquee' => 'Card Title Marquee',
 			'horizontalLayout' => 'Horizontal Layout',
@@ -10999,9 +11003,9 @@ extension on Translations {
 			'bindBangumiIdSuccess' => 'Bangumi ID bound successfully',
 			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
 			'applySuccess' => 'Apply success',
-			'noChanges' => 'No changes',
 			_ => null,
 		} ?? switch (path) {
+			'noChanges' => 'No changes',
 			'applyFailed' => 'Apply failed',
 			'noResultsTryOtherKeywords' => 'No results found, please try other keywords',
 			'jumping' => 'Jumping...',
@@ -11513,9 +11517,9 @@ extension on Translations {
 			'outputModality' => 'Output modalities',
 			'supportsReasoning' => 'Supports reasoning',
 			'capabilities' => 'Capabilities',
-			'modelTypeChat' => 'Chat',
 			_ => null,
 		} ?? switch (path) {
+			'modelTypeChat' => 'Chat',
 			'modelTypeImage' => 'Image',
 			'modelTypeEmbedding' => 'Embedding',
 			'modelTypeAudio' => 'Audio',

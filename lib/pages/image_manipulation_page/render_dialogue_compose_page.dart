@@ -591,8 +591,8 @@ class _RenderDialogueComposePageState
       barrierColor: Colors.black.toOpacity(0.3),
       pageBuilder: (context, animation, secondaryAnimation) {
         return Center(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: BlurEffect(
+            borderRadius: BorderRadius.circular(12),
             child: Material(
               color: Colors.black.toOpacity(0.3),
               borderRadius: BorderRadius.circular(12),
