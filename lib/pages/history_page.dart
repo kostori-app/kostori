@@ -93,6 +93,21 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 
   void onUpdate() => _loadHistory();
 
+  /// 打开历史详情：不先关弹层，让 Hero 从瓷砖飞入详情页，返回时回到弹层；
+  /// 带上卡片实际 heroTag，否则对不上没有 Hero 动画
+  void _openHistoryDetail(History h, int heroID, String? heroTag) {
+    App.mainNavigatorKey?.currentContext?.to<dynamic>(
+      () => AnimePage(
+        id: h.id,
+        sourceKey: h.sourceKey,
+        cover: h.cover,
+        title: h.title,
+        heroID: heroID,
+        heroTag: heroTag,
+      ),
+    );
+  }
+
   void _showDaySheet(DateTime day, List<History> items) {
     if (items.isEmpty || !mounted) return;
     // 用 PageRoute 版弹层（而非 showModalBottomSheet），这样瓷砖才能与详情页做 Hero 转场
@@ -110,27 +125,22 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                 sliver: SliverGridAnimes(
                   animes: items,
                   disableMasonry: true,
-                  onTap: (a, heroID, [heroTag]) {
-                    final h = a as History;
-                    // 不先关弹层：让 Hero 从瓷砖飞入详情页，返回时回到弹层
-                    // 带上卡片实际 heroTag，否则对不上没有 Hero 动画
-                    App.mainNavigatorKey?.currentContext?.to<dynamic>(
-                      () => AnimePage(
-                        id: h.id,
-                        sourceKey: h.sourceKey,
-                        cover: h.cover,
-                        title: h.title,
-                        heroID: heroID,
-                        heroTag: heroTag,
-                      ),
-                    );
-                  },
+                  onTap: (a, heroID, [heroTag]) =>
+                      _openHistoryDetail(a as History, heroID, heroTag),
                 ),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  /// 历史搜索：弹层内输入，结果用 anime 卡片网格展示（与热力图格子弹层一致）
+  void _showSearchSheet() {
+    if (!mounted) return;
+    context.toSheet(
+      () => _HistorySearchSheet(animes: animes, onOpen: _openHistoryDetail),
     );
   }
 
@@ -257,6 +267,11 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     ];
 
     List<Widget> normalActions = [
+      IconButton(
+        icon: const Icon(Icons.search),
+        tooltip: t.search,
+        onPressed: _showSearchSheet,
+      ),
       IconButton(
         icon: const Icon(Icons.checklist),
         tooltip: multiSelectMode ? t.exitMultiSelect : t.multiSelect,
@@ -540,6 +555,107 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
         }
       },
       child: body,
+    );
+  }
+}
+
+/// 历史搜索弹层：顶部输入框，下方用 anime 卡片网格展示匹配到的历史
+/// （与点击热力图格子的弹层一致）
+class _HistorySearchSheet extends StatefulWidget {
+  const _HistorySearchSheet({required this.animes, required this.onOpen});
+
+  final List<History> animes;
+  final void Function(History h, int heroID, String? heroTag) onOpen;
+
+  @override
+  State<_HistorySearchSheet> createState() => _HistorySearchSheetState();
+}
+
+class _HistorySearchSheetState extends State<_HistorySearchSheet> {
+  final TextEditingController _controller = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  List<History> get _results {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    return widget.animes.where((h) {
+      if (h.title.toLowerCase().contains(q)) return true;
+      if (h.subtitle.toLowerCase().contains(q)) return true;
+      final name = AnimeSource.find(h.sourceKey)?.name.toLowerCase();
+      return name != null && name.contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final results = _results;
+    return Sheet(
+      title: t.search,
+      icon: Icons.search,
+      initialSize: 0.75,
+      builder: (context, sc) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: t.search,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _controller.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ),
+            Expanded(
+              child: results.isEmpty
+                  ? Center(
+                      child: Text(
+                        _query.trim().isEmpty ? t.search : t.noData,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  : CustomScrollView(
+                      controller: sc,
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+                          sliver: SliverGridAnimes(
+                            animes: results,
+                            disableMasonry: true,
+                            onTap: (a, heroID, [heroTag]) =>
+                                widget.onOpen(a as History, heroID, heroTag),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
