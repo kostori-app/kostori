@@ -16,6 +16,38 @@ import 'package:rhttp/rhttp.dart' as rhttp;
 export 'package:dio/dio.dart';
 
 class MyLogInterceptor extends Interceptor {
+  /// 隐私脱敏：敏感请求/响应头的值打码；cookie 只保留名字（便于排查又不泄露）。
+  static String _redactHeaders(Map<dynamic, dynamic> headers) {
+    bool sensitive(String lower) =>
+        lower == 'authorization' ||
+        lower == 'proxy-authorization' ||
+        lower.contains('token') ||
+        lower.contains('secret') ||
+        lower.contains('password') ||
+        lower.contains('api-key') ||
+        lower.contains('apikey') ||
+        lower.contains('auth');
+    final out = <String, String>{};
+    headers.forEach((k, v) {
+      final key = k.toString();
+      final lower = key.toLowerCase();
+      if (lower == 'cookie' || lower == 'set-cookie') {
+        final names = v
+            .toString()
+            .split(';')
+            .map((p) => p.split('=').first.trim())
+            .where((n) => n.isNotEmpty)
+            .toSet();
+        out[key] = '<${names.length} cookie(s): ${names.join(', ')}>';
+      } else if (sensitive(lower)) {
+        out[key] = '<redacted>';
+      } else {
+        out[key] = v.toString();
+      }
+    });
+    return out.toString();
+  }
+
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     // 标注 noLog 的请求（如 HLS 分片，动辄上千条）不记录，避免刷屏
@@ -23,12 +55,15 @@ class MyLogInterceptor extends Interceptor {
       handler.next(err);
       return;
     }
-    // 请求失败一律记录（错误日志不需要正文），概要模式下也只记一行
+    // 请求失败一律记录（错误日志不需要正文），概要模式下也只记一行；
+    // 带上脱敏后的请求头，便于定位问题
     NetLog.error(
       "Network",
       NetLog.metaOnly
           ? '${err.requestOptions.method} ${err.requestOptions.uri} → ${err.response?.statusCode ?? err.type.name}'
-          : "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}",
+          : "${err.requestOptions.method} ${err.requestOptions.path}\n"
+                "request headers:\n${_redactHeaders(err.requestOptions.headers)}\n"
+                "$err\n${err.response?.data.toString()}",
     );
     switch (err.type) {
       case DioExceptionType.badResponse:
@@ -121,7 +156,6 @@ class MyLogInterceptor extends Interceptor {
         value.length == 1 ? value.first : value.toString(),
       ),
     );
-    headers.remove("cookie");
     // 日志正文限长：大响应（大 JSON/HTML、二进制）只记长度/前缀，
     // 避免构造并持有 MB 级字符串（内存与卡顿的主要来源）
     const logBodyLimit = 32768;
@@ -150,7 +184,7 @@ class MyLogInterceptor extends Interceptor {
           : LogLevel.error,
       "Network",
       "Response ${response.realUri.toString()} ${response.statusCode}\n"
-          "headers:\n$headers\n$content",
+          "headers:\n${_redactHeaders(headers)}\n$content",
     );
 
     handler.next(response);
@@ -191,7 +225,7 @@ class MyLogInterceptor extends Interceptor {
     NetLog.info(
       "Network",
       "${options.method} ${options.uri}\n"
-          "headers:\n${options.headers}\n"
+          "headers:\n${_redactHeaders(options.headers)}\n"
           "data:\n$data",
     );
 

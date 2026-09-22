@@ -1115,7 +1115,11 @@ class AppBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final btn = GestureDetector(
       // 长按与点击共存：超时未松手走抽屉，松手早走返回
-      onLongPress: () => openQuickDrawer(context),
+      onLongPress: () {
+        // 移动端给一次震动反馈，明确已触发长按抽屉
+        if (App.isMobile) HapticFeedback.mediumImpact();
+        openQuickDrawer(context);
+      },
       child: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new),
         onPressed: () => Navigator.maybePop(context),
