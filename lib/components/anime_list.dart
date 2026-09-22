@@ -844,47 +844,20 @@ class AnimeListState extends State<AnimeList>
   }
 
   Widget buildContinuousMode(BuildContext context) {
-    Widget pageSelecto = Container(
-      height: 46,
-      decoration: BoxDecoration(color: Colors.transparent),
-      child: context.width <= changePoint
-          ? _buildCompactPageSelector()
-          : _buildFullPageSelector(),
-    );
-
+    // 连续模式没有翻页概念，报错时只显示错误与重试，不显示翻页条
     if (_error != null && _data.isEmpty) {
-      return Stack(
+      return Column(
         children: [
-          Positioned.fill(
-            child: Column(
-              children: [
-                if (widget.errorLeading != null) widget.errorLeading!,
-                Expanded(
-                  child: NetworkError(
-                    withAppbar: false,
-                    message: _error!,
-                    retry: () {
-                      setState(() {
-                        _error = null;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 翻页条贴底（与分页模式一致），别顶到顶部状态栏下方
-          Positioned(
-            right: 0,
-            left: 0,
-            bottom: 0,
-            child: ClipRect(
-              child: BlurEffect(
-                child: Container(
-                  color: Theme.of(context).colorScheme.surface.toOpacity(0.85),
-                  child: pageSelecto,
-                ),
-              ),
+          if (widget.errorLeading != null) widget.errorLeading!,
+          Expanded(
+            child: NetworkError(
+              withAppbar: false,
+              message: _error!,
+              retry: () {
+                setState(() {
+                  _error = null;
+                });
+              },
             ),
           ),
         ],
