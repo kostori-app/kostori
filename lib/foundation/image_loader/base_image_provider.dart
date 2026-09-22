@@ -20,6 +20,20 @@ String imageCacheKey(String url, String? sourceKey, [String? aid]) {
   return 'long:${sha1.convert(utf8.encode(url))}x${url.length}$tail';
 }
 
+/// 图片加载失败日志节流：同一 key 10 分钟内只记一次，且不带堆栈。
+/// 坏图（如源返回的一批失效地址）否则会把控制台刷爆。
+final Map<String, int> _imageErrorLoggedAt = {};
+
+void _logImageError(String key, Object error) {
+  final now = DateTime.now().millisecondsSinceEpoch;
+  if (now - (_imageErrorLoggedAt[key] ?? 0) < 10 * 60 * 1000) return;
+  if (_imageErrorLoggedAt.length > 1000) _imageErrorLoggedAt.clear();
+  _imageErrorLoggedAt[key] = now;
+  // 只留错误首行（地址 + 简短原因），不带堆栈
+  final detail = error.toString().split('\n').first;
+  DebugLog.error('Image Loading', '$key\n$detail');
+}
+
 abstract class BaseImageProvider<T extends BaseImageProvider<T>>
     extends ImageProvider<T> {
   const BaseImageProvider();
@@ -204,13 +218,13 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
       }
     } on _ImageLoadingStopException {
       rethrow;
-    } catch (e, s) {
+    } catch (e) {
       scheduleMicrotask(() {
         PaintingBinding.instance.imageCache.evict(key);
       });
       final msg = e.toString();
       if (!msg.contains('404') && !msg.contains('403')) {
-        DebugLog.error("Image Loading", e, s);
+        _logImageError(key.key, e);
       }
       rethrow;
     } finally {

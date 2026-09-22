@@ -52,7 +52,11 @@ Future<Uint8List?> _resolveInlineImage(String url, String? sourceKey) async {
       unawaited(InlineImageStore.storeRef(url, bytes));
       return bytes;
     } catch (e) {
-      DebugLog.error('InlineImage', 'loadInlineImage failed: $e');
+      // 只记简短原因（不带堆栈/底层长串），避免坏图刷屏
+      DebugLog.warning(
+        'InlineImage',
+        'loadInlineImage failed: ${e.toString().split('\n').first}',
+      );
       return null;
     }
   }
