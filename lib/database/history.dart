@@ -1,16 +1,21 @@
 // ignore_for_file: collection_methods_unrelated_type
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart' show SqliteException;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/db_common.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/image_loader/inline_image.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:path/path.dart' as p;
 
 part 'history.g.dart';
 
@@ -670,6 +675,9 @@ class HistoryManager with ChangeNotifier {
   /// 避免数据导入/后台关闭连接时打断在途查询（原生 sqlite3_step 崩溃）
   int _busy = 0;
 
+  /// 损坏恢复进行中标志，避免并发重复重建
+  bool _dbRepairing = false;
+
   Future<void> _waitIdle() async {
     while (_busy > 0) {
       await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -793,21 +801,144 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   }
 
+  // ─── 损坏恢复（database disk image is malformed）──────────────
+
+  /// 是否为数据库文件损坏错误。库经 drift remote（isolate）执行，异常可能被
+  /// 包装成非 SqliteException，故同时按消息文本判断。
+  bool _isMalformedError(Object e) {
+    final msg = e.toString();
+    return (e is SqliteException && e.resultCode == 11) ||
+        msg.contains('malformed') ||
+        msg.contains('code 11');
+  }
+
+  /// 执行 [op]；若因数据库损坏失败，重建 [table] 后重试一次。
+  /// [onFailure] 为仍失败时的兜底返回值（默认继续抛出）。
+  Future<T> _resilient<T>(
+    TableInfo table,
+    Future<T> Function() op, {
+    T Function()? onFailure,
+  }) async {
+    try {
+      return await op();
+    } catch (e, s) {
+      if (!_isMalformedError(e)) rethrow;
+      Log.error(
+        'HistoryRepair',
+        '检测到数据库损坏（${table.actualTableName}），尝试修复: $e\n$s',
+      );
+      await _repairTable(table);
+      try {
+        return await op();
+      } catch (e2, s2) {
+        Log.error('HistoryRepair', '修复后重试仍失败: $e2\n$s2');
+        if (onFailure != null) return onFailure();
+        rethrow;
+      }
+    }
+  }
+
+  /// 重建损坏的表，尽力保留其余表数据与旧表可读行；表级重建失败时整库重建兜底。
+  /// 不能用 reinit()——它先 _waitIdle，而重建由在途查询触发会死锁
+  Future<void> _repairTable(TableInfo table) async {
+    if (_dbRepairing) return;
+    _dbRepairing = true;
+    try {
+      final name = table.actualTableName;
+      final backup = '${name}_repair_old';
+      // 1. 旧表改名（只改 schema，损坏行仍可能被读出）
+      await _db.customStatement('DROP TABLE IF EXISTS "$backup"');
+      await _db.customStatement('ALTER TABLE "$name" RENAME TO "$backup"');
+      // 2. 按 drift schema 建新表
+      await Migrator(_db).createTable(table);
+      // 3. 尽力把旧数据搬回：主键冲突/损坏行以 OR REPLACE 覆盖（去重）
+      await _db.customStatement(
+        'INSERT OR REPLACE INTO "$name" SELECT * FROM "$backup"',
+      );
+      await _db.customStatement('DROP TABLE IF EXISTS "$backup"');
+      // 4. 重开连接：清空 drift 缓存的 prepared statement（保留数据）
+      await _db.close();
+      isInitialized = false;
+      _db = _HistoryDb();
+      isInitialized = true;
+      DebugLog.info('HistoryRepair', '已重建并尽力恢复 $name 表');
+    } catch (e, s) {
+      Log.error(
+        'HistoryRepair',
+        '重建 ${table.actualTableName} 失败，尝试整库重建: $e\n$s',
+      );
+      await _rebuildDatabase();
+    } finally {
+      _dbRepairing = false;
+    }
+  }
+
+  /// 整库重建：把损坏的 history.db 备份为 `.corrupt-<ts>` 后重新初始化，
+  /// 不直接删除，尽量保留用户数据副本以便人工恢复。
+  Future<void> _rebuildDatabase() async {
+    try {
+      await _db.close();
+      // ignore: empty_catches
+    } catch (_) {}
+    isInitialized = false;
+    _cachedHistoryIds = null;
+    cachedHistories.clear();
+    _rebuildBangumiBest();
+    try {
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final base = p.join(App.dataPath, 'history.db');
+      for (final suffix in const ['', '-wal', '-shm']) {
+        final f = File('$base$suffix');
+        if (await f.exists()) await f.rename('${f.path}.corrupt-$stamp');
+      }
+    } catch (e, s) {
+      Log.error('HistoryRepair', '备份损坏的 history.db 失败: $e\n$s');
+    }
+    _db = _HistoryDb();
+    isInitialized = true;
+    try {
+      await _db.customStatement('PRAGMA busy_timeout = 10000;');
+      // ignore: empty_catches
+    } catch (_) {}
+    for (final sql in const [
+      _createPluginEventsSql,
+      _createTextRulesSql,
+      _createMemosSql,
+    ]) {
+      try {
+        await _db.customStatement(sql);
+        // ignore: empty_catches
+      } catch (_) {}
+    }
+    try {
+      await _db.customStatement(_alterTextRulesUpdatedAtSql);
+      // ignore: empty_catches
+    } catch (_) {}
+    try {
+      await _updateCache();
+      // ignore: empty_catches
+    } catch (_) {}
+    notifyListeners();
+    DebugLog.info('HistoryRepair', '已重建 history.db');
+  }
+
   int get length => _cachedHistoryIds?.length ?? 0;
 
   // ─── 缓存 ──────────────────────────────────
 
-  Future<void> _updateCache() => _guard(() async {
-    final rows = await _db.select(_db.historyTable).get();
-    _cachedHistoryIds = {};
-    cachedHistories.clear();
-    for (final r in rows) {
-      final h = History.fromDrift(r);
-      _cachedHistoryIds![h.id] = true;
-      cachedHistories[h.id] = h;
-    }
-    _rebuildBangumiBest();
-  });
+  Future<void> _updateCache() => _guard(
+    () => _resilient(_db.historyTable, () async {
+      final rows = await _db.select(_db.historyTable).get();
+      _cachedHistoryIds = {};
+      cachedHistories.clear();
+      for (final r in rows) {
+        final h = History.fromDrift(r);
+        _cachedHistoryIds![h.id] = true;
+        cachedHistories[h.id] = h;
+      }
+      _rebuildBangumiBest();
+    }),
+  );
 
   void updateCache() => _updateCache();
 
@@ -924,23 +1055,27 @@ class HistoryManager with ChangeNotifier {
 
   Future<History?> findAsync(String id, AnimeType type) => _guard(() async {
     try {
-      final row =
-          await (_db.select(_db.historyTable)
-                ..where((t) => t.id.equals(id) & t.type.equals(type.value)))
-              .getSingleOrNull();
-      return row != null ? History.fromDrift(row) : null;
+      return await _resilient(_db.historyTable, () async {
+        final row =
+            await (_db.select(_db.historyTable)
+                  ..where((t) => t.id.equals(id) & t.type.equals(type.value)))
+                .getSingleOrNull();
+        return row != null ? History.fromDrift(row) : null;
+      });
     } catch (_) {
       // 连接可能正在重开（WebDAV 导入等），忽略该次查询
       return null;
     }
   });
 
-  Future<List<History>> getAll() => _guard(() async {
-    final rows = await (_db.select(
-      _db.historyTable,
-    )..orderBy([(t) => OrderingTerm.desc(t.time)])).get();
-    return rows.map(History.fromDrift).toList();
-  });
+  Future<List<History>> getAll() => _guard(
+    () => _resilient(_db.historyTable, () async {
+      final rows = await (_db.select(
+        _db.historyTable,
+      )..orderBy([(t) => OrderingTerm.desc(t.time)])).get();
+      return rows.map(History.fromDrift).toList();
+    }, onFailure: () => <History>[]),
+  );
 
   Stream<List<History>> watchAll() {
     return (_db.select(_db.historyTable)
@@ -1031,69 +1166,73 @@ class HistoryManager with ChangeNotifier {
   });
 
   /// 全部观看进度（跨端同步导出用）
-  Future<List<Progress>> getAllProgress() => _guard(() async {
-    final rows = await _db.select(_db.progressTable).get();
-    return rows.map(Progress.fromDrift).toList();
-  });
+  Future<List<Progress>> getAllProgress() => _guard(
+    () => _resilient(_db.progressTable, () async {
+      final rows = await _db.select(_db.progressTable).get();
+      return rows.map(Progress.fromDrift).toList();
+    }, onFailure: () => <Progress>[]),
+  );
 
   /// 字段级合并观看进度：同一条（type/historyId/episode/road）取「结束时间更晚、
   /// 否则观看进度更大」的一条，`isCompleted` 取两端或。
   ///
   /// 用于跨端同步：只做增量合并，不删除本地条目（历史被删时的进度清理由
   /// [mergeHistoryList] 级联完成）。
-  Future<void> mergeProgressList(List<Progress> remote) => _guard(() async {
-    if (remote.isEmpty) return;
-    final localRows = await _db.select(_db.progressTable).get();
-    final localMap = <String, Progress>{};
-    for (final row in localRows) {
-      final p = Progress.fromDrift(row);
-      localMap[p.key] = p;
-    }
-
-    final toWrite = <Progress>[];
-    for (final r in remote) {
-      final local = localMap[r.key];
-      if (local == null) {
-        toWrite.add(r);
-        continue;
+  Future<void> mergeProgressList(List<Progress> remote) => _guard(
+    () => _resilient(_db.progressTable, () async {
+      if (remote.isEmpty) return;
+      final localRows = await _db.select(_db.progressTable).get();
+      final localMap = <String, Progress>{};
+      for (final row in localRows) {
+        final p = Progress.fromDrift(row);
+        localMap[p.key] = p;
       }
-      final winner = r.isNewerThan(local) ? r : local;
-      toWrite.add(
-        Progress(
-          historyId: winner.historyId,
-          type: winner.type,
-          episode: winner.episode,
-          road: winner.road,
-          progressInMilli: winner.progressInMilli,
-          // 任一端标记看完即视为看完，避免回退成未完成
-          isCompleted: local.isCompleted || r.isCompleted,
-          startTime: winner.startTime,
-          endTime: winner.endTime,
-        ),
-      );
-    }
-    if (toWrite.isEmpty) return;
 
-    await _db.batch((batch) {
-      for (final p in toWrite) {
-        batch.insert(
-          _db.progressTable,
-          ProgressTableCompanion(
-            type: Value(p.type.value),
-            historyId: Value(p.historyId),
-            episode: Value(p.episode),
-            road: Value(p.road),
-            progressInMilli: Value(p.progressInMilli),
-            isCompleted: Value(p.isCompleted),
-            startTime: Value(p.startTime?.toIso8601String()),
-            endTime: Value(p.endTime?.toIso8601String()),
+      final toWrite = <Progress>[];
+      for (final r in remote) {
+        final local = localMap[r.key];
+        if (local == null) {
+          toWrite.add(r);
+          continue;
+        }
+        final winner = r.isNewerThan(local) ? r : local;
+        toWrite.add(
+          Progress(
+            historyId: winner.historyId,
+            type: winner.type,
+            episode: winner.episode,
+            road: winner.road,
+            progressInMilli: winner.progressInMilli,
+            // 任一端标记看完即视为看完，避免回退成未完成
+            isCompleted: local.isCompleted || r.isCompleted,
+            startTime: winner.startTime,
+            endTime: winner.endTime,
           ),
-          mode: InsertMode.insertOrReplace,
         );
       }
-    });
-    notifyListeners();
-  });
+      if (toWrite.isEmpty) return;
+
+      await _db.batch((batch) {
+        for (final p in toWrite) {
+          batch.insert(
+            _db.progressTable,
+            ProgressTableCompanion(
+              type: Value(p.type.value),
+              historyId: Value(p.historyId),
+              episode: Value(p.episode),
+              road: Value(p.road),
+              progressInMilli: Value(p.progressInMilli),
+              isCompleted: Value(p.isCompleted),
+              startTime: Value(p.startTime?.toIso8601String()),
+              endTime: Value(p.endTime?.toIso8601String()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
+      });
+      notifyListeners();
+    }),
+  );
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1101,40 +1240,44 @@ class HistoryManager with ChangeNotifier {
 // ═══════════════════════════════════════════════════════════
 
 extension ProgressHelper on HistoryManager {
-  Future<void> addProgress(Progress prog, String historyId) => _guard(() async {
-    await _db
-        .into(_db.progressTable)
-        .insertOnConflictUpdate(
-          ProgressTableCompanion(
-            type: Value(prog.type.value),
-            historyId: Value(historyId),
-            episode: Value(prog.episode),
-            road: Value(prog.road),
-            progressInMilli: Value(prog.progressInMilli),
-            isCompleted: Value(prog.isCompleted),
-            startTime: Value(prog.startTime?.toIso8601String()),
-            endTime: Value(prog.endTime?.toIso8601String()),
-          ),
-        );
-  });
+  Future<void> addProgress(Progress prog, String historyId) => _guard(
+    () => _resilient(_db.progressTable, () async {
+      await _db
+          .into(_db.progressTable)
+          .insertOnConflictUpdate(
+            ProgressTableCompanion(
+              type: Value(prog.type.value),
+              historyId: Value(historyId),
+              episode: Value(prog.episode),
+              road: Value(prog.road),
+              progressInMilli: Value(prog.progressInMilli),
+              isCompleted: Value(prog.isCompleted),
+              startTime: Value(prog.startTime?.toIso8601String()),
+              endTime: Value(prog.endTime?.toIso8601String()),
+            ),
+          );
+    }),
+  );
 
   Future<bool> checkIfProgressExists({
     required String historyId,
     required AnimeType type,
     required int episode,
     required int road,
-  }) => _guard(() async {
-    final row =
-        await (_db.select(_db.progressTable)..where(
-              (t) =>
-                  t.historyId.equals(historyId) &
-                  t.type.equals(type.value) &
-                  t.episode.equals(episode) &
-                  t.road.equals(road),
-            ))
-            .getSingleOrNull();
-    return row != null;
-  });
+  }) => _guard(
+    () => _resilient(_db.progressTable, () async {
+      final row =
+          await (_db.select(_db.progressTable)..where(
+                (t) =>
+                    t.historyId.equals(historyId) &
+                    t.type.equals(type.value) &
+                    t.episode.equals(episode) &
+                    t.road.equals(road),
+              ))
+              .getSingleOrNull();
+      return row != null;
+    }, onFailure: () => false),
+  );
 
   Progress? progressFind(
     String historyId,
@@ -1151,18 +1294,20 @@ extension ProgressHelper on HistoryManager {
     AnimeType type,
     int episode,
     int road,
-  ) => _guard(() async {
-    final row =
-        await (_db.select(_db.progressTable)..where(
-              (t) =>
-                  t.historyId.equals(historyId) &
-                  t.type.equals(type.value) &
-                  t.episode.equals(episode) &
-                  t.road.equals(road),
-            ))
-            .getSingleOrNull();
-    return row != null ? Progress.fromDrift(row) : null;
-  });
+  ) => _guard(
+    () => _resilient(_db.progressTable, () async {
+      final row =
+          await (_db.select(_db.progressTable)..where(
+                (t) =>
+                    t.historyId.equals(historyId) &
+                    t.type.equals(type.value) &
+                    t.episode.equals(episode) &
+                    t.road.equals(road),
+              ))
+              .getSingleOrNull();
+      return row != null ? Progress.fromDrift(row) : null;
+    }, onFailure: () => null),
+  );
 
   Future<void> updateProgress({
     required String historyId,
@@ -1173,31 +1318,33 @@ extension ProgressHelper on HistoryManager {
     bool? isCompleted,
     DateTime? startTime,
     DateTime? endTime,
-  }) => _guard(() async {
-    await (_db.update(_db.progressTable)..where(
-          (t) =>
-              t.historyId.equals(historyId) &
-              t.type.equals(type.value) &
-              t.episode.equals(episode) &
-              t.road.equals(road),
-        ))
-        .write(
-          ProgressTableCompanion(
-            progressInMilli: progressInMilli != null
-                ? Value(progressInMilli)
-                : const Value.absent(),
-            isCompleted: isCompleted != null
-                ? Value(isCompleted)
-                : const Value.absent(),
-            startTime: startTime != null
-                ? Value(startTime.toIso8601String())
-                : const Value.absent(),
-            endTime: endTime != null
-                ? Value(endTime.toIso8601String())
-                : const Value.absent(),
-          ),
-        );
-  });
+  }) => _guard(
+    () => _resilient(_db.progressTable, () async {
+      await (_db.update(_db.progressTable)..where(
+            (t) =>
+                t.historyId.equals(historyId) &
+                t.type.equals(type.value) &
+                t.episode.equals(episode) &
+                t.road.equals(road),
+          ))
+          .write(
+            ProgressTableCompanion(
+              progressInMilli: progressInMilli != null
+                  ? Value(progressInMilli)
+                  : const Value.absent(),
+              isCompleted: isCompleted != null
+                  ? Value(isCompleted)
+                  : const Value.absent(),
+              startTime: startTime != null
+                  ? Value(startTime.toIso8601String())
+                  : const Value.absent(),
+              endTime: endTime != null
+                  ? Value(endTime.toIso8601String())
+                  : const Value.absent(),
+            ),
+          );
+    }),
+  );
 
   Future<void> _ensureDb() => _guard(() async {
     if (!isInitialized) await init();
