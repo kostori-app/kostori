@@ -250,6 +250,7 @@ class _CategoryPageState extends State<_CategoryPage>
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: TextField(
         controller: searchController,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         onChanged: (value) => setState(() => query = value),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(

@@ -745,6 +745,8 @@ class _PluginSearchPageState extends State<PluginSearchPage> {
                 child: TextField(
                   controller: _ctrl,
                   autofocus: true,
+                  onTapOutside: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
                   textInputAction: TextInputAction.search,
                   onSubmitted: _search,
                   decoration: InputDecoration(

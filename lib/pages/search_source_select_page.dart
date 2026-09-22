@@ -321,6 +321,7 @@ class _SearchSourcePickerState extends State<SearchSourcePicker> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: TextField(
             controller: _searchCtrl,
+            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             onChanged: (v) => setState(() => _keyword = v),
             decoration: InputDecoration(
               hintText: t.search,

@@ -608,6 +608,9 @@ class _HistorySearchSheetState extends State<_HistorySearchSheet> {
                 controller: _controller,
                 autofocus: true,
                 textInputAction: TextInputAction.search,
+                // 点击输入框以外的区域（结果、空白等）时收起键盘并取消焦点
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: t.search,

@@ -546,6 +546,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           hintText: keyword.isNotEmpty ? keyword : t.searchAll,
           border: const UnderlineInputBorder(),
         ),
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         onChanged: (v) {
           keyword = v;
           searchHasUpper = keyword.contains(RegExp(r'[A-Z]'));

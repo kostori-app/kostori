@@ -326,6 +326,8 @@ class _GroupSourcesPickerState extends State<_GroupSourcesPicker> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
               child: TextField(
                 controller: _searchCtrl,
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
                 onChanged: (v) => setState(() => _keyword = v),
                 decoration: InputDecoration(
                   hintText: t.search,

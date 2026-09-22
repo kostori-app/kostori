@@ -1753,6 +1753,8 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               child: TextField(
                 controller: _controller,
                 autofocus: false,
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
                 style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   filled: true,

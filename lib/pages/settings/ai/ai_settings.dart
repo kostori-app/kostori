@@ -1102,6 +1102,7 @@ class _ModelListSectionState extends State<_ModelListSection> {
     final searchRow = Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: TextField(
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         onChanged: (v) => setState(() => _query = v),
         decoration: InputDecoration(
           hintText: t.search,
