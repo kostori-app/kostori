@@ -2,7 +2,7 @@
 // 双页签：提示词注入（PromptInjection）+ 世界书（WorldBook）。
 // 人格（persona/tone）已并入助手档案，本页不再包含人格设定。
 
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 class PromptManagementSettingsPage extends StatelessWidget {
   const PromptManagementSettingsPage({super.key});

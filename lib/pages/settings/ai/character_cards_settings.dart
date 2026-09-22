@@ -1,7 +1,7 @@
 // 角色卡库（扩展管理）：导入 / 查看 / 编辑 / 导出，酒馆兼容。
 // 故事内角色与该库共用 CharacterCard 模型。
 
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 class CharacterCardsSettingsPage extends StatefulWidget {
   const CharacterCardsSettingsPage({super.key});

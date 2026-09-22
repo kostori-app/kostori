@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 /// 连接 Hub 前确保已填写显示名；未填写则弹框强制填写。
 /// 返回 false 表示用户取消（不应连接）。

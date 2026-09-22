@@ -1,7 +1,7 @@
 // AI 会话记录（ai_tasks 表）：查看 / 删除不再需要的消息条目。
 // 典型用途：删掉存档后残留的记忆、辅助任务（生成设定/标题/头像等）产生的噪音。
 
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 class AiTasksManagerPage extends StatefulWidget {
   const AiTasksManagerPage({super.key});

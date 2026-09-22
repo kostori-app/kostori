@@ -962,6 +962,73 @@ class _BindModeSelector extends StatelessWidget {
   }
 }
 
+/// 紧凑等宽分段选择器（番剧源筛选、插件筛选等共用）。
+/// 风格与 [_DisplayModeSelector] 一致，但每项占满等宽。
+class SettingSegmented extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+  final List<(String, String)> options;
+
+  const SettingSegmented({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    required this.options,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 30,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        children: options.map((opt) {
+          final (key, label) = opt;
+          final selected = value == key;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? colorScheme.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.toOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurface.toOpacity(0.45),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 /// 卡片显示模式选择器（简洁 / 详细 / 瀑布流，或自定义选项），
 /// 风格与端口绑定模式选择器一致
 class _DisplayModeSelector extends StatelessWidget {

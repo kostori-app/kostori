@@ -3,7 +3,7 @@
 // ① 辅助任务模型 ② 角色管理（提示词注入 + 世界书）③ MCP 服务器 ④ 技能。
 // 本文件为二级页 + MCP/技能区块；角色管理页见 role_management_settings.dart。
 
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 class ExtensionSettingsPage extends StatelessWidget {
   const ExtensionSettingsPage({super.key});

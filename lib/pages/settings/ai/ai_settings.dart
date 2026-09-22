@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 class AiSettings extends StatefulWidget {
   const AiSettings({super.key});

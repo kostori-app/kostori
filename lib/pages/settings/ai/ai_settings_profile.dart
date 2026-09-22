@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 /// 打开助手档案编辑器（供 AI 工坊等外部页面复用）
 Future<void> openAssistantProfileEditor({AssistantProfile? profile}) async {

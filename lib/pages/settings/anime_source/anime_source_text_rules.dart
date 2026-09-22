@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 /// 全局文本规则管理页（不绑定具体番源）：新增/编辑/删除规则
 class _TextRulesManagerPage extends StatefulWidget {

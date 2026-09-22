@@ -100,9 +100,9 @@ part 'app_settings.dart';
 part 'appearance.dart';
 
 part 'bangumi_settings.dart';
-part 'me_plugin_settings.dart';
+part 'me_plugin/me_plugin_settings.dart';
 
-part 'me_plugin_editors.dart';
+part 'me_plugin/me_plugin_editors.dart';
 
 part 'explore_settings.dart';
 
@@ -118,34 +118,34 @@ part 'translation_settings.dart';
 
 part 'service_settings.dart';
 
-part 'anime_source_settings.dart';
+part 'anime_source/anime_source_settings.dart';
 
-part 'anime_source_text_rules.dart';
+part 'anime_source/anime_source_text_rules.dart';
 
-part 'anime_source_builder.dart';
+part 'anime_source/anime_source_builder.dart';
 
-part 'hub_service_setting.dart';
+part 'hub/hub_service_setting.dart';
 
-part 'hub_service_form_widgets.dart';
+part 'hub/hub_service_form_widgets.dart';
 
-part 'hub_client_setting.dart';
+part 'hub/hub_client_setting.dart';
 
-part 'hub_upload_settings.dart';
+part 'hub/hub_upload_settings.dart';
 
 part 'log_settings.dart';
 
-part 'ai_settings.dart';
+part 'ai/ai_settings.dart';
 
-part 'ai_settings_profile.dart';
+part 'ai/ai_settings_profile.dart';
 
-part 'ai_settings_providers.dart';
+part 'ai/ai_settings_providers.dart';
 
-part 'extension_settings.dart';
+part 'ai/extension_settings.dart';
 
-part 'role_management_settings.dart';
-part 'character_cards_settings.dart';
-part 'ai_request_log_page.dart';
-part 'ai_tasks_manager_page.dart';
+part 'ai/role_management_settings.dart';
+part 'ai/character_cards_settings.dart';
+part 'ai/ai_request_log_page.dart';
+part 'ai/ai_tasks_manager_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});

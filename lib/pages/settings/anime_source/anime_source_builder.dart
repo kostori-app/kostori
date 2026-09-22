@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 /// 积木式番剧源构建器：用表单配置各功能块，生成 JS 源脚本并导入。
 /// 覆盖基础播放链路：基础信息 + 搜索 + 番剧详情 + 播放。

@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 // ─────────────────────────────────────────────
 // 自定义服务商 单行

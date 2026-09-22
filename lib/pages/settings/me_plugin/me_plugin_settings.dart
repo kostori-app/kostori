@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 /// 个人页插件管理卡片：列出已加载插件，支持重新加载与删除。
 class PluginSettings extends StatefulWidget {
@@ -436,7 +436,7 @@ const plugin = {
                 Row(
                   children: [
                     Expanded(
-                      child: _PluginFilterSegmented(
+                      child: SettingSegmented(
                         value: _loginFilter,
                         options: [
                           ('all', t.filterAll),
@@ -448,7 +448,7 @@ const plugin = {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _PluginFilterSegmented(
+                      child: SettingSegmented(
                         value: _enabledFilter,
                         options: [
                           ('all', t.filterAll),
@@ -1252,71 +1252,6 @@ String? _normalizeCookieUserhash(String raw) {
   // 官方饼干允许是百分号编码 token（如 %2F%DD…），需原样保留再放进 Cookie
   if (!RegExp(r'^[0-9A-Za-z%._~-]{2,256}$').hasMatch(text)) return null;
   return text;
-}
-
-/// 分段筛选控件（与番剧源设置页 _FilterSegmented 同款式）
-class _PluginFilterSegmented extends StatelessWidget {
-  final String value;
-  final List<(String, String)> options;
-  final ValueChanged<String> onChanged;
-
-  const _PluginFilterSegmented({
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      height: 30,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        children: options.map((opt) {
-          final (key, label) = opt;
-          final selected = value == key;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(key),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeInOut,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? colorScheme.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.toOpacity(0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected
-                        ? colorScheme.onSurface
-                        : colorScheme.onSurface.toOpacity(0.45),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
 }
 
 /// 插件“账户”二级页：与番剧源账户页一致（未登录→登录；已登录→重新登录/登出）

@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 /// 通用账号登录模块：插件 JS 通过声明 methods 提供会话/验证码/同步能力。
 /// 登录成功后自动同步插件返回的饼干列表进通用 cookies 存储。

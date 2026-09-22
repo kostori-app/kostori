@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 // ── 服务端上传配置（二级页面） ─────────────────────────────────────────────────
 

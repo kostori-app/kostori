@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 /// 数据同步风格的表单卡片（Kostori/Satori bot 设置页复用）
 class _FormCard extends StatelessWidget {

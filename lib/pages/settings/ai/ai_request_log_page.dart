@@ -1,6 +1,6 @@
 // AI 请求日志：查看每次对话/任务的请求与响应
 
-part of 'settings_page.dart';
+part of '../settings_page.dart';
 
 class AiRequestLogPage extends StatefulWidget {
   const AiRequestLogPage({super.key});
