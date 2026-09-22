@@ -547,34 +547,27 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   /// 选中项不在可视区时滚动过去（对齐 TabBar 的自动滚动行为）
   /// 内容够长时尽量让选中项居中（可看清两边）；
   /// 在最左/最右时自然贴边（clamp 到滚动范围）。
-  /// 只在下标变化时滚动一次，避免动画帧反复 animateTo 卡死。
   void _scrollSelectedIntoView(double value, List<Rect> rects) {
     if (!widget.autoScroll || !widget.scrollable) return;
     if (rects.isEmpty || !_scrollController.hasClients) return;
-    final index = value.round().clamp(0, rects.length - 1);
-    if (index == _lastScrolledIndex) return;
-    final rect = rects[index];
     final position = _scrollController.position;
-    final offset = position.pixels;
     final viewport = position.viewportDimension;
-    if (viewport <= 0) return;
-    if (position.maxScrollExtent <= 0) {
-      _lastScrolledIndex = index;
-      return;
-    }
-    // 已完全可见就不动，避免无意义抖动
-    if (rect.left >= offset && rect.right <= offset + viewport) {
-      _lastScrolledIndex = index;
-      return;
-    }
+    if (viewport <= 0 || position.maxScrollExtent <= 0) return;
+    // 滚动动画进行中不要打断：每帧都会走到这里，反复 animateTo 会互相打架卡死
+    if (position.isScrollingNotifier.value) return;
+    final index = value.round().clamp(0, rects.length - 1);
+    final rect = rects[index];
+    final offset = position.pixels;
+    final fullyVisible =
+        rect.left >= offset - 0.5 && rect.right <= offset + viewport + 0.5;
+    // 下标没变且选中项完全可见：不动，避免和用户手动滚动打架；
+    // 否则（切了 tab，或滚动位置与选中项不同步）就把它滚到中间。
+    if (index == _lastScrolledIndex && fullyVisible) return;
+    _lastScrolledIndex = index;
     // 居中目标：选中项中心 - 视口一半，贴边时 clamp 自动处理
     var target = rect.center.dx - viewport / 2;
     target = target.clamp(position.minScrollExtent, position.maxScrollExtent);
-    if ((target - offset).abs() < 0.5) {
-      _lastScrolledIndex = index;
-      return;
-    }
-    _lastScrolledIndex = index;
+    if ((target - offset).abs() < 0.5) return;
     _scrollController.animateTo(
       target,
       duration: widget.duration,
