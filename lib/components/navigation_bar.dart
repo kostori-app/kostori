@@ -459,13 +459,11 @@ class NaviPaneState extends State<NaviPane>
   /// 与窄屏底部导航完全一致的磨砂圆角胶囊容器
   Widget _frostedPill({required Widget child}) {
     final colorScheme = Theme.of(context).colorScheme;
-    // 关闭模糊时用不透明底色，避免导航栏透出下方内容
-    final bgAlpha = BlurEffect.globalEnabled ? 0.82 : 1.0;
     return BlurEffect(
       borderRadius: const BorderRadius.all(Radius.circular(22)),
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: bgAlpha),
+          color: colorScheme.surface.withValues(alpha: 0.82),
           border: Border.all(
             color: colorScheme.outlineVariant.withValues(alpha: 0.2),
             width: 1,
