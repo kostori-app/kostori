@@ -17,13 +17,33 @@ class BangumiGridCard extends StatelessWidget {
     final showOverlay = appdata.implicitData['showAnimeCardOverlay'] != false;
 
     Widget backdropFilter(Widget child) {
-      return BlurEffect(
-        borderRadius: BorderRadius.circular(8),
+      if (BlurEffect.globalEnabled) {
+        return BlurEffect(
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.3)
+                : Colors.black.toOpacity(0.3),
+            child: child,
+          ),
+        );
+      }
+      // 未开启模糊：沿用之前的半透明叠色（外层 0.4 + 内层 0.6）
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(0),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          color: context.brightness == Brightness.light
-              ? Colors.white.toOpacity(0.3)
-              : Colors.black.toOpacity(0.3),
+          decoration: BoxDecoration(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.6)
+                : Colors.black.toOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: child,
         ),
       );
@@ -225,13 +245,33 @@ class _BangumiCharacterCard extends StatelessWidget {
     }
 
     Widget backdropFilter(Widget child) {
-      return BlurEffect(
-        borderRadius: BorderRadius.circular(8),
+      if (BlurEffect.globalEnabled) {
+        return BlurEffect(
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.3)
+                : Colors.black.toOpacity(0.3),
+            child: child,
+          ),
+        );
+      }
+      // 未开启模糊：沿用之前的半透明叠色（外层 0.4 + 内层 0.6）
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(0),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          color: context.brightness == Brightness.light
-              ? Colors.white.toOpacity(0.3)
-              : Colors.black.toOpacity(0.3),
+          decoration: BoxDecoration(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.6)
+                : Colors.black.toOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: child,
         ),
       );
