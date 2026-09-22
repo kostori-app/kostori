@@ -1177,7 +1177,8 @@ class DownloadManager extends ChangeNotifier {
                     // 显式超时让尾部分片失败走重试/报错，而不是静默卡死
                     sendTimeout: const Duration(seconds: 30),
                     receiveTimeout: const Duration(seconds: 30),
-                    extra: const {'httpVersion11': true},
+                    // noLog：分片动辄上千，不逐条记录（失败由下载器统一汇总上报）
+                    extra: const {'httpVersion11': true, 'noLog': true},
                   ),
                 );
                 final expect =

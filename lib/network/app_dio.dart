@@ -18,6 +18,11 @@ export 'package:dio/dio.dart';
 class MyLogInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    // 标注 noLog 的请求（如 HLS 分片，动辄上千条）不记录，避免刷屏
+    if (err.requestOptions.extra['noLog'] == true) {
+      handler.next(err);
+      return;
+    }
     // 请求失败一律记录（错误日志不需要正文），概要模式下也只记一行
     NetLog.error(
       "Network",
@@ -73,6 +78,11 @@ class MyLogInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
+    // 标注 noLog 的请求（如 HLS 分片）不记录
+    if (response.requestOptions.extra['noLog'] == true) {
+      handler.next(response);
+      return;
+    }
     if (!NetLog.enabled) {
       handler.next(response);
       return;
@@ -150,6 +160,11 @@ class MyLogInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     // 计时：概要模式用
     options.extra['__logStartMs'] = DateTime.now().millisecondsSinceEpoch;
+    // 标注 noLog 的请求（如 HLS 分片，动辄上千条）不记录，避免刷屏
+    if (options.extra['noLog'] == true) {
+      handler.next(options);
+      return;
+    }
     if (!NetLog.enabled) {
       handler.next(options);
       return;
