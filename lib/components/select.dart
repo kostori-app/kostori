@@ -472,8 +472,12 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
   /// 无外部 [SlidingSegmentedBar.progress] 时的内部滑动动画（值 = 选项下标浮点）
   late final AnimationController _slide;
 
-  /// 横向滚动控制器（[SlidingSegmentedBar.scrollable] 时用于自动滚到选中项）
-  final ScrollController _scrollController = ScrollController();
+  /// 横向滚动控制器（[SlidingSegmentedBar.scrollable] 时用于自动滚到选中项）。
+  /// 关闭 keepScrollOffset：不要从 PageStorage 恢复偏移（同 bucket 里多个无 key 的
+  /// 滚动视图会互相覆盖，导致回到页面时滚动位置跳到别处、看起来像选中了别的 tab）。
+  final ScrollController _scrollController = ScrollController(
+    keepScrollOffset: false,
+  );
 
   /// 上次已自动滚动到的下标：避免动画每一帧都触发 animateTo 导致互相打架卡死
   /// （选中 tab 卡在屏幕外不动的潜在根因）

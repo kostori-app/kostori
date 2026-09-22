@@ -189,6 +189,10 @@ class _ExplorePageState extends State<ExplorePage>
   void onNaviItemTapped(int index) {
     if (index == 4) {
       _scheduleSyncLift();
+      // 重新回到探索页时强制重建一次：悬浮分段条的子状态在页面离屏期间不会重建，
+      // 其横向滚动位置可能与当前选中的源不同步（看起来像选中了别的 tab）。
+      // 重建会让 SlidingSegmentedBar 重新测量并把选中项滚回可见/居中位置。
+      if (mounted) setState(() {});
       String currentSource = sources[sourceController.index];
       int pageIndex = pageControllers[currentSource]?.index ?? 0;
       String currentPageId = sourcePages[currentSource]![pageIndex];
@@ -540,6 +544,10 @@ class _ExplorePageState extends State<ExplorePage>
             context: context,
             removeTop: true,
             child: ExtendedTabBarView(
+              // 独立的 PageStorageKey：否则其内部 PageController（keepPage=true）
+              // 会和同 bucket 里其它无 key 的滚动视图共用默认标识、互相覆盖，
+              // 导致回到页面时页视图恢复到错误的源（内容与选中的 tab 对不上）
+              key: const PageStorageKey('explore_source_view'),
               controller: sourceController,
               // 桌面端不用滚轮/拖动翻源，避免误切
               physics: tabPagePhysics,
