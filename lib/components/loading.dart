@@ -158,9 +158,11 @@ abstract class LoadingState<T extends ConsumerStatefulWidget, S extends Object>
       error = null;
     });
     loadDataWithRetry().then((value) async {
+      if (!mounted) return;
       if (value.success) {
         data = value.data;
         await onDataLoaded();
+        if (!mounted) return;
         setState(() {
           isLoading = false;
         });
@@ -187,6 +189,7 @@ abstract class LoadingState<T extends ConsumerStatefulWidget, S extends Object>
         if (value.success) {
           data = value.data;
           await onDataLoaded();
+          if (!mounted) return;
           setState(() {
             isLoading = false;
           });
