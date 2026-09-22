@@ -113,6 +113,14 @@ List<ContextMenuButtonItem> _frameworkBaseItems(
   return items.where((e) => allow.contains(e.type)).toList();
 }
 
+/// 选中菜单项的 [context] 有时并不在 Navigator 之下（例如位于应用级 Overlay），
+/// 直接 `Navigator.of(context)` 会空指针。这里优先用其自身，找不到时回退到
+/// 主导航器 context，保证新页面仍压在当前页之上。
+BuildContext _navContextOf(BuildContext context) {
+  if (Navigator.maybeOf(context) != null) return context;
+  return App.mainNavigatorKey?.currentContext ?? App.rootContext;
+}
+
 /// 选中文本的菜单：默认项 + 翻译 + 搜索
 ///
 /// [selectedText] 延迟到点击时才取值，避免菜单构建时选中内容尚未同步。
@@ -139,7 +147,7 @@ Widget appSelectionContextMenu(
             final text = selectedText().trim();
             if (text.isEmpty) return;
             // 用菜单所在上下文弹出，归属当前路由
-            showTranslationSheet(context, text);
+            showTranslationSheet(_navContextOf(context), text);
           },
         ),
       if (hasSelection)
@@ -152,7 +160,7 @@ Widget appSelectionContextMenu(
             // 此前用 App.rootContext，导致从搜索页内选中搜索时，
             // 新页面被压在搜索页下面（被覆盖）。改用当前 context，
             // 保证覆盖在当前页之上
-            context.to(() => SearchPage(keyword: text));
+            _navContextOf(context).to(() => SearchPage(keyword: text));
           },
         ),
       // 选中文本存入备忘录（剪贴板）
@@ -275,7 +283,7 @@ Widget appEditableSelectionContextMenu(
           onPressed: () {
             ContextMenuController.removeAny();
             if (text.isEmpty) return;
-            showTranslationSheet(context, text);
+            showTranslationSheet(_navContextOf(context), text);
           },
         ),
       if (hasSelection)
@@ -285,7 +293,7 @@ Widget appEditableSelectionContextMenu(
             ContextMenuController.removeAny();
             if (text.isEmpty) return;
             // 同上，用当前 context 导航
-            context.to(() => SearchPage(keyword: text));
+            _navContextOf(context).to(() => SearchPage(keyword: text));
           },
         ),
       // 同上，存入备忘录
