@@ -206,6 +206,30 @@ class MyLogInterceptor extends Interceptor {
   }
 }
 
+/// 把网络异常转成给用户看的简短信息：错误类型 + 状态码 + 访问地址。
+/// 不再原样输出 DioException / 底层库的长串。
+String networkErrorMessage(Object? error) {
+  // 保持 Cloudflare 标记原样：NetworkError 靠它识别并给出验证按钮
+  if (error is CloudflareException) return error.toString();
+  if (error is DioException) {
+    final status = error.response?.statusCode;
+    final typeText = switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.transformTimeout => t.connectionTimedOut,
+      DioExceptionType.cancel => t.cancel,
+      DioExceptionType.badResponse => t.requestFailed,
+      DioExceptionType.badCertificate ||
+      DioExceptionType.connectionError ||
+      DioExceptionType.unknown => t.connectionFailed,
+    };
+    final statusPart = status != null ? ' · HTTP $status' : '';
+    return '$typeText$statusPart\n${error.requestOptions.uri}';
+  }
+  return error?.toString() ?? 'Unknown error';
+}
+
 class AppDio with DioMixin {
   /// 是否打印请求/响应/错误日志。静默模式用于图片缩略图、
   /// 后台轮询等失败属正常场景的请求，避免 error 日志刷屏。

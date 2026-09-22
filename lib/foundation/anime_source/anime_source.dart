@@ -17,6 +17,7 @@ import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/js_pool.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/pages/category_animes_page.dart';
 import 'package:kostori/pages/search_result_page.dart';

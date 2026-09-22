@@ -728,6 +728,21 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   void _onAnimeTap(Anime a, int heroID, [String? heroTag]) {
     if (a.viewMore != null && a.viewMore?.attributes != null) {
       var context = App.mainNavigatorKey!.currentContext!;
+      // 二级页不经过详情页，补记一条历史（无集数信息）
+      final type = a is FavoriteItem ? a.type : AnimeType(a.sourceKey.hashCode);
+      unawaited(
+        HistoryManager().addHistory(
+          History(
+            id: a.id,
+            type: type,
+            title: a.title,
+            subtitle: a.subtitle ?? '',
+            cover: a.cover,
+            viewMore: a.viewMore,
+            time: DateTime.now(),
+          ),
+        ),
+      );
       a.viewMore!.jump(context);
       _markRecentlyWatched(a);
       return;

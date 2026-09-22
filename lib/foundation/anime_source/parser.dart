@@ -255,7 +255,7 @@ class AnimeSourceParser {
           return const Res(true);
         } catch (e, s) {
           SourceLog.error("Network", "$e\n$s");
-          return Res.error(e.toString());
+          return Res.error(networkErrorMessage(e));
         }
       };
     }
@@ -371,7 +371,7 @@ class AnimeSourceParser {
             );
           } catch (e, s) {
             SourceLog.error("Data Analysis", "$e\n$s");
-            return Res.error(e.toString());
+            return Res.error(networkErrorMessage(e));
           }
         };
       } else if (type == "multiPageAnimeList") {
@@ -390,7 +390,7 @@ class AnimeSourceParser {
               );
             } catch (e, s) {
               SourceLog.error("Network", "$e\n$s");
-              return Res.error(e.toString());
+              return Res.error(networkErrorMessage(e));
             }
           };
         } else {
@@ -408,7 +408,7 @@ class AnimeSourceParser {
               );
             } catch (e, s) {
               SourceLog.error("Network", "$e\n$s");
-              return Res.error(e.toString());
+              return Res.error(networkErrorMessage(e));
             }
           };
         }
@@ -435,7 +435,7 @@ class AnimeSourceParser {
             );
           } catch (e, s) {
             SourceLog.error("Data Analysis", "$e\n$s");
-            return Res.error(e.toString());
+            return Res.error(networkErrorMessage(e));
           }
         };
       } else if (type == 'mixed') {
@@ -465,7 +465,7 @@ class AnimeSourceParser {
             return Res(list, subData: res['maxPage']);
           } catch (e, s) {
             SourceLog.error("Network", "$e\n$s");
-            return Res.error(e.toString());
+            return Res.error(networkErrorMessage(e));
           }
         };
       }
@@ -657,7 +657,7 @@ class AnimeSourceParser {
             "Data Analysis",
             "Failed to load category options.\n$e",
           );
-          return Res.error(e.toString());
+          return Res.error(networkErrorMessage(e));
         }
       };
     }
@@ -689,7 +689,7 @@ class AnimeSourceParser {
             );
           } catch (e, s) {
             SourceLog.error("Network", "$e\n$s");
-            return Res.error(e.toString());
+            return Res.error(networkErrorMessage(e));
           }
         };
       } else {
@@ -708,7 +708,7 @@ class AnimeSourceParser {
             );
           } catch (e, s) {
             SourceLog.error("Network", "$e\n$s");
-            return Res.error(e.toString());
+            return Res.error(networkErrorMessage(e));
           }
         };
       }
@@ -740,7 +740,7 @@ class AnimeSourceParser {
           );
         } catch (e, s) {
           SourceLog.error("Network", "$e\n$s");
-          return Res.error(e.toString());
+          return Res.error(networkErrorMessage(e));
         }
       },
       rankingData: rankingData,
@@ -787,7 +787,7 @@ class AnimeSourceParser {
           );
         } catch (e, s) {
           SourceLog.error("Network", "$e\n$s");
-          return Res.error(e.toString());
+          return Res.error(networkErrorMessage(e));
         }
       };
     } else {
@@ -806,7 +806,7 @@ class AnimeSourceParser {
           );
         } catch (e, s) {
           SourceLog.error("Network", "$e\n$s");
-          return Res.error(e.toString());
+          return Res.error(networkErrorMessage(e));
         }
       };
     }
@@ -826,7 +826,7 @@ class AnimeSourceParser {
         return Res(AnimeDetails.fromJson(res));
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -847,7 +847,7 @@ class AnimeSourceParser {
         );
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -861,7 +861,7 @@ class AnimeSourceParser {
         return res;
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -880,7 +880,7 @@ class AnimeSourceParser {
         );
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -897,7 +897,7 @@ class AnimeSourceParser {
           return const Res(true);
         } catch (e, s) {
           SourceLog.error("Network", "$e\n$s");
-          return Res.error(e.toString());
+          return Res.error(networkErrorMessage(e));
         }
       }
 
@@ -1020,7 +1020,7 @@ class AnimeSourceParser {
         return Res(List<String>.from(res['thumbnails']), subData: res['next']);
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -1037,7 +1037,7 @@ class AnimeSourceParser {
         return const Res(true);
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -1054,7 +1054,7 @@ class AnimeSourceParser {
         return Res(res is num ? res.toInt() : 0);
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -1071,7 +1071,7 @@ class AnimeSourceParser {
         return Res(res is num ? res.toInt() : 0);
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
@@ -1205,7 +1205,7 @@ class AnimeSourceParser {
         return const Res(true);
       } catch (e, s) {
         SourceLog.error("Network", "$e\n$s");
-        return Res.error(e.toString());
+        return Res.error(networkErrorMessage(e));
       }
     };
   }
