@@ -10,7 +10,6 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
@@ -183,12 +182,6 @@ class _VideoPageState extends State<VideoPage>
     final roomId = hub.currentRoomId;
     final inRoom =
         hub.isConnected && roomId != null && roomId != hub.lobbyRoomId;
-    DebugLog.info(
-      'VideoPage',
-      'chatOverlay: fs=${playerController.isFullScreen} '
-          'inRoom=$inRoom connected=${hub.isConnected} '
-          'roomId=$roomId lobby=${hub.lobbyRoomId}',
-    );
     if (!inRoom) return const SizedBox.shrink();
     return Stack(
       children: [
