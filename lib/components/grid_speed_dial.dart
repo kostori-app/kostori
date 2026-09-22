@@ -38,6 +38,8 @@ class _FrostedCircleButton extends StatelessWidget {
     final radius = size / 2;
     final border = (dark ? Colors.white : Colors.black).withValues(alpha: 0.1);
     final fg = foregroundColor ?? cs.onSurfaceVariant;
+    // 关闭模糊时用不透明底色（普通 FAB 观感），避免半透明叠在深色内容上发暗
+    final alpha = BlurEffect.globalEnabled ? (dark ? 0.45 : 0.6) : 1.0;
 
     final button = SizedBox(
       width: size,
@@ -45,7 +47,7 @@ class _FrostedCircleButton extends StatelessWidget {
       child: BlurEffect(
         borderRadius: BorderRadius.circular(radius),
         child: Material(
-          color: (tint ?? cs.surface).withValues(alpha: dark ? 0.45 : 0.6),
+          color: (tint ?? cs.surface).withValues(alpha: alpha),
           shape: CircleBorder(side: BorderSide(color: border, width: 0.8)),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
