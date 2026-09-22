@@ -131,13 +131,16 @@ class _ExplorePageState extends State<ExplorePage>
       _rebuildPageControllers(prevPageIndices);
 
       final old = sourceController;
-      sourceController = TabController(length: sources.length, vsync: this);
+      final prevIdx = prevSourceKey == null
+          ? -1
+          : sources.indexOf(prevSourceKey);
+      sourceController = TabController(
+        length: sources.length,
+        vsync: this,
+        initialIndex: (prevIdx >= 0 && prevIdx < sources.length) ? prevIdx : 0,
+      );
       old.removeListener(_onSourceChanged);
       old.dispose();
-      if (prevSourceKey != null) {
-        final idx = sources.indexOf(prevSourceKey);
-        if (idx != -1) sourceController.index = idx;
-      }
       sourceController.addListener(_onSourceChanged);
     });
   }
@@ -170,14 +173,16 @@ class _ExplorePageState extends State<ExplorePage>
           (persisted[source] as num?)?.toInt() ??
           0;
       pageControllers[source]?.dispose();
+      // 同样用 initialIndex，避免二级 tab 先渲染 0 再跳到恢复页
       pageControllers[source] = TabController(
         length: pages.length,
         vsync: this,
+        initialIndex:
+            (pages.isNotEmpty && prevIndex >= 0 && prevIndex < pages.length)
+            ? prevIndex
+            : 0,
       );
       pageControllers[source]!.addListener(_onPageChanged);
-      if (pages.isNotEmpty && prevIndex < pages.length) {
-        pageControllers[source]!.index = prevIndex;
-      }
     }
   }
 
@@ -265,8 +270,14 @@ class _ExplorePageState extends State<ExplorePage>
   void initState() {
     super.initState();
     _initSourcesAndPages();
-    sourceController = TabController(length: sources.length, vsync: this);
-    _restoreSourceIndex();
+    // 用 initialIndex 直接以恢复的源起步，避免先渲染第 0 个再动画跳过去
+    final restoredSource = _restoredSourceIndex();
+    sourceController = TabController(
+      length: sources.length,
+      vsync: this,
+      initialIndex: restoredSource,
+    );
+    _lastSourceIndex = restoredSource;
     sourceController.addListener(_onSourceChanged);
     _rebuildPageControllers();
     appdata.settings.addListener(onSettingsChanged);
@@ -363,18 +374,13 @@ class _ExplorePageState extends State<ExplorePage>
     return <String, dynamic>{};
   }
 
-  /// 恢复上次选中的源（按 key，源顺序变化也能对上）
-  void _restoreSourceIndex() {
+  /// 上次选中的源下标（按 key，源顺序变化也能对上；无记录/越界回退 0）
+  int _restoredSourceIndex() {
     final key = appdata.implicitData['exploreSourceKey']?.toString();
-    if (key == null || key.isEmpty) return;
+    if (key == null || key.isEmpty) return 0;
     final idx = sources.indexOf(key);
-    if (idx <= 0 || idx >= sources.length) return;
-    // 在首帧之后再切换：ExtendedTabBarView 尚未构建时直接设 index 会丢失，
-    // 导致停在默认（第一个）或异常跳到末尾
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || idx >= sourceController.length) return;
-      sourceController.animateTo(idx, duration: Duration.zero);
-    });
+    if (idx <= 0 || idx >= sources.length) return 0;
+    return idx;
   }
 
   /// 源切换：刷新悬浮头（分类胶囊随源变化）+ 持久化
