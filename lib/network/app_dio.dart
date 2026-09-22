@@ -388,12 +388,38 @@ class RHttpAdapter implements HttpClientAdapter {
       headers[key]!.add(entry.$2);
     }
     return ResponseBody(
-      res.body,
+      _guardBody(options, res.body),
       res.statusCode,
       statusMessage: _getStatusMessage(res.statusCode),
       isRedirect: false,
       headers: headers,
     );
+  }
+
+  /// 把响应体流的错误统一转成 [DioException]。
+  ///
+  /// rhttp/reqwest 在响应体解码失败时（压缩编码不支持、连接中途断开等）会抛出
+  /// `AnyhowException("error decoding response body")`；它既不是 [DioException]、
+  /// 也可能没有正常挂到 dio 的错误管线里，表现为裸露的 flutter_rust_bridge 异常。
+  /// 这里包一层，交给统一的错误处理/重试逻辑，并记录请求地址便于排查。
+  Stream<Uint8List> _guardBody(
+    RequestOptions options,
+    Stream<Uint8List> body,
+  ) async* {
+    try {
+      yield* body;
+    } catch (e, s) {
+      NetLog.error('Network', '${options.method} ${options.uri} 响应体读取失败: $e');
+      Error.throwWithStackTrace(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.badResponse,
+          error: e,
+          message: t.networkRequestFailed,
+        ),
+        s,
+      );
+    }
   }
 
   static String _getStatusMessage(int statusCode) {
