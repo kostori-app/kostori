@@ -637,6 +637,8 @@ class _BatchProgressBar extends StatelessWidget {
                   child: SizedBox(
                     height: 10,
                     child: Row(
+                      // 必须 stretch：ColoredBox 无固有高度，默认 center 会塌成 0 高（整条看不见）
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (done > 0)
                           Expanded(
