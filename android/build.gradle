@@ -1,7 +1,18 @@
 allprojects {
     repositories {
+        // 本地精简版 ffmpeg-kit AAR(自编译: x264 + libwebp + gnutls, 仅 arm64-v8a)
+        maven { url = uri("${rootProject.projectDir}/local-maven") }
         google()
         mavenCentral()
+    }
+}
+
+// 用自编译的精简 AAR 替换线上 com.antonkarpenko:ffmpeg-kit-min-gpl
+subprojects {
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            substitute module('com.antonkarpenko:ffmpeg-kit-min-gpl') using module('com.antonkarpenko:ffmpeg-kit-slim:1.0.0')
+        }
     }
 }
 

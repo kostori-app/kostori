@@ -1,0 +1,1637 @@
+diff --git a/android/README.md b/android/README.md
+index c243015..fb59b02 100644
+--- a/android/README.md
++++ b/android/README.md
+@@ -98,7 +98,7 @@ methods and callbacks work identically from Kotlin (callbacks accept lambdas, an
+ 1. Execute synchronous `FFmpeg` commands.
+ 
+     ```java
+-    import com.arthenica.ffmpegkit.FFmpegKit;
++    import com.antonkarpenko.ffmpegkit.FFmpegKit;
+ 
+     FFmpegSession session = FFmpegKit.execute("-i file1.mp4 -c:v mpeg4 file2.mp4");
+     ReturnCode returnCode = session.getReturnCode();
+@@ -150,7 +150,7 @@ methods and callbacks work identically from Kotlin (callbacks accept lambdas, an
+     String failStackTrace = session.getFailStackTrace();
+ 
+     // The list of logs generated for this execution
+-    List<com.arthenica.ffmpegkit.Log> logs = session.getLogs();
++    List<com.antonkarpenko.ffmpegkit.Log> logs = session.getLogs();
+ 
+     // The list of statistics generated for this execution
+     List<Statistics> statistics = session.getStatistics();
+diff --git a/android/ffmpeg-kit-next-android-lib/build.gradle b/android/ffmpeg-kit-next-android-lib/build.gradle
+index ac09ba7..88dcbfb 100644
+--- a/android/ffmpeg-kit-next-android-lib/build.gradle
++++ b/android/ffmpeg-kit-next-android-lib/build.gradle
+@@ -8,7 +8,7 @@ base {
+ 
+ android {
+     if (project.android.hasProperty("namespace")) {
+-        namespace = 'com.arthenica.ffmpegkit'
++        namespace = 'com.antonkarpenko'
+     }
+     compileSdk 34
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/consumer-rules.pro b/android/ffmpeg-kit-next-android-lib/consumer-rules.pro
+index 2810109..be92057 100644
+--- a/android/ffmpeg-kit-next-android-lib/consumer-rules.pro
++++ b/android/ffmpeg-kit-next-android-lib/consumer-rules.pro
+@@ -1,4 +1,4 @@
+--keep class com.arthenica.ffmpegkit.FFmpegKitConfig {
++-keep class com.antonkarpenko.ffmpegkit.FFmpegKitConfig {
+     native <methods>;
+     void log(long, int, byte[]);
+     void statistics(long, int, float, float, long , double, double, double);
+@@ -6,6 +6,6 @@
+     int safClose(int);
+ }
+ 
+--keep class com.arthenica.ffmpegkit.AbiDetect {
++-keep class com.antonkarpenko.ffmpegkit.AbiDetect {
+     native <methods>;
+ }
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.c b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.c
+index 01bc01f..4ddcd0d 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.c
++++ b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.c
+@@ -102,7 +102,7 @@ static jclass stringClass;
+ static jmethodID stringConstructor;
+ 
+ /** Full name of the Config class */
+-const char *configClassName = "com/arthenica/ffmpegkit/FFmpegKitConfig";
++const char *configClassName = "com/antonkarpenko/ffmpegkit/FFmpegKitConfig";
+ 
+ /** Full name of String class */
+ const char *stringClassName = "java/lang/String";
+@@ -227,66 +227,66 @@ extern void av_set_ffkitstream_functions(
+ JNINativeMethod configMethods[] = {
+     {"enableNativeRedirection", "()V",
+      (void *)
+-         Java_com_arthenica_ffmpegkit_FFmpegKitConfig_enableNativeRedirection},
++         Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_enableNativeRedirection},
+     {"disableNativeRedirection", "()V",
+      (void *)
+-         Java_com_arthenica_ffmpegkit_FFmpegKitConfig_disableNativeRedirection},
++         Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_disableNativeRedirection},
+     {"setNativeLogLevel", "(I)V",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeLogLevel},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_setNativeLogLevel},
+     {"getNativeLogLevel", "()I",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeLogLevel},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeLogLevel},
+     {"getNativeFFmpegVersion", "()Ljava/lang/String;",
+      (void *)
+-         Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegVersion},
++         Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegVersion},
+     {"getNativeVersion", "()Ljava/lang/String;",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeVersion},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeVersion},
+     {"getNativePackageName", "()Ljava/lang/String;",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativePackageName},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativePackageName},
+     {"nativeFFmpegExecute", "(J[Ljava/lang/String;)I",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegExecute},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegExecute},
+     {"nativeFFmpegCancel", "(J)V",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegCancel},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegCancel},
+     {"nativeFFprobeExecute", "(J[Ljava/lang/String;)I",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute},
+     {"nativeFFprobeGetMediaInformation", "(J[Ljava/lang/String;)[B",
+      (void *)
+-         Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeGetMediaInformation},
++         Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFprobeGetMediaInformation},
+     {"registerNewNativeFFmpegPipe", "(Ljava/lang/String;)I",
+      (void *)
+-         Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNewNativeFFmpegPipe},
++         Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNewNativeFFmpegPipe},
+     {"getNativeBuildDate", "()Ljava/lang/String;",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeBuildDate},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeBuildDate},
+     {"setNativeEnvironmentVariable", "(Ljava/lang/String;Ljava/lang/String;)I",
+      (void *)
+-         Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeEnvironmentVariable},
++         Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_setNativeEnvironmentVariable},
+     {"ignoreNativeSignal", "(I)V",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_ignoreNativeSignal},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_ignoreNativeSignal},
+     {"messagesInTransmit", "(J)I",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_messagesInTransmit},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_messagesInTransmit},
+     {"registerNativeFFmpegKitInputBuffer", "([B)J",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputBuffer},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputBuffer},
+     {"registerNativeFFmpegKitInputDirectBuffer", "(Ljava/nio/ByteBuffer;I)J",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputDirectBuffer},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputDirectBuffer},
+     {"registerNativeFFmpegKitOutputBuffer", "(JJ)J",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitOutputBuffer},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitOutputBuffer},
+     {"getNativeFFmpegKitBufferSize", "(J)J",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitBufferSize},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitBufferSize},
+     {"getNativeFFmpegKitOutputBuffer", "(J)[B",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBuffer},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBuffer},
+     {"getNativeFFmpegKitOutputBufferDirect", "(J)Ljava/nio/ByteBuffer;",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBufferDirect},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBufferDirect},
+     {"unregisterNativeFFmpegKitBuffer", "(J)V",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitBuffer},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitBuffer},
+     {"registerNativeFFmpegKitStream", "(JI)J",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitStream},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitStream},
+     {"nativeFFmpegKitStreamWrite", "(J[BIII)I",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamWrite},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamWrite},
+     {"nativeFFmpegKitStreamRead", "(JII)[B",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamRead},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamRead},
+     {"nativeFFmpegKitStreamCloseInput", "(J)V",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamCloseInput},
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamCloseInput},
+     {"unregisterNativeFFmpegKitStream", "(J)V",
+-     (void *)Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitStream}};
++     (void *)Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitStream}};
+ 
+ /** Forward declaration for function defined in fftools/ffmpeg.c */
+ int ffmpeg_execute(int argc, char **argv);
+@@ -1564,7 +1564,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+  * @param level log level
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeLogLevel(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_setNativeLogLevel(JNIEnv *env,
+                                                                jclass object,
+                                                                jint level) {
+     configuredLogLevel = level;
+@@ -1577,7 +1577,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeLogLevel(JNIEnv *env,
+  * @param object reference to the class on which this method is invoked
+  */
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeLogLevel(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeLogLevel(JNIEnv *env,
+                                                                jclass object) {
+     return configuredLogLevel;
+ }
+@@ -1589,7 +1589,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeLogLevel(JNIEnv *env,
+  * @param object reference to the class on which this method is invoked
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_enableNativeRedirection(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_enableNativeRedirection(
+     JNIEnv *env, jclass object) {
+     enableNativeRedirection();
+ }
+@@ -1601,7 +1601,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_enableNativeRedirection(
+  * @param object reference to the class on which this method is invoked
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_disableNativeRedirection(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_disableNativeRedirection(
+     JNIEnv *env, jclass object) {
+ 
+     mutexLock();
+@@ -1628,7 +1628,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_disableNativeRedirection(
+  * @return FFmpeg version string
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegVersion(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegVersion(
+     JNIEnv *env, jclass object) {
+     return (*env)->NewStringUTF(env, FFMPEG_VERSION);
+ }
+@@ -1641,7 +1641,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegVersion(
+  * @return FFmpegKit version string
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeVersion(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeVersion(JNIEnv *env,
+                                                               jclass object) {
+     return (*env)->NewStringUTF(env, FFMPEG_KIT_VERSION);
+ }
+@@ -1654,7 +1654,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeVersion(JNIEnv *env,
+  * @return native FFmpegKit package name
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativePackageName(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativePackageName(
+     JNIEnv *env, jclass object) {
+ 
+ #ifndef FFMPEG_KIT_PACKAGE_NAME
+@@ -1677,7 +1677,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativePackageName(
+  * @return zero on successful execution, non-zero on error
+  */
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegExecute(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegExecute(
+     JNIEnv *env, jclass object, jlong id, jobjectArray stringArray) {
+     jstring *tempArray = NULL;
+     int argumentCount = 1;
+@@ -1751,7 +1751,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegExecute(
+  * @param id session id
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegCancel(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegCancel(JNIEnv *env,
+                                                                 jclass object,
+                                                                 jlong id) {
+     cancel_operation(id);
+@@ -1766,7 +1766,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegCancel(JNIEnv *env,
+  * @return zero on successful creation, non-zero on error
+  */
+ JNIEXPORT int JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNewNativeFFmpegPipe(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNewNativeFFmpegPipe(
+     JNIEnv *env, jclass object, jstring ffmpegPipePath) {
+     const char *ffmpegPipePathString =
+         (*env)->GetStringUTFChars(env, ffmpegPipePath, 0);
+@@ -1775,7 +1775,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNewNativeFFmpegPipe(
+ }
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputBuffer(
+     JNIEnv *env, jclass object, jbyteArray data) {
+     int64_t id;
+     jsize size;
+@@ -1820,7 +1820,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputBuffer(
+ }
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputDirectBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputDirectBuffer(
+     JNIEnv *env, jclass object, jobject byteBuffer, jint size) {
+     int64_t id;
+     void *address;
+@@ -1863,7 +1863,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputDirectB
+ }
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitOutputBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitOutputBuffer(
+     JNIEnv *env, jclass object, jlong initialCapacity, jlong maxCapacity) {
+     int64_t id;
+     FFKitMemoryResource *resource;
+@@ -1902,7 +1902,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitOutputBuffer
+ }
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitBufferSize(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitBufferSize(
+     JNIEnv *env, jclass object, jlong id) {
+     FFKitMemoryResource *resource;
+     int64_t size = -1;
+@@ -1920,7 +1920,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitBufferSize(
+ }
+ 
+ JNIEXPORT jbyteArray JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBuffer(
+     JNIEnv *env, jclass object, jlong id) {
+     FFKitMemoryResource *resource;
+     jbyteArray result = NULL;
+@@ -1945,7 +1945,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBuffer(
+ }
+ 
+ JNIEXPORT jobject JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBufferDirect(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBufferDirect(
+     JNIEnv *env, jclass object, jlong id) {
+     FFKitMemoryResource *resource;
+     jobject result = NULL;
+@@ -1966,7 +1966,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBufferDirec
+ }
+ 
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitBuffer(
+     JNIEnv *env, jclass object, jlong id) {
+     FFKitMemoryResource *current;
+     FFKitMemoryResource *previous = NULL;
+@@ -2003,7 +2003,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitBuffer(
+ }
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitStream(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitStream(
+     JNIEnv *env, jclass object, jlong capacity, jint type) {
+     int64_t id;
+     FFKitStreamResource *resource;
+@@ -2039,7 +2039,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitStream(
+ }
+ 
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamWrite(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamWrite(
+     JNIEnv *env, jclass object, jlong id, jbyteArray data, jint offset,
+     jint length, jint timeoutMs) {
+     FFKitStreamResource *resource;
+@@ -2098,7 +2098,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamWrite(
+ }
+ 
+ JNIEXPORT jbyteArray JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamRead(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamRead(
+     JNIEnv *env, jclass object, jlong id, jint maxBytes, jint timeoutMs) {
+     FFKitStreamResource *resource;
+     uint8_t *buffer;
+@@ -2159,7 +2159,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamRead(
+ }
+ 
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamCloseInput(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamCloseInput(
+     JNIEnv *env, jclass object, jlong id) {
+     FFKitStreamResource *resource;
+ 
+@@ -2176,7 +2176,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamCloseInput(
+ }
+ 
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitStream(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitStream(
+     JNIEnv *env, jclass object, jlong id) {
+     FFKitStreamResource *current;
+     FFKitStreamResource *previous = NULL;
+@@ -2224,7 +2224,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitStream(
+  * @return FFmpegKit library build date
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeBuildDate(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeBuildDate(JNIEnv *env,
+                                                                 jclass object) {
+     char buildDate[10];
+     sprintf(buildDate, "%d", FFMPEG_KIT_BUILD_DATE);
+@@ -2241,7 +2241,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeBuildDate(JNIEnv *env,
+  * @return zero on success, non-zero on error
+  */
+ JNIEXPORT int JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeEnvironmentVariable(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_setNativeEnvironmentVariable(
+     JNIEnv *env, jclass object, jstring variableName, jstring variableValue) {
+     const char *variableNameString =
+         (*env)->GetStringUTFChars(env, variableName, 0);
+@@ -2264,7 +2264,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeEnvironmentVariable(
+  * @param signum signal number
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_ignoreNativeSignal(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_ignoreNativeSignal(JNIEnv *env,
+                                                                 jclass object,
+                                                                 jint signum) {
+     if (signum == SIGQUIT) {
+@@ -2289,7 +2289,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_ignoreNativeSignal(JNIEnv *env,
+  * @param id session id
+  */
+ JNIEXPORT int JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_messagesInTransmit(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_messagesInTransmit(JNIEnv *env,
+                                                                 jclass object,
+                                                                 jlong id) {
+     return atomic_load(&sessionInTransitMessageCountMap[id % SESSION_MAP_SIZE]);
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.h b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.h
+index fc14f0a..68b718b 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.h
++++ b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.h
+@@ -50,180 +50,180 @@
+ #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LIB_NAME, __VA_ARGS__)
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    enableNativeRedirection
+  * Signature: ()V
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_enableNativeRedirection(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_enableNativeRedirection(JNIEnv *,
+                                                                      jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    disableNativeRedirection
+  * Signature: ()V
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_disableNativeRedirection(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_disableNativeRedirection(JNIEnv *,
+                                                                       jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    setNativeLogLevel
+  * Signature: (I)V
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeLogLevel(JNIEnv *, jclass,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_setNativeLogLevel(JNIEnv *, jclass,
+                                                                jint);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    getNativeLogLevel
+  * Signature: ()I
+  */
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeLogLevel(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeLogLevel(JNIEnv *,
+                                                                jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    getNativeFFmpegVersion
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegVersion(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegVersion(JNIEnv *,
+                                                                     jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    getNativeVersion
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeVersion(JNIEnv *, jclass);
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeVersion(JNIEnv *, jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    getNativePackageName
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativePackageName(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativePackageName(JNIEnv *,
+                                                                   jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    nativeFFmpegExecute
+  * Signature: (J[Ljava/lang/String;)I
+  */
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegExecute(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegExecute(JNIEnv *,
+                                                                  jclass, jlong,
+                                                                  jobjectArray);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    nativeFFmpegCancel
+  * Signature: (J)V
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegCancel(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegCancel(JNIEnv *,
+                                                                 jclass, jlong);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    registerNewNativeFFmpegPipe
+  * Signature: (Ljava/lang/String;)I
+  */
+ JNIEXPORT int JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNewNativeFFmpegPipe(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNewNativeFFmpegPipe(
+     JNIEnv *env, jclass object, jstring ffmpegPipePath);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    getNativeBuildDate
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeBuildDate(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeBuildDate(JNIEnv *env,
+                                                                 jclass object);
+ 
+ /**
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    setNativeEnvironmentVariable
+  * Signature: (Ljava/lang/String;Ljava/lang/String;)I
+  */
+ JNIEXPORT int JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_setNativeEnvironmentVariable(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_setNativeEnvironmentVariable(
+     JNIEnv *env, jclass object, jstring variableName, jstring variableValue);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    ignoreNativeSignal
+  * Signature: (I)V
+  */
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_ignoreNativeSignal(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_ignoreNativeSignal(JNIEnv *env,
+                                                                 jclass object,
+                                                                 jint signum);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    messagesInTransmit
+  * Signature: (J)I
+  */
+ JNIEXPORT int JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_messagesInTransmit(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_messagesInTransmit(JNIEnv *env,
+                                                                 jclass object,
+                                                                 jlong id);
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputBuffer(
+     JNIEnv *env, jclass object, jbyteArray data);
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputDirectBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitInputDirectBuffer(
+     JNIEnv *env, jclass object, jobject byteBuffer, jint size);
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitOutputBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitOutputBuffer(
+     JNIEnv *env, jclass object, jlong initialCapacity, jlong maxCapacity);
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitBufferSize(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitBufferSize(
+     JNIEnv *env, jclass object, jlong id);
+ 
+ JNIEXPORT jbyteArray JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBuffer(
+     JNIEnv *env, jclass object, jlong id);
+ 
+ JNIEXPORT jobject JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBufferDirect(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_getNativeFFmpegKitOutputBufferDirect(
+     JNIEnv *env, jclass object, jlong id);
+ 
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitBuffer(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitBuffer(
+     JNIEnv *env, jclass object, jlong id);
+ 
+ JNIEXPORT jlong JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitStream(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_registerNativeFFmpegKitStream(
+     JNIEnv *env, jclass object, jlong capacity, jint type);
+ 
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamWrite(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamWrite(
+     JNIEnv *env, jclass object, jlong id, jbyteArray data, jint offset,
+     jint length, jint timeoutMs);
+ 
+ JNIEXPORT jbyteArray JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamRead(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamRead(
+     JNIEnv *env, jclass object, jlong id, jint maxBytes, jint timeoutMs);
+ 
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamCloseInput(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFmpegKitStreamCloseInput(
+     JNIEnv *env, jclass object, jlong id);
+ 
+ JNIEXPORT void JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitStream(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_unregisterNativeFFmpegKitStream(
+     JNIEnv *env, jclass object, jlong id);
+ 
+ #endif /* FFMPEG_KIT_H */
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.c b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.c
+index 10517a5..e7f7a49 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.c
++++ b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.c
+@@ -22,20 +22,20 @@
+ #include "fftools/ffmpeg.h"
+ 
+ /** Full name of the Java class that owns native functions in this file. */
+-const char *abiDetectClassName = "com/arthenica/ffmpegkit/AbiDetect";
++const char *abiDetectClassName = "com/antonkarpenko/ffmpegkit/AbiDetect";
+ 
+ /** Prototypes of native functions defined by this file. */
+ JNINativeMethod abiDetectMethods[] = {
+     {"getNativeAbi", "()Ljava/lang/String;",
+-     (void *)Java_com_arthenica_ffmpegkit_AbiDetect_getNativeAbi},
++     (void *)Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeAbi},
+     {"getNativeCpuAbi", "()Ljava/lang/String;",
+-     (void *)Java_com_arthenica_ffmpegkit_AbiDetect_getNativeCpuAbi},
++     (void *)Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeCpuAbi},
+     {"isNativeLTSBuild", "()Z",
+-     (void *)Java_com_arthenica_ffmpegkit_AbiDetect_isNativeLTSBuild},
++     (void *)Java_com_antonkarpenko_ffmpegkit_AbiDetect_isNativeLTSBuild},
+     {"getNativeBuildConf", "()Ljava/lang/String;",
+-     (void *)Java_com_arthenica_ffmpegkit_AbiDetect_getNativeBuildConf},
++     (void *)Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeBuildConf},
+     {"getNativeMinSdk", "()Ljava/lang/String;",
+-     (void *)Java_com_arthenica_ffmpegkit_AbiDetect_getNativeMinSdk}};
++     (void *)Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeMinSdk}};
+ 
+ /**
+  * Called when 'abidetect' native library is loaded.
+@@ -73,7 +73,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+  * @param object reference to the class on which this method is invoked
+  * @return loaded ABI name as UTF string
+  */
+-JNIEXPORT jstring JNICALL Java_com_arthenica_ffmpegkit_AbiDetect_getNativeAbi(
++JNIEXPORT jstring JNICALL Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeAbi(
+     JNIEnv *env, jclass object) {
+ 
+ #ifdef FFMPEG_KIT_ARM_V7A
+@@ -97,7 +97,7 @@ JNIEXPORT jstring JNICALL Java_com_arthenica_ffmpegkit_AbiDetect_getNativeAbi(
+  * @return ABI name of the running cpu as UTF string
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_getNativeCpuAbi(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeCpuAbi(JNIEnv *env,
+                                                        jclass object) {
+     AndroidCpuFamily family = android_getCpuFamily();
+ 
+@@ -133,7 +133,7 @@ Java_com_arthenica_ffmpegkit_AbiDetect_getNativeCpuAbi(JNIEnv *env,
+  * @return yes or no
+  */
+ JNIEXPORT jboolean JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_isNativeLTSBuild(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_isNativeLTSBuild(JNIEnv *env,
+                                                         jclass object) {
+ #if defined(FFMPEG_KIT_LTS)
+     return JNI_TRUE;
+@@ -150,7 +150,7 @@ Java_com_arthenica_ffmpegkit_AbiDetect_isNativeLTSBuild(JNIEnv *env,
+  * @return build configuration string
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_getNativeBuildConf(JNIEnv *env,
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeBuildConf(JNIEnv *env,
+                                                           jclass object) {
+     return (*env)->NewStringUTF(env, FFMPEG_CONFIGURATION);
+ }
+@@ -163,7 +163,7 @@ Java_com_arthenica_ffmpegkit_AbiDetect_getNativeBuildConf(JNIEnv *env,
+  * @return the minimum Android API level required to run this native library
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_getNativeMinSdk(
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeMinSdk(
+     JNIEnv *env, jclass object) {
+ 
+ #define STRINGIFY(x) #x
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.h b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.h
+index ca7d554..d5166f3 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.h
++++ b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit_abidetect.h
+@@ -45,44 +45,44 @@
+ #define ABI_UNKNOWN "unknown"
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_AbiDetect
++ * Class:     com_antonkarpenko_ffmpegkit_AbiDetect
+  * Method:    getNativeAbi
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_getNativeAbi(JNIEnv *, jclass);
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeAbi(JNIEnv *, jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_AbiDetect
++ * Class:     com_antonkarpenko_ffmpegkit_AbiDetect
+  * Method:    getNativeCpuAbi
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_getNativeCpuAbi(JNIEnv *, jclass);
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeCpuAbi(JNIEnv *, jclass);
+ 
+ /**
+- * Class:     com_arthenica_ffmpegkit_AbiDetect
++ * Class:     com_antonkarpenko_ffmpegkit_AbiDetect
+  * Method:    isNativeLTSBuild
+  * Signature: ()Z
+  */
+ JNIEXPORT jboolean JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_isNativeLTSBuild(JNIEnv *, jclass);
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_isNativeLTSBuild(JNIEnv *, jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_AbiDetect
++ * Class:     com_antonkarpenko_ffmpegkit_AbiDetect
+  * Method:    getNativeBuildConf
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_getNativeBuildConf(JNIEnv *, jclass);
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeBuildConf(JNIEnv *, jclass);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_AbiDetect
++ * Class:     com_antonkarpenko_ffmpegkit_AbiDetect
+  * Method:    getNativeMinSdk
+  * Signature: ()Ljava/lang/String;
+  */
+ JNIEXPORT jstring JNICALL
+-Java_com_arthenica_ffmpegkit_AbiDetect_getNativeMinSdk(
++Java_com_antonkarpenko_ffmpegkit_AbiDetect_getNativeMinSdk(
+ JNIEnv *env, jclass object);
+ 
+ #endif /* FFMPEG_KIT_ABIDETECT_H */
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.c b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.c
+index 782bb68..f8ffdd2 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.c
++++ b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.c
+@@ -49,7 +49,7 @@ extern void resetMessagesInTransmit(long sessionId);
+  * @return zero on successful execution, non-zero on error
+  */
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute(
+     JNIEnv *env, jclass object, jlong id, jobjectArray stringArray) {
+     jstring *tempArray = NULL;
+     int argumentCount = 1;
+@@ -132,7 +132,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute(
+  * @return captured output bytes on success, or NULL on a non-zero return code
+  */
+ JNIEXPORT jbyteArray JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeGetMediaInformation(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFprobeGetMediaInformation(
+     JNIEnv *env, jclass object, jlong id, jobjectArray stringArray) {
+     jstring *tempArray = NULL;
+     int argumentCount = 1;
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.h b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.h
+index ec246f8..022f4e9 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.h
++++ b/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffprobekit.h
+@@ -23,17 +23,17 @@
+ #include <jni.h>
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    nativeFFprobeExecute
+  * Signature: (J[Ljava/lang/String;)I
+  */
+ JNIEXPORT jint JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute(JNIEnv *,
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute(JNIEnv *,
+                                                                   jclass, jlong,
+                                                                   jobjectArray);
+ 
+ /*
+- * Class:     com_arthenica_ffmpegkit_FFmpegKitConfig
++ * Class:     com_antonkarpenko_ffmpegkit_FFmpegKitConfig
+  * Method:    nativeFFprobeGetMediaInformation
+  * Signature: (J[Ljava/lang/String;)[B
+  *
+@@ -42,7 +42,7 @@ Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeExecute(JNIEnv *,
+  * getMediaInformation so the JSON never routes through the av_log path.
+  */
+ JNIEXPORT jbyteArray JNICALL
+-Java_com_arthenica_ffmpegkit_FFmpegKitConfig_nativeFFprobeGetMediaInformation(
++Java_com_antonkarpenko_ffmpegkit_FFmpegKitConfig_nativeFFprobeGetMediaInformation(
+     JNIEnv *, jclass, jlong, jobjectArray);
+ 
+ #endif /* FFPROBE_KIT_H */
+\ No newline at end of file
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Abi.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Abi.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Abi.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Abi.kt
+index 2e5e149..941b558 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Abi.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Abi.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Enumeration for Android ABIs.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AbiDetect.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AbiDetect.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AbiDetect.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AbiDetect.kt
+index 090f4f1..c9e4eb6 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AbiDetect.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AbiDetect.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Detects the running ABI name natively using Google <code>cpu-features</code> library.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AbstractSession.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AbstractSession.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AbstractSession.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AbstractSession.kt
+index 20e928d..7c1ae28 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AbstractSession.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AbstractSession.kt
+@@ -17,9 +17,9 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+-import com.arthenica.ffmpegkit.AbstractSession.Companion.DEFAULT_TIMEOUT_FOR_ASYNCHRONOUS_MESSAGES_IN_TRANSMIT
++import com.antonkarpenko.ffmpegkit.AbstractSession.Companion.DEFAULT_TIMEOUT_FOR_ASYNCHRONOUS_MESSAGES_IN_TRANSMIT
+ import com.arthenica.smartexception.java.Exceptions
+ import java.util.Date
+ import java.util.concurrent.Future
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncFFmpegExecuteTask.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncFFmpegExecuteTask.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncFFmpegExecuteTask.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncFFmpegExecuteTask.kt
+index 00af0b3..4ab417f 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncFFmpegExecuteTask.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncFFmpegExecuteTask.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import com.arthenica.smartexception.java.Exceptions
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncFFprobeExecuteTask.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncFFprobeExecuteTask.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncFFprobeExecuteTask.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncFFprobeExecuteTask.kt
+index 1cd67cc..eaa504c 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncFFprobeExecuteTask.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncFFprobeExecuteTask.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import com.arthenica.smartexception.java.Exceptions
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncGetMediaInformationTask.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncGetMediaInformationTask.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncGetMediaInformationTask.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncGetMediaInformationTask.kt
+index 4a9d702..903b450 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/AsyncGetMediaInformationTask.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/AsyncGetMediaInformationTask.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import com.arthenica.smartexception.java.Exceptions
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/CameraSupport.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/CameraSupport.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/CameraSupport.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/CameraSupport.kt
+index 1a24acb..d32defd 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/CameraSupport.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/CameraSupport.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import android.content.Context
+ import android.hardware.camera2.CameraAccessException
+@@ -25,7 +25,7 @@ import android.hardware.camera2.CameraCharacteristics
+ import android.hardware.camera2.CameraManager
+ import android.hardware.camera2.CameraMetadata
+ import android.util.Log
+-import com.arthenica.ffmpegkit.FFmpegKitConfig.Companion.TAG
++import com.antonkarpenko.ffmpegkit.FFmpegKitConfig.Companion.TAG
+ 
+ /**
+  * <p>Helper class to detect camera devices that can be used in
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Chapter.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Chapter.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Chapter.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Chapter.kt
+index d6b8728..1d50733 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Chapter.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Chapter.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.json.JSONObject
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKit.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKit.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKit.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKit.kt
+index 40b1ee4..e941c04 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKit.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKit.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import java.util.concurrent.ExecutorService
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitConfig.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitConfig.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitConfig.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitConfig.kt
+index feca607..1d51b0c 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitConfig.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitConfig.kt
+@@ -18,7 +18,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import android.content.ContentResolver
+ import android.content.Context
+@@ -112,7 +112,7 @@ open class FFmpegKitConfig private constructor() {
+ 
+         init {
+ 
+-            Exceptions.registerRootPackage("com.arthenica")
++            Exceptions.registerRootPackage("com.antonkarpenko")
+ 
+             val nativeFFmpegTriedAndFailed = NativeLoader.loadFFmpeg()
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitInputBuffer.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitInputBuffer.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitInputBuffer.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitInputBuffer.kt
+index 30331b6..7544719 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitInputBuffer.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitInputBuffer.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import androidx.annotation.NonNull
+ import androidx.annotation.Nullable
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitOutputBuffer.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitOutputBuffer.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitOutputBuffer.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitOutputBuffer.kt
+index cce0936..1b4ebcc 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitOutputBuffer.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitOutputBuffer.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import androidx.annotation.NonNull
+ import androidx.annotation.Nullable
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitStreamInput.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitStreamInput.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitStreamInput.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitStreamInput.kt
+index bf0b34a..a51b513 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitStreamInput.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitStreamInput.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import androidx.annotation.NonNull
+ import androidx.annotation.Nullable
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitStreamOutput.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitStreamOutput.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitStreamOutput.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitStreamOutput.kt
+index 8360974..204d574 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegKitStreamOutput.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitStreamOutput.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import androidx.annotation.NonNull
+ import androidx.annotation.Nullable
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegSession.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSession.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegSession.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSession.kt
+index 4038df2..0e45518 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegSession.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSession.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>An FFmpeg session.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegSessionCompleteCallback.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSessionCompleteCallback.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegSessionCompleteCallback.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSessionCompleteCallback.kt
+index a8c729c..3ffa2bc 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFmpegSessionCompleteCallback.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSessionCompleteCallback.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Callback function that is invoked when an asynchronous <code>FFmpeg</code> session has ended.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeKit.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeKit.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeKit.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeKit.kt
+index bf7bc3c..2c718ed 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeKit.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeKit.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import java.util.concurrent.ExecutorService
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeSession.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSession.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeSession.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSession.kt
+index 82b7e84..24e5588 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeSession.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSession.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>An FFprobe session.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeSessionCompleteCallback.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSessionCompleteCallback.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeSessionCompleteCallback.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSessionCompleteCallback.kt
+index 0c13d36..c127c50 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/FFprobeSessionCompleteCallback.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSessionCompleteCallback.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Callback function that is invoked when an asynchronous <code>FFprobe</code> session has ended.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Level.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Level.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Level.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Level.kt
+index 9e84874..dd33feb 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Level.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Level.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Enumeration type for log levels.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Log.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Log.kt
+similarity index 97%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Log.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Log.kt
+index d90f8b6..bf31259 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Log.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Log.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Log entry for an <code>FFmpegKit</code> session.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/LogCallback.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/LogCallback.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/LogCallback.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/LogCallback.kt
+index a0b3d18..4e49f86 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/LogCallback.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/LogCallback.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Callback function that receives logs generated for <code>FFmpegKit</code> sessions.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/LogRedirectionStrategy.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/LogRedirectionStrategy.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/LogRedirectionStrategy.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/LogRedirectionStrategy.kt
+index b052d21..64842bb 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/LogRedirectionStrategy.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/LogRedirectionStrategy.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ enum class LogRedirectionStrategy {
+     ALWAYS_PRINT_LOGS,
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformation.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformation.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformation.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformation.kt
+index 9a6b156..6ea31d9 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformation.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformation.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.json.JSONObject
+ import java.util.ArrayList
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationJsonParser.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationJsonParser.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationJsonParser.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationJsonParser.kt
+index ed581e1..fa5e59c 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationJsonParser.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationJsonParser.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import android.util.Log
+ import androidx.annotation.NonNull
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationSession.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSession.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationSession.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSession.kt
+index d513ec7..1ee496e 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationSession.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSession.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>A custom FFprobe session, which produces a <code>MediaInformation</code> object using the
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationSessionCompleteCallback.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSessionCompleteCallback.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationSessionCompleteCallback.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSessionCompleteCallback.kt
+index 28ff2c7..8ca19ec 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/MediaInformationSessionCompleteCallback.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSessionCompleteCallback.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Callback function that is invoked when an asynchronous <code>MediaInformation</code> session
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/NativeLoader.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/NativeLoader.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/NativeLoader.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/NativeLoader.kt
+index bb9ce0d..f255722 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/NativeLoader.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/NativeLoader.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import android.os.Build
+ import com.arthenica.smartexception.java.Exceptions
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Packages.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Packages.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Packages.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Packages.kt
+index c62fe7d..5aa8390 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Packages.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Packages.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Helper class to extract binary package information.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/ReturnCode.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/ReturnCode.kt
+similarity index 97%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/ReturnCode.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/ReturnCode.kt
+index 00e8dce..e8a7ef7 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/ReturnCode.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/ReturnCode.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ open class ReturnCode(open val value: Int) {
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Session.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Session.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Session.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Session.kt
+index 62c1e79..91ebc02 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Session.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Session.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import java.util.Date
+ import java.util.concurrent.Future
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/SessionDeleteListener.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/SessionDeleteListener.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/SessionDeleteListener.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/SessionDeleteListener.kt
+index f06087c..cbd6e2d 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/SessionDeleteListener.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/SessionDeleteListener.kt
+@@ -17,7 +17,7 @@
+  * <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * Listener notified when a session is deleted from the native session history.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/SessionState.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/SessionState.kt
+similarity index 95%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/SessionState.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/SessionState.kt
+index ae31e25..b99b9ca 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/SessionState.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/SessionState.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ enum class SessionState {
+     CREATED,
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Signal.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Signal.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Signal.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Signal.kt
+index 979a49f..9a1ef64 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Signal.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Signal.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Lists signals handled by FFmpegKit library.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Statistics.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Statistics.kt
+similarity index 97%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Statistics.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Statistics.kt
+index e5b1888..3e955ec 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/Statistics.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/Statistics.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Statistics entry for an FFmpeg execute session.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/StatisticsCallback.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/StatisticsCallback.kt
+similarity index 96%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/StatisticsCallback.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/StatisticsCallback.kt
+index 606d6ee..583c718 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/StatisticsCallback.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/StatisticsCallback.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ /**
+  * <p>Callback function that receives statistics generated for <code>FFmpegKit</code> sessions.
+diff --git a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/StreamInformation.kt b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/StreamInformation.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/StreamInformation.kt
+rename to android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/StreamInformation.kt
+index eac74f4..1e040c6 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/StreamInformation.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/StreamInformation.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.json.JSONObject
+ 
+diff --git a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegKitConfigTest.kt b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitConfigTest.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegKitConfigTest.kt
+rename to android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitConfigTest.kt
+index 7cc7221..6fa3b77 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegKitConfigTest.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitConfigTest.kt
+@@ -18,7 +18,7 @@
+  * along with FFmpegKit.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.junit.Assert
+ import org.junit.Test
+diff --git a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegKitTest.kt b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitTest.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegKitTest.kt
+rename to android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitTest.kt
+index 9a9d1f2..997a7d5 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegKitTest.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegKitTest.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKit.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.json.JSONException
+ import org.json.JSONObject
+diff --git a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegSessionTest.kt b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSessionTest.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegSessionTest.kt
+rename to android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSessionTest.kt
+index 47f8762..d24a737 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFmpegSessionTest.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFmpegSessionTest.kt
+@@ -17,7 +17,7 @@
+  *  along with FFmpegKit.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.junit.Assert
+ import org.junit.Test
+diff --git a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFprobeSessionTest.kt b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSessionTest.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFprobeSessionTest.kt
+rename to android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSessionTest.kt
+index ba97c89..ab83f13 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/FFprobeSessionTest.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/FFprobeSessionTest.kt
+@@ -17,7 +17,7 @@
+  *  along with FFmpegKit.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.junit.Assert
+ import org.junit.Test
+diff --git a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/MediaInformationJsonParserTest.kt b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationJsonParserTest.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/MediaInformationJsonParserTest.kt
+rename to android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationJsonParserTest.kt
+index 3e506f7..eb26190 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/MediaInformationJsonParserTest.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationJsonParserTest.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.json.JSONException
+ import org.junit.Assert
+diff --git a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/MediaInformationSessionTest.kt b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSessionTest.kt
+similarity index 99%
+rename from android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/MediaInformationSessionTest.kt
+rename to android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSessionTest.kt
+index 4a5130a..7cdd119 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/MediaInformationSessionTest.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/MediaInformationSessionTest.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKitNext. If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import org.json.JSONObject
+ import org.junit.Assert
+diff --git a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/SAFProtocolUrlLifecycleTest.kt b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/SAFProtocolUrlLifecycleTest.kt
+similarity index 98%
+rename from android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/SAFProtocolUrlLifecycleTest.kt
+rename to android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/SAFProtocolUrlLifecycleTest.kt
+index 59c5275..8f1a916 100644
+--- a/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/arthenica/ffmpegkit/SAFProtocolUrlLifecycleTest.kt
++++ b/android/ffmpeg-kit-next-android-lib/src/test/kotlin/com/antonkarpenko/ffmpegkit/SAFProtocolUrlLifecycleTest.kt
+@@ -17,7 +17,7 @@
+  * along with FFmpegKit.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
+-package com.arthenica.ffmpegkit
++package com.antonkarpenko.ffmpegkit
+ 
+ import android.content.ContentProvider
+ import android.content.ContentValues
+@@ -193,7 +193,7 @@ class SAFProtocolUrlLifecycleTest {
+     }
+ 
+     companion object {
+-        private const val AUTHORITY = "com.arthenica.ffmpegkit.test.saf"
++        private const val AUTHORITY = "com.antonkarpenko.ffmpegkit.test.saf"
+ 
+         // safOpen/safClose are private native callbacks; they are reached by reflection so their
+         // JNI-visible names stay untouched.
+diff --git a/android/gradle/wrapper/gradle-wrapper.properties b/android/gradle/wrapper/gradle-wrapper.properties
+index 4f5eb9d..44cbadc 100644
+--- a/android/gradle/wrapper/gradle-wrapper.properties
++++ b/android/gradle/wrapper/gradle-wrapper.properties
+@@ -1,6 +1,6 @@
+ distributionBase=GRADLE_USER_HOME
+ distributionPath=wrapper/dists
+-distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.5-bin.zip
++distributionUrl=file\:///home/xiuzh/gradle-8.14.5-bin.zip
+ networkTimeout=10000
+ validateDistributionUrl=true
+ zipStoreBase=GRADLE_USER_HOME
+diff --git a/scripts/android/ffmpeg.sh b/scripts/android/ffmpeg.sh
+index 9747ad7..97f02b7 100755
+--- a/scripts/android/ffmpeg.sh
++++ b/scripts/android/ffmpeg.sh
+@@ -436,7 +436,22 @@ fi
+ 
+ ###################################################################
+ 
++# --- ffmpeg-kit slim: internal component trimming ---
++TRIM_ENABLES=" \
++  --enable-avcodec --enable-avformat --enable-avfilter --enable-avutil --enable-swscale --enable-swresample \
++  --enable-protocol=file,http,https,tcp,tls,crypto,concat,data \
++  --enable-demuxer=mov,mp4,m4v,3gp,3g2,mj2,matroska,webm,mpegts,mpegps,hls,concat,image2,image2pipe,gif,webp,wav,flac,mp3,ogg,avi,aac,mjpeg,png_pipe,apng,flv,asf,rtsp,sdp,rtp,udp,rawvideo,mpegvideo,hevc,ivf,ac3,eac3 \
++  --enable-muxer=mp4,mov,image2,image2pipe,gif,apng,webp,adts,mp3,matroska,mpegts,ipod,3gp,webm,wav,flac,ogg \
++  --enable-parser=h264,hevc,av1,mpeg4video,mpegvideo,aac,ac3,flac,mpegaudio,opus,vorbis,vp8,vp9,gif,png,mjpeg,vc1 \
++  --enable-bsf=h264_mp4toannexb,aac_adtstoasc,hevc_mp4toannexb,vp9_superframe,mpeg4_unpack_bframes,extract_extradata,mp3_header_decompress \
++  --enable-decoder=h264,hevc,av1,mpeg4,mpeg2video,mpeg1video,vp8,vp9,flv,theora,mjpeg,png,webp,gif,bmp,apng,rawvideo,wmv2,vc1,prores,mp3,aac,ac3,eac3,flac,alac,opus,vorbis,wavpack,ape,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,pcm_u8,pcm_mulaw,pcm_alaw,dca,truehd,atrac3,atrac3p \
++  --enable-encoder=libx264,mjpeg,png,libwebp,libwebp_anim,apng,gif,bmp,aac,rawvideo,pcm_s16le \
++  --enable-filter=crop,scale,rotate,hflip,vflip,fps,split,palettegen,paletteuse,format,trim,setpts,aresample,atrim,eq,overlay,transpose,pad,scale2ref,select,setdar,setsar,drawbox,colorchannelmixer,lut,unsharp,gblur,boxblur,hstack,vstack,concat,aformat,anull,anullsink,null,nullsink"
++CONFIGURE_POSTFIX+=" ${TRIM_ENABLES}"
++# --- end trim ---
++
+ ./configure \
++  --disable-everything \
+   --cross-prefix="${HOST}-" \
+   --sysroot="${ANDROID_SYSROOT}" \
+   --prefix="${FFMPEG_LIBRARY_PATH}" \
+diff --git a/scripts/help-android.sh b/scripts/help-android.sh
+old mode 100644
+new mode 100755
+diff --git a/scripts/help-apple.sh b/scripts/help-apple.sh
+old mode 100644
+new mode 100755
+diff --git a/scripts/help-ios.sh b/scripts/help-ios.sh
+old mode 100644
+new mode 100755
+diff --git a/scripts/help-linux.sh b/scripts/help-linux.sh
+old mode 100644
+new mode 100755
+diff --git a/scripts/help-macos.sh b/scripts/help-macos.sh
+old mode 100644
+new mode 100755
+diff --git a/scripts/help-tvos.sh b/scripts/help-tvos.sh
+old mode 100644
+new mode 100755
+diff --git a/scripts/help-visionos.sh b/scripts/help-visionos.sh
+old mode 100644
+new mode 100755
+diff --git a/tools/set-version.sh b/tools/set-version.sh
+index 8213950..35a12b4 100755
+--- a/tools/set-version.sh
++++ b/tools/set-version.sh
+@@ -256,7 +256,7 @@ update_android() {
+   update_doxyfile "${BASEDIR}/android/ffmpeg-kit-next-android-lib/Doxyfile"
+   replace_in_file "${BASEDIR}/android/ffmpeg-kit-next-android-lib/build.gradle" "Android Gradle version" 'BEGIN { $count = 0 } $count += s/(versionCode[ \t]+)[0-9]+/${1}$ENV{ANDROID_VERSION_CODE}/g; $count += s/(versionName[ \t]+")[^"]+(")/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count >= 2 ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/android/ffmpeg-kit-next-android-lib/src/main/cpp/ffmpegkit.h" "Android native version" 'BEGIN { $count = 0 } $count += s/(#define[ \t]+FFMPEG_KIT_VERSION[ \t]+")[^"]+(")/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+-  replace_in_file "${BASEDIR}/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/arthenica/ffmpegkit/NativeLoader.kt" "Android test loader version" 'BEGIN { $count = 0 } $count += s/(val[ \t]+version[ \t]*=[ \t]*")[^"]+(")/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
++  replace_in_file "${BASEDIR}/android/ffmpeg-kit-next-android-lib/src/main/kotlin/com/antonkarpenko/ffmpegkit/NativeLoader.kt" "Android test loader version" 'BEGIN { $count = 0 } $count += s/(val[ \t]+version[ \t]*=[ \t]*")[^"]+(")/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+ }
+ 
+ update_apple() {
+@@ -283,7 +283,7 @@ update_flutter() {
+   replace_in_file "${BASEDIR}/flutter/flutter/pubspec.yaml" "Flutter pubspec version" 'BEGIN { $count = 0 } $count += s/^(version:[ \t]*)[^\r\n]+/${1}$ENV{NEW_VERSION}/mg; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/flutter/flutter/lib/src/ffmpeg_kit_factory.dart" "Flutter Dart version" 'BEGIN { $count = 0 } $count += s/(static String getVersion\(\) => ")[^"]+(";)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/flutter/flutter/android/build.gradle" "Flutter Android version" 'BEGIN { $count = 0 } $count += s/(versionCode[ \t]+)[0-9]+/${1}$ENV{PACKAGE_VERSION_CODE}/g; $count += s/(versionName[ \t]+")[^"]+(")/${1}$ENV{NEW_VERSION}${2}/g; $count += s/(implementation '\''com\.arthenica:ffmpeg-kit-next:)[^'\'']+('\''\s*)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count >= 3 ? 0 : 3) }'
+-  replace_in_file "${BASEDIR}/flutter/flutter/android/src/main/java/com/arthenica/ffmpegkit/flutter/FFmpegKitFlutterPlugin.java" "Flutter Android plugin library version" 'BEGIN { $count = 0 } $count += s/(public static final String LIBRARY_VERSION[ \t]*=[ \t]*")[^"]+(";)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
++  replace_in_file "${BASEDIR}/flutter/flutter/android/src/main/java/com/antonkarpenko/ffmpegkit/flutter/FFmpegKitFlutterPlugin.java" "Flutter Android plugin library version" 'BEGIN { $count = 0 } $count += s/(public static final String LIBRARY_VERSION[ \t]*=[ \t]*")[^"]+(";)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/flutter/flutter/linux/ffmpeg_kit_flutter_plugin.cc" "Flutter Linux plugin library version" 'BEGIN { $count = 0 } $count += s/(#define[ \t]+FFMPEG_KIT_LIBRARY_VERSION[ \t]+")[^"]+(")/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/flutter/flutter/ios/ffmpeg_kit_next_flutter.podspec" "Flutter iOS podspec version" 'BEGIN { $count = 0 } $count += s/(s\.version[ \t]*=[ \t]*'\''\s*)[^'\'']+('\''\s*)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/flutter/flutter/ios/ffmpeg_kit_next_flutter/Sources/ffmpeg_kit_next_flutter/FFmpegKitFlutterPlugin.m" "Flutter iOS plugin library version" 'BEGIN { $count = 0 } $count += s/(static NSString \*const LIBRARY_VERSION[ \t]*=[ \t]*@")[^"]+(";)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+@@ -294,7 +294,7 @@ update_flutter() {
+ update_react_native() {
+   replace_in_file "${BASEDIR}/react-native/package.json" "React Native package version" 'BEGIN { $count = 0 } $count += s/("version"[ \t]*:[ \t]*")[^"]+(",)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/react-native/android/build.gradle" "React Native Android version" 'BEGIN { $count = 0 } $count += s/(versionCode[ \t]+)[0-9]+/${1}$ENV{PACKAGE_VERSION_CODE}/g; $count += s/(versionName[ \t]+")[^"]+(")/${1}$ENV{NEW_VERSION}${2}/g; $count += s/(implementation '\''com\.arthenica:ffmpeg-kit-next:)[^'\'']+('\''\s*)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count >= 3 ? 0 : 3) }'
+-  replace_in_file "${BASEDIR}/react-native/android/src/main/java/com/arthenica/ffmpegkit/reactnative/FFmpegKitReactNativeModule.java" "React Native Android module library version" 'BEGIN { $count = 0 } $count += s/(public static final String LIBRARY_VERSION[ \t]*=[ \t]*")[^"]+(";)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
++  replace_in_file "${BASEDIR}/react-native/android/src/main/java/com/antonkarpenko/ffmpegkit/reactnative/FFmpegKitReactNativeModule.java" "React Native Android module library version" 'BEGIN { $count = 0 } $count += s/(public static final String LIBRARY_VERSION[ \t]*=[ \t]*")[^"]+(";)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/react-native/src/index.js" "React Native JavaScript version" 'BEGIN { $count = 0 } $count += s/(static getVersion\(\)[ \t\r\n]*\{[ \t\r\n]*return ")[^"]+(";[ \t\r\n]*\})/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+   replace_in_file "${BASEDIR}/react-native/ios/FFmpegKitReactNativeModule.mm" "React Native iOS module library version" 'BEGIN { $count = 0 } $count += s/(static NSString \*const LIBRARY_VERSION[ \t]*=[ \t]*@")[^"]+(";)/${1}$ENV{NEW_VERSION}${2}/g; END { exit($count ? 0 : 3) }'
+ }
