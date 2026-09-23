@@ -9,6 +9,7 @@ import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
+import 'package:kostori/pages/watcher/player_hud.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -655,204 +656,30 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   // HUD 指示
   Widget _buildSeekIndicator(LocalPlayerState state) {
-    // 方向配色 + 磨砂玻璃 + 目标时间/总时长 + 进度条
-    final target = state.seekPreview ?? state.position;
-    final current = state.position;
-    final total = state.duration;
-    final isForward = target > current;
-    final diffSec = (target - current).inSeconds.abs().clamp(0, 999);
-    final totalSec = total.inSeconds > 0 ? total.inSeconds : 1;
-    final progress = (target.inMilliseconds / (totalSec * 1000)).clamp(
-      0.0,
-      1.0,
-    );
-    final accent = isForward
-        ? const Color(0xFF2ED8A7)
-        : const Color(0xFFFF7A6B);
-    final icon = isForward
-        ? Icons.fast_forward_rounded
-        : Icons.fast_rewind_rounded;
+    // 复用 anime page 播放器的快进/快退 HUD（PlayerSeekHud）
     return Positioned(
       top: MediaQuery.paddingOf(context).top + 80,
       left: 0,
       right: 0,
-      child: IgnorePointer(
-        child: Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BlurEffect(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.toOpacity(0.60),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.toOpacity(0.22)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.toOpacity(0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, animation) =>
-                          ScaleTransition(scale: animation, child: child),
-                      child: Icon(
-                        icon,
-                        key: ValueKey(icon),
-                        color: accent,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isForward
-                              ? t.seekForward(s: diffSec)
-                              : t.seekBackward(s: diffSec),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _fmtDuration(target),
-                              style: TextStyle(
-                                color: accent,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              ' / ${_fmtDuration(total)}',
-                              style: TextStyle(
-                                color: Colors.white.toOpacity(0.6),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        SizedBox(
-                          width: 120,
-                          height: 3,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: Stack(
-                              children: [
-                                Container(color: Colors.white.toOpacity(0.15)),
-                                FractionallySizedBox(
-                                  widthFactor: progress,
-                                  child: Container(color: accent),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+      child: Center(
+        child: PlayerSeekHud(
+          target: state.seekPreview ?? state.position,
+          current: state.position,
+          total: state.duration,
         ),
       ),
     );
   }
 
-  String _fmtDuration(Duration d) {
-    final h = d.inHours;
-    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
-    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
-  }
-
-  /// 亮度/音量 HUD：顶部居中，磨砂玻璃 + 等级图标 + 进度条 + 数值
+  /// 亮度/音量 HUD：顶部居中（复用 anime page 播放器的 PlayerLevelHud）
   Widget _buildLevelHUD(LocalPlayerState state, {required bool isBrightness}) {
-    final accent = isBrightness
-        ? const Color(0xFFF5A623)
-        : const Color(0xFF4DB6FF);
     final value = isBrightness ? state.brightness * 100 : state.volume * 100;
-    final icon = isBrightness
-        ? Icons.brightness_7_rounded
-        : (value <= 0
-              ? Icons.volume_off_rounded
-              : value < 50
-              ? Icons.volume_down_rounded
-              : Icons.volume_up_rounded);
     return Positioned(
       top: MediaQuery.paddingOf(context).top + 80,
       left: 0,
       right: 0,
-      child: IgnorePointer(
-        child: Center(
-          child: _frostedGlass(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: accent, size: 22),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 110,
-                  height: 8,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Stack(
-                      children: [
-                        Container(color: Colors.white.toOpacity(0.15)),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOutCubic,
-                          width: 110 * (value.clamp(0, 100) / 100),
-                          decoration: BoxDecoration(
-                            color: accent,
-                            borderRadius: BorderRadius.circular(4),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accent.toOpacity(0.5),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 38,
-                  child: Text(
-                    '${value.round()}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: Center(
+        child: PlayerLevelHud(isBrightness: isBrightness, value: value),
       ),
     );
   }
@@ -889,31 +716,6 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  /// 磨砂玻璃容器
-  Widget _frostedGlass({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BlurEffect(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.black.toOpacity(0.60),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.toOpacity(0.22)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.toOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: child,
         ),
       ),
     );

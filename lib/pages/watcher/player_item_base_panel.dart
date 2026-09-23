@@ -11,6 +11,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/player_hud.dart';
 
 class PlayerItemBasePanel extends StatefulWidget {
   const PlayerItemBasePanel({
@@ -334,10 +335,6 @@ class _LevelSliderHUD extends StatelessWidget {
 
   final PlayerController playerController;
 
-  // 亮度用暖色、音量用冷色，作视觉区分
-  static const _brightnessColor = Color(0xFFF5A623);
-  static const _volumeColor = Color(0xFF4DB6FF);
-
   @override
   Widget build(BuildContext context) {
     return Observer(
@@ -347,113 +344,18 @@ class _LevelSliderHUD extends StatelessWidget {
         if (!showBrightness && !showVolume) {
           return const SizedBox.shrink();
         }
-
-        // 当前目标值（0-100）
         final isBrightness = showBrightness;
+        // 当前目标值（0-100）
         final targetValue = isBrightness
             ? (playerController.brightness * 100)
             : playerController.volume;
-        final accent = isBrightness ? _brightnessColor : _volumeColor;
-
-        // 图标按等级切换（动画在 _LevelIcon 内处理）
-        final icon = isBrightness
-            ? Icons.brightness_7_rounded
-            : (targetValue <= 0
-                  ? Icons.volume_off_rounded
-                  : targetValue < 50
-                  ? Icons.volume_down_rounded
-                  : Icons.volume_up_rounded);
-
-        return IgnorePointer(
-          child: _FrostedGlass(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _LevelIcon(icon: icon, color: accent),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 110,
-                  height: 8,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Stack(
-                      children: [
-                        Container(color: Colors.white.toOpacity(0.15)),
-                        // 从当前宽度平滑过渡，不会从 0 弹起
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOutCubic,
-                          width: 110 * (targetValue.clamp(0, 100) / 100),
-                          decoration: BoxDecoration(
-                            color: accent,
-                            borderRadius: BorderRadius.circular(4),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accent.toOpacity(0.5),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 38,
-                  child: Text(
-                    '${targetValue.round()}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return PlayerLevelHud(isBrightness: isBrightness, value: targetValue);
       },
     );
   }
 }
 
-/// 磨砂玻璃容器：模糊背景 + 深色半透明底 + 圆角边框
-class _FrostedGlass extends StatelessWidget {
-  const _FrostedGlass({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BlurEffect(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.black.toOpacity(0.60),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.toOpacity(0.22)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.toOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-/// 快进 / 快退 HUD（左右滑动时显示）
+/// 快进 / 快退 HUD（左右滑动时显示）——复用共享的 [PlayerSeekHud]
 class _SeekHUD extends StatelessWidget {
   const _SeekHUD({required this.playerController});
 
@@ -463,131 +365,12 @@ class _SeekHUD extends StatelessWidget {
   Widget build(BuildContext context) {
     return Observer(
       builder: (context) {
-        final target = playerController.currentPosition;
-        final current = playerController.player.state.position;
-        final total = playerController.duration;
-        final isForward = target > current;
-        final diffSec = (target - current).inSeconds.abs().clamp(0, 999);
-        final totalSec = total.inSeconds > 0 ? total.inSeconds : 1;
-        final progress = (target.inMilliseconds / (totalSec * 1000)).clamp(
-          0.0,
-          1.0,
-        );
-
-        // 方向配色：快进青绿 / 快退橙红
-        final accent = isForward
-            ? const Color(0xFF2ED8A7)
-            : const Color(0xFFFF7A6B);
-        final icon = isForward
-            ? Icons.fast_forward_rounded
-            : Icons.fast_rewind_rounded;
-
-        return IgnorePointer(
-          child: _FrostedGlass(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: Icon(
-                    icon,
-                    key: ValueKey(icon),
-                    color: accent,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isForward
-                          ? t.seekForward(s: diffSec)
-                          : t.seekBackward(s: diffSec),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // 目标时间 + 总时长
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _fmt(target),
-                          style: TextStyle(
-                            color: accent,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          ' / ${_fmt(total)}',
-                          style: TextStyle(
-                            color: Colors.white.toOpacity(0.6),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      width: 120,
-                      height: 3,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: Stack(
-                          children: [
-                            Container(color: Colors.white.toOpacity(0.15)),
-                            FractionallySizedBox(
-                              widthFactor: progress,
-                              child: Container(color: accent),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        return PlayerSeekHud(
+          target: playerController.currentPosition,
+          current: playerController.player.state.position,
+          total: playerController.duration,
         );
       },
-    );
-  }
-
-  static String _fmt(Duration d) {
-    final h = d.inHours;
-    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
-    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
-  }
-}
-
-/// 带切换动画的图标（切换时缩放 + 淡入，模拟"点亮"）
-class _LevelIcon extends StatelessWidget {
-  const _LevelIcon({required this.icon, required this.color});
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(scale: animation, child: child),
-        );
-      },
-      child: Icon(icon, key: ValueKey(icon), color: color, size: 22),
     );
   }
 }
