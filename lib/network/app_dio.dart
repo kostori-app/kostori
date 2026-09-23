@@ -264,7 +264,16 @@ String networkErrorMessage(Object? error) {
     final statusPart = status != null ? ' · HTTP $status' : '';
     return '$typeText$statusPart\n${error.requestOptions.uri}';
   }
-  return error?.toString() ?? 'Unknown error';
+  final text = error?.toString() ?? 'Unknown error';
+  // 有些路径把 DioException 变成了字符串（经 JS 引擎/包装），这里兜底再缩短一次：
+  // 提取地址 + 判断连接类错误，避免把整段 Rhttp/hyper 长串直接丢给用户。
+  if (text.contains('DioException') ||
+      text.contains('Rhttp') ||
+      text.contains('Connection error')) {
+    final url = RegExp(r'https?://[^\s)\]"，,]+').firstMatch(text)?.group(0);
+    return url == null ? t.connectionFailed : '${t.connectionFailed}\n$url';
+  }
+  return text;
 }
 
 class AppDio with DioMixin {
