@@ -199,13 +199,14 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     if (tapPosition < sectionWidth) {
       // 左半屏调亮度
       ctrl.setShowBrightness(true);
-      final level = totalHeight * 2;
+      // 整屏高度滑满 ≈ 满量程变化（此前除数是 height*0.03，轻微上滑就冲到 100%）
+      final level = totalHeight;
       final result = (st.brightness - delta / level).clamp(0.0, 1.0);
       await ctrl.setBrightness(result);
     } else {
       // 右半屏调音量
       ctrl.setShowVolume(true);
-      final level = totalHeight * 0.03;
+      final level = totalHeight;
       final v = (st.volume - delta / level).clamp(0.0, 1.0);
       await ctrl.setVolume(v);
     }
@@ -318,7 +319,8 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
             onVerticalDragEnd: (_) => _onVerticalDragEnd(),
           ),
         ),
-        if (state.showSeekTime) _buildSeekIndicator(state),
+        if (state.showSeekTime && state.seekPreview != null)
+          _buildSeekIndicator(state),
         if (state.showVolume) _buildLevelHUD(state, isBrightness: false),
         if (state.showBrightness) _buildLevelHUD(state, isBrightness: true),
         if (state.speed != 1.0 && !state.showControls)

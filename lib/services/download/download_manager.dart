@@ -115,21 +115,14 @@ class DownloadManager extends ChangeNotifier {
     } catch (_) {
       return;
     }
-    // 文件已删的记录不再点亮角标（此前只看记录不看文件，删文件后仍显示已下载）
+    // 只看是否存在下载记录，不校验文件是否还在：卡片「已下载」角标据此点亮，
+    // 避免用户以为没下过而重复下载同一条目。
     final keys = <String>{};
-    await Future.wait(
-      records.whereType<Map>().map((r) async {
-        final fp = r['filePath']?.toString() ?? '';
-        if (fp.isEmpty) return;
-        try {
-          if (!await File(fp).exists()) return;
-        } catch (_) {
-          return;
-        }
-        final aid = r['animeId']?.toString() ?? '';
-        if (aid.isNotEmpty) keys.add('$aid|${r['sourceKey']}');
-      }),
-    );
+    for (final r in records.whereType<Map>()) {
+      final aid = r['animeId']?.toString() ?? '';
+      if (aid.isEmpty) continue;
+      keys.add('$aid|${r['sourceKey']}');
+    }
     _downloadedKeys = keys;
     if (!_recordsChanged.isClosed) _recordsChanged.add(null);
   }
