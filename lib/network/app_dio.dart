@@ -204,10 +204,13 @@ class MyLogInterceptor extends Interceptor {
       return;
     }
     if (NetLog.metaOnly) {
-      // 概要模式：只记一行，不打请求头/正文。
-      // 二进制请求（图片/文件）成功时会静默，这里也不打请求行（失败由 onError 记录）
+      // 概要模式：一行摘要 + 脱敏请求头（失败时靠它定位是哪个头不对）
       if (options.responseType != ResponseType.bytes) {
-        NetLog.info("→ Network", '${options.method} ${options.uri}');
+        NetLog.info(
+          "→ Network",
+          '${options.method} ${options.uri}\n'
+              'headers:\n${_redactHeaders(options.headers)}',
+        );
       }
       handler.next(options);
       return;

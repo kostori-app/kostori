@@ -29,10 +29,10 @@ class BangumiGridCard extends StatelessWidget {
           ),
         );
       }
-      // 未开启模糊：沿用之前的半透明叠色（外层 0.4 + 内层 0.6）
+      // 未开启模糊：用更实的半透明叠色，避免太透（外 0.55 + 内 0.82）
       return Container(
         decoration: BoxDecoration(
-          color: Colors.white.toOpacity(0.4),
+          color: Colors.white.toOpacity(0.55),
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.all(0),
@@ -40,8 +40,8 @@ class BangumiGridCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.6)
-                : Colors.black.toOpacity(0.6),
+                ? Colors.white.toOpacity(0.82)
+                : Colors.black.toOpacity(0.82),
             borderRadius: BorderRadius.circular(8),
           ),
           child: child,
@@ -257,10 +257,10 @@ class _BangumiCharacterCard extends StatelessWidget {
           ),
         );
       }
-      // 未开启模糊：沿用之前的半透明叠色（外层 0.4 + 内层 0.6）
+      // 未开启模糊：用更实的半透明叠色，避免太透（外 0.55 + 内 0.82）
       return Container(
         decoration: BoxDecoration(
-          color: Colors.white.toOpacity(0.4),
+          color: Colors.white.toOpacity(0.55),
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.all(0),
@@ -268,8 +268,8 @@ class _BangumiCharacterCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.6)
-                : Colors.black.toOpacity(0.6),
+                ? Colors.white.toOpacity(0.82)
+                : Colors.black.toOpacity(0.82),
             borderRadius: BorderRadius.circular(8),
           ),
           child: child,

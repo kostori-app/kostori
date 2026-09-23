@@ -566,15 +566,30 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
     final position = _scrollController.position;
     final viewport = position.viewportDimension;
     if (viewport <= 0 || position.maxScrollExtent <= 0) return;
+    // 滚动动画进行中（我们自己的 animateTo）不要打断，避免反复重启动画
+    if (position.isScrollingNotifier.value) return;
     final index = value.round().clamp(0, rects.length - 1);
+    // 只有指示块动画settled（值已达选中项）时才处理；切换 tab 的动画中途跳过，
+    // 否则会先把旧选中项拉回来再滚向新项，表现为“抽搐”。
+    final settled =
+        widget.selectedIndex < 0 ||
+        (widget.selectedIndex == index &&
+            (value - index.toDouble()).abs() < 0.01);
     final positionChanged = !identical(position, _lastPosition);
     _lastPosition = position;
-    if (!positionChanged && index == _lastScrolledIndex) return;
+    final rect = rects[index];
+    final offset = position.pixels;
+    final fullyVisible =
+        rect.left >= offset - 0.5 && rect.right <= offset + viewport + 0.5;
+    // 无变化且选中项可见：不动。触发重新对齐的时机：下标变化、position 被
+    // 重建（离开再回到页面）、或选中项滚出可视区（离屏期间错位）。
+    if (!positionChanged && index == _lastScrolledIndex && fullyVisible) return;
+    if (!settled) return;
     _lastScrolledIndex = index;
     // 居中目标：选中项中心 - 视口一半，贴边时 clamp 自动处理
-    var target = rects[index].center.dx - viewport / 2;
+    var target = rect.center.dx - viewport / 2;
     target = target.clamp(position.minScrollExtent, position.maxScrollExtent);
-    if ((target - position.pixels).abs() < 0.5) return;
+    if ((target - offset).abs() < 0.5) return;
     _scrollController.animateTo(
       target,
       duration: widget.duration,

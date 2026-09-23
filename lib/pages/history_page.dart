@@ -31,6 +31,13 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   var controller = FlyoutController();
   late int heatYear = DateTime.now().year;
   bool showHeatNumbers = true;
+  final _heatmapKey = GlobalKey<_YearActivityHeatmapState>();
+  NaviPaneState? _naviPane;
+
+  /// 重新进入历史页时把热力图定位到今天
+  void _onNaviItemTapped(int index) {
+    if (index == 3) _heatmapKey.currentState?.recenterToToday(animate: true);
+  }
 
   Map<String, bool> toJsonMap(Map<HistoryTimeGroup, bool> map) {
     return map.map((key, value) => MapEntry(key.name, value));
@@ -59,6 +66,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   void initState() {
     super.initState();
     _loadHistory();
+    NaviPane.of(context).addNaviItemTapListener(_onNaviItemTapped);
     ref.listenManual(historyAllProvider, (_, next) {
       final list = next.when(
         data: (d) => d,
@@ -81,7 +89,14 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    _naviPane = NaviPane.of(context);
+    super.didChangeDependencies();
+  }
+
+  @override
   void dispose() {
+    _naviPane?.removeNaviItemTapListener(_onNaviItemTapped);
     scrollController.dispose();
     super.dispose();
   }
@@ -484,6 +499,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
         ),
         SliverToBoxAdapter(
           child: _HistoryHeatmapCard(
+            heatmapKey: _heatmapKey,
             year: heatYear,
             dayEntries: dayEntries,
             minYear: minYear,
@@ -684,6 +700,7 @@ class _HistoryHeatmapCard extends StatelessWidget {
     required this.onPrev,
     required this.onNext,
     required this.onDayTap,
+    this.heatmapKey,
   });
 
   final int year;
@@ -695,6 +712,9 @@ class _HistoryHeatmapCard extends StatelessWidget {
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final void Function(DateTime, List<History>) onDayTap;
+
+  /// 用于在重新进入历史页时把热力图定位到今天
+  final GlobalKey<_YearActivityHeatmapState>? heatmapKey;
 
   @override
   Widget build(BuildContext context) {
@@ -777,6 +797,7 @@ class _HistoryHeatmapCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _YearActivityHeatmap(
+            key: heatmapKey,
             year: year,
             dayEntries: dayEntries,
             showNumbers: showNumbers,
@@ -790,8 +811,9 @@ class _HistoryHeatmapCard extends StatelessWidget {
 
 /// 全年热力图：可横向滚动，格子固定偏大；只铺真实日期（首尾周不补占位）
 /// 全年热力图：可横向滚动，格子固定偏大；顶部完整月名（i18n）；只铺真实日期
-class _YearActivityHeatmap extends StatelessWidget {
+class _YearActivityHeatmap extends StatefulWidget {
   const _YearActivityHeatmap({
+    super.key,
     required this.year,
     required this.dayEntries,
     required this.showNumbers,
@@ -838,7 +860,69 @@ class _YearActivityHeatmap extends StatelessWidget {
   }
 
   @override
+  State<_YearActivityHeatmap> createState() => _YearActivityHeatmapState();
+}
+
+class _YearActivityHeatmapState extends State<_YearActivityHeatmap> {
+  final ScrollController _scrollController = ScrollController();
+  bool _didInitialRecenter = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// 把热力图横向滚动到今天所在列居中。
+  void recenterToToday({bool animate = false}) {
+    if (!mounted || !_scrollController.hasClients) return;
+    final now = DateTime.now();
+    if (now.year != widget.year) return;
+    const cell = _YearActivityHeatmap.cell;
+    const gap = _YearActivityHeatmap.gap;
+    const gutter = _YearActivityHeatmap.gutter;
+    final first = DateTime(widget.year, 1, 1);
+    final leading = first.weekday - 1;
+    final col = (leading + now.difference(first).inDays) ~/ 7;
+    final x = gutter + col * (cell + gap);
+    final position = _scrollController.position;
+    var target = x + cell / 2 - position.viewportDimension / 2;
+    target = target.clamp(0.0, position.maxScrollExtent);
+    if ((target - position.pixels).abs() < 0.5) return;
+    if (animate) {
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    } else {
+      _scrollController.jumpTo(target);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _YearActivityHeatmap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 切换年份后重新定位到今天（仅当年份是今年时有效）
+    if (oldWidget.year != widget.year) _didInitialRecenter = false;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final year = widget.year;
+    final dayEntries = widget.dayEntries;
+    final showNumbers = widget.showNumbers;
+    final onDayTap = widget.onDayTap;
+    final monthName = widget.monthName;
+    const cell = _YearActivityHeatmap.cell;
+    const gap = _YearActivityHeatmap.gap;
+    const gutter = _YearActivityHeatmap.gutter;
+    const topLabel = _YearActivityHeatmap.topLabel;
+    // 首次进入（或切年后）自动定位到今天所在列
+    if (!_didInitialRecenter) {
+      _didInitialRecenter = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => recenterToToday());
+    }
     final colorScheme = Theme.of(context).colorScheme;
     final first = DateTime(year, 1, 1);
     final last = DateTime(year, 12, 31);
@@ -926,30 +1010,51 @@ class _YearActivityHeatmap extends StatelessWidget {
       final tip =
           '${d.year}-${two(d.month)}-${two(d.day)}'
           '${count > 0 ? ' · $count' : ''}';
+      final now = DateTime.now();
+      final isToday =
+          d.year == now.year && d.month == now.month && d.day == now.day;
+      Widget box = Container(
+        width: cell,
+        height: cell,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          color: colorOf(d),
+        ),
+        child: showNumbers && count > 0
+            ? Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onPrimary,
+                ),
+              )
+            : null,
+      );
+      if (isToday) {
+        // 今天：用渐变描边圈出来，便于一眼定位
+        box = Container(
+          width: cell,
+          height: cell,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colorScheme.primary, colorScheme.tertiary],
+            ),
+          ),
+          child: box,
+        );
+      }
       return Tooltip(
         message: tip,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: count > 0 ? () => onDayTap(d, items!) : null,
-          child: Container(
-            width: cell,
-            height: cell,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              color: colorOf(d),
-            ),
-            child: showNumbers && count > 0
-                ? Text(
-                    '$count',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onPrimary,
-                    ),
-                  )
-                : null,
-          ),
+          child: box,
         ),
       );
     }
@@ -1001,6 +1106,7 @@ class _YearActivityHeatmap extends StatelessWidget {
     );
 
     return SingleChildScrollView(
+      controller: _scrollController,
       scrollDirection: Axis.horizontal,
       child: SizedBox(
         width: contentWidth,
