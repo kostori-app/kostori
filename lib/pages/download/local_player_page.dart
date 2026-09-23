@@ -87,6 +87,10 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   LocalPlayerState get st =>
       ref.read(localPlayerControllerProvider(widget.filePath));
 
+  /// 竖屏全屏（对齐 anime page 播放器的 isPortraitFullscreen）
+  bool get isPortraitFullscreen =>
+      st.fullscreen && MediaQuery.orientationOf(context) == Orientation.portrait;
+
   @override
   void initState() {
     super.initState();
@@ -658,7 +662,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   Widget _buildSeekIndicator(LocalPlayerState state) {
     // 复用 anime page 播放器的快进/快退 HUD（PlayerSeekHud）
     return Positioned(
-      top: MediaQuery.paddingOf(context).top + 80,
+      top: playerHudTop(isPortraitFullscreen: isPortraitFullscreen),
       left: 0,
       right: 0,
       child: Center(
@@ -675,7 +679,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   Widget _buildLevelHUD(LocalPlayerState state, {required bool isBrightness}) {
     final value = isBrightness ? state.brightness * 100 : state.volume * 100;
     return Positioned(
-      top: MediaQuery.paddingOf(context).top + 80,
+      top: playerHudTop(isPortraitFullscreen: isPortraitFullscreen),
       left: 0,
       right: 0,
       child: Center(
@@ -687,7 +691,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   /// 播放速度 HUD：顶部居中
   Widget _buildSpeedIndicator(LocalPlayerState state) {
     return Positioned(
-      top: MediaQuery.paddingOf(context).top + 80,
+      top: playerHudTop(isPortraitFullscreen: isPortraitFullscreen),
       left: 0,
       right: 0,
       child: AnimatedSwitcher(

@@ -6,6 +6,12 @@ import 'package:kostori/i18n/strings.g.dart';
 /// 播放器快进/快退、亮度/音量 HUD 的共享实现：
 /// anime page 播放器与本地播放器共用同一套外观与逻辑。
 
+/// 快进/快退、亮度/音量、倍速 HUD 距播放器顶部的偏移。
+/// 竖屏全屏时更靠下（避开状态栏/刘海），其余为 50。
+/// 两个播放器共用，保证同一组件的位置一致。
+double playerHudTop({required bool isPortraitFullscreen}) =>
+    isPortraitFullscreen ? 140 : 50;
+
 /// HUD 底：磨砂玻璃卡片（模糊背景 + 深色半透明底 + 圆角边框）
 class PlayerHudCard extends StatelessWidget {
   const PlayerHudCard({super.key, required this.child});

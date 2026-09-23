@@ -122,7 +122,9 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
             _CenterHintOverlay(playerController: playerController),
             // 快进/快退 HUD（左右滑动时显示）
             Positioned(
-              top: playerController.isPortraitFullscreen ? 140 : 50,
+              top: playerHudTop(
+                isPortraitFullscreen: playerController.isPortraitFullscreen,
+              ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 transitionBuilder: (child, animation) =>
@@ -134,7 +136,9 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
             ),
             // 顶部播放速度条
             Positioned(
-              top: playerController.isPortraitFullscreen ? 140 : 50,
+              top: playerHudTop(
+                isPortraitFullscreen: playerController.isPortraitFullscreen,
+              ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: playerController.showPlaySpeed
@@ -168,7 +172,9 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
             ),
             // 亮度/音量 HUD（共用一个组件，切换时进度平滑联动）
             Positioned(
-              top: playerController.isPortraitFullscreen ? 140 : 50,
+              top: playerHudTop(
+                isPortraitFullscreen: playerController.isPortraitFullscreen,
+              ),
               child: _LevelSliderHUD(playerController: playerController),
             ),
           ],

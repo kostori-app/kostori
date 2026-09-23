@@ -103,6 +103,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   VideoController? _controller;
   final List<StreamSubscription<dynamic>> _subs = [];
   Timer? _hideTimer;
+  Timer? _levelTimer;
 
   StreamSubscription<Duration>? _posSub;
   StreamSubscription<Duration>? _durSub;
@@ -122,6 +123,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     ref.onDispose(_disposeInternal);
     _init(filePath);
     _resetHideTimer();
+    _startLevelSync();
     // 初始即进入可交互状态，open 异步进行（否则加载期间手势/返回全部不可用）
     return const LocalPlayerState(loading: false);
   }
@@ -170,6 +172,38 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       if (state.showControls) {
         _update(state.copyWith(showControls: false));
       }
+    });
+  }
+
+  /// 与 anime page 播放器对齐：state.volume / state.brightness 均为 0..1。
+  /// 读取系统真实音量/亮度，避免沿用默认 1.0 导致首次上滑直接显示 100。
+  Future<void> _syncSystemLevels() async {
+    try {
+      if (App.isDesktop) {
+        final v = player.state.volume / 100;
+        _update(state.copyWith(volume: v.clamp(0.0, 1.0)));
+      } else {
+        final v = await FlutterVolumeController.getVolume();
+        if (v != null) {
+          _update(state.copyWith(volume: v.clamp(0.0, 1.0)));
+        }
+      }
+    } catch (_) {}
+    if (!App.isDesktop) {
+      try {
+        final b = await ScreenBrightnessPlatform.instance.application;
+        _update(state.copyWith(brightness: b.clamp(0.0, 1.0)));
+      } catch (_) {}
+    }
+  }
+
+  /// 周期同步系统音量/亮度（滑动调整期间跳过，避免与手势互相覆盖）
+  void _startLevelSync() {
+    _levelTimer?.cancel();
+    _syncSystemLevels();
+    _levelTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (state.showVolume || state.showBrightness) return;
+      _syncSystemLevels();
     });
   }
 
@@ -225,7 +259,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     v = v.clamp(0.0, 1.0);
     try {
       if (App.isDesktop) {
-        await player.setVolume(v);
+        await player.setVolume(v * 100);
       } else {
         FlutterVolumeController.updateShowSystemUI(false);
         await FlutterVolumeController.setVolume(v);
@@ -334,6 +368,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
 
   void _disposeInternal() {
     _hideTimer?.cancel();
+    _levelTimer?.cancel();
     for (final s in _subs) {
       s.cancel();
     }
