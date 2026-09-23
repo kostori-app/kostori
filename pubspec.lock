@@ -25,14 +25,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.3"
-  animated_text_kit:
-    dependency: "direct main"
-    description:
-      name: animated_text_kit
-      sha256: "1d41486860885321972dd332179357a535d50d4780fc2ba5e1805bde085c81f2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.3.0"
   antlr4:
     dependency: "direct main"
     description:
@@ -137,14 +129,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
-  auto_injector:
-    dependency: transitive
-    description:
-      name: auto_injector
-      sha256: "81815294ad9a512e294d97819bdbeccc7f93f18daeceac321e0c046a6f25eeb1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.0"
   battery_plus:
     dependency: "direct main"
     description:
@@ -225,6 +209,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.10.1"
+  camera:
+    dependency: transitive
+    description:
+      name: camera
+      sha256: "3f30ca0ff376f91534f23afa2a7aea06ebb6c889fd9e260642437b37e3d9f753"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.12.1"
+  camera_android_camerax:
+    dependency: transitive
+    description:
+      name: camera_android_camerax
+      sha256: "977f54512d338b3b36d7f82929794886766d8f41ae84a48fe103eb0106ecfe25"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.4+8"
+  camera_avfoundation:
+    dependency: transitive
+    description:
+      name: camera_avfoundation
+      sha256: "843247230a583e04742ea1434ce3f91e536760922fab67c72ce46aa34fac3e9d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.10.3"
+  camera_platform_interface:
+    dependency: transitive
+    description:
+      name: camera_platform_interface
+      sha256: "9365babc7488a9e93d0ed6dcccd917619fb12ea6f9e601519e1191d4890ee2fe"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.14.0"
+  camera_web:
+    dependency: transitive
+    description:
+      name: camera_web
+      sha256: "5aecf1ac4dd4a949c5a7820e590020acb2bc35425384ab87a030e1739bfe12e2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.5+6"
   change_app_package_name:
     dependency: "direct dev"
     description:
@@ -711,14 +735,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
-  flutter_displaymode:
-    dependency: "direct main"
-    description:
-      name: flutter_displaymode
-      sha256: ecd44b1e902b0073b42ff5b55bf283f38e088270724cdbb7f7065ccf54aa60a8
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.0"
   flutter_file_dialog:
     dependency: "direct main"
     description:
@@ -883,14 +899,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
-  flutter_modular:
-    dependency: "direct main"
-    description:
-      name: flutter_modular
-      sha256: "04b924a79e17ec897aa40886a46f27954ee0194e4601a006bdba3cb2be65e180"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.1.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -983,6 +991,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_zxing:
+    dependency: "direct main"
+    description:
+      name: flutter_zxing
+      sha256: d94f5a5f75d30e503390e248c034eee3de9bd3481f7cdda348b05c2ce81b0bd0
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.1"
   freezed:
     dependency: "direct dev"
     description:
@@ -1481,14 +1497,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  mobile_scanner:
-    dependency: "direct main"
-    description:
-      name: mobile_scanner
-      sha256: ce3f059ebd6dbfab7292bba0e893e354b46730636820d3c9ef69005ce2d55bce
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.4.0"
   mobx:
     dependency: "direct main"
     description:
