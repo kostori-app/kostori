@@ -117,6 +117,8 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
               playerController: playerController,
               duration: widget.duration,
             ),
+            // 中央提示（如「正在播放下一集」）：与缓冲覆盖层同一位置，居中于播放器
+            _CenterHintOverlay(playerController: playerController),
             // 快进/快退 HUD（左右滑动时显示）
             Positioned(
               top: playerController.isPortraitFullscreen ? 140 : 50,
@@ -265,6 +267,63 @@ class _VideoLoadingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: _LoadingInfoCard(playerController: playerController),
+    );
+  }
+}
+
+/// 播放器中央提示（如「正在播放下一集」）：位置对齐缓冲覆盖层（居中于播放器，
+/// 而不是用全局 showCenter 居中到整个页面）。
+class _CenterHintOverlay extends StatelessWidget {
+  const _CenterHintOverlay({required this.playerController});
+
+  final PlayerController playerController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Observer(
+      builder: (context) {
+        final msg = playerController.centerHintMessage;
+        if (msg == null || msg.isEmpty) return const SizedBox.shrink();
+        final success = playerController.centerHintSuccess;
+        return IgnorePointer(
+          child: Align(
+            alignment: Alignment.center,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.black.toOpacity(0.45),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Gif(
+                    image: AssetImage(
+                      success
+                          ? 'assets/img/check.gif'
+                          : 'assets/img/warning.gif',
+                    ),
+                    height: 80,
+                    fps: 120,
+                    color: success
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                    autostart: Autostart.once,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    msg,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -159,6 +159,27 @@ abstract class _PlayerController with Store {
   @observable
   String? lastPlayError;
 
+  /// 播放器中央提示（如「正在播放下一集」）：在播放器组件内部居中显示，
+  /// 位置与缓冲覆盖层一致（不再用全局 showCenter，避免居中到整个页面）。
+  @observable
+  String? centerHintMessage;
+  @observable
+  bool centerHintSuccess = true;
+  Timer? _centerHintTimer;
+
+  void showCenterHint({
+    required String message,
+    bool success = true,
+    int seconds = 1,
+  }) {
+    centerHintMessage = message;
+    centerHintSuccess = success;
+    _centerHintTimer?.cancel();
+    _centerHintTimer = Timer(Duration(seconds: seconds), () {
+      centerHintMessage = null;
+    });
+  }
+
   /// 播放失败提示去抖：mpv 对失效链接会反复重试刷错误日志，短时间只弹一次
   DateTime? _lastFailToastAt;
   void toastPlayFailed(String msg) {
@@ -407,29 +428,38 @@ abstract class _PlayerController with Store {
     _playingSub?.cancel();
     _bufferingSub?.cancel();
     _completedSub?.cancel();
+    _centerHintTimer?.cancel();
     playerTimer?.cancel();
   }
 
+  /// 本 controller 所属的 Watcher。多个详情页入栈时，`WatcherPlayer.currentState`
+  /// 会指向最近挂载/返回的那个；选集/换集必须作用在自己所属的 Watcher 上，
+  /// 否则会播放成另一个 anime page 的内容。
+  WatcherPlayer? watcher;
+
+  WatcherPlayer? get _ownerWatcher => watcher ?? WatcherPlayer.currentState;
+
   Future<void> playNextEpisode() async {
-    WatcherPlayer.currentState!.playNextEpisode();
+    _ownerWatcher?.playNextEpisode();
   }
 
-  Future<void> playEpisode(int index, int road) =>
-      WatcherPlayer.currentState!.loadInfo(index, road);
+  Future<void> playEpisode(int index, int road) async {
+    await _ownerWatcher?.loadInfo(index, road);
+  }
 
   /// 在当前播放器里播放已下载的本地文件（保持选集/进度逻辑，离线可播）
   Future<void> playLocalFile(
     String path, {
     required int index,
     required int road,
-  }) => WatcherPlayer.currentState!.loadLocalFile(
-    path,
-    episodeIndex: index,
-    road: road,
-  );
+  }) async {
+    await _ownerWatcher?.loadLocalFile(path, episodeIndex: index, road: road);
+  }
 
   /// 重载当前集视频链接（重新解析地址）
-  Future<void> reloadCurrent() => WatcherPlayer.currentState!.reloadCurrent();
+  Future<void> reloadCurrent() async {
+    await _ownerWatcher?.reloadCurrent();
+  }
 
   // 更新当前集数的方法
   void updateCurrentSetName(int newEpisode) {

@@ -7,8 +7,6 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gif/gif.dart';
-import 'package:kostori/components/components.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/database/history_write_service.dart';
 import 'package:kostori/database/stats.dart';
@@ -205,6 +203,7 @@ class _WatcherState extends State<Watcher>
   void initState() {
     super.initState();
     current = this;
+    playerController.watcher = this;
     playerController.changePlayerSettings();
     epIndex = 1;
     currentRoad = 0;
@@ -283,6 +282,9 @@ class _WatcherState extends State<Watcher>
     if (current == this) {
       current = null;
     }
+    if (playerController.watcher == this) {
+      playerController.watcher = null;
+    }
     _completedSub?.cancel();
     updateHistoryTimer?.cancel();
     _stopPlaybackReporting();
@@ -310,33 +312,26 @@ class _WatcherState extends State<Watcher>
   /// 播放下一集（已到最后一集时提示无更多剧集）
   @override
   Future<void> playNextEpisode({bool checkRemainingTime = true}) async {
-    // 播放器组件的全局区域：提示信息居中显示在播放器上（宽屏 sideBySide 下播放器只占左侧）
-    final playerRect = _playerRect();
     setState(() {
       if (epIndex < _episodeCount(playerController.currentRoad)) {
         try {
           epIndex++;
           loadNextEpisode(epIndex);
-          _showCenterHint(
-            icon: const AssetImage('assets/img/check.gif'),
-            message: t.watcherPlayingNext,
-            playerRect: playerRect,
-          );
+          // 提示在播放器组件内部居中（与缓冲覆盖层同位置）
+          playerController.showCenterHint(message: t.watcherPlayingNext);
         } catch (e) {
-          _showCenterHint(
-            seconds: 3,
-            icon: const AssetImage('assets/img/warning.gif'),
+          playerController.showCenterHint(
             message: t.watcherEpisodeLoadError(error: e.toString()),
-            playerRect: playerRect,
+            success: false,
+            seconds: 3,
           );
           PlayLog.info("playNextEpisode", "加载剧集时出错");
         }
       } else {
-        _showCenterHint(
-          seconds: 3,
-          icon: const AssetImage('assets/img/warning.gif'),
+        playerController.showCenterHint(
           message: t.watcherNoMoreEpisodes,
-          playerRect: playerRect,
+          success: false,
+          seconds: 3,
         );
         PlayLog.info("下一集", "没有更多剧集可播放");
       }
@@ -838,40 +833,6 @@ class _WatcherState extends State<Watcher>
   int _episodeCount(int road) => _isSeries
       ? _series?.length ?? 0
       : anime.episode?.values.elementAt(road).length ?? 0;
-
-  /// 播放器区域矩形（用于提示居中）
-  Rect? _playerRect() {
-    if (!mounted) return null;
-    final renderObject = context.findRenderObject();
-    if (renderObject is RenderBox && renderObject.hasSize) {
-      return renderObject.localToGlobal(Offset.zero) & renderObject.size;
-    }
-    return null;
-  }
-
-  /// 播放器上的居中 Gif 提示
-  void _showCenterHint({
-    required ImageProvider icon,
-    required String message,
-    Rect? playerRect,
-    int seconds = 1,
-  }) {
-    showCenter(
-      seconds: seconds,
-      icon: Gif(
-        image: icon,
-        height: 80,
-        fps: 120,
-        color: icon == const AssetImage('assets/img/check.gif')
-            ? Theme.of(context).colorScheme.primary
-            : null,
-        autostart: Autostart.once,
-      ),
-      message: message,
-      context: context,
-      centerRect: playerRect,
-    );
-  }
 
   /// 源提供播放进度上报接口时开始同步。
   /// 上报逻辑放在表层（watcher），由源自定义 playbackProgress/playbackStopped

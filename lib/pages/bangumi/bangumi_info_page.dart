@@ -146,11 +146,12 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
   @override
   void initState() {
     super.initState();
-    // Riverpod 不允许在 initState 同步修改 provider，统一延迟到 microtask 后。
-    // 全局单例在二次进入时残留上次的 isLoading=false，必须先强制为 true 触发骨架。
-    Future(() => infoController.setIsLoading(true));
+    // 全局单例二次进入时残留上次的 isLoading=false。置位必须和查询在同一帧后回调里：
+    // 若用延迟 Future 置 true，缓存命中时查询可能先跑完（置回 false），随后又被置 true
+    // 卡死骨架 → 表现为“第二次概览加载不出来”。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      infoController.setIsLoading(true);
       infoController.clearBangumiLists();
       infoController.bangumiItem = bangumiItem;
       queryBangumiEpisodeByID(bangumiId);

@@ -319,6 +319,42 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$centerHintMessageAtom = Atom(
+    name: '_PlayerController.centerHintMessage',
+    context: context,
+  );
+
+  @override
+  String? get centerHintMessage {
+    _$centerHintMessageAtom.reportRead();
+    return super.centerHintMessage;
+  }
+
+  @override
+  set centerHintMessage(String? value) {
+    _$centerHintMessageAtom.reportWrite(value, super.centerHintMessage, () {
+      super.centerHintMessage = value;
+    });
+  }
+
+  late final _$centerHintSuccessAtom = Atom(
+    name: '_PlayerController.centerHintSuccess',
+    context: context,
+  );
+
+  @override
+  bool get centerHintSuccess {
+    _$centerHintSuccessAtom.reportRead();
+    return super.centerHintSuccess;
+  }
+
+  @override
+  set centerHintSuccess(bool value) {
+    _$centerHintSuccessAtom.reportWrite(value, super.centerHintSuccess, () {
+      super.centerHintSuccess = value;
+    });
+  }
+
   late final _$bufferAtom = Atom(
     name: '_PlayerController.buffer',
     context: context,
@@ -961,6 +997,8 @@ isBuffering: ${isBuffering},
 completed: ${completed},
 loadFailed: ${loadFailed},
 lastPlayError: ${lastPlayError},
+centerHintMessage: ${centerHintMessage},
+centerHintSuccess: ${centerHintSuccess},
 buffer: ${buffer},
 duration: ${duration},
 previewImage: ${previewImage},
