@@ -225,5 +225,4 @@ flutter:
     - images/
     - assets/shaders/
     - assets/img/
-    - assets/translation.json
     - assets/

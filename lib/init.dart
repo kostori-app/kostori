@@ -45,7 +45,6 @@ import 'package:kostori/skills/skill_registry.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,7 +72,6 @@ Future<void> init() async {
     Rhttp.init(),
     App.initComponents(),
     SAFTaskWorker().init().wait(),
-    AppTranslation.init().wait(),
     I18nUtils.init().wait(),
     JsEngine().init().wait(),
     AnimeSourceManager().init().wait(),

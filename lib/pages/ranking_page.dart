@@ -4,7 +4,6 @@ import 'package:kostori/components/components.dart';
 import "package:kostori/foundation/anime_source/anime_source.dart";
 import "package:kostori/foundation/app.dart";
 import "package:kostori/i18n/strings.g.dart";
-import "package:kostori/utils/translations.dart";
 
 class RankingPage extends StatefulWidget {
   const RankingPage({required this.categoryKey, super.key});
@@ -79,7 +78,7 @@ class _RankingPageState extends State<RankingPage> {
       CapsuleOptions(
         children: [
           for (var option in options.entries)
-            buildOptionItem(option.value.tl, option.key, context),
+            buildOptionItem(option.value, option.key, context),
         ],
       ),
     );

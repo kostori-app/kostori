@@ -210,7 +210,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
           alignment: WrapAlignment.start,
           children: [
             for (var option in optionList.options.entries)
-              buildOptionItem(option.value.tl, option.key, group, context),
+              buildOptionItem(option.value, option.key, group, context),
           ],
         );
       } else {
