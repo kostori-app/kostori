@@ -32,14 +32,15 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
   try {
     final manager = providerContainer.read(bangumiManagerProvider);
     if (isFetchEpisodes) {
-      // 一次性清理：旧版本会把补全占位（可能含已完结旧番）写进日历缓存，
+      // 一次性清理：旧版本会把补全条目（含已完结旧番/未放送番）写进日历缓存，
       // 而 getCalendarData 当天已拉取时会跳过、不会清表，导致坏卡片一直残留。
       // 这里清空日历表并重置拉取时间，强制重新拉取一次。
-      if (appdata.implicitData['bangumiCalendarPurgedV3'] != true) {
+      // V4：改为不再把补全条目写回日历表（见下方补全逻辑），故再清一次历史坏行。
+      if (appdata.implicitData['bangumiCalendarPurgedV4'] != true) {
         await manager.clearBangumiCalendar();
         appdata.settings['getCalendarDataTime'] = '';
         appdata.saveData();
-        appdata.implicitData['bangumiCalendarPurgedV3'] = true;
+        appdata.implicitData['bangumiCalendarPurgedV4'] = true;
         appdata.writeImplicitData();
       }
       await Bangumi.instance.getCalendarData();
@@ -50,18 +51,27 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
     // 清掉旧版本遗留的坏占位行（标题为原始 JSON）
     await manager.cleanupBrokenCalendarRows();
     final allItems = await manager.getWeeks(targetDays);
+    // bgm /calendar 当季 API 来源的 id：bgm 认定其当季在播，直接信任。
+    // 其余（bangumi-data 补全 / binding 缓存）可能实为他国语言重播、
+    // 或早已完结的旧番（其 begin 因他国开播而显得"近期"），需按条目
+    // 自身 air_date + 话数复核（见 _isLikelyFinished）。
+    final apiIds = allItems.map((item) => item.id).toSet();
 
     // 补全：bangumi_data 表（全量）中日历表缺失的近期条目。
     // 仅补最近 ~12 个月内开播的（覆盖当季 + 半年番），避免对历史数据大量请求；
-    // 补全成功写回本地日历表，下次直接读取，不再重复请求接口。
+    // 补全条目按需在内存中合成（不再落库，见文件底部），故每次都会走这里。
     final supplement = await manager.getAllBangumiDataEntries();
     final existingIds = allItems.map((item) => item.id).toSet();
-    // 仅补全「近期在播或刚完结」且播放日在目标天内的条目
+    // 仅补全「已开播、近期在播或刚完结」且播放日在目标天内的条目
     final recentIds = supplement.entries
         .where((e) {
           final begin = DateTime.tryParse(e.value.begin ?? '');
           if (begin == null) return false;
           if (!targetDays.contains(begin.weekday)) return false;
+          // 未放送：开播日在未来（留 1 天余量，避免误伤当天/次日的深夜档首播）
+          if (begin.isAfter(DateTime.now().add(const Duration(days: 1)))) {
+            return false;
+          }
           // 开始时间在最近 ~150 天内（只覆盖当季 + 上一季）：
           // 旧番的重播/改档条目常被 bangumi-data 写成近期 begin，
           // 放宽到 12 个月会把这类过期条目也拉来补全
@@ -153,15 +163,15 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           supplementToCache.add(item);
         }
       }
-      // 写回本地缓存，下次 getWeeks 直接命中，不再请求接口
+      // 只写入 binding 表缓存详情，不再写回日历表：
+      // 补全条目按需在内存中合成并已做日期窗过滤，避免过期/未放送条目
+      // 长期留在 bangumi_calendar 里、每次 getWeeks 都被当成当季番重复显示。
       try {
-        await manager.batchAddBangumiCalendar(supplementToCache);
-        // 同时写入 binding 表：即使日历行丢失，下次也能直接命中详情缓存
         for (final item in supplementToCache) {
           await manager.addBangumiBinding(item);
         }
       } catch (e, s) {
-        Log.warning('补全日历缓存', '$e\n$s');
+        Log.warning('补全binding缓存', '$e\n$s');
       }
       // 持久化跳过集合（成功解除的已从 skipIds 移除）
       skipIds.addAll(newSkipIds);
@@ -179,9 +189,25 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
     final fetchEpisodes = appdata.settings['calendarFetchEpisodes'] ?? false;
     final shouldFetchEpisodes =
         fetchEpisodes && isFetchEpisodes && fetchEpisodeInfo;
-    final allEpisodesMap = shouldFetchEpisodes
-        ? await _fetchEpisodesInBatches(validItems)
-        : <int, List<EpisodeInfo>>{};
+
+    // data 里没有 end 的条目：不少是「当季实际已播完、但 bangumi-data 漏标 end」。
+    // 用 bangumi_AllEpInfo 里的剧集信息复核是否真的还在播（见下方 skip 判断）。
+    final noEndItems = validItems
+        .where((it) => existenceMap[it.id.toString()]?.end == null)
+        .toList();
+
+    Map<int, List<EpisodeInfo>> allEpisodesMap;
+    if (shouldFetchEpisodes) {
+      allEpisodesMap = await _fetchEpisodesInBatches(validItems);
+    } else if (noEndItems.isNotEmpty) {
+      // 日历页（fetchEpisodeInfo=true）：按天拉取并落库，供本次及后续判定；
+      // 主页（fetchEpisodeInfo=false）：只读已有缓存，避免打开主页就批量请求
+      allEpisodesMap = fetchEpisodeInfo && isFetchEpisodes
+          ? await _fetchEpisodesInBatches(noEndItems)
+          : await _readCachedEpisodes(noEndItems);
+    } else {
+      allEpisodesMap = <int, List<EpisodeInfo>>{};
+    }
 
     final newCalendar = List.generate(7, (_) => <BangumiItem>[]);
     final now = DateTime.now();
@@ -195,19 +221,31 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
       try {
         final parsedTime = parseBangumiAirTime(airTimeStr);
         if (parsedTime == null) continue;
+        // 未放送：首播日在未来（1 天余量同上），直接跳过
+        if (parsedTime.isAfter(now.add(const Duration(days: 1)))) continue;
+        // 非当季 API 来源：按条目自身 air_date + 话数复核是否早已播完，
+        // 避免「他国在播 / 改档重播」的 bangumi-data 条目污染时间表
+        if (!apiIds.contains(item.id) && _isLikelyFinished(item, now)) {
+          continue;
+        }
         final weekday = parsedTime.weekday;
         final episodes = allEpisodesMap[item.id];
 
-        final episodeResult = shouldFetchEpisodes
-            ? await _processEpisodeInfo(
-                episodes: episodes,
-                now: now,
-                currentWeekInfo: currentWeekInfo,
-                bangumiItem: item,
-              )
-            : EpisodeResult.fromEndDate(entry.end);
+        // 有剧集信息时按实际播出判定（可识别 data 漏标 end 的已完结番：
+        // 最终话已播且非本周 → shouldSkip）；判定不出来时回退到 end 字段，
+        // 避免因缓存缺集/日期缺失而误删仍在播的番
+        EpisodeResult? episodeResult;
+        if (episodes != null && episodes.isNotEmpty) {
+          episodeResult = await _processEpisodeInfo(
+            episodes: episodes,
+            now: now,
+            currentWeekInfo: currentWeekInfo,
+            bangumiItem: item,
+          );
+        }
+        episodeResult ??= EpisodeResult.fromEndDate(entry.end);
 
-        if (episodeResult == null || episodeResult.shouldSkip) continue;
+        if (episodeResult.shouldSkip) continue;
 
         newCalendar[weekday - 1].add(
           item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
@@ -271,6 +309,18 @@ Future<EpisodeResult?> _processEpisodeInfo({
   );
 }
 
+/// 按条目自身首播日 + 总话数估算是否早已播完（按周更，末话后再留 2 周缓冲）。
+/// 用于过滤 bangumi-data 补全里的「他国语言重播 / 早已完结旧番」：
+/// 这类条目的 begin 可能因他国开播而显得近期，但 bgm 条目自身 air_date 很旧。
+/// 集数未知（0）或日期无法解析时返回 false，交由当季 API / 其他窗口逻辑背书。
+bool _isLikelyFinished(BangumiItem item, DateTime now) {
+  final start = DateTime.tryParse(item.airDate);
+  final eps = item.totalEpisodes;
+  if (start == null || eps <= 0) return false;
+  final expectedEnd = start.add(Duration(days: (eps - 1) * 7 + 14));
+  return now.isAfter(expectedEnd);
+}
+
 void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
   for (final dayList in calendar) {
     dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
@@ -318,6 +368,20 @@ Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
     result.addAll(await _fetchBatchEpisodes(items, needsUpdate: needsUpdate));
   }
 
+  return result;
+}
+
+Future<Map<int, List<EpisodeInfo>>> _readCachedEpisodes(
+  List<BangumiItem> items,
+) async {
+  final result = <int, List<EpisodeInfo>>{};
+  final manager = providerContainer.read(bangumiManagerProvider);
+  for (final item in items) {
+    try {
+      final episodes = await manager.allEpInfoFind(item.id);
+      if (episodes.isNotEmpty) result[item.id] = episodes;
+    } catch (_) {}
+  }
   return result;
 }
 

@@ -655,12 +655,21 @@ class Bangumi {
 
       final bangumiDataList = parseBangumiDataList(itemsList);
 
-      final last100Items = bangumiDataList.length > 200
-          ? bangumiDataList.sublist(bangumiDataList.length - 200)
-          : bangumiDataList;
+      // 按日期区间筛选，而非按最后 N 条截断：只保留「近一年 + 未来档期」的条目。
+      // 按条数截断时，已定档的未来番会把半年前开播、仍在连载的番挤出窗口。
+      final cutoff = DateTime.now().subtract(const Duration(days: 400));
+      final recentItems = bangumiDataList.where((item) {
+        final begin = DateTime.tryParse(item.begin ?? '');
+        // begin 缺失：无法判断，保留（可能是已公布/未定档条目）
+        if (begin == null) return true;
+        return begin.isAfter(cutoff);
+      }).toList();
       await manager.clearBangumiData();
-      DebugLog.info('getBangumiData', 'clearBangumiData success');
-      await manager.batchAddBangumiData(last100Items);
+      DebugLog.info(
+        'getBangumiData',
+        'clearBangumiData success, kept ${recentItems.length}/${bangumiDataList.length}',
+      );
+      await manager.batchAddBangumiData(recentItems);
 
       DebugLog.info('getBangumiData', 'batchAddBangumiData success');
     } on DioException catch (e, s) {
