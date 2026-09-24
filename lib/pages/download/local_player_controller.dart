@@ -104,6 +104,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   final List<StreamSubscription<dynamic>> _subs = [];
   Timer? _hideTimer;
   Timer? _levelTimer;
+  bool _disposed = false;
 
   StreamSubscription<Duration>? _posSub;
   StreamSubscription<Duration>? _durSub;
@@ -133,42 +134,58 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       final p = Player();
       _player = p;
       _controller = VideoController(p);
-      _posSub = p.stream.position.listen(
-        (v) => _update(state.copyWith(position: v)),
-      );
-      _durSub = p.stream.duration.listen(
-        (v) => _update(state.copyWith(duration: v)),
-      );
-      _bufSub = p.stream.buffer.listen(
-        (v) => _update(state.copyWith(buffer: v)),
-      );
+      _posSub = p.stream.position.listen((v) {
+        if (_disposed) return;
+        _update(state.copyWith(position: v));
+      });
+      _durSub = p.stream.duration.listen((v) {
+        if (_disposed) return;
+        _update(state.copyWith(duration: v));
+      });
+      _bufSub = p.stream.buffer.listen((v) {
+        if (_disposed) return;
+        _update(state.copyWith(buffer: v));
+      });
       _subs.add(_posSub!);
       _subs.add(_durSub!);
       _subs.add(_bufSub!);
       _subs.add(
-        p.stream.playing.listen((v) => _update(state.copyWith(playing: v))),
+        p.stream.playing.listen((v) {
+          if (_disposed) return;
+          _update(state.copyWith(playing: v));
+        }),
       );
       _subs.add(
-        p.stream.buffering.listen((v) => _update(state.copyWith(buffering: v))),
+        p.stream.buffering.listen((v) {
+          if (_disposed) return;
+          _update(state.copyWith(buffering: v));
+        }),
       );
       // 播放错误：详情页的诊断信息要用
       _subs.add(
-        p.stream.error.listen((e) => _update(state.copyWith(error: e))),
+        p.stream.error.listen((e) {
+          if (_disposed) return;
+          _update(state.copyWith(error: e));
+        }),
       );
       await p.open(Media(filePath), play: true);
     } catch (e) {
+      if (_disposed) return;
       _update(state.copyWith(error: e.toString()));
     }
   }
 
   void _update(LocalPlayerState next) {
+    if (_disposed) return;
     if (state == next) return;
     state = next;
   }
 
   void _resetHideTimer() {
+    if (_disposed) return;
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (_disposed) return;
       if (state.showControls) {
         _update(state.copyWith(showControls: false));
       }
@@ -178,13 +195,16 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   /// 与 anime page 播放器对齐：state.volume / state.brightness 均为 0..1。
   /// 读取系统真实音量/亮度，避免沿用默认 1.0 导致首次上滑直接显示 100。
   Future<void> _syncSystemLevels() async {
+    if (_disposed) return;
     try {
       if (App.isDesktop) {
         final v = player.state.volume / 100;
+        if (_disposed) return;
         _update(state.copyWith(volume: v.clamp(0.0, 1.0)));
       } else {
         final v = await FlutterVolumeController.getVolume();
         if (v != null) {
+          if (_disposed) return;
           _update(state.copyWith(volume: v.clamp(0.0, 1.0)));
         }
       }
@@ -192,6 +212,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     if (!App.isDesktop) {
       try {
         final b = await ScreenBrightnessPlatform.instance.application;
+        if (_disposed) return;
         _update(state.copyWith(brightness: b.clamp(0.0, 1.0)));
       } catch (_) {}
     }
@@ -202,6 +223,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     _levelTimer?.cancel();
     _syncSystemLevels();
     _levelTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (_disposed) return;
       if (state.showVolume || state.showBrightness) return;
       _syncSystemLevels();
     });
@@ -265,6 +287,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
         await FlutterVolumeController.setVolume(v);
       }
     } catch (_) {}
+    if (_disposed) return;
     _update(state.copyWith(volume: v));
   }
 
@@ -275,6 +298,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     try {
       await ScreenBrightnessPlatform.instance.setApplicationScreenBrightness(b);
     } catch (_) {}
+    if (_disposed) return;
     _update(state.copyWith(brightness: b));
   }
 
@@ -333,15 +357,18 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   /// 恢复进度同步
   void startPositionSync() {
     stopPositionSync();
-    _posSub = player.stream.position.listen(
-      (v) => _update(state.copyWith(position: v)),
-    );
-    _durSub = player.stream.duration.listen(
-      (v) => _update(state.copyWith(duration: v)),
-    );
-    _bufSub = player.stream.buffer.listen(
-      (v) => _update(state.copyWith(buffer: v)),
-    );
+    _posSub = player.stream.position.listen((v) {
+      if (_disposed) return;
+      _update(state.copyWith(position: v));
+    });
+    _durSub = player.stream.duration.listen((v) {
+      if (_disposed) return;
+      _update(state.copyWith(duration: v));
+    });
+    _bufSub = player.stream.buffer.listen((v) {
+      if (_disposed) return;
+      _update(state.copyWith(buffer: v));
+    });
   }
 
   /// 截图保存
@@ -367,8 +394,13 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   }
 
   void _disposeInternal() {
+    _disposed = true;
     _hideTimer?.cancel();
     _levelTimer?.cancel();
+    // 进度同步订阅会在 seek 后重建，未记录在 _subs 里，单独取消
+    _posSub?.cancel();
+    _durSub?.cancel();
+    _bufSub?.cancel();
     for (final s in _subs) {
       s.cancel();
     }
