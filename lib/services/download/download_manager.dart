@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/download_database.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
@@ -145,9 +146,8 @@ class DownloadManager extends ChangeNotifier {
   String _taskDirPath(DownloadTask task) =>
       p.join(groupDir(task.group), _safeTaskName(task));
 
-  static String get _persistFile => p.join(App.dataPath, 'download_tasks.json');
-
   bool _loaded = false;
+  Future<void> _persistChain = Future.value();
 
   DateTime? _lastKeepAlive;
   bool _keepAliveStarted = false;
@@ -388,16 +388,13 @@ class DownloadManager extends ChangeNotifier {
     if (_loaded) return;
     _loaded = true;
     try {
-      final f = File(_persistFile);
-      if (await f.exists()) {
-        final list = jsonDecode(await f.readAsString()) as List;
-        for (final e in list) {
-          try {
-            _tasks.add(
-              DownloadTask.fromJson(Map<String, dynamic>.from(e as Map)),
-            );
-          } catch (_) {}
-        }
+      final jsons = await DownloadDatabase.instance.loadTaskJson();
+      for (final j in jsons) {
+        try {
+          _tasks.add(
+            DownloadTask.fromJson(Map<String, dynamic>.from(jsonDecode(j))),
+          );
+        } catch (_) {}
       }
       // 重启后中断的任务置为“已暂停”：保留断点文件，由用户手动点继续续传
       for (final t in _tasks) {
@@ -1588,13 +1585,7 @@ class DownloadManager extends ChangeNotifier {
       return;
     }
     await _deleteQuiet(File(filePath));
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await file.exists()) return;
-    try {
-      final records = jsonDecode(await file.readAsString()) as List;
-      records.removeWhere((e) => e is Map && e['filePath'] == filePath);
-      await file.writeAsString(jsonEncode(records));
-    } catch (_) {}
+    await DownloadDatabase.instance.deleteRecordByPath(filePath);
     await _refreshDownloadedKeys();
   }
 
@@ -1634,21 +1625,15 @@ class DownloadManager extends ChangeNotifier {
     await _removeRecord(t);
   }
 
-  /// 从 download_records.json 移除某任务的记录
+  /// 从下载记录中移除某任务的记录
   Future<void> _removeRecord(DownloadTask task) async {
     if (task.animeId == null && task.sourceKey == null) return;
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await file.exists()) return;
     try {
-      final records = jsonDecode(await file.readAsString()) as List;
-      records.removeWhere(
-        (e) =>
-            e is Map &&
-            e['animeId'] == task.animeId &&
-            e['episode'] == task.episode &&
-            e['sourceKey'] == task.sourceKey,
+      await DownloadDatabase.instance.deleteRecordByEpisode(
+        animeId: task.animeId,
+        episode: task.episode,
+        sourceKey: task.sourceKey,
       );
-      await file.writeAsString(jsonEncode(records));
     } catch (e, s) {
       Log.error('DownloadManager.removeRecord', '$e\n$s');
     }
@@ -1791,34 +1776,25 @@ class DownloadManager extends ChangeNotifier {
   String _safeTaskName(DownloadTask task) =>
       '${_fileBaseName(task)}_${task.id}'.replaceAll(' ', '_');
 
-  /// 下载记录：完成时写入 download_records.json
+  /// 下载记录：完成时写入 download_record（按文件路径去重）
   Future<void> _writeRecord(DownloadTask task) async {
     if (task.filePath == null) return;
     if (task.animeId == null && task.sourceKey == null) return;
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    List records = [];
-    if (await file.exists()) {
-      try {
-        records = jsonDecode(await file.readAsString()) as List;
-      } catch (_) {}
-    }
     // 只按文件路径去重：同一集名（重名集/系列同名条目）下载到不同文件时
     // 各自的记录都要保留，不能按 (animeId, episode, sourceKey) 互相覆盖
-    records.removeWhere((e) => e is Map && e['filePath'] == task.filePath);
-    records.insert(0, {
-      'animeId': task.animeId,
-      'sourceKey': task.sourceKey,
-      'title': task.title,
-      'episode': task.episode,
-      'episodeRaw': task.episodeRaw,
-      'resolution': task.resolution,
-      'group': task.group,
-      'filePath': task.filePath,
-      'totalBytes': task.totalBytes,
-      'time': DateTime.now().toIso8601String(),
-    });
     try {
-      await file.writeAsString(jsonEncode(records));
+      await DownloadDatabase.instance.upsertRecord({
+        'animeId': task.animeId,
+        'sourceKey': task.sourceKey,
+        'title': task.title,
+        'episode': task.episode,
+        'episodeRaw': task.episodeRaw,
+        'resolution': task.resolution,
+        'group': task.group,
+        'filePath': task.filePath,
+        'totalBytes': task.totalBytes,
+        'time': DateTime.now().toIso8601String(),
+      });
     } catch (e, s) {
       Log.error('DownloadManager.record', '$e\n$s');
     }
@@ -1830,18 +1806,16 @@ class DownloadManager extends ChangeNotifier {
     String animeId,
     String sourceKey,
   ) async {
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await file.exists()) return [];
     try {
-      final list = jsonDecode(await file.readAsString()) as List;
+      final list = await DownloadDatabase.instance.recordsForAnime(animeId);
       final results = <Map<String, dynamic>>[];
-      for (final e in list.whereType<Map>()) {
-        if (e['animeId'] != animeId || e['sourceKey'] != sourceKey) continue;
+      for (final e in list) {
+        if (e['sourceKey'] != sourceKey) continue;
         // 文件已不存在的记录视为已删除，不返回（详情页"已下载"据此判断）
         final fp = e['filePath'] as String?;
         if (fp == null || fp.isEmpty) continue;
         if (!await File(fp).exists()) continue;
-        results.add(Map<String, dynamic>.from(e));
+        results.add(e);
       }
       return results;
     } catch (_) {
@@ -1858,13 +1832,10 @@ class DownloadManager extends ChangeNotifier {
     String sourceKey, {
     required bool requireExisting,
   }) async {
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await file.exists()) return {};
     try {
-      final list = jsonDecode(await file.readAsString()) as List;
+      final list = await DownloadDatabase.instance.recordsForSource(sourceKey);
       final out = <String, String>{};
-      for (final e in list.whereType<Map>()) {
-        if (e['sourceKey'] != sourceKey) continue;
+      for (final e in list) {
         final fp = e['filePath'] as String?;
         if (fp == null || fp.isEmpty) continue;
         // 同名集可能有多份（不同标题/文件）：保留最新的一条（记录为倒序）
@@ -1897,24 +1868,19 @@ class DownloadManager extends ChangeNotifier {
 
   /// 查询全部下载记录（含文件已丢失的，供"下载记录"页标记"已删除"）
   static Future<List<Map<String, dynamic>>> allRecords() async {
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await file.exists()) return [];
     try {
-      final list = jsonDecode(await file.readAsString()) as List;
-      return list.whereType<Map>().map(Map<String, dynamic>.from).toList();
+      return await DownloadDatabase.instance.allRecords();
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> _persist() async {
-    try {
-      final f = File(_persistFile);
-      await f.create(recursive: true);
-      await f.writeAsString(jsonEncode(_tasks.map((t) => t.toJson()).toList()));
-    } catch (e, s) {
-      Log.error('DownloadManager.persist', '$e\n$s');
-    }
+  Future<void> _persist() {
+    final jsons = _tasks.map((t) => jsonEncode(t.toJson())).toList();
+    _persistChain = _persistChain
+        .then((_) => DownloadDatabase.instance.saveTaskJson(jsons))
+        .catchError((_) {});
+    return _persistChain;
   }
 
   // ── 分组（= 下载目录）────────────────────────
@@ -2150,18 +2116,8 @@ class DownloadManager extends ChangeNotifier {
   Future<void> renameRecord(String filePath, String newTitle) async {
     final name = newTitle.trim();
     if (name.isEmpty) return;
-    final recFile = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await recFile.exists()) return;
-    List records;
-    try {
-      records = jsonDecode(await recFile.readAsString()) as List;
-    } catch (_) {
-      return;
-    }
-    final rec = records
-        .whereType<Map>()
-        .where((e) => e['filePath'] == filePath)
-        .firstOrNull;
+    final records = await DownloadDatabase.instance.allRecords();
+    final rec = records.where((e) => e['filePath'] == filePath).firstOrNull;
     if (rec == null) return;
 
     final oldTitle = rec['title']?.toString() ?? '';
@@ -2181,10 +2137,12 @@ class DownloadManager extends ChangeNotifier {
         } catch (_) {}
       }
     }
-    rec['title'] = name;
-    rec['filePath'] = newPath;
     try {
-      await recFile.writeAsString(jsonEncode(records));
+      await DownloadDatabase.instance.updateRecordTitle(
+        filePath,
+        name,
+        newPath,
+      );
     } catch (_) {}
     notifyListeners();
   }
@@ -2232,30 +2190,21 @@ class DownloadManager extends ChangeNotifier {
     String newPath,
     String group,
   ) async {
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await file.exists()) return;
     try {
-      final records = jsonDecode(await file.readAsString()) as List;
-      var changed = false;
-      for (final e in records.whereType<Map>()) {
-        if (e['filePath'] == oldPath) {
-          e['group'] = group;
-          e['filePath'] = newPath;
-          changed = true;
-        }
-      }
-      if (changed) await file.writeAsString(jsonEncode(records));
+      await DownloadDatabase.instance.updateRecordPath(
+        oldPath,
+        newPath,
+        group: group,
+      );
     } catch (_) {}
     await _refreshDownloadedKeys();
   }
 
   Future<void> _rewriteRecordGroups(Map<String, String> mapping) async {
-    final file = File(p.join(App.dataPath, 'download_records.json'));
-    if (!await file.exists()) return;
     try {
-      final records = jsonDecode(await file.readAsString()) as List;
+      final records = await DownloadDatabase.instance.allRecords();
       var changed = false;
-      for (final e in records.whereType<Map>()) {
+      for (final e in records) {
         final g = e['group']?.toString() ?? '';
         if (!mapping.containsKey(g)) continue;
         final newG = mapping[g] ?? '';
@@ -2268,7 +2217,9 @@ class DownloadManager extends ChangeNotifier {
         }
         changed = true;
       }
-      if (changed) await file.writeAsString(jsonEncode(records));
+      if (changed) {
+        await DownloadDatabase.instance.replaceAllRecords(records);
+      }
     } catch (_) {}
     await _refreshDownloadedKeys();
   }

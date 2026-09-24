@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dtorrent_task_v2/dtorrent_task_v2.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kostori/database/download_database.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -154,9 +155,9 @@ class TorrentManager extends ChangeNotifier {
   final Set<String> _refetching = {};
   final Set<String> _wantStart = {};
 
-  File? _storeFile;
   Directory? _torrentDir;
   int _persistTick = 0;
+  Future<void> _writeChain = Future.value();
 
   /// 与普通下载相同的目录
   static String get downloadDir {
@@ -173,11 +174,10 @@ class TorrentManager extends ChangeNotifier {
     return '';
   }
 
-  List<String> get trackers => _readList(appdata.implicitData, kTorrentTrackers)
-      .split('\n')
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
+  List<String> get trackers => _readList(
+    appdata.implicitData,
+    kTorrentTrackers,
+  ).split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
   void setTrackers(List<String> list) {
     appdata.implicitData[kTorrentTrackers] = list
@@ -192,7 +192,8 @@ class TorrentManager extends ChangeNotifier {
       final model = _models[job.id];
       if (engine == null || model == null) continue;
       for (final tr in _parseTrackers(
-          _readList(appdata.implicitData, kTorrentTrackers).split('\n'))) {
+        _readList(appdata.implicitData, kTorrentTrackers).split('\n'),
+      )) {
         try {
           engine.startAnnounceUrl(tr, model.infoHashBuffer);
         } catch (_) {}
@@ -229,13 +230,14 @@ class TorrentManager extends ChangeNotifier {
       final res = await req.close();
       final body = await res.transform(const SystemEncoding().decoder).join();
       client.close(force: true);
-      final list = body
-          .split(RegExp(r'\s+'))
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty && s.contains('://'))
-          .toSet()
-          .toList()
-        ..sort();
+      final list =
+          body
+              .split(RegExp(r'\s+'))
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty && s.contains('://'))
+              .toSet()
+              .toList()
+            ..sort();
       if (list.isNotEmpty) setTrackers(list);
     } catch (_) {}
   }
@@ -269,11 +271,10 @@ class TorrentManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<String> get customNodes => _readList(appdata.implicitData, kTorrentCustomNodes)
-      .split('\n')
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
+  List<String> get customNodes => _readList(
+    appdata.implicitData,
+    kTorrentCustomNodes,
+  ).split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
   void setCustomNodes(List<String> list) {
     appdata.implicitData[kTorrentCustomNodes] = list
@@ -344,7 +345,6 @@ class TorrentManager extends ChangeNotifier {
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
-    _storeFile = File(p.join(App.dataPath, 'torrent_jobs.json'));
     _torrentDir = Directory(p.join(App.dataPath, 'torrent_meta'));
     if (!await _torrentDir!.exists()) {
       await _torrentDir!.create(recursive: true);
@@ -359,25 +359,21 @@ class TorrentManager extends ChangeNotifier {
 
   Future<void> _loadJobs() async {
     try {
-      final f = _storeFile;
-      if (f == null || !await f.exists()) return;
-      final data = jsonDecode(await f.readAsString());
-      if (data is List) {
-        for (final e in data) {
+      final jsons = await DownloadDatabase.instance.loadJobJson();
+      for (final j in jsons) {
+        try {
+          final e = jsonDecode(j);
           if (e is Map<String, dynamic>) _jobs.add(TorrentJob.fromJson(e));
-        }
+        } catch (_) {}
       }
     } catch (_) {}
   }
 
   void _persist() {
-    final f = _storeFile;
-    if (f == null) return;
-    try {
-      f.writeAsStringSync(
-        jsonEncode(_jobs.map((j) => j.toJson()).toList()),
-      );
-    } catch (_) {}
+    final jsons = _jobs.map((j) => jsonEncode(j.toJson())).toList();
+    _writeChain = _writeChain
+        .then((_) => DownloadDatabase.instance.saveJobJson(jsons))
+        .catchError((_) {});
   }
 
   // ── 添加 ──────────────────────────────────────────────────────────────────
@@ -467,10 +463,7 @@ class TorrentManager extends ChangeNotifier {
   }
 
   // ── 引擎准备 ──────────────────────────────────────────────────────────────
-  Future<void> _prepareEngine(
-    TorrentJob job, {
-    required bool start,
-  }) async {
+  Future<void> _prepareEngine(TorrentJob job, {required bool start}) async {
     if (_engines.containsKey(job.id)) return;
     try {
       final magnet = MagnetParser.parse(job.magnet);
@@ -595,10 +588,7 @@ class TorrentManager extends ChangeNotifier {
   /// 读取持久化的 **原始 info 字典字节** 构建模型。
   /// 旧版本存的是完整 `.torrent`（info 被重新编码，hash 不对），
   /// 解析会失败 → 删除并返回 null，由调用方重新抓取元数据。
-  Future<TorrentModel?> _loadModel(
-    TorrentJob job,
-    MagnetLink? magnet,
-  ) async {
+  Future<TorrentModel?> _loadModel(TorrentJob job, MagnetLink? magnet) async {
     final f = File(job.torrentPath);
     if (job.torrentPath.isEmpty || !await f.exists()) return null;
     final bytes = await f.readAsBytes();

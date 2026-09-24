@@ -1,3 +1,4 @@
+import 'package:kostori/database/download_database.dart';
 import 'package:kostori/foundation/appdata.dart';
 
 /// 内容标识：有 bangumiId 用它（跨源共享），否则用「源 + 条目 id」。
@@ -11,9 +12,7 @@ String playbackContentKey({
 
 /// 从种子标题抽取「组」（开头 `【...】` 或 `[...]`），无则空。
 String btGroupOf(String title) {
-  final m = RegExp(
-    r'^\s*(?:【\s*([^】]+)\s*】|\[([^\]]+)\])',
-  ).firstMatch(title);
+  final m = RegExp(r'^\s*(?:【\s*([^】]+)\s*】|\[([^\]]+)\])').firstMatch(title);
   return (m?.group(1) ?? m?.group(2) ?? '').trim();
 }
 
@@ -68,53 +67,9 @@ class BtLine {
   String get label => group.isEmpty ? siteName : '$siteName · [$group]';
 }
 
-/// BT 线路选择 + 当前是否走 BT 线（内容级，持久化）。
-class BtLineStore {
-  BtLineStore._();
-
-  static Map<String, dynamic> _lines() {
-    final raw = appdata.implicitData['btLines'];
-    if (raw is Map) return raw.cast<String, dynamic>();
-    return <String, dynamic>{};
-  }
-
-  static BtLine? line(String contentKey) =>
-      BtLine.fromJson(_lines()[contentKey]);
-
-  static void setLine(String contentKey, BtLine? line) {
-    final all = _lines();
-    if (line == null) {
-      all.remove(contentKey);
-    } else {
-      all[contentKey] = line.toJson();
-    }
-    appdata.implicitData['btLines'] = all;
-    appdata.writeImplicitData();
-  }
-
-  static bool _isActive(String contentKey) =>
-      appdata.implicitData['btActive'] is Map &&
-      (appdata.implicitData['btActive'] as Map)[contentKey] == true;
-
-  /// 该内容当前是否走 BT 线
-  static bool isActive(String contentKey) => _isActive(contentKey);
-
-  static void setActive(String contentKey, bool active) {
-    final raw = appdata.implicitData['btActive'];
-    final all = raw is Map ? raw.cast<String, dynamic>() : <String, dynamic>{};
-    if (active) {
-      all[contentKey] = true;
-    } else {
-      all.remove(contentKey);
-    }
-    appdata.implicitData['btActive'] = all;
-    appdata.writeImplicitData();
-  }
-}
-
 /// 某一集绑定的种子播放资源（指向某个种子任务的某个文件）。
 ///
-/// 只存 jobId + 文件相对路径，播放时再向 [TorrentManager] 换取 loopback URL
+/// 只存 jobId + 文件相对路径，播放时再向 TorrentManager 换取 loopback URL
 /// （端口每次启动都变，不能持久化 URL）。
 class TorrentBinding {
   final String jobId;
@@ -151,26 +106,110 @@ class TorrentBinding {
   }
 }
 
-/// 「内容 + 线路 + 集」→ 绑定的种子资源。持久化在 `implicitData['torrentBindings']`。
+/// BT 线路 / 绑定 / 开关的持久化：放在 download 数据库（`download.db`），
+/// 不放进 implicitData（后者会被整体读写、且体积随记录增长）。
+class _BindingStore {
+  static final Map<String, dynamic> lines = {};
+  static final Map<String, dynamic> active = {};
+  static final Map<String, dynamic> bindings = {};
+  static bool _loaded = false;
+  static Future<void> _writeChain = Future.value();
+
+  static Future<void> ensureLoaded() async {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      _merge(lines, await DownloadDatabase.instance.loadLines());
+      _merge(active, await DownloadDatabase.instance.loadActive());
+      _merge(bindings, await DownloadDatabase.instance.loadBindings());
+    } catch (_) {}
+    // 迁移：早期版本存在 implicitData 里
+    final legacy = <String, dynamic>{};
+    for (final key in const ['btLines', 'btActive', 'torrentBindings']) {
+      final v = appdata.implicitData[key];
+      if (v is Map) {
+        _merge(
+          key == 'btLines'
+              ? lines
+              : key == 'btActive'
+              ? active
+              : bindings,
+          v,
+        );
+        legacy[key] = v;
+      }
+    }
+    if (legacy.isNotEmpty) {
+      _persist();
+      for (final key in legacy.keys) {
+        appdata.implicitData.remove(key);
+      }
+      appdata.writeImplicitData();
+    }
+  }
+
+  static void _merge(Map<String, dynamic> into, Object? src) {
+    if (src is Map) into.addAll(src.cast<String, dynamic>());
+  }
+
+  static void _persist() {
+    final l = Map<String, dynamic>.from(lines);
+    final a = Map<String, dynamic>.from(active);
+    final b = Map<String, dynamic>.from(bindings);
+    _writeChain = _writeChain
+        .then((_) async {
+          await DownloadDatabase.instance.replaceLines(l);
+          await DownloadDatabase.instance.replaceActive(a);
+          await DownloadDatabase.instance.replaceBindings(b);
+        })
+        .catchError((_) {});
+  }
+}
+
+/// BT 线路选择 + 当前是否走 BT 线（内容级）。
+class BtLineStore {
+  BtLineStore._();
+
+  static Future<void> ensureLoaded() => _BindingStore.ensureLoaded();
+
+  static BtLine? line(String contentKey) =>
+      BtLine.fromJson(_BindingStore.lines[contentKey]);
+
+  static void setLine(String contentKey, BtLine? line) {
+    if (line == null) {
+      _BindingStore.lines.remove(contentKey);
+    } else {
+      _BindingStore.lines[contentKey] = line.toJson();
+    }
+    _BindingStore._persist();
+  }
+
+  static bool isActive(String contentKey) =>
+      _BindingStore.active[contentKey] == true;
+
+  static void setActive(String contentKey, bool active) {
+    if (active) {
+      _BindingStore.active[contentKey] = true;
+    } else {
+      _BindingStore.active.remove(contentKey);
+    }
+    _BindingStore._persist();
+  }
+}
+
+/// 「内容 + 线路 + 集」→ 绑定的种子资源。
 class TorrentBindingStore {
   TorrentBindingStore._();
 
-  static Map<String, dynamic> _all() {
-    final raw = appdata.implicitData['torrentBindings'];
-    if (raw is Map) return raw.cast<String, dynamic>();
-    return <String, dynamic>{};
-  }
-
-  static void _save(Map<String, dynamic> all) {
-    appdata.implicitData['torrentBindings'] = all;
-    appdata.writeImplicitData();
-  }
+  static Future<void> ensureLoaded() => _BindingStore.ensureLoaded();
 
   static String _key(String contentKey, int road, int episodeIndex) =>
       '$contentKey|$road|$episodeIndex';
 
   static TorrentBinding? get(String contentKey, int road, int episodeIndex) =>
-      TorrentBinding.fromJson(_all()[_key(contentKey, road, episodeIndex)]);
+      TorrentBinding.fromJson(
+        _BindingStore.bindings[_key(contentKey, road, episodeIndex)],
+      );
 
   static void set(
     String contentKey,
@@ -178,22 +217,21 @@ class TorrentBindingStore {
     int episodeIndex,
     TorrentBinding binding,
   ) {
-    final all = _all();
-    all[_key(contentKey, road, episodeIndex)] = binding.toJson();
-    _save(all);
+    _BindingStore.bindings[_key(contentKey, road, episodeIndex)] = binding
+        .toJson();
+    _BindingStore._persist();
   }
 
   static void remove(String contentKey, int road, int episodeIndex) {
-    final all = _all();
-    all.remove(_key(contentKey, road, episodeIndex));
-    _save(all);
+    _BindingStore.bindings.remove(_key(contentKey, road, episodeIndex));
+    _BindingStore._persist();
   }
 
   /// 某内容下所有绑定：`road|episode` → binding。
   static Map<String, TorrentBinding> forContent(String contentKey) {
     final prefix = '$contentKey|';
     final out = <String, TorrentBinding>{};
-    _all().forEach((k, v) {
+    _BindingStore.bindings.forEach((k, v) {
       if (!k.startsWith(prefix)) return;
       final b = TorrentBinding.fromJson(v);
       if (b != null) out[k.substring(prefix.length)] = b;

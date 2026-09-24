@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/download_database.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/ai_task_database.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
@@ -22,6 +23,7 @@ import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
+import 'package:kostori/services/torrent/torrent_binding.dart';
 import 'package:kostori/services/torrent/torrent_manager.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
@@ -139,6 +141,8 @@ Future<void> init() async {
       DebugLog.warning('Init', 'AI database prewarm failed: $e');
     }
   }());
+  // 下载/种子/BT 绑定：JSON → download.db 一次性迁移（幂等）
+  await DownloadDatabase.instance.migrateFromJson();
   // 加载持久化的下载任务
   await DownloadManager.instance.init();
   // 启动即初始化数据同步（启用时自动首次下载，并监听数据变化自动上传）
@@ -233,6 +237,8 @@ Future<void> _checkAppUpdates() async {
   TorrentManager.instance.init();
   // 加载 BT 资源站配置（<dataPath>/bt_source/*.json）
   BtSources.ensureLoaded();
+  // 加载 BT 线路/绑定（download.db）
+  TorrentBindingStore.ensureLoaded();
   await Bangumi.instance.getCalendarData();
   await Bangumi.instance.checkBangumiData();
   if (appdata.settings['checkUpdateOnStart']) {
