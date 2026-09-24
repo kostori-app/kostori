@@ -399,7 +399,7 @@ class _TextRulePickSheetState extends State<_TextRulePickSheet> {
 class _EpisodeDownloadPicker extends StatefulWidget {
   const _EpisodeDownloadPicker({
     required this.items,
-    required this.downloadedFiles,
+    required this.downloadedKeys,
     required this.activeTasks,
     required this.resolvePlay,
     required this.animeTitle,
@@ -409,8 +409,8 @@ class _EpisodeDownloadPicker extends StatefulWidget {
 
   final List<_DownloadItem> items;
 
-  /// `animeId|episodeName` → 本地文件路径（仅文件仍存在的已下载项）
-  final Map<String, String> downloadedFiles;
+  /// 已下载的 `animeId|episodeName` 集合（只看记录，不校验文件是否还在）
+  final Set<String> downloadedKeys;
 
   /// `animeId|episodeName` → 已在下载列表里的任务状态（排队/下载中/暂停/失败）
   final Map<String, DownloadStatus> activeTasks;
@@ -475,11 +475,9 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
   _DownloadFilter _filter = _DownloadFilter.all;
 
   bool _isDownloaded(_DownloadItem item) =>
-      widget.downloadedFiles.containsKey(
-        '${item.animeId}|${_itemName(item)}',
-      ) ||
+      widget.downloadedKeys.contains('${item.animeId}|${_itemName(item)}') ||
       // 规则开关/改名后：记录里同时存了原始名，按原始名也能命中
-      widget.downloadedFiles.containsKey('${item.animeId}|${item.episodeName}');
+      widget.downloadedKeys.contains('${item.animeId}|${item.episodeName}');
 
   /// 该条目是否已经在下载列表里（避免重复下载）：
   /// 任务存的是确认瞬间的集名，规则开关/改名后按下当前名查不到，
@@ -1544,7 +1542,9 @@ Future<void> _openAnimeDownloadPicker(
   Future<String?> Function(String id)? resolveAnimeTitle,
   bool Function()? isCancelled,
 }) async {
-  final downloadedFiles = await DownloadManager.downloadedFilesFor(source.key);
+  final downloadedKeys = await DownloadManager.downloadedEpisodeKeys(
+    source.key,
+  );
   if (isCancelled?.call() ?? false) return;
   if (!context.mounted) return;
   final result = await showModalBottomSheet<List<_DownloadPick>>(
@@ -1552,7 +1552,7 @@ Future<void> _openAnimeDownloadPicker(
     isScrollControlled: true,
     builder: (_) => _EpisodeDownloadPicker(
       items: items,
-      downloadedFiles: downloadedFiles,
+      downloadedKeys: downloadedKeys,
       activeTasks: activeDownloadTasksOf(source.key),
       resolvePlay: (epKey) => resolveAnimePlayResult(source, data.id, epKey),
       animeTitle: animeTitle,

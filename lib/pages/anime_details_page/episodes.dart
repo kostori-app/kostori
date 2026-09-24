@@ -22,15 +22,24 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   bool _seriesAsc = false;
   bool showAll = false;
 
-  /// 已下载且文件仍存在的条目：`animeId|episodeName` → 本地文件路径
+  /// 已下载且文件仍存在的条目：`animeId|episodeName` → 本地文件路径（供本地播放）
   Map<String, String> _downloaded = {};
+
+  /// 已下载的 `animeId|episodeName` 集合（只看记录，不校验文件；供「已下载」标记）
+  Set<String> _downloadedKeys = {};
   bool _downloadedLoaded = false;
+  StreamSubscription<void>? _recordsSub;
 
   Future<void> _loadDownloaded() async {
-    final loaded = await DownloadManager.downloadedFilesFor(
-      state.anime.sourceKey,
-    );
-    if (mounted) setState(() => _downloaded = loaded);
+    final sourceKey = state.anime.sourceKey;
+    final files = await DownloadManager.downloadedFilesFor(sourceKey);
+    final keys = await DownloadManager.downloadedEpisodeKeys(sourceKey);
+    if (mounted) {
+      setState(() {
+        _downloaded = files;
+        _downloadedKeys = keys;
+      });
+    }
   }
 
   /// 系列模式：源无分集，加载与剧集平行的系列列表（复用 Anime 结构）
@@ -61,11 +70,21 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     if (!_downloadedLoaded) {
       _downloadedLoaded = true;
       _loadDownloaded();
+      // 下载完成/删除/改名后刷新「已下载」标记，无需重进页面
+      _recordsSub ??= DownloadManager.instance.recordsChanged.listen((_) {
+        if (mounted) _loadDownloaded();
+      });
     }
     if (_isSeries && _series == null) {
       _loadSeries();
     }
     super.didChangeDependencies();
+  }
+
+  @override
+  void dispose() {
+    _recordsSub?.cancel();
+    super.dispose();
   }
 
   /// 加载系列列表（仅系列模式）；结果缓存在 anime_page state，避免每次重建重新请求
@@ -153,7 +172,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                     playingId != null &&
                     items[i].id == playingId,
                 isPlayingNow: state.playerController.playing,
-                isDownloaded: _downloaded.containsKey(
+                isDownloaded: _downloadedKeys.contains(
                   '${items[i].id}|${items[i].title}',
                 ),
                 onTap: () async {
@@ -189,8 +208,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   /// 当前条目（系列模式单集）卡片：标题 + 播放按钮，点击直接播放该条目
   Widget _buildCurrentEpisodeCard(BuildContext context, Anime entry) {
     final colorScheme = Theme.of(context).colorScheme;
-    final localPath = _downloaded['${entry.id}|${entry.title}'];
-    final downloaded = localPath != null;
+    final epKey = '${entry.id}|${entry.title}';
+    final localPath = _downloaded[epKey];
+    final downloaded = _downloadedKeys.contains(epKey);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Material(
@@ -498,8 +518,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                         final epName = epTitle.isEmpty
                             ? t.episodeN(n: key)
                             : epTitle;
-                        final localPath =
-                            _downloaded['${state.anime.id}|$epName'];
+                        final epKey = '${state.anime.id}|$epName';
+                        final localPath = _downloaded[epKey];
+                        final downloaded = _downloadedKeys.contains(epKey);
 
                         return SizedBox(
                           // 只有一集时占满整行，避免显示成 1/3 宽的小格子
@@ -511,8 +532,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                               vertical: 8,
                             ),
                             child: Material(
-                              // 已下载（文件仍在）：绿色调高亮，点击播放本地
-                              color: localPath != null
+                              // 已下载（有记录）：绿色调高亮；点击优先播本地文件
+                              color: downloaded
                                   ? Colors.green.withValues(alpha: 0.15)
                                   : (!visited
                                         ? context.colorScheme.surfaceContainer
@@ -620,7 +641,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                           ),
                                         ),
                                       ),
-                                      if (localPath != null)
+                                      if (downloaded)
                                         const Padding(
                                           padding: EdgeInsets.only(left: 4),
                                           child: Icon(

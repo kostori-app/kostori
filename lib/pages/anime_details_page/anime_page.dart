@@ -1124,7 +1124,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     ];
     await _openDownloadPicker(
       items: items,
-      downloadedFiles: await DownloadManager.downloadedFilesFor(_sourceKey),
+      downloadedKeys: await DownloadManager.downloadedEpisodeKeys(_sourceKey),
     );
   }
 
@@ -1190,7 +1190,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     ];
     await _openDownloadPicker(
       items: items,
-      downloadedFiles: await DownloadManager.downloadedFilesFor(_sourceKey),
+      downloadedKeys: await DownloadManager.downloadedEpisodeKeys(_sourceKey),
       // 系列条目逐个访问详情取自身标题用于命名
       resolveAnimeTitle: (id) async {
         final load = source.loadAnimeInfo;
@@ -1208,7 +1208,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   /// 弹出卡片化下载选择框，确认后逐项加入下载队列
   Future<void> _openDownloadPicker({
     required List<_DownloadItem> items,
-    required Map<String, String> downloadedFiles,
+    required Set<String> downloadedKeys,
     Future<String?> Function(String id)? resolveAnimeTitle,
   }) async {
     final result = await showModalBottomSheet<List<_DownloadPick>>(
@@ -1216,7 +1216,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       isScrollControlled: true,
       builder: (_) => _EpisodeDownloadPicker(
         items: items,
-        downloadedFiles: downloadedFiles,
+        downloadedKeys: downloadedKeys,
         activeTasks: _activeDownloadTasks(),
         resolvePlay: _resolvePlayResult,
         animeTitle: data!.title,

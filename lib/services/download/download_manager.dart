@@ -1849,15 +1849,15 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
-  /// 已下载且文件仍存在的 `animeId|episode` → 本地文件路径（同源）。
-  /// 供下载面板标记"已下载"并直接播放本地文件；文件已删除的记录不返回，
-  /// 此时按未下载处理（系列里同名条目靠 animeId 区分）。
-  ///
+  /// 某源下载记录里的 `animeId|episode` → 文件路径（同源）。
+  /// [requireExisting] 为 true 时只保留文件仍存在的记录（供本地播放）；
+  /// 为 false 时只看记录（供「已下载」标记，文件被删/移动后仍命中）。
   /// 一条记录登记两个键（规则套用后名 + 原始名）：规则开关/手动改名后
   /// 任意一边都能命中，不再因改名误判未下载而重复下载。
-  static Future<Map<String, String>> downloadedFilesFor(
-    String sourceKey,
-  ) async {
+  static Future<Map<String, String>> _downloadedFilesFor(
+    String sourceKey, {
+    required bool requireExisting,
+  }) async {
     final file = File(p.join(App.dataPath, 'download_records.json'));
     if (!await file.exists()) return {};
     try {
@@ -1867,8 +1867,8 @@ class DownloadManager extends ChangeNotifier {
         if (e['sourceKey'] != sourceKey) continue;
         final fp = e['filePath'] as String?;
         if (fp == null || fp.isEmpty) continue;
-        if (!await File(fp).exists()) continue;
         // 同名集可能有多份（不同标题/文件）：保留最新的一条（记录为倒序）
+        if (requireExisting && !await File(fp).exists()) continue;
         final animeId = e['animeId'];
         for (final ep in {e['episode'], e['episodeRaw']}) {
           if (ep == null || (ep as String).isEmpty) continue;
@@ -1881,9 +1881,19 @@ class DownloadManager extends ChangeNotifier {
     }
   }
 
-  /// 已下载的 `animeId|episode` 集合（同源；供下载面板标记"已下载"）
-  static Future<Set<String>> downloadedKeysFor(String sourceKey) async =>
-      (await downloadedFilesFor(sourceKey)).keys.toSet();
+  /// 已下载且文件仍存在的 `animeId|episode` → 本地文件路径（同源）。
+  /// 供详情页/下载面板播放本地文件；文件已删除的记录不返回。
+  static Future<Map<String, String>> downloadedFilesFor(String sourceKey) =>
+      _downloadedFilesFor(sourceKey, requireExisting: true);
+
+  /// 已下载的 `animeId|episode` 集合（同源；只看下载记录，不校验文件是否还在）。
+  /// 与卡片「已下载」角标口径一致：文件被删/移动后仍标记已下载，
+  /// 避免用户以为没下过而重复下载。供详情页剧集列表/下载选择器标记用。
+  static Future<Set<String>> downloadedEpisodeKeys(String sourceKey) async =>
+      (await _downloadedFilesFor(
+        sourceKey,
+        requireExisting: false,
+      )).keys.toSet();
 
   /// 查询全部下载记录（含文件已丢失的，供"下载记录"页标记"已删除"）
   static Future<List<Map<String, dynamic>>> allRecords() async {
