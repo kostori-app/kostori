@@ -193,18 +193,22 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
     // data 里没有 end 的条目：不少是「当季实际已播完、但 bangumi-data 漏标 end」。
     // 用 bangumi_AllEpInfo 里的剧集信息复核是否真的还在播（见下方 skip 判断）。
     final noEndItems = validItems
-        .where((it) => existenceMap[it.id.toString()]?.end == null)
+        .where((it) {
+          final end = existenceMap[it.id.toString()]?.end;
+          return end == null || end.isEmpty;
+        })
         .toList();
 
     Map<int, List<EpisodeInfo>> allEpisodesMap;
     if (shouldFetchEpisodes) {
       allEpisodesMap = await _fetchEpisodesInBatches(validItems);
+    } else if (noEndItems.isNotEmpty && isFetchEpisodes) {
+      // 缺 end 的条目数量少，即使主页（fetchEpisodeInfo=false）也拉取一次：
+      // 否则缓存缺失时，「实际已完结、只是漏标 end」的番无法被 allepinfo 判定剔除。
+      // _fetchEpisodesInBatches 按天节流，当天只拉一次。
+      allEpisodesMap = await _fetchEpisodesInBatches(noEndItems);
     } else if (noEndItems.isNotEmpty) {
-      // 日历页（fetchEpisodeInfo=true）：按天拉取并落库，供本次及后续判定；
-      // 主页（fetchEpisodeInfo=false）：只读已有缓存，避免打开主页就批量请求
-      allEpisodesMap = fetchEpisodeInfo && isFetchEpisodes
-          ? await _fetchEpisodesInBatches(noEndItems)
-          : await _readCachedEpisodes(noEndItems);
+      allEpisodesMap = await _readCachedEpisodes(noEndItems);
     } else {
       allEpisodesMap = <int, List<EpisodeInfo>>{};
     }
