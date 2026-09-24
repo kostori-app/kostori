@@ -3,6 +3,7 @@ import 'package:kostori/components/color_pick_page.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 /// 播放器字幕样式（Flutter 侧渲染时生效）。
@@ -130,8 +131,18 @@ final SubtitleViewConfiguration kPlayerSubtitleViewConfiguration =
     buildPlayerSubtitleViewConfiguration(const PlayerSubtitleStyle());
 
 /// 共享字幕设置面板（本地播放器 / anime page 共用）。
-Future<void> showPlayerSubtitleSettingsSheet(BuildContext context) async {
+/// [subtitleTracks] 非空时，面板顶部会以分段胶囊展示字幕开关/轨道切换，
+/// 选中后回调 [onSelectSubtitleTrack]。
+Future<void> showPlayerSubtitleSettingsSheet(
+  BuildContext context, {
+  List<SubtitleTrack> subtitleTracks = const [],
+  String? currentSubtitleTrackId,
+  ValueChanged<SubtitleTrack>? onSelectSubtitleTrack,
+}) async {
   var style = PlayerSubtitleStyleController.notifier.value;
+  var currentId = currentSubtitleTrackId;
+  final showTracks =
+      subtitleTracks.isNotEmpty && onSelectSubtitleTrack != null;
   await showModalBottomSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -146,6 +157,34 @@ Future<void> showPlayerSubtitleSettingsSheet(BuildContext context) async {
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             children: [
+              if (showTracks) ...[
+                Text(t.subtitle),
+                const SizedBox(height: 8),
+                CapsuleOptions(
+                  alignment: WrapAlignment.start,
+                  wrap: true,
+                  children: [
+                    CapsuleOption(
+                      text: t.subtitleOff,
+                      isSelected: currentId == null || currentId == 'no',
+                      onTap: () {
+                        setModalState(() => currentId = 'no');
+                        onSelectSubtitleTrack(SubtitleTrack.no());
+                      },
+                    ),
+                    for (final tr in subtitleTracks)
+                      CapsuleOption(
+                        text: _trackLabel(tr.title, tr.language),
+                        isSelected: currentId == tr.id,
+                        onTap: () {
+                          setModalState(() => currentId = tr.id);
+                          onSelectSubtitleTrack(tr);
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
               _colorRow(
                 context,
                 label: t.subtitleTextColor,
@@ -240,4 +279,13 @@ Widget _colorRow(
       ),
     ),
   );
+}
+
+/// 字幕轨道显示名：标题优先，其次语言
+String _trackLabel(String? title, String? language) {
+  final name = (title ?? '').trim();
+  if (name.isNotEmpty) return name;
+  final lang = (language ?? '').trim();
+  if (lang.isNotEmpty) return lang;
+  return t.subtitle;
 }

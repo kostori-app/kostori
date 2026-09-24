@@ -501,9 +501,6 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   List<AudioTrack> _realAudioTracks(LocalPlayerState s) =>
       s.audioTracks.where((tr) => tr.id != 'auto' && tr.id != 'no').toList();
 
-  bool _isSubtitleOn(LocalPlayerState s) =>
-      s.subtitleTrackId != null && s.subtitleTrackId != 'no';
-
   String _trackLabel(String? title, String? language) {
     final name = (title ?? '').trim();
     if (name.isNotEmpty) return name;
@@ -568,36 +565,6 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                       )
                       .toList(),
                   child: const Icon(Icons.audiotrack, color: Colors.white),
-                ),
-              // 字幕选择（含内封/外挂轨道）
-              if (_realSubtitleTracks(state).isNotEmpty)
-                PopupMenuButton<SubtitleTrack>(
-                  tooltip: t.subtitle,
-                  onSelected: ctrl.setSubtitleTrack,
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: SubtitleTrack.no(),
-                      child: Text(t.subtitleOff),
-                    ),
-                    ..._realSubtitleTracks(state).map(
-                      (tr) => PopupMenuItem(
-                        value: tr,
-                        child: Text(_trackLabel(tr.title, tr.language)),
-                      ),
-                    ),
-                  ],
-                  child: Icon(
-                    Icons.subtitles,
-                    color: _isSubtitleOn(state) ? Colors.white : Colors.white54,
-                  ),
-                ),
-              // 字幕样式设置
-              if (_realSubtitleTracks(state).isNotEmpty)
-                IconButton(
-                  color: Colors.white,
-                  icon: const Icon(Icons.text_fields),
-                  tooltip: t.subtitleSettings,
-                  onPressed: () => showPlayerSubtitleSettingsSheet(context),
                 ),
               // 播放器详情
               if (!state.fullscreen)
@@ -718,6 +685,19 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                     onSeek: ctrl.seek,
                   ),
                 ),
+                // 字幕设置（在 fullscreen 左边）
+                if (_realSubtitleTracks(state).isNotEmpty)
+                  IconButton(
+                    color: Colors.white,
+                    icon: const Icon(Icons.text_fields),
+                    tooltip: t.subtitleSettings,
+                    onPressed: () => showPlayerSubtitleSettingsSheet(
+                      context,
+                      subtitleTracks: _realSubtitleTracks(state),
+                      currentSubtitleTrackId: state.subtitleTrackId,
+                      onSelectSubtitleTrack: ctrl.setSubtitleTrack,
+                    ),
+                  ),
                 IconButton(
                   color: Colors.white,
                   icon: Icon(
