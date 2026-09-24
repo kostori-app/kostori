@@ -8775,6 +8775,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Torrent Stream'
 	String get torrentStream => 'Torrent Stream';
 
+	/// en: 'Current'
+	String get torrentLineCurrent => 'Current';
+
+	/// en: 'Added'
+	String get torrentAdded => 'Added';
+
 	/// en: 'Pause'
 	String get torrentPause => 'Pause';
 
@@ -12176,6 +12182,8 @@ extension on Translations {
 			'monthNames.nov' => 'November',
 			'monthNames.dec' => 'December',
 			'torrentStream' => 'Torrent Stream',
+			'torrentLineCurrent' => 'Current',
+			'torrentAdded' => 'Added',
 			'torrentPause' => 'Pause',
 			'torrentResume' => 'Resume',
 			'torrentClearCompleted' => 'Clear completed',

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 
@@ -14,14 +15,20 @@ class VolumeListener {
   StreamSubscription? stream;
 
   void listen() {
-    stream = channel.receiveBroadcastStream().listen(onEvent);
+    // 该通道只有 Android 注册了原生实现，其它平台监听会抛 PlatformException
+    if (!Platform.isAndroid) return;
+    stream = channel.receiveBroadcastStream().listen(
+      onEvent,
+      onError: (_) {},
+      cancelOnError: true,
+    );
   }
 
   void onEvent(dynamic event) {
     if (event == 1) {
-      onUp!();
+      onUp?.call();
     } else if (event == 2) {
-      onDown!();
+      onDown?.call();
     }
   }
 

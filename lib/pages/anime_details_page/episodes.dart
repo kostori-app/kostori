@@ -62,12 +62,14 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
       context,
       initialKeyword: state.anime.title,
       episode: targetEp,
+      currentLine: BtLineStore.line(_contentKey),
     );
     if (line == null || !mounted) return;
     BtLineStore.setLine(_contentKey, line);
     BtLineStore.setActive(_contentKey, true);
     setState(() {});
-    if (targetEp == ep && road == state.playerController.currentRoad) {
+    // 已在播放：强制重载当前集（reloadCurrent 会绕过“同集重复加载”检查）
+    if (ep >= 1) {
       await state.playerController.reloadCurrent();
     } else {
       await state.playerController.playEpisode(targetEp, road);
@@ -699,7 +701,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                             color: Colors.green,
                                           ),
                                         ),
-                                      if (torrentBinding != null)
+                                      if (torrentBinding != null &&
+                                          BtLineStore.isActive(_contentKey))
                                         const Padding(
                                           padding: EdgeInsets.only(left: 4),
                                           child: Icon(
@@ -763,7 +766,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
             label: t.reloadEpisode,
             onTap: () => state.playerController.reloadCurrent(),
           ),
-          if (!_isSeries)
+          if (!_isSeries && state.isBangumi)
             IconTileButton(
               icon: const Icon(Icons.podcasts_outlined),
               label: t.torrentStream,

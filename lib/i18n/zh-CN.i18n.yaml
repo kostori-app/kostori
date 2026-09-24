@@ -2989,6 +2989,8 @@ monthNames:
   dec: 十二月
 
 torrentStream: 种子播放
+torrentLineCurrent: 当前
+torrentAdded: 已添加
 torrentPause: 暂停
 torrentResume: 继续
 torrentClearCompleted: 清除已完成

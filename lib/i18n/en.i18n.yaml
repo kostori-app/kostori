@@ -2990,6 +2990,8 @@ monthNames:
   dec: December
 
 torrentStream: Torrent Stream
+torrentLineCurrent: Current
+torrentAdded: Added
 torrentPause: Pause
 torrentResume: Resume
 torrentClearCompleted: Clear completed

@@ -2951,6 +2951,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get logFileSizeMb => '日志文件大小上限(MB)';
 	@override late final Translations$monthNames$zh_CN monthNames = Translations$monthNames$zh_CN.internal(_root);
 	@override String get torrentStream => '种子播放';
+	@override String get torrentLineCurrent => '当前';
+	@override String get torrentAdded => '已添加';
 	@override String get torrentPause => '暂停';
 	@override String get torrentResume => '继续';
 	@override String get torrentClearCompleted => '清除已完成';
@@ -6087,6 +6089,8 @@ extension on TranslationsZhCn {
 			'monthNames.nov' => '十一月',
 			'monthNames.dec' => '十二月',
 			'torrentStream' => '种子播放',
+			'torrentLineCurrent' => '当前',
+			'torrentAdded' => '已添加',
 			'torrentPause' => '暂停',
 			'torrentResume' => '继续',
 			'torrentClearCompleted' => '清除已完成',

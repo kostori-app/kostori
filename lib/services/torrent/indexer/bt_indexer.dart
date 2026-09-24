@@ -70,6 +70,11 @@ String? _base32ToHex(String s) {
   return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 }
 
+/// 从磁力里取 hex infohash（小写），取不到返回 null。
+String? btInfoHashOfMagnet(String magnet) => RegExp(
+  r'xt=urn:btih:([0-9a-fA-F]{40})',
+).firstMatch(normalizeMagnet(magnet))?.group(1)?.toLowerCase();
+
 /// BT 资源站配置：完全数据驱动（不内置任何站点），由用户导入。
 ///
 /// `type=regex`：抓取 [urlTemplate]，用 [itemRegex] 切分条目，各正则取字段。

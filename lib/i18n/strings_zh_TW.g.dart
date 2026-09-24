@@ -2950,6 +2950,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get logFileSizeMb => '日誌檔案大小上限(MB)';
 	@override late final Translations$monthNames$zh_TW monthNames = Translations$monthNames$zh_TW.internal(_root);
 	@override String get torrentStream => '種子播放';
+	@override String get torrentLineCurrent => '目前';
+	@override String get torrentAdded => '已加入';
 	@override String get torrentPause => '暫停';
 	@override String get torrentResume => '繼續';
 	@override String get torrentClearCompleted => '清除已完成';
@@ -6085,6 +6087,8 @@ extension on TranslationsZhTw {
 			'monthNames.nov' => '十一月',
 			'monthNames.dec' => '十二月',
 			'torrentStream' => '種子播放',
+			'torrentLineCurrent' => '目前',
+			'torrentAdded' => '已加入',
 			'torrentPause' => '暫停',
 			'torrentResume' => '繼續',
 			'torrentClearCompleted' => '清除已完成',

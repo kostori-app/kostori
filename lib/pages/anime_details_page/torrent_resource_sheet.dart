@@ -3,6 +3,8 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/services/torrent/torrent_binding.dart';
+import 'package:kostori/services/torrent/torrent_job.dart';
+import 'package:kostori/services/torrent/torrent_manager.dart';
 
 String _fmtSize(int bytes) {
   if (bytes <= 0) return '';
@@ -35,8 +37,10 @@ Future<BtLine?> showTorrentResourcePicker(
   BuildContext context, {
   String? initialKeyword,
   int? episode,
+  BtLine? currentLine,
 }) async {
   await BtSources.ensureLoaded();
+  await TorrentManager.instance.init();
   return showModalBottomSheet<BtLine>(
     context: context,
     isScrollControlled: true,
@@ -50,6 +54,7 @@ Future<BtLine?> showTorrentResourcePicker(
         scroll: sc,
         initialKeyword: initialKeyword,
         episode: episode,
+        currentLine: currentLine,
       ),
     ),
   );
@@ -60,11 +65,15 @@ class _BtLineSheet extends StatefulWidget {
     required this.scroll,
     this.initialKeyword,
     this.episode,
+    this.currentLine,
   });
 
   final ScrollController scroll;
   final String? initialKeyword;
   final int? episode;
+
+  /// 当前已选中的线路（用于标出“当前”）
+  final BtLine? currentLine;
 
   @override
   State<_BtLineSheet> createState() => _BtLineSheetState();
@@ -211,6 +220,16 @@ class _BtLineSheetState extends State<_BtLineSheet> {
     );
   }
 
+  Widget _chip(String text, Color color) => Container(
+    margin: const EdgeInsets.only(right: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text(text, style: TextStyle(fontSize: 11, color: color)),
+  );
+
   Widget _buildResults() {
     final target = widget.episode ?? 0;
     final filtered = target <= 0
@@ -251,6 +270,13 @@ class _BtLineSheetState extends State<_BtLineSheet> {
         return pb[2].compareTo(pa[2]);
       });
 
+    // 已有种子任务（按 infohash），用于标出「已添加/已完成」，避免重复下载
+    final existing = <String, TorrentJobStatus>{};
+    for (final j in TorrentManager.instance.jobs) {
+      final h = btInfoHashOfMagnet(j.magnet);
+      if (h != null) existing[h] = j.status;
+    }
+
     final children = <Widget>[];
     for (final key in keys) {
       final parts = key.split('\u0000');
@@ -261,11 +287,25 @@ class _BtLineSheetState extends State<_BtLineSheet> {
           return db.compareTo(da);
         });
       final collapsed = _collapsed.contains(key);
+      final line = widget.currentLine;
+      final isCurrent =
+          line != null && line.siteKey == parts[0] && line.group == parts[2];
+      TorrentJobStatus? existingStatus;
+      for (final r in groupList) {
+        final h = btInfoHashOfMagnet(r.magnet);
+        final s = h == null ? null : existing[h];
+        if (s == TorrentJobStatus.completed) {
+          existingStatus = s;
+          break;
+        }
+        existingStatus ??= s;
+      }
+      final cs = Theme.of(context).colorScheme;
       children.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
           child: Material(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            color: cs.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(10),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -273,7 +313,7 @@ class _BtLineSheetState extends State<_BtLineSheet> {
                 ListTile(
                   leading: Icon(
                     collapsed ? Icons.chevron_right : Icons.expand_more,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: cs.primary,
                   ),
                   title: Text(
                     parts[2].isEmpty
@@ -282,7 +322,22 @@ class _BtLineSheetState extends State<_BtLineSheet> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Text('${groupList.length}'),
+                  subtitle: Row(
+                    children: [
+                      Text('${groupList.length}'),
+                      const SizedBox(width: 8),
+                      if (isCurrent) _chip(t.torrentLineCurrent, cs.primary),
+                      if (existingStatus != null)
+                        _chip(
+                          existingStatus == TorrentJobStatus.completed
+                              ? t.completed
+                              : t.torrentAdded,
+                          existingStatus == TorrentJobStatus.completed
+                              ? Colors.green
+                              : cs.primary,
+                        ),
+                    ],
+                  ),
                   trailing: TextButton(
                     onPressed: () => _select(groupList.first),
                     child: Text(t.apply),

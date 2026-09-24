@@ -24,6 +24,7 @@ import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/foundation/text_rule.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 
@@ -246,6 +247,14 @@ Future<File> exportAppData() async {
     ).listSync()) {
       if (file is File) {
         zipFile.addFile("anime_source/${file.name}", file.path);
+      }
+    }
+    final btSourceDir = FilePath.join(dataPath, "bt_source");
+    if (Directory(btSourceDir).existsSync()) {
+      for (var file in Directory(btSourceDir).listSync()) {
+        if (file is File) {
+          zipFile.addFile("bt_source/${file.name}", file.path);
+        }
       }
     }
     final pluginsDir = FilePath.join(dataPath, mePluginsDirName);
@@ -496,6 +505,7 @@ List<(String, String)> _partEntries(String key) {
       FilePath.join(App.cachePath, 'source_config_merge.json'),
     );
     addDir('anime_source', FilePath.join(dp, 'anime_source'));
+    addDir('bt_source', FilePath.join(dp, 'bt_source'));
     addDir(mePluginsDirName, FilePath.join(dp, mePluginsDirName));
   }
   return out;
@@ -944,6 +954,20 @@ Future<void> _applyImportedData(String cacheDirPath) async {
       }
     }
     await AnimeSourceManager().reload();
+  }
+  var btSourceDir = FilePath.join(cacheDirPath, "bt_source");
+  if (Directory(btSourceDir).existsSync()) {
+    DebugLog.info('importAppData', '开始导入btSource');
+    // 同 animeSource：按文件覆盖，保留本机独有的 BT 资源站
+    Directory(
+      FilePath.join(App.dataPath, "bt_source"),
+    ).createSync(recursive: true);
+    for (var file in Directory(btSourceDir).listSync()) {
+      if (file is File) {
+        await file.copy(FilePath.join(App.dataPath, "bt_source", file.name));
+      }
+    }
+    await BtSources.reload();
   }
   var pluginsDir = FilePath.join(cacheDirPath, mePluginsDirName);
   if (Directory(pluginsDir).existsSync()) {
