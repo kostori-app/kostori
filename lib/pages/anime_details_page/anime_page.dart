@@ -2009,8 +2009,8 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
         settings.keys.any((k) => k.toLowerCase().contains('captcha'));
   }
 
-  /// 参与聚合的 bangumi 源（排除当前源）
-  List<AnimeSource> get _bangumiSources => AnimeSource.allSources()
+  /// 参与聚合的 bangumi 源（仅启用的，排除当前源）
+  List<AnimeSource> get _bangumiSources => AnimeSource.all()
       .where((x) => x.isBangumi && x.key != widget.currentSourceKey)
       .toList();
 
