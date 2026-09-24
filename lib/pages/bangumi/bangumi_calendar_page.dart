@@ -192,12 +192,10 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
 
     // data 里没有 end 的条目：不少是「当季实际已播完、但 bangumi-data 漏标 end」。
     // 用 bangumi_AllEpInfo 里的剧集信息复核是否真的还在播（见下方 skip 判断）。
-    final noEndItems = validItems
-        .where((it) {
-          final end = existenceMap[it.id.toString()]?.end;
-          return end == null || end.isEmpty;
-        })
-        .toList();
+    final noEndItems = validItems.where((it) {
+      final end = existenceMap[it.id.toString()]?.end;
+      return end == null || end.isEmpty;
+    }).toList();
 
     Map<int, List<EpisodeInfo>> allEpisodesMap;
     if (shouldFetchEpisodes) {

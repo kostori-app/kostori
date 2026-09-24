@@ -51,8 +51,9 @@ class PlayerSubtitleStyle {
 class PlayerSubtitleStyleController {
   PlayerSubtitleStyleController._();
 
-  static final ValueNotifier<PlayerSubtitleStyle> notifier =
-      ValueNotifier(_load());
+  static final ValueNotifier<PlayerSubtitleStyle> notifier = ValueNotifier(
+    _load(),
+  );
 
   static PlayerSubtitleStyle _load() {
     final data = appdata.implicitData;
@@ -141,8 +142,7 @@ Future<void> showPlayerSubtitleSettingsSheet(
 }) async {
   var style = PlayerSubtitleStyleController.notifier.value;
   var currentId = currentSubtitleTrackId;
-  final showTracks =
-      subtitleTracks.isNotEmpty && onSelectSubtitleTrack != null;
+  final showTracks = subtitleTracks.isNotEmpty && onSelectSubtitleTrack != null;
   await showModalBottomSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -212,10 +212,7 @@ Future<void> showPlayerSubtitleSettingsSheet(
                 divisions: 60,
                 onChanged: (v) {
                   setModalState(() => style = style.copyWith(fontSize: v));
-                  PlayerSubtitleStyleController.update(
-                    style,
-                    persist: false,
-                  );
+                  PlayerSubtitleStyleController.update(style, persist: false);
                 },
                 onChangeEnd: (_) => PlayerSubtitleStyleController.update(style),
               ),
@@ -229,10 +226,7 @@ Future<void> showPlayerSubtitleSettingsSheet(
                 divisions: 12,
                 onChanged: (v) {
                   setModalState(() => style = style.copyWith(outlineWidth: v));
-                  PlayerSubtitleStyleController.update(
-                    style,
-                    persist: false,
-                  );
+                  PlayerSubtitleStyleController.update(style, persist: false);
                 },
                 onChangeEnd: (_) => PlayerSubtitleStyleController.update(style),
               ),

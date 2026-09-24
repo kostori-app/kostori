@@ -253,12 +253,12 @@ class _BtLineSheetState extends State<_BtLineSheet> {
       final group = (r.fansub ?? '').trim().isNotEmpty
           ? r.fansub!.trim()
           : btGroupOf(r.title);
-      groups.putIfAbsent('${r.sourceKey}\u0000${r.source}\u0000$group', () => [])
+      groups
+          .putIfAbsent('${r.sourceKey}\u0000${r.source}\u0000$group', () => [])
           .add(r);
     }
     final sourceOrder = {
-      for (var i = 0; i < BtIndexers.all.length; i++)
-        BtIndexers.all[i].key: i,
+      for (var i = 0; i < BtIndexers.all.length; i++) BtIndexers.all[i].key: i,
     };
     final keys = groups.keys.toList()
       ..sort((a, b) {
@@ -316,9 +316,7 @@ class _BtLineSheetState extends State<_BtLineSheet> {
                     color: cs.primary,
                   ),
                   title: Text(
-                    parts[2].isEmpty
-                        ? parts[1]
-                        : '${parts[1]} · [${parts[2]}]',
+                    parts[2].isEmpty ? parts[1] : '${parts[1]} · [${parts[2]}]',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -354,7 +352,10 @@ class _BtLineSheetState extends State<_BtLineSheet> {
                   for (final r in groupList)
                     ListTile(
                       dense: true,
-                      contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                      contentPadding: const EdgeInsets.only(
+                        left: 56,
+                        right: 16,
+                      ),
                       title: Text(
                         _cleanTitle(r.title),
                         maxLines: 2,

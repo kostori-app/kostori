@@ -120,7 +120,9 @@ class _BtSourcesPageState extends State<BtSourcesPage> {
     try {
       final file = await selectFile(ext: ['json']);
       if (file == null) return;
-      final n = await BtSources.importJson(utf8.decode(await file.readAsBytes()));
+      final n = await BtSources.importJson(
+        utf8.decode(await file.readAsBytes()),
+      );
       if (!mounted) return;
       App.rootContext.showMessage(
         message: n == 0 ? t.switchFailed : '${t.import}: $n',
@@ -231,9 +233,8 @@ class _BtSourcesPageState extends State<BtSourcesPage> {
           ),
           TextButton(
             onPressed: () async {
-              final text = await Clipboard.getData('text/plain').then(
-                (d) => d?.text,
-              );
+              final text = await Clipboard.getData('text/plain')
+                  .then((d) => d?.text);
               if (text != null && text.isNotEmpty) ctrl.text = text;
             },
             child: Text(t.paste),

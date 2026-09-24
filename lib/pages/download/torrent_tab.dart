@@ -60,19 +60,22 @@ Future<void> showAddTorrentSheet(BuildContext context) async {
                   CapsuleOption(
                     text: t.torrentStopNone,
                     isSelected: stopAfter == TorrentStopPolicy.none,
-                    onTap: () => setSt(() => stopAfter = TorrentStopPolicy.none),
+                    onTap: () =>
+                        setSt(() => stopAfter = TorrentStopPolicy.none),
                   ),
                   CapsuleOption(
                     text: t.torrentStopAfterMetadata,
                     isSelected: stopAfter == TorrentStopPolicy.afterMetadata,
-                    onTap: () =>
-                        setSt(() => stopAfter = TorrentStopPolicy.afterMetadata),
+                    onTap: () => setSt(
+                      () => stopAfter = TorrentStopPolicy.afterMetadata,
+                    ),
                   ),
                   CapsuleOption(
                     text: t.torrentStopAfterDownload,
                     isSelected: stopAfter == TorrentStopPolicy.afterDownload,
-                    onTap: () =>
-                        setSt(() => stopAfter = TorrentStopPolicy.afterDownload),
+                    onTap: () => setSt(
+                      () => stopAfter = TorrentStopPolicy.afterDownload,
+                    ),
                   ),
                 ],
               ),
@@ -86,7 +89,10 @@ Future<void> showAddTorrentSheet(BuildContext context) async {
                   }
                   if (ctx.mounted) Navigator.pop(ctx);
                   App.rootContext.showMessage(message: t.torrentFetchingMeta);
-                  await TorrentManager.instance.add(magnet, stopAfter: stopAfter);
+                  await TorrentManager.instance.add(
+                    magnet,
+                    stopAfter: stopAfter,
+                  );
                 },
                 icon: const Icon(Icons.check),
                 label: Text(t.torrentParse),
@@ -335,7 +341,9 @@ class _TorrentTabState extends State<TorrentTab> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        job.isFinished ? Icons.check_circle_outline : Icons.stream,
+                        job.isFinished
+                            ? Icons.check_circle_outline
+                            : Icons.stream,
                         color: cs.onSecondaryContainer,
                       ),
                     ),
@@ -345,7 +353,9 @@ class _TorrentTabState extends State<TorrentTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            job.name.isNotEmpty ? job.name : t.torrentFetchingMeta,
+                            job.name.isNotEmpty
+                                ? job.name
+                                : t.torrentFetchingMeta,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -390,7 +400,10 @@ class _TorrentTabState extends State<TorrentTab> {
                     Text(
                       '↓ ${formatSpeed(job.downloadRate)}  '
                       '↑ ${formatSpeed(job.uploadRate)}',
-                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -514,9 +527,7 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
   // ── 基本信息 ──────────────────────────────────────────────────────────────
   List<Widget> _infoSection(TorrentJob job) {
     final total = job.totalWanted > 0 ? job.totalWanted : job.totalDone;
-    final done = total > 0
-        ? (job.progress * total).round().clamp(0, total)
-        : 0;
+    final done = total > 0 ? (job.progress * total).round().clamp(0, total) : 0;
     return [
       _infoRow(t.status, _statusLabel(job.status)),
       _infoRow(
@@ -581,10 +592,11 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
 
   void _toggleFile(TorrentJob job, int index) {
     final all = {for (final f in _files) f.index};
-    final sel = (job.selectedFiles.isEmpty
-            ? {...all}
-            : job.selectedFiles.where(all.contains).toSet())
-        .toSet();
+    final sel =
+        (job.selectedFiles.isEmpty
+                ? {...all}
+                : job.selectedFiles.where(all.contains).toSet())
+            .toSet();
     if (!sel.remove(index)) sel.add(index);
     if (sel.isEmpty) return; // 至少保留一个文件
     if (sel.length == all.length) {
@@ -695,9 +707,7 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             ),
           ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 12)),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12))),
         ],
       ),
     );

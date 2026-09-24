@@ -26,7 +26,8 @@ mixin class JsUiApi {
 
   static void unforceCaptcha() => _captchaForced--;
 
-  static bool get captchaEnabled => _captchaForced > 0 || _captchaSuppressed <= 0;
+  static bool get captchaEnabled =>
+      _captchaForced > 0 || _captchaSuppressed <= 0;
 
   /// 被抑制的验证码请求计数：自动搜索期间源 JS 请求验证码弹窗的次数，
   /// 用于让调用方识别"该源可能需要验证码"。

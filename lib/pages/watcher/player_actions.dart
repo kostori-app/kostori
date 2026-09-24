@@ -9,7 +9,9 @@ import 'package:kostori/utils/remote.dart';
 
 /// 桌面端音频输出设备选择弹窗。
 /// 用 [App.rootContext]，以便在 sheet 已经关闭后仍能弹出。
-Future<void> showPlayerAudioDevicePicker(PlayerController playerController) async {
+Future<void> showPlayerAudioDevicePicker(
+  PlayerController playerController,
+) async {
   final devices = await playerController.getAudioDevices();
   final current = playerController.currentAudioDevice;
   final context = App.rootContext;
@@ -25,7 +27,9 @@ Future<void> showPlayerAudioDevicePicker(PlayerController playerController) asyn
             dense: true,
             leading: const Icon(Icons.autorenew, size: 18),
             title: Text(t.autoDetect),
-            trailing: current.isEmpty ? const Icon(Icons.check, size: 18) : null,
+            trailing: current.isEmpty
+                ? const Icon(Icons.check, size: 18)
+                : null,
             onTap: () async {
               await playerController.setAudioDevice('');
               if (ctx.mounted) Navigator.pop(ctx);
@@ -35,7 +39,11 @@ Future<void> showPlayerAudioDevicePicker(PlayerController playerController) asyn
             ListTile(
               dense: true,
               leading: const Icon(Icons.speaker_outlined, size: 18),
-              title: Text(d.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+              title: Text(
+                d.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               trailing: current == d.name
                   ? const Icon(Icons.check, size: 18)
                   : null,

@@ -42,9 +42,8 @@ String get _ua => appdata.implicitData['ua']?.toString() ?? webUA;
 
 /// 把 `xt=urn:btih:` 的 base32 infohash 规范成 hex（引擎只认 hex）。
 String normalizeMagnet(String magnet) {
-  final m = RegExp(
-    r'xt=urn:btih:([A-Za-z2-7]{32})(?![A-Za-z2-7])',
-  ).firstMatch(magnet);
+  final m = RegExp(r'xt=urn:btih:([A-Za-z2-7]{32})(?![A-Za-z2-7])')
+      .firstMatch(magnet);
   if (m == null) return magnet;
   final hex = _base32ToHex(m.group(1)!);
   if (hex == null) return magnet;
@@ -71,9 +70,11 @@ String? _base32ToHex(String s) {
 }
 
 /// 从磁力里取 hex infohash（小写），取不到返回 null。
-String? btInfoHashOfMagnet(String magnet) => RegExp(
-  r'xt=urn:btih:([0-9a-fA-F]{40})',
-).firstMatch(normalizeMagnet(magnet))?.group(1)?.toLowerCase();
+String? btInfoHashOfMagnet(String magnet) =>
+    RegExp(r'xt=urn:btih:([0-9a-fA-F]{40})')
+        .firstMatch(normalizeMagnet(magnet))
+        ?.group(1)
+        ?.toLowerCase();
 
 /// BT 资源站配置：完全数据驱动（不内置任何站点），由用户导入。
 ///
@@ -273,9 +274,8 @@ class BtSources {
 
   static Future<void> _writeFile(BtSourceConfig c) async {
     if (!await dir.exists()) await dir.create(recursive: true);
-    await File(
-      p.join(dir.path, '${c.key}.json'),
-    ).writeAsString(const JsonEncoder.withIndent('  ').convert(c.toJson()));
+    await File(p.join(dir.path, '${c.key}.json'))
+        .writeAsString(const JsonEncoder.withIndent('  ').convert(c.toJson()));
   }
 
   static Future<void> upsert(BtSourceConfig config) async {
@@ -292,8 +292,7 @@ class BtSources {
             final data = jsonDecode(await f.readAsString());
             final has =
                 (data is Map && data['key'] == key) ||
-                (data is List &&
-                    data.any((e) => e is Map && e['key'] == key));
+                (data is List && data.any((e) => e is Map && e['key'] == key));
             if (has) await f.delete();
           } catch (_) {}
         }
@@ -432,7 +431,9 @@ class HttpIndexer extends BtIndexer {
           sourceKey: key,
           source: name,
           size: _parseSizeStr(_group(config.sizeRegex, b)),
-          createdAt: DateTime.tryParse(_stripTags(_group(config.dateRegex, b) ?? '')),
+          createdAt: DateTime.tryParse(
+            _stripTags(_group(config.dateRegex, b) ?? ''),
+          ),
           fansub: group.isEmpty ? null : group,
         ),
       );
@@ -515,8 +516,7 @@ int _parseSizeStr(String? s) {
 class BtIndexers {
   BtIndexers._();
 
-  static List<BtIndexer> get all =>
-      BtSources.all.map(HttpIndexer.new).toList();
+  static List<BtIndexer> get all => BtSources.all.map(HttpIndexer.new).toList();
 
   static bool isEnabled(String key) {
     for (final c in BtSources.all) {

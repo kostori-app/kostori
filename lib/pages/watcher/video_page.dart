@@ -471,12 +471,7 @@ class _VideoPageState extends State<VideoPage>
   Widget _buildPlaylistTab() {
     return GridViewObserver(
       controller: observerController,
-      child: Column(
-        children: [
-          _buildPlaylistHeader(),
-          _buildPlaylistBody(),
-        ],
-      ),
+      child: Column(children: [_buildPlaylistHeader(), _buildPlaylistBody()]),
     );
   }
 

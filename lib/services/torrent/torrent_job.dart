@@ -108,7 +108,9 @@ class TorrentJob {
     totalWanted: (j['totalWanted'] as num?)?.toInt() ?? 0,
     error: j['error'] as String?,
     selectedFiles:
-        (j['selectedFiles'] as List?)?.map((e) => (e as num).toInt()).toList() ??
+        (j['selectedFiles'] as List?)
+            ?.map((e) => (e as num).toInt())
+            .toList() ??
         const [],
     stopAfter: TorrentStopPolicy.values.firstWhere(
       (e) => e.name == j['stopAfter'],

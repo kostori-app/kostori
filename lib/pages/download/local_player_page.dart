@@ -97,7 +97,8 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   /// 竖屏全屏（对齐 anime page 播放器的 isPortraitFullscreen）
   bool get isPortraitFullscreen =>
-      st.fullscreen && MediaQuery.orientationOf(context) == Orientation.portrait;
+      st.fullscreen &&
+      MediaQuery.orientationOf(context) == Orientation.portrait;
 
   @override
   void initState() {
@@ -281,8 +282,9 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
               controller: c.controller,
               controls: null,
               fit: BoxFit.contain,
-              subtitleViewConfiguration:
-                  buildPlayerSubtitleViewConfiguration(subtitleStyle),
+              subtitleViewConfiguration: buildPlayerSubtitleViewConfiguration(
+                subtitleStyle,
+              ),
             ),
           ),
         ),

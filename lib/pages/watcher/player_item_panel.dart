@@ -703,8 +703,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 color: Colors.white,
                                 icon: const Icon(Icons.subtitles),
                                 tooltip: t.subtitle,
-                                onPressed: () =>
-                                    _openSubtitleSheet(context, playerController),
+                                onPressed: () => _openSubtitleSheet(
+                                  context,
+                                  playerController,
+                                ),
                               ),
 
                             if (App.isAndroid && !playerController.isFullScreen)

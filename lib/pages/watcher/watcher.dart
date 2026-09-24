@@ -442,9 +442,9 @@ class _WatcherState extends State<Watcher>
     }
 
     // ② 整季合集：在同一内容已绑定的种子任务里找匹配本集的文件
-    final jobIds = TorrentBindingStore.forContent(
-      contentKey,
-    ).values.map((b) => b.jobId).toSet();
+    final jobIds = TorrentBindingStore.forContent(contentKey).values
+        .map((b) => b.jobId)
+        .toSet();
     for (final id in jobIds) {
       final job = jobById(id);
       if (job == null) continue;

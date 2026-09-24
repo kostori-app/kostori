@@ -43,24 +43,20 @@ void main() {
   final cases = <String, String>{
     'short': 'kostori://anime?id=12345&source=test',
     'bangumi': 'kostori://bangumi?id=987654',
-    'watchroom':
-        'kostori://watchroom?room=abc123&server=https://example.com/ws&pwd=Xk92mZ',
-    'long-url':
-        'https://example.com/share/anime?id=123456789&source=some_source_key&token=abcdefghijklmnopqrstuvwxyz0123456789',
+    'watchroom': 'kostori://watchroom?room=abc123&server=https://example.com/ws&pwd=Xk92mZ',
+    'long-url': 'https://example.com/share/anime?id=123456789&source=some_source_key&token=abcdefghijklmnopqrstuvwxyz0123456789',
   };
 
   for (final entry in cases.entries) {
     for (final double size in <double>[420, 260, 180]) {
-      testWidgets(
-        'zxing2 styled QR [${entry.key}] size=$size',
-        (tester) async {
-          final decoded = await _renderAndDecode(tester, entry.value, size);
-          // ignore: avoid_print
-          print('CASE=${entry.key} size=$size -> ${decoded == entry.value ? "OK" : "FAIL($decoded)"}');
-          expect(decoded, entry.value);
-        },
-        timeout: const Timeout(Duration(minutes: 2)),
-      );
+      testWidgets('zxing2 styled QR [${entry.key}] size=$size', (tester) async {
+        final decoded = await _renderAndDecode(tester, entry.value, size);
+        // ignore: avoid_print
+        print(
+          'CASE=${entry.key} size=$size -> ${decoded == entry.value ? "OK" : "FAIL($decoded)"}',
+        );
+        expect(decoded, entry.value);
+      }, timeout: const Timeout(Duration(minutes: 2)));
     }
   }
 }

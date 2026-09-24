@@ -959,9 +959,8 @@ Future<void> _applyImportedData(String cacheDirPath) async {
   if (Directory(btSourceDir).existsSync()) {
     DebugLog.info('importAppData', '开始导入btSource');
     // 同 animeSource：按文件覆盖，保留本机独有的 BT 资源站
-    Directory(
-      FilePath.join(App.dataPath, "bt_source"),
-    ).createSync(recursive: true);
+    Directory(FilePath.join(App.dataPath, "bt_source"))
+        .createSync(recursive: true);
     for (var file in Directory(btSourceDir).listSync()) {
       if (file is File) {
         await file.copy(FilePath.join(App.dataPath, "bt_source", file.name));

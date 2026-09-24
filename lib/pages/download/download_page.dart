@@ -104,7 +104,6 @@ class _DownloadPageState extends State<DownloadPage>
     showDownloadSettingsSheet(context);
   }
 
-
   @override
   void dispose() {
     DownloadManager.instance.removeListener(_onChange);

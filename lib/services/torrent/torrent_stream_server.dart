@@ -112,9 +112,9 @@ class TorrentStreamServer {
       if (pieceLength > 0) {
         final sp = (file.offset + start) ~/ pieceLength;
         final ep = (file.offset + end) ~/ pieceLength;
-        task.pieceManager?.pieceSelector.setPriorityPieces(
-          {for (var i = sp; i <= ep; i++) i},
-        );
+        task.pieceManager?.pieceSelector.setPriorityPieces({
+          for (var i = sp; i <= ep; i++) i,
+        });
       }
 
       final stream = file.createStream(start, end + 1);
