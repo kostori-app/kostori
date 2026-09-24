@@ -2982,3 +2982,46 @@ monthNames:
   oct: 十月
   nov: 十一月
   dec: 十二月
+
+torrentStream: 种子播放
+torrentMagnetHint: 粘贴磁力链接
+torrentPlay: 播放
+torrentParse: 解析
+torrentAdd: 添加种子
+torrentSettings: 种子设置
+torrentModeStream: 边下边播
+torrentModeDownload: 下载保存
+torrentStatusMetadata: 获取元数据
+torrentStatusDownloading: 下载中
+torrentStatusPaused: 已暂停
+torrentStatusCompleted: 已完成
+torrentStatusFailed: 失败
+torrentSaveDir: 保存目录
+torrentDownloadLimit: 下载限速
+torrentUploadLimit: 上传限速
+torrentDht: DHT 网络
+torrentLsd: 局域网发现(LSD)
+torrentUpnp: UPnP/NAT-PMP
+torrentEncrypt: 强制加密连接
+torrentStopSeed: 完成后停止做种
+torrentSelectFiles: 选择文件
+torrentApplySelection: 应用选择
+torrentDelete: 删除
+torrentEmpty: 暂无种子任务
+torrentTab: 种子
+torrentUnlimited: 不限
+torrentInfo: 基本信息
+torrentContent: 内容
+torrentSavePathLabel: 保存路径
+torrentInfoHashLabel: 信息哈希
+torrentProgressLabel: 进度
+torrentPickFile: 选择要播放的文件
+torrentFetchingMeta: 正在获取元数据…
+torrentBuffering: 正在缓冲…
+torrentStop: 停止
+torrentNeedMagnet: 请输入磁力链接
+torrentPeers: 连接
+torrentTrackers: Tracker 列表
+torrentTrackerUrlHint: Tracker 列表地址
+torrentFetchTrackers: 获取 Tracker
+torrentTrackersHint: 每行一个 tracker，播放时自动附加到磁力链接

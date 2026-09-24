@@ -71,6 +71,7 @@ dependencies:
   media_kit: ^1.2.6
   media_kit_libs_video: ^1.0.7
   media_kit_video: ^2.0.1
+  libtorrent_flutter: 1.8.5
   mime: ^2.0.0
   mobx: ^2.6.1
   package_info_plus: ^10.2.1
@@ -140,7 +141,7 @@ dependencies:
   drift_flutter: ^0.3.1
   pasteboard: ^0.5.0
   pretty_qr_code: ^3.6.0
-  flutter_zxing: ^3.0.1
+  mobile_scanner: ^7.4.0
   zxing2: ^0.2.4
   slang: ^4.19.0
   slang_flutter: ^4.19.0
@@ -150,6 +151,8 @@ dependencies:
   material3_expressive_loading_indicator: ^0.1.2
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   drift_dev: 2.34.6
   build_runner: ^2.13.1

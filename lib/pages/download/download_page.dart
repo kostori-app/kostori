@@ -9,7 +9,9 @@ import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/download_filter.dart';
+import 'package:kostori/pages/download/download_settings_sheet.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
+import 'package:kostori/pages/download/torrent_tab.dart';
 import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/services/download/download_task.dart';
 import 'package:kostori/network/external_player.dart';
@@ -36,18 +38,14 @@ class _DownloadPageState extends State<DownloadPage>
   /// 点已选中的项即取消筛选回到「全部」）
   String _recordExistsFilter = readDownloadFilter(_recordFilterKey, 'all');
 
-  late final TabController _tabCtrl = TabController(length: 2, vsync: this)
+  late final TabController _tabCtrl = TabController(length: 3, vsync: this)
     ..addListener(() => setState(() {}));
 
   /// 下载记录 tab 的分组管理入口
   final _recordsKey = GlobalKey<_RecordsTabState>();
 
   bool get _isRecordsTab =>
-      (_tabCtrl.animation?.value ?? _tabCtrl.index.toDouble()).round().clamp(
-        0,
-        1,
-      ) ==
-      1;
+      (_tabCtrl.animation?.value ?? _tabCtrl.index.toDouble()).round() == 1;
 
   @override
   void initState() {
@@ -101,141 +99,11 @@ class _DownloadPageState extends State<DownloadPage>
     );
   }
 
-  /// 下载设置弹窗：并发数 + 仅 WiFi
+  /// 下载设置弹窗（下载 / 种子 两个 Tab）
   void _showSettings(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
-          final concurrent =
-              appdata.implicitData['downloadConcurrent'] as int? ?? 2;
-          final segment =
-              appdata.implicitData['downloadSegmentConcurrent'] as int? ?? 4;
-          final wifiOnly =
-              appdata.implicitData['downloadWifiOnly'] as bool? ?? false;
-          final ignoreEpisodeTitle =
-              appdata.implicitData['downloadIgnoreEpisodeTitle'] as bool? ??
-              false;
-
-          Widget sliderRow({
-            required String label,
-            required int value,
-            required int min,
-            required int max,
-            required void Function(int) onChanged,
-          }) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(child: Text(label)),
-                  SizedBox(
-                    width: 220,
-                    child: Slider(
-                      value: value.toDouble(),
-                      min: min.toDouble(),
-                      max: max.toDouble(),
-                      divisions: max - min,
-                      label: '$value',
-                      onChanged: (v) {
-                        onChanged(v.round());
-                        setSheetState(() {});
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 32, child: Text('$value')),
-                ],
-              ),
-            );
-          }
-
-          return Sheet(
-            title: t.downloadSettings,
-            icon: Icons.settings_outlined,
-            initialSize: 0.5,
-            builder: (sheetCtx, sc) => SingleChildScrollView(
-              controller: sc,
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  sliderRow(
-                    label: t.downloadConcurrent,
-                    value: concurrent,
-                    min: 1,
-                    max: 4,
-                    onChanged: (v) {
-                      appdata.implicitData['downloadConcurrent'] = v;
-                      appdata.writeImplicitData();
-                      DownloadManager.instance.poke();
-                    },
-                  ),
-                  sliderRow(
-                    label: t.downloadSegmentConcurrent,
-                    value: segment,
-                    min: 1,
-                    max: 8,
-                    onChanged: (v) {
-                      appdata.implicitData['downloadSegmentConcurrent'] = v;
-                      appdata.writeImplicitData();
-                    },
-                  ),
-                  ListTile(
-                    title: Text(t.downloadIgnoreEpisodeTitle),
-                    subtitle: Text(t.downloadIgnoreEpisodeTitleDesc),
-                    trailing: CustomSwitch(
-                      value: ignoreEpisodeTitle,
-                      onChanged: (v) {
-                        appdata.implicitData['downloadIgnoreEpisodeTitle'] = v;
-                        appdata.writeImplicitData();
-                        setSheetState(() {});
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    title: Text(t.downloadWifiOnly),
-                    trailing: CustomSwitch(
-                      value: wifiOnly,
-                      onChanged: (v) {
-                        appdata.implicitData['downloadWifiOnly'] = v;
-                        appdata.writeImplicitData();
-                        setSheetState(() {});
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.folder_outlined),
-                    title: Text(t.downloadDir),
-                    // 剩余/总量空间已移到页面外部 StorageBar 常驻显示，
-                    // 这里只保留目录本身
-                    subtitle: Text(
-                      _currentDownloadDir(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onTap: () async {
-                      final dir = await selectDirectory();
-                      if (dir != null && dir.isNotEmpty) {
-                        appdata.implicitData['downloadDir'] = dir;
-                        appdata.writeImplicitData();
-                        setSheetState(() {});
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
+    showDownloadSettingsSheet(context);
   }
 
-  String _currentDownloadDir() {
-    final dir = appdata.implicitData['downloadDir'] as String?;
-    if (dir != null && dir.isNotEmpty) return dir;
-    return '${App.dataPath}/downloads';
-  }
 
   @override
   void dispose() {
@@ -258,6 +126,11 @@ class _DownloadPageState extends State<DownloadPage>
       appBar: Appbar(
         title: Text(t.download),
         actions: [
+          IconButton(
+            tooltip: t.torrentAdd,
+            icon: const Icon(Icons.add_link),
+            onPressed: () => showAddTorrentSheet(context),
+          ),
           IconButton(
             tooltip: _sortByName ? t.sortModeName : t.sortModeTime,
             icon: Icon(_sortByName ? Icons.sort_by_alpha : Icons.sort),
@@ -299,6 +172,7 @@ class _DownloadPageState extends State<DownloadPage>
                   key: _recordsKey,
                   existsFilter: _recordExistsFilter,
                 ),
+                const TorrentTab(),
               ],
             ),
           ),
@@ -369,8 +243,7 @@ class _DownloadAppbarBottom extends StatelessWidget
         // 右侧筛选会“移动完成后一会才出现/消失”；动画值过半即切换
         final isRecords =
             (controller.animation?.value ?? controller.index.toDouble())
-                .round()
-                .clamp(0, 1) ==
+                .round() ==
             1;
         return SizedBox(
           height: _height,
@@ -380,7 +253,7 @@ class _DownloadAppbarBottom extends StatelessWidget
               Expanded(
                 child: CapsuleTabBar(
                   controller: controller,
-                  labels: [t.downloadActive, t.downloadRecords],
+                  labels: [t.downloadActive, t.downloadRecords, t.torrentTab],
                   height: _height,
                   center: false,
                   padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),

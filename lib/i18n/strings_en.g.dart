@@ -8756,6 +8756,132 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	String get logFileSizeMb => 'Log file size limit (MB)';
 
 	late final Translations$monthNames$en monthNames = Translations$monthNames$en.internal(_root);
+
+	/// en: 'Torrent Stream'
+	String get torrentStream => 'Torrent Stream';
+
+	/// en: 'Paste magnet link'
+	String get torrentMagnetHint => 'Paste magnet link';
+
+	/// en: 'Play'
+	String get torrentPlay => 'Play';
+
+	/// en: 'Parse'
+	String get torrentParse => 'Parse';
+
+	/// en: 'Add Torrent'
+	String get torrentAdd => 'Add Torrent';
+
+	/// en: 'Torrent Settings'
+	String get torrentSettings => 'Torrent Settings';
+
+	/// en: 'Stream'
+	String get torrentModeStream => 'Stream';
+
+	/// en: 'Download'
+	String get torrentModeDownload => 'Download';
+
+	/// en: 'Getting metadata'
+	String get torrentStatusMetadata => 'Getting metadata';
+
+	/// en: 'Downloading'
+	String get torrentStatusDownloading => 'Downloading';
+
+	/// en: 'Paused'
+	String get torrentStatusPaused => 'Paused';
+
+	/// en: 'Completed'
+	String get torrentStatusCompleted => 'Completed';
+
+	/// en: 'Failed'
+	String get torrentStatusFailed => 'Failed';
+
+	/// en: 'Save directory'
+	String get torrentSaveDir => 'Save directory';
+
+	/// en: 'Download limit'
+	String get torrentDownloadLimit => 'Download limit';
+
+	/// en: 'Upload limit'
+	String get torrentUploadLimit => 'Upload limit';
+
+	/// en: 'DHT'
+	String get torrentDht => 'DHT';
+
+	/// en: 'Local peer discovery (LSD)'
+	String get torrentLsd => 'Local peer discovery (LSD)';
+
+	/// en: 'UPnP/NAT-PMP'
+	String get torrentUpnp => 'UPnP/NAT-PMP';
+
+	/// en: 'Force encryption'
+	String get torrentEncrypt => 'Force encryption';
+
+	/// en: 'Stop seeding when finished'
+	String get torrentStopSeed => 'Stop seeding when finished';
+
+	/// en: 'Select files'
+	String get torrentSelectFiles => 'Select files';
+
+	/// en: 'Apply selection'
+	String get torrentApplySelection => 'Apply selection';
+
+	/// en: 'Delete'
+	String get torrentDelete => 'Delete';
+
+	/// en: 'No torrent tasks'
+	String get torrentEmpty => 'No torrent tasks';
+
+	/// en: 'Torrents'
+	String get torrentTab => 'Torrents';
+
+	/// en: 'Unlimited'
+	String get torrentUnlimited => 'Unlimited';
+
+	/// en: 'Info'
+	String get torrentInfo => 'Info';
+
+	/// en: 'Content'
+	String get torrentContent => 'Content';
+
+	/// en: 'Save path'
+	String get torrentSavePathLabel => 'Save path';
+
+	/// en: 'Info hash'
+	String get torrentInfoHashLabel => 'Info hash';
+
+	/// en: 'Progress'
+	String get torrentProgressLabel => 'Progress';
+
+	/// en: 'Select a file to play'
+	String get torrentPickFile => 'Select a file to play';
+
+	/// en: 'Fetching metadata…'
+	String get torrentFetchingMeta => 'Fetching metadata…';
+
+	/// en: 'Buffering…'
+	String get torrentBuffering => 'Buffering…';
+
+	/// en: 'Stop'
+	String get torrentStop => 'Stop';
+
+	/// en: 'Please enter a magnet link'
+	String get torrentNeedMagnet => 'Please enter a magnet link';
+
+	/// en: 'Peers'
+	String get torrentPeers => 'Peers';
+
+	/// en: 'Trackers'
+	String get torrentTrackers => 'Trackers';
+
+	/// en: 'Tracker list URL'
+	String get torrentTrackerUrlHint => 'Tracker list URL';
+
+	/// en: 'Fetch trackers'
+	String get torrentFetchTrackers => 'Fetch trackers';
+
+	/// en: 'One tracker per line; appended to the magnet automatically'
+	String get torrentTrackersHint => 'One tracker per line; appended to the magnet automatically';
 }
 
 // Path: colors
@@ -11918,6 +12044,48 @@ extension on Translations {
 			'monthNames.oct' => 'October',
 			'monthNames.nov' => 'November',
 			'monthNames.dec' => 'December',
+			'torrentStream' => 'Torrent Stream',
+			'torrentMagnetHint' => 'Paste magnet link',
+			'torrentPlay' => 'Play',
+			'torrentParse' => 'Parse',
+			'torrentAdd' => 'Add Torrent',
+			'torrentSettings' => 'Torrent Settings',
+			'torrentModeStream' => 'Stream',
+			'torrentModeDownload' => 'Download',
+			'torrentStatusMetadata' => 'Getting metadata',
+			'torrentStatusDownloading' => 'Downloading',
+			'torrentStatusPaused' => 'Paused',
+			'torrentStatusCompleted' => 'Completed',
+			'torrentStatusFailed' => 'Failed',
+			'torrentSaveDir' => 'Save directory',
+			'torrentDownloadLimit' => 'Download limit',
+			'torrentUploadLimit' => 'Upload limit',
+			'torrentDht' => 'DHT',
+			'torrentLsd' => 'Local peer discovery (LSD)',
+			'torrentUpnp' => 'UPnP/NAT-PMP',
+			'torrentEncrypt' => 'Force encryption',
+			'torrentStopSeed' => 'Stop seeding when finished',
+			'torrentSelectFiles' => 'Select files',
+			'torrentApplySelection' => 'Apply selection',
+			'torrentDelete' => 'Delete',
+			'torrentEmpty' => 'No torrent tasks',
+			'torrentTab' => 'Torrents',
+			'torrentUnlimited' => 'Unlimited',
+			'torrentInfo' => 'Info',
+			'torrentContent' => 'Content',
+			'torrentSavePathLabel' => 'Save path',
+			'torrentInfoHashLabel' => 'Info hash',
+			'torrentProgressLabel' => 'Progress',
+			'torrentPickFile' => 'Select a file to play',
+			'torrentFetchingMeta' => 'Fetching metadata…',
+			'torrentBuffering' => 'Buffering…',
+			'torrentStop' => 'Stop',
+			'torrentNeedMagnet' => 'Please enter a magnet link',
+			'torrentPeers' => 'Peers',
+			'torrentTrackers' => 'Trackers',
+			'torrentTrackerUrlHint' => 'Tracker list URL',
+			'torrentFetchTrackers' => 'Fetch trackers',
+			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',
 			_ => null,
 		};
 	}

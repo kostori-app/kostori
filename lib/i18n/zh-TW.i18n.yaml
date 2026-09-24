@@ -2984,3 +2984,46 @@ monthNames:
   oct: 十月
   nov: 十一月
   dec: 十二月
+
+torrentStream: 種子播放
+torrentMagnetHint: 貼上磁力連結
+torrentPlay: 播放
+torrentParse: 解析
+torrentAdd: 新增種子
+torrentSettings: 種子設定
+torrentModeStream: 邊下邊播
+torrentModeDownload: 下載保存
+torrentStatusMetadata: 取得中介資料
+torrentStatusDownloading: 下載中
+torrentStatusPaused: 已暫停
+torrentStatusCompleted: 已完成
+torrentStatusFailed: 失敗
+torrentSaveDir: 保存目錄
+torrentDownloadLimit: 下載限速
+torrentUploadLimit: 上傳限速
+torrentDht: DHT 網路
+torrentLsd: 區域網路探索(LSD)
+torrentUpnp: UPnP/NAT-PMP
+torrentEncrypt: 強制加密連線
+torrentStopSeed: 完成後停止做種
+torrentSelectFiles: 選擇檔案
+torrentApplySelection: 套用選擇
+torrentDelete: 刪除
+torrentEmpty: 尚無種子任務
+torrentTab: 種子
+torrentUnlimited: 不限
+torrentInfo: 基本資訊
+torrentContent: 內容
+torrentSavePathLabel: 保存路徑
+torrentInfoHashLabel: 資訊雜湊
+torrentProgressLabel: 進度
+torrentPickFile: 選擇要播放的檔案
+torrentFetchingMeta: 正在取得中介資料…
+torrentBuffering: 正在緩衝…
+torrentStop: 停止
+torrentNeedMagnet: 請輸入磁力連結
+torrentPeers: 連線
+torrentTrackers: Tracker 列表
+torrentTrackerUrlHint: Tracker 列表網址
+torrentFetchTrackers: 取得 Tracker
+torrentTrackersHint: 每行一個 tracker，播放時自動附加到磁力連結

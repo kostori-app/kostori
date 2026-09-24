@@ -2983,3 +2983,46 @@ monthNames:
   oct: October
   nov: November
   dec: December
+
+torrentStream: Torrent Stream
+torrentMagnetHint: Paste magnet link
+torrentPlay: Play
+torrentParse: Parse
+torrentAdd: Add Torrent
+torrentSettings: Torrent Settings
+torrentModeStream: Stream
+torrentModeDownload: Download
+torrentStatusMetadata: Getting metadata
+torrentStatusDownloading: Downloading
+torrentStatusPaused: Paused
+torrentStatusCompleted: Completed
+torrentStatusFailed: Failed
+torrentSaveDir: Save directory
+torrentDownloadLimit: Download limit
+torrentUploadLimit: Upload limit
+torrentDht: DHT
+torrentLsd: Local peer discovery (LSD)
+torrentUpnp: UPnP/NAT-PMP
+torrentEncrypt: Force encryption
+torrentStopSeed: Stop seeding when finished
+torrentSelectFiles: Select files
+torrentApplySelection: Apply selection
+torrentDelete: Delete
+torrentEmpty: No torrent tasks
+torrentTab: Torrents
+torrentUnlimited: Unlimited
+torrentInfo: Info
+torrentContent: Content
+torrentSavePathLabel: Save path
+torrentInfoHashLabel: Info hash
+torrentProgressLabel: Progress
+torrentPickFile: Select a file to play
+torrentFetchingMeta: Fetching metadata…
+torrentBuffering: Buffering…
+torrentStop: Stop
+torrentNeedMagnet: Please enter a magnet link
+torrentPeers: Peers
+torrentTrackers: Trackers
+torrentTrackerUrlHint: Tracker list URL
+torrentFetchTrackers: Fetch trackers
+torrentTrackersHint: One tracker per line; appended to the magnet automatically
