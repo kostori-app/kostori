@@ -119,6 +119,15 @@ class PlayerActionButtons extends StatelessWidget {
             });
           }),
         ),
+        // 正在用种子播放：可切回在线源（本集）
+        if (pc.isTorrentPlayback)
+          IconTileButton(
+            icon: const Icon(Icons.cloud_outlined),
+            label: t.torrentSwitchOnline,
+            onTap: () => _run(() {
+              pc.playEpisodeFromSource(pc.currentEpisoded, pc.currentRoad);
+            }),
+          ),
         if (!pc.isFullScreen)
           IconTileButton(
             icon: const Icon(Icons.article_outlined),

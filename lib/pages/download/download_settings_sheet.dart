@@ -68,32 +68,18 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet>
             child: TabBarView(
               controller: _tabCtrl,
               children: [
-                _centered(
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.only(top: 8, bottom: 24),
-                    child: _downloadSettings(),
-                  ),
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 8, bottom: 24),
+                  child: _downloadSettings(),
                 ),
-                _centered(
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.only(top: 8, bottom: 24),
-                    child: _torrentSettings(),
-                  ),
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 8, bottom: 24),
+                  child: _torrentSettings(),
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// 除顶部切换胶囊外，设置内容整体居中（限制宽度）。
-  Widget _centered(Widget child) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: child,
       ),
     );
   }
@@ -200,7 +186,7 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet>
           const SizedBox(height: 6),
           CapsuleOptions(
             wrap: true,
-            alignment: WrapAlignment.center,
+            alignment: WrapAlignment.start,
             children: [
               for (final v in values)
                 CapsuleOption(
@@ -275,7 +261,7 @@ class _TorrentSettingsState extends State<_TorrentSettings> {
           const SizedBox(height: 6),
           CapsuleOptions(
             wrap: true,
-            alignment: WrapAlignment.center,
+            alignment: WrapAlignment.start,
             children: [
               for (final v in _speeds)
                 CapsuleOption(
@@ -349,11 +335,13 @@ class _TrackerEditorPageState extends State<_TrackerEditorPage> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
               _card(
-                SwitchListTile(
+                ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                   title: Text(t.torrentTrackersAuto),
-                  value: _m.trackerAutoAdd,
-                  onChanged: (v) => setState(() => _m.setTrackerAutoAdd(v)),
+                  trailing: CustomSwitch(
+                    value: _m.trackerAutoAdd,
+                    onChanged: (v) => setState(() => _m.setTrackerAutoAdd(v)),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -375,9 +363,10 @@ class _TrackerEditorPageState extends State<_TrackerEditorPage> {
                       const SizedBox(height: 10),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: FilledButton.tonalIcon(
-                          onPressed: _fetching ? null : _fetch,
-                          icon: _fetching
+                        child: CapsuleButton(
+                          primary: true,
+                          enabled: !_fetching,
+                          leading: _fetching
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
@@ -386,7 +375,8 @@ class _TrackerEditorPageState extends State<_TrackerEditorPage> {
                                   ),
                                 )
                               : const Icon(Icons.download, size: 18),
-                          label: Text(t.torrentFetchTrackers),
+                          text: t.torrentFetchTrackers,
+                          onTap: _fetch,
                         ),
                       ),
                     ],

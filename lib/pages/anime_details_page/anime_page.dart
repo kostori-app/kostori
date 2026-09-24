@@ -48,8 +48,10 @@ import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.da
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
+import 'package:kostori/pages/anime_details_page/torrent_resource_sheet.dart';
 import 'package:kostori/services/download/download_manager.dart';
 import 'package:kostori/services/download/download_task.dart';
+import 'package:kostori/services/torrent/torrent_binding.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/translations.dart';

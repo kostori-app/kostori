@@ -20,6 +20,90 @@ const String kTorrentUploadLimit = 'torrentUploadLimit';
 const String kTorrentStopSeed = 'torrentStopSeed';
 const String kTorrentCustomNodes = 'torrentCustomNodes';
 
+/// 内置公共 tracker；与磁力自带、用户在「种子设置」里配置的列表合并去重后使用。
+const List<String> kDefaultTrackers = [
+  'http://1337.abcvg.info:80/announce',
+  'http://bt1.archive.org:6969/announce',
+  'http://bt2.archive.org:6969/announce',
+  'http://ipv4announce.sktorrent.eu:6969/announce',
+  'http://nyaa.tracker.wf:7777/announce',
+  'http://torrentsmd.com:8080/announce',
+  'http://tracker.bt4g.com:2095/announce',
+  'http://tracker.dhitechnical.com:6969/announce',
+  'http://tracker.mywaifu.best:6969/announce',
+  'http://tracker.renfei.net:8080/announce',
+  'http://tracker.waaa.moe:6969/announce',
+  'http://tracker810.xyz:11450/announce',
+  'http://www.wareztorrent.com:80/announce',
+  'https://004430.xyz:443/announce',
+  'https://1337.abcvg.info:443/announce',
+  'https://ht.therarbg.to:443/announce',
+  'https://t.213891.xyz:443/announce',
+  'https://tr.abiir.top:443/announce',
+  'https://tr.abir.ga:443/announce',
+  'https://tr.zukizuki.org:443/announce',
+  'https://tracker.7471.top:443/announce',
+  'https://tracker.bt4g.com:443/announce',
+  'https://tracker.foreverpirates.co:443/announce',
+  'https://tracker.gcrenwp.top:443/announce',
+  'https://tracker.kuroy.me:443/announce',
+  'https://tracker.leechshield.link:443/announce',
+  'https://tracker.linvk.com:443/announce',
+  'https://tracker.nekomi.cn:443/announce',
+  'https://tracker.pmman.tech:443/announce',
+  'https://tracker.yemekyedim.com:443/announce',
+  'https://tracker.zhuqiy.com:443/announce',
+  'https://tracker1.520.jp:443/announce',
+  'udp://bittorrent-tracker.e-n-c-r-y-p-t.net:1337/announce',
+  'udp://evan.im:6969/announce',
+  'udp://explodie.org:6969/announce',
+  'udp://ipv6.govt.hu:6969/announce',
+  'udp://mail.segso.net:6969/announce',
+  'udp://martin-gebhardt.eu:25/announce',
+  'udp://ns575949.ip-51-222-82.net:6969/announce',
+  'udp://obey.torrentonline.cc:42069/announce',
+  'udp://open.demonii.com:1337/announce',
+  'udp://open.ftorrent.com:443/announce',
+  'udp://open.stealth.si:80/announce',
+  'udp://open.tracker.ink:6969/announce',
+  'udp://opentor.org:2710/announce',
+  'udp://p4p.arenabg.com:1337/announce',
+  'udp://retracker.hotplug.ru:2710/announce',
+  'udp://t.overflow.biz:6969/announce',
+  'udp://torrent.tracker.durukanbal.com:6969/announce',
+  'udp://torrentclub.online:1984/announce',
+  'udp://torrentclub.online:54123/announce',
+  'udp://tr.btube3.com:2010/announce',
+  'udp://tr3.ysagin.top:2715/announce',
+  'udp://tracker-udp.gbitt.info:80/announce',
+  'udp://tracker.0x7c0.com:6969/announce',
+  'udp://tracker.aruku.ovh:8081/announce',
+  'udp://tracker.auctor.tv:6969/announce',
+  'udp://tracker.breizh.pm:6969/announce',
+  'udp://tracker.cn.nyaa.net:6969/announce',
+  'udp://tracker.corpscorp.online:80/announce',
+  'udp://tracker.cynma.tv:6969/announce',
+  'udp://tracker.dler.com:6969/announce',
+  'udp://tracker.dler.org:6969/announce',
+  'udp://tracker.farted.net:6969/announce',
+  'udp://tracker.gmi.gd:6969/announce',
+  'udp://tracker.ilibr.org:6969/announce',
+  'udp://tracker.k.vu:6969/announce',
+  'udp://tracker.nexusstream.eu:6969/announce',
+  'udp://tracker.nyaa.net:6969/announce',
+  'udp://tracker.opentrackr.com:6969/announce',
+  'udp://tracker.opentrackr.org:1337/announce',
+  'udp://tracker.peerfect.org:6969/announce',
+  'udp://tracker.publictracker.xyz:6969/announce',
+  'udp://tracker.qu.ax:6969/announce',
+  'udp://tracker.skyts.net:6969/announce',
+  'udp://tracker.teambelgium.net:6969/announce',
+  'udp://tracker.torrent.eu.org:451/announce',
+  'udp://whybother.torrentonline.cc:42069/announce',
+  'udp://zer0day.ch:1337/announce',
+  'wss://tracker.openwebtorrent.com:443/announce',
+];
+
 /// 视频/音频扩展名，用于判断是否可播放。
 const _streamableExt = {
   'mp4',
@@ -302,9 +386,10 @@ class TorrentManager extends ChangeNotifier {
     TorrentStopPolicy stopAfter = TorrentStopPolicy.none,
   }) async {
     final id = '${DateTime.now().millisecondsSinceEpoch}';
+    final effectiveMagnet = _augmentTrackers(magnet);
     final job = TorrentJob(
       id: id,
-      magnet: magnet,
+      magnet: effectiveMagnet,
       torrentPath: p.join(_torrentDir!.path, '$id.torrent'),
       savePath: downloadDir,
       createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -316,7 +401,7 @@ class TorrentManager extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final bytes = await _fetchMetadata(magnet);
+      final bytes = await _fetchMetadata(effectiveMagnet);
       await File(job.torrentPath).writeAsBytes(bytes, flush: true);
       await _prepareEngine(
         job,
@@ -335,6 +420,24 @@ class TorrentManager extends ChangeNotifier {
     _persist();
     notifyListeners();
     return job;
+  }
+
+  /// 给磁力补 tracker：合并「磁力自带 + 用户配置 + 内置公共」并去重。
+  /// 搜索结果里的磁力常常没带 tracker，自己也没配置时也能找到 peer。
+  String _augmentTrackers(String magnet) {
+    final existing = <String>{
+      ...?Uri.tryParse(magnet)?.queryParametersAll['tr'],
+    };
+    final merged = <String>{
+      if (trackerAutoAdd) ...trackers,
+      ...kDefaultTrackers,
+    }..removeWhere(existing.contains);
+    if (merged.isEmpty) return magnet;
+    final sb = StringBuffer(magnet);
+    for (final t in merged) {
+      sb.write('&tr=${Uri.encodeComponent(t)}');
+    }
+    return sb.toString();
   }
 
   /// 下载 magnet 元数据，返回**原始 info 字典字节**（BEP 09）。

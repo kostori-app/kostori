@@ -26,6 +26,10 @@ import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
+import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
+import 'package:kostori/services/torrent/torrent_binding.dart';
+import 'package:kostori/services/torrent/torrent_job.dart';
+import 'package:kostori/services/torrent/torrent_manager.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// 播放器对外操作接口：`_WatcherState` 私有化后，外部（播放页/详情页/局域网等）
@@ -67,6 +71,9 @@ abstract class WatcherPlayer {
 
   /// 加载指定线路的某一集
   Future<void> loadInfo(int episodeIndex, int road);
+
+  /// 忽略种子绑定，强制用在线源加载某集（播放中切回原源）
+  Future<void> loadInfoFromSource(int episodeIndex, int road);
 
   /// 播放已下载的本地文件：仍复用当前播放器与选集/进度逻辑，
   /// 只是媒体源换成本地文件（不再向源解析地址，离线也能播）。
@@ -345,6 +352,15 @@ class _WatcherState extends State<Watcher>
   }
 
   @override
+  Future<void> loadInfoFromSource(int episodeIndex, int road) async {
+    await _loadEpisode(
+      episodeIndex: episodeIndex,
+      road: road,
+      preferSource: true,
+    );
+  }
+
+  @override
   Future<void> loadLocalFile(
     String path, {
     required int episodeIndex,
@@ -368,11 +384,132 @@ class _WatcherState extends State<Watcher>
     );
   }
 
+  /// 按选定的 BT 线路解析某一集的 loopback 播放 URL，否则 null。
+  /// ① 精确绑定 ② 已有种子（整季合集）按文件名匹配本集 ③ 在该线路（站+组）内自动检索
+  Future<String?> _btUrlFor(
+    String contentKey,
+    BtLine line,
+    int road,
+    int episodeIndex,
+    String title,
+  ) async {
+    if (_isSeries) return null;
+    final manager = TorrentManager.instance;
+    await manager.init();
+
+    TorrentJob? jobById(String id) {
+      for (final j in manager.jobs) {
+        if (j.id == id) return j;
+      }
+      return null;
+    }
+
+    Future<String?> tryStream(TorrentJob job, int index) async {
+      try {
+        return await manager.streamUrl(job, index);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    void bind(TorrentJob job, int index, List<TorrentFileEntry> files) {
+      TorrentBindingStore.set(
+        contentKey,
+        road,
+        episodeIndex,
+        TorrentBinding(
+          jobId: job.id,
+          filePath: files[index].path,
+          label: files[index].name,
+        ),
+      );
+    }
+
+    // ① 精确绑定
+    final binding = TorrentBindingStore.get(contentKey, road, episodeIndex);
+    if (binding != null) {
+      final job = jobById(binding.jobId);
+      if (job == null) {
+        TorrentBindingStore.remove(contentKey, road, episodeIndex);
+      } else {
+        final files = manager.filesOf(job);
+        final idx = files.indexWhere((f) => f.path == binding.filePath);
+        if (idx >= 0) {
+          final url = await tryStream(job, idx);
+          if (url != null) return url;
+        }
+      }
+    }
+
+    // ② 整季合集：在同一内容已绑定的种子任务里找匹配本集的文件
+    final jobIds = TorrentBindingStore.forContent(
+      contentKey,
+    ).values.map((b) => b.jobId).toSet();
+    for (final id in jobIds) {
+      final job = jobById(id);
+      if (job == null) continue;
+      final files = manager.filesOf(job);
+      final idx = files.indexWhere(
+        (f) => f.isStreamable && btEpisodeOf(f.name) == episodeIndex,
+      );
+      if (idx >= 0) {
+        bind(job, idx, files);
+        final url = await tryStream(job, idx);
+        if (url != null) return url;
+      }
+    }
+
+    // ③ 该线路（站 + 组）内自动检索本集，取最佳结果
+    BtIndexer? indexer;
+    for (final e in BtIndexers.all) {
+      if (e.key == line.siteKey) {
+        indexer = e;
+        break;
+      }
+    }
+    if (indexer == null) return null;
+    List<BtSearchResult> results = const [];
+    try {
+      results = await indexer.search(title);
+    } catch (_) {}
+    if (!mounted) return null;
+    final matches = results.where((r) {
+      final group = (r.fansub ?? '').trim().isNotEmpty
+          ? r.fansub!.trim()
+          : btGroupOf(r.title);
+      if (line.group.isNotEmpty && group != line.group) return false;
+      final ep = btEpisodeOf(r.title);
+      return ep == episodeIndex || ep == 0;
+    }).toList();
+    if (matches.isEmpty) return null;
+    matches.sort((a, b) {
+      final ea = btEpisodeOf(a.title) == episodeIndex ? 0 : 1;
+      final eb = btEpisodeOf(b.title) == episodeIndex ? 0 : 1;
+      if (ea != eb) return ea.compareTo(eb);
+      return b.size.compareTo(a.size);
+    });
+    final job = await manager.add(matches.first.magnet);
+    List<TorrentFileEntry> files = const [];
+    for (var i = 0; i < 120; i++) {
+      if (!mounted) return null;
+      files = manager.filesOf(job).where((f) => f.isStreamable).toList();
+      if (files.isNotEmpty || (job.error ?? '').isNotEmpty) break;
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    if (files.isEmpty) return null;
+    var idx = files.indexWhere((f) => btEpisodeOf(f.name) == episodeIndex);
+    if (idx < 0) idx = files.length == 1 ? 0 : -1;
+    if (idx < 0) return null;
+    bind(job, idx, files);
+    return tryStream(job, idx);
+  }
+
   /// 核心加载流程：解析播放地址 → 初始化播放器 → 加载媒体 → 缓冲
   Future<void> _loadEpisode({
     required int episodeIndex,
     required int road,
     String? localPath,
+    bool preferSource = false,
     bool cfRetried = false,
   }) async {
     // 一起看成员：禁止手动切换集数，只能跟随房主（房主同步会临时解锁放行）
@@ -441,6 +578,31 @@ class _WatcherState extends State<Watcher>
 
       // 步骤0：解析视频地址；已下载的本地文件直接用本地路径（离线可播）
       playerController.loadingStep = 0;
+
+      // 走 BT 线：用 loopback URL 播放（当作本地直连，不走源解析）
+      if (localPath == null && !preferSource) {
+        final contentKey = playbackContentKey(
+          bangumiId: bangumiId,
+          sourceKey: anime.sourceKey,
+          animeId: anime.id,
+        );
+        final line = BtLineStore.line(contentKey);
+        if (line != null && BtLineStore.isActive(contentKey)) {
+          final btUrl = await _btUrlFor(
+            contentKey,
+            line,
+            road,
+            epIndex,
+            anime.title,
+          );
+          if (gen != _loadGen || !mounted) return;
+          if (btUrl == null) {
+            // BT 线路没有这一集（如组只发了前 12 集）：回退普通源并提示
+            App.rootContext.showMessage(message: t.torrentFallbackSource);
+          }
+          localPath = btUrl;
+        }
+      }
       playerController.isParsing = localPath == null;
 
       String playUrl;

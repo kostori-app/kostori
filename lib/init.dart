@@ -21,6 +21,8 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/services/download/download_manager.dart';
+import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
+import 'package:kostori/services/torrent/torrent_manager.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/js_engine.dart';
@@ -227,6 +229,10 @@ void _checkOldConfigs() {
 
 Future<void> _checkAppUpdates() async {
   AnimeSourceSettings.checkAnimeSourceUpdate();
+  // 加载种子任务（供「绑定种子到某一集」的播放路径使用）
+  TorrentManager.instance.init();
+  // 加载 BT 资源站配置（<dataPath>/bt_source/*.json）
+  BtSources.ensureLoaded();
   await Bangumi.instance.getCalendarData();
   await Bangumi.instance.checkBangumiData();
   if (appdata.settings['checkUpdateOnStart']) {

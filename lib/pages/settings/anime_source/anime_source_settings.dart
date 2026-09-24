@@ -582,6 +582,16 @@ class _BodyState extends State<_Body> with RouteAware {
                         },
                       ),
                       IconTileButton(
+                        icon: const Icon(Icons.podcasts_outlined),
+                        label: t.torrentSources,
+                        onTap: () {
+                          showPopUpWidget(
+                            App.rootContext,
+                            const BtSourcesPage(),
+                          );
+                        },
+                      ),
+                      IconTileButton(
                         icon: const Icon(Icons.network_check_outlined),
                         label: t.pingTest,
                         onTap: () {

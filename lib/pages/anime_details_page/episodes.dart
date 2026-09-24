@@ -30,6 +30,16 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   bool _downloadedLoaded = false;
   StreamSubscription<void>? _recordsSub;
 
+  /// 某集绑定的种子资源：`road|episode` → binding
+  Map<String, TorrentBinding> _torrentBindings = {};
+
+  /// 内容标识（有 bangumiId 优先，便于跨源共享绑定/历史）
+  String get _contentKey => playbackContentKey(
+    bangumiId: state.history?.bangumiId,
+    sourceKey: state.anime.sourceKey,
+    animeId: state.anime.id,
+  );
+
   Future<void> _loadDownloaded() async {
     final sourceKey = state.anime.sourceKey;
     final files = await DownloadManager.downloadedFilesFor(sourceKey);
@@ -38,8 +48,46 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
       setState(() {
         _downloaded = files;
         _downloadedKeys = keys;
+        _torrentBindings = TorrentBindingStore.forContent(_contentKey);
       });
     }
+  }
+
+  /// 选择一条 BT 线路（站+组），选定后当前内容走 BT 线并立即重载当前集。
+  Future<void> _onChooseBtLine() async {
+    final road = state.playerController.currentRoad;
+    final ep = state.playerController.currentEpisoded;
+    final targetEp = ep >= 1 ? ep : 1;
+    final line = await showTorrentResourcePicker(
+      context,
+      initialKeyword: state.anime.title,
+      episode: targetEp,
+    );
+    if (line == null || !mounted) return;
+    BtLineStore.setLine(_contentKey, line);
+    BtLineStore.setActive(_contentKey, true);
+    setState(() {});
+    if (targetEp == ep && road == state.playerController.currentRoad) {
+      await state.playerController.reloadCurrent();
+    } else {
+      await state.playerController.playEpisode(targetEp, road);
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// 长按：在普通源线 与 已选 BT 线 之间切换（没选过则先选）。
+  Future<void> _onToggleBtLine() async {
+    final contentKey = _contentKey;
+    final line = BtLineStore.line(contentKey);
+    if (line == null) {
+      await _onChooseBtLine();
+      return;
+    }
+    final active = BtLineStore.isActive(contentKey);
+    BtLineStore.setActive(contentKey, !active);
+    setState(() {});
+    await state.playerController.reloadCurrent();
+    if (mounted) setState(() {});
   }
 
   /// 系列模式：源无分集，加载与剧集平行的系列列表（复用 Anime 结构）
@@ -521,6 +569,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                         final epKey = '${state.anime.id}|$epName';
                         final localPath = _downloaded[epKey];
                         final downloaded = _downloadedKeys.contains(epKey);
+                        final torrentBinding =
+                            _torrentBindings['$playList|${index + 1}'];
 
                         return SizedBox(
                           // 只有一集时占满整行，避免显示成 1/3 宽的小格子
@@ -544,8 +594,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                               ),
                               child: InkWell(
                                 onTap: () async {
-                                  // 已下载且文件仍在：用当前播放器播本地文件
-                                  // （离线可播，不再跳去独立的本地播放器页）
+                                  // BT 线路由播放器加载时统一处理（_loadEpisode 命中即用种子）
                                   if (localPath != null) {
                                     await state.playerController.playLocalFile(
                                       localPath,
@@ -650,6 +699,15 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                             color: Colors.green,
                                           ),
                                         ),
+                                      if (torrentBinding != null)
+                                        const Padding(
+                                          padding: EdgeInsets.only(left: 4),
+                                          child: Icon(
+                                            Icons.podcasts,
+                                            size: 14,
+                                            color: Colors.orangeAccent,
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -705,6 +763,16 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
             label: t.reloadEpisode,
             onTap: () => state.playerController.reloadCurrent(),
           ),
+          if (!_isSeries)
+            IconTileButton(
+              icon: const Icon(Icons.podcasts_outlined),
+              label: t.torrentStream,
+              onTap: _onChooseBtLine,
+              onLongPress: _onToggleBtLine,
+              isActive: BtLineStore.isActive(_contentKey),
+              activeIcon: const Icon(Icons.podcasts),
+              activeColor: Theme.of(context).colorScheme.primary,
+            ),
         ],
       ),
     );

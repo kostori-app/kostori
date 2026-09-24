@@ -2990,6 +2990,33 @@ monthNames:
   dec: December
 
 torrentStream: Torrent Stream
+torrentPause: Pause
+torrentResume: Resume
+torrentClearCompleted: Clear completed
+torrentSwitchOnline: Play online source
+torrentFallbackSource: No torrent for this episode; using the online source
+torrentSources: BT sources
+torrentSourceName: Name
+torrentSourceType: Type
+torrentSourceUrl: Search URL (with {query})
+torrentSourceProvider: Provider (empty = all)
+torrentSourceItemRegex: Item regex
+torrentSourceMagnetRegex: Magnet regex
+torrentSourceTitleRegex: Title regex
+torrentSourceSizeRegex: Size regex
+torrentSourceGroupRegex: Group regex
+torrentSourceHashRegex: Hash regex
+torrentSourceMagnetTemplate: Magnet template ({hash})
+torrentSourceDateRegex: Date regex
+torrentSourceJsonPath: JSON path
+torrentSourceTitleField: Title field
+torrentSourceMagnetField: Magnet field
+torrentSourceHashField: Hash field
+torrentSourceSizeField: Size field
+torrentSourceGroupField: Group field
+torrentSourceDateField: Date field
+torrentSourcesEmpty: No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below
+torrentSourceExample: Fill example
 torrentMagnetHint: Paste magnet link
 torrentPlay: Play
 torrentParse: Parse

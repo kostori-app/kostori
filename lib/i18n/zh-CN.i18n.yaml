@@ -2989,6 +2989,33 @@ monthNames:
   dec: 十二月
 
 torrentStream: 种子播放
+torrentPause: 暂停
+torrentResume: 继续
+torrentClearCompleted: 清除已完成
+torrentSwitchOnline: 切回在线源
+torrentFallbackSource: BT 无本集，已用普通源
+torrentSources: BT 资源站
+torrentSourceName: 名称
+torrentSourceType: 类型
+torrentSourceUrl: 搜索地址（含 {query}）
+torrentSourceProvider: 聚合来源（留空表示全部）
+torrentSourceItemRegex: 条目正则
+torrentSourceMagnetRegex: 磁力正则
+torrentSourceTitleRegex: 标题正则
+torrentSourceSizeRegex: 体积正则
+torrentSourceGroupRegex: 分组正则
+torrentSourceHashRegex: 哈希正则
+torrentSourceMagnetTemplate: 磁力模板（{hash}）
+torrentSourceDateRegex: 时间正则
+torrentSourceJsonPath: JSON 路径
+torrentSourceTitleField: 标题字段
+torrentSourceMagnetField: 磁力字段
+torrentSourceHashField: 哈希字段
+torrentSourceSizeField: 体积字段
+torrentSourceGroupField: 分组字段
+torrentSourceDateField: 时间字段
+torrentSourcesEmpty: 还没有 BT 资源站：点右下角「导入」，或把 .json 配置文件放进下面目录
+torrentSourceExample: 填入示例
 torrentMagnetHint: 粘贴磁力链接
 torrentPlay: 播放
 torrentParse: 解析

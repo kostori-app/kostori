@@ -8775,6 +8775,87 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Torrent Stream'
 	String get torrentStream => 'Torrent Stream';
 
+	/// en: 'Pause'
+	String get torrentPause => 'Pause';
+
+	/// en: 'Resume'
+	String get torrentResume => 'Resume';
+
+	/// en: 'Clear completed'
+	String get torrentClearCompleted => 'Clear completed';
+
+	/// en: 'Play online source'
+	String get torrentSwitchOnline => 'Play online source';
+
+	/// en: 'No torrent for this episode; using the online source'
+	String get torrentFallbackSource => 'No torrent for this episode; using the online source';
+
+	/// en: 'BT sources'
+	String get torrentSources => 'BT sources';
+
+	/// en: 'Name'
+	String get torrentSourceName => 'Name';
+
+	/// en: 'Type'
+	String get torrentSourceType => 'Type';
+
+	/// en: 'Search URL (with {query})'
+	String get torrentSourceUrl => 'Search URL (with {query})';
+
+	/// en: 'Provider (empty = all)'
+	String get torrentSourceProvider => 'Provider (empty = all)';
+
+	/// en: 'Item regex'
+	String get torrentSourceItemRegex => 'Item regex';
+
+	/// en: 'Magnet regex'
+	String get torrentSourceMagnetRegex => 'Magnet regex';
+
+	/// en: 'Title regex'
+	String get torrentSourceTitleRegex => 'Title regex';
+
+	/// en: 'Size regex'
+	String get torrentSourceSizeRegex => 'Size regex';
+
+	/// en: 'Group regex'
+	String get torrentSourceGroupRegex => 'Group regex';
+
+	/// en: 'Hash regex'
+	String get torrentSourceHashRegex => 'Hash regex';
+
+	/// en: 'Magnet template ({hash})'
+	String get torrentSourceMagnetTemplate => 'Magnet template ({hash})';
+
+	/// en: 'Date regex'
+	String get torrentSourceDateRegex => 'Date regex';
+
+	/// en: 'JSON path'
+	String get torrentSourceJsonPath => 'JSON path';
+
+	/// en: 'Title field'
+	String get torrentSourceTitleField => 'Title field';
+
+	/// en: 'Magnet field'
+	String get torrentSourceMagnetField => 'Magnet field';
+
+	/// en: 'Hash field'
+	String get torrentSourceHashField => 'Hash field';
+
+	/// en: 'Size field'
+	String get torrentSourceSizeField => 'Size field';
+
+	/// en: 'Group field'
+	String get torrentSourceGroupField => 'Group field';
+
+	/// en: 'Date field'
+	String get torrentSourceDateField => 'Date field';
+
+	/// en: 'No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below'
+	String get torrentSourcesEmpty => 'No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below';
+
+	/// en: 'Fill example'
+	String get torrentSourceExample => 'Fill example';
+
 	/// en: 'Paste magnet link'
 	String get torrentMagnetHint => 'Paste magnet link';
 
@@ -12095,6 +12176,33 @@ extension on Translations {
 			'monthNames.nov' => 'November',
 			'monthNames.dec' => 'December',
 			'torrentStream' => 'Torrent Stream',
+			'torrentPause' => 'Pause',
+			'torrentResume' => 'Resume',
+			'torrentClearCompleted' => 'Clear completed',
+			'torrentSwitchOnline' => 'Play online source',
+			'torrentFallbackSource' => 'No torrent for this episode; using the online source',
+			'torrentSources' => 'BT sources',
+			'torrentSourceName' => 'Name',
+			'torrentSourceType' => 'Type',
+			'torrentSourceUrl' => 'Search URL (with {query})',
+			'torrentSourceProvider' => 'Provider (empty = all)',
+			'torrentSourceItemRegex' => 'Item regex',
+			'torrentSourceMagnetRegex' => 'Magnet regex',
+			'torrentSourceTitleRegex' => 'Title regex',
+			'torrentSourceSizeRegex' => 'Size regex',
+			'torrentSourceGroupRegex' => 'Group regex',
+			'torrentSourceHashRegex' => 'Hash regex',
+			'torrentSourceMagnetTemplate' => 'Magnet template ({hash})',
+			'torrentSourceDateRegex' => 'Date regex',
+			'torrentSourceJsonPath' => 'JSON path',
+			'torrentSourceTitleField' => 'Title field',
+			'torrentSourceMagnetField' => 'Magnet field',
+			'torrentSourceHashField' => 'Hash field',
+			'torrentSourceSizeField' => 'Size field',
+			'torrentSourceGroupField' => 'Group field',
+			'torrentSourceDateField' => 'Date field',
+			'torrentSourcesEmpty' => 'No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below',
+			'torrentSourceExample' => 'Fill example',
 			'torrentMagnetHint' => 'Paste magnet link',
 			'torrentPlay' => 'Play',
 			'torrentParse' => 'Parse',

@@ -134,6 +134,7 @@ String _progressText(TorrentJob job) {
 
 class _TorrentTabState extends State<TorrentTab> {
   final _m = TorrentManager.instance;
+  String _filter = 'all';
 
   @override
   void initState() {
@@ -152,10 +153,48 @@ class _TorrentTabState extends State<TorrentTab> {
     super.dispose();
   }
 
+  bool _matches(TorrentJob j) {
+    switch (_filter) {
+      case 'downloading':
+        return j.status == TorrentJobStatus.downloading ||
+            j.status == TorrentJobStatus.metadata;
+      case 'paused':
+        return j.status == TorrentJobStatus.paused;
+      case 'completed':
+        return j.status == TorrentJobStatus.completed;
+      case 'failed':
+        return j.status == TorrentJobStatus.failed;
+    }
+    return true;
+  }
+
+  Future<void> _startAll() async {
+    for (final j in _m.jobs) {
+      if (j.status == TorrentJobStatus.paused) await _m.resume(j);
+    }
+  }
+
+  void _pauseAll() {
+    for (final j in _m.jobs) {
+      if (j.status == TorrentJobStatus.downloading ||
+          j.status == TorrentJobStatus.metadata) {
+        _m.pause(j);
+      }
+    }
+  }
+
+  Future<void> _clearCompleted() async {
+    for (final j in List.of(_m.jobs)) {
+      if (j.status == TorrentJobStatus.completed) {
+        await _m.remove(j, deleteFiles: false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final jobs = _m.jobs;
-    if (jobs.isEmpty) {
+    final all = _m.jobs;
+    if (all.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -176,9 +215,96 @@ class _TorrentTabState extends State<TorrentTab> {
         ),
       );
     }
-    return ListView(
-      padding: const EdgeInsets.only(top: 4, bottom: 16),
-      children: [for (final job in jobs) _jobCard(job)],
+    final jobs = all.where(_matches).toList();
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '${t.all} (${all.length})',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+        // 筛选胶囊 + 批量操作，同一行可横滑
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+          child: Row(
+            children: [
+              CapsuleOptions(
+                children: [
+                  for (final (key, label) in [
+                    ('all', t.all),
+                    ('downloading', t.downloading),
+                    ('paused', t.paused),
+                    ('completed', t.completed),
+                    ('failed', t.failed),
+                  ])
+                    CapsuleOption(
+                      text: label,
+                      isSelected: _filter == key,
+                      onTap: () => setState(() => _filter = key),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              CapsuleButtonBar(
+                padding: EdgeInsets.zero,
+                children: [
+                  Tooltip(
+                    message: t.startAll,
+                    child: CapsuleButton(
+                      flat: true,
+                      leading: const Icon(Icons.play_arrow),
+                      onTap: _startAll,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: t.pauseAll,
+                    child: CapsuleButton(
+                      flat: true,
+                      leading: const Icon(Icons.pause),
+                      onTap: _pauseAll,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: t.torrentClearCompleted,
+                    child: CapsuleButton(
+                      flat: true,
+                      leading: const Icon(Icons.delete_sweep_outlined),
+                      onTap: _clearCompleted,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(top: 4, bottom: 16),
+            children: [for (final job in jobs) _jobCard(job)],
+          ),
+        ),
+      ],
     );
   }
 
@@ -271,15 +397,14 @@ class _TorrentTabState extends State<TorrentTab> {
                 Row(
                   children: [
                     const Spacer(),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        paused ? Icons.play_arrow : Icons.pause_circle_outline,
+                    if (!job.isFinished)
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(paused ? Icons.play_arrow : Icons.pause),
+                        tooltip: paused ? t.torrentResume : t.torrentPause,
+                        onPressed: () =>
+                            paused ? _m.resume(job) : _m.pause(job),
                       ),
-                      tooltip: paused ? t.torrentPlay : t.torrentStatusPaused,
-                      onPressed: () =>
-                          paused ? _m.resume(job) : _m.pause(job),
-                    ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.delete_outline),

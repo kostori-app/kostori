@@ -475,6 +475,14 @@ abstract class _PlayerController with Store {
     await _ownerWatcher?.loadInfo(index, road);
   }
 
+  /// 忽略种子绑定，强制用在线源播放某集（播放中从种子切回原源）
+  Future<void> playEpisodeFromSource(int index, int road) async {
+    await _ownerWatcher?.loadInfoFromSource(index, road);
+  }
+
+  /// 当前是否正在播放种子（loopback）媒体
+  bool get isTorrentPlayback => playUrl.startsWith('http://127.0.0.1:');
+
   /// 在当前播放器里播放已下载的本地文件（保持选集/进度逻辑，离线可播）
   Future<void> playLocalFile(
     String path, {
