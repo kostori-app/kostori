@@ -389,6 +389,8 @@ class TorrentManager extends ChangeNotifier {
       job.totalWanted = _wantedBytes(job, model);
       if (job.totalDone > job.totalWanted) job.totalDone = job.totalWanted;
 
+      await _migrateSingleFileLayout(job, model);
+
       final task = TorrentTask.newTask(
         model,
         _engineSavePath(job, model),
@@ -407,6 +409,8 @@ class TorrentManager extends ChangeNotifier {
         _applyEndpoints(task, model);
         job.status = TorrentJobStatus.downloading;
       } else {
+        // 加载状态文件，让暂停中的任务也能显示单文件进度
+        await task.prepare();
         job.status = TorrentJobStatus.paused;
       }
     } catch (e) {
@@ -428,6 +432,60 @@ class TorrentManager extends ChangeNotifier {
   String _sanitizeName(String name) {
     final s = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
     return s.isEmpty ? 'torrent' : s;
+  }
+
+  /// 兼容旧布局：单文件曾直接放在下载根目录，现在放进同名文件夹。
+  /// 若根目录已存在同名文件/状态文件，迁移到新文件夹中，避免
+  /// 「创建目录时发现同名文件」导致的 PathExistsException。
+  Future<void> _migrateSingleFileLayout(
+    TorrentJob job,
+    TorrentModel model,
+  ) async {
+    if (!model.isSingleFile) return;
+    final base = job.savePath.isNotEmpty ? job.savePath : downloadDir;
+    final mediaName = model.files.first.name;
+    final folder = p.join(base, _sanitizeName(model.name));
+    final folderDir = Directory(folder);
+
+    if (!await folderDir.exists()) {
+      final flat = File(p.join(base, mediaName));
+      final atFolder = File(folder);
+      File? media;
+      if (await atFolder.exists()) {
+        media = atFolder;
+      } else if (await flat.exists()) {
+        media = flat;
+      }
+      if (media != null) {
+        final tmp = '$folder.__migrating__';
+        try {
+          await media.rename(tmp);
+        } catch (_) {}
+        await folderDir.create(recursive: true);
+        final tmpFile = File(tmp);
+        final dest = p.join(folder, mediaName);
+        if (await tmpFile.exists() && !await File(dest).exists()) {
+          try {
+            await tmpFile.rename(dest);
+          } catch (_) {}
+        }
+      } else {
+        await folderDir.create(recursive: true);
+      }
+    }
+
+    // 迁移旧的 resume 状态文件
+    final hash = model.infoHash;
+    if (hash.isEmpty) return;
+    for (final suffix in ['$hash.bt.state', '$hash.bt.paths.json']) {
+      final old = File(p.join(base, suffix));
+      if (!await old.exists()) continue;
+      final dest = File(p.join(folder, suffix));
+      if (await dest.exists()) continue;
+      try {
+        await old.rename(dest.path);
+      } catch (_) {}
+    }
   }
 
   /// 读取持久化的 **原始 info 字典字节** 构建模型。
@@ -666,7 +724,16 @@ class TorrentManager extends ChangeNotifier {
         job.uploadRate = 0;
         job.numPeers = 0;
         job.numSeeds = 0;
-        if (job.status != TorrentJobStatus.completed &&
+        // prepare() 后 fileManager 可用：读回状态，保证外层与内容进度一致
+        if (engine.fileManager != null) {
+          final d = engine.downloaded;
+          if (d != null) job.totalDone = d;
+          if (job.totalWanted <= 0) job.totalWanted = engine.metaInfo.totalSize;
+          job.progress = engine.progress.clamp(0.0, 1.0);
+        }
+        if (job.progress >= 0.999) {
+          job.status = TorrentJobStatus.completed;
+        } else if (job.status != TorrentJobStatus.completed &&
             job.status != TorrentJobStatus.failed) {
           job.status = TorrentJobStatus.paused;
         }

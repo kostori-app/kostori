@@ -175,11 +175,11 @@ dependency_overrides:
       url: https://github.com/axlmly/super_native_extensions.git
       path: super_native_extensions
       ref: main
-  # 修复 magnet 元数据下载与 info hash（BEP 09 / 解析器），见 fork。
+  # 修复 magnet 元数据下载、info hash、prepare()、单文件进度，见 fork。
   dtorrent_task_v2:
     git:
       url: https://github.com/axlmly/dtorrent_task_v2
-      ref: 52cf65620668c142cd9b988d4a6b88496ee22878
+      ref: 97a3b338957999007e01d74b82089c8c12a5ad3f
 
 flutter_launcher_icons:
   android: true
