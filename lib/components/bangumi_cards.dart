@@ -807,6 +807,19 @@ String formatScore(num value) {
   return d.toStringAsFixed(1);
 }
 
+/// 卡片上的放送时间：从 airTime 解析出 HH:mm。
+/// 无数据 / 无法解析时返回 null，调用处据此不显示该行（兜底）。
+String? _airTimeHHmm(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    final dt = DateTime.parse(raw).toLocal();
+    return '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}';
+  } catch (_) {
+    return null;
+  }
+}
+
 class BangumiCard extends StatefulWidget {
   const BangumiCard({
     super.key,
@@ -1001,6 +1014,28 @@ class _BangumiCardState extends State<BangumiCard> {
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
+                                      // 放送时间（日期上方）：与日期同样式，
+                                      // 无数据时不显示该行
+                                      if (_airTimeHHmm(bangumiItem.airTime) !=
+                                          null) ...[
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: backdropFilter(
+                                            Text(
+                                              _airTimeHHmm(
+                                                bangumiItem.airTime,
+                                              )!,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                      ],
                                       if (bangumiItem.airTime != null)
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(
