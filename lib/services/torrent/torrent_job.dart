@@ -1,0 +1,145 @@
+/// 种子任务状态
+enum TorrentJobStatus { metadata, downloading, paused, completed, failed }
+
+/// 添加种子后的停止策略
+enum TorrentStopPolicy { none, afterMetadata, afterDownload }
+
+/// 种子任务的可持久化模型（引擎对象由 TorrentManager 持有，不在此处）。
+class TorrentJob {
+  final String id;
+  final String magnet;
+  String name;
+
+  TorrentJobStatus status;
+
+  /// 0..1
+  double progress;
+  int downloadRate;
+  int uploadRate;
+  int numPeers;
+  int numSeeds;
+
+  /// 已下载字节
+  int totalDone;
+
+  /// 需要下载的总字节（选中文件的总量）
+  int totalWanted;
+
+  bool hasMetadata;
+
+  final int createdAt;
+  String? error;
+
+  /// 持久化的元数据文件路径（原始 info 字典字节；重启直接加载）
+  final String torrentPath;
+
+  /// 本地保存目录（下载根目录）
+  String savePath;
+
+  /// 已选择的文件下标；空表示全部
+  List<int> selectedFiles;
+
+  /// 添加后的停止策略
+  TorrentStopPolicy stopAfter;
+
+  TorrentJob({
+    required this.id,
+    required this.magnet,
+    required this.torrentPath,
+    required this.savePath,
+    required this.createdAt,
+    this.name = '',
+    this.status = TorrentJobStatus.metadata,
+    this.progress = 0,
+    this.downloadRate = 0,
+    this.uploadRate = 0,
+    this.numPeers = 0,
+    this.numSeeds = 0,
+    this.totalDone = 0,
+    this.totalWanted = 0,
+    this.hasMetadata = false,
+    this.error,
+    this.selectedFiles = const [],
+    this.stopAfter = TorrentStopPolicy.none,
+  });
+
+  bool get isFinished => status == TorrentJobStatus.completed;
+
+  /// 从 magnet 提取 btih 信息哈希（仅支持 hex；base32 返回空）
+  String get infoHash {
+    final m = RegExp(
+      r'urn:btih:([^&]+)',
+      caseSensitive: false,
+    ).firstMatch(magnet);
+    return m?.group(1) ?? '';
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'magnet': magnet,
+    'name': name,
+    'status': status.name,
+    'progress': progress,
+    'hasMetadata': hasMetadata,
+    'totalDone': totalDone,
+    'totalWanted': totalWanted,
+    'createdAt': createdAt,
+    'error': error,
+    'torrentPath': torrentPath,
+    'savePath': savePath,
+    'selectedFiles': selectedFiles,
+    'stopAfter': stopAfter.name,
+  };
+
+  factory TorrentJob.fromJson(Map<String, dynamic> j) => TorrentJob(
+    id: j['id'] as String,
+    magnet: j['magnet'] as String? ?? '',
+    torrentPath: j['torrentPath'] as String? ?? '',
+    savePath: j['savePath'] as String? ?? '',
+    createdAt: (j['createdAt'] as num?)?.toInt() ?? 0,
+    name: (j['name'] as String?) ?? '',
+    status: TorrentJobStatus.values.firstWhere(
+      (e) => e.name == j['status'],
+      orElse: () => TorrentJobStatus.paused,
+    ),
+    progress: (j['progress'] as num?)?.toDouble() ?? 0,
+    hasMetadata: (j['hasMetadata'] as bool?) ?? false,
+    totalDone: (j['totalDone'] as num?)?.toInt() ?? 0,
+    totalWanted: (j['totalWanted'] as num?)?.toInt() ?? 0,
+    error: j['error'] as String?,
+    selectedFiles:
+        (j['selectedFiles'] as List?)?.map((e) => (e as num).toInt()).toList() ??
+        const [],
+    stopAfter: TorrentStopPolicy.values.firstWhere(
+      (e) => e.name == j['stopAfter'],
+      orElse: () => TorrentStopPolicy.none,
+    ),
+  );
+}
+
+/// 供 UI 使用的种子内文件条目。
+class TorrentFileEntry {
+  final int index;
+  final String name;
+  final String path;
+  final int size;
+  final int downloaded;
+  final bool isStreamable;
+
+  const TorrentFileEntry({
+    required this.index,
+    required this.name,
+    required this.path,
+    required this.size,
+    required this.downloaded,
+    required this.isStreamable,
+  });
+
+  double get progress =>
+      size <= 0 ? 0 : (downloaded / size).clamp(0.0, 1.0).toDouble();
+
+  bool get completed => size > 0 && downloaded >= size;
+
+  /// 正在下载（已有部分数据但未完成）
+  bool get isDownloading => !completed && downloaded > 0;
+}

@@ -3015,6 +3015,8 @@ torrentContent: 内容
 torrentSavePathLabel: 保存路径
 torrentInfoHashLabel: 信息哈希
 torrentProgressLabel: 进度
+torrentFileDone: 已下
+torrentFilePending: 未下
 torrentPickFile: 选择要播放的文件
 torrentFetchingMeta: 正在获取元数据…
 torrentBuffering: 正在缓冲…
@@ -3025,3 +3027,11 @@ torrentTrackers: Tracker 列表
 torrentTrackerUrlHint: Tracker 列表地址
 torrentFetchTrackers: 获取 Tracker
 torrentTrackersHint: 每行一个 tracker，播放时自动附加到磁力链接
+torrentNodesHint: 每行一个 DHT 节点，格式 host:port
+torrentTrackersAuto: 自动附加 URL 的 trackers 到新的下载
+torrentDhtExplain: DHT 是 BT 标准的「无 tracker 找 peer」网络，通常保持开启；下面可填自定义引导节点（可选）。
+torrentFileDownloading: 下载中
+torrentStopAfter: 停止条件
+torrentStopNone: 不停止
+torrentStopAfterMetadata: 获取元数据后停止
+torrentStopAfterDownload: 下载完成后停止

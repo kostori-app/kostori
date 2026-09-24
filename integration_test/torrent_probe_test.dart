@@ -1,87 +1,81 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:dtorrent_task_v2/dtorrent_task_v2.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:libtorrent_flutter/libtorrent_flutter.dart';
 
 const String _magnet =
-    'magnet:?xt=urn:btih:8186293b553a83bc2b36453adaf90569a27b5a2b'
-    '&dn=%2B%2B%2B%20%5BFHD%5D%20DAL-012'
-    '&tr=http%3A%2F%2Fsukebei.tracker.wf%3A8888%2Fannounce'
-    '&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce'
-    '&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce'
-    '&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce'
-    '&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce';
-
-Future<String?> _fetchTrackers(String url) async {
-  try {
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
-    final req = await client.getUrl(Uri.parse(url));
-    final res = await req.close();
-    final body = await res.transform(const SystemEncoding().decoder).join();
-    client.close(force: true);
-    final list = body
-        .split(RegExp(r'\s+'))
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty && s.contains('://'))
-        .toSet()
-        .toList();
-    return list.join('\n');
-  } catch (e) {
-    print('probe: fetchTrackers failed: $e');
-    return null;
-  }
-}
+    'magnet:?xt=urn:btih:97f529aadec5e94ddcc89c841e6fe0f42a8934e6'
+    '&tr=http%3a%2f%2ft.nyaatracker.com%2fannounce'
+    '&tr=http%3a%2f%2ftracker.kamigami.org%3a2710%2fannounce'
+    '&tr=http%3a%2f%2fshare.camoe.cn%3a8080%2fannounce'
+    '&tr=http%3a%2f%2fopentracker.acgnx.se%2fannounce'
+    '&tr=udp%3a%2f%2ftracker.opentrackr.org%3a1337%2fannounce';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('probe: magnet metadata with trackers', (tester) async {
+  testWidgets('probe: magnet metadata + correct infohash + download',
+      (tester) async {
     final dir = Directory.systemTemp.createTempSync('torrent_probe');
-    await LibtorrentFlutter.init(
-      fetchTrackers: false,
-      defaultSavePath: dir.path,
+
+    final downloader = MetadataDownloader.fromMagnet(_magnet);
+    final completer = Completer<Uint8List>();
+    downloader.createListener()
+      ..on<MetaDataDownloadComplete>((event) {
+        completer.complete(Uint8List.fromList(event.data));
+      })
+      ..on<MetaDataDownloadFailed>((event) {
+        if (!completer.isCompleted) completer.completeError(event.error);
+      });
+    unawaited(downloader.startDownload());
+
+    final infoBytes = await completer.future.timeout(
+      const Duration(minutes: 3),
+    );
+    await downloader.stop();
+
+    final magnet = MagnetParser.parse(_magnet);
+    final model = TorrentParser.parseFromInfoBytes(
+      infoBytes,
+      announces: magnet?.trackers ?? const [],
+    );
+    print('probe: name=${model.name} files=${model.files.length}');
+    print(
+      'probe: infohash magnet=${magnet?.infoHashString} model=${model.infoHash}',
     );
 
-    final trackers = await _fetchTrackers(
-      'https://cf.trackerslist.com/all.txt',
+    final task = TorrentTask.newTask(
+      model,
+      dir.path,
+      true,
+      null,
+      null,
+      SequentialConfig.forVideoStreaming(),
     );
-    var magnet = _magnet;
-    if (trackers != null) {
-      for (final tr in trackers.split('\n')) {
-        final enc = Uri.encodeComponent(tr);
-        if (!magnet.contains(enc) && !magnet.contains(tr)) {
-          magnet += '&tr=$enc';
-        }
-      }
-    }
-    print('probe: trackers fetched=${trackers?.split('\n').length ?? 0}');
-
-    final id = LibtorrentFlutter.instance.addMagnet(magnet, dir.path);
-    print('probe: torrentId=$id');
-
-    for (var i = 0; i < 30; i++) {
-      await Future<void>.delayed(const Duration(seconds: 3));
-      final info = LibtorrentFlutter.instance.torrents[id];
-      if (info == null) {
-        print('probe[$i]: no status');
-        continue;
-      }
+    await task.start();
+    for (var i = 0; i < 15; i++) {
+      await Future<void>.delayed(const Duration(seconds: 4));
+      final files = task.fileManager?.files ?? const [];
       print(
-        'probe[$i]: state=${info.state} peers=${info.numPeers} '
-        'seeds=${info.numSeeds} meta=${info.hasMetadata} '
-        'prog=${(info.progress * 100).toStringAsFixed(1)}% '
-        'name=${info.name}',
+        'probe[$i]: peers=${task.connectedPeersNumber} '
+        'seeds=${task.seederNumber} '
+        'downloaded=${task.downloaded} '
+        'prog=${(task.progress * 100).toStringAsFixed(1)}%',
       );
-      if (info.hasMetadata) {
-        final files = LibtorrentFlutter.instance.getFiles(id);
-        print('probe: METADATA OK, files=${files.length}');
-        for (final f in files.take(5)) {
-          print('  [${f.index}] ${f.name} ${formatBytes(f.size)} streamable=${f.isStreamable}');
-        }
-        break;
+      if (files.isNotEmpty) {
+        final f = files.first;
+        print(
+          '  ${f.torrentFilePath} '
+          '${f.downloadedBytes}/${f.length} '
+          '(${f.downloadProgress.toStringAsFixed(1)}%)',
+        );
       }
+      if (task.progress > 0) break;
     }
-    LibtorrentFlutter.instance.disposeTorrent(id);
-  }, timeout: const Timeout(Duration(minutes: 3)));
+    await task.stop();
+    await task.dispose();
+  }, timeout: const Timeout(Duration(minutes: 6)));
 }

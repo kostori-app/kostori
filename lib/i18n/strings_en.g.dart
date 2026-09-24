@@ -8853,6 +8853,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Progress'
 	String get torrentProgressLabel => 'Progress';
 
+	/// en: 'Downloaded'
+	String get torrentFileDone => 'Downloaded';
+
+	/// en: 'Not downloaded'
+	String get torrentFilePending => 'Not downloaded';
+
 	/// en: 'Select a file to play'
 	String get torrentPickFile => 'Select a file to play';
 
@@ -8882,6 +8888,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'One tracker per line; appended to the magnet automatically'
 	String get torrentTrackersHint => 'One tracker per line; appended to the magnet automatically';
+
+	/// en: 'One DHT node per line, host:port'
+	String get torrentNodesHint => 'One DHT node per line, host:port';
+
+	/// en: 'Auto-append trackers from the URL to new downloads'
+	String get torrentTrackersAuto => 'Auto-append trackers from the URL to new downloads';
+
+	/// en: 'DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.'
+	String get torrentDhtExplain => 'DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.';
+
+	/// en: 'Downloading'
+	String get torrentFileDownloading => 'Downloading';
+
+	/// en: 'Stop condition'
+	String get torrentStopAfter => 'Stop condition';
+
+	/// en: 'Do not stop'
+	String get torrentStopNone => 'Do not stop';
+
+	/// en: 'Stop after metadata'
+	String get torrentStopAfterMetadata => 'Stop after metadata';
+
+	/// en: 'Stop when download completes'
+	String get torrentStopAfterDownload => 'Stop when download completes';
 }
 
 // Path: colors
@@ -12076,6 +12106,8 @@ extension on Translations {
 			'torrentSavePathLabel' => 'Save path',
 			'torrentInfoHashLabel' => 'Info hash',
 			'torrentProgressLabel' => 'Progress',
+			'torrentFileDone' => 'Downloaded',
+			'torrentFilePending' => 'Not downloaded',
 			'torrentPickFile' => 'Select a file to play',
 			'torrentFetchingMeta' => 'Fetching metadata…',
 			'torrentBuffering' => 'Buffering…',
@@ -12086,6 +12118,14 @@ extension on Translations {
 			'torrentTrackerUrlHint' => 'Tracker list URL',
 			'torrentFetchTrackers' => 'Fetch trackers',
 			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',
+			'torrentNodesHint' => 'One DHT node per line, host:port',
+			'torrentTrackersAuto' => 'Auto-append trackers from the URL to new downloads',
+			'torrentDhtExplain' => 'DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.',
+			'torrentFileDownloading' => 'Downloading',
+			'torrentStopAfter' => 'Stop condition',
+			'torrentStopNone' => 'Do not stop',
+			'torrentStopAfterMetadata' => 'Stop after metadata',
+			'torrentStopAfterDownload' => 'Stop when download completes',
 			_ => null,
 		};
 	}

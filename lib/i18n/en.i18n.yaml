@@ -3016,6 +3016,8 @@ torrentContent: Content
 torrentSavePathLabel: Save path
 torrentInfoHashLabel: Info hash
 torrentProgressLabel: Progress
+torrentFileDone: Downloaded
+torrentFilePending: Not downloaded
 torrentPickFile: Select a file to play
 torrentFetchingMeta: Fetching metadata…
 torrentBuffering: Buffering…
@@ -3026,3 +3028,11 @@ torrentTrackers: Trackers
 torrentTrackerUrlHint: Tracker list URL
 torrentFetchTrackers: Fetch trackers
 torrentTrackersHint: One tracker per line; appended to the magnet automatically
+torrentNodesHint: One DHT node per line, host:port
+torrentTrackersAuto: Auto-append trackers from the URL to new downloads
+torrentDhtExplain: DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.
+torrentFileDownloading: Downloading
+torrentStopAfter: Stop condition
+torrentStopNone: Do not stop
+torrentStopAfterMetadata: Stop after metadata
+torrentStopAfterDownload: Stop when download completes

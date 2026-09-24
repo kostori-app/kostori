@@ -71,7 +71,7 @@ dependencies:
   media_kit: ^1.2.6
   media_kit_libs_video: ^1.0.7
   media_kit_video: ^2.0.1
-  libtorrent_flutter: 1.8.5
+  dtorrent_task_v2: ^0.5.4
   mime: ^2.0.0
   mobx: ^2.6.1
   package_info_plus: ^10.2.1
@@ -175,6 +175,11 @@ dependency_overrides:
       url: https://github.com/axlmly/super_native_extensions.git
       path: super_native_extensions
       ref: main
+  # 修复 magnet 元数据下载与 info hash（BEP 09 / 解析器），见 fork。
+  dtorrent_task_v2:
+    git:
+      url: https://github.com/axlmly/dtorrent_task_v2
+      ref: 52cf65620668c142cd9b988d4a6b88496ee22878
 
 flutter_launcher_icons:
   android: true

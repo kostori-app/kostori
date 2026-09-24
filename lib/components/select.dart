@@ -437,6 +437,9 @@ class SlidingSegmentedBar extends StatefulWidget {
   final Duration duration;
   final bool scrollable;
 
+  /// 选项超出一行时换行展示（不横向滚动）。开启后 [scrollable] 不再生效。
+  final bool wrap;
+
   /// 选中项变化时自动滚动到可视区（仅 [scrollable] 生效）
   final bool autoScroll;
 
@@ -454,6 +457,7 @@ class SlidingSegmentedBar extends StatefulWidget {
     this.alignment = WrapAlignment.center,
     this.duration = _fastAnimationDuration,
     this.scrollable = false,
+    this.wrap = false,
     this.autoScroll = true,
   });
 
@@ -685,11 +689,13 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
         padding: widget.padding,
         decoration: widget.trackDecoration,
         clipBehavior: Clip.antiAlias,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          scrollDirection: Axis.horizontal,
-          child: content,
-        ),
+        child: widget.wrap
+            ? content
+            : SingleChildScrollView(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                child: content,
+              ),
       ),
     );
   }
@@ -731,6 +737,9 @@ class CapsuleOptions extends StatelessWidget {
   /// 单行横向滚动（选项过多时）
   final bool scrollable;
 
+  /// 超过一行时换行展示（不横向滚动）
+  final bool wrap;
+
   const CapsuleOptions({
     super.key,
     required this.children,
@@ -739,6 +748,7 @@ class CapsuleOptions extends StatelessWidget {
     this.progress,
     this.actionButton,
     this.scrollable = false,
+    this.wrap = false,
   });
 
   @override
@@ -757,6 +767,7 @@ class CapsuleOptions extends StatelessWidget {
       progress: progress,
       actionButton: actionButton,
       scrollable: scrollable,
+      wrap: wrap,
       padding: padding,
       alignment: alignment,
       trackDecoration: BoxDecoration(

@@ -2977,6 +2977,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentSavePathLabel => '保存路径';
 	@override String get torrentInfoHashLabel => '信息哈希';
 	@override String get torrentProgressLabel => '进度';
+	@override String get torrentFileDone => '已下';
+	@override String get torrentFilePending => '未下';
 	@override String get torrentPickFile => '选择要播放的文件';
 	@override String get torrentFetchingMeta => '正在获取元数据…';
 	@override String get torrentBuffering => '正在缓冲…';
@@ -2987,6 +2989,14 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentTrackerUrlHint => 'Tracker 列表地址';
 	@override String get torrentFetchTrackers => '获取 Tracker';
 	@override String get torrentTrackersHint => '每行一个 tracker，播放时自动附加到磁力链接';
+	@override String get torrentNodesHint => '每行一个 DHT 节点，格式 host:port';
+	@override String get torrentTrackersAuto => '自动附加 URL 的 trackers 到新的下载';
+	@override String get torrentDhtExplain => 'DHT 是 BT 标准的「无 tracker 找 peer」网络，通常保持开启；下面可填自定义引导节点（可选）。';
+	@override String get torrentFileDownloading => '下载中';
+	@override String get torrentStopAfter => '停止条件';
+	@override String get torrentStopNone => '不停止';
+	@override String get torrentStopAfterMetadata => '获取元数据后停止';
+	@override String get torrentStopAfterDownload => '下载完成后停止';
 }
 
 // Path: colors
@@ -6071,6 +6081,8 @@ extension on TranslationsZhCn {
 			'torrentSavePathLabel' => '保存路径',
 			'torrentInfoHashLabel' => '信息哈希',
 			'torrentProgressLabel' => '进度',
+			'torrentFileDone' => '已下',
+			'torrentFilePending' => '未下',
 			'torrentPickFile' => '选择要播放的文件',
 			'torrentFetchingMeta' => '正在获取元数据…',
 			'torrentBuffering' => '正在缓冲…',
@@ -6081,6 +6093,14 @@ extension on TranslationsZhCn {
 			'torrentTrackerUrlHint' => 'Tracker 列表地址',
 			'torrentFetchTrackers' => '获取 Tracker',
 			'torrentTrackersHint' => '每行一个 tracker，播放时自动附加到磁力链接',
+			'torrentNodesHint' => '每行一个 DHT 节点，格式 host:port',
+			'torrentTrackersAuto' => '自动附加 URL 的 trackers 到新的下载',
+			'torrentDhtExplain' => 'DHT 是 BT 标准的「无 tracker 找 peer」网络，通常保持开启；下面可填自定义引导节点（可选）。',
+			'torrentFileDownloading' => '下载中',
+			'torrentStopAfter' => '停止条件',
+			'torrentStopNone' => '不停止',
+			'torrentStopAfterMetadata' => '获取元数据后停止',
+			'torrentStopAfterDownload' => '下载完成后停止',
 			_ => null,
 		};
 	}

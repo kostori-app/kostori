@@ -129,6 +129,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
+  b_encode_decode:
+    dependency: transitive
+    description:
+      name: b_encode_decode
+      sha256: "4982fd1b21b967ddb606d80b68b4fb9fdcbc5eb0f4e1248d4ddaf789b020c24d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   battery_plus:
     dependency: "direct main"
     description:
@@ -369,6 +377,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  dart_ipify:
+    dependency: transitive
+    description:
+      name: dart_ipify
+      sha256: "3b70d589504126107e81ad0703d91394cc8e2039cb0a11ebd92b9b824a5e9561"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   dart_style:
     dependency: transitive
     description:
@@ -466,6 +482,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
+  dtorrent_task_v2:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "52cf65620668c142cd9b988d4a6b88496ee22878"
+      resolved-ref: "52cf65620668c142cd9b988d4a6b88496ee22878"
+      url: "https://github.com/axlmly/dtorrent_task_v2"
+    source: git
+    version: "0.5.4"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -490,6 +515,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.7"
+  events_emitter2:
+    dependency: transitive
+    description:
+      name: events_emitter2
+      sha256: "1d2f7b249491e9a143a18992c9a500fc21ac5e271e59e157c12193553ccd3d57"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
   extended_tabs:
     dependency: "direct main"
     description:
@@ -1247,14 +1280,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  libtorrent_flutter:
-    dependency: "direct main"
-    description:
-      name: libtorrent_flutter
-      sha256: "48605ded68779749246deac803bce4ecea75eb2aac2394fdb8b85961014a3d36"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.8.5"
   lints:
     dependency: transitive
     description:
@@ -1700,10 +1725,10 @@ packages:
     dependency: transitive
     description:
       name: petitparser
-      sha256: "07c8f0b1913bcde1ff0d26e57ace2f3012ccbf2b204e070290dad3bb22797646"
+      sha256: "91bd59303e9f769f108f8df05e371341b15d59e995e6806aefab827b58336675"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.0"
+    version: "7.0.2"
   photo_view:
     dependency: "direct main"
     description:
@@ -2449,6 +2474,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.5"
+  utp_protocol:
+    dependency: transitive
+    description:
+      name: utp_protocol
+      sha256: d2396507767ecf7053c4ad1e8cf56a648c36e1c0ba2275e460f68bd06e9e26c0
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   uuid:
     dependency: "direct main"
     description:
@@ -2477,10 +2510,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: "557a315b7d2a6dbb0aaaff84d857967ce6bdc96a63dc6ee2a57ce5a6ee5d3331"
+      sha256: "4dca4feb77dc3ec7f6e27e49c53241eb8217f55e4f9b12599a27f8903bca5682"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.17"
+    version: "1.3.0"
   vector_math:
     dependency: transitive
     description:
@@ -2631,10 +2664,10 @@ packages:
     dependency: transitive
     description:
       name: xml
-      sha256: b015a8ad1c488f66851d762d3090a21c600e479dc75e68328c52774040cf9226
+      sha256: "971043b3a0d3da28727e40ed3e0b5d18b742fa5a68665cca88e74b7876d5e025"
       url: "https://pub.dev"
     source: hosted
-    version: "6.5.0"
+    version: "6.6.1"
   yaml:
     dependency: "direct main"
     description:

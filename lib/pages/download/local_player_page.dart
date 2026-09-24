@@ -14,17 +14,20 @@ import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-/// 本地视频播放页（播放已下载的 mp4）
+/// 本地视频播放页（播放已下载的 mp4 / 种子流）
 class LocalPlayerPage extends StatelessWidget {
   final String filePath;
 
-  const LocalPlayerPage({super.key, required this.filePath});
+  /// 页面销毁时回调（如停止种子流、恢复文件优先级）
+  final VoidCallback? onDispose;
+
+  const LocalPlayerPage({super.key, required this.filePath, this.onDispose});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: LocalPlayerView(filePath: filePath),
+      body: LocalPlayerView(filePath: filePath, onDispose: onDispose),
     );
   }
 }
@@ -68,7 +71,10 @@ class _LocalFullscreenVideoPageState
 class LocalPlayerView extends ConsumerStatefulWidget {
   final String filePath;
 
-  const LocalPlayerView({super.key, required this.filePath});
+  /// 页面销毁时回调（如停止种子流）
+  final VoidCallback? onDispose;
+
+  const LocalPlayerView({super.key, required this.filePath, this.onDispose});
 
   @override
   ConsumerState<LocalPlayerView> createState() => _LocalPlayerViewState();
@@ -109,6 +115,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   void dispose() {
     hideTimer?.cancel();
     animationController.dispose();
+    widget.onDispose?.call();
     super.dispose();
   }
 

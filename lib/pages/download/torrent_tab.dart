@@ -1,15 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
+import 'package:kostori/services/torrent/torrent_job.dart';
 import 'package:kostori/services/torrent/torrent_manager.dart';
-import 'package:kostori/services/torrent/torrent_task.dart';
-import 'package:libtorrent_flutter/libtorrent_flutter.dart';
+import 'package:kostori/utils/io.dart';
 
 /// 添加种子弹窗（供下载页 AppBar 调用）
 Future<void> showAddTorrentSheet(BuildContext context) async {
   final magnetCtrl = TextEditingController();
+  var stopAfter = TorrentStopPolicy.none;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -17,50 +20,79 @@ Future<void> showAddTorrentSheet(BuildContext context) async {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: (ctx) => Sheet(
-      title: t.torrentAdd,
-      icon: Icons.add_link,
-      initialSize: 0.45,
-      builder: (ctx, sc) => SingleChildScrollView(
-        controller: sc,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: magnetCtrl,
-              minLines: 1,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: t.torrentMagnetHint,
-                border: const OutlineInputBorder(),
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSt) => Sheet(
+        title: t.torrentAdd,
+        icon: Icons.add_link,
+        initialSize: 0.6,
+        builder: (ctx, sc) => SingleChildScrollView(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: magnetCtrl,
+                minLines: 1,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: t.torrentMagnetHint,
+                  border: const OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${t.torrentSaveDir}: ${TorrentManager.downloadDir}',
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(ctx).colorScheme.outline,
+              const SizedBox(height: 6),
+              Text(
+                '${t.torrentSaveDir}: ${TorrentManager.downloadDir}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(ctx).colorScheme.outline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () async {
-                final magnet = magnetCtrl.text.trim();
-                if (magnet.isEmpty) {
-                  App.rootContext.showMessage(message: t.torrentNeedMagnet);
-                  return;
-                }
-                if (ctx.mounted) Navigator.pop(ctx);
-                await TorrentManager.instance.add(magnet);
-              },
-              icon: const Icon(Icons.check),
-              label: Text(t.torrentParse),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Text(t.torrentStopAfter, style: const TextStyle(fontSize: 13)),
+              const SizedBox(height: 6),
+              CapsuleOptions(
+                wrap: true,
+                alignment: WrapAlignment.center,
+                children: [
+                  CapsuleOption(
+                    text: t.torrentStopNone,
+                    isSelected: stopAfter == TorrentStopPolicy.none,
+                    onTap: () => setSt(() => stopAfter = TorrentStopPolicy.none),
+                  ),
+                  CapsuleOption(
+                    text: t.torrentStopAfterMetadata,
+                    isSelected: stopAfter == TorrentStopPolicy.afterMetadata,
+                    onTap: () =>
+                        setSt(() => stopAfter = TorrentStopPolicy.afterMetadata),
+                  ),
+                  CapsuleOption(
+                    text: t.torrentStopAfterDownload,
+                    isSelected: stopAfter == TorrentStopPolicy.afterDownload,
+                    onTap: () =>
+                        setSt(() => stopAfter = TorrentStopPolicy.afterDownload),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () async {
+                  final magnet = magnetCtrl.text.trim();
+                  if (magnet.isEmpty) {
+                    App.rootContext.showMessage(message: t.torrentNeedMagnet);
+                    return;
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  App.rootContext.showMessage(message: t.torrentFetchingMeta);
+                  await TorrentManager.instance.add(magnet, stopAfter: stopAfter);
+                },
+                icon: const Icon(Icons.check),
+                label: Text(t.torrentParse),
+              ),
+            ],
+          ),
         ),
       ),
     ),
@@ -74,6 +106,30 @@ class TorrentTab extends StatefulWidget {
 
   @override
   State<TorrentTab> createState() => _TorrentTabState();
+}
+
+String _statusLabel(TorrentJobStatus s) {
+  switch (s) {
+    case TorrentJobStatus.metadata:
+      return t.torrentStatusMetadata;
+    case TorrentJobStatus.downloading:
+      return t.torrentStatusDownloading;
+    case TorrentJobStatus.paused:
+      return t.torrentStatusPaused;
+    case TorrentJobStatus.completed:
+      return t.torrentStatusCompleted;
+    case TorrentJobStatus.failed:
+      return t.torrentStatusFailed;
+  }
+}
+
+/// 下载进度文本：已下载 / 总大小 + 百分比。
+String _progressText(TorrentJob job) {
+  final total = job.totalWanted > 0 ? job.totalWanted : job.totalDone;
+  if (total <= 0) return '${(job.progress * 100).toStringAsFixed(1)}%';
+  final done = (job.progress * total).round().clamp(0, total);
+  return '${formatBytesShort(done)} / ${formatBytesShort(total)}  '
+      '${(job.progress * 100).toStringAsFixed(1)}%';
 }
 
 class _TorrentTabState extends State<TorrentTab> {
@@ -98,8 +154,8 @@ class _TorrentTabState extends State<TorrentTab> {
 
   @override
   Widget build(BuildContext context) {
-    final tasks = _m.tasks;
-    if (tasks.isEmpty) {
+    final jobs = _m.jobs;
+    if (jobs.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -122,28 +178,13 @@ class _TorrentTabState extends State<TorrentTab> {
     }
     return ListView(
       padding: const EdgeInsets.only(top: 4, bottom: 16),
-      children: [for (final task in tasks) _taskCard(task)],
+      children: [for (final job in jobs) _jobCard(job)],
     );
   }
 
-  String _statusLabel(TorrentTaskStatus s) {
-    switch (s) {
-      case TorrentTaskStatus.metadata:
-        return t.torrentStatusMetadata;
-      case TorrentTaskStatus.downloading:
-        return t.torrentStatusDownloading;
-      case TorrentTaskStatus.paused:
-        return t.torrentStatusPaused;
-      case TorrentTaskStatus.completed:
-        return t.torrentStatusCompleted;
-      case TorrentTaskStatus.failed:
-        return t.torrentStatusFailed;
-    }
-  }
-
-  Widget _taskCard(TorrentTask task) {
+  Widget _jobCard(TorrentJob job) {
     final cs = Theme.of(context).colorScheme;
-    final paused = task.status == TorrentTaskStatus.paused;
+    final paused = job.status == TorrentJobStatus.paused;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Material(
@@ -151,7 +192,7 @@ class _TorrentTabState extends State<TorrentTab> {
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => _showDetailSheet(task),
+          onTap: () => _showDetailSheet(job),
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -168,9 +209,7 @@ class _TorrentTabState extends State<TorrentTab> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        task.isFinished
-                            ? Icons.check_circle_outline
-                            : Icons.stream,
+                        job.isFinished ? Icons.check_circle_outline : Icons.stream,
                         color: cs.onSecondaryContainer,
                       ),
                     ),
@@ -180,9 +219,7 @@ class _TorrentTabState extends State<TorrentTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            task.name.isNotEmpty
-                                ? task.name
-                                : t.torrentFetchingMeta,
+                            job.name.isNotEmpty ? job.name : t.torrentFetchingMeta,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -192,8 +229,8 @@ class _TorrentTabState extends State<TorrentTab> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '${_statusLabel(task.status)} · '
-                            '${t.torrentPeers} ${task.numPeers}/${task.numSeeds}',
+                            '${_statusLabel(job.status)} · '
+                            '${t.torrentPeers} ${job.numPeers}/${job.numSeeds}',
                             style: TextStyle(
                               fontSize: 12,
                               color: cs.onSurfaceVariant,
@@ -206,7 +243,7 @@ class _TorrentTabState extends State<TorrentTab> {
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: task.hasMetadata ? task.progress : null,
+                  value: job.hasMetadata ? job.progress : null,
                   borderRadius: BorderRadius.circular(4),
                   minHeight: 4,
                 ),
@@ -215,11 +252,9 @@ class _TorrentTabState extends State<TorrentTab> {
                   children: [
                     Expanded(
                       child: Text(
-                        task.hasMetadata
-                            ? '${formatBytes(task.totalDone)} / '
-                                  '${formatBytes(task.totalWanted)}  '
-                                  '${(task.progress * 100).toStringAsFixed(1)}%'
-                            : _statusLabel(task.status),
+                        job.hasMetadata
+                            ? _progressText(job)
+                            : _statusLabel(job.status),
                         style: TextStyle(
                           fontSize: 11,
                           color: cs.onSurfaceVariant,
@@ -227,8 +262,8 @@ class _TorrentTabState extends State<TorrentTab> {
                       ),
                     ),
                     Text(
-                      '↓ ${formatSpeed(task.downloadRate)}  '
-                      '↑ ${formatSpeed(task.uploadRate)}',
+                      '↓ ${formatSpeed(job.downloadRate)}  '
+                      '↑ ${formatSpeed(job.uploadRate)}',
                       style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                     ),
                   ],
@@ -243,13 +278,13 @@ class _TorrentTabState extends State<TorrentTab> {
                       ),
                       tooltip: paused ? t.torrentPlay : t.torrentStatusPaused,
                       onPressed: () =>
-                          paused ? _m.resume(task) : _m.pause(task),
+                          paused ? _m.resume(job) : _m.pause(job),
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.delete_outline),
                       tooltip: t.torrentDelete,
-                      onPressed: () => _m.remove(task),
+                      onPressed: () => _m.remove(job),
                     ),
                   ],
                 ),
@@ -261,7 +296,7 @@ class _TorrentTabState extends State<TorrentTab> {
     );
   }
 
-  Future<void> _showDetailSheet(TorrentTask task) {
+  Future<void> _showDetailSheet(TorrentJob job) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -269,149 +304,254 @@ class _TorrentTabState extends State<TorrentTab> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _TorrentDetailSheet(task: task, manager: _m),
+      builder: (_) => _TorrentDetailSheet(job: job),
     );
   }
 }
 
-/// 种子详情：基本信息 + 内容（文件卡片，观看按钮在右）
+/// 种子详情：基本信息 / 内容（可左右滑动切换）
 class _TorrentDetailSheet extends StatefulWidget {
-  const _TorrentDetailSheet({required this.task, required this.manager});
+  const _TorrentDetailSheet({required this.job});
 
-  final TorrentTask task;
-  final TorrentManager manager;
+  final TorrentJob job;
 
   @override
   State<_TorrentDetailSheet> createState() => _TorrentDetailSheetState();
 }
 
-class _TorrentDetailSheetState extends State<_TorrentDetailSheet> {
+class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
+    with SingleTickerProviderStateMixin {
   final _m = TorrentManager.instance;
+
+  /// 0 = 基本信息，1 = 内容（可左右滑动切换）
+  late final TabController _tabCtrl = TabController(length: 2, vsync: this);
+
+  List<TorrentFileEntry> _files = const [];
 
   @override
   void initState() {
     super.initState();
     _m.addListener(_onChange);
+    _refreshFiles();
   }
 
   void _onChange() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _refreshFiles();
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
     _m.removeListener(_onChange);
+    _tabCtrl.dispose();
     super.dispose();
+  }
+
+  void _refreshFiles() {
+    _files = _m.filesOf(widget.job);
   }
 
   @override
   Widget build(BuildContext context) {
-    final task = widget.task;
-    final files = _m.filesOf(task);
-    final cs = Theme.of(context).colorScheme;
+    final job = widget.job;
     return Sheet(
-      title: task.name.isNotEmpty ? task.name : t.torrentFetchingMeta,
+      title: job.name.isNotEmpty ? job.name : t.torrentFetchingMeta,
       icon: Icons.stream,
       initialSize: 0.8,
-      builder: (ctx, sc) => ListView(
-        controller: sc,
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      builder: (_, _) => Column(
         children: [
-          Text(
-            t.torrentInfo,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          CapsuleTabBar(
+            controller: _tabCtrl,
+            labels: [t.torrentInfo, t.torrentContent],
           ),
-          const SizedBox(height: 8),
-          _infoRow(t.status, _statusLabel(task.status)),
-          _infoRow(
-            t.torrentProgressLabel,
-            task.hasMetadata
-                ? '${(task.progress * 100).toStringAsFixed(1)}%'
-                : '--',
+          Expanded(
+            child: TabBarView(
+              controller: _tabCtrl,
+              children: [
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: _infoSection(job),
+                ),
+                ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: _contentSection(job),
+                ),
+              ],
+            ),
           ),
-          _infoRow(
-            t.download,
-            task.hasMetadata
-                ? '${formatBytes(task.totalDone)} / '
-                      '${formatBytes(task.totalWanted)}'
-                : '--',
+        ],
+      ),
+    );
+  }
+
+  // ── 基本信息 ──────────────────────────────────────────────────────────────
+  List<Widget> _infoSection(TorrentJob job) {
+    final total = job.totalWanted > 0 ? job.totalWanted : job.totalDone;
+    final done = total > 0
+        ? (job.progress * total).round().clamp(0, total)
+        : 0;
+    return [
+      _infoRow(t.status, _statusLabel(job.status)),
+      _infoRow(
+        t.torrentProgressLabel,
+        job.hasMetadata ? '${(job.progress * 100).toStringAsFixed(1)}%' : '--',
+      ),
+      _infoRow(
+        t.download,
+        job.hasMetadata && total > 0
+            ? '${formatBytesShort(done)} / ${formatBytesShort(total)}'
+            : '--',
+      ),
+      _infoRow(t.torrentDownloadLimit, '↓ ${formatSpeed(job.downloadRate)}'),
+      _infoRow(t.torrentUploadLimit, '↑ ${formatSpeed(job.uploadRate)}'),
+      _infoRow(t.torrentPeers, '${job.numPeers}/${job.numSeeds}'),
+      _infoRow(t.torrentSavePathLabel, TorrentManager.downloadDir),
+      if (job.infoHash.isNotEmpty)
+        _infoRow(t.torrentInfoHashLabel, job.infoHash),
+      if (job.error != null && job.error!.isNotEmpty)
+        _infoRow(t.downloadFailed, job.error!),
+    ];
+  }
+
+  // ── 内容：文件列表（大小 + 已下/未下 + 单文件进度） ────────────────────────
+  List<Widget> _contentSection(TorrentJob job) {
+    final cs = Theme.of(context).colorScheme;
+    if (_files.isEmpty) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            job.hasMetadata ? t.torrentPickFile : t.torrentFetchingMeta,
+            style: TextStyle(color: cs.outline),
           ),
-          _infoRow(
-            t.torrentDownloadLimit,
-            '↓ ${formatSpeed(task.downloadRate)}',
-          ),
-          _infoRow(t.torrentUploadLimit, '↑ ${formatSpeed(task.uploadRate)}'),
-          _infoRow(
-            t.torrentPeers,
-            '${task.numPeers}/${task.numSeeds}',
-          ),
-          _infoRow(t.torrentSavePathLabel, TorrentManager.downloadDir),
-          if (task.infoHash.isNotEmpty)
-            _infoRow(t.torrentInfoHashLabel, task.infoHash),
-          const SizedBox(height: 12),
-          Text(
-            t.torrentContent,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          if (files.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Text(
-                task.hasMetadata ? t.torrentPickFile : t.torrentFetchingMeta,
-                style: TextStyle(color: cs.outline),
-              ),
-            )
-          else
-            for (final f in files)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Material(
-                  color: cs.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(12),
-                  clipBehavior: Clip.antiAlias,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.insert_drive_file_outlined,
-                          size: 20,
-                          color: cs.onSurfaceVariant,
+        ),
+      ];
+    }
+    final all = {for (final f in _files) f.index};
+    final selected = job.selectedFiles.isEmpty
+        ? all
+        : job.selectedFiles.where(all.contains).toSet();
+    return [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          children: [
+            Text(
+              t.torrentSelectFiles,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: () => _m.setSelectedFiles(job, const []),
+              child: Text(t.all),
+            ),
+          ],
+        ),
+      ),
+      for (final f in _files) _fileTile(job, f, selected.contains(f.index)),
+    ];
+  }
+
+  void _toggleFile(TorrentJob job, int index) {
+    final all = {for (final f in _files) f.index};
+    final sel = (job.selectedFiles.isEmpty
+            ? {...all}
+            : job.selectedFiles.where(all.contains).toSet())
+        .toSet();
+    if (!sel.remove(index)) sel.add(index);
+    if (sel.isEmpty) return; // 至少保留一个文件
+    if (sel.length == all.length) {
+      _m.setSelectedFiles(job, const []); // 空 = 全部
+    } else {
+      _m.setSelectedFiles(job, sel.toList()..sort());
+    }
+  }
+
+  Widget _fileTile(TorrentJob job, TorrentFileEntry f, bool selected) {
+    final cs = Theme.of(context).colorScheme;
+    final done = f.completed;
+    final pct = (f.progress * 100).clamp(0, 100).toStringAsFixed(0);
+    final statusText = done
+        ? t.torrentFileDone
+        : f.isDownloading
+        ? t.torrentFileDownloading
+        : t.torrentFilePending;
+    final statusColor = done
+        ? cs.primary
+        : f.isDownloading
+        ? cs.tertiary
+        : cs.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: selected
+            ? cs.primaryContainer.withValues(alpha: 0.45)
+            : cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _toggleFile(job, f.index),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        f.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: f.size > 0 ? f.progress : null,
+                          minHeight: 4,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                f.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              Text(
-                                formatBytes(f.size),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: cs.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Text(
+                            '${formatBytesShort(f.downloaded)} / '
+                            '${formatBytesShort(f.size)}  $pct%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: cs.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                        if (f.isStreamable)
-                          IconButton(
-                            icon: const Icon(Icons.play_circle_outline),
-                            tooltip: t.torrentPlay,
-                            onPressed: () => _play(f.index),
+                          const SizedBox(width: 8),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: statusColor,
+                              fontWeight: done || f.isDownloading
+                                  ? FontWeight.w500
+                                  : null,
+                            ),
                           ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-        ],
+                if (f.isStreamable)
+                  IconButton(
+                    icon: const Icon(Icons.play_circle_outline),
+                    tooltip: t.torrentPlay,
+                    onPressed: () => _play(f.index),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -438,24 +578,14 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet> {
     );
   }
 
-  String _statusLabel(TorrentTaskStatus s) {
-    switch (s) {
-      case TorrentTaskStatus.metadata:
-        return t.torrentStatusMetadata;
-      case TorrentTaskStatus.downloading:
-        return t.torrentStatusDownloading;
-      case TorrentTaskStatus.paused:
-        return t.torrentStatusPaused;
-      case TorrentTaskStatus.completed:
-        return t.torrentStatusCompleted;
-      case TorrentTaskStatus.failed:
-        return t.torrentStatusFailed;
-    }
-  }
-
-  void _play(int fileIndex) {
-    final url = _m.startStream(widget.task, fileIndex).url;
+  Future<void> _play(int fileIndex) async {
+    final url = await _m.streamUrl(widget.job, fileIndex);
     if (!mounted) return;
-    context.to(() => LocalPlayerPage(filePath: url));
+    context.to(
+      () => LocalPlayerPage(
+        filePath: url,
+        onDispose: () => _m.stopStreams(widget.job),
+      ),
+    );
   }
 }

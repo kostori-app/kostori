@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -25,9 +27,12 @@ class _DownloadSettingsSheet extends StatefulWidget {
   State<_DownloadSettingsSheet> createState() => _DownloadSettingsSheetState();
 }
 
-class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet> {
-  int _tab = 0;
+class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet>
+    with SingleTickerProviderStateMixin {
   final _m = TorrentManager.instance;
+
+  /// 下载 / 种子 两个设置页（可左右滑动切换）
+  late final TabController _tabCtrl = TabController(length: 2, vsync: this);
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet> {
   @override
   void dispose() {
     _m.removeListener(_onChange);
+    _tabCtrl.dispose();
     super.dispose();
   }
 
@@ -52,34 +58,28 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet> {
       title: t.downloadSettings,
       icon: Icons.settings_outlined,
       initialSize: 0.62,
-      builder: (sheetCtx, sc) => SingleChildScrollView(
-        controller: sc,
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: CapsuleOptions(
-                scrollable: true,
-                alignment: WrapAlignment.start,
-                children: [
-                  CapsuleOption(
-                    text: t.download,
-                    isSelected: _tab == 0,
-                    onTap: () => setState(() => _tab = 0),
-                  ),
-                  CapsuleOption(
-                    text: t.torrentTab,
-                    isSelected: _tab == 1,
-                    onTap: () => setState(() => _tab = 1),
-                  ),
-                ],
-              ),
+      builder: (_, _) => Column(
+        children: [
+          CapsuleTabBar(
+            controller: _tabCtrl,
+            labels: [t.download, t.torrentTab],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabCtrl,
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 8, bottom: 24),
+                  child: _downloadSettings(),
+                ),
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 8, bottom: 24),
+                  child: _torrentSettings(),
+                ),
+              ],
             ),
-            if (_tab == 0) _downloadSettings() else _torrentSettings(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -168,60 +168,7 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet> {
   }
 
   // ── 种子 ──────────────────────────────────────────────────────────────────
-  Widget _torrentSettings() {
-    const speeds = [0, 1024, 2048, 5120, 10240, 20480];
-    String speedLabel(int kb) => kb == 0 ? t.torrentUnlimited : '$kb KB/s';
-    return Column(
-      children: [
-        ListTile(
-          leading: const Icon(Icons.folder_outlined),
-          title: Text(t.torrentSaveDir),
-          subtitle: Text(
-            TorrentManager.downloadDir,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        _capsuleRow(
-          label: t.torrentDownloadLimit,
-          values: speeds,
-          selected: _m.downloadLimitKb,
-          labelOf: speedLabel,
-          onSelected: (v) => setState(() => _m.downloadLimitKb = v),
-        ),
-        _capsuleRow(
-          label: t.torrentUploadLimit,
-          values: speeds,
-          selected: _m.uploadLimitKb,
-          labelOf: speedLabel,
-          onSelected: (v) => setState(() => _m.uploadLimitKb = v),
-        ),
-        _switchTile(t.torrentDht, _m.dhtEnabled, _m.setDht),
-        _switchTile(t.torrentLsd, _m.lsdEnabled, _m.setLsd),
-        _switchTile(t.torrentUpnp, _m.upnpEnabled, _m.setUpnp),
-        _switchTile(t.torrentEncrypt, _m.encryptEnabled, _m.setEncrypt),
-        _switchTile(t.torrentStopSeed, _m.stopSeedAfterComplete, _m.setStopSeed),
-        const Divider(),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-          child: TrackerEditor(manager: _m),
-        ),
-      ],
-    );
-  }
-
-  Widget _switchTile(String title, bool value, ValueChanged<bool> onChanged) {
-    return ListTile(
-      title: Text(title),
-      trailing: CustomSwitch(
-        value: value,
-        onChanged: (v) {
-          onChanged(v);
-          setState(() {});
-        },
-      ),
-    );
-  }
+  Widget _torrentSettings() => const _TorrentSettings();
 
   Widget _capsuleRow<T>({
     required String label,
@@ -238,8 +185,8 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet> {
           Text(label),
           const SizedBox(height: 6),
           CapsuleOptions(
-            scrollable: true,
-            alignment: WrapAlignment.start,
+            wrap: true,
+            alignment: WrapAlignment.center,
             children: [
               for (final v in values)
                 CapsuleOption(
@@ -255,29 +202,42 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet> {
   }
 }
 
-/// Tracker 列表编辑（地址 + 获取 + 多行）
-class TrackerEditor extends StatefulWidget {
-  const TrackerEditor({super.key, required this.manager});
-
-  final TorrentManager manager;
+/// 种子设置：限速 / 做种 / Tracker / DHT。
+class _TorrentSettings extends StatefulWidget {
+  const _TorrentSettings();
 
   @override
-  State<TrackerEditor> createState() => _TrackerEditorState();
+  State<_TorrentSettings> createState() => _TorrentSettingsState();
 }
 
-class _TrackerEditorState extends State<TrackerEditor> {
+class _TorrentSettingsState extends State<_TorrentSettings> {
+  final _m = TorrentManager.instance;
   late final TextEditingController _urlCtrl = TextEditingController(
-    text: widget.manager.trackerUrl,
+    text: _m.trackerUrl,
   );
   late final TextEditingController _trackersCtrl = TextEditingController(
-    text: widget.manager.trackers,
+    text: _m.trackers.join('\n'),
+  );
+  late final TextEditingController _nodesCtrl = TextEditingController(
+    text: _m.customNodes.join('\n'),
   );
   bool _fetching = false;
+  Timer? _debounce;
+
+  static const _speeds = [0, 1024, 2048, 5120, 10240, 20480];
+  String _speedLabel(int kb) => kb == 0 ? t.torrentUnlimited : '$kb KB/s';
+
+  void _debounced(void Function() action) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 700), action);
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _urlCtrl.dispose();
     _trackersCtrl.dispose();
+    _nodesCtrl.dispose();
     super.dispose();
   }
 
@@ -286,49 +246,142 @@ class _TrackerEditorState extends State<TrackerEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: _urlCtrl,
-          decoration: InputDecoration(
-            labelText: t.torrentTrackerUrlHint,
-            border: const OutlineInputBorder(),
+        _capsuleRow(
+          t.torrentDownloadLimit,
+          _m.downloadLimitKb,
+          (v) => setState(() => _m.downloadLimitKb = v),
+        ),
+        _capsuleRow(
+          t.torrentUploadLimit,
+          _m.uploadLimitKb,
+          (v) => setState(() => _m.uploadLimitKb = v),
+        ),
+        ListTile(
+          title: Text(t.torrentStopSeed),
+          trailing: CustomSwitch(
+            value: _m.stopSeedAfterComplete,
+            onChanged: (v) => setState(() => _m.stopSeedAfterComplete = v),
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            FilledButton.tonalIcon(
-              onPressed: _fetching
-                  ? null
-                  : () async {
-                      widget.manager.setTrackerUrl(_urlCtrl.text.trim());
-                      setState(() => _fetching = true);
-                      await widget.manager.fetchTrackers();
-                      _trackersCtrl.text = widget.manager.trackers;
-                      setState(() => _fetching = false);
-                    },
-              icon: _fetching
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.download),
-              label: Text(t.torrentFetchTrackers),
+        const Divider(),
+        ListTile(
+          title: Text(t.torrentTrackersAuto),
+          trailing: CustomSwitch(
+            value: _m.trackerAutoAdd,
+            onChanged: (v) => setState(() => _m.setTrackerAutoAdd(v)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: TextField(
+            controller: _urlCtrl,
+            decoration: InputDecoration(
+              labelText: t.torrentTrackerUrlHint,
+              border: const OutlineInputBorder(),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _trackersCtrl,
-          minLines: 4,
-          maxLines: 10,
-          decoration: InputDecoration(
-            hintText: t.torrentTrackersHint,
-            border: const OutlineInputBorder(),
+            onChanged: (v) => _m.setTrackerUrl(v.trim()),
           ),
-          onChanged: widget.manager.setTrackers,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Row(
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _fetching
+                    ? null
+                    : () async {
+                        _m.setTrackerUrl(_urlCtrl.text.trim());
+                        setState(() => _fetching = true);
+                        await _m.fetchTrackers();
+                        _trackersCtrl.text = _m.trackers.join('\n');
+                        if (mounted) setState(() => _fetching = false);
+                      },
+                icon: _fetching
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download),
+                label: Text(t.torrentFetchTrackers),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: TextField(
+            controller: _trackersCtrl,
+            minLines: 5,
+            maxLines: 12,
+            decoration: InputDecoration(
+              hintText: t.torrentTrackersHint,
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (v) => _debounced(
+              () => _m.setTrackers(
+                v
+                    .split('\n')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList(),
+              ),
+            ),
+          ),
+        ),
+        const Divider(),
+        ListTile(
+          leading: const Icon(Icons.hub_outlined),
+          title: Text(t.torrentDht),
+          subtitle: Text(t.torrentDhtExplain),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: TextField(
+            controller: _nodesCtrl,
+            minLines: 3,
+            maxLines: 8,
+            decoration: InputDecoration(
+              hintText: t.torrentNodesHint,
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (v) => _debounced(
+              () => _m.setCustomNodes(
+                v
+                    .split('\n')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList(),
+              ),
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _capsuleRow(String label, int selected, ValueChanged<int> onSelected) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label),
+          const SizedBox(height: 6),
+          CapsuleOptions(
+            wrap: true,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final v in _speeds)
+                CapsuleOption(
+                  text: _speedLabel(v),
+                  isSelected: v == selected,
+                  onTap: () => onSelected(v),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
