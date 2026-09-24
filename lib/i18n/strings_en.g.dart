@@ -8419,6 +8419,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Off'
 	String get subtitleOff => 'Off';
 
+	/// en: 'Subtitle settings'
+	String get subtitleSettings => 'Subtitle settings';
+
+	/// en: 'Text color'
+	String get subtitleTextColor => 'Text color';
+
+	/// en: 'Outline color'
+	String get subtitleOutlineColor => 'Outline color';
+
+	/// en: 'Font size'
+	String get subtitleFontSize => 'Font size';
+
+	/// en: 'Outline width'
+	String get subtitleOutlineWidth => 'Outline width';
+
 	/// en: 'Quality'
 	String get quality => 'Quality';
 
@@ -11950,6 +11965,11 @@ extension on Translations {
 			'audioTrack' => 'Audio track',
 			'subtitle' => 'Subtitles',
 			'subtitleOff' => 'Off',
+			'subtitleSettings' => 'Subtitle settings',
+			'subtitleTextColor' => 'Text color',
+			'subtitleOutlineColor' => 'Outline color',
+			'subtitleFontSize' => 'Font size',
+			'subtitleOutlineWidth' => 'Outline width',
 			'quality' => 'Quality',
 			'copiedField' => ({required Object x}) => 'Copied: ${x}',
 			'selectAliasCount' => ({required Object count}) => 'Select alias (${count})',

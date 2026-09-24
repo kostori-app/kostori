@@ -12,6 +12,7 @@ import 'package:kostori/foundation/video_probe.dart';
 import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
+import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -487,6 +488,7 @@ class _PlayerViewState extends ConsumerState<_PlayerView>
             controller: widget.videoController,
             controls: NoVideoControls,
             fill: Colors.black,
+            subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
           ),
         ),
         // 径向渐变遮罩

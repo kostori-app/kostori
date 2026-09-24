@@ -949,6 +949,86 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$embeddedSubtitleTracksAtom = Atom(
+    name: '_PlayerController.embeddedSubtitleTracks',
+    context: context,
+  );
+
+  @override
+  List<SubtitleTrack> get embeddedSubtitleTracks {
+    _$embeddedSubtitleTracksAtom.reportRead();
+    return super.embeddedSubtitleTracks;
+  }
+
+  @override
+  set embeddedSubtitleTracks(List<SubtitleTrack> value) {
+    _$embeddedSubtitleTracksAtom.reportWrite(
+      value,
+      super.embeddedSubtitleTracks,
+      () {
+        super.embeddedSubtitleTracks = value;
+      },
+    );
+  }
+
+  late final _$embeddedAudioTracksAtom = Atom(
+    name: '_PlayerController.embeddedAudioTracks',
+    context: context,
+  );
+
+  @override
+  List<AudioTrack> get embeddedAudioTracks {
+    _$embeddedAudioTracksAtom.reportRead();
+    return super.embeddedAudioTracks;
+  }
+
+  @override
+  set embeddedAudioTracks(List<AudioTrack> value) {
+    _$embeddedAudioTracksAtom.reportWrite(value, super.embeddedAudioTracks, () {
+      super.embeddedAudioTracks = value;
+    });
+  }
+
+  late final _$currentSubtitleTrackIdAtom = Atom(
+    name: '_PlayerController.currentSubtitleTrackId',
+    context: context,
+  );
+
+  @override
+  String? get currentSubtitleTrackId {
+    _$currentSubtitleTrackIdAtom.reportRead();
+    return super.currentSubtitleTrackId;
+  }
+
+  @override
+  set currentSubtitleTrackId(String? value) {
+    _$currentSubtitleTrackIdAtom.reportWrite(
+      value,
+      super.currentSubtitleTrackId,
+      () {
+        super.currentSubtitleTrackId = value;
+      },
+    );
+  }
+
+  late final _$currentAudioTrackIdAtom = Atom(
+    name: '_PlayerController.currentAudioTrackId',
+    context: context,
+  );
+
+  @override
+  String? get currentAudioTrackId {
+    _$currentAudioTrackIdAtom.reportRead();
+    return super.currentAudioTrackId;
+  }
+
+  @override
+  set currentAudioTrackId(String? value) {
+    _$currentAudioTrackIdAtom.reportWrite(value, super.currentAudioTrackId, () {
+      super.currentAudioTrackId = value;
+    });
+  }
+
   late final _$toggleFullScreenAsyncAction = AsyncAction(
     '_PlayerController.toggleFullScreen',
     context: context,
@@ -1031,7 +1111,11 @@ brightnessSeeking: ${brightnessSeeking},
 canHidePlayerPanel: ${canHidePlayerPanel},
 chatOverlayOpen: ${chatOverlayOpen},
 animeImg: ${animeImg},
-currentSetName: ${currentSetName}
+currentSetName: ${currentSetName},
+embeddedSubtitleTracks: ${embeddedSubtitleTracks},
+embeddedAudioTracks: ${embeddedAudioTracks},
+currentSubtitleTrackId: ${currentSubtitleTrackId},
+currentAudioTrackId: ${currentAudioTrackId}
     ''';
   }
 }

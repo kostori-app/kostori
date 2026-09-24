@@ -19,6 +19,7 @@ import 'package:kostori/pages/watcher/player_item_base_panel.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:kostori/utils/remote.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -1043,6 +1044,7 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
                   controller: widget.controller.playerController,
                   fit: BoxFit.cover,
                   controls: null,
+                  subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
                 ),
                 Container(
                   width: double.infinity,

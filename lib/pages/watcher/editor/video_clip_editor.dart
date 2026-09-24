@@ -18,6 +18,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
+import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
@@ -1270,6 +1271,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               controller: _previewController!,
               fill: Colors.black,
               controls: NoVideoControls,
+              subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
             ),
 
           if (_showCropOverlay && _previewController != null)

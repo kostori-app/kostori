@@ -12,10 +12,21 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:kostori/pages/watcher/volume_slider_popup.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
+import 'package:media_kit/media_kit.dart';
+
+/// media_kit 轨道显示名：标题优先，其次语言
+String _trackLabel(String? title, String? language) {
+  final name = (title ?? '').trim();
+  if (name.isNotEmpty) return name;
+  final lang = (language ?? '').trim();
+  if (lang.isNotEmpty) return lang;
+  return t.subtitle;
+}
 
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
@@ -606,7 +617,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   )
                                 : Container(),
 
-                            // 音轨选择（源脚本提供媒体信息时显示）
+                            // 音轨选择（源脚本提供优先，其次 media_kit 内封轨道）
                             if ((playerController
                                         .playResult
                                         ?.audioTracks
@@ -627,12 +638,36 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                       ),
                                     )
                                     .toList(),
-                                child: Icon(
+                                child: const Icon(
+                                  Icons.audiotrack,
+                                  color: Colors.white,
+                                ),
+                              )
+                            else if (playerController
+                                    .embeddedAudioTracks
+                                    .length >
+                                1)
+                              PopupMenuButton<AudioTrack>(
+                                tooltip: t.audioTrack,
+                                onSelected:
+                                    playerController.setEmbeddedAudioTrack,
+                                itemBuilder: (_) => playerController
+                                    .embeddedAudioTracks
+                                    .map(
+                                      (tr) => PopupMenuItem(
+                                        value: tr,
+                                        child: Text(
+                                          _trackLabel(tr.title, tr.language),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                child: const Icon(
                                   Icons.audiotrack,
                                   color: Colors.white,
                                 ),
                               ),
-                            // 字幕选择
+                            // 字幕选择（源脚本提供优先，其次 media_kit 内封轨道）
                             if ((playerController
                                     .playResult
                                     ?.subtitleTracks
@@ -655,11 +690,54 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                         ),
                                       ),
                                 ],
-                                child: Icon(
+                                child: const Icon(
                                   Icons.subtitles,
                                   color: Colors.white,
                                 ),
+                              )
+                            else if (playerController
+                                .embeddedSubtitleTracks
+                                .isNotEmpty)
+                              PopupMenuButton<SubtitleTrack>(
+                                tooltip: t.subtitle,
+                                onSelected:
+                                    playerController.setEmbeddedSubtitleTrack,
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(
+                                    value: SubtitleTrack.no(),
+                                    child: Text(t.subtitleOff),
+                                  ),
+                                  ...playerController.embeddedSubtitleTracks
+                                      .map(
+                                        (tr) => PopupMenuItem(
+                                          value: tr,
+                                          child: Text(
+                                            _trackLabel(tr.title, tr.language),
+                                          ),
+                                        ),
+                                      ),
+                                ],
+                                child: Icon(
+                                  Icons.subtitles,
+                                  color:
+                                      (playerController.currentSubtitleTrackId !=
+                                              null &&
+                                          playerController
+                                                  .currentSubtitleTrackId !=
+                                              'no')
+                                      ? Colors.white
+                                      : Colors.white54,
+                                ),
                               ),
+
+                            // 字幕样式设置
+                            IconButton(
+                              color: Colors.white,
+                              icon: const Icon(Icons.text_fields),
+                              tooltip: t.subtitleSettings,
+                              onPressed: () =>
+                                  showPlayerSubtitleSettingsSheet(context),
+                            ),
 
                             if (App.isAndroid && !playerController.isFullScreen)
                               IconButton(

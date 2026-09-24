@@ -2831,6 +2831,11 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get audioTrack => '音軌';
 	@override String get subtitle => '字幕';
 	@override String get subtitleOff => '關閉字幕';
+	@override String get subtitleSettings => '字幕設定';
+	@override String get subtitleTextColor => '文字顏色';
+	@override String get subtitleOutlineColor => '描邊顏色';
+	@override String get subtitleFontSize => '字號';
+	@override String get subtitleOutlineWidth => '描邊寬度';
 	@override String get quality => '清晰度';
 	@override String copiedField({required Object x}) => '已複製: ${x}';
 	@override String selectAliasCount({required Object count}) => '選擇別名 (${count})';
@@ -5923,6 +5928,11 @@ extension on TranslationsZhTw {
 			'audioTrack' => '音軌',
 			'subtitle' => '字幕',
 			'subtitleOff' => '關閉字幕',
+			'subtitleSettings' => '字幕設定',
+			'subtitleTextColor' => '文字顏色',
+			'subtitleOutlineColor' => '描邊顏色',
+			'subtitleFontSize' => '字號',
+			'subtitleOutlineWidth' => '描邊寬度',
 			'quality' => '清晰度',
 			'copiedField' => ({required Object x}) => '已複製: ${x}',
 			'selectAliasCount' => ({required Object count}) => '選擇別名 (${count})',

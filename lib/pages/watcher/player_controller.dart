@@ -29,6 +29,7 @@ import 'package:kostori/pages/watcher/editor/video_clip_editor.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/services/download/download_manager.dart';
+import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
@@ -67,6 +68,8 @@ abstract class _PlayerController with Store {
   StreamSubscription<bool>? _playingSub;
   StreamSubscription<bool>? _bufferingSub;
   StreamSubscription<bool>? _completedSub;
+  StreamSubscription<Tracks>? _tracksSub;
+  StreamSubscription<Track>? _trackSub;
 
   DateTime currentTime = DateTime.now();
 
@@ -329,6 +332,16 @@ abstract class _PlayerController with Store {
   @observable
   String currentSetName = '';
 
+  /// media_kit 解析出的内封轨道（含文件里 mux 的轨道；已过滤 auto/no）
+  @observable
+  List<SubtitleTrack> embeddedSubtitleTracks = const [];
+  @observable
+  List<AudioTrack> embeddedAudioTracks = const [];
+  @observable
+  String? currentSubtitleTrackId;
+  @observable
+  String? currentAudioTrackId;
+
   late WindowFrameController windowFrame;
 
   // 播放器实时状态
@@ -398,6 +411,19 @@ abstract class _PlayerController with Store {
     _completedSub = player.stream.completed.listen((c) {
       completed = c;
     });
+    // media_kit 内封字幕/音轨 + 当前选中项
+    _tracksSub = player.stream.tracks.listen((tracks) {
+      embeddedSubtitleTracks = tracks.subtitle
+          .where((e) => e.id != 'auto' && e.id != 'no')
+          .toList();
+      embeddedAudioTracks = tracks.audio
+          .where((e) => e.id != 'auto' && e.id != 'no')
+          .toList();
+    });
+    _trackSub = player.stream.track.listen((track) {
+      currentSubtitleTrackId = track.subtitle.id;
+      currentAudioTrackId = track.audio.id;
+    });
 
     // 音量/亮度保持 Timer 但降低频率，且只在非 seeking 时才查询
     playerTimer = Timer.periodic(const Duration(seconds: 2), (_) {
@@ -428,6 +454,8 @@ abstract class _PlayerController with Store {
     _playingSub?.cancel();
     _bufferingSub?.cancel();
     _completedSub?.cancel();
+    _tracksSub?.cancel();
+    _trackSub?.cancel();
     _centerHintTimer?.cancel();
     playerTimer?.cancel();
   }
@@ -942,6 +970,20 @@ abstract class _PlayerController with Store {
     } catch (_) {}
   }
 
+  /// 切换 media_kit 内封字幕轨道（关闭用 [SubtitleTrack.no]）
+  Future<void> setEmbeddedSubtitleTrack(SubtitleTrack track) async {
+    try {
+      await player.setSubtitleTrack(track);
+    } catch (_) {}
+  }
+
+  /// 切换 media_kit 内封音轨
+  Future<void> setEmbeddedAudioTrack(AudioTrack track) async {
+    try {
+      await player.setAudioTrack(track);
+    } catch (_) {}
+  }
+
   /// 切换清晰度（源提供对应清晰度的播放地址时）
   Future<void> switchQuality(String url) async {
     if (url.isEmpty) return;
@@ -1212,6 +1254,7 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
             ? Video(
                 controller: playerController.playerController,
                 controls: null,
+                subtitleViewConfiguration: kPlayerSubtitleViewConfiguration,
               )
             : VideoPage(playerController: playerController);
       },

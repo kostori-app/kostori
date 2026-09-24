@@ -2832,6 +2832,11 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get audioTrack => '音轨';
 	@override String get subtitle => '字幕';
 	@override String get subtitleOff => '关闭字幕';
+	@override String get subtitleSettings => '字幕设置';
+	@override String get subtitleTextColor => '文字颜色';
+	@override String get subtitleOutlineColor => '描边颜色';
+	@override String get subtitleFontSize => '字号';
+	@override String get subtitleOutlineWidth => '描边宽度';
 	@override String get quality => '清晰度';
 	@override String copiedField({required Object x}) => '已复制: ${x}';
 	@override String selectAliasCount({required Object count}) => '选择别名 (${count})';
@@ -5925,6 +5930,11 @@ extension on TranslationsZhCn {
 			'audioTrack' => '音轨',
 			'subtitle' => '字幕',
 			'subtitleOff' => '关闭字幕',
+			'subtitleSettings' => '字幕设置',
+			'subtitleTextColor' => '文字颜色',
+			'subtitleOutlineColor' => '描边颜色',
+			'subtitleFontSize' => '字号',
+			'subtitleOutlineWidth' => '描边宽度',
 			'quality' => '清晰度',
 			'copiedField' => ({required Object x}) => '已复制: ${x}',
 			'selectAliasCount' => ({required Object count}) => '选择别名 (${count})',
