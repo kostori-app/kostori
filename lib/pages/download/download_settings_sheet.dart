@@ -68,18 +68,32 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet>
             child: TabBarView(
               controller: _tabCtrl,
               children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 8, bottom: 24),
-                  child: _downloadSettings(),
+                _centered(
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.only(top: 8, bottom: 24),
+                    child: _downloadSettings(),
+                  ),
                 ),
-                SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 8, bottom: 24),
-                  child: _torrentSettings(),
+                _centered(
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.only(top: 8, bottom: 24),
+                    child: _torrentSettings(),
+                  ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 除顶部切换胶囊外，设置内容整体居中（限制宽度）。
+  Widget _centered(Widget child) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: child,
       ),
     );
   }
@@ -212,34 +226,9 @@ class _TorrentSettings extends StatefulWidget {
 
 class _TorrentSettingsState extends State<_TorrentSettings> {
   final _m = TorrentManager.instance;
-  late final TextEditingController _urlCtrl = TextEditingController(
-    text: _m.trackerUrl,
-  );
-  late final TextEditingController _trackersCtrl = TextEditingController(
-    text: _m.trackers.join('\n'),
-  );
-  late final TextEditingController _nodesCtrl = TextEditingController(
-    text: _m.customNodes.join('\n'),
-  );
-  bool _fetching = false;
-  Timer? _debounce;
 
   static const _speeds = [0, 1024, 2048, 5120, 10240, 20480];
   String _speedLabel(int kb) => kb == 0 ? t.torrentUnlimited : '$kb KB/s';
-
-  void _debounced(void Function() action) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 700), action);
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _urlCtrl.dispose();
-    _trackersCtrl.dispose();
-    _nodesCtrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,99 +252,15 @@ class _TorrentSettingsState extends State<_TorrentSettings> {
             onChanged: (v) => setState(() => _m.stopSeedAfterComplete = v),
           ),
         ),
-        const Divider(),
+        const Divider(height: 1),
         ListTile(
-          title: Text(t.torrentTrackersAuto),
-          trailing: CustomSwitch(
-            value: _m.trackerAutoAdd,
-            onChanged: (v) => setState(() => _m.setTrackerAutoAdd(v)),
-          ),
+          leading: const Icon(Icons.dns_outlined),
+          title: Text(t.torrentTrackers),
+          subtitle: Text('${_m.trackers.length}'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => showPopUpWidget(context, const _TrackerEditorPage()),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: TextField(
-            controller: _urlCtrl,
-            decoration: InputDecoration(
-              labelText: t.torrentTrackerUrlHint,
-              border: const OutlineInputBorder(),
-            ),
-            onChanged: (v) => _m.setTrackerUrl(v.trim()),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Row(
-            children: [
-              FilledButton.tonalIcon(
-                onPressed: _fetching
-                    ? null
-                    : () async {
-                        _m.setTrackerUrl(_urlCtrl.text.trim());
-                        setState(() => _fetching = true);
-                        await _m.fetchTrackers();
-                        _trackersCtrl.text = _m.trackers.join('\n');
-                        if (mounted) setState(() => _fetching = false);
-                      },
-                icon: _fetching
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download),
-                label: Text(t.torrentFetchTrackers),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: TextField(
-            controller: _trackersCtrl,
-            minLines: 5,
-            maxLines: 12,
-            decoration: InputDecoration(
-              hintText: t.torrentTrackersHint,
-              border: const OutlineInputBorder(),
-            ),
-            onChanged: (v) => _debounced(
-              () => _m.setTrackers(
-                v
-                    .split('\n')
-                    .map((e) => e.trim())
-                    .where((e) => e.isNotEmpty)
-                    .toList(),
-              ),
-            ),
-          ),
-        ),
-        const Divider(),
-        ListTile(
-          leading: const Icon(Icons.hub_outlined),
-          title: Text(t.torrentDht),
-          subtitle: Text(t.torrentDhtExplain),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: TextField(
-            controller: _nodesCtrl,
-            minLines: 3,
-            maxLines: 8,
-            decoration: InputDecoration(
-              hintText: t.torrentNodesHint,
-              border: const OutlineInputBorder(),
-            ),
-            onChanged: (v) => _debounced(
-              () => _m.setCustomNodes(
-                v
-                    .split('\n')
-                    .map((e) => e.trim())
-                    .where((e) => e.isNotEmpty)
-                    .toList(),
-              ),
-            ),
-          ),
-        ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -382,6 +287,169 @@ class _TorrentSettingsState extends State<_TorrentSettings> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 二级页面：Tracker 列表编辑
+class _TrackerEditorPage extends StatefulWidget {
+  const _TrackerEditorPage();
+
+  @override
+  State<_TrackerEditorPage> createState() => _TrackerEditorPageState();
+}
+
+class _TrackerEditorPageState extends State<_TrackerEditorPage> {
+  final _m = TorrentManager.instance;
+  late final TextEditingController _urlCtrl = TextEditingController(
+    text: _m.trackerUrl,
+  );
+  late final TextEditingController _trackersCtrl = TextEditingController(
+    text: _m.trackers.join('\n'),
+  );
+  bool _fetching = false;
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _urlCtrl.dispose();
+    _trackersCtrl.dispose();
+    super.dispose();
+  }
+
+  void _debounced(void Function() action) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 700), action);
+  }
+
+  static List<String> _lines(String value) => value
+      .split('\n')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+
+  Future<void> _fetch() async {
+    _m.setTrackerUrl(_urlCtrl.text.trim());
+    setState(() => _fetching = true);
+    await _m.fetchTrackers();
+    _trackersCtrl.text = _m.trackers.join('\n');
+    if (mounted) setState(() => _fetching = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return PopUpWidgetScaffold(
+      title: t.torrentTrackers,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              _card(
+                SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  title: Text(t.torrentTrackersAuto),
+                  value: _m.trackerAutoAdd,
+                  onChanged: (v) => setState(() => _m.setTrackerAutoAdd(v)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _card(
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _urlCtrl,
+                        decoration: InputDecoration(
+                          labelText: t.torrentTrackerUrlHint,
+                          prefixIcon: const Icon(Icons.link, size: 18),
+                          border: const OutlineInputBorder(),
+                        ),
+                        onChanged: (v) => _m.setTrackerUrl(v.trim()),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.tonalIcon(
+                          onPressed: _fetching ? null : _fetch,
+                          icon: _fetching
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.download, size: 18),
+                          label: Text(t.torrentFetchTrackers),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _card(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.list_alt, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            t.torrentTrackers,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${_m.trackers.length}',
+                            style: TextStyle(color: cs.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      child: TextField(
+                        controller: _trackersCtrl,
+                        minLines: 8,
+                        maxLines: 16,
+                        style: const TextStyle(fontSize: 12, height: 1.4),
+                        decoration: InputDecoration(
+                          hintText: t.torrentTrackersHint,
+                          border: const OutlineInputBorder(),
+                        ),
+                        onChanged: (v) =>
+                            _debounced(() => _m.setTrackers(_lines(v))),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _card(Widget child) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 }

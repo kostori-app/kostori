@@ -101,12 +101,14 @@ class TorrentManager extends ChangeNotifier {
         .where((e) => e.isNotEmpty)
         .toList();
     appdata.writeImplicitData();
-    // 对已在运行的任务补发 announce
+    // 只对已启动的任务补发 announce（未启动的还没绑定端口）
     for (final job in _jobs) {
+      if (!_started.contains(job.id)) continue;
       final engine = _engines[job.id];
       final model = _models[job.id];
       if (engine == null || model == null) continue;
-      for (final tr in _parseTrackers(_readList(appdata.implicitData, kTorrentTrackers).split('\n'))) {
+      for (final tr in _parseTrackers(
+          _readList(appdata.implicitData, kTorrentTrackers).split('\n'))) {
         try {
           engine.startAnnounceUrl(tr, model.infoHashBuffer);
         } catch (_) {}
@@ -125,8 +127,7 @@ class TorrentManager extends ChangeNotifier {
   }
 
   String get trackerUrl =>
-      (appdata.implicitData[kTorrentTrackerUrl] as String?) ??
-      'https://cf.trackerslist.com/all.txt';
+      (appdata.implicitData[kTorrentTrackerUrl] as String?) ?? '';
 
   void setTrackerUrl(String v) {
     appdata.implicitData[kTorrentTrackerUrl] = v;
