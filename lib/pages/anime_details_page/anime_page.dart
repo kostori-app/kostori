@@ -1022,7 +1022,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     final picked = await showModalBottomSheet<Anime>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
+      // Sheet 组件自带拖拽把手，这里不要再开 showDragHandle，否则出现两层把手
       builder: (_) => _SourceSwitchSheet(
         initialKeyword: anime.title,
         currentSourceKey: _sourceKey,
@@ -2049,8 +2049,14 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
     }
     final beforeSuppressed = JsUiApi.suppressedCaptchaRequests;
     try {
-      // 批量自动搜索：抑制源 JS 的验证码弹窗，验证码只在该源被主动触发时弹出
-      if (!allowCaptchaDialog) JsUiApi.suppressCaptcha();
+      // 批量自动搜索：抑制源 JS 的验证码弹窗，验证码只在该源被主动触发时弹出。
+      // 主动触发时强制放行：其它源的自动搜索还可能在跑（抑制计数未归零），
+      // 否则本源的验证码框也会被一起抑制掉。
+      if (allowCaptchaDialog) {
+        JsUiApi.forceCaptcha();
+      } else {
+        JsUiApi.suppressCaptcha();
+      }
       final options = (data.searchOptions ?? const [])
           .map((e) => e.defaultValue)
           .toList();
@@ -2068,7 +2074,11 @@ class _SourceSwitchSheetState extends State<_SourceSwitchSheet> {
           !st.needsCaptcha &&
           (msg.toLowerCase().contains('captcha') || msg.contains('验证码'));
     } finally {
-      if (!allowCaptchaDialog) JsUiApi.restoreCaptcha();
+      if (allowCaptchaDialog) {
+        JsUiApi.unforceCaptcha();
+      } else {
+        JsUiApi.restoreCaptcha();
+      }
       // 搜索期间源 JS 请求过验证码弹窗（被抑制）→ 标记该源需要验证码
       if (JsUiApi.suppressedCaptchaRequests > beforeSuppressed) {
         st.needsCaptcha = true;
@@ -2172,7 +2182,10 @@ class _SourceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final needsCf = state.cf != null;
-    final needsCaptcha = needsCaptchaDeclared || state.needsCaptcha;
+    // 搜索已经成功说明本次不需要验证码（或被主动验证通过了），
+    // 不再显示"需要验证"标记与点击验证入口
+    final needsCaptcha =
+        !state.success && (needsCaptchaDeclared || state.needsCaptcha);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(

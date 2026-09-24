@@ -11,11 +11,22 @@ mixin class JsUiApi {
   /// 不自动弹出验证码输入框；用户主动触发该源搜索（点击验证/重试）时恢复。
   static int _captchaSuppressed = 0;
 
+  /// 强制放行计数：用户主动触发的搜索（点击验证/重试）会临时置位。
+  /// 批量自动搜索是并发进行的，抑制计数要等最后一个源结束才归零，
+  /// 若仅看 [_captchaSuppressed]，用户在其它源还在搜时点击验证会被
+  /// 误判为"抑制中"而拿不到验证码框（源侧随即报"已取消验证码输入"）。
+  static int _captchaForced = 0;
+
   static void suppressCaptcha() => _captchaSuppressed++;
 
   static void restoreCaptcha() => _captchaSuppressed--;
 
-  static bool get captchaEnabled => _captchaSuppressed <= 0;
+  /// 用户主动触发搜索期间强制允许验证码弹窗
+  static void forceCaptcha() => _captchaForced++;
+
+  static void unforceCaptcha() => _captchaForced--;
+
+  static bool get captchaEnabled => _captchaForced > 0 || _captchaSuppressed <= 0;
 
   /// 被抑制的验证码请求计数：自动搜索期间源 JS 请求验证码弹窗的次数，
   /// 用于让调用方识别"该源可能需要验证码"。
