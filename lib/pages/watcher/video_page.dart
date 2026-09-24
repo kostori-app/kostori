@@ -907,13 +907,14 @@ class _VideoPageState extends State<VideoPage>
   }
 
   Widget _settingsTile({required Widget child}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
         color: Colors.white10,
         borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: child,
       ),
-      child: child,
     );
   }
 

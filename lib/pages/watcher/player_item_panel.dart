@@ -28,6 +28,36 @@ String _trackLabel(String? title, String? language) {
   return t.subtitle;
 }
 
+bool _hasSubtitleOptions(PlayerController pc) =>
+    pc.embeddedSubtitleTracks.isNotEmpty ||
+    (pc.playResult?.subtitleTracks.isNotEmpty ?? false);
+
+/// 字幕轨道 + 样式合并到一个面板：优先用 media_kit 内封轨道，其次源脚本轨道。
+void _openSubtitleSheet(BuildContext context, PlayerController pc) {
+  final embedded = pc.embeddedSubtitleTracks;
+  if (embedded.isNotEmpty) {
+    showPlayerSubtitleSettingsSheet(
+      context,
+      subtitleTracks: embedded,
+      currentSubtitleTrackId: pc.currentSubtitleTrackId,
+      onSelectSubtitleTrack: pc.setEmbeddedSubtitleTrack,
+    );
+    return;
+  }
+  final src = pc.playResult?.subtitleTracks ?? const [];
+  showPlayerSubtitleSettingsSheet(
+    context,
+    subtitleTracks: [
+      for (final tr in src)
+        SubtitleTrack('${tr.index}', tr.title ?? tr.displayTitle, tr.language),
+    ],
+    onSelectSubtitleTrack: (tr) {
+      final i = int.tryParse(tr.id);
+      if (i != null) pc.setSubtitleTrack(i);
+    },
+  );
+}
+
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
     super.key,
@@ -667,77 +697,15 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   color: Colors.white,
                                 ),
                               ),
-                            // 字幕选择（源脚本提供优先，其次 media_kit 内封轨道）
-                            if ((playerController
-                                    .playResult
-                                    ?.subtitleTracks
-                                    .isNotEmpty ??
-                                false))
-                              PopupMenuButton<int>(
+                            // 字幕（轨道切换 + 样式合并在同一面板）
+                            if (_hasSubtitleOptions(playerController))
+                              IconButton(
+                                color: Colors.white,
+                                icon: const Icon(Icons.subtitles),
                                 tooltip: t.subtitle,
-                                onSelected: (i) =>
-                                    playerController.setSubtitleTrack(i),
-                                itemBuilder: (_) => [
-                                  PopupMenuItem(
-                                    value: -1,
-                                    child: Text(t.subtitleOff),
-                                  ),
-                                  ...playerController.playResult!.subtitleTracks
-                                      .map(
-                                        (tr) => PopupMenuItem(
-                                          value: tr.index,
-                                          child: Text(tr.displayTitle),
-                                        ),
-                                      ),
-                                ],
-                                child: const Icon(
-                                  Icons.subtitles,
-                                  color: Colors.white,
-                                ),
-                              )
-                            else if (playerController
-                                .embeddedSubtitleTracks
-                                .isNotEmpty)
-                              PopupMenuButton<SubtitleTrack>(
-                                tooltip: t.subtitle,
-                                onSelected:
-                                    playerController.setEmbeddedSubtitleTrack,
-                                itemBuilder: (_) => [
-                                  PopupMenuItem(
-                                    value: SubtitleTrack.no(),
-                                    child: Text(t.subtitleOff),
-                                  ),
-                                  ...playerController.embeddedSubtitleTracks
-                                      .map(
-                                        (tr) => PopupMenuItem(
-                                          value: tr,
-                                          child: Text(
-                                            _trackLabel(tr.title, tr.language),
-                                          ),
-                                        ),
-                                      ),
-                                ],
-                                child: Icon(
-                                  Icons.subtitles,
-                                  color:
-                                      (playerController.currentSubtitleTrackId !=
-                                              null &&
-                                          playerController
-                                                  .currentSubtitleTrackId !=
-                                              'no')
-                                      ? Colors.white
-                                      : Colors.white54,
-                                ),
+                                onPressed: () =>
+                                    _openSubtitleSheet(context, playerController),
                               ),
-
-                            // 字幕样式设置
-                            IconButton(
-                              color: Colors.white,
-                              icon: const Icon(Icons.text_fields),
-                              tooltip: t.subtitleSettings,
-                              onPressed: () =>
-                                  showPlayerSubtitleSettingsSheet(context),
-                            ),
 
                             if (App.isAndroid && !playerController.isFullScreen)
                               IconButton(
