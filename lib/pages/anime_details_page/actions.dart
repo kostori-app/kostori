@@ -89,22 +89,24 @@ abstract mixin class _AnimePageActions {
       // 更新当前条目历史：使用更高集/更新的时间
       own.lastWatchEpisode = inheritedEp;
       own.lastWatchTime = inheritedTime;
+      own.lastRoad = best.lastRoad ?? own.lastRoad;
       await manager.addHistory(own);
       watcherController.history = own;
 
-      // 复制最高进度的该集进度到当前条目（road 0，常规单路源）
+      // 复制最高进度的该集进度到当前条目（沿用其线路 road）
       if (inheritedEp > 0) {
+        final road = best.lastRoad ?? 0;
         final sourceProg = await manager.progressFindAsync(
           best.id,
           best.type,
           inheritedEp,
-          0,
+          road,
         );
         if (sourceProg != null) {
           final p = Progress.fromModel(
             model: anime,
             episode: inheritedEp,
-            road: 0,
+            road: road,
             progressInMilli: sourceProg.progressInMilli,
           );
           p.isCompleted = sourceProg.isCompleted;

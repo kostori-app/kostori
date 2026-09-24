@@ -278,7 +278,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (history?.bangumiId == null) {
       DebugLog.info('onDataLoaded', 'isBangumi: $isBangumi');
       if (isBangumi) {
-        updateBangumiId();
+        // 绑定 bangumiId 需要网络搜索，绑定成功后再按 id 继承其它来源的进度
+        // （否则这里 fire-and-forget，后面的继承会因 bangumiId 仍为空而跳过）
+        unawaited(
+          updateBangumiId().then((_) async {
+            if (!mounted) return;
+            await inheritBangumiProgress();
+            update();
+          }),
+        );
       }
     }
     isLiked = await stats.getGroupLikedStatus(
