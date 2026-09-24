@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:floating/floating.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,14 +12,13 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
+import 'package:kostori/pages/watcher/player_actions.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_base_panel.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
-import 'package:kostori/utils/remote.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
@@ -243,82 +241,6 @@ class _PlayerItemState extends State<PlayerItem>
     );
   }
 
-  /// 更多面板里"点击型"操作项（小窗 / 投屏 / 日志 / 播放器详情 / 音频设备）
-  List<MenuEntry> _actionEntries() {
-    return [
-      if (App.isDesktop)
-        MenuEntry(
-          icon: Icons.speaker_outlined,
-          text: t.audioOutputDevice,
-          onClick: () => _showAudioDevicePicker(),
-        ),
-      if (!playerController.isFullScreen && App.isAndroid)
-        MenuEntry(
-          icon: Icons.picture_in_picture_alt,
-          text: t.watcherMiniWindow,
-          onClick: () async {
-            final floating = Floating();
-            if (await floating.isPipAvailable) {
-              final status = await floating.pipStatus;
-              if (status == PiPStatus.disabled ||
-                  status == PiPStatus.automatic) {
-                playerController.enterPiPMode();
-              } else if (status == PiPStatus.enabled) {
-                playerController.exitPiPMode();
-              }
-            }
-          },
-        ),
-      MenuEntry(
-        icon: Icons.cast_outlined,
-        text: t.remoteCast,
-        onClick: () {
-          bool needRestart = playerController.playing;
-          playerController.pause();
-          RemotePlay().castVideo(playerController.videoUrl).whenComplete(() {
-            if (needRestart) {
-              playerController.play();
-            }
-          });
-        },
-      ),
-      if (!playerController.isFullScreen)
-        MenuEntry(
-          icon: Icons.article_outlined,
-          text: t.log,
-          onClick: () {
-            showModalBottomSheet(
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-                maxWidth: MediaQuery.sizeOf(context).width <= 600
-                    ? MediaQuery.sizeOf(context).width
-                    : (App.isDesktop)
-                    ? MediaQuery.sizeOf(context).width * 9 / 16
-                    : MediaQuery.sizeOf(context).width,
-              ),
-              clipBehavior: Clip.antiAlias,
-              context: context,
-              builder: (_) => Sheet(
-                title: t.logs,
-                icon: Icons.article_outlined,
-                initialSize: 0.85,
-                builder: (_, _) => const LogsPage(inSheet: true),
-              ),
-            );
-          },
-        ),
-      MenuEntry(
-        icon: Icons.info_outline,
-        text: t.playerDetails,
-        onClick: () {
-          showVideoInfo();
-        },
-      ),
-    ];
-  }
-
   /// 播放器面板右上角"更多"按钮：点击弹出底部 sheet
   Widget _buildMenuItems() {
     return IconButton(
@@ -344,21 +266,13 @@ class _PlayerItemState extends State<PlayerItem>
           controller: sc,
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           children: [
-            // 操作项：图标在上文字在下，放置最上方
+            // 操作项：与「视频详情」tab 一致（音频设备/小窗/投屏/日志/播放器详情）
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  for (final e in _actionEntries())
-                    IconTileButton(
-                      icon: Icon(e.icon),
-                      label: e.text,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        e.onClick();
-                      },
-                    ),
-                ],
+              child: PlayerActionButtons(
+                playerController: playerController,
+                onPlayerDetails: showVideoInfo,
+                onBeforeAction: () => Navigator.pop(ctx),
               ),
             ),
             // 开关类：卡片风格（图标 + 标题 + 开关）
@@ -444,82 +358,29 @@ class _PlayerItemState extends State<PlayerItem>
               icon: Icons.high_quality_outlined,
               title: t.superResolution,
               child: Observer(
-                builder: (context) => SegmentedButton<int>(
-                  segments: [
-                    ButtonSegment<int>(
-                      value: 1,
-                      label: Text(t.superResolutionOff),
+                builder: (context) => CapsuleOptions(
+                  alignment: WrapAlignment.start,
+                  wrap: true,
+                  children: [
+                    CapsuleOption(
+                      text: t.superResolutionOff,
+                      isSelected: playerController.superResolutionType == 1,
+                      onTap: () => playerController.setShader(1),
                     ),
-                    ButtonSegment<int>(
-                      value: 2,
-                      label: Text(t.superResolutionEfficiency),
+                    CapsuleOption(
+                      text: t.superResolutionEfficiency,
+                      isSelected: playerController.superResolutionType == 2,
+                      onTap: () => playerController.setShader(2),
                     ),
-                    ButtonSegment<int>(
-                      value: 3,
-                      label: Text(t.superResolutionQuality),
+                    CapsuleOption(
+                      text: t.superResolutionQuality,
+                      isSelected: playerController.superResolutionType == 3,
+                      onTap: () => playerController.setShader(3),
                     ),
                   ],
-                  selected: {playerController.superResolutionType},
-                  onSelectionChanged: (Set<int> selected) {
-                    if (selected.isNotEmpty) {
-                      playerController.setShader(selected.first);
-                    }
-                  },
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 音频输出设备选择弹窗（桌面端）
-  Future<void> _showAudioDevicePicker() async {
-    final devices = await playerController.getAudioDevices();
-    final current = playerController.currentAudioDevice;
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => ContentDialog(
-        title: t.audioOutputDevice,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              dense: true,
-              leading: const Icon(Icons.autorenew, size: 18),
-              title: Text(t.autoDetect),
-              trailing: current.isEmpty
-                  ? const Icon(Icons.check, size: 18)
-                  : null,
-              onTap: () async {
-                await playerController.setAudioDevice('');
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-            ),
-            for (final d in devices)
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.speaker_outlined, size: 18),
-                title: Text(
-                  d.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: current == d.name
-                    ? const Icon(Icons.check, size: 18)
-                    : null,
-                onTap: () async {
-                  await playerController.setAudioDevice(d.name);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-            if (devices.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(t.noAudioDevice),
-              ),
           ],
         ),
       ),

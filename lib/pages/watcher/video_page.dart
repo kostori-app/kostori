@@ -14,12 +14,11 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/danmaku_settings.dart';
+import 'package:kostori/pages/watcher/player_actions.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
-import 'package:kostori/utils/remote.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -474,19 +473,6 @@ class _VideoPageState extends State<VideoPage>
       controller: observerController,
       child: Column(
         children: [
-          // 顶层操作按钮行（剧集/系列列表之上，后续可扩展更多按钮）
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              children: [
-                IconTileButton(
-                  icon: const Icon(Icons.refresh),
-                  label: t.reloadEpisode,
-                  onTap: () => playerController.reloadCurrent(),
-                ),
-              ],
-            ),
-          ),
           _buildPlaylistHeader(),
           _buildPlaylistBody(),
         ],
@@ -511,7 +497,12 @@ class _VideoPageState extends State<VideoPage>
             ),
           ),
           const SizedBox(width: 10),
-          // 系列模式：无线路概念，不显示线路选择器
+          // 重载剧集（移到「切换播放列表」左侧）
+          IconTileButton(
+            icon: const Icon(Icons.refresh),
+            label: t.reloadEpisode,
+            onTap: () => playerController.reloadCurrent(),
+          ),
           if (!_isSeries)
             MenuAnchor(
               consumeOutsideTap: true,
@@ -823,31 +814,44 @@ class _VideoPageState extends State<VideoPage>
                 ),
               ),
               const SizedBox(height: 24),
+              // 操作按钮（与「更多」面板一致：音频设备/小窗/投屏/日志/播放器详情）
+              PlayerActionButtons(
+                playerController: playerController,
+                onPlayerDetails: () => _panelTabController.animateTo(2),
+              ),
+              const SizedBox(height: 24),
               // Super resolution
               _sectionTitle(t.superResolution),
               const SizedBox(height: 8),
-              SegmentedButton<int>(
-                segments: [
-                  ButtonSegment<int>(
-                    value: 1,
-                    label: Text(t.superResolutionOff),
+              CapsuleOptions(
+                alignment: WrapAlignment.start,
+                wrap: true,
+                children: [
+                  CapsuleOption(
+                    text: t.superResolutionOff,
+                    isSelected: playerController.superResolutionType == 1,
+                    onTap: () {
+                      playerController.setShader(1);
+                      setState(() {});
+                    },
                   ),
-                  ButtonSegment<int>(
-                    value: 2,
-                    label: Text(t.superResolutionEfficiency),
+                  CapsuleOption(
+                    text: t.superResolutionEfficiency,
+                    isSelected: playerController.superResolutionType == 2,
+                    onTap: () {
+                      playerController.setShader(2);
+                      setState(() {});
+                    },
                   ),
-                  ButtonSegment<int>(
-                    value: 3,
-                    label: Text(t.superResolutionQuality),
+                  CapsuleOption(
+                    text: t.superResolutionQuality,
+                    isSelected: playerController.superResolutionType == 3,
+                    onTap: () {
+                      playerController.setShader(3);
+                      setState(() {});
+                    },
                   ),
                 ],
-                selected: {playerController.superResolutionType},
-                onSelectionChanged: (Set<int> selected) {
-                  if (selected.isNotEmpty) {
-                    playerController.setShader(selected.first);
-                    setState(() {});
-                  }
-                },
               ),
               const SizedBox(height: 24),
               // Other settings
@@ -895,58 +899,7 @@ class _VideoPageState extends State<VideoPage>
                   ),
                 ),
               ),
-              if (!playerController.isFullScreen)
-                _settingsTile(
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.bug_report,
-                      color: Colors.white70,
-                    ),
-                    title: Text(
-                      t.logs,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    onTap: () => context.to(() => const LogsPage()),
-                  ),
-                ),
             ],
-          ),
-        ),
-
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.7),
-                ],
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            child: Row(
-              children: [
-                // Cast 按钮
-                _bottomAction(
-                  icon: Icons.cast,
-                  label: t.remoteCast,
-                  onTap: () {
-                    bool needRestart = playerController.playing;
-                    playerController.pause();
-                    RemotePlay()
-                        .castVideo(playerController.videoUrl)
-                        .whenComplete(() {
-                          if (needRestart) playerController.play();
-                        });
-                  },
-                ),
-              ],
-            ),
           ),
         ),
       ],
@@ -961,31 +914,6 @@ class _VideoPageState extends State<VideoPage>
         borderRadius: BorderRadius.circular(8),
       ),
       child: child,
-    );
-  }
-
-  Widget _bottomAction({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white70, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
