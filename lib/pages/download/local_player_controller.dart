@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
@@ -11,6 +12,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:window_manager/window_manager.dart';
 
 /// 本地播放器状态
 class LocalPlayerState {
@@ -33,6 +35,14 @@ class LocalPlayerState {
   final double volume;
   final double brightness;
 
+  /// 可选字幕/音轨（来自 media_kit，含 auto/no 占位项）
+  final List<SubtitleTrack> subtitleTracks;
+  final List<AudioTrack> audioTracks;
+
+  /// 当前选中的字幕/音轨 id（media_kit `Track.id`）
+  final String? subtitleTrackId;
+  final String? audioTrackId;
+
   const LocalPlayerState({
     this.loading = true,
     this.playing = false,
@@ -50,6 +60,10 @@ class LocalPlayerState {
     this.showBrightness = false,
     this.volume = 1.0,
     this.brightness = 1.0,
+    this.subtitleTracks = const [],
+    this.audioTracks = const [],
+    this.subtitleTrackId,
+    this.audioTrackId,
   });
 
   LocalPlayerState copyWith({
@@ -70,6 +84,10 @@ class LocalPlayerState {
     bool? showBrightness,
     double? volume,
     double? brightness,
+    List<SubtitleTrack>? subtitleTracks,
+    List<AudioTrack>? audioTracks,
+    String? subtitleTrackId,
+    String? audioTrackId,
   }) {
     return LocalPlayerState(
       loading: loading ?? this.loading,
@@ -88,6 +106,10 @@ class LocalPlayerState {
       showBrightness: showBrightness ?? this.showBrightness,
       volume: volume ?? this.volume,
       brightness: brightness ?? this.brightness,
+      subtitleTracks: subtitleTracks ?? this.subtitleTracks,
+      audioTracks: audioTracks ?? this.audioTracks,
+      subtitleTrackId: subtitleTrackId ?? this.subtitleTrackId,
+      audioTrackId: audioTrackId ?? this.audioTrackId,
     );
   }
 }
@@ -166,6 +188,26 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
         p.stream.error.listen((e) {
           if (_disposed) return;
           _update(state.copyWith(error: e));
+        }),
+      );
+      // 可选字幕/音轨（内封轨道也在这里）与当前选中项
+      _subs.add(
+        p.stream.tracks.listen((t) {
+          if (_disposed) return;
+          _update(
+            state.copyWith(subtitleTracks: t.subtitle, audioTracks: t.audio),
+          );
+        }),
+      );
+      _subs.add(
+        p.stream.track.listen((t) {
+          if (_disposed) return;
+          _update(
+            state.copyWith(
+              subtitleTrackId: t.subtitle.id,
+              audioTrackId: t.audio.id,
+            ),
+          );
         }),
       );
       await p.open(Media(filePath), play: true);
@@ -304,6 +346,20 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
 
   void setShowBrightness(bool v) => _update(state.copyWith(showBrightness: v));
 
+  /// 切换字幕轨道（关闭用 [SubtitleTrack.no]）
+  Future<void> setSubtitleTrack(SubtitleTrack track) async {
+    try {
+      await player.setSubtitleTrack(track);
+    } catch (_) {}
+  }
+
+  /// 切换音轨
+  Future<void> setAudioTrack(AudioTrack track) async {
+    try {
+      await player.setAudioTrack(track);
+    } catch (_) {}
+  }
+
   /// 长按倍速（watcher 交互：按住 2x，松开恢复）
   void startSpeedBoost() {
     final next = state.speed * 2 > 4 ? 4.0 : state.speed * 2;
@@ -317,10 +373,30 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     _update(state.copyWith(speed: next));
   }
 
-  /// 全屏（参考 watcher PlayerController.toggleFullScreen 移动端逻辑）：
-  /// 进入全屏 → 沉浸式 + 横屏 + 打开全屏路由；退出 → 恢复 + pop 全屏路由
+  /// 全屏（对齐 watcher PlayerController.toggleFullScreen）：
+  /// PC 端切系统窗口全屏 + 隐藏自绘窗框；移动端沉浸式 + 横屏 + 全屏路由。
   Future<void> toggleFullscreen() async {
     final next = !state.fullscreen;
+
+    // --- PC 端逻辑 ---
+    if (App.isDesktop) {
+      if (state.fullscreen) {
+        App.rootContext.pop();
+      } else {
+        Future.microtask(() {
+          App.rootContext.toFadeScale(
+            () => LocalFullscreenVideoPage(filePath: filePath),
+          );
+        });
+      }
+      await windowManager.setFullScreen(next);
+      _update(state.copyWith(fullscreen: next));
+      WindowFrame.of(App.rootContext).setWindowFrame(!next);
+      _resetHideTimer();
+      return;
+    }
+
+    // --- 移动端逻辑 ---
     _update(state.copyWith(fullscreen: next));
     if (next) {
       WakelockPlus.enable();

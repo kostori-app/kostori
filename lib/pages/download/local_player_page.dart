@@ -10,8 +10,10 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
 import 'package:kostori/pages/watcher/player_hud.dart';
+import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 /// 本地视频播放页（播放已下载的 mp4 / 种子流）
@@ -273,10 +275,15 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     final stack = Stack(
       children: [
         Positioned.fill(
-          child: Video(
-            controller: c.controller,
-            controls: null,
-            fit: BoxFit.contain,
+          child: ValueListenableBuilder<PlayerSubtitleStyle>(
+            valueListenable: PlayerSubtitleStyleController.notifier,
+            builder: (context, subtitleStyle, _) => Video(
+              controller: c.controller,
+              controls: null,
+              fit: BoxFit.contain,
+              subtitleViewConfiguration:
+                  buildPlayerSubtitleViewConfiguration(subtitleStyle),
+            ),
           ),
         ),
         // 径向渐变遮罩：边缘渐暗，随控件淡入淡出
@@ -488,6 +495,23 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
+  List<SubtitleTrack> _realSubtitleTracks(LocalPlayerState s) =>
+      s.subtitleTracks.where((tr) => tr.id != 'auto' && tr.id != 'no').toList();
+
+  List<AudioTrack> _realAudioTracks(LocalPlayerState s) =>
+      s.audioTracks.where((tr) => tr.id != 'auto' && tr.id != 'no').toList();
+
+  bool _isSubtitleOn(LocalPlayerState s) =>
+      s.subtitleTrackId != null && s.subtitleTrackId != 'no';
+
+  String _trackLabel(String? title, String? language) {
+    final name = (title ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final lang = (language ?? '').trim();
+    if (lang.isNotEmpty) return lang;
+    return t.subtitle;
+  }
+
   Widget _buildTopBar(LocalPlayerState state) {
     return Positioned(
       top: 0,
@@ -530,6 +554,51 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
+              // 音轨选择（多于一条可选音轨时）
+              if (_realAudioTracks(state).length > 1)
+                PopupMenuButton<AudioTrack>(
+                  tooltip: t.audioTrack,
+                  onSelected: ctrl.setAudioTrack,
+                  itemBuilder: (_) => _realAudioTracks(state)
+                      .map(
+                        (tr) => PopupMenuItem(
+                          value: tr,
+                          child: Text(_trackLabel(tr.title, tr.language)),
+                        ),
+                      )
+                      .toList(),
+                  child: const Icon(Icons.audiotrack, color: Colors.white),
+                ),
+              // 字幕选择（含内封/外挂轨道）
+              if (_realSubtitleTracks(state).isNotEmpty)
+                PopupMenuButton<SubtitleTrack>(
+                  tooltip: t.subtitle,
+                  onSelected: ctrl.setSubtitleTrack,
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: SubtitleTrack.no(),
+                      child: Text(t.subtitleOff),
+                    ),
+                    ..._realSubtitleTracks(state).map(
+                      (tr) => PopupMenuItem(
+                        value: tr,
+                        child: Text(_trackLabel(tr.title, tr.language)),
+                      ),
+                    ),
+                  ],
+                  child: Icon(
+                    Icons.subtitles,
+                    color: _isSubtitleOn(state) ? Colors.white : Colors.white54,
+                  ),
+                ),
+              // 字幕样式设置
+              if (_realSubtitleTracks(state).isNotEmpty)
+                IconButton(
+                  color: Colors.white,
+                  icon: const Icon(Icons.text_fields),
+                  tooltip: t.subtitleSettings,
+                  onPressed: () => showPlayerSubtitleSettingsSheet(context),
+                ),
               // 播放器详情
               if (!state.fullscreen)
                 IconButton(
