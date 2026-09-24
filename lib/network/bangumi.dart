@@ -632,7 +632,7 @@ class Bangumi {
     }
   }
 
-  Future<void> getBangumiData() async {
+  Future<bool> getBangumiData() async {
     try {
       final response = await _dio.request(
         Api.bangumiDataUrl,
@@ -643,14 +643,14 @@ class Bangumi {
       if (responseData is! Map<String, dynamic> ||
           responseData['items'] is! List) {
         NetLog.error('bangumi', 'Invalid API response structure');
-        return;
+        return false;
       }
 
       final itemsList = responseData['items'] as List;
 
       if (itemsList.isEmpty) {
         NetLog.error('bangumi', 'Received empty data list');
-        return;
+        return false;
       }
 
       final bangumiDataList = parseBangumiDataList(itemsList);
@@ -664,38 +664,47 @@ class Bangumi {
         if (begin == null) return true;
         return begin.isAfter(cutoff);
       }).toList();
+      if (recentItems.isEmpty) {
+        NetLog.error('bangumi', 'No valid items after filtering');
+        return false;
+      }
       await manager.clearBangumiData();
       DebugLog.info(
         'getBangumiData',
         'clearBangumiData success, kept ${recentItems.length}/${bangumiDataList.length}',
       );
-      await manager.batchAddBangumiData(recentItems);
+      final ok = await manager.batchAddBangumiData(recentItems);
 
-      DebugLog.info('getBangumiData', 'batchAddBangumiData success');
+      DebugLog.info('getBangumiData', 'batchAddBangumiData success=$ok');
+      return ok;
     } on DioException catch (e, s) {
       NetLog.error('getBangumiData', 'Network error: ${e.message}\nStack: $s');
-    } on FormatException catch (e, s) {
-      NetLog.error(
-        'getBangumiData',
-        'Data parsing failed: ${e.message}\nStack: $s',
-      );
+      return false;
     } catch (e, s) {
       NetLog.error('getBangumiData', 'Unexpected error: $e\nStack: $s');
+      return false;
     }
   }
 
   List<BangumiData> parseBangumiDataList(List<dynamic> jsonList) {
-    return jsonList.map<BangumiData>((json) {
+    final out = <BangumiData>[];
+    for (final json in jsonList) {
+      // 单条脏数据跳过，而不是让整包失败：否则一条坏数据会中止整次导入，
+      // 且版本号仍会被标记已更新，导致后续不再重试、条目长期缺失
+      if (json is! Map) {
+        NetLog.warning('parseBangumiDataList', 'Skip non-map item: $json');
+        continue;
+      }
       try {
-        return BangumiData.fromJson(json);
+        out.add(BangumiData.fromJson(Map<String, dynamic>.from(json)));
       } catch (e, s) {
         NetLog.error(
           'parseBangumiDataList',
           'Failed to parse item: $e\nStack: $s',
         );
-        throw FormatException('Invalid BangumiData item');
       }
-    }).toList();
+    }
+    return out;
   }
 
   Future<void> checkBangumiData({bool isUpdata = false}) async {
@@ -721,7 +730,15 @@ class Bangumi {
       if (appdata.settings['bangumiDataVer'] != jsonData['tag_name']) {
         NetLog.info('checkBangumiData', '${jsonData['tag_name']}');
 
-        await getBangumiData();
+        final ok = await getBangumiData();
+        if (!ok) {
+          // 失败不标记版本，保留重试机会（否则会被当成"已最新"，长期不补）
+          App.rootContext.showMessage(
+            message: t.bangumiDataUpdateFailed,
+            level: LogLevel.error,
+          );
+          return;
+        }
         // bangumi-data 更新后，之前因脏数据被跳过的补全 id 可能有救，清空重试
         appdata.implicitData['bangumiCalendarSkipIds'] = <int>[];
         appdata.writeImplicitData();
@@ -774,9 +791,16 @@ class Bangumi {
       );
       final jsonData = res.data;
       NetLog.info('resetBangumiData', '${jsonData['tag_name']}');
+      final ok = await getBangumiData();
+      if (!ok) {
+        App.rootContext.showMessage(
+          message: t.bangumiDataResetFailed,
+          level: LogLevel.error,
+        );
+        return;
+      }
       appdata.settings['getBangumiAllEpInfoTime'] = null;
       NetLog.info('resetBangumiData', 'Cleared bangumi data successfully');
-      await getBangumiData();
       await getCalendarData(isUpdata: true);
       App.rootContext.showMessage(
         message:

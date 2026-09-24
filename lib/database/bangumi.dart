@@ -442,7 +442,7 @@ class BangumiManager with ChangeNotifier {
     });
   }
 
-  Future<void> batchAddBangumiData(List<BangumiData> list) {
+  Future<bool> batchAddBangumiData(List<BangumiData> list) {
     return _guard(() async {
       DebugLog.info('batchAddBangumiData', 'start, list.length=${list.length}');
       try {
@@ -468,8 +468,10 @@ class BangumiManager with ChangeNotifier {
           'batchAddBangumiData',
           'db count after insert=${count.read<int>('cnt')}',
         );
+        return true;
       } catch (e, s) {
         DebugLog.error('batchAddBangumiData', 'error=$e\n$s');
+        return false;
       }
     });
   }
