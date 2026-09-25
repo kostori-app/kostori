@@ -1226,7 +1226,7 @@ Future<AnimePlayResult?> resolveAnimePlayResult(
 ) async {
   final loadPages = source.loadAnimePages;
   if (loadPages == null) return null;
-  final res = await loadPages(dataId, epKey);
+  final res = await runWithCloudflare(() => loadPages(dataId, epKey));
   if (res is! Map) return null;
   try {
     return AnimePlayResult.fromJson(Map<String, dynamic>.from(res));
@@ -1245,7 +1245,7 @@ Future<String?> resolveAnimeEpisodeUrl({
   if (url != null && url.isNotEmpty && !url.startsWith('blob:')) return url;
   final loadPages = source.loadAnimePages;
   if (loadPages == null) return null;
-  final res = await loadPages(dataId, epKey);
+  final res = await runWithCloudflare(() => loadPages(dataId, epKey));
   if (res is String) return res;
   if (res is Map) {
     try {

@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/history.dart';
@@ -706,12 +707,30 @@ class _WatcherState extends State<Watcher>
       if (!mounted) return;
 
       // 先组装请求头（源 httpHeaders + cookie），再决定是否走代理：
-      // 走代理时这些头要交给代理使用，播放器只访问本地代理地址
+      // 走代理时这些头要交给代理使用，播放器只访问本地代理地址。
+      // 注意：即便源没有 httpHeaders，也要从 cookie jar 取 cookie
+      //（很多视频 CDN / CF 就是靠会话 cookie 才放行）。
       Map<String, String>? playHeaders;
-      if (!local && headers != null) {
-        playHeaders = Map<String, String>.from(headers!);
+      if (!local) {
+        playHeaders = Map<String, String>.from(headers ?? const {});
         final cookieHeader = await _cookieHeaderFor(res);
-        if (cookieHeader.isNotEmpty) playHeaders['Cookie'] = cookieHeader;
+        if (cookieHeader.isNotEmpty) {
+          final existing = playHeaders['Cookie'] ?? playHeaders['cookie'];
+          playHeaders['Cookie'] = existing == null || existing.isEmpty
+              ? cookieHeader
+              : '$existing; $cookieHeader';
+          // cf_clearance 与获取它时的 User-Agent 绑定：播放器必须用同一个
+          // UA，否则 CF 认为 cookie 无效而拒绝（Dio 请求由拦截器对齐 UA，
+          // mpv 不经过拦截器，这里手动对齐）
+          if (cookieHeader.contains('cf_clearance')) {
+            final ua = appdata.implicitData['ua'] as String?;
+            if (ua != null && ua.isNotEmpty) {
+              playHeaders.remove('user-agent');
+              playHeaders['User-Agent'] = ua;
+            }
+          }
+        }
+        if (playHeaders.isEmpty) playHeaders = null;
       }
 
       final actualPlayUrl = local

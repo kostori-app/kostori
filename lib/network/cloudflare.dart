@@ -62,8 +62,15 @@ class CloudflareException implements DioException {
 }
 
 class CloudflareInterceptor extends Interceptor {
+  /// 请求上带 `extra['noCloudflare'] == true` 时跳过本拦截器（调用方自行判断）。
+  static const noCloudflareExtra = 'noCloudflare';
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (options.extra[noCloudflareExtra] == true) {
+      handler.next(options);
+      return;
+    }
     if (options.headers['cookie'].toString().contains('cf_clearance')) {
       options.headers['user-agent'] = appdata.implicitData['ua'] ?? webUA;
     }
@@ -72,6 +79,10 @@ class CloudflareInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (err.requestOptions.extra[noCloudflareExtra] == true) {
+      handler.next(err);
+      return;
+    }
     final res = err.response;
     if (res != null && _isChallenge(res)) {
       // 判定为挑战就直接换成 CloudflareException，交给上层弹「验证」按钮；
@@ -84,6 +95,10 @@ class CloudflareInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (response.requestOptions.extra[noCloudflareExtra] == true) {
+      handler.next(response);
+      return;
+    }
     if (_isChallenge(response)) {
       handler.reject(
         CloudflareException(response.requestOptions.uri.toString()),
@@ -91,6 +106,17 @@ class CloudflareInterceptor extends Interceptor {
       return;
     }
     handler.next(response);
+  }
+
+  /// Cloudflare「硬拦截」页（Error 1020 / Attention Required!）无法通过人工
+  /// 验证解决，不能当作可验证的挑战，否则只会弹一个永远过不去的验证页。
+  static bool looksLikeBlocked(String? body) {
+    if (body == null) return false;
+    return body.contains('Sorry, you have been blocked') ||
+        body.contains('You are unable to access') ||
+        body.contains('Attention Required!') ||
+        body.contains('Error 1020') ||
+        body.contains('error code: 1020');
   }
 
   /// 挑战页正文强特征：CF interstitial 专用脚本/表单。
@@ -103,39 +129,51 @@ class CloudflareInterceptor extends Interceptor {
   /// - `cf-mitigated: challenge` 头（最可靠）
   /// - 状态码 403/429/503 且 `server: cloudflare`（很多挑战页不带 cf-mitigated）
   /// - 正文带挑战页强特征（部分 managed challenge 返回 200，状态码不可靠）
-  bool _looksLikeChallenge(int? statusCode, Headers headers, {String? body}) {
+  /// 明显的硬拦截页（Error 1020）优先判为非挑战。
+  static bool looksLikeChallenge(
+    int? statusCode,
+    Headers headers, {
+    String? body,
+  }) {
     if (headers['cf-mitigated']?.firstOrNull == 'challenge') return true;
+    if (looksLikeBlocked(body)) return false;
+    // 有正文时只认挑战页强特征：避免把普通 403 / 错误 HTML 误判为挑战
+    if (body != null) return _hasChallengeMarkers(body);
     final server = headers['server']?.firstOrNull?.toLowerCase();
     final serverCf = server == 'cloudflare' || server == 'cloudflare-nginx';
-    if (serverCf &&
-        (statusCode == 403 || statusCode == 429 || statusCode == 503)) {
-      return true;
-    }
-    if (body != null && _hasChallengeMarkers(body)) return true;
-    return false;
+    return serverCf &&
+        (statusCode == 403 || statusCode == 429 || statusCode == 503);
   }
 
   /// 从响应判定挑战：正文只在「较小且为 HTML」时扫描，
-  /// 避免对大 JSON / 二进制响应做无谓的字符串匹配。
+  /// 非 HTML 响应（JSON / 视频等）直接排除，避免误判。
   bool _isChallenge(Response response) {
+    final headers = response.headers;
+    final cfMitigated = headers['cf-mitigated']?.firstOrNull == 'challenge';
+    final contentType = headers.value('content-type')?.toLowerCase() ?? '';
     final data = response.data;
     String? body;
     if (data is String &&
         data.length <= 64 * 1024 &&
-        (response.headers.value('content-type')?.contains('html') ?? false)) {
+        contentType.contains('html')) {
       body = data;
     }
-    return _looksLikeChallenge(
-      response.statusCode,
-      response.headers,
-      body: body,
-    );
+    if (!cfMitigated &&
+        contentType.isNotEmpty &&
+        !contentType.contains('html')) {
+      return false;
+    }
+    return looksLikeChallenge(response.statusCode, headers, body: body);
   }
 }
 
 void passCloudflare(CloudflareException e, void Function() onFinished) async {
-  var url = e.url;
-  var uri = Uri.parse(url);
+  final uri = Uri.parse(e.url);
+  // cf_clearance 是「域级」的：直接打开具体 API/媒体地址往往只是内容
+  // （不会出现挑战、也拿不到 clearance）。导航到站点根，触发并完成该域
+  // 的 CF 挑战后再把 cookie（含 cf_clearance）整份保存下来。
+  final rootUri = Uri(scheme: uri.scheme, host: uri.host);
+  var url = rootUri.toString();
 
   // 保证 onFinished 只回调一次（Linux 分支 close 与 onClose 可能重复触发）
   var finished = false;
@@ -145,24 +183,9 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
     onFinished();
   }
 
-  SingleInstanceCookieJar.instance?.deleteCookieByName('cf_clearance');
-  NetLog.info("Cloudflare", "Cleared old cf_clearance");
-
-  if (!App.isLinux) {
-    try {
-      final cookieManager = CookieManager.instance(
-        webViewEnvironment: AppWebview.webViewEnvironment,
-      );
-      await cookieManager.deleteCookies(
-        url: WebUri(
-          Uri(scheme: uri.scheme, host: uri.host, path: '/').toString(),
-        ),
-      );
-      NetLog.info("Cloudflare", "Cleared old cf_clearance from WebView");
-    } catch (e) {
-      NetLog.warning("Cloudflare", "Failed to clear WebView cf_clearance: $e");
-    }
-  }
+  // 不清空已有的 cf_clearance / 该域 cookie：很多站点正是靠既有会话和
+  // clearance 才能过；清掉反而可能拿不回来，导致“验证页里能播、播放器
+  // 却因为没有 cf_clearance 播不了”。
 
   if (App.isLinux) {
     var webview = DesktopWebview(
@@ -181,11 +204,10 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
           appdata.writeImplicitData();
         }
 
-        final success = await _trySaveCookies(controller, url, uri);
-        if (success) {
-          controller.close();
-          // onClose 会回调 onFinished，这里不重复调用
-        }
+        // 不再要求必须有 cf_clearance：非 CF 内容页也要保存会话 cookie
+        await _trySaveCookies(controller, url, uri);
+        controller.close();
+        // onClose 会回调 onFinished，这里不重复调用
       },
       onClose: finishOnce,
     );
@@ -203,15 +225,9 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
         );
         return;
       }
-      final success = await _trySaveCookies(webview, url, uri);
-      if (success) {
-        finishOnce();
-        return;
-      }
-      if (waited >= 180) {
-        NetLog.warning("Cloudflare", "Challenge not resolved after 3 minutes");
-        finishOnce();
-      }
+      await _trySaveCookies(webview, url, uri);
+      finishOnce();
+      return;
     });
   } else {
     bool isChecking = false;
@@ -228,17 +244,15 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       if (finished || isChecking) return;
       isChecking = true;
       try {
-        final success = await _trySaveCookies(controller, url, uri);
-        if (!success) {
-          NetLog.info("Cloudflare", "cf_clearance not ready");
-          return;
-        }
-        // 即使拿到了 cookie，若页面仍处于挑战态则继续等待，
-        // 避免旧 cookie 导致"还没通过就退出"
+        final hasClearance = await _trySaveCookies(controller, url, uri);
+        // 仍处于挑战态才继续等；否则（挑战已过，或页面本就是内容/视频）
+        // 保存会话 cookie 后直接结束
         if (await _isChallenging(controller, url)) {
           NetLog.info(
             "Cloudflare",
-            "cf_clearance present but still challenging, waiting...",
+            hasClearance
+                ? "cf_clearance present but still challenging, waiting..."
+                : "cf_clearance not ready",
           );
           return;
         }
@@ -270,9 +284,12 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
         confirmLabel: t.confirm,
         onConfirm: (controller) async {
           if (finished) return true;
-          final success = await _trySaveCookies(controller, url, uri);
-          if (!success) {
-            NetLog.info("Cloudflare", "manual confirm: no cf_clearance yet");
+          final hasClearance = await _trySaveCookies(controller, url, uri);
+          if (!hasClearance && await _isChallenging(controller, url)) {
+            NetLog.info(
+              "Cloudflare",
+              "manual confirm: still challenging, no cf_clearance",
+            );
             return false;
           }
           final ua = await controller.getUA();
@@ -315,53 +332,72 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
   }
 }
 
-Future<bool> _isChallenging(dynamic controller, String url) async {
-  String head = '';
-  String body = '';
-
-  try {
-    if (App.isLinux) {
-      head =
-          await (controller as DesktopWebview).evaluateJavascript(
-            "document.head ? document.head.innerHTML : ''",
-          ) ??
-          '';
-      body =
-          await (controller).evaluateJavascript(
-            "document.body ? document.body.innerHTML : ''",
-          ) ??
-          '';
-    } else {
-      head =
-          await (controller as InAppWebViewController).evaluateJavascript(
-            source: "document.head ? document.head.innerHTML : ''",
-          ) as String? ??
-          '';
-      body =
-          await (controller).evaluateJavascript(
-            source: "document.body ? document.body.innerHTML : ''",
-          ) as String? ??
-          '';
+/// 执行可能触发 Cloudflare 挑战的异步操作：命中挑战时弹出验证页，
+/// 通过后自动重试（默认一次）。供下载等非播放器流程复用。
+Future<T> runWithCloudflare<T>(
+  Future<T> Function() action, {
+  int retries = 1,
+}) async {
+  var left = retries;
+  while (true) {
+    try {
+      return await action();
+    } catch (e) {
+      final cfe = e is CloudflareException
+          ? e
+          : CloudflareException.fromString(e.toString());
+      if (cfe == null || left <= 0) rethrow;
+      left--;
+      final done = Completer<void>();
+      passCloudflare(cfe, () {
+        if (!done.isCompleted) done.complete();
+      });
+      await done.future;
     }
+  }
+}
+
+Future<bool> _isChallenging(dynamic controller, String url) async {
+  Future<String> eval(String js) async {
+    if (App.isLinux) {
+      return await (controller as DesktopWebview).evaluateJavascript(js) ?? '';
+    }
+    return await (controller as InAppWebViewController).evaluateJavascript(
+          source: js,
+        ) as String? ??
+        '';
+  }
+
+  String head;
+  String body;
+  String contentType;
+  try {
+    head = await eval("document.head ? document.head.innerHTML : ''");
+    body = await eval("document.body ? document.body.innerHTML : ''");
+    contentType = (await eval("document.contentType || ''")).toLowerCase();
   } catch (e) {
     NetLog.info("Cloudflare", "evaluateJavascript error: $e");
     return true;
   }
 
-  // 检测安全警告页面（SmartScreen / 举报页面）
-  var isSecurityBlock =
-      head.contains('interstitial') ||
-      body.contains('reported-unsafe') ||
-      body.contains('ERR_BLOCKED') ||
-      body.isEmpty;
+  // 直接跳转成媒体/非 HTML 文档（如视频直链本身就是内容）→ 不是挑战页
+  if (contentType.isNotEmpty && !contentType.contains('html')) {
+    return false;
+  }
 
-  if (isSecurityBlock) {
+  // 检测安全警告页面（SmartScreen / 举报页面）
+  if (head.contains('interstitial') ||
+      body.contains('reported-unsafe') ||
+      body.contains('ERR_BLOCKED')) {
     NetLog.info(
       "Cloudflare",
       "Security block page detected, treating as challenging",
     );
     return true;
   }
+
+  // 空正文不算挑战（媒体文档/极简页），避免一直干等 cf_clearance
+  if (body.isEmpty) return false;
 
   return head.contains('#challenge-success-text') ||
       head.contains('#challenge-error-text') ||
@@ -394,8 +430,12 @@ Future<bool> _trySaveCookies(dynamic controller, String url, Uri uri) async {
 
     NetLog.info("Cloudflare", "Attempt $i cookies: $cookiesMap");
 
-    if (cookiesMap.containsKey('cf_clearance')) {
+    // 不管有没有 cf_clearance 都保存：非 CF 页面（如直接是内容）的会话
+    // cookie 同样需要，否则验证页能播、播放器却缺少会话播不了。
+    if (cookiesMap.isNotEmpty) {
       _saveCookies(uri, cookiesMap);
+    }
+    if (cookiesMap.containsKey('cf_clearance')) {
       NetLog.info("Cloudflare", "cf_clearance saved successfully!");
       return true;
     }
