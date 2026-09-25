@@ -2213,6 +2213,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Address'
 	String get mirrorAddress => 'Address';
 
+	/// en: 'Usage'
+	String get mirrorScope => 'Usage';
+
+	/// en: 'General (site + download/API)'
+	String get mirrorScopeAll => 'General (site + download/API)';
+
+	/// en: 'Site/files only'
+	String get mirrorScopeSite => 'Site/files only';
+
+	/// en: 'Download/API only'
+	String get mirrorScopeApi => 'Download/API only';
+
 	/// en: 'No mirror source added yet'
 	String get mirrorEmpty => 'No mirror source added yet';
 
@@ -10029,6 +10041,10 @@ extension on Translations {
 			'githubMirrorDesc' => 'Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)',
 			'mirrorOfficial' => 'Official (no mirror)',
 			'mirrorAddress' => 'Address',
+			'mirrorScope' => 'Usage',
+			'mirrorScopeAll' => 'General (site + download/API)',
+			'mirrorScopeSite' => 'Site/files only',
+			'mirrorScopeApi' => 'Download/API only',
 			'mirrorEmpty' => 'No mirror source added yet',
 			'bangumiClientIdSecretRequired' => 'Please fill in the client ID first',
 			'recognizeImageFailed' => 'Failed to read image, please retry',
@@ -10325,12 +10341,12 @@ extension on Translations {
 			'channelCount' => 'Channel Count',
 			'hrChannels' => 'HR Channels',
 			'uriTrack' => 'From URI',
+			_ => null,
+		} ?? switch (path) {
 			'channelsCount' => 'Channels Count',
 			'channels' => 'Channels',
 			'fps' => 'FPS',
 			'bitrate' => 'Bitrate',
-			_ => null,
-		} ?? switch (path) {
 			'par' => 'PAR',
 			'audioChannels' => 'Audio Channels',
 			'audioBitrate' => 'Audio bitrate',
@@ -10839,12 +10855,12 @@ extension on Translations {
 			'noUsersOnline' => 'No users online',
 			'room' => 'Room',
 			'noPasswordSet' => 'No password set',
+			_ => null,
+		} ?? switch (path) {
 			'passwordProtected' => 'Password protected',
 			'imageLabel' => 'Image',
 			'stickersLabel' => 'Stickers',
 			'pokedYou' => 'poked you',
-			_ => null,
-		} ?? switch (path) {
 			'kickedFromServerByP' => ({required Object p}) => 'Kicked from server by ${p}',
 			'kickedFromRoomByP' => ({required Object p}) => 'Kicked from room by ${p}',
 			'leftTheRoom' => 'left the room',
@@ -11353,12 +11369,12 @@ extension on Translations {
 			'noKostoriLinkFoundInClipboard' => 'No Kostori link found in clipboard',
 			'qrCodeFeatureOnlyOnMobile' => 'QR code feature only available on mobile',
 			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
+			_ => null,
+		} ?? switch (path) {
 			'pleaseDragImageFile' => 'Please drag in image file',
 			'imageDownloadFailed' => 'Image download failed',
 			'failedToFetchNetworkImage' => 'Failed to fetch network image',
 			'imageDecodeFailed' => 'Image decode failed',
-			_ => null,
-		} ?? switch (path) {
 			'noQrCodeFoundInImage' => 'No QR code found in image',
 			'copiedToClipboard' => 'Copied to clipboard',
 			'likeSuccess' => 'Like success',
@@ -11867,12 +11883,12 @@ extension on Translations {
 			'profileTabPrompt' => 'Prompt',
 			'profileTabSkills' => 'Skills',
 			'profileTabParams' => 'Params',
+			_ => null,
+		} ?? switch (path) {
 			'profileTabBasic' => 'Basic',
 			'profileTabExtensions' => 'Extensions',
 			'profileTabMemory' => 'Memory',
 			'profileTabRequest' => 'Request',
-			_ => null,
-		} ?? switch (path) {
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
@@ -12381,12 +12397,12 @@ extension on Translations {
 			'torrentTrackers' => 'Trackers',
 			'torrentTrackerUrlHint' => 'Tracker list URL',
 			'torrentFetchTrackers' => 'Fetch trackers',
+			_ => null,
+		} ?? switch (path) {
 			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',
 			'torrentNodesHint' => 'One DHT node per line, host:port',
 			'torrentTrackersAuto' => 'Auto-append trackers from the URL to new downloads',
 			'torrentDhtExplain' => 'DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.',
-			_ => null,
-		} ?? switch (path) {
 			'torrentFileDownloading' => 'Downloading',
 			'torrentStopAfter' => 'Stop condition',
 			'torrentStopNone' => 'Do not stop',

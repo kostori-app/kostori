@@ -714,6 +714,10 @@ githubMirror: GitHub 鏡像
 githubMirrorDesc: 支援前綴式鏡像與 jsDelivr（如 https://cdn.jsdelivr.net/）
 mirrorOfficial: 官方（不使用鏡像）
 mirrorAddress: 位址
+mirrorScope: 用途
+mirrorScopeAll: 通用（主站點 + 下載介面）
+mirrorScopeSite: 僅主站點/檔案
+mirrorScopeApi: 僅下載介面/API
 mirrorEmpty: 還沒有新增鏡像源
 bangumiClientIdSecretRequired: 請先填寫用戶端 ID
 recognizeImageFailed: 圖片讀取失敗，請重試

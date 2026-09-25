@@ -756,6 +756,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get githubMirrorDesc => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）';
 	@override String get mirrorOfficial => '官方（不使用镜像）';
 	@override String get mirrorAddress => '地址';
+	@override String get mirrorScope => '用途';
+	@override String get mirrorScopeAll => '通用（主站点 + 下载接口）';
+	@override String get mirrorScopeSite => '仅主站点/文件';
+	@override String get mirrorScopeApi => '仅下载接口/API';
 	@override String get mirrorEmpty => '还没有添加镜像源';
 	@override String get bangumiClientIdSecretRequired => '请先填写客户端 ID';
 	@override String get recognizeImageFailed => '图片读取失败，请重试';
@@ -3865,6 +3869,10 @@ extension on TranslationsZhCn {
 			'githubMirrorDesc' => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）',
 			'mirrorOfficial' => '官方（不使用镜像）',
 			'mirrorAddress' => '地址',
+			'mirrorScope' => '用途',
+			'mirrorScopeAll' => '通用（主站点 + 下载接口）',
+			'mirrorScopeSite' => '仅主站点/文件',
+			'mirrorScopeApi' => '仅下载接口/API',
 			'mirrorEmpty' => '还没有添加镜像源',
 			'bangumiClientIdSecretRequired' => '请先填写客户端 ID',
 			'recognizeImageFailed' => '图片读取失败，请重试',
@@ -4168,12 +4176,12 @@ extension on TranslationsZhCn {
 			'hrChannels' => 'HR 声道',
 			'uriTrack' => '由 URI 提供',
 			'channelsCount' => '声道数',
+			_ => null,
+		} ?? switch (path) {
 			'channels' => '声道',
 			'fps' => 'FPS',
 			'bitrate' => '位元率',
 			'par' => 'PAR',
-			_ => null,
-		} ?? switch (path) {
 			'audioChannels' => '音频声道',
 			'audioBitrate' => '音频码率',
 			'audio' => '音频',
@@ -4682,12 +4690,12 @@ extension on TranslationsZhCn {
 			'room' => '房间',
 			'noPasswordSet' => '未设置密码',
 			'passwordProtected' => '密码保护',
+			_ => null,
+		} ?? switch (path) {
 			'imageLabel' => '图片',
 			'stickersLabel' => '贴纸',
 			'pokedYou' => '戳了你一下',
 			'kickedFromServerByP' => ({required Object p}) => '被 ${p} 移出了服务器',
-			_ => null,
-		} ?? switch (path) {
 			'kickedFromRoomByP' => ({required Object p}) => '被 ${p} 移出了房间',
 			'leftTheRoom' => '离开了房间',
 			'joinedTheRoom' => '加入了房间',
@@ -5196,12 +5204,12 @@ extension on TranslationsZhCn {
 			'failedToFetchPersonInfo' => '获取人物信息失败',
 			'unrecognizedLink' => '无法识别的链接',
 			'noKostoriLinkFoundInClipboard' => '剪贴板中未发现 Kostori 链接',
+			_ => null,
+		} ?? switch (path) {
 			'qrCodeFeatureOnlyOnMobile' => '扫码功能仅支持移动端',
 			'unrecognizedKostoriProtocol' => '未识别到 Kostori 协议',
 			'pleaseDragImageFile' => '请拖入图片文件',
 			'imageDownloadFailed' => '图片下载失败',
-			_ => null,
-		} ?? switch (path) {
 			'failedToFetchNetworkImage' => '网络图片获取失败',
 			'imageDecodeFailed' => '图片解码失败',
 			'noQrCodeFoundInImage' => '未在图片中识别到二维码',
@@ -5710,12 +5718,12 @@ extension on TranslationsZhCn {
 			'profileTabPrompt' => '提示词',
 			'profileTabSkills' => '技能',
 			'profileTabParams' => '参数',
+			_ => null,
+		} ?? switch (path) {
 			'profileTabBasic' => '基础',
 			'profileTabExtensions' => '扩展',
 			'profileTabMemory' => '记忆',
 			'profileTabRequest' => '请求',
-			_ => null,
-		} ?? switch (path) {
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => '绑定本助手的 MCP 服务器（连接后自动导入工具）',
 			'profileTabLocalTools' => '工具技能',
@@ -6224,12 +6232,12 @@ extension on TranslationsZhCn {
 			'torrentTrackers' => 'Tracker 列表',
 			'torrentTrackerUrlHint' => 'Tracker 列表地址',
 			'torrentFetchTrackers' => '获取 Tracker',
+			_ => null,
+		} ?? switch (path) {
 			'torrentTrackersHint' => '每行一个 tracker，播放时自动附加到磁力链接',
 			'torrentNodesHint' => '每行一个 DHT 节点，格式 host:port',
 			'torrentTrackersAuto' => '自动附加 URL 的 trackers 到新的下载',
 			'torrentDhtExplain' => 'DHT 是 BT 标准的「无 tracker 找 peer」网络，通常保持开启；下面可填自定义引导节点（可选）。',
-			_ => null,
-		} ?? switch (path) {
 			'torrentFileDownloading' => '下载中',
 			'torrentStopAfter' => '停止条件',
 			'torrentStopNone' => '不停止',

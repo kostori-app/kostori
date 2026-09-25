@@ -86,6 +86,7 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                         title: t.githubMirror,
                         description: t.githubMirrorDesc,
                         addressHint: 'https://cdn.jsdelivr.net/',
+                        allowScope: true,
                       ),
                     ).then((_) {
                       if (mounted) setState(() {});

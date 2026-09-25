@@ -14,12 +14,16 @@ class MirrorManagerPage extends StatefulWidget {
     required this.description,
     required this.addressHint,
     this.footer,
+    this.allowScope = false,
   });
 
   final MirrorStore store;
   final String title;
   final String description;
   final String addressHint;
+
+  /// 是否允许给条目设置「用途」标签（GitHub 镜像需要区分是否支持 API）
+  final bool allowScope;
 
   /// 额外设置项（如 Bangumi 的「镜像使用鉴权」开关）
   final Widget? footer;
@@ -29,7 +33,7 @@ class MirrorManagerPage extends StatefulWidget {
 }
 
 class _MirrorManagerPageState extends State<MirrorManagerPage> {
-  late List<MirrorEntry> _entries = List.of(widget.store.entries);
+  late final List<MirrorEntry> _entries = List.of(widget.store.entries);
 
   void _persist() {
     widget.store.save(_entries);
@@ -41,35 +45,61 @@ class _MirrorManagerPageState extends State<MirrorManagerPage> {
     setState(() {});
   }
 
+  String _scopeLabel(MirrorScope scope) => switch (scope) {
+    MirrorScope.all => t.mirrorScopeAll,
+    MirrorScope.site => t.mirrorScopeSite,
+    MirrorScope.api => t.mirrorScopeApi,
+  };
+
   Future<void> _edit({MirrorEntry? initial}) async {
     final nameCtrl = TextEditingController(text: initial?.name ?? '');
     final urlCtrl = TextEditingController(text: initial?.url ?? '');
+    var scope = initial?.scope ?? MirrorScope.all;
     await ContentDialog.show(
       context: context,
       title: initial == null ? t.add : t.edit,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: nameCtrl,
-            decoration: InputDecoration(labelText: t.name),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: urlCtrl,
-            keyboardType: TextInputType.url,
-            decoration: InputDecoration(
-              labelText: t.mirrorAddress,
-              hintText: widget.addressHint,
+      content: StatefulBuilder(
+        builder: (context, setState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: InputDecoration(labelText: t.name),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlCtrl,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: t.mirrorAddress,
+                hintText: widget.addressHint,
+              ),
+            ),
+            if (widget.allowScope) ...[
+              const SizedBox(height: 16),
+              Text(
+                t.mirrorScope,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              CapsuleOptions(
+                wrap: true,
+                alignment: WrapAlignment.start,
+                children: [
+                  for (final s in MirrorScope.values)
+                    CapsuleOption(
+                      text: _scopeLabel(s),
+                      isSelected: scope == s,
+                      onTap: () => setState(() => scope = s),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => App.rootContext.pop(),
-          child: Text(t.cancel),
-        ),
         FilledButton(
           onPressed: () {
             final url = urlCtrl.text.trim();
@@ -78,6 +108,7 @@ class _MirrorManagerPageState extends State<MirrorManagerPage> {
             final entry = MirrorEntry(
               name: name.isEmpty ? url : name,
               url: url,
+              scope: scope,
             );
             if (initial == null) {
               _entries.add(entry);
@@ -149,7 +180,9 @@ class _MirrorManagerPageState extends State<MirrorManagerPage> {
           for (final m in _entries)
             SelectCard(
               title: m.name,
-              subtitle: m.url,
+              subtitle: widget.allowScope
+                  ? '${_scopeLabel(m.scope)} · ${m.url}'
+                  : m.url,
               selected: selected == m.url,
               onChanged: (_) => _select(m.url),
               trailing: Row(

@@ -1,18 +1,55 @@
 import 'package:kostori/foundation/appdata.dart';
 
-/// 一条用户自定义镜像（名称 + 地址）。
+/// 规范化镜像地址：补全 scheme（用户常只填 `github.akams.cn` 这类裸域名，
+/// 缺省会被解析成无 host 而静默失效）。
+String normalizeMirrorUrl(String url) {
+  var u = url.trim();
+  if (u.isEmpty) return '';
+  if (!u.contains('://')) u = 'https://$u';
+  return u;
+}
+
+/// 镜像用途：决定一个镜像能承接哪些请求。
+/// 前缀式代理可「通用」；jsDelivr / ghfast 这类不支持 api.github.com，应标「仅主站点/文件」。
+enum MirrorScope {
+  all('all'),
+  site('site'),
+  api('api');
+
+  const MirrorScope(this.value);
+
+  final String value;
+
+  static MirrorScope parse(String? v) => switch (v) {
+    'site' => site,
+    'api' => api,
+    _ => all,
+  };
+}
+
+/// 一条用户自定义镜像（名称 + 地址 + 用途）。
 class MirrorEntry {
   final String name;
   final String url;
+  final MirrorScope scope;
 
-  const MirrorEntry({required this.name, required this.url});
+  const MirrorEntry({
+    required this.name,
+    required this.url,
+    this.scope = MirrorScope.all,
+  });
 
   factory MirrorEntry.fromJson(Map json) => MirrorEntry(
     name: json['name']?.toString() ?? '',
-    url: json['url']?.toString() ?? '',
+    url: normalizeMirrorUrl(json['url']?.toString() ?? ''),
+    scope: MirrorScope.parse(json['scope']?.toString()),
   );
 
-  Map<String, dynamic> toJson() => {'name': name, 'url': url};
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'url': normalizeMirrorUrl(url),
+    'scope': scope.value,
+  };
 }
 
 /// 某类镜像的存取（列表 + 当前选中），数据存在 implicitData。
@@ -39,10 +76,10 @@ class MirrorStore {
 
   /// 当前选中的镜像地址；空字符串表示不使用镜像
   String get selectedUrl =>
-      (appdata.implicitData[selectedKey] as String?) ?? '';
+      normalizeMirrorUrl((appdata.implicitData[selectedKey] as String?) ?? '');
 
   void select(String url) {
-    appdata.implicitData[selectedKey] = url;
+    appdata.implicitData[selectedKey] = normalizeMirrorUrl(url);
     appdata.writeImplicitData();
   }
 
@@ -75,7 +112,7 @@ String applyBangumiMirror(String url) {
   return '$base$path${uri.hasQuery ? '?${uri.query}' : ''}';
 }
 
-/// 前缀式/替换式镜像可加速的 GitHub 主机
+/// 前缀式/替换式镜像可加速的 GitHub 主机（真正的前缀代理对 API 与文件下载都有效）。
 const _githubHosts = {
   'github.com',
   'api.github.com',
@@ -97,21 +134,19 @@ bool _isLargeGithubDownload(Uri uri) {
   return uri.path.contains('/releases/download/');
 }
 
-/// jsDelivr 只能服务 GitHub 仓库内容（raw 或它自己的地址）
-bool _jsdelivrCanServe(Uri uri) =>
-    uri.host == 'raw.githubusercontent.com' || _isJsdelivrHost(uri.host);
+bool _scopeCanServe(MirrorScope scope, {required bool needApi}) =>
+    scope == MirrorScope.all ||
+    (needApi ? scope == MirrorScope.api : scope == MirrorScope.site);
 
-/// 选中的 GitHub 镜像；jsDelivr 服务不了时（大文件 / 非仓库主机如 api.github.com）
-/// 回退到列表中第一个非 jsDelivr 镜像。
-MirrorEntry? _effectiveGithubMirror(Uri uri, {required bool largeFile}) {
+/// 按「用途」标签挑选可承接该请求的镜像：优先当前选中的（若其用途匹配），
+/// 否则取第一个用途匹配的；都不匹配则不走镜像。
+MirrorEntry? _effectiveGithubMirror({required bool needApi}) {
   final selected = githubMirrorStore.selected;
-  if (selected == null) return null;
-  final host = Uri.tryParse(selected.url)?.host ?? '';
-  if (!_isJsdelivrHost(host)) return selected;
-  if (!largeFile && _jsdelivrCanServe(uri)) return selected;
+  if (selected != null && _scopeCanServe(selected.scope, needApi: needApi)) {
+    return selected;
+  }
   for (final e in githubMirrorStore.entries) {
-    final h = Uri.tryParse(e.url)?.host ?? '';
-    if (!_isJsdelivrHost(h)) return e;
+    if (_scopeCanServe(e.scope, needApi: needApi)) return e;
   }
   return null;
 }
@@ -119,15 +154,16 @@ MirrorEntry? _effectiveGithubMirror(Uri uri, {required bool largeFile}) {
 /// 按选中的 GitHub 镜像改写地址：
 /// - jsDelivr 式镜像：`raw.githubusercontent.com/用户/仓库/分支/路径` →
 ///   `/gh/用户/仓库@分支/路径`；已是 jsDelivr 的地址则替换镜像主机；
-/// - 前缀式镜像：镜像地址 + 原始 URL；
-/// jsDelivr 服务不了的请求（大文件、api.github.com 等非仓库主机）会回退到
-/// 列表中第一个非 jsDelivr 镜像，没有则走官方。
+/// - 前缀式镜像：镜像地址 + 原始 URL。
+/// 镜像能否承接 API/大文件由条目的「用途」标签决定（`仅主站点/文件` 的镜像
+/// 不会被用于 api.github.com 或 release 大文件）。
 String applyGithubMirror(String url, {bool largeFile = false}) {
   final uri = Uri.tryParse(url);
   if (uri == null) return url;
 
-  final large = largeFile || _isLargeGithubDownload(uri);
-  final mirror = _effectiveGithubMirror(uri, largeFile: large);
+  final needApi =
+      largeFile || uri.host == 'api.github.com' || _isLargeGithubDownload(uri);
+  final mirror = _effectiveGithubMirror(needApi: needApi);
   if (mirror == null) return url;
 
   final mirrorUri = Uri.tryParse(mirror.url);

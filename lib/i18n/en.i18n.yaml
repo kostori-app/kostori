@@ -726,6 +726,10 @@ githubMirror: GitHub mirror
 githubMirrorDesc: Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)
 mirrorOfficial: Official (no mirror)
 mirrorAddress: Address
+mirrorScope: Usage
+mirrorScopeAll: General (site + download/API)
+mirrorScopeSite: Site/files only
+mirrorScopeApi: Download/API only
 mirrorEmpty: No mirror source added yet
 bangumiClientIdSecretRequired: Please fill in the client ID first
 recognizeImageFailed: Failed to read image, please retry
