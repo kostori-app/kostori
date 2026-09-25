@@ -1004,9 +1004,19 @@ class _WatcherState extends State<Watcher>
   }
 
   /// 第 index 集的 key：剧集模式为 episode[线路] 的键，系列模式为系列条目 id
-  String _episodeKey(int road, int index) => _isSeries
-      ? _series![index - 1].id
-      : anime.episode!.values.elementAt(road).keys.elementAt(index - 1);
+  /// 越界时返回空串（线路/集数可能因源数据刷新而变化）
+  String _episodeKey(int road, int index) {
+    if (_isSeries) {
+      final series = _series;
+      if (series == null || index < 1 || index > series.length) return '';
+      return series[index - 1].id;
+    }
+    final roads = anime.episode;
+    if (roads == null || road < 0 || road >= roads.length) return '';
+    final episodes = roads.values.elementAt(road);
+    if (index < 1 || index > episodes.length) return '';
+    return episodes.keys.elementAt(index - 1);
+  }
 
   /// 系列模式下第 index 条系列条目（供 playerController 等外部访问）
   @override
@@ -1016,9 +1026,13 @@ class _WatcherState extends State<Watcher>
       : null;
 
   /// 当前线路的集数：剧集模式为线路内集数，系列模式为系列条目数
-  int _episodeCount(int road) => _isSeries
-      ? _series?.length ?? 0
-      : anime.episode?.values.elementAt(road).length ?? 0;
+  /// 线路越界时返回 0
+  int _episodeCount(int road) {
+    if (_isSeries) return _series?.length ?? 0;
+    final roads = anime.episode;
+    if (roads == null || road < 0 || road >= roads.length) return 0;
+    return roads.values.elementAt(road).length;
+  }
 
   /// 源提供播放进度上报接口时开始同步。
   /// 上报逻辑放在表层（watcher），由源自定义 playbackProgress/playbackStopped
