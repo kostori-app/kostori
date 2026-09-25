@@ -549,6 +549,7 @@ saveToAlbum: Save to Album
 stitchLongImage: Stitch Long Image
 stitchHorizontalImage: Stitch Horizontal Image
 stitchSubtitles: Stitch Subtitles
+stitchNineGrid: Nine-grid Collage
 saveLongImage: Save Long Image
 borderColor: Border Color
 conversationTitle: Conversation Title
@@ -561,6 +562,7 @@ noTopicsYet: No topics yet
 selectAiPersonality: Select AI Personality
 apply: Apply
 heightPx: Height(px)
+marginPx: Margin(px)
 setUniformHeight: Set Uniform Height
 uniformHeight: Uniform Height
 cropImage: Crop Image
@@ -569,6 +571,8 @@ sortImages: Sort Images
 finishSorting: Finish Sorting
 noImages: No Images
 cropHeightCPx: "Crop Height: ${c} px"
+cropHeightLabel: Crop height
+cropBottomMargin: Bottom margin
 firstImageFullHeight: First image shown at full height
 enterHexColorCode: "Enter hex color code, e.g. #FF000000"
 showImageBorders: Show Image Borders

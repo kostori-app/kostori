@@ -537,6 +537,7 @@ saveToAlbum: 儲存到相簿
 stitchLongImage: 拼長圖
 stitchHorizontalImage: 橫向拼圖
 stitchSubtitles: 台詞拼接
+stitchNineGrid: 九宮格拼圖
 saveLongImage: 儲存長圖
 borderColor: 邊框顏色
 conversationTitle: 對話標題
@@ -549,6 +550,7 @@ noTopicsYet: 暫無話題
 selectAiPersonality: 選擇 AI 人格
 apply: 應用
 heightPx: 高度(px)
+marginPx: 邊距(px)
 setUniformHeight: 設定統一高度
 uniformHeight: 統一高度
 cropImage: 裁剪圖片
@@ -562,6 +564,8 @@ importedCountI: 已匯入 ${i} 張圖片
 exportImage: 複製/分享
 saveAndShare: 儲存並分享
 cropHeightCPx: 裁剪高度：${c} px
+cropHeightLabel: 裁剪高度
+cropBottomMargin: 下邊距
 firstImageFullHeight: 首張全高顯示
 enterHexColorCode: "輸入十六進位顏色代碼，例如 #FF000000"
 showImageBorders: 顯示圖片邊框

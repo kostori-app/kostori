@@ -1682,6 +1682,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Stitch Subtitles'
 	String get stitchSubtitles => 'Stitch Subtitles';
 
+	/// en: 'Nine-grid Collage'
+	String get stitchNineGrid => 'Nine-grid Collage';
+
 	/// en: 'Save Long Image'
 	String get saveLongImage => 'Save Long Image';
 
@@ -1718,6 +1721,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Height(px)'
 	String get heightPx => 'Height(px)';
 
+	/// en: 'Margin(px)'
+	String get marginPx => 'Margin(px)';
+
 	/// en: 'Set Uniform Height'
 	String get setUniformHeight => 'Set Uniform Height';
 
@@ -1741,6 +1747,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Crop Height: ${c} px'
 	String cropHeightCPx({required Object c}) => 'Crop Height: ${c} px';
+
+	/// en: 'Crop height'
+	String get cropHeightLabel => 'Crop height';
+
+	/// en: 'Bottom margin'
+	String get cropBottomMargin => 'Bottom margin';
 
 	/// en: 'First image shown at full height'
 	String get firstImageFullHeight => 'First image shown at full height';
@@ -9840,6 +9852,7 @@ extension on Translations {
 			'stitchLongImage' => 'Stitch Long Image',
 			'stitchHorizontalImage' => 'Stitch Horizontal Image',
 			'stitchSubtitles' => 'Stitch Subtitles',
+			'stitchNineGrid' => 'Nine-grid Collage',
 			'saveLongImage' => 'Save Long Image',
 			'borderColor' => 'Border Color',
 			'conversationTitle' => 'Conversation Title',
@@ -9852,6 +9865,7 @@ extension on Translations {
 			'selectAiPersonality' => 'Select AI Personality',
 			'apply' => 'Apply',
 			'heightPx' => 'Height(px)',
+			'marginPx' => 'Margin(px)',
 			'setUniformHeight' => 'Set Uniform Height',
 			'uniformHeight' => 'Uniform Height',
 			'cropImage' => 'Crop Image',
@@ -9860,6 +9874,8 @@ extension on Translations {
 			'finishSorting' => 'Finish Sorting',
 			'noImages' => 'No Images',
 			'cropHeightCPx' => ({required Object c}) => 'Crop Height: ${c} px',
+			'cropHeightLabel' => 'Crop height',
+			'cropBottomMargin' => 'Bottom margin',
 			'firstImageFullHeight' => 'First image shown at full height',
 			'enterHexColorCode' => 'Enter hex color code, e.g. #FF000000',
 			'showImageBorders' => 'Show Image Borders',
@@ -10313,12 +10329,12 @@ extension on Translations {
 			'channels' => 'Channels',
 			'fps' => 'FPS',
 			'bitrate' => 'Bitrate',
+			_ => null,
+		} ?? switch (path) {
 			'par' => 'PAR',
 			'audioChannels' => 'Audio Channels',
 			'audioBitrate' => 'Audio bitrate',
 			'audio' => 'Audio',
-			_ => null,
-		} ?? switch (path) {
 			'video' => 'Video',
 			'media' => 'Media',
 			'noLogsForL' => ({required Object l}) => 'No logs for ${l}',
@@ -10827,12 +10843,12 @@ extension on Translations {
 			'imageLabel' => 'Image',
 			'stickersLabel' => 'Stickers',
 			'pokedYou' => 'poked you',
+			_ => null,
+		} ?? switch (path) {
 			'kickedFromServerByP' => ({required Object p}) => 'Kicked from server by ${p}',
 			'kickedFromRoomByP' => ({required Object p}) => 'Kicked from room by ${p}',
 			'leftTheRoom' => 'left the room',
 			'joinedTheRoom' => 'joined the room',
-			_ => null,
-		} ?? switch (path) {
 			'pWasKickedByO' => ({required Object p, required Object o}) => '${p} was kicked by ${o}',
 			'youLabel' => 'You',
 			'leftTheServer' => 'left the server',
@@ -11341,12 +11357,12 @@ extension on Translations {
 			'imageDownloadFailed' => 'Image download failed',
 			'failedToFetchNetworkImage' => 'Failed to fetch network image',
 			'imageDecodeFailed' => 'Image decode failed',
+			_ => null,
+		} ?? switch (path) {
 			'noQrCodeFoundInImage' => 'No QR code found in image',
 			'copiedToClipboard' => 'Copied to clipboard',
 			'likeSuccess' => 'Like success',
 			'unlikeSuccess' => 'Unlike success',
-			_ => null,
-		} ?? switch (path) {
 			'operationSuccess' => 'Operation success',
 			'saveSuccess' => 'Save success',
 			'saveFailed' => 'Save failed',
@@ -11855,12 +11871,12 @@ extension on Translations {
 			'profileTabExtensions' => 'Extensions',
 			'profileTabMemory' => 'Memory',
 			'profileTabRequest' => 'Request',
+			_ => null,
+		} ?? switch (path) {
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
 			'profileTabLibrary' => 'Library',
-			_ => null,
-		} ?? switch (path) {
 			'inheritGlobalLibrary' => 'Inherit globally enabled items',
 			'inheritGlobalLibraryHint' => 'When off, only the world books and prompt injections selected below are used; when on and nothing is selected, the globally enabled ones are used.',
 			'profileLibraryHint' => 'Selected entries apply only to this assistant; see the switch above for inheriting the globally enabled ones.',
@@ -12369,12 +12385,12 @@ extension on Translations {
 			'torrentNodesHint' => 'One DHT node per line, host:port',
 			'torrentTrackersAuto' => 'Auto-append trackers from the URL to new downloads',
 			'torrentDhtExplain' => 'DHT is the standard trackerless peer-discovery network; normally left on. Optionally add custom bootstrap nodes below.',
+			_ => null,
+		} ?? switch (path) {
 			'torrentFileDownloading' => 'Downloading',
 			'torrentStopAfter' => 'Stop condition',
 			'torrentStopNone' => 'Do not stop',
 			'torrentStopAfterMetadata' => 'Stop after metadata',
-			_ => null,
-		} ?? switch (path) {
 			'torrentStopAfterDownload' => 'Stop when download completes',
 			_ => null,
 		};

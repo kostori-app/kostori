@@ -1,5 +1,6 @@
 library;
 
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
@@ -19,11 +20,15 @@ import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:path_provider/path_provider.dart';
 
+part 'collage_editor.dart';
+
 part 'render_dialogue_compose_page.dart';
 
 part 'render_horizontal_pic_page.dart';
 
 part 'render_long_pic_page.dart';
+
+part 'render_nine_grid_page.dart';
 
 final imagesProvider = StateNotifierProvider<ImagesNotifier, List<File>>((ref) {
   return ImagesNotifier();
@@ -344,9 +349,14 @@ class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
             clipBehavior: Clip.antiAlias,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.outline.toOpacity(0.72)
+              // 选中描边要画在图片之上，否则会被图片盖住（原来用背景色因此看不到）
+              foregroundDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: isSelected
+                    ? Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 3,
+                      )
                     : null,
               ),
               child: Material(
@@ -435,31 +445,47 @@ class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
           },
         ),
       ),
+      SliverToBoxAdapter(
+        child: _buildCard(
+          icon: Icons.grid_view,
+          title: t.stitchNineGrid,
+          onTap: () {
+            context.to(
+              () => SelectImagesPage(
+                maxSelection: 9,
+                onSelected: (selectedImages) {
+                  context.to(() => RenderNineGridPage(images: selectedImages));
+                },
+              ),
+            );
+          },
+        ),
+      ),
       _buildGrid(),
     ];
 
     Widget content;
     if (tabMode) {
-      // 适配 Tab：用普通头部 + 普通滚动，不套 SliverAppbar，
-      // 避免与详情页 NestedScrollView 冲突、避免 SliverAppbar 的
-      // topPadding 导致内容被拉出很长距离。
+      // 适配 Tab：用普通滚动，不套 SliverAppbar，避免与详情页 NestedScrollView 冲突。
+      // 顶部横条只在多选时显示（用于全选/删除等操作），普通状态不占位。
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Material(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: title,
+          if (multiSelect)
+            Material(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: title,
+                    ),
                   ),
-                ),
-                ..._buildActions(context, multiSelect, selectedIndexes),
-              ],
+                  ..._buildActions(context, multiSelect, selectedIndexes),
+                ],
+              ),
             ),
-          ),
           Expanded(
             child: AppScrollBar(
               controller: _scrollCtrl,
@@ -556,11 +582,11 @@ class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
 
 typedef OnImagesSelected = void Function(List<File> selectedImages);
 
-/// 底部毛玻璃操作栏（图标按钮 + tooltip）
-class _FrostedBottomBar extends StatelessWidget {
-  final List<Widget> children;
+/// 底部毛玻璃操作栏（内放分段胶囊按钮）
+class FrostedBottomBar extends StatelessWidget {
+  final Widget child;
 
-  const _FrostedBottomBar({required this.children});
+  const FrostedBottomBar({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -577,40 +603,8 @@ class _FrostedBottomBar extends StatelessWidget {
                 top: Radius.circular(16),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: children,
-            ),
+            child: child,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 底部操作图标按钮（带 tooltip）
-class _BottomIconAction extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  const _BottomIconAction({
-    required this.icon,
-    required this.tooltip,
-    this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: tooltip,
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(icon, color: cs.onSurface),
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.white.toOpacity(0.15),
         ),
       ),
     );
@@ -619,13 +613,11 @@ class _BottomIconAction extends StatelessWidget {
 
 /// 进入排序/裁剪模式时，返回优先退出模式而不退出页面
 class _ModeAwareBackButton extends StatelessWidget {
-  final bool reorderMode;
-  final bool cropMode;
+  final bool editorMode;
   final VoidCallback onExitMode;
 
   const _ModeAwareBackButton({
-    required this.reorderMode,
-    required this.cropMode,
+    required this.editorMode,
     required this.onExitMode,
   });
 
@@ -634,7 +626,7 @@ class _ModeAwareBackButton extends StatelessWidget {
     return IconButton(
       icon: const Icon(Icons.arrow_back_ios_new),
       onPressed: () {
-        if (reorderMode || cropMode) {
+        if (editorMode) {
           onExitMode();
         } else {
           Navigator.maybePop(context);
@@ -774,33 +766,42 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
           final image = allImages[index];
           final selectedIndex = selectedImages.indexOf(image);
           final isSelected = selectedIndex != -1;
+          final themeColor = Theme.of(context).colorScheme.primary;
 
           return GestureDetector(
             onTap: () => _toggleSelection(image),
-            child: Stack(
-              children: [
-                Positioned.fill(child: Image.file(image, fit: BoxFit.cover)),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: CircleAvatar(
-                    backgroundColor: isSelected
-                        ? Colors.blue
-                        : Colors.transparent,
-                    radius: 14,
-                    child: isSelected
-                        ? Text(
-                            '${selectedIndex + 1}',
-                            style: const TextStyle(color: Colors.white),
-                          )
-                        : const CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.circle_outlined, size: 16),
-                          ),
-                  ),
+            child: Container(
+              // 描边画在图片之上；裁剪交给内层 ClipRRect，避免 border 内缩导致圆角失效
+              foregroundDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected ? themeColor : Colors.transparent,
+                  width: 3,
                 ),
-              ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(image, fit: BoxFit.cover),
+                    if (isSelected)
+                      ColoredBox(
+                        color: Colors.black.toOpacity(0.45),
+                        child: Center(
+                          child: Text(
+                            '${selectedIndex + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           );
         },
@@ -829,124 +830,97 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
     final innerBorderColor = ref.watch(innerBorderColorProvider);
     final innerBorderWidth = ref.watch(innerBorderWidthProvider);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
+    return Sheet(
+      title: t.borderSettings,
+      icon: Icons.color_lens_outlined,
+      initialSize: 0.72,
+      builder: (context, sc) => ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              t.borderSettings,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        children: [
+          /// 外边框设置
+          ListTile(
+            title: Text(t.showOuterBorder),
+            trailing: CustomSwitch(
+              value: showOuterBorder,
+              onChanged: (v) =>
+                  ref.read(showOuterBorderProvider.notifier).state = v,
             ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: showOuterBorder
+                ? Column(
+                    children: [
+                      _ColorPickerField(
+                        title: t.outerBorderColor,
+                        initialColor: outerBorderColor,
+                        onChanged: (c) =>
+                            ref.read(outerBorderColorProvider.notifier).state =
+                                c,
+                      ),
+                      _buildSlider(
+                        t.outerBorderWidth,
+                        outerBorderWidth,
+                        0,
+                        120,
+                        (v) =>
+                            ref.read(outerBorderWidthProvider.notifier).state =
+                                v,
+                      ),
+                      _buildSlider(
+                        t.outerBorderRadius,
+                        outerBorderRadius,
+                        0,
+                        120,
+                        (v) =>
+                            ref.read(outerBorderRadiusProvider.notifier).state =
+                                v,
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 16),
 
-            const SizedBox(height: 16),
+          /// 内边框设置
+          ListTile(
+            title: Text(t.showImageBorders),
+            trailing: CustomSwitch(
+              value: showInnerBorders,
+              onChanged: (v) =>
+                  ref.read(showInnerBordersProvider.notifier).state = v,
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: showInnerBorders
+                ? Column(
+                    children: [
+                      _ColorPickerField(
+                        title: t.innerBorderColor,
+                        initialColor: innerBorderColor,
+                        onChanged: (c) =>
+                            ref.read(innerBorderColorProvider.notifier).state =
+                                c,
+                      ),
+                      _buildSlider(
+                        t.innerBorderWidth,
+                        innerBorderWidth,
+                        0,
+                        120,
+                        (v) =>
+                            ref.read(innerBorderWidthProvider.notifier).state =
+                                v,
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
 
-            /// 外边框设置
-            ListTile(
-              title: Text(t.showOuterBorder),
-              trailing: CustomSwitch(
-                value: showOuterBorder,
-                onChanged: (v) =>
-                    ref.read(showOuterBorderProvider.notifier).state = v,
-              ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: showOuterBorder
-                  ? Column(
-                      children: [
-                        _ColorPickerField(
-                          title: t.outerBorderColor,
-                          initialColor: outerBorderColor,
-                          onChanged: (c) =>
-                              ref
-                                      .read(outerBorderColorProvider.notifier)
-                                      .state =
-                                  c,
-                        ),
-                        _buildSlider(
-                          t.outerBorderWidth,
-                          outerBorderWidth,
-                          0,
-                          120,
-                          (v) =>
-                              ref
-                                      .read(outerBorderWidthProvider.notifier)
-                                      .state =
-                                  v,
-                        ),
-                        _buildSlider(
-                          t.outerBorderRadius,
-                          outerBorderRadius,
-                          0,
-                          120,
-                          (v) =>
-                              ref
-                                      .read(outerBorderRadiusProvider.notifier)
-                                      .state =
-                                  v,
-                        ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            const SizedBox(height: 16),
-
-            /// 内边框设置
-            ListTile(
-              title: Text(t.showImageBorders),
-              trailing: CustomSwitch(
-                value: showInnerBorders,
-                onChanged: (v) =>
-                    ref.read(showInnerBordersProvider.notifier).state = v,
-              ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: showInnerBorders
-                  ? Column(
-                      children: [
-                        _ColorPickerField(
-                          title: t.innerBorderColor,
-                          initialColor: innerBorderColor,
-                          onChanged: (c) =>
-                              ref
-                                      .read(innerBorderColorProvider.notifier)
-                                      .state =
-                                  c,
-                        ),
-                        _buildSlider(
-                          t.innerBorderWidth,
-                          innerBorderWidth,
-                          0,
-                          120,
-                          (v) =>
-                              ref
-                                      .read(innerBorderWidthProvider.notifier)
-                                      .state =
-                                  v,
-                        ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// 操作按钮
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(t.apply),
-              ),
-            ),
-          ],
-        ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }

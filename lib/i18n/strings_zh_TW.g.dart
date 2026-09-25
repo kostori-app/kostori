@@ -578,6 +578,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get stitchLongImage => '拼長圖';
 	@override String get stitchHorizontalImage => '橫向拼圖';
 	@override String get stitchSubtitles => '台詞拼接';
+	@override String get stitchNineGrid => '九宮格拼圖';
 	@override String get saveLongImage => '儲存長圖';
 	@override String get borderColor => '邊框顏色';
 	@override String get conversationTitle => '對話標題';
@@ -590,6 +591,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get selectAiPersonality => '選擇 AI 人格';
 	@override String get apply => '應用';
 	@override String get heightPx => '高度(px)';
+	@override String get marginPx => '邊距(px)';
 	@override String get setUniformHeight => '設定統一高度';
 	@override String get uniformHeight => '統一高度';
 	@override String get cropImage => '裁剪圖片';
@@ -603,6 +605,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get exportImage => '複製/分享';
 	@override String get saveAndShare => '儲存並分享';
 	@override String cropHeightCPx({required Object c}) => '裁剪高度：${c} px';
+	@override String get cropHeightLabel => '裁剪高度';
+	@override String get cropBottomMargin => '下邊距';
 	@override String get firstImageFullHeight => '首張全高顯示';
 	@override String get enterHexColorCode => '輸入十六進位顏色代碼，例如 #FF000000';
 	@override String get showImageBorders => '顯示圖片邊框';
@@ -3682,6 +3686,7 @@ extension on TranslationsZhTw {
 			'stitchLongImage' => '拼長圖',
 			'stitchHorizontalImage' => '橫向拼圖',
 			'stitchSubtitles' => '台詞拼接',
+			'stitchNineGrid' => '九宮格拼圖',
 			'saveLongImage' => '儲存長圖',
 			'borderColor' => '邊框顏色',
 			'conversationTitle' => '對話標題',
@@ -3694,6 +3699,7 @@ extension on TranslationsZhTw {
 			'selectAiPersonality' => '選擇 AI 人格',
 			'apply' => '應用',
 			'heightPx' => '高度(px)',
+			'marginPx' => '邊距(px)',
 			'setUniformHeight' => '設定統一高度',
 			'uniformHeight' => '統一高度',
 			'cropImage' => '裁剪圖片',
@@ -3707,6 +3713,8 @@ extension on TranslationsZhTw {
 			'exportImage' => '複製/分享',
 			'saveAndShare' => '儲存並分享',
 			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
+			'cropHeightLabel' => '裁剪高度',
+			'cropBottomMargin' => '下邊距',
 			'firstImageFullHeight' => '首張全高顯示',
 			'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
 			'showImageBorders' => '顯示圖片邊框',
@@ -4163,12 +4171,12 @@ extension on TranslationsZhTw {
 			'channels' => '聲道',
 			'fps' => '幀率',
 			'bitrate' => '位元率',
+			_ => null,
+		} ?? switch (path) {
 			'par' => 'PAR',
 			'audioChannels' => '音訊聲道',
 			'audioBitrate' => '音訊位元率',
 			'audio' => '音訊',
-			_ => null,
-		} ?? switch (path) {
 			'video' => '影片',
 			'media' => '媒體',
 			'noLogsForL' => ({required Object l}) => '暫無 ${l} 的日誌',
@@ -4677,12 +4685,12 @@ extension on TranslationsZhTw {
 			'imageLabel' => '圖片',
 			'stickersLabel' => '貼紙',
 			'pokedYou' => '戳了你',
+			_ => null,
+		} ?? switch (path) {
 			'kickedFromServerByP' => ({required Object p}) => '被 ${p} 踢出了伺服器',
 			'kickedFromRoomByP' => ({required Object p}) => '被 ${p} 踢出了房間',
 			'leftTheRoom' => '離開了房間',
 			'joinedTheRoom' => '加入了房間',
-			_ => null,
-		} ?? switch (path) {
 			'pWasKickedByO' => ({required Object p, required Object o}) => '${p} 被 ${o} 踢出了房間',
 			'youLabel' => '你',
 			'leftTheServer' => '離開了伺服器',
@@ -5191,12 +5199,12 @@ extension on TranslationsZhTw {
 			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
 			'pleaseDragImageFile' => 'Please drag in image file',
 			'imageDownloadFailed' => 'Image download failed',
+			_ => null,
+		} ?? switch (path) {
 			'failedToFetchNetworkImage' => 'Failed to fetch network image',
 			'imageDecodeFailed' => 'Image decode failed',
 			'noQrCodeFoundInImage' => '未在圖片中識別到二維碼',
 			'copiedToClipboard' => '已複製到剪貼簿',
-			_ => null,
-		} ?? switch (path) {
 			'likeSuccess' => '按讚成功',
 			'unlikeSuccess' => '取消按讚成功',
 			'operationSuccess' => '操作成功',
@@ -5705,12 +5713,12 @@ extension on TranslationsZhTw {
 			'profileTabMemory' => '記憶',
 			'profileTabRequest' => '請求',
 			'profileTabMcp' => 'MCP',
+			_ => null,
+		} ?? switch (path) {
 			'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
 			'profileTabLocalTools' => '工具技能',
 			'profileTabLibrary' => '知識庫',
 			'inheritGlobalLibrary' => '沿用全域啟用項',
-			_ => null,
-		} ?? switch (path) {
 			'inheritGlobalLibraryHint' => '關閉時只使用下方勾選的世界書與提示注入；開啟且未勾選時沿用全域啟用項。',
 			'profileLibraryHint' => '勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。',
 			'userNickname' => '使用者暱稱',
@@ -6219,6 +6227,8 @@ extension on TranslationsZhTw {
 			'torrentTrackersAuto' => '自動附加 URL 的 trackers 到新的下載',
 			'torrentDhtExplain' => 'DHT 是 BT 標準的「無 tracker 找 peer」網路，通常保持開啟；下面可填自訂引導節點（可選）。',
 			'torrentFileDownloading' => '下載中',
+			_ => null,
+		} ?? switch (path) {
 			'torrentStopAfter' => '停止條件',
 			'torrentStopNone' => '不停止',
 			'torrentStopAfterMetadata' => '取得中介資料後停止',
