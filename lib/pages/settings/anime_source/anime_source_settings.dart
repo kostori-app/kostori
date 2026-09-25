@@ -1960,6 +1960,8 @@ class _PingTestPageState extends State<_PingTestPage> {
   Future<void> _loadDefaultEndpoints() async {
     final result = <Map<String, String?>>[];
     for (final source in AnimeSource.allSources()) {
+      // 只测试已启用的源
+      if (!AnimeSourceManager().isEnabled(source.key)) continue;
       final endpoint = source.host != null ? await source.host!() : null;
       result.add({'name': source.name, 'endpoint': endpoint});
     }
@@ -2169,11 +2171,11 @@ class _PingTestPageState extends State<_PingTestPage> {
                           ? _stopContinuousPing
                           : _startContinuousPing,
                     ),
-                    FilledButton.tonal(
-                      onPressed: (testing || continuousPing)
-                          ? null
-                          : _runAllTests,
-                      child: Text(t.testAll),
+                    CapsuleButton(
+                      text: t.testAll,
+                      primary: true,
+                      enabled: !(testing || continuousPing),
+                      onTap: (testing || continuousPing) ? () {} : _runAllTests,
                     ),
                     const SizedBox(width: 16),
                   ],
