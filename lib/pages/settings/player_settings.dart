@@ -227,21 +227,25 @@ class _PlayerCacheSettingState extends State<_PlayerCacheSetting> {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(t.playerCache),
-      // 分段胶囊本身就能看出当前选中项，无需副标题；选项过宽时横向滚动
-      trailing: CapsuleOptions(
-        scrollable: true,
-        children: [
-          for (final tier in playerCacheTiers)
-            CapsuleOption(
-              text: playerCacheTierLabel(tier),
-              isSelected: currentPlayerCacheTier.key == tier.key,
-              onTap: () {
-                appdata.implicitData[kPlayerCacheTierKey] = tier.key;
-                appdata.writeImplicitData();
-                setState(() {});
-              },
-            ),
-        ],
+      // 限宽避免分段胶囊占满整行、把标题挤成竖排
+      trailing: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: CapsuleOptions(
+          alignment: WrapAlignment.end,
+          scrollable: true,
+          children: [
+            for (final tier in playerCacheTiers)
+              CapsuleOption(
+                text: playerCacheTierLabel(tier),
+                isSelected: currentPlayerCacheTier.key == tier.key,
+                onTap: () {
+                  appdata.implicitData[kPlayerCacheTierKey] = tier.key;
+                  appdata.writeImplicitData();
+                  setState(() {});
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
