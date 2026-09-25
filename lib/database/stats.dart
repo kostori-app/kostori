@@ -124,6 +124,62 @@ extension DateTimeFormat on DateTime {
       '${second.toString().padLeft(2, '0')}';
 }
 
+/// click/watch 这类「每个平台每天一条累加记录」的快照归并：
+/// 同一平台只保留数值最大（即最新）的一条。
+/// 多端同步时同一台设备的旧快照（如 4 次）和新快照（5 次）会被改写，
+/// 时间/数值都不同，若按整条记录去重就会重复累加，这里按平台折叠。
+List<PlatformEventRecord> _collapseCumulativeRecords(
+  List<PlatformEventRecord> records,
+) {
+  final byPlatform = <String, PlatformEventRecord>{};
+  final order = <String>[];
+  final orphan = <PlatformEventRecord>[];
+  for (final r in records) {
+    final key = r.platform?.value;
+    if (key == null) {
+      orphan.add(r);
+      continue;
+    }
+    final existing = byPlatform[key];
+    if (existing == null) {
+      byPlatform[key] = r;
+      order.add(key);
+      continue;
+    }
+    final existingDate =
+        existing.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final recordDate = r.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+    if (r.value > existing.value ||
+        (r.value == existing.value && recordDate.isAfter(existingDate))) {
+      byPlatform[key] = r;
+    }
+  }
+  return [for (final key in order) byPlatform[key]!, ...orphan];
+}
+
+List<DailyEvent> _collapseCumulativeEvents(List<DailyEvent> events) {
+  return [
+    for (final e in events)
+      DailyEvent(
+        dateStr: e.date.yyyymmdd,
+        platformEventRecords: _collapseCumulativeRecords(
+          e.platformEventRecords,
+        ),
+      ),
+  ];
+}
+
+List<PlatformEventRecord> _dedupeRecordsByJson(
+  List<PlatformEventRecord> records,
+) {
+  final seen = <String>{};
+  final merged = <PlatformEventRecord>[];
+  for (final r in records) {
+    if (seen.add(jsonEncode(r.toJson()))) merged.add(r);
+  }
+  return merged;
+}
+
 enum FavoriteAction {
   add("add"),
   move("move"),
@@ -370,8 +426,12 @@ class StatsDataImpl implements StatsData {
       liked: row.liked,
       isBangumi: row.isBangumi,
       comment: _parseList(row.comment),
-      totalClickCount: _parseList(row.totalClickCount),
-      totalWatchDurations: _parseList(row.totalWatchDurations),
+      totalClickCount: _collapseCumulativeEvents(
+        _parseList(row.totalClickCount),
+      ),
+      totalWatchDurations: _collapseCumulativeEvents(
+        _parseList(row.totalWatchDurations),
+      ),
       rating: _parseList(row.rating),
       favorite: _parseList(row.favorite),
       firstClickTime: row.firstClickTime != null
@@ -796,30 +856,36 @@ class StatsManager with ChangeNotifier {
         .toList();
   }
 
-  /// 合并两个 DailyEvent 列表：按日期分组，同日期合并 platformEventRecords 并去重，
-  /// 不同日期都保留。返回按日期升序的结果。
+  /// 合并两个 DailyEvent 列表：按日期分组，同日期合并 platformEventRecords。
+  /// `cumulative=true` 时（click/watch）按平台折叠保留最新快照，否则按整条
+  /// JSON 去重（comment/rating/favorite 是逐条追加的事件）。返回按日期升序。
   static List<DailyEvent> _mergeDailyEvents(
     List<DailyEvent> a,
-    List<DailyEvent> b,
-  ) {
+    List<DailyEvent> b, {
+    bool cumulative = false,
+  }) {
+    List<PlatformEventRecord> combine(List<PlatformEventRecord> records) =>
+        cumulative
+        ? _collapseCumulativeRecords(records)
+        : _dedupeRecordsByJson(records);
+
     final map = <String, DailyEvent>{};
     for (final e in [...a, ...b]) {
       final key = e.toJson()['date'] as String;
       if (map.containsKey(key)) {
-        // 同日期合并 records 并去重（按 toJson 字符串）
         final existing = map[key]!;
-        final seen = <String>{};
-        final merged = <PlatformEventRecord>[];
-        for (final r in [
-          ...existing.platformEventRecords,
-          ...e.platformEventRecords,
-        ]) {
-          final sig = jsonEncode(r.toJson());
-          if (seen.add(sig)) merged.add(r);
-        }
-        map[key] = DailyEvent(dateStr: key, platformEventRecords: merged);
+        map[key] = DailyEvent(
+          dateStr: key,
+          platformEventRecords: combine([
+            ...existing.platformEventRecords,
+            ...e.platformEventRecords,
+          ]),
+        );
       } else {
-        map[key] = e;
+        map[key] = DailyEvent(
+          dateStr: key,
+          platformEventRecords: combine(e.platformEventRecords),
+        );
       }
     }
     final keys = map.keys.toList()..sort();
@@ -855,10 +921,12 @@ class StatsManager with ChangeNotifier {
         totalClickCount: _mergeDailyEvents(
           l.totalClickCount,
           r.totalClickCount,
+          cumulative: true,
         ),
         totalWatchDurations: _mergeDailyEvents(
           l.totalWatchDurations,
           r.totalWatchDurations,
+          cumulative: true,
         ),
         rating: _mergeDailyEvents(l.rating, r.rating),
         favorite: _mergeDailyEvents(l.favorite, r.favorite),

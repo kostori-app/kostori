@@ -707,6 +707,52 @@ class HistoryManager with ChangeNotifier {
     return (a.lastWatchTime ?? 0) > (b.lastWatchTime ?? 0);
   }
 
+  /// 逐字段合并同一部（同 id）历史：
+  /// 集数与已看集集合只增不减；播放位置/线路取进度更靠前的一条；
+  /// 最近活动时间取较晚者。
+  /// 避免某端停在旧集数、但播放位置数值更大时整体覆盖，导致集数回退
+  /// （`lastWatchTime` 是集内播放位置，不是时间戳）。
+  static History _mergeHistoryFields(History a, History b) {
+    final advanced = _betterHistory(a, b) ? a : b;
+    final newer = a.time.isAfter(b.time) ? a : b;
+    return History(
+      id: advanced.id,
+      type: advanced.type,
+      time: newer.time,
+      title: newer.title.isNotEmpty ? newer.title : advanced.title,
+      subtitle: newer.subtitle.isNotEmpty ? newer.subtitle : advanced.subtitle,
+      cover: newer.cover.isNotEmpty ? newer.cover : advanced.cover,
+      lastWatchEpisode: _maxInt(a.lastWatchEpisode, b.lastWatchEpisode),
+      lastWatchTime: advanced.lastWatchTime,
+      lastRoad: advanced.lastRoad,
+      allEpisode: _maxInt(a.allEpisode, b.allEpisode),
+      bangumiId: newer.bangumiId ?? advanced.bangumiId,
+      watchEpisode: {...a.watchEpisode, ...b.watchEpisode},
+      viewMore: newer.viewMore ?? advanced.viewMore,
+    );
+  }
+
+  static int? _maxInt(int? a, int? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    return a > b ? a : b;
+  }
+
+  static bool _sameHistory(History a, History b) {
+    return a.id == b.id &&
+        a.type == b.type &&
+        a.time == b.time &&
+        a.title == b.title &&
+        a.subtitle == b.subtitle &&
+        a.cover == b.cover &&
+        (a.lastWatchEpisode ?? 0) == (b.lastWatchEpisode ?? 0) &&
+        (a.lastWatchTime ?? 0) == (b.lastWatchTime ?? 0) &&
+        (a.lastRoad ?? 0) == (b.lastRoad ?? 0) &&
+        (a.allEpisode ?? 0) == (b.allEpisode ?? 0) &&
+        a.bangumiId == b.bangumiId &&
+        setEquals(a.watchEpisode, b.watchEpisode);
+  }
+
   void _rebuildBangumiBest() {
     _bangumiBest.clear();
     for (final h in cachedHistories.values) {
@@ -1115,14 +1161,16 @@ class HistoryManager with ChangeNotifier {
     final local = await getAll();
     final localMap = {for (final h in local) h.id: h};
 
-    // 先筛出需要写入的条目（远端较新或本地没有）
+    // 先筛出需要写入的条目（逐字段合并；本地没有则直接采用远端）
     final toWrite = <History>[];
     for (final r in remote) {
       final l = localMap[r.id];
-      if (l == null || (r.lastWatchTime ?? 0) > (l.lastWatchTime ?? 0)) {
+      if (l == null) {
         toWrite.add(r);
+        continue;
       }
-      // 本地较新或相等：保持本地
+      final merged = _mergeHistoryFields(l, r);
+      if (!_sameHistory(l, merged)) toWrite.add(merged);
     }
 
     // 远端为该端全量快照：删除"本地有但远端没有"的条目（另一端已删除），
