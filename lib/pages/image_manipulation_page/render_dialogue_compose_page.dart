@@ -341,20 +341,14 @@ class _RenderDialogueComposePageState
 
   /// 复制到剪贴板（桌面）或分享（移动端），同时保存一份到 Kostori 文件夹
   Future<void> _copyOrShareDialogueImage() async {
-    try {
-      final bytes = await _renderDialogueBytes(context);
-      if (bytes == null) return;
-      await ImageSaver.saveOrShareImage(
-        bytes: bytes,
-        filename: '拼图_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await ref.read(imagesProvider.notifier).loadImages();
-    } catch (e, st) {
-      debugPrint('复制/分享长图异常: $e\n$st');
-      App.rootContext.showMessage(
-        message: t.saveFailedWithError(e: e.toString()),
-      );
-    }
+    await ImageExporter.run(
+      context,
+      filename: '拼图_${DateTime.now().millisecondsSinceEpoch}',
+      generate: ImageExporter.bytes(() => _renderDialogueBytes(context)),
+      generatingMessage: t.generating,
+      failureMessageBuilder: (e) => t.saveFailedWithError(e: e.toString()),
+    );
+    await ref.read(imagesProvider.notifier).loadImages();
   }
 
   Widget _buildReorderView() {

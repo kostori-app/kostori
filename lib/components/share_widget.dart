@@ -1,8 +1,4 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:kostori/components/watermark.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
@@ -11,6 +7,7 @@ import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/components/watermark.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -29,7 +26,7 @@ import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
-import 'package:kostori/utils/io.dart';
+import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/utils.dart';
 
@@ -37,23 +34,14 @@ part 'share_cards.dart';
 
 final GlobalKey repaintKey = GlobalKey();
 
+/// 分享页截图：进度弹窗、超长切分、保存 / 分享全部交给 [ImageExporter]。
 Future<void> captureAndSave(BuildContext context) async {
   try {
-    final renderObject = repaintKey.currentContext?.findRenderObject();
-    if (renderObject == null) {
-      ImageSaver.showResult(success: false, message: t.screenshotFailed);
-      return;
-    }
-    final boundary = renderObject as RenderRepaintBoundary;
-    final image = await boundary.toImage(pixelRatio: 3.0);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final bytes = byteData!.buffer.asUint8List();
-
-    final filename = 'popup_${DateTime.now().millisecondsSinceEpoch}.png';
-    await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
-  } catch (e) {
-    ImageSaver.showResult(success: false, message: t.screenshotFailed);
-    Log.error('截图失败', '$e');
+    await ImageExporter.run(
+      context,
+      filename: 'popup_${DateTime.now().millisecondsSinceEpoch}',
+      generate: ImageExporter.repaintBoundary(repaintKey),
+    );
   } finally {
     await providerContainer.read(imagesProvider.notifier).loadImages();
   }
@@ -367,7 +355,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   }
 
   Widget _animeInfoPage() {
-    return RepaintBoundary(
+    return TileableRepaintBoundary(
       key: repaintKey,
       child: Padding(
         padding: EdgeInsets.only(
@@ -492,7 +480,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
         currentWeekEp.values.first != null &&
         type0Episodes.isNotEmpty &&
         currentWeekEp.values.first == type0Episodes.last;
-    return RepaintBoundary(
+    return TileableRepaintBoundary(
       key: repaintKey,
       child: Padding(
         padding: EdgeInsets.only(
@@ -973,7 +961,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   Widget _searchSubjectPage() {
     final keyList = selectedBangumiItems.keys.toList();
 
-    return RepaintBoundary(
+    return TileableRepaintBoundary(
       key: repaintKey,
       child: Padding(
         padding: EdgeInsets.only(
@@ -1161,7 +1149,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   Widget _searchCharacterPage() {
     final keyList = selectedCharacterItems.keys.toList();
 
-    return RepaintBoundary(
+    return TileableRepaintBoundary(
       key: repaintKey,
       child: Padding(
         padding: EdgeInsets.only(
@@ -1247,7 +1235,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   }
 
   Widget _characterPage() {
-    return RepaintBoundary(
+    return TileableRepaintBoundary(
       key: repaintKey,
       child: Padding(
         padding: EdgeInsets.only(
@@ -1438,9 +1426,9 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    captureAndSave(context);
-                    App.rootContext.pop();
+                  onTap: () async {
+                    await captureAndSave(context);
+                    if (context.mounted) App.rootContext.pop();
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(12),

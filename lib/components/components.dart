@@ -59,6 +59,7 @@ import 'package:kostori/pages/remote_control_page.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:marquee/marquee.dart';

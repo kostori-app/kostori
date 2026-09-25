@@ -219,17 +219,14 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   }
 
   Future<void> _copyOrShareLongImage() async {
-    try {
-      final bytes = await _renderLongBytes();
-      if (bytes == null) return;
-      await ImageSaver.saveOrShareImage(
-        bytes: bytes,
-        filename: '拼图_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await ref.read(imagesProvider.notifier).loadImages();
-    } catch (e) {
-      App.rootContext.showMessage(message: t.saveFailedE(e: e.toString()));
-    }
+    await ImageExporter.run(
+      context,
+      filename: '拼图_${DateTime.now().millisecondsSinceEpoch}',
+      generate: ImageExporter.bytes(_renderLongBytes),
+      generatingMessage: t.generating,
+      failureMessageBuilder: (e) => t.saveFailedE(e: e.toString()),
+    );
+    await ref.read(imagesProvider.notifier).loadImages();
   }
 
   Widget _buildReorderView() {

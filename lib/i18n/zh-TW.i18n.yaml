@@ -2076,6 +2076,8 @@ jumping: 正在跳轉...
 queryFailed: 查詢失敗
 screenshotSuccess: 擷圖成功
 screenshotFailed: 擷圖失敗
+screenshotGeneratingProgress: "正在產生截圖 ${current}/${total}"
+screenshotSavingProgress: "正在儲存 ${current}/${total}"
 noRecordForMonth: ${month}暫無記錄
 screenshotFailedPleaseRetry: 擷圖失敗，請重試
 shareFailed: 分享失敗

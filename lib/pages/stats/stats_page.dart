@@ -32,6 +32,7 @@ import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/pages/stats/all_stats_timeline_page.dart';
 import 'package:kostori/pages/stats/stat_display.dart';
 import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -736,50 +737,44 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
 
   Future<void> _captureOffscreen(BuildContext context) async {
     try {
-      final bytes = await ImageSaver.captureWidgetToImage(
-        context: context,
-        width: 1200.0,
-        delay: const Duration(milliseconds: 500),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                t.statsYearSuffix(year: _year),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+      await ImageExporter.run(
+        context,
+        filename: 'yearly_${DateTime.now().millisecondsSinceEpoch}',
+        generate: ImageExporter.offscreen(
+          context: context,
+          width: 1200.0,
+          delay: const Duration(milliseconds: 500),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  t.statsYearSuffix(year: _year),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.9,
+                const SizedBox(height: 12),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: 12,
+                  itemBuilder: (context, i) => _buildTile(context, i),
                 ),
-                itemCount: 12,
-                itemBuilder: (context, i) => _buildTile(context, i),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      );
-      if (bytes == null) return;
-
-      final filename = 'yearly_${DateTime.now().millisecondsSinceEpoch}.png';
-      await ImageSaver.saveOrShareImage(
-        bytes: bytes,
-        filename: filename,
         desktopSuccessMessage: t.statsCopiedToClipboard,
       );
-    } catch (e) {
-      ImageSaver.showResult(success: false, message: t.screenshotFailed);
-      Log.error('截图失败', '$e');
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();
     }

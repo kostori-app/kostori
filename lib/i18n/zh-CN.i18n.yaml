@@ -2072,6 +2072,8 @@ jumping: 正在跳转...
 queryFailed: 查询失败
 screenshotSuccess: 截图成功
 screenshotFailed: 截图失败
+screenshotGeneratingProgress: "正在生成截图 ${current}/${total}"
+screenshotSavingProgress: "正在保存 ${current}/${total}"
 noRecordForMonth: ${month}暂无记录
 screenshotFailedPleaseRetry: 截图失败，请重试
 shareFailed: 分享失败

@@ -6115,6 +6115,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Screenshot failed'
 	String get screenshotFailed => 'Screenshot failed';
 
+	/// en: 'Generating screenshot ${current}/${total}'
+	String screenshotGeneratingProgress({required Object current, required Object total}) => 'Generating screenshot ${current}/${total}';
+
+	/// en: 'Saving ${current}/${total}'
+	String screenshotSavingProgress({required Object current, required Object total}) => 'Saving ${current}/${total}';
+
 	/// en: 'No record for $month'
 	String noRecordForMonth({required Object month}) => 'No record for ${month}';
 
@@ -11360,6 +11366,8 @@ extension on Translations {
 			'queryFailed' => 'Query failed',
 			'screenshotSuccess' => 'Screenshot success',
 			'screenshotFailed' => 'Screenshot failed',
+			'screenshotGeneratingProgress' => ({required Object current, required Object total}) => 'Generating screenshot ${current}/${total}',
+			'screenshotSavingProgress' => ({required Object current, required Object total}) => 'Saving ${current}/${total}',
 			'noRecordForMonth' => ({required Object month}) => 'No record for ${month}',
 			'screenshotFailedPleaseRetry' => 'Screenshot failed, please retry',
 			'shareFailed' => 'Share failed',
@@ -11851,10 +11859,10 @@ extension on Translations {
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
 			'profileTabLibrary' => 'Library',
-			'inheritGlobalLibrary' => 'Inherit globally enabled items',
-			'inheritGlobalLibraryHint' => 'When off, only the world books and prompt injections selected below are used; when on and nothing is selected, the globally enabled ones are used.',
 			_ => null,
 		} ?? switch (path) {
+			'inheritGlobalLibrary' => 'Inherit globally enabled items',
+			'inheritGlobalLibraryHint' => 'When off, only the world books and prompt injections selected below are used; when on and nothing is selected, the globally enabled ones are used.',
 			'profileLibraryHint' => 'Selected entries apply only to this assistant; see the switch above for inheriting the globally enabled ones.',
 			'userNickname' => 'User nickname',
 			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
@@ -12365,6 +12373,8 @@ extension on Translations {
 			'torrentStopAfter' => 'Stop condition',
 			'torrentStopNone' => 'Do not stop',
 			'torrentStopAfterMetadata' => 'Stop after metadata',
+			_ => null,
+		} ?? switch (path) {
 			'torrentStopAfterDownload' => 'Stop when download completes',
 			_ => null,
 		};

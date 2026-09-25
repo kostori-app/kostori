@@ -2066,6 +2066,8 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get queryFailed => '查詢失敗';
 	@override String get screenshotSuccess => '擷圖成功';
 	@override String get screenshotFailed => '擷圖失敗';
+	@override String screenshotGeneratingProgress({required Object current, required Object total}) => '正在產生截圖 ${current}/${total}';
+	@override String screenshotSavingProgress({required Object current, required Object total}) => '正在儲存 ${current}/${total}';
 	@override String noRecordForMonth({required Object month}) => '${month}暫無記錄';
 	@override String get screenshotFailedPleaseRetry => '擷圖失敗，請重試';
 	@override String get shareFailed => '分享失敗';
@@ -5216,6 +5218,8 @@ extension on TranslationsZhTw {
 			'queryFailed' => '查詢失敗',
 			'screenshotSuccess' => '擷圖成功',
 			'screenshotFailed' => '擷圖失敗',
+			'screenshotGeneratingProgress' => ({required Object current, required Object total}) => '正在產生截圖 ${current}/${total}',
+			'screenshotSavingProgress' => ({required Object current, required Object total}) => '正在儲存 ${current}/${total}',
 			'noRecordForMonth' => ({required Object month}) => '${month}暫無記錄',
 			'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
 			'shareFailed' => '分享失敗',
@@ -5705,10 +5709,10 @@ extension on TranslationsZhTw {
 			'profileTabLocalTools' => '工具技能',
 			'profileTabLibrary' => '知識庫',
 			'inheritGlobalLibrary' => '沿用全域啟用項',
-			'inheritGlobalLibraryHint' => '關閉時只使用下方勾選的世界書與提示注入；開啟且未勾選時沿用全域啟用項。',
-			'profileLibraryHint' => '勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。',
 			_ => null,
 		} ?? switch (path) {
+			'inheritGlobalLibraryHint' => '關閉時只使用下方勾選的世界書與提示注入；開啟且未勾選時沿用全域啟用項。',
+			'profileLibraryHint' => '勾選的條目僅對目前助手生效；是否沿用全域啟用項見上方開關。',
 			'userNickname' => '使用者暱稱',
 			'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',
 			'animeRecognize' => '動漫識別',

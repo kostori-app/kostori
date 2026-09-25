@@ -51,6 +51,7 @@ import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/skills/skill_registry.dart';
+import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:pasteboard/pasteboard.dart';
@@ -1794,44 +1795,42 @@ class _AiResultCard extends ConsumerWidget {
 
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     try {
-      final bytes = await ImageSaver.captureWidgetToImage(
-        context: context,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, size: 22),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+      await ImageExporter.run(
+        context,
+        filename: 'kostori_ai_${DateTime.now().millisecondsSinceEpoch}',
+        generate: ImageExporter.offscreen(
+          context: context,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 22),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (header != null) ...[header!, const SizedBox(height: 12)],
-              CustomMarkdownWidget(data: content),
-              const SizedBox(height: 16),
-              const Center(child: KostoriWatermark()),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (header != null) ...[header!, const SizedBox(height: 12)],
+                CustomMarkdownWidget(data: content),
+                const SizedBox(height: 16),
+                const Center(child: KostoriWatermark()),
+              ],
+            ),
           ),
         ),
       );
-      if (bytes == null) return;
-      final filename =
-          'kostori_ai_${DateTime.now().millisecondsSinceEpoch}.png';
-      await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
-    } catch (e) {
-      ImageSaver.showResult(success: false, message: t.screenshotFailed);
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();
     }

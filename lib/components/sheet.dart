@@ -217,30 +217,20 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
     setState(() => _isExporting = true);
 
     try {
-      final bytes = await ImageSaver.captureWidgetToImage(
-        context: context,
-        child: _QrCard(config: _config),
-        width: _config.exportWidth,
-        pixelRatio: _config.exportPixelRatio,
-      );
-
-      if (bytes == null) {
-        ImageSaver.showResult(
-          success: false,
-          message: t.screenshotFailedPleaseRetry,
-        );
-        return;
-      }
-
-      final filename =
-          'kostori_qr_${DateTime.now().millisecondsSinceEpoch}.png';
-      await ImageSaver.saveOrShareImage(
-        bytes: bytes,
-        filename: filename,
+      final ok = await ImageExporter.run(
+        context,
+        filename: 'kostori_qr_${DateTime.now().millisecondsSinceEpoch}',
+        generate: ImageExporter.offscreen(
+          context: context,
+          child: _QrCard(config: _config),
+          width: _config.exportWidth,
+          pixelRatio: _config.exportPixelRatio,
+        ),
         desktopSuccessMessage: t.qrCopiedToClipboard,
         mobileSuccessMessage: t.qrSavedToGallery,
+        failureMessage: t.screenshotFailedPleaseRetry,
       );
-      if (mounted) Navigator.pop(context);
+      if (ok && mounted) Navigator.pop(context);
     } catch (e) {
       ImageSaver.showResult(success: false, message: t.shareFailed);
     } finally {

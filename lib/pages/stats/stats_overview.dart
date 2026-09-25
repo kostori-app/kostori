@@ -32,35 +32,32 @@ class _StatsOverviewScreenState extends ConsumerState<StatsOverviewScreen> {
 
   Future<void> _captureOffscreen(BuildContext context) async {
     try {
-      final bytes = await ImageSaver.captureWidgetToImage(
-        context: context,
-        child: SizedBox(
-          width: 800,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                StatsOverview(
-                  stats: stats,
-                  selectedDate: selectedDay,
-                  timeRange: timeRange,
-                ),
-                const SizedBox(height: 12),
-                const Center(child: KostoriWatermark()),
-              ],
+      await ImageExporter.run(
+        context,
+        filename: 'stats_${DateTime.now().millisecondsSinceEpoch}',
+        generate: ImageExporter.offscreen(
+          context: context,
+          child: SizedBox(
+            width: 800,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  StatsOverview(
+                    stats: stats,
+                    selectedDate: selectedDay,
+                    timeRange: timeRange,
+                  ),
+                  const SizedBox(height: 12),
+                  const Center(child: KostoriWatermark()),
+                ],
+              ),
             ),
           ),
         ),
       );
-      if (bytes == null) return;
-
-      final filename = 'stats_${DateTime.now().millisecondsSinceEpoch}.png';
-      await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
-    } catch (e) {
-      ImageSaver.showResult(success: false, message: t.screenshotFailed);
-      Log.error('截图失败', '$e');
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();
     }

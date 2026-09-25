@@ -2066,6 +2066,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get queryFailed => '查询失败';
 	@override String get screenshotSuccess => '截图成功';
 	@override String get screenshotFailed => '截图失败';
+	@override String screenshotGeneratingProgress({required Object current, required Object total}) => '正在生成截图 ${current}/${total}';
+	@override String screenshotSavingProgress({required Object current, required Object total}) => '正在保存 ${current}/${total}';
 	@override String noRecordForMonth({required Object month}) => '${month}暂无记录';
 	@override String get screenshotFailedPleaseRetry => '截图失败，请重试';
 	@override String get shareFailed => '分享失败';
@@ -5217,6 +5219,8 @@ extension on TranslationsZhCn {
 			'queryFailed' => '查询失败',
 			'screenshotSuccess' => '截图成功',
 			'screenshotFailed' => '截图失败',
+			'screenshotGeneratingProgress' => ({required Object current, required Object total}) => '正在生成截图 ${current}/${total}',
+			'screenshotSavingProgress' => ({required Object current, required Object total}) => '正在保存 ${current}/${total}',
 			'noRecordForMonth' => ({required Object month}) => '${month}暂无记录',
 			'screenshotFailedPleaseRetry' => '截图失败，请重试',
 			'shareFailed' => '分享失败',
@@ -5706,10 +5710,10 @@ extension on TranslationsZhCn {
 			'profileMcpHint' => '绑定本助手的 MCP 服务器（连接后自动导入工具）',
 			'profileTabLocalTools' => '工具技能',
 			'profileTabLibrary' => '知识库',
-			'inheritGlobalLibrary' => '沿用全局启用项',
-			'inheritGlobalLibraryHint' => '关闭时只使用下方勾选的世界书与提示注入；开启且未勾选时沿用全局启用项',
 			_ => null,
 		} ?? switch (path) {
+			'inheritGlobalLibrary' => '沿用全局启用项',
+			'inheritGlobalLibraryHint' => '关闭时只使用下方勾选的世界书与提示注入；开启且未勾选时沿用全局启用项',
 			'profileLibraryHint' => '勾选的条目仅对当前助手生效；是否沿用全局启用项见上方开关。',
 			'userNickname' => '用户昵称',
 			'userNicknameHint' => '聊天中显示的用户名称，并注入 {{user_nickname}}',
@@ -6220,6 +6224,8 @@ extension on TranslationsZhCn {
 			'torrentStopAfter' => '停止条件',
 			'torrentStopNone' => '不停止',
 			'torrentStopAfterMetadata' => '获取元数据后停止',
+			_ => null,
+		} ?? switch (path) {
 			'torrentStopAfterDownload' => '下载完成后停止',
 			_ => null,
 		};

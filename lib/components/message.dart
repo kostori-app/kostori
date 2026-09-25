@@ -305,6 +305,30 @@ LoadingDialogController showLoadingDialog(
   return controller;
 }
 
+/// 在带加载/进度弹窗中执行 [task]，结束后自动关闭弹窗并返回结果。
+///
+/// [task] 可通过 [LoadingDialogController] 更新文案与进度
+/// （一旦调用 [LoadingDialogController.setProgress]，弹窗从转圈切换为进度条）。
+Future<T> runWithLoadingDialog<T>(
+  BuildContext context, {
+  required String message,
+  required Future<T> Function(LoadingDialogController controller) task,
+  bool allowCancel = false,
+  bool barrierDismissible = false,
+}) async {
+  final controller = showLoadingDialog(
+    context,
+    message: message,
+    allowCancel: allowCancel,
+    barrierDismissible: barrierDismissible,
+  );
+  try {
+    return await task(controller);
+  } finally {
+    controller.close();
+  }
+}
+
 class ContentDialog extends StatelessWidget {
   const ContentDialog({
     super.key,

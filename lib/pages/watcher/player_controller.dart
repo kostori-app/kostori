@@ -1150,34 +1150,48 @@ abstract class _PlayerController with Store {
 
   Future<void> captureAndSaveScreenshot({required BuildContext context}) async {
     saveAddress = '';
-    App.rootContext.showMessage(message: t.screenshotInProgress);
+    String? savedPath;
+    String? savedFilename;
 
     try {
-      final Uint8List? screenData = await playerController.player.screenshot();
-      if (screenData == null) {
-        Log.error('截图失败', '截图数据为空');
-        return;
-      }
+      await runWithLoadingDialog<void>(
+        context,
+        message: t.screenshotInProgress,
+        task: (loading) async {
+          final Uint8List? screenData = await playerController.player
+              .screenshot();
+          if (screenData == null) {
+            Log.error('截图失败', '截图数据为空');
+            return;
+          }
 
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final title = animeTitle;
-      final filename = '${title}_$timestamp.png';
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final filename = '${animeTitle}_$timestamp.png';
 
-      final file = await ImageSaver.writeFile(
-        bytes: screenData,
-        filename: filename,
+          loading.setMessage(t.savingImage);
+          final file = await ImageSaver.writeFile(
+            bytes: screenData,
+            filename: filename,
+          );
+          if (file == null) return;
+
+          savedPath = file.path;
+          savedFilename = filename;
+          saveAddress = file.path;
+
+          if (App.isAndroid) {
+            const platform = MethodChannel('kostori/media');
+            await platform.invokeMethod('scanFolder', {
+              'path': file.parent.path,
+            });
+          }
+        },
       );
 
-      if (file == null) return;
-
-      saveAddress = file.path;
-      showScreenshotPopup(context, saveAddress, filename);
-      ImageSaver.showResult(success: true, message: t.screenshotSuccess);
-      Log.info('保存文件成功', file.path);
-
-      if (App.isAndroid) {
-        const platform = MethodChannel('kostori/media');
-        await platform.invokeMethod('scanFolder', {'path': file.parent.path});
+      if (savedPath != null && savedFilename != null && context.mounted) {
+        showScreenshotPopup(context, savedPath!, savedFilename!);
+        ImageSaver.showResult(success: true, message: t.screenshotSuccess);
+        Log.info('保存文件成功', savedPath!);
       }
     } catch (e) {
       ImageSaver.showResult(success: false, message: t.screenshotFailed);

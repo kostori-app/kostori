@@ -221,17 +221,14 @@ class _RenderHorizontalPicPageState
 
   /// 复制到剪贴板（桌面）或分享（移动端），同时保存一份到 Kostori 文件夹
   Future<void> _copyOrShareHorizontalImage() async {
-    try {
-      final bytes = await _renderHorizontalBytes();
-      if (bytes == null) return;
-      await ImageSaver.saveOrShareImage(
-        bytes: bytes,
-        filename: '拼图_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await ref.read(imagesProvider.notifier).loadImages();
-    } catch (e) {
-      App.rootContext.showMessage(message: t.saveFailedE(e: e));
-    }
+    await ImageExporter.run(
+      context,
+      filename: '拼图_${DateTime.now().millisecondsSinceEpoch}',
+      generate: ImageExporter.bytes(_renderHorizontalBytes),
+      generatingMessage: t.generating,
+      failureMessageBuilder: (e) => t.saveFailedE(e: e),
+    );
+    await ref.read(imagesProvider.notifier).loadImages();
   }
 
   void _showBorderSettings() {

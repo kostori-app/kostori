@@ -2074,6 +2074,8 @@ jumping: Jumping...
 queryFailed: Query failed
 screenshotSuccess: Screenshot success
 screenshotFailed: Screenshot failed
+screenshotGeneratingProgress: "Generating screenshot ${current}/${total}"
+screenshotSavingProgress: "Saving ${current}/${total}"
 noRecordForMonth: No record for $month
 screenshotFailedPleaseRetry: Screenshot failed, please retry
 shareFailed: Share failed

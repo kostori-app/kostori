@@ -375,22 +375,34 @@ class Share {
     required String filename,
     required String mime,
   }) async {
+    await shareFiles(dataList: [data], filenames: [filename], mime: mime);
+  }
+
+  static Future<void> shareFiles({
+    required List<Uint8List> dataList,
+    required List<String> filenames,
+    required String mime,
+  }) async {
+    if (dataList.isEmpty || dataList.length != filenames.length) return;
     if (!App.isWindows) {
       await s.SharePlus.instance.share(
         s.ShareParams(
-          fileNameOverrides: [filename],
-          files: [s.XFile.fromData(data, mimeType: mime)],
+          fileNameOverrides: filenames,
+          files: [
+            for (final data in dataList) s.XFile.fromData(data, mimeType: mime),
+          ],
         ),
       );
     } else {
       // write to cache
-      final file = File(FilePath.join(App.cachePath, filename));
-      await file.writeAsBytes(data);
+      final files = <s.XFile>[];
+      for (var i = 0; i < dataList.length; i++) {
+        final file = File(FilePath.join(App.cachePath, filenames[i]));
+        await file.writeAsBytes(dataList[i]);
+        files.add(s.XFile(file.path));
+      }
       await s.SharePlus.instance.share(
-        s.ShareParams(
-          fileNameOverrides: [filename],
-          files: [s.XFile(file.path)],
-        ),
+        s.ShareParams(fileNameOverrides: filenames, files: files),
       );
     }
   }
@@ -628,22 +640,69 @@ class ImageSaver {
   static Future<void> saveOrShareImage({
     required Uint8List bytes,
     required String filename,
-    String desktopSuccessMessage = '已复制到剪贴板',
-    String mobileSuccessMessage = '截图成功',
+    String? desktopSuccessMessage,
+    String? mobileSuccessMessage,
+    void Function(int done, int total)? onProgress,
+    void Function()? onSaved,
+  }) {
+    return saveOrShareImages(
+      bytes: [bytes],
+      filenames: [filename],
+      desktopSuccessMessage: desktopSuccessMessage ?? t.copiedToClipboard,
+      mobileSuccessMessage: mobileSuccessMessage,
+      onProgress: onProgress,
+      onSaved: onSaved,
+    );
+  }
+
+  /// 保存或分享多张图片。
+  ///
+  /// 桌面端逐张保存并复制第一张到剪贴板；移动端逐张保存后一次性分享全部，
+  /// 用于超长内容切成的多张图。[onProgress] 驱动保存进度，[onSaved] 在保存
+  /// 完成、弹出结果提示或分享面板前回调（便于收起进度弹窗）。
+  static Future<void> saveOrShareImages({
+    required List<Uint8List> bytes,
+    required List<String> filenames,
+    String? desktopSuccessMessage,
+    String? mobileSuccessMessage,
+    void Function(int done, int total)? onProgress,
+    void Function()? onSaved,
   }) async {
+    if (bytes.isEmpty || bytes.length != filenames.length) return;
     if (App.isDesktop) {
-      await Pasteboard.writeImage(bytes);
-      await writeFile(bytes: bytes, filename: filename);
-      showResult(success: true, message: desktopSuccessMessage);
+      for (var i = 0; i < bytes.length; i++) {
+        await writeFile(bytes: bytes[i], filename: filenames[i]);
+        onProgress?.call(i + 1, bytes.length);
+      }
+      onSaved?.call();
+      await Pasteboard.writeImage(bytes.first);
+      showResult(
+        success: true,
+        message: desktopSuccessMessage ?? t.saveSuccess,
+      );
     } else {
-      final file = await writeFile(bytes: bytes, filename: filename);
-      if (file == null) return;
-      showResult(success: true, message: mobileSuccessMessage);
-      final data = await file.readAsBytes();
-      await Share.shareFile(data: data, filename: filename, mime: 'image/png');
+      final saved = <File>[];
+      for (var i = 0; i < bytes.length; i++) {
+        final file = await writeFile(bytes: bytes[i], filename: filenames[i]);
+        if (file != null) saved.add(file);
+        onProgress?.call(i + 1, bytes.length);
+      }
+      if (saved.isEmpty) return;
+      onSaved?.call();
+      showResult(
+        success: true,
+        message: mobileSuccessMessage ?? t.screenshotSuccess,
+      );
+      await Share.shareFiles(
+        dataList: bytes,
+        filenames: filenames,
+        mime: 'image/png',
+      );
       if (App.isAndroid) {
         const platform = MethodChannel('kostori/media');
-        await platform.invokeMethod('scanFolder', {'path': file.parent.path});
+        await platform.invokeMethod('scanFolder', {
+          'path': saved.first.parent.path,
+        });
       }
     }
   }
