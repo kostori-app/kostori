@@ -1736,8 +1736,8 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               );
             },
           ),
-        // 搜索（历史/联想）状态：隐藏分类胶囊，避免与输入/列表抢位置
-        if (!_showSearchHistory && !_showSearchSuggestions)
+        // 搜索（历史/联想）状态或多选模式下隐藏分类胶囊，避免与输入/列表抢位置
+        if (!_showSearchHistory && !_showSearchSuggestions && !multiSelectMode)
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: _searchCategoryCapsule(),
