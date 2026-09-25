@@ -400,18 +400,23 @@ class BangumiWidget {
     bool enableDefaultSize = true,
     int? cacheWidth,
   }) {
-    ImageProvider? findImageProvider() {
-      ImageProvider image;
-      image = CachedImageProvider(imageUrl, sourceKey: 'bangumi');
-
-      return image;
+    // 缺封面时上层常传空串：直接给占位，避免创建空地址 provider
+    if (imageUrl.trim().isEmpty) {
+      final cs = Theme.of(context).colorScheme;
+      return Container(
+        width: enableDefaultSize ? width : null,
+        height: enableDefaultSize ? height : null,
+        color: cs.surfaceContainerHighest,
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: 24,
+          color: cs.onSurfaceVariant,
+        ),
+      );
     }
 
-    var image = findImageProvider();
-    if (image == null) {
-      return const SizedBox();
-    }
-
+    final image = CachedImageProvider(imageUrl, sourceKey: 'bangumi');
     if (enableDefaultSize) {
       return AnimatedImage(
         image: image,

@@ -44,6 +44,12 @@ class CachedImageProvider
 
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
+    // 空地址（条目缺封面时上层常传 ''）：直接失败走占位，不进入网络层，
+    // 否则 rhttp 会抛 'relative URL without a base'
+    if (url.trim().isEmpty) {
+      throw ImageLoadException(url, 'Empty image url');
+    }
+
     // 转存后的短引用 / 源侧懒加载图片：一次渲染可能同时触发几十张
     // （每张都要抓图 + 解密 + 转 base64），必须和其它图片共用并发上限，
     // 否则会把 UI 线程和源请求压死。
