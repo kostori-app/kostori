@@ -484,7 +484,6 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
     await ImageSaver.saveImage(
       bytes: bytes,
       filename: 'word_cloud_$timestamp.png',
-      ref: ref,
     );
   }
 

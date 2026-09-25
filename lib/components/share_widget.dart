@@ -22,9 +22,7 @@ import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
-import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/image_export.dart';
 import 'package:kostori/utils/protocol_parser.dart';
@@ -36,15 +34,11 @@ final GlobalKey repaintKey = GlobalKey();
 
 /// 分享页截图：进度弹窗、超长切分、保存 / 分享全部交给 [ImageExporter]。
 Future<void> captureAndSave(BuildContext context) async {
-  try {
-    await ImageExporter.run(
-      context,
-      filename: 'popup_${DateTime.now().millisecondsSinceEpoch}',
-      generate: ImageExporter.repaintBoundary(repaintKey),
-    );
-  } finally {
-    await providerContainer.read(imagesProvider.notifier).loadImages();
-  }
+  await ImageExporter.run(
+    context,
+    filename: 'popup_${DateTime.now().millisecondsSinceEpoch}',
+    generate: ImageExporter.repaintBoundary(repaintKey),
+  );
 }
 
 class ShareWidget extends ConsumerStatefulWidget {

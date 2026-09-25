@@ -532,6 +532,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       final filename = '${base}_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = await ImageSaver.writeFile(bytes: data, filename: filename);
       if (file == null) return;
+      await ImageSaver.refreshImageList();
       App.rootContext.showMessage(
         message: '${t.screenshotSuccess}: ${file.path}',
       );

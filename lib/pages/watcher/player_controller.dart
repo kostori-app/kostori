@@ -1185,6 +1185,7 @@ abstract class _PlayerController with Store {
               'path': file.parent.path,
             });
           }
+          await ImageSaver.refreshImageList();
         },
       );
 

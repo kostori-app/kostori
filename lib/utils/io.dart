@@ -547,7 +547,6 @@ class ImageSaver {
   static Future<void> saveImage({
     required Uint8List bytes,
     required String filename,
-    WidgetRef? ref,
   }) async {
     try {
       final file = await writeFile(bytes: bytes, filename: filename);
@@ -565,7 +564,21 @@ class ImageSaver {
       );
       Log.error('保存失败', '$e');
     } finally {
-      await ref?.read(imagesProvider.notifier).loadImages();
+      await refreshImageList();
+    }
+  }
+
+  /// 刷新「图片操作」页的图片列表，让新保存的图片立即出现（无需重启）。
+  static Future<void> refreshImageList() async {
+    final context = App.rootNavigatorKey.currentContext;
+    if (context == null) return;
+    try {
+      await ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(imagesProvider.notifier).loadImages();
+    } catch (e, s) {
+      Log.error('刷新图片列表失败', '$e\n$s');
     }
   }
 
@@ -674,6 +687,7 @@ class ImageSaver {
         await writeFile(bytes: bytes[i], filename: filenames[i]);
         onProgress?.call(i + 1, bytes.length);
       }
+      await refreshImageList();
       onSaved?.call();
       await Pasteboard.writeImage(bytes.first);
       showResult(
@@ -688,6 +702,7 @@ class ImageSaver {
         onProgress?.call(i + 1, bytes.length);
       }
       if (saved.isEmpty) return;
+      await refreshImageList();
       onSaved?.call();
       showResult(
         success: true,
@@ -740,6 +755,7 @@ class ImageSaver {
         await platform.invokeMethod('scanFolder', {'path': folderPath});
       }
 
+      await refreshImageList();
       return file.path;
     } catch (e) {
       Log.error('_saveImageToLocalFolder', '$e');

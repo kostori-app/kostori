@@ -12,7 +12,6 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
@@ -1203,8 +1202,6 @@ Future<void> captureBangumiCalendarScreenshot(
             ? 'timetable_weekly_$timestamp.png'
             : 'timetable_today_$timestamp.png',
       );
-      // 保存后刷新图片操作页列表，让截图出现在其中
-      providerContainer.read(imagesProvider.notifier).loadImages();
     }
   } catch (e) {
     removeLoading();
