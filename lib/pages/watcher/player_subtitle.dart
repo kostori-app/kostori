@@ -131,18 +131,24 @@ List<Shadow> _subtitleOutlineShadows(Color color, double width) {
 final SubtitleViewConfiguration kPlayerSubtitleViewConfiguration =
     buildPlayerSubtitleViewConfiguration(const PlayerSubtitleStyle());
 
-/// 共享字幕设置面板（本地播放器 / anime page 共用）。
+/// 共享字幕 / 音轨设置面板（本地播放器 / anime page 共用）。
 /// [subtitleTracks] 非空时，面板顶部会以分段胶囊展示字幕开关/轨道切换，
-/// 选中后回调 [onSelectSubtitleTrack]。
+/// 选中后回调 [onSelectSubtitleTrack]；[audioTracks] 同理展示音轨切换，
+/// 避免音轨单独占用播放器面板按钮位置。
 Future<void> showPlayerSubtitleSettingsSheet(
   BuildContext context, {
   List<SubtitleTrack> subtitleTracks = const [],
   String? currentSubtitleTrackId,
   ValueChanged<SubtitleTrack>? onSelectSubtitleTrack,
+  List<AudioTrack> audioTracks = const [],
+  AudioTrack? currentAudioTrack,
+  ValueChanged<AudioTrack>? onSelectAudioTrack,
 }) async {
   var style = PlayerSubtitleStyleController.notifier.value;
   var currentId = currentSubtitleTrackId;
+  var currentAudio = currentAudioTrack;
   final showTracks = subtitleTracks.isNotEmpty && onSelectSubtitleTrack != null;
+  final showAudio = audioTracks.length > 1 && onSelectAudioTrack != null;
   await showModalBottomSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -179,6 +185,26 @@ Future<void> showPlayerSubtitleSettingsSheet(
                         onTap: () {
                           setModalState(() => currentId = tr.id);
                           onSelectSubtitleTrack(tr);
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (showAudio) ...[
+                Text(t.audioTrack),
+                const SizedBox(height: 8),
+                CapsuleOptions(
+                  alignment: WrapAlignment.start,
+                  wrap: true,
+                  children: [
+                    for (final tr in audioTracks)
+                      CapsuleOption(
+                        text: _trackLabel(tr.title, tr.language),
+                        isSelected: currentAudio?.id == tr.id,
+                        onTap: () {
+                          setModalState(() => currentAudio = tr);
+                          onSelectAudioTrack(tr);
                         },
                       ),
                   ],

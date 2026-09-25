@@ -34,6 +34,7 @@ import 'package:kostori/foundation/memo_store.dart';
 import 'package:kostori/foundation/me_plugin/me_plugin.dart';
 import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/network/bangumi_oauth.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/skills/builtins/anime_info_skill.dart';
@@ -165,6 +166,9 @@ Future<void> init() async {
     await SMTCManagerWindows.instance.init();
   }
   providerContainer.read(bangumiManagerProvider);
+  // 启动时后台查询一次 Bangumi 令牌状态并缓存，设置页直接读取，
+  // 不再每次进页都请求。不 await，且内部已捕获异常，不影响启动流程。
+  unawaited(refreshBangumiTokenStatus());
 }
 
 /// 清理历史遗留、当前代码已不再使用的 shared_preferences 键

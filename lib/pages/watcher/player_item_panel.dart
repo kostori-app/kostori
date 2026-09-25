@@ -19,21 +19,23 @@ import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:media_kit/media_kit.dart';
 
-/// media_kit 轨道显示名：标题优先，其次语言
-String _trackLabel(String? title, String? language) {
-  final name = (title ?? '').trim();
-  if (name.isNotEmpty) return name;
-  final lang = (language ?? '').trim();
-  if (lang.isNotEmpty) return lang;
-  return t.subtitle;
-}
-
-bool _hasSubtitleOptions(PlayerController pc) =>
+/// 是否存在可切换的字幕/音轨选项（决定字幕设置按钮是否显示）。
+bool _hasTrackOptions(PlayerController pc) =>
     pc.embeddedSubtitleTracks.isNotEmpty ||
-    (pc.playResult?.subtitleTracks.isNotEmpty ?? false);
+    (pc.playResult?.subtitleTracks.isNotEmpty ?? false) ||
+    pc.embeddedAudioTracks.length > 1;
 
-/// 字幕轨道 + 样式合并到一个面板：优先用 media_kit 内封轨道，其次源脚本轨道。
+/// 字幕 + 音轨切换 + 字幕样式合并到一个面板（音轨不再单独占用面板按钮）：
+/// 优先用 media_kit 内封轨道，其次源脚本轨道。
 void _openSubtitleSheet(BuildContext context, PlayerController pc) {
+  final audioTracks = pc.embeddedAudioTracks;
+  AudioTrack? currentAudio;
+  for (final tr in audioTracks) {
+    if (tr.id == pc.currentAudioTrackId) {
+      currentAudio = tr;
+      break;
+    }
+  }
   final embedded = pc.embeddedSubtitleTracks;
   if (embedded.isNotEmpty) {
     showPlayerSubtitleSettingsSheet(
@@ -41,6 +43,9 @@ void _openSubtitleSheet(BuildContext context, PlayerController pc) {
       subtitleTracks: embedded,
       currentSubtitleTrackId: pc.currentSubtitleTrackId,
       onSelectSubtitleTrack: pc.setEmbeddedSubtitleTrack,
+      audioTracks: audioTracks,
+      currentAudioTrack: currentAudio,
+      onSelectAudioTrack: pc.setEmbeddedAudioTrack,
     );
     return;
   }
@@ -55,6 +60,9 @@ void _openSubtitleSheet(BuildContext context, PlayerController pc) {
       final i = int.tryParse(tr.id);
       if (i != null) pc.setSubtitleTrack(i);
     },
+    audioTracks: audioTracks,
+    currentAudioTrack: currentAudio,
+    onSelectAudioTrack: pc.setEmbeddedAudioTrack,
   );
 }
 
@@ -647,62 +655,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   )
                                 : Container(),
 
-                            // 音轨选择（源脚本提供优先，其次 media_kit 内封轨道）
-                            if ((playerController
-                                        .playResult
-                                        ?.audioTracks
-                                        .length ??
-                                    0) >
-                                1)
-                              PopupMenuButton<int>(
-                                tooltip: t.audioTrack,
-                                onSelected: (i) =>
-                                    playerController.setAudioTrack(i),
-                                itemBuilder: (_) => playerController
-                                    .playResult!
-                                    .audioTracks
-                                    .map(
-                                      (tr) => PopupMenuItem(
-                                        value: tr.index,
-                                        child: Text(tr.displayTitle),
-                                      ),
-                                    )
-                                    .toList(),
-                                child: const Icon(
-                                  Icons.audiotrack,
-                                  color: Colors.white,
-                                ),
-                              )
-                            else if (playerController
-                                    .embeddedAudioTracks
-                                    .length >
-                                1)
-                              PopupMenuButton<AudioTrack>(
-                                tooltip: t.audioTrack,
-                                onSelected:
-                                    playerController.setEmbeddedAudioTrack,
-                                itemBuilder: (_) => playerController
-                                    .embeddedAudioTracks
-                                    .map(
-                                      (tr) => PopupMenuItem(
-                                        value: tr,
-                                        child: Text(
-                                          _trackLabel(tr.title, tr.language),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                                child: const Icon(
-                                  Icons.audiotrack,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            // 字幕（轨道切换 + 样式合并在同一面板）
-                            if (_hasSubtitleOptions(playerController))
+                            // 字幕 / 音轨（轨道切换 + 样式合并在同一面板）
+                            if (_hasTrackOptions(playerController))
                               IconButton(
                                 color: Colors.white,
                                 icon: const Icon(Icons.subtitles),
-                                tooltip: t.subtitle,
+                                tooltip: t.subtitleSettings,
                                 onPressed: () => _openSubtitleSheet(
                                   context,
                                   playerController,

@@ -75,7 +75,7 @@ class AnimeSourceSettings extends StatelessWidget {
   }
 
   /// 拉取仓库 index.json 文本：本地路径（file:// 或无 scheme/盘符）直接读文件，
-  /// 远程走 HTTP；默认仓库走 gitMirror。
+  /// 远程走 HTTP；仓库地址走用户选中的 GitHub 镜像。
   static Future<String?> _fetchRepoText(String url) async {
     final trimmed = url.trim();
     if (trimmed.isEmpty) return null;
@@ -90,12 +90,8 @@ class AnimeSourceSettings extends StatelessWidget {
       return await file.exists() ? await file.readAsString() : null;
     }
     final dio = AppDio();
-    final target =
-        (trimmed == Api.kostoriConfig && appdata.settings['gitMirror'])
-        ? Api.gitMirror + Api.kostoriConfig
-        : trimmed;
     final res = await dio.get<String>(
-      target,
+      trimmed,
       options: Options(
         method: 'GET',
         receiveTimeout: const Duration(seconds: 30),
@@ -611,7 +607,6 @@ class _BodyState extends State<_Body> with RouteAware {
                     ],
                   ),
                 ),
-                _SwitchSetting(title: t.gitMirror, settingKey: "gitMirror"),
                 const SizedBox(height: 8),
               ],
             ),
@@ -841,12 +836,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         text = await file.readAsString();
       } else {
         var dio = AppDio();
-        dynamic res;
-        if (url == Api.kostoriConfig && appdata.settings['gitMirror']) {
-          res = await dio.get<String>(Api.gitMirror + Api.kostoriConfig);
-        } else {
-          res = await dio.get<String>(url);
-        }
+        final res = await dio.get<String>(url);
         if (res.statusCode != 200) {
           context.showMessage(message: t.error);
           setState(() {

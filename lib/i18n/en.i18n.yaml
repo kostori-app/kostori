@@ -242,7 +242,6 @@ folders: Folders
 following: Following
 fullScreen: Full Screen
 fullscreen: Fullscreen
-gitMirror: Git Mirror
 green: Green
 help: Help
 history: History
@@ -714,6 +713,16 @@ bangumiTokenExpires: Expires
 bangumiTokenExpired: Expired
 bangumiTokenRefreshSuccess: Token refreshed
 bangumiTokenRefreshFailed: Token refresh failed
+bangumiMirror: Bangumi mirror
+bangumiMirrorDesc: Accelerate Bangumi API access via a third-party mirror
+bangumiMirrorSendAuth: Send auth to mirror
+bangumiMirrorSendAuthDesc: When off, login tokens/credentials are not sent to the mirror (safer)
+networkMirror: Mirrors
+githubMirror: GitHub mirror
+githubMirrorDesc: Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)
+mirrorOfficial: Official (no mirror)
+mirrorAddress: Address
+mirrorEmpty: No mirror source added yet
 bangumiClientIdSecretRequired: Please fill in the client ID first
 recognizeImageFailed: Failed to read image, please retry
 recognizeFailed: Recognition failed
@@ -864,6 +873,9 @@ searchingDevices: Searching for devices…
 noDevicesFound: No devices found
 tryingToCast: Trying to cast to
 dlnaException: DLNA exception
+stopCast: Stop casting
+castingTo: Casting to ${device}
+castStopped: Casting stopped
 audioOptionLowLatency: |-
   Audio Option: 
    Low Latency
@@ -2367,6 +2379,20 @@ playerAutoPlayOnEnter: Auto play on open
 playerAutoPlayOnEnterDesc: Start playing automatically when the player opens
 playerLoopEpisode: Loop single episode
 playerLoopEpisodeDesc: Repeat the current episode when it ends
+playerBackgroundPlay: Background playback
+playerBackgroundPlayDesc: Keep playing audio when the app goes to the background
+playerAutoResume: Resume last position
+playerAutoResumeDesc: Continue from where you left off when opening an episode
+playerBrightnessGesture: Brightness swipe control
+playerBrightnessGestureDesc: Swipe up/down on the left side to adjust brightness
+playerVolumeGesture: Volume swipe control
+playerVolumeGestureDesc: Swipe up/down on the right side to adjust volume
+playerCache: Player cache
+playerCacheDesc: Larger cache means smoother playback but more memory (takes effect after reopening the player)
+cacheLow: Low
+cacheMedium: Medium
+cacheHigh: High
+cacheUltra: Ultra
 form: Form
 installPluginByDrop: Drag & drop install
 dropJsPluginHint: Drop a .js plugin file here to install

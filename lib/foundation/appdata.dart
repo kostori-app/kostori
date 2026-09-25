@@ -163,6 +163,11 @@ class Appdata with Init {
     // 磨砂玻璃效果默认值（外观设置）：默认开启、强度 15（范围 5~20）
     implicitData['blurEnabled'] ??= true;
     implicitData['blurStrength'] ??= 15;
+    // 默认 GitHub 镜像：jsDelivr（release 等大文件会自动跳过 jsDelivr）
+    implicitData['githubMirrors'] ??= [
+      {'name': 'jsDelivr', 'url': 'https://cdn.jsdelivr.net/'},
+    ];
+    implicitData['githubMirror'] ??= 'https://cdn.jsdelivr.net/';
   }
 }
 

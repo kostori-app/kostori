@@ -42,7 +42,6 @@ abstract class SettingsData with _$SettingsData {
     String? bangumiDataVer,
     String? getBangumiAllEpInfoTime,
     @Default('') String animeSourceListUrl,
-    @Default(false) bool gitMirror,
     @Default('0') String initialPage,
     @Default(false) bool debugInfo,
     @Default('') String bangumiUserName,

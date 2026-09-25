@@ -466,9 +466,14 @@ Future<bool> verifyFileSha256(File file, String expectedSha256) async {
 AppDownloadTask prepareDownloadTask(
   String url,
   String savePath,
-  void Function(double) onProgress,
-) {
-  final task = AppDownloadTask(url: url, savePath: savePath);
+  void Function(double) onProgress, {
+  bool useMirror = true,
+}) {
+  final task = AppDownloadTask(
+    url: url,
+    savePath: savePath,
+    extra: useMirror ? null : const {'noGithubMirror': true},
+  );
   task.progressStream.listen(
     onProgress,
     onError: (err) {
@@ -712,7 +717,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
     if (mounted) setState(() {});
   }
 
-  void _startDownload(String url) {
+  void _startDownload(String url, {bool useMirror = true}) {
     if (isDownloading || file == null) return;
 
     setState(() {
@@ -725,7 +730,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       setState(() {
         downloadProgress = progress;
       });
-    });
+    }, useMirror: useMirror);
 
     _sub = task?.progressStream.listen(
       (_) {},
@@ -847,11 +852,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
           )
         else if (!isDownloading && App.isAndroid && isVersionConsistent) ...[
           Button.text(
-            onPressed: () => _startDownload(Api.gitMirror + downloadUrl),
+            onPressed: () => _startDownload(downloadUrl),
             child: Text(t.mirror),
           ),
           Button.text(
-            onPressed: () => _startDownload(downloadUrl),
+            onPressed: () => _startDownload(downloadUrl, useMirror: false),
             child: Text(t.download),
           ),
         ],

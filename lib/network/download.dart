@@ -7,10 +7,13 @@ import 'package:kostori/network/app_dio.dart';
 class AppDownloadTask {
   final String url;
   final String savePath;
-  final CancelToken _cancelToken = CancelToken();
-  final Dio _dio = Dio();
 
-  AppDownloadTask({required this.url, required this.savePath});
+  /// 透传给 Dio 的 extra（如 `noGithubMirror`）
+  final Map<String, dynamic>? extra;
+  final CancelToken _cancelToken = CancelToken();
+  final Dio _dio = AppDio.quiet();
+
+  AppDownloadTask({required this.url, required this.savePath, this.extra});
 
   late final StreamController<double> _progressController =
       StreamController<double>.broadcast();
@@ -30,6 +33,7 @@ class AppDownloadTask {
         url,
         savePath,
         cancelToken: _cancelToken,
+        options: extra == null ? null : Options(extra: extra),
         onReceiveProgress: (received, total) {
           double progress = total > 0
               ? (received / total).clamp(0.0, 1.0)

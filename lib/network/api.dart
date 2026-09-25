@@ -22,9 +22,6 @@ class Api {
   static const String checkBangumiDataUrl =
       'https://api.github.com/repos/bangumi-data/bangumi-data/releases/latest';
 
-  // Github镜像
-  static const String gitMirror = 'https://ghfast.top/';
-
   // kostori-config
   static const String kostoriConfig =
       'https://raw.githubusercontent.com/kostori-app/kostori-configs/master/index.json';
@@ -70,9 +67,9 @@ class Api {
   static const String personCommentsByPersonIDNext =
       'https://next.bgm.tv/p1/persons/{0}/comments';
 
-  // 制作
-  static const String bangumiStaffByIDNext =
-      'https://next.bgm.tv/p1/subjects/{0}/staffs/persons';
+  // 制作人员（v0 subjects persons：返回 person × relation 扁平列表）
+  static const String bangumiStaffByID =
+      'https://api.bgm.tv/v0/subjects/{0}/persons';
 
   // 热门
   static const String bangumiTrendingByNext =

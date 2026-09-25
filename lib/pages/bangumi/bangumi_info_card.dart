@@ -273,467 +273,485 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width <= 550 ? 450 : 475,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    double height =
-                        MediaQuery.sizeOf(context).width <=
-                            constraints.maxWidth + 150
-                        ? 210
-                        : 260;
-                    double width = height * 0.72;
-                    return Container(
-                      width: constraints.maxWidth,
-                      height: height,
-                      padding: EdgeInsets.all(2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              BangumiWidget.showImagePreview(
-                                context: context,
-                                url: widget.bangumiItem.images['large']!,
-                                title: widget.bangumiItem.nameCn,
-                                heroTag: (widget.heroTag == null)
-                                    ? '${widget.bangumiItem.id}'
-                                    : '${widget.heroTag}-${widget.bangumiItem.id}',
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: ClipRRect(
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width <= 550 ? 450 : 475,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      double height =
+                          MediaQuery.sizeOf(context).width <=
+                              constraints.maxWidth + 150
+                          ? 210
+                          : 260;
+                      double width = height * 0.72;
+                      return Container(
+                        width: constraints.maxWidth,
+                        height: height,
+                        padding: EdgeInsets.all(2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                BangumiWidget.showImagePreview(
+                                  context: context,
+                                  url: widget.bangumiItem.images['large']!,
+                                  title: widget.bangumiItem.nameCn,
+                                  heroTag: (widget.heroTag == null)
+                                      ? '${widget.bangumiItem.id}'
+                                      : '${widget.heroTag}-${widget.bangumiItem.id}',
+                                );
+                              },
                               borderRadius: BorderRadius.circular(12),
-                              child: KostoriHero(
-                                tag: (widget.heroTag == null)
-                                    ? '${widget.bangumiItem.id}'
-                                    : '${widget.heroTag}-${widget.bangumiItem.id}',
-                                child: SizedBox(
-                                  width: width,
-                                  height: height,
-                                  child: Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: BangumiWidget.kostoriImage(
-                                          context,
-                                          widget.bangumiItem.images['large']!,
-                                          width: width,
-                                          height: height,
-                                          // 按显示宽度解码：避免详情页封面按原图全分辨率解码
-                                          // 造成进页首帧卡顿（与列表卡片不同尺寸，必然 miss 缓存）
-                                          cacheWidth:
-                                              (width *
-                                                      MediaQuery.devicePixelRatioOf(
-                                                        context,
-                                                      ))
-                                                  .round(),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: KostoriHero(
+                                  tag: (widget.heroTag == null)
+                                      ? '${widget.bangumiItem.id}'
+                                      : '${widget.heroTag}-${widget.bangumiItem.id}',
+                                  child: SizedBox(
+                                    width: width,
+                                    height: height,
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: BangumiWidget.kostoriImage(
+                                            context,
+                                            widget.bangumiItem.images['large']!,
+                                            width: width,
+                                            height: height,
+                                            // 按显示宽度解码：避免详情页封面按原图全分辨率解码
+                                            // 造成进页首帧卡顿（与列表卡片不同尺寸，必然 miss 缓存）
+                                            cacheWidth:
+                                                (width *
+                                                        MediaQuery.devicePixelRatioOf(
+                                                          context,
+                                                        ))
+                                                    .round(),
+                                          ),
                                         ),
-                                      ),
-                                      Positioned(
-                                        right: 8,
-                                        bottom: 8,
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            onTap: () {
-                                              liked();
-                                              setState(() {
-                                                isLiked = !isLiked;
-                                              });
-                                            },
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              child: AnimatedSwitcher(
-                                                duration: const Duration(
-                                                  milliseconds: 500,
+                                        Positioned(
+                                          right: 8,
+                                          bottom: 8,
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                liked();
+                                                setState(() {
+                                                  isLiked = !isLiked;
+                                                });
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  8,
                                                 ),
-                                                child: Icon(
-                                                  isLiked
-                                                      ? Icons.favorite
-                                                      : Icons.favorite_border,
-                                                  color: isLiked
-                                                      ? Colors.redAccent
-                                                      : Theme.of(context)
-                                                            .colorScheme
-                                                            .primary,
-                                                  size: 24,
+                                                child: AnimatedSwitcher(
+                                                  duration: const Duration(
+                                                    milliseconds: 500,
+                                                  ),
+                                                  child: Icon(
+                                                    isLiked
+                                                        ? Icons.favorite
+                                                        : Icons.favorite_border,
+                                                    color: isLiked
+                                                        ? Colors.redAccent
+                                                        : Theme.of(context)
+                                                              .colorScheme
+                                                              .primary,
+                                                    size: 24,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: 12.0),
-                          Container(
-                            height: height,
-                            constraints: BoxConstraints(maxWidth: 235),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                GestureDetector(
-                                  onLongPress: () {
-                                    Clipboard.setData(
-                                      ClipboardData(text: bangumiItem.nameCn),
-                                    );
-                                    App.rootContext.showMessage(
-                                      message: t.copiedToClipboard,
-                                    );
-                                  },
-                                  child: Text(
-                                    bangumiItem.nameCn,
-                                    style: TextStyle(
-                                      fontSize: width * 1 / 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onLongPress: () {
-                                    Clipboard.setData(
-                                      ClipboardData(text: bangumiItem.name),
-                                    );
-                                    App.rootContext.showMessage(
-                                      message: t.copiedToClipboard,
-                                    );
-                                  },
-                                  child: Text(
-                                    bangumiItem.name,
-                                    style: TextStyle(fontSize: width * 1 / 24),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                SizedBox(height: 12.0),
-                                (!widget.isLoading)
-                                    ? Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-
-                                        children: [
-                                          if (bangumiItem.airDate.isNotEmpty)
-                                            Container(
-                                              padding: EdgeInsets.fromLTRB(
-                                                8,
-                                                5,
-                                                8,
-                                                5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(8.0),
-                                                color: Colors.transparent,
-                                                border: Border.all(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                      .toOpacity(0.72),
-                                                  width: 1.0,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                bangumiItem.airDate,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          SizedBox(width: 4.0),
-                                          () {
-                                            final currentWeekEp =
-                                                infoController.currentWeekEp;
-                                            final type0Episodes = infoController
-                                                .allEpisodes
-                                                .where((ep) => ep.type == 0)
-                                                .toList();
-                                            final lastSort =
-                                                type0Episodes.isNotEmpty
-                                                ? type0Episodes.last.sort
-                                                : null;
-                                            final currentSort =
-                                                currentWeekEp.isEmpty
-                                                ? null
-                                                : currentWeekEp
-                                                      .values
-                                                      .first
-                                                      ?.sort;
-                                            final isCompleted =
-                                                currentSort != null &&
-                                                lastSort != null &&
-                                                currentSort.toDouble() ==
-                                                    lastSort.toDouble();
-                                            return BangumiWidget.bangumiTimeText(
-                                              bangumiItem,
-                                              currentWeekEp,
-                                              isCompleted,
-                                            );
-                                          }(),
-                                        ],
-                                      )
-                                    : Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: SizedBox(
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Skeletonizer.zone(
-                                                child: Bone.text(
-                                                  fontSize: 12,
-                                                  width: 60,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Skeletonizer.zone(
-                                                child: Bone.text(
-                                                  fontSize: 12,
-                                                  width: 60,
-                                                ),
-                                              ),
-                                            ],
+                            SizedBox(width: 12.0),
+                            Expanded(
+                              child: SizedBox(
+                                height: height,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    GestureDetector(
+                                      onLongPress: () {
+                                        Clipboard.setData(
+                                          ClipboardData(
+                                            text: bangumiItem.nameCn,
                                           ),
+                                        );
+                                        App.rootContext.showMessage(
+                                          message: t.copiedToClipboard,
+                                        );
+                                      },
+                                      child: Text(
+                                        bangumiItem.nameCn,
+                                        style: TextStyle(
+                                          fontSize: width * 1 / 10,
+                                          fontWeight: FontWeight.bold,
                                         ),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                Spacer(),
-                                (!widget.isLoading)
-                                    ? Align(
-                                        alignment: Alignment.bottomRight,
-                                        child: InkWell(
-                                          onTap: () async {
-                                            await showRatingDialog(stats);
-                                          },
-                                          customBorder: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12.0,
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(4),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                if (latestRating != null)
-                                                  Text(
-                                                    t.bangumiMyRating(
-                                                      score: latestRating ?? 0,
-                                                    ),
-                                                    style: TextStyle(
-                                                      fontSize: 12.0,
+                                    ),
+                                    GestureDetector(
+                                      onLongPress: () {
+                                        Clipboard.setData(
+                                          ClipboardData(text: bangumiItem.name),
+                                        );
+                                        App.rootContext.showMessage(
+                                          message: t.copiedToClipboard,
+                                        );
+                                      },
+                                      child: Text(
+                                        bangumiItem.name,
+                                        style: TextStyle(
+                                          fontSize: width * 1 / 24,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    SizedBox(height: 12.0),
+                                    (!widget.isLoading)
+                                        ? Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+
+                                            children: [
+                                              if (bangumiItem
+                                                  .airDate
+                                                  .isNotEmpty)
+                                                Container(
+                                                  padding: EdgeInsets.fromLTRB(
+                                                    8,
+                                                    5,
+                                                    8,
+                                                    5,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8.0,
+                                                        ),
+                                                    color: Colors.transparent,
+                                                    border: Border.all(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primary
+                                                          .toOpacity(0.72),
+                                                      width: 1.0,
                                                     ),
                                                   ),
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.end,
+                                                  child: Text(
+                                                    bangumiItem.airDate,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              SizedBox(width: 4.0),
+                                              () {
+                                                final currentWeekEp =
+                                                    infoController
+                                                        .currentWeekEp;
+                                                final type0Episodes =
+                                                    infoController.allEpisodes
+                                                        .where(
+                                                          (ep) => ep.type == 0,
+                                                        )
+                                                        .toList();
+                                                final lastSort =
+                                                    type0Episodes.isNotEmpty
+                                                    ? type0Episodes.last.sort
+                                                    : null;
+                                                final currentSort =
+                                                    currentWeekEp.isEmpty
+                                                    ? null
+                                                    : currentWeekEp
+                                                          .values
+                                                          .first
+                                                          ?.sort;
+                                                final isCompleted =
+                                                    currentSort != null &&
+                                                    lastSort != null &&
+                                                    currentSort.toDouble() ==
+                                                        lastSort.toDouble();
+                                                return BangumiWidget.bangumiTimeText(
+                                                  bangumiItem,
+                                                  currentWeekEp,
+                                                  isCompleted,
+                                                );
+                                              }(),
+                                            ],
+                                          )
+                                        : Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: SizedBox(
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Skeletonizer.zone(
+                                                    child: Bone.text(
+                                                      fontSize: 12,
+                                                      width: 60,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Skeletonizer.zone(
+                                                    child: Bone.text(
+                                                      fontSize: 12,
+                                                      width: 60,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                    Spacer(),
+                                    (!widget.isLoading)
+                                        ? Align(
+                                            alignment: Alignment.bottomRight,
+                                            child: InkWell(
+                                              onTap: () async {
+                                                await showRatingDialog(stats);
+                                              },
+                                              customBorder:
+                                                  RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12.0,
+                                                        ),
+                                                  ),
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
+                                                child: Column(
                                                   crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
+                                                      CrossAxisAlignment.end,
                                                   children: [
-                                                    if (bangumiItem.total >=
-                                                        20) ...[
+                                                    if (latestRating != null)
                                                       Text(
-                                                        '${bangumiItem.score}',
+                                                        t.bangumiMyRating(
+                                                          score:
+                                                              latestRating ?? 0,
+                                                        ),
                                                         style: TextStyle(
-                                                          fontSize: 24.0,
-                                                          fontWeight:
-                                                              FontWeight.bold,
+                                                          fontSize: 12.0,
                                                         ),
                                                       ),
-                                                      SizedBox(width: 5),
-                                                      Container(
-                                                        padding:
-                                                            EdgeInsets.fromLTRB(
-                                                              4,
-                                                              3,
-                                                              4,
-                                                              3,
+                                                    FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment:
+                                                          Alignment.centerRight,
+                                                      child: Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .end,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .center,
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          if (bangumiItem
+                                                                  .total >=
+                                                              20) ...[
+                                                            Text(
+                                                              '${bangumiItem.score}',
+                                                              style: TextStyle(
+                                                                fontSize: 24.0,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
                                                             ),
-                                                        decoration: BoxDecoration(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                          border: Border.all(
-                                                            color:
-                                                                Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .colorScheme
-                                                                    .primary
-                                                                    .toOpacity(
-                                                                      0.72,
+                                                            SizedBox(width: 5),
+                                                            Container(
+                                                              padding:
+                                                                  EdgeInsets.fromLTRB(
+                                                                    4,
+                                                                    3,
+                                                                    4,
+                                                                    3,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      8,
                                                                     ),
-                                                            width: 1.0,
+                                                                border: Border.all(
+                                                                  color:
+                                                                      Theme.of(
+                                                                            context,
+                                                                          )
+                                                                          .colorScheme
+                                                                          .primary
+                                                                          .toOpacity(
+                                                                            0.72,
+                                                                          ),
+                                                                  width: 1.0,
+                                                                ),
+                                                              ),
+                                                              child: Text(
+                                                                Utils.getRatingLabel(
+                                                                  bangumiItem
+                                                                      .score,
+                                                                ),
+                                                                style: TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            SizedBox(width: 4),
+                                                          ],
+                                                          Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .end,
+                                                            children: [
+                                                              RatingBarIndicator(
+                                                                itemCount: 5,
+                                                                rating:
+                                                                    bangumiItem
+                                                                        .score
+                                                                        .toDouble() /
+                                                                    2,
+                                                                itemBuilder:
+                                                                    (
+                                                                      context,
+                                                                      index,
+                                                                    ) => const Icon(
+                                                                      Icons
+                                                                          .star_rounded,
+                                                                    ),
+                                                                itemSize: 20.0,
+                                                              ),
+                                                              Text(
+                                                                Translations.of(
+                                                                  context,
+                                                                ).tReviewsR(
+                                                                  t: bangumiItem
+                                                                      .total,
+                                                                  r: bangumiItem
+                                                                      .rank,
+                                                                ),
+                                                                style:
+                                                                    const TextStyle(
+                                                                      fontSize:
+                                                                          12,
+                                                                    ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                        ),
-                                                        child: Text(
-                                                          Utils.getRatingLabel(
-                                                            bangumiItem.score,
-                                                          ),
-                                                          style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
+                                                        ],
                                                       ),
-                                                      SizedBox(width: 4),
-                                                    ],
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .end,
-                                                      children: [
-                                                        RatingBarIndicator(
-                                                          itemCount: 5,
-                                                          rating:
-                                                              bangumiItem.score
-                                                                  .toDouble() /
-                                                              2,
-                                                          itemBuilder:
-                                                              (
-                                                                context,
-                                                                index,
-                                                              ) => const Icon(
-                                                                Icons
-                                                                    .star_rounded,
-                                                              ),
-                                                          itemSize: 20.0,
-                                                        ),
-                                                        Text(
-                                                          Translations.of(
-                                                            context,
-                                                          ).tReviewsR(
-                                                            t: bangumiItem
-                                                                .total,
-                                                            r: bangumiItem.rank,
-                                                          ),
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 12,
-                                                              ),
-                                                        ),
-                                                      ],
                                                     ),
                                                   ],
                                                 ),
-                                              ],
+                                              ),
+                                            ),
+                                          )
+                                        : Align(
+                                            alignment: Alignment.bottomRight,
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(
+                                                4.0,
+                                              ),
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  Skeletonizer.zone(
+                                                    child: Bone.text(
+                                                      fontSize: 10,
+                                                      width: 120,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Skeletonizer.zone(
+                                                    child: Bone.text(
+                                                      fontSize: 10,
+                                                      width: 120,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      )
-                                    : Align(
-                                        alignment: Alignment.bottomRight,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(4.0),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
-                                            children: [
-                                              Skeletonizer.zone(
-                                                child: Bone.text(
-                                                  fontSize: 10,
-                                                  width: 120,
+                                    if (showRightButton) ...[
+                                      SizedBox(height: 4),
+                                      (!widget.isLoading)
+                                          ? _button()
+                                          : Padding(
+                                              padding: const EdgeInsets.all(
+                                                4.0,
+                                              ),
+                                              child: SizedBox(
+                                                child: Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Skeletonizer.zone(
+                                                      child: Bone.text(
+                                                        fontSize: 24,
+                                                        width: 60,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Skeletonizer.zone(
+                                                      child: Bone.text(
+                                                        fontSize: 24,
+                                                        width: 120,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Skeletonizer.zone(
-                                                child: Bone.text(
-                                                  fontSize: 10,
-                                                  width: 120,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                if (showRightButton) ...[
-                                  SizedBox(height: 4),
-                                  (!widget.isLoading)
-                                      ? _button()
-                                      : Padding(
-                                          padding: const EdgeInsets.all(4.0),
-                                          child: SizedBox(
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Skeletonizer.zone(
-                                                  child: Bone.text(
-                                                    fontSize: 24,
-                                                    width: 60,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Skeletonizer.zone(
-                                                  child: Bone.text(
-                                                    fontSize: 24,
-                                                    width: 120,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ), // 底部按钮
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      (bangumiItem.collection != null && !widget.isLoading)
-                          ? Align(
-                              child: BangumiWidget.buildStatsRow(
-                                context: context,
-                                bangumiItem: bangumiItem,
-                              ),
-                            )
-                          : Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: SizedBox(
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Skeletonizer.zone(
-                                      child: Bone.text(
-                                        fontSize: 10,
-                                        width: 240,
-                                      ),
-                                    ),
+                                            ), // 底部按钮
+                                    ],
                                   ],
                                 ),
                               ),
                             ),
-                      if (showBottomButton) ...[
-                        Spacer(),
-                        (!widget.isLoading)
-                            ? _button()
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        (bangumiItem.collection != null && !widget.isLoading)
+                            ? Align(
+                                child: BangumiWidget.buildStatsRow(
+                                  context: context,
+                                  bangumiItem: bangumiItem,
+                                ),
+                              )
                             : Padding(
                                 padding: const EdgeInsets.all(4.0),
                                 child: SizedBox(
@@ -743,112 +761,133 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                     children: [
                                       Skeletonizer.zone(
                                         child: Bone.text(
-                                          fontSize: 24,
-                                          width: 60,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Skeletonizer.zone(
-                                        child: Bone.text(
-                                          fontSize: 24,
-                                          width: 120,
+                                          fontSize: 10,
+                                          width: 240,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ), // 底部按钮
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (MediaQuery.sizeOf(context).width >= 1200 &&
-                      !widget.isLoading &&
-                      widget.bangumiItem.total > 20)
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: 450,
-                        maxHeight: 300,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                t.ratingChart,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
                               ),
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .secondaryContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '${bangumiItem.score}',
-                                  style: ts.s12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  t.standardDeviationS(
-                                    s: standardDeviation.toStringAsFixed(2),
+                        if (showBottomButton) ...[
+                          Spacer(),
+                          (!widget.isLoading)
+                              ? _button()
+                              : Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: SizedBox(
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Skeletonizer.zone(
+                                          child: Bone.text(
+                                            fontSize: 24,
+                                            width: 60,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Skeletonizer.zone(
+                                          child: Bone.text(
+                                            fontSize: 24,
+                                            width: 120,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  Utils.getDispute(standardDeviation),
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                const SizedBox(width: 24),
-                                Text(t.votes(n: widget.bangumiItem.total)),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: BangumiBarChartPage(
-                              bangumiItem: widget.bangumiItem,
-                            ),
-                          ),
+                                ), // 底部按钮
                         ],
-                      ),
+                      ],
                     ),
+                  ),
                 ],
               ),
             ),
           ),
+          if (MediaQuery.sizeOf(context).width >= 1200)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (!widget.isLoading && widget.bangumiItem.total > 20)
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: 450,
+                          maxHeight: 300,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  t.ratingChart,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .secondaryContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${bangumiItem.score}',
+                                    style: ts.s12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    t.standardDeviationS(
+                                      s: standardDeviation.toStringAsFixed(2),
+                                    ),
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    Utils.getDispute(standardDeviation),
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  const SizedBox(width: 24),
+                                  Text(t.votes(n: widget.bangumiItem.total)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: BangumiBarChartPage(
+                                bangumiItem: widget.bangumiItem,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

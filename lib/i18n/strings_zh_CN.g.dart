@@ -272,7 +272,6 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get following => '收藏';
 	@override String get fullScreen => '全屏';
 	@override String get fullscreen => '全屏';
-	@override String get gitMirror => 'Git 镜像';
 	@override String get green => '绿色';
 	@override String get help => '帮助';
 	@override String get history => '历史';
@@ -744,6 +743,16 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get bangumiTokenExpired => '已过期';
 	@override String get bangumiTokenRefreshSuccess => '令牌已刷新';
 	@override String get bangumiTokenRefreshFailed => '令牌刷新失败';
+	@override String get bangumiMirror => 'Bangumi 镜像';
+	@override String get bangumiMirrorDesc => '通过第三方镜像加速访问 Bangumi 接口';
+	@override String get bangumiMirrorSendAuth => '镜像使用鉴权';
+	@override String get bangumiMirrorSendAuthDesc => '关闭时不向镜像发送登录令牌等凭证（更安全）';
+	@override String get networkMirror => '镜像设置';
+	@override String get githubMirror => 'GitHub 镜像';
+	@override String get githubMirrorDesc => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）';
+	@override String get mirrorOfficial => '官方（不使用镜像）';
+	@override String get mirrorAddress => '地址';
+	@override String get mirrorEmpty => '还没有添加镜像源';
 	@override String get bangumiClientIdSecretRequired => '请先填写客户端 ID';
 	@override String get recognizeImageFailed => '图片读取失败，请重试';
 	@override String get recognizeFailed => '识别失败';
@@ -905,6 +914,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get noDevicesFound => '未找到设备';
 	@override String get tryingToCast => '尝试投屏至';
 	@override String get dlnaException => 'DLNA 异常';
+	@override String get stopCast => '停止投屏';
+	@override String castingTo({required Object device}) => '正在投屏到 ${device}';
+	@override String get castStopped => '已停止投屏';
 	@override String get copyLink => '复制链接';
 	@override String get superResolution => '超分辨率';
 	@override String get superResolutionOff => '关闭';
@@ -2349,6 +2361,20 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playerAutoPlayOnEnterDesc => '打开播放器时自动开始播放';
 	@override String get playerLoopEpisode => '单集循环';
 	@override String get playerLoopEpisodeDesc => '本集结束后循环播放当前集';
+	@override String get playerBackgroundPlay => '后台播放';
+	@override String get playerBackgroundPlayDesc => '切到后台时继续播放声音';
+	@override String get playerAutoResume => '自动跳转到上次播放位置';
+	@override String get playerAutoResumeDesc => '打开剧集时从上次的进度继续播放';
+	@override String get playerBrightnessGesture => '亮度滑动控制';
+	@override String get playerBrightnessGestureDesc => '在播放器左侧上下滑动调节亮度';
+	@override String get playerVolumeGesture => '音量滑动控制';
+	@override String get playerVolumeGestureDesc => '在播放器右侧上下滑动调节音量';
+	@override String get playerCache => '播放器缓存';
+	@override String get playerCacheDesc => '缓存越大播放越流畅，占用内存也越多（重开播放器后生效）';
+	@override String get cacheLow => '低';
+	@override String get cacheMedium => '中';
+	@override String get cacheHigh => '高';
+	@override String get cacheUltra => '极高';
 	@override String get form => '表单';
 	@override String get installPluginByDrop => '拖拽安装';
 	@override String get dropJsPluginHint => '把 .js 插件文件拖到这里即可安装';
@@ -3347,7 +3373,6 @@ extension on TranslationsZhCn {
 			'following' => '收藏',
 			'fullScreen' => '全屏',
 			'fullscreen' => '全屏',
-			'gitMirror' => 'Git 镜像',
 			'green' => '绿色',
 			'help' => '帮助',
 			'history' => '历史',
@@ -3626,9 +3651,9 @@ extension on TranslationsZhCn {
 			'debugInfo' => '调试信息',
 			'install' => '安装',
 			'viewOnGithub' => '在 GitHub 上查看',
+			'noProxyOverrides' => '无代理覆写',
 			_ => null,
 		} ?? switch (path) {
-			'noProxyOverrides' => '无代理覆写',
 			'save' => '保存',
 			'mirror' => '镜像',
 			'result' => '结果',
@@ -3821,6 +3846,16 @@ extension on TranslationsZhCn {
 			'bangumiTokenExpired' => '已过期',
 			'bangumiTokenRefreshSuccess' => '令牌已刷新',
 			'bangumiTokenRefreshFailed' => '令牌刷新失败',
+			'bangumiMirror' => 'Bangumi 镜像',
+			'bangumiMirrorDesc' => '通过第三方镜像加速访问 Bangumi 接口',
+			'bangumiMirrorSendAuth' => '镜像使用鉴权',
+			'bangumiMirrorSendAuthDesc' => '关闭时不向镜像发送登录令牌等凭证（更安全）',
+			'networkMirror' => '镜像设置',
+			'githubMirror' => 'GitHub 镜像',
+			'githubMirrorDesc' => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）',
+			'mirrorOfficial' => '官方（不使用镜像）',
+			'mirrorAddress' => '地址',
+			'mirrorEmpty' => '还没有添加镜像源',
 			'bangumiClientIdSecretRequired' => '请先填写客户端 ID',
 			'recognizeImageFailed' => '图片读取失败，请重试',
 			'recognizeFailed' => '识别失败',
@@ -3982,6 +4017,9 @@ extension on TranslationsZhCn {
 			'noDevicesFound' => '未找到设备',
 			'tryingToCast' => '尝试投屏至',
 			'dlnaException' => 'DLNA 异常',
+			'stopCast' => '停止投屏',
+			'castingTo' => ({required Object device}) => '正在投屏到 ${device}',
+			'castStopped' => '已停止投屏',
 			'copyLink' => '复制链接',
 			'superResolution' => '超分辨率',
 			'superResolutionOff' => '关闭',
@@ -4128,6 +4166,8 @@ extension on TranslationsZhCn {
 			'audioBitrate' => '音频码率',
 			'audio' => '音频',
 			'video' => '视频',
+			_ => null,
+		} ?? switch (path) {
 			'media' => '媒体',
 			'noLogsForL' => ({required Object l}) => '暂无 ${l} 的日志',
 			'onlyValidForThisRun' => '仅在此次运行中有效',
@@ -4140,8 +4180,6 @@ extension on TranslationsZhCn {
 			'versionReleaseField' => '版本发布',
 			'versionSdkIntField' => 'SDK 版本',
 			'displayField' => '显示',
-			_ => null,
-		} ?? switch (path) {
 			'hardwareField' => '硬件',
 			'physicalRamSizeField' => '实体内存大小',
 			'availableRamSizeField' => '可用内存大小',
@@ -4642,6 +4680,8 @@ extension on TranslationsZhCn {
 			'leftTheRoom' => '离开了房间',
 			'joinedTheRoom' => '加入了房间',
 			'pWasKickedByO' => ({required Object p, required Object o}) => '${p} 被 ${o} 踢出了房间',
+			_ => null,
+		} ?? switch (path) {
 			'youLabel' => '您',
 			'leftTheServer' => '离开了服务器',
 			'joinedTheServer' => '加入了服务器',
@@ -4654,8 +4694,6 @@ extension on TranslationsZhCn {
 			'invite' => '邀请',
 			'invited' => '已邀请',
 			'roomInvite' => '房间邀请',
-			_ => null,
-		} ?? switch (path) {
 			'invitedYouTo' => '邀请你加入',
 			'acceptInvite' => '接受',
 			'acceptedYourInvite' => '接受了你的邀请',
@@ -5156,6 +5194,8 @@ extension on TranslationsZhCn {
 			'imageDecodeFailed' => '图片解码失败',
 			'noQrCodeFoundInImage' => '未在图片中识别到二维码',
 			'copiedToClipboard' => '已复制到剪贴板',
+			_ => null,
+		} ?? switch (path) {
 			'likeSuccess' => '点赞成功',
 			'unlikeSuccess' => '取消点赞成功',
 			'operationSuccess' => '操作成功',
@@ -5168,8 +5208,6 @@ extension on TranslationsZhCn {
 			'requestFailed' => '请求失败',
 			'allCopiedSuccess' => '全部复制成功',
 			'bindBangumiIdSuccess' => '绑定Bangumi ID成功',
-			_ => null,
-		} ?? switch (path) {
 			'notBoundToBangumi' => '该番剧尚未绑定 Bangumi 条目',
 			'applySuccess' => '应用成功',
 			'noChanges' => '没有更改',
@@ -5474,6 +5512,20 @@ extension on TranslationsZhCn {
 			'playerAutoPlayOnEnterDesc' => '打开播放器时自动开始播放',
 			'playerLoopEpisode' => '单集循环',
 			'playerLoopEpisodeDesc' => '本集结束后循环播放当前集',
+			'playerBackgroundPlay' => '后台播放',
+			'playerBackgroundPlayDesc' => '切到后台时继续播放声音',
+			'playerAutoResume' => '自动跳转到上次播放位置',
+			'playerAutoResumeDesc' => '打开剧集时从上次的进度继续播放',
+			'playerBrightnessGesture' => '亮度滑动控制',
+			'playerBrightnessGestureDesc' => '在播放器左侧上下滑动调节亮度',
+			'playerVolumeGesture' => '音量滑动控制',
+			'playerVolumeGestureDesc' => '在播放器右侧上下滑动调节音量',
+			'playerCache' => '播放器缓存',
+			'playerCacheDesc' => '缓存越大播放越流畅，占用内存也越多（重开播放器后生效）',
+			'cacheLow' => '低',
+			'cacheMedium' => '中',
+			'cacheHigh' => '高',
+			'cacheUltra' => '极高',
 			'form' => '表单',
 			'installPluginByDrop' => '拖拽安装',
 			'dropJsPluginHint' => '把 .js 插件文件拖到这里即可安装',
@@ -5656,6 +5708,8 @@ extension on TranslationsZhCn {
 			'profileTabLibrary' => '知识库',
 			'inheritGlobalLibrary' => '沿用全局启用项',
 			'inheritGlobalLibraryHint' => '关闭时只使用下方勾选的世界书与提示注入；开启且未勾选时沿用全局启用项',
+			_ => null,
+		} ?? switch (path) {
 			'profileLibraryHint' => '勾选的条目仅对当前助手生效；是否沿用全局启用项见上方开关。',
 			'userNickname' => '用户昵称',
 			'userNicknameHint' => '聊天中显示的用户名称，并注入 {{user_nickname}}',
@@ -5682,8 +5736,6 @@ extension on TranslationsZhCn {
 			'outputModality' => '输出模态',
 			'supportsReasoning' => '支持推理',
 			'capabilities' => '能力',
-			_ => null,
-		} ?? switch (path) {
 			'modelTypeChat' => '聊天',
 			'modelTypeImage' => '图像',
 			'modelTypeEmbedding' => '嵌入',

@@ -7,6 +7,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/network/mirror_store.dart';
 import 'package:kostori/network/cache.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
@@ -292,6 +293,8 @@ class AppDio with DioMixin {
       interceptors.add(CookieManagerSql());
       interceptors.add(NetworkCacheManager());
       interceptors.add(CloudflareInterceptor());
+      interceptors.add(BangumiMirrorInterceptor());
+      interceptors.add(GithubMirrorInterceptor());
       // 图片缩略图等高频、可恢复的请求不打 error 日志，避免刷屏
       if (verboseLog) {
         interceptors.add(MyLogInterceptor());
@@ -540,6 +543,48 @@ class WebdavRHttpAdapter extends RHttpAdapter {
     options.headers['Accept-Encoding'] = 'identity';
     options.extra['httpVersion11'] = true;
     return super.fetch(options, requestStream, cancelFuture);
+  }
+}
+
+/// 把 Bangumi 官方接口主机（api.bgm.tv / next.bgm.tv）改写为用户选中的镜像，
+/// 其余请求原样放行。镜像地址在「网络设置」里维护。
+class BangumiMirrorInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final original = options.uri.toString();
+    final mirrored = applyBangumiMirror(original);
+    if (mirrored != original) {
+      options.path = mirrored;
+      // 默认不把登录鉴权/凭证交给镜像；仅当用户显式开启时才带上
+      if (!bangumiMirrorSendAuth) {
+        options.headers.remove('authorization');
+        options.headers.remove('Authorization');
+        options.headers.remove('cookie');
+        options.headers.remove('Cookie');
+      }
+    }
+    handler.next(options);
+  }
+}
+
+/// 把 GitHub / jsDelivr 请求改写为用户选中的镜像。
+/// `extra['noGithubMirror'] == true` 可让单个请求跳过（如「官方下载」按钮）。
+class GithubMirrorInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (options.extra['noGithubMirror'] == true) {
+      handler.next(options);
+      return;
+    }
+    final original = options.uri.toString();
+    final mirrored = applyGithubMirror(
+      original,
+      largeFile: options.extra['githubLargeFile'] == true,
+    );
+    if (mirrored != original) {
+      options.path = mirrored;
+    }
+    handler.next(options);
   }
 }
 

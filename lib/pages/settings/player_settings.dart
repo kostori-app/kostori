@@ -99,6 +99,36 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   settingKey: 'playerLoopEpisode',
                   dataSource: SwitchDataSource.implicit,
                 ),
+                _SwitchSetting(
+                  title: t.playerBackgroundPlay,
+                  subtitle: t.playerBackgroundPlayDesc,
+                  settingKey: 'playerBackgroundPlay',
+                  dataSource: SwitchDataSource.implicit,
+                  defaultValue: true,
+                ),
+                _SwitchSetting(
+                  title: t.playerAutoResume,
+                  subtitle: t.playerAutoResumeDesc,
+                  settingKey: 'playerAutoResume',
+                  dataSource: SwitchDataSource.implicit,
+                  defaultValue: true,
+                ),
+                _SwitchSetting(
+                  title: t.playerBrightnessGesture,
+                  subtitle: t.playerBrightnessGestureDesc,
+                  settingKey: 'playerBrightnessGesture',
+                  dataSource: SwitchDataSource.implicit,
+                  defaultValue: true,
+                ),
+                _SwitchSetting(
+                  title: t.playerVolumeGesture,
+                  subtitle: t.playerVolumeGestureDesc,
+                  settingKey: 'playerVolumeGesture',
+                  dataSource: SwitchDataSource.implicit,
+                  defaultValue: true,
+                ),
+                // 播放器缓存挡位（分段胶囊；重开播放器后生效）
+                const _PlayerCacheSetting(),
                 _CallbackSetting(
                   title: t.hardwareDecoder,
                   actionTitle: t.set,
@@ -180,6 +210,39 @@ class _PlayerSettingsState extends State<PlayerSettings> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 播放器缓存挡位：直接内联分段胶囊选择（不跳二级页面）。
+class _PlayerCacheSetting extends StatefulWidget {
+  const _PlayerCacheSetting();
+
+  @override
+  State<_PlayerCacheSetting> createState() => _PlayerCacheSettingState();
+}
+
+class _PlayerCacheSettingState extends State<_PlayerCacheSetting> {
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(t.playerCache),
+      // 分段胶囊本身就能看出当前选中项，无需副标题；选项过宽时横向滚动
+      trailing: CapsuleOptions(
+        scrollable: true,
+        children: [
+          for (final tier in playerCacheTiers)
+            CapsuleOption(
+              text: playerCacheTierLabel(tier),
+              isSelected: currentPlayerCacheTier.key == tier.key,
+              onTap: () {
+                appdata.implicitData[kPlayerCacheTierKey] = tier.key;
+                appdata.writeImplicitData();
+                setState(() {});
+              },
+            ),
+        ],
+      ),
     );
   }
 }

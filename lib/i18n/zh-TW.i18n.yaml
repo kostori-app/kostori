@@ -230,7 +230,6 @@ folders: 資料夾
 following: 收藏
 fullScreen: 全螢幕
 fullscreen: 全螢幕
-gitMirror: Git 鏡像
 green: 綠色
 help: 幫助
 history: 歷史
@@ -702,6 +701,16 @@ bangumiTokenExpires: 過期
 bangumiTokenExpired: 已過期
 bangumiTokenRefreshSuccess: 令牌已重新整理
 bangumiTokenRefreshFailed: 令牌重新整理失敗
+bangumiMirror: Bangumi 鏡像
+bangumiMirrorDesc: 透過第三方鏡像加速存取 Bangumi 介面
+bangumiMirrorSendAuth: 鏡像使用鑑權
+bangumiMirrorSendAuthDesc: 關閉時不向鏡像傳送登入權杖等憑證（較安全）
+networkMirror: 鏡像設定
+githubMirror: GitHub 鏡像
+githubMirrorDesc: 支援前綴式鏡像與 jsDelivr（如 https://cdn.jsdelivr.net/）
+mirrorOfficial: 官方（不使用鏡像）
+mirrorAddress: 位址
+mirrorEmpty: 還沒有新增鏡像源
 bangumiClientIdSecretRequired: 請先填寫用戶端 ID
 recognizeImageFailed: 圖片讀取失敗，請重試
 recognizeFailed: 辨識失敗
@@ -867,6 +876,9 @@ searchingDevices: 正在搜尋設備…
 noDevicesFound: 未找到設備
 tryingToCast: 嘗試投屏至
 dlnaException: DLNA 異常
+stopCast: 停止投放
+castingTo: 正在投放至 ${device}
+castStopped: 已停止投放
 startSearch: 搜尋
 copyLink: 複製連結
 
@@ -2368,6 +2380,20 @@ playerAutoPlayOnEnter: 進入時自動播放
 playerAutoPlayOnEnterDesc: 開啟播放器時自動開始播放
 playerLoopEpisode: 單集循環
 playerLoopEpisodeDesc: 本集結束後循環播放當前集
+playerBackgroundPlay: 背景播放
+playerBackgroundPlayDesc: 切到背景時繼續播放聲音
+playerAutoResume: 自動跳轉到上次播放位置
+playerAutoResumeDesc: 開啟劇集時從上次的進度繼續播放
+playerBrightnessGesture: 亮度滑動控制
+playerBrightnessGestureDesc: 在播放器左側上下滑動調節亮度
+playerVolumeGesture: 音量滑動控制
+playerVolumeGestureDesc: 在播放器右側上下滑動調節音量
+playerCache: 播放器快取
+playerCacheDesc: 快取越大播放越流暢，佔用記憶體也越多（重開播放器後生效）
+cacheLow: 低
+cacheMedium: 中
+cacheHigh: 高
+cacheUltra: 極高
 form: 表單
 installPluginByDrop: 拖曳安裝
 dropJsPluginHint: 把 .js 插件檔案拖到這裡即可安裝

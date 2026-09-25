@@ -7,10 +7,13 @@ import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
 import 'package:kostori/pages/watcher/player_hud.dart';
+import 'package:kostori/pages/watcher/player_settings_cards.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
+import 'package:kostori/utils/remote.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:media_kit/media_kit.dart';
@@ -83,7 +86,7 @@ class LocalPlayerView extends ConsumerStatefulWidget {
 }
 
 class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController animationController;
   late final Animation<double> fadeAnimation;
   Timer? hideTimer;
@@ -103,6 +106,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -115,7 +119,19 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // 关闭「后台播放」时，切到后台自动暂停（与 anime page 播放器一致）
+    if (state == AppLifecycleState.paused &&
+        appdata.implicitData['playerBackgroundPlay'] == false &&
+        st.playing) {
+      ctrl.pause();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     hideTimer?.cancel();
     animationController.dispose();
     widget.onDispose?.call();
@@ -213,6 +229,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
     if (tapPosition < sectionWidth) {
       // 左半屏调亮度
+      if (appdata.implicitData['playerBrightnessGesture'] == false) return;
       ctrl.setShowBrightness(true);
       // 整屏高度滑满 ≈ 满量程变化（此前除数是 height*0.03，轻微上滑就冲到 100%）
       final level = totalHeight;
@@ -220,6 +237,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
       await ctrl.setBrightness(result);
     } else {
       // 右半屏调音量
+      if (appdata.implicitData['playerVolumeGesture'] == false) return;
       ctrl.setShowVolume(true);
       final level = totalHeight;
       final v = (st.volume - delta / level).clamp(0.0, 1.0);
@@ -503,12 +521,34 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   List<AudioTrack> _realAudioTracks(LocalPlayerState s) =>
       s.audioTracks.where((tr) => tr.id != 'auto' && tr.id != 'no').toList();
 
-  String _trackLabel(String? title, String? language) {
-    final name = (title ?? '').trim();
-    if (name.isNotEmpty) return name;
-    final lang = (language ?? '').trim();
-    if (lang.isNotEmpty) return lang;
-    return t.subtitle;
+  /// 字幕 / 音轨设置按钮：两类轨道合并到同一面板，音轨不再单独占按钮。
+  Widget _buildTrackSettingsButton(LocalPlayerState state) {
+    final subtitleTracks = _realSubtitleTracks(state);
+    final audioTracks = _realAudioTracks(state);
+    if (subtitleTracks.isEmpty && audioTracks.length <= 1) {
+      return const SizedBox.shrink();
+    }
+    AudioTrack? currentAudio;
+    for (final tr in audioTracks) {
+      if (tr.id == state.audioTrackId) {
+        currentAudio = tr;
+        break;
+      }
+    }
+    return IconButton(
+      color: Colors.white,
+      icon: const Icon(Icons.text_fields),
+      tooltip: t.subtitleSettings,
+      onPressed: () => showPlayerSubtitleSettingsSheet(
+        context,
+        subtitleTracks: subtitleTracks,
+        currentSubtitleTrackId: state.subtitleTrackId,
+        onSelectSubtitleTrack: ctrl.setSubtitleTrack,
+        audioTracks: audioTracks,
+        currentAudioTrack: currentAudio,
+        onSelectAudioTrack: ctrl.setAudioTrack,
+      ),
+    );
   }
 
   Widget _buildTopBar(LocalPlayerState state) {
@@ -553,21 +593,35 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
-              // 音轨选择（多于一条可选音轨时）
-              if (_realAudioTracks(state).length > 1)
-                PopupMenuButton<AudioTrack>(
-                  tooltip: t.audioTrack,
-                  onSelected: ctrl.setAudioTrack,
-                  itemBuilder: (_) => _realAudioTracks(state)
-                      .map(
-                        (tr) => PopupMenuItem(
-                          value: tr,
-                          child: Text(_trackLabel(tr.title, tr.language)),
-                        ),
-                      )
-                      .toList(),
-                  child: const Icon(Icons.audiotrack, color: Colors.white),
-                ),
+              // 设置面板（倍速/超分/通用开关）
+              IconButton(
+                color: Colors.white,
+                icon: const Icon(Icons.more_horiz),
+                tooltip: t.more,
+                onPressed: _showSettingsSheet,
+              ),
+              // 投屏 / 停止投屏（本地文件会临时起局域网 HTTP 流透出去）
+              ValueListenableBuilder<String?>(
+                valueListenable: RemotePlay.instance.castingDeviceName,
+                builder: (context, castingName, _) {
+                  final casting = castingName != null;
+                  return IconButton(
+                    color: Colors.white,
+                    icon: Icon(
+                      casting ? Icons.cast_connected : Icons.cast_outlined,
+                    ),
+                    tooltip: casting ? t.stopCast : t.remoteCast,
+                    onPressed: () {
+                      if (casting) {
+                        RemotePlay.instance.stopCast();
+                        return;
+                      }
+                      ctrl.pause();
+                      RemotePlay.instance.castVideo(widget.filePath);
+                    },
+                  );
+                },
+              ),
               // 播放器详情
               if (!state.fullscreen)
                 IconButton(
@@ -578,6 +632,43 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 本地播放器设置面板：倍速 / 超分辨率 / 通用功能开关（与 watcher 共用卡片组件）
+  void _showSettingsSheet() {
+    final provider = localPlayerControllerProvider(widget.filePath);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      builder: (_) => Sheet(
+        title: t.more,
+        icon: Icons.more_horiz,
+        initialSize: 0.6,
+        builder: (ctx, sc) => Consumer(
+          builder: (context, ref, _) {
+            final state = ref.watch(provider);
+            final c = ref.read(provider.notifier);
+            return ListView(
+              controller: sc,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              children: [
+                PlayerPlaybackSpeedCard(
+                  value: state.speed,
+                  onChanged: c.setRate,
+                ),
+                PlayerSuperResolutionCard(
+                  value: state.superResolutionType,
+                  onChanged: c.setSuperResolution,
+                ),
+                const PlayerCommonToggles(),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -687,19 +778,8 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                     onSeek: ctrl.seek,
                   ),
                 ),
-                // 字幕设置（在 fullscreen 左边）
-                if (_realSubtitleTracks(state).isNotEmpty)
-                  IconButton(
-                    color: Colors.white,
-                    icon: const Icon(Icons.text_fields),
-                    tooltip: t.subtitleSettings,
-                    onPressed: () => showPlayerSubtitleSettingsSheet(
-                      context,
-                      subtitleTracks: _realSubtitleTracks(state),
-                      currentSubtitleTrackId: state.subtitleTrackId,
-                      onSelectSubtitleTrack: ctrl.setSubtitleTrack,
-                    ),
-                  ),
+                // 字幕 / 音轨设置（在 fullscreen 左边）
+                _buildTrackSettingsButton(state),
                 IconButton(
                   color: Colors.white,
                   icon: Icon(

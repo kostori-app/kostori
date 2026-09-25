@@ -18,6 +18,7 @@ import 'package:kostori/pages/watcher/danmaku_settings.dart';
 import 'package:kostori/pages/watcher/player_actions.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
+import 'package:kostori/pages/watcher/player_settings_cards.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:window_manager/window_manager.dart';
@@ -492,11 +493,13 @@ class _VideoPageState extends State<VideoPage>
             ),
           ),
           const SizedBox(width: 10),
-          // 重载剧集（移到「切换播放列表」左侧）
-          IconTileButton(
+          // 重载剧集
+          IconButton(
+            tooltip: t.reloadEpisode,
+            color: Colors.white,
+            visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.refresh),
-            label: t.reloadEpisode,
-            onTap: () => playerController.reloadCurrent(),
+            onPressed: () => playerController.reloadCurrent(),
           ),
           if (!_isSeries)
             MenuAnchor(
@@ -769,147 +772,17 @@ class _VideoPageState extends State<VideoPage>
                 '${_fmtDuration(playerController.currentPosition)} / ${_fmtDuration(playerController.duration)}',
               ),
               const Divider(color: Colors.white24, height: 32),
-              // Playback speed
-              _sectionTitle(t.playbackSpeed),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text(
-                    '0.5x',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                  Expanded(
-                    child: Slider(
-                      value: playerController.playbackSpeed,
-                      min: 0.5,
-                      max: 4.0,
-                      divisions: 7,
-                      activeColor: Theme.of(context).colorScheme.primary,
-                      inactiveColor: Colors.white24,
-                      onChanged: (value) {
-                        playerController.setPlaybackSpeed(value);
-                        setState(() {});
-                      },
-                    ),
-                  ),
-                  const Text(
-                    '4.0x',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-              Center(
-                child: Text(
-                  '${playerController.playbackSpeed.toStringAsFixed(2)}x',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              // 操作按钮（本 tab 即播放器详情，不再重复显示「播放器详情」入口）
+              PlayerActionButtons(playerController: playerController),
               const SizedBox(height: 24),
-              // 操作按钮（与「更多」面板一致：音频设备/小窗/投屏/日志/播放器详情）
-              PlayerActionButtons(
-                playerController: playerController,
-                onPlayerDetails: () => _panelTabController.animateTo(2),
-              ),
-              const SizedBox(height: 24),
-              // Super resolution
-              _sectionTitle(t.superResolution),
-              const SizedBox(height: 8),
-              CapsuleOptions(
-                alignment: WrapAlignment.start,
-                wrap: true,
-                children: [
-                  CapsuleOption(
-                    text: t.superResolutionOff,
-                    isSelected: playerController.superResolutionType == 1,
-                    onTap: () {
-                      playerController.setShader(1);
-                      setState(() {});
-                    },
-                  ),
-                  CapsuleOption(
-                    text: t.superResolutionEfficiency,
-                    isSelected: playerController.superResolutionType == 2,
-                    onTap: () {
-                      playerController.setShader(2);
-                      setState(() {});
-                    },
-                  ),
-                  CapsuleOption(
-                    text: t.superResolutionQuality,
-                    isSelected: playerController.superResolutionType == 3,
-                    onTap: () {
-                      playerController.setShader(3);
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Other settings
+              // 其他设置：与「更多」sheet 共用同一卡片组，避免两边各写一遍
               _sectionTitle(t.otherSettings),
               const SizedBox(height: 8),
-              if (App.isAndroid)
-                _settingsTile(
-                  child: ListTile(
-                    title: Text(
-                      (appdata.settings['audioOutType'] ?? true)
-                          ? t.audioLowLatency
-                          : t.audioCompatibility,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    trailing: CustomSwitch(
-                      value: appdata.settings['audioOutType'] ?? true,
-                      onChanged: (value) async {
-                        try {
-                          await playerController.changeAudioOutType();
-                          App.rootContext.showMessage(
-                            message: t.switchSuccessful,
-                          );
-                          setState(() {});
-                        } catch (e) {
-                          App.rootContext.showMessage(message: t.switchFailed);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              _settingsTile(
-                child: ListTile(
-                  title: Text(
-                    '${t.glimmerMode}: ${playerController.glimmerEffect ? t.glimmerModeOn : t.glimmerModeOff}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  trailing: CustomSwitch(
-                    value: playerController.glimmerEffect,
-                    onChanged: (value) {
-                      playerController.glimmerEffect = value;
-                      appdata.implicitData['glimmerEffect'] = value;
-                      appdata.writeImplicitData();
-                      setState(() {});
-                    },
-                  ),
-                ),
-              ),
+              PlayerSettingsCards(playerController: playerController),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _settingsTile({required Widget child}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(8),
-        clipBehavior: Clip.antiAlias,
-        child: child,
-      ),
     );
   }
 

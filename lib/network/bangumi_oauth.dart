@@ -49,6 +49,28 @@ String _oauthFormEncode(Map<String, String> data) => data.entries
     )
     .join('&');
 
+/// 最近一次查询到的令牌状态（user_id / expires）。启动时后台查询一次后缓存，
+/// 设置页直接读取，避免每次进入设置页都请求 `token_status`。
+final ValueNotifier<Map<String, dynamic>?> bangumiTokenStatusNotifier =
+    ValueNotifier<Map<String, dynamic>?>(null);
+
+/// 刷新并缓存令牌状态。未登录时清空；请求失败时保留旧值。
+/// 内部吞掉所有异常，可在启动时 fire-and-forget 调用，不影响运行流程。
+Future<void> refreshBangumiTokenStatus() async {
+  if (!bangumiLoggedIn) {
+    bangumiTokenStatusNotifier.value = null;
+    return;
+  }
+  try {
+    final info = await bangumiTokenStatus();
+    if (info != null) {
+      bangumiTokenStatusNotifier.value = info;
+    }
+  } catch (e) {
+    Log.error('BangumiOAuth', 'refresh token status failed: $e');
+  }
+}
+
 /// 用 refresh_token 换新 access_token（OAuth 授权有效期刷新）
 Future<bool> bangumiRefreshToken() async {
   final refresh = bangumiRefreshTokenValue;
@@ -81,6 +103,7 @@ Future<bool> bangumiRefreshToken() async {
           appdata.implicitData[_kRefreshToken] = newRefresh;
         }
         appdata.writeImplicitData();
+        await refreshBangumiTokenStatus();
         return true;
       }
     }
@@ -150,6 +173,7 @@ void bangumiOAuthLogout() {
   appdata.implicitData[_kAccessToken] = '';
   appdata.implicitData[_kRefreshToken] = '';
   appdata.writeImplicitData();
+  bangumiTokenStatusNotifier.value = null;
 }
 
 /// Bangumi 账号密码登录弹窗内容

@@ -5,8 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
+import 'package:kostori/pages/watcher/player_cache.dart';
+import 'package:kostori/pages/watcher/player_shaders.dart';
+import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -43,6 +47,9 @@ class LocalPlayerState {
   final String? subtitleTrackId;
   final String? audioTrackId;
 
+  /// 超分辨率挡位：1 关 / 2 效率 / 3 质量
+  final int superResolutionType;
+
   const LocalPlayerState({
     this.loading = true,
     this.playing = false,
@@ -64,6 +71,7 @@ class LocalPlayerState {
     this.audioTracks = const [],
     this.subtitleTrackId,
     this.audioTrackId,
+    this.superResolutionType = 1,
   });
 
   LocalPlayerState copyWith({
@@ -88,6 +96,7 @@ class LocalPlayerState {
     List<AudioTrack>? audioTracks,
     String? subtitleTrackId,
     String? audioTrackId,
+    int? superResolutionType,
   }) {
     return LocalPlayerState(
       loading: loading ?? this.loading,
@@ -110,6 +119,7 @@ class LocalPlayerState {
       audioTracks: audioTracks ?? this.audioTracks,
       subtitleTrackId: subtitleTrackId ?? this.subtitleTrackId,
       audioTrackId: audioTrackId ?? this.audioTrackId,
+      superResolutionType: superResolutionType ?? this.superResolutionType,
     );
   }
 }
@@ -126,7 +136,12 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   final List<StreamSubscription<dynamic>> _subs = [];
   Timer? _hideTimer;
   Timer? _levelTimer;
+  Timer? _posSaveTimer;
   bool _disposed = false;
+
+  /// 超分辨率 shader（与 watcher 共用 applySuperResolutionShader）
+  ShadersController? _shaders;
+  Future<void>? _shadersReady;
 
   StreamSubscription<Duration>? _posSub;
   StreamSubscription<Duration>? _durSub;
@@ -153,9 +168,14 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
 
   Future<void> _init(String filePath) async {
     try {
-      final p = Player();
+      final p = Player(
+        configuration: PlayerConfiguration(bufferSize: playerBufferSize),
+      );
       _player = p;
       _controller = VideoController(p);
+      // 超分辨率 shader 目录准备（异步，不阻塞播放）
+      _shaders = ShadersController();
+      _shadersReady = _shaders!.copyShadersToExternalDirectory();
       _posSub = p.stream.position.listen((v) {
         if (_disposed) return;
         _update(state.copyWith(position: v));
@@ -211,10 +231,48 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
         }),
       );
       await p.open(Media(filePath), play: true);
+      await _restorePosition();
+      _posSaveTimer?.cancel();
+      _posSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        _savePosition();
+      });
     } catch (e) {
       if (_disposed) return;
       _update(state.copyWith(error: e.toString()));
     }
+  }
+
+  String get _posKey => 'localPlayerPos:$filePath';
+
+  /// 「自动跳转到上次播放位置」开启时，恢复本地文件的上次播放进度
+  Future<void> _restorePosition() async {
+    if (appdata.implicitData['playerAutoResume'] == false) return;
+    final saved = (appdata.implicitData[_posKey] as num?)?.toInt() ?? 0;
+    if (saved <= 0) return;
+    final p = _player;
+    if (p == null) return;
+    try {
+      // 等拿到真实时长再判断是否接近结尾（避免一进来就播完）
+      final duration = await p.stream.duration
+          .firstWhere((d) => d > Duration.zero)
+          .timeout(const Duration(seconds: 5));
+      if (_disposed || !identical(p, _player)) return;
+      if ((duration - Duration(milliseconds: saved)).abs() <=
+          const Duration(seconds: 3)) {
+        return;
+      }
+      await p.seek(Duration(milliseconds: saved));
+    } catch (_) {}
+  }
+
+  /// 记录本地文件当前播放进度（关闭「自动跳转上次位置」时仍记录，便于再次开启）
+  void _savePosition() {
+    final p = _player;
+    if (_disposed || p == null) return;
+    final pos = p.state.position.inMilliseconds;
+    if (pos <= 0) return;
+    appdata.implicitData[_posKey] = pos;
+    appdata.writeImplicitData();
   }
 
   void _update(LocalPlayerState next) {
@@ -300,6 +358,19 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   void setRate(double rate) {
     player.setRate(rate);
     _update(state.copyWith(speed: rate));
+  }
+
+  /// 设置超分辨率挡位（1 关 / 2 效率 / 3 质量），与 watcher 播放器一致
+  Future<void> setSuperResolution(int type) async {
+    final s = _shaders;
+    if (s == null) return;
+    try {
+      await _shadersReady;
+      if (_disposed) return;
+      final next = await applySuperResolutionShader(player, s, type);
+      if (_disposed) return;
+      _update(state.copyWith(superResolutionType: next));
+    } catch (_) {}
   }
 
   void toggleControls() {
@@ -470,9 +541,11 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   }
 
   void _disposeInternal() {
+    _savePosition();
     _disposed = true;
     _hideTimer?.cancel();
     _levelTimer?.cancel();
+    _posSaveTimer?.cancel();
     // 进度同步订阅会在 seek 后重建，未记录在 _subs 里，单独取消
     _posSub?.cancel();
     _durSub?.cancel();

@@ -826,14 +826,13 @@ class Bangumi {
   }
 
   Future<StaffResponse> getBangumiStaffByID(int id) async {
-    StaffResponse staffResponse = StaffResponse.fromTemplate();
+    StaffResponse staffResponse = StaffResponse(data: []);
     try {
       final res = await _dio.request(
-        Api.formatUrl(Api.bangumiStaffByIDNext, [id]),
+        Api.formatUrl(Api.bangumiStaffByID, [id]),
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
-      final jsonData = res.data;
-      staffResponse = StaffResponse.fromJson(jsonData);
+      staffResponse = StaffResponse.fromJson(res.data as List);
     } catch (e, s) {
       NetLog.error('getBangumiStaffByID', '$e\n$s');
     }

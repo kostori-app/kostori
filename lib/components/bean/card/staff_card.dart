@@ -68,8 +68,8 @@ class StaffCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    staffFullItem!.positions.isNotEmpty
-                        ? staffFullItem!.positions[0].type.cn
+                    staffFullItem!.relations.isNotEmpty
+                        ? staffFullItem!.relations.first
                         : '',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),

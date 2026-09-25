@@ -2,6 +2,7 @@ import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
@@ -64,20 +65,20 @@ Future<void> showPlayerAudioDevicePicker(
 }
 
 /// 播放器操作按钮行（音频设备 / 小窗 / 投屏 / 日志 / 播放器详情）。
-/// 「更多」面板与「视频详情」tab 共用，保证按钮数量与样式一致。
-/// 弹窗一律用 [App.rootContext]，避免 sheet 关闭后 context 失效。
+/// 「更多」面板与「视频详情」tab 共用；弹窗一律用 [App.rootContext]，
+/// 避免 sheet 关闭后 context 失效。
 class PlayerActionButtons extends StatelessWidget {
   const PlayerActionButtons({
     super.key,
     required this.playerController,
-    required this.onPlayerDetails,
+    this.onPlayerDetails,
     this.onBeforeAction,
   });
 
   final PlayerController playerController;
 
-  /// 「播放器详情」动作
-  final VoidCallback onPlayerDetails;
+  /// 「播放器详情」动作；为 null 时不显示该按钮（如已在「视频详情」tab 中）
+  final VoidCallback? onPlayerDetails;
 
   /// 每个动作执行前调用（如关闭当前 sheet）
   final VoidCallback? onBeforeAction;
@@ -116,16 +117,49 @@ class PlayerActionButtons extends StatelessWidget {
               }
             }),
           ),
-        IconTileButton(
-          icon: const Icon(Icons.cast_outlined),
-          label: t.remoteCast,
-          onTap: () => _run(() {
-            final needRestart = pc.playing;
-            pc.pause();
-            RemotePlay().castVideo(pc.videoUrl).whenComplete(() {
-              if (needRestart) pc.play();
-            });
-          }),
+        // 投屏 / 停止投屏：投屏中图标高亮，点击直接停止
+        ValueListenableBuilder<String?>(
+          valueListenable: RemotePlay.instance.castingDeviceName,
+          builder: (context, castingName, _) {
+            final casting = castingName != null;
+            return IconTileButton(
+              icon: Icon(casting ? Icons.cast_connected : Icons.cast_outlined),
+              label: casting ? t.stopCast : t.remoteCast,
+              onTap: () => _run(() {
+                if (casting) {
+                  RemotePlay.instance.stopCast();
+                  return;
+                }
+                final needRestart = pc.playing;
+                pc.pause();
+                RemotePlay.instance
+                    .castVideo(
+                      pc.videoUrl,
+                      headers: pc.videoHeaders,
+                      // 投屏优先：加载下一集时不要本地播放
+                      onCastingChanged: (v) => pc.castMode = v,
+                      // TV 放完自动续投下一集（遵循自动连播/单集循环设置）
+                      next: () async {
+                        if (appdata.implicitData['playerLoopEpisode'] == true) {
+                          return (url: pc.videoUrl, headers: pc.videoHeaders);
+                        }
+                        if (appdata.implicitData['playerAutoPlay'] == false) {
+                          return null;
+                        }
+                        final before = pc.currentEpisoded;
+                        await pc.playNextEpisode();
+                        if (pc.currentEpisoded == before) return null;
+                        return (url: pc.videoUrl, headers: pc.videoHeaders);
+                      },
+                    )
+                    .whenComplete(() {
+                      if (needRestart && !RemotePlay.instance.isCasting) {
+                        pc.play();
+                      }
+                    });
+              }),
+            );
+          },
         ),
         // 正在用种子播放：可切回在线源（本集）
         if (pc.isTorrentPlayback)
@@ -163,11 +197,12 @@ class PlayerActionButtons extends StatelessWidget {
               );
             }),
           ),
-        IconTileButton(
-          icon: const Icon(Icons.info_outline),
-          label: t.playerDetails,
-          onTap: () => _run(onPlayerDetails),
-        ),
+        if (onPlayerDetails != null)
+          IconTileButton(
+            icon: const Icon(Icons.info_outline),
+            label: t.playerDetails,
+            onTap: () => _run(onPlayerDetails!),
+          ),
       ],
     );
   }

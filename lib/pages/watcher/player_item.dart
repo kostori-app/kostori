@@ -18,6 +18,7 @@ import 'package:kostori/pages/watcher/player_item_base_panel.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:kostori/pages/watcher/player_settings_cards.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -81,13 +82,6 @@ class _PlayerItemState extends State<PlayerItem>
       // 不 await，避免连续触发时 Future 堆积
       playerController.setVolume(value);
     }
-  }
-
-  void glimmerEffectMode() {
-    appdata.implicitData['glimmerEffect'] = !playerController.glimmerEffect;
-    appdata.writeImplicitData();
-    playerController.glimmerEffect = !playerController.glimmerEffect;
-    setState(() {});
   }
 
   Future<void> setBrightness(double value) async {
@@ -251,7 +245,7 @@ class _PlayerItemState extends State<PlayerItem>
     );
   }
 
-  /// 更多选项底部 sheet：上方是"图标在上文字在下"的操作项，下方是卡片式开关
+  /// 更多选项底部 sheet：上方是操作项，下方是复用的设置卡片组。
   void _showMoreSheet() {
     showModalBottomSheet(
       context: context,
@@ -266,7 +260,6 @@ class _PlayerItemState extends State<PlayerItem>
           controller: sc,
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           children: [
-            // 操作项：与「视频详情」tab 一致（音频设备/小窗/投屏/日志/播放器详情）
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: PlayerActionButtons(
@@ -275,112 +268,8 @@ class _PlayerItemState extends State<PlayerItem>
                 onBeforeAction: () => Navigator.pop(ctx),
               ),
             ),
-            // 开关类：卡片风格（图标 + 标题 + 开关）
-            if (App.isAndroid)
-              _MoreSwitchCard(
-                icon: Icons.speaker_outlined,
-                title: t.audioOption, // 低延迟音频
-                value: appdata.settings['audioOutType'] ?? true,
-                onChanged: (v) async {
-                  appdata.settings['audioOutType'] = v;
-                  appdata.saveData();
-                  await playerController.changeAudioOutType();
-                  App.rootContext.showMessage(message: t.switchSuccessful);
-                },
-              ),
-            if (App.isDesktop)
-              _MoreSwitchCard(
-                icon: Icons.graphic_eq_outlined,
-                title: t.volumeBoost,
-                value: playerController.volumeBoost,
-                onChanged: (v) async {
-                  await playerController.toggleVolumeBoost();
-                  App.rootContext.showMessage(message: t.switchSuccessful);
-                },
-              ),
-            _MoreSwitchCard(
-              icon: Icons.play_circle_outline,
-              title: t.playerAutoPlayOnEnter,
-              value: appdata.implicitData['playerAutoPlayOnEnter'] ?? true,
-              onChanged: (v) {
-                appdata.implicitData['playerAutoPlayOnEnter'] = v;
-                appdata.writeImplicitData();
-              },
-            ),
-            _MoreSwitchCard(
-              icon: Icons.skip_next_rounded,
-              title: t.playerAutoPlay,
-              value: appdata.implicitData['playerAutoPlay'] ?? true,
-              onChanged: (v) {
-                appdata.implicitData['playerAutoPlay'] = v;
-                appdata.writeImplicitData();
-              },
-            ),
-            _MoreSwitchCard(
-              icon: Icons.repeat_rounded,
-              title: t.playerLoopEpisode,
-              value: appdata.implicitData['playerLoopEpisode'] ?? false,
-              onChanged: (v) {
-                appdata.implicitData['playerLoopEpisode'] = v;
-                appdata.writeImplicitData();
-              },
-            ),
-            _MoreSwitchCard(
-              icon: Icons.auto_awesome_outlined,
-              title: t.glimmerMode,
-              value: playerController.glimmerEffect,
-              onChanged: (v) => glimmerEffectMode(),
-            ),
-            // 播放倍率（与全屏视频信息一致，Observer 驱动实时刷新）
-            _MoreSettingCard(
-              icon: Icons.speed_outlined,
-              title: t.playbackSpeed,
-              child: Observer(
-                builder: (context) => Column(
-                  children: [
-                    Slider(
-                      value: playerController.playbackSpeed,
-                      min: 0.5,
-                      max: 4.0,
-                      divisions: 7,
-                      onChanged: (v) => playerController.setPlaybackSpeed(v),
-                    ),
-                    Text(
-                      '${playerController.playbackSpeed.toStringAsFixed(2)}x',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // 超分辨率（与全屏视频信息一致）
-            _MoreSettingCard(
-              icon: Icons.high_quality_outlined,
-              title: t.superResolution,
-              child: Observer(
-                builder: (context) => CapsuleOptions(
-                  alignment: WrapAlignment.start,
-                  wrap: true,
-                  children: [
-                    CapsuleOption(
-                      text: t.superResolutionOff,
-                      isSelected: playerController.superResolutionType == 1,
-                      onTap: () => playerController.setShader(1),
-                    ),
-                    CapsuleOption(
-                      text: t.superResolutionEfficiency,
-                      isSelected: playerController.superResolutionType == 2,
-                      onTap: () => playerController.setShader(2),
-                    ),
-                    CapsuleOption(
-                      text: t.superResolutionQuality,
-                      isSelected: playerController.superResolutionType == 3,
-                      onTap: () => playerController.setShader(3),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // 设置卡片：与「视频详情」tab 共用同一组件
+            PlayerSettingsCards(playerController: playerController),
           ],
         ),
       ),
@@ -398,6 +287,17 @@ class _PlayerItemState extends State<PlayerItem>
     );
     windowManager.addListener(this);
     displayVideoController();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // 关闭「后台播放」时，切到后台自动暂停（默认开启，保持原行为）
+    if (state == AppLifecycleState.paused &&
+        appdata.implicitData['playerBackgroundPlay'] == false &&
+        playerController.playing) {
+      playerController.pause(showIndicator: false);
+    }
   }
 
   @override
@@ -761,52 +661,52 @@ class _PlayerItemState extends State<PlayerItem>
                             playerController.startPlayerStreams();
                             playerController.showSeekTime = false;
                           },
-                          onVerticalDragUpdate:
-                              (DragUpdateDetails details) async {
-                                final double totalWidth = MediaQuery.sizeOf(
-                                  context,
-                                ).width;
-                                final double totalHeight = MediaQuery.sizeOf(
-                                  context,
-                                ).height;
-                                final double tapPosition =
-                                    details.localPosition.dx;
-                                final double sectionWidth = totalWidth / 2;
-                                final double delta = details.delta.dy;
+                          onVerticalDragUpdate: (DragUpdateDetails details) async {
+                            final double totalWidth = MediaQuery.sizeOf(context)
+                                .width;
+                            final double totalHeight = MediaQuery.sizeOf(
+                              context,
+                            ).height;
+                            final double tapPosition = details.localPosition.dx;
+                            final double sectionWidth = totalWidth / 2;
+                            final double delta = details.delta.dy;
 
-                                if (tapPosition < sectionWidth) {
-                                  // 左边区域
-                                  playerController.brightnessSeeking = true;
-                                  playerController.showBrightness = true;
-                                  final double level = (totalHeight) * 2;
-                                  final double brightness =
-                                      playerController.brightness -
-                                      delta / level;
-                                  final double result = brightness.clamp(
-                                    0.0,
-                                    1.0,
-                                  );
-                                  setBrightness(result);
-                                  playerController.brightness = result;
-                                } else {
-                                  // 右边区域
-                                  playerController.volumeSeeking = true;
-                                  playerController.showVolume = true;
-                                  final double level = (totalHeight) * 0.03;
-                                  final double volume =
-                                      playerController.volume - delta / level;
-                                  // HUD 即时反馈：先更新 observable，播放器实际
-                                  // 音量节流应用，避免连续滑动时每帧高频调用
-                                  // media_kit setVolume 造成视频播放卡顿
-                                  playerController.volume = volume.clamp(
-                                    0.0,
-                                    playerController.volumeUpperBound,
-                                  );
-                                  _applyVolumeThrottled(
-                                    playerController.volume,
-                                  );
-                                }
-                              },
+                            if (tapPosition < sectionWidth) {
+                              // 左边区域
+                              if (appdata
+                                      .implicitData['playerBrightnessGesture'] ==
+                                  false) {
+                                return;
+                              }
+                              playerController.brightnessSeeking = true;
+                              playerController.showBrightness = true;
+                              final double level = (totalHeight) * 2;
+                              final double brightness =
+                                  playerController.brightness - delta / level;
+                              final double result = brightness.clamp(0.0, 1.0);
+                              setBrightness(result);
+                              playerController.brightness = result;
+                            } else {
+                              // 右边区域
+                              if (appdata.implicitData['playerVolumeGesture'] ==
+                                  false) {
+                                return;
+                              }
+                              playerController.volumeSeeking = true;
+                              playerController.showVolume = true;
+                              final double level = (totalHeight) * 0.03;
+                              final double volume =
+                                  playerController.volume - delta / level;
+                              // HUD 即时反馈：先更新 observable，播放器实际
+                              // 音量节流应用，避免连续滑动时每帧高频调用
+                              // media_kit setVolume 造成视频播放卡顿
+                              playerController.volume = volume.clamp(
+                                0.0,
+                                playerController.volumeUpperBound,
+                              );
+                              _applyVolumeThrottled(playerController.volume);
+                            }
+                          },
                           onVerticalDragEnd: (_) {
                             if (playerController.volumeSeeking) {
                               playerController.volumeSeeking = false;
@@ -926,120 +826,6 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 更多面板里的设置卡片：图标 + 标题 + 自定义内容（卡片风格）
-class _MoreSettingCard extends StatelessWidget {
-  const _MoreSettingCard({
-    required this.icon,
-    required this.title,
-    required this.child,
-  });
-
-  final IconData icon;
-
-  final String title;
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, size: 20, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              child,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 更多面板里的开关卡片：图标 + 标题 + 开关（卡片风格）
-class _MoreSwitchCard extends StatefulWidget {
-  const _MoreSwitchCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-
-  final String title;
-
-  final bool value;
-
-  final ValueChanged<bool> onChanged;
-
-  @override
-  State<_MoreSwitchCard> createState() => _MoreSwitchCardState();
-}
-
-class _MoreSwitchCardState extends State<_MoreSwitchCard> {
-  late bool _value = widget.value;
-
-  @override
-  void didUpdateWidget(covariant _MoreSwitchCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value) {
-      _value = widget.value;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            children: [
-              Icon(widget.icon, size: 20, color: cs.onSurfaceVariant),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.title,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-              CustomSwitch(
-                value: _value,
-                onChanged: (v) {
-                  setState(() => _value = v);
-                  widget.onChanged(v);
-                },
-              ),
-            ],
           ),
         ),
       ),

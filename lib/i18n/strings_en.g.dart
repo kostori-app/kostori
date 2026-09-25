@@ -761,9 +761,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Fullscreen'
 	String get fullscreen => 'Fullscreen';
 
-	/// en: 'Git Mirror'
-	String get gitMirror => 'Git Mirror';
-
 	/// en: 'Green'
 	String get green => 'Green';
 
@@ -2177,6 +2174,36 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Token refresh failed'
 	String get bangumiTokenRefreshFailed => 'Token refresh failed';
 
+	/// en: 'Bangumi mirror'
+	String get bangumiMirror => 'Bangumi mirror';
+
+	/// en: 'Accelerate Bangumi API access via a third-party mirror'
+	String get bangumiMirrorDesc => 'Accelerate Bangumi API access via a third-party mirror';
+
+	/// en: 'Send auth to mirror'
+	String get bangumiMirrorSendAuth => 'Send auth to mirror';
+
+	/// en: 'When off, login tokens/credentials are not sent to the mirror (safer)'
+	String get bangumiMirrorSendAuthDesc => 'When off, login tokens/credentials are not sent to the mirror (safer)';
+
+	/// en: 'Mirrors'
+	String get networkMirror => 'Mirrors';
+
+	/// en: 'GitHub mirror'
+	String get githubMirror => 'GitHub mirror';
+
+	/// en: 'Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)'
+	String get githubMirrorDesc => 'Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)';
+
+	/// en: 'Official (no mirror)'
+	String get mirrorOfficial => 'Official (no mirror)';
+
+	/// en: 'Address'
+	String get mirrorAddress => 'Address';
+
+	/// en: 'No mirror source added yet'
+	String get mirrorEmpty => 'No mirror source added yet';
+
 	/// en: 'Please fill in the client ID first'
 	String get bangumiClientIdSecretRequired => 'Please fill in the client ID first';
 
@@ -2626,6 +2653,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'DLNA exception'
 	String get dlnaException => 'DLNA exception';
+
+	/// en: 'Stop casting'
+	String get stopCast => 'Stop casting';
+
+	/// en: 'Casting to ${device}'
+	String castingTo({required Object device}) => 'Casting to ${device}';
+
+	/// en: 'Casting stopped'
+	String get castStopped => 'Casting stopped';
 
 	/// en: 'Audio Option: Low Latency'
 	String get audioOptionLowLatency => 'Audio Option: \n Low Latency';
@@ -6970,6 +7006,48 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Repeat the current episode when it ends'
 	String get playerLoopEpisodeDesc => 'Repeat the current episode when it ends';
 
+	/// en: 'Background playback'
+	String get playerBackgroundPlay => 'Background playback';
+
+	/// en: 'Keep playing audio when the app goes to the background'
+	String get playerBackgroundPlayDesc => 'Keep playing audio when the app goes to the background';
+
+	/// en: 'Resume last position'
+	String get playerAutoResume => 'Resume last position';
+
+	/// en: 'Continue from where you left off when opening an episode'
+	String get playerAutoResumeDesc => 'Continue from where you left off when opening an episode';
+
+	/// en: 'Brightness swipe control'
+	String get playerBrightnessGesture => 'Brightness swipe control';
+
+	/// en: 'Swipe up/down on the left side to adjust brightness'
+	String get playerBrightnessGestureDesc => 'Swipe up/down on the left side to adjust brightness';
+
+	/// en: 'Volume swipe control'
+	String get playerVolumeGesture => 'Volume swipe control';
+
+	/// en: 'Swipe up/down on the right side to adjust volume'
+	String get playerVolumeGestureDesc => 'Swipe up/down on the right side to adjust volume';
+
+	/// en: 'Player cache'
+	String get playerCache => 'Player cache';
+
+	/// en: 'Larger cache means smoother playback but more memory (takes effect after reopening the player)'
+	String get playerCacheDesc => 'Larger cache means smoother playback but more memory (takes effect after reopening the player)';
+
+	/// en: 'Low'
+	String get cacheLow => 'Low';
+
+	/// en: 'Medium'
+	String get cacheMedium => 'Medium';
+
+	/// en: 'High'
+	String get cacheHigh => 'High';
+
+	/// en: 'Ultra'
+	String get cacheUltra => 'Ultra';
+
 	/// en: 'Form'
 	String get form => 'Form';
 
@@ -9447,7 +9525,6 @@ extension on Translations {
 			'following' => 'Following',
 			'fullScreen' => 'Full Screen',
 			'fullscreen' => 'Fullscreen',
-			'gitMirror' => 'Git Mirror',
 			'green' => 'Green',
 			'help' => 'Help',
 			'history' => 'History',
@@ -9719,9 +9796,9 @@ extension on Translations {
 			'hotspot' => 'hotspot',
 			'completed' => 'Completed',
 			'mainCharacter' => 'Main character',
+			'supportingCharacter' => 'Supporting character',
 			_ => null,
 		} ?? switch (path) {
-			'supportingCharacter' => 'Supporting character',
 			'cameo' => 'Cameo',
 			'idleCorner' => 'Idle corner',
 			'unknown' => 'Unknown',
@@ -9921,6 +9998,16 @@ extension on Translations {
 			'bangumiTokenExpired' => 'Expired',
 			'bangumiTokenRefreshSuccess' => 'Token refreshed',
 			'bangumiTokenRefreshFailed' => 'Token refresh failed',
+			'bangumiMirror' => 'Bangumi mirror',
+			'bangumiMirrorDesc' => 'Accelerate Bangumi API access via a third-party mirror',
+			'bangumiMirrorSendAuth' => 'Send auth to mirror',
+			'bangumiMirrorSendAuthDesc' => 'When off, login tokens/credentials are not sent to the mirror (safer)',
+			'networkMirror' => 'Mirrors',
+			'githubMirror' => 'GitHub mirror',
+			'githubMirrorDesc' => 'Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)',
+			'mirrorOfficial' => 'Official (no mirror)',
+			'mirrorAddress' => 'Address',
+			'mirrorEmpty' => 'No mirror source added yet',
 			'bangumiClientIdSecretRequired' => 'Please fill in the client ID first',
 			'recognizeImageFailed' => 'Failed to read image, please retry',
 			'recognizeFailed' => 'Recognition failed',
@@ -10071,6 +10158,9 @@ extension on Translations {
 			'noDevicesFound' => 'No devices found',
 			'tryingToCast' => 'Trying to cast to',
 			'dlnaException' => 'DLNA exception',
+			'stopCast' => 'Stop casting',
+			'castingTo' => ({required Object device}) => 'Casting to ${device}',
+			'castStopped' => 'Casting stopped',
 			'audioOptionLowLatency' => 'Audio Option: \n Low Latency',
 			'audioOptionCompatibility' => 'Audio Option: \n Compatibility',
 			'audioOutputDevice' => 'Audio Output Device',
@@ -10221,6 +10311,8 @@ extension on Translations {
 			'audioChannels' => 'Audio Channels',
 			'audioBitrate' => 'Audio bitrate',
 			'audio' => 'Audio',
+			_ => null,
+		} ?? switch (path) {
 			'video' => 'Video',
 			'media' => 'Media',
 			'noLogsForL' => ({required Object l}) => 'No logs for ${l}',
@@ -10233,8 +10325,6 @@ extension on Translations {
 			'manufacturerField' => 'manufacturer',
 			'versionReleaseField' => 'version_release',
 			'versionSdkIntField' => 'version_sdkInt',
-			_ => null,
-		} ?? switch (path) {
 			'displayField' => 'display',
 			'hardwareField' => 'hardware',
 			'physicalRamSizeField' => 'physicalRamSize',
@@ -10735,6 +10825,8 @@ extension on Translations {
 			'kickedFromRoomByP' => ({required Object p}) => 'Kicked from room by ${p}',
 			'leftTheRoom' => 'left the room',
 			'joinedTheRoom' => 'joined the room',
+			_ => null,
+		} ?? switch (path) {
 			'pWasKickedByO' => ({required Object p, required Object o}) => '${p} was kicked by ${o}',
 			'youLabel' => 'You',
 			'leftTheServer' => 'left the server',
@@ -10747,8 +10839,6 @@ extension on Translations {
 			'inviteToRoom' => 'Invite to Room',
 			'invite' => 'Invite',
 			'invited' => 'invited',
-			_ => null,
-		} ?? switch (path) {
 			'roomInvite' => 'Room Invite',
 			'invitedYouTo' => 'invited you to',
 			'acceptInvite' => 'Accept',
@@ -11249,6 +11339,8 @@ extension on Translations {
 			'copiedToClipboard' => 'Copied to clipboard',
 			'likeSuccess' => 'Like success',
 			'unlikeSuccess' => 'Unlike success',
+			_ => null,
+		} ?? switch (path) {
 			'operationSuccess' => 'Operation success',
 			'saveSuccess' => 'Save success',
 			'saveFailed' => 'Save failed',
@@ -11261,8 +11353,6 @@ extension on Translations {
 			'bindBangumiIdSuccess' => 'Bangumi ID bound successfully',
 			'notBoundToBangumi' => 'This anime is not bound to a Bangumi entry',
 			'applySuccess' => 'Apply success',
-			_ => null,
-		} ?? switch (path) {
 			'noChanges' => 'No changes',
 			'applyFailed' => 'Apply failed',
 			'noResultsTryOtherKeywords' => 'No results found, please try other keywords',
@@ -11567,6 +11657,20 @@ extension on Translations {
 			'playerAutoPlayOnEnterDesc' => 'Start playing automatically when the player opens',
 			'playerLoopEpisode' => 'Loop single episode',
 			'playerLoopEpisodeDesc' => 'Repeat the current episode when it ends',
+			'playerBackgroundPlay' => 'Background playback',
+			'playerBackgroundPlayDesc' => 'Keep playing audio when the app goes to the background',
+			'playerAutoResume' => 'Resume last position',
+			'playerAutoResumeDesc' => 'Continue from where you left off when opening an episode',
+			'playerBrightnessGesture' => 'Brightness swipe control',
+			'playerBrightnessGestureDesc' => 'Swipe up/down on the left side to adjust brightness',
+			'playerVolumeGesture' => 'Volume swipe control',
+			'playerVolumeGestureDesc' => 'Swipe up/down on the right side to adjust volume',
+			'playerCache' => 'Player cache',
+			'playerCacheDesc' => 'Larger cache means smoother playback but more memory (takes effect after reopening the player)',
+			'cacheLow' => 'Low',
+			'cacheMedium' => 'Medium',
+			'cacheHigh' => 'High',
+			'cacheUltra' => 'Ultra',
 			'form' => 'Form',
 			'installPluginByDrop' => 'Drag & drop install',
 			'dropJsPluginHint' => 'Drop a .js plugin file here to install',
@@ -11749,6 +11853,8 @@ extension on Translations {
 			'profileTabLibrary' => 'Library',
 			'inheritGlobalLibrary' => 'Inherit globally enabled items',
 			'inheritGlobalLibraryHint' => 'When off, only the world books and prompt injections selected below are used; when on and nothing is selected, the globally enabled ones are used.',
+			_ => null,
+		} ?? switch (path) {
 			'profileLibraryHint' => 'Selected entries apply only to this assistant; see the switch above for inheriting the globally enabled ones.',
 			'userNickname' => 'User nickname',
 			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
@@ -11775,8 +11881,6 @@ extension on Translations {
 			'outputModality' => 'Output modalities',
 			'supportsReasoning' => 'Supports reasoning',
 			'capabilities' => 'Capabilities',
-			_ => null,
-		} ?? switch (path) {
 			'modelTypeChat' => 'Chat',
 			'modelTypeImage' => 'Image',
 			'modelTypeEmbedding' => 'Embedding',

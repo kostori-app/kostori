@@ -18,6 +18,7 @@ class _NetworkSettingsState extends State<NetworkSettings> {
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
+                _SettingPartTitle(title: t.network, icon: Icons.wifi),
                 _PopupWindowSetting(
                   title: t.proxy,
                   builder: () => const _ProxySettingView(),
@@ -33,6 +34,63 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                 _SwitchSetting(
                   title: t.ignoreCertificateErrors,
                   settingKey: "ignoreBadCertificate",
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.networkMirror,
+                  icon: Icons.cloud_outlined,
+                ),
+                _CallbackSetting(
+                  title: t.bangumiMirror,
+                  subtitle:
+                      bangumiMirrorStore.selected?.name ?? t.mirrorOfficial,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(
+                      App.rootContext,
+                      MirrorManagerPage(
+                        store: bangumiMirrorStore,
+                        title: t.bangumiMirror,
+                        description: t.bangumiMirrorDesc,
+                        addressHint: 'https://api.bgmapi.com',
+                        footer: _SwitchSetting(
+                          title: t.bangumiMirrorSendAuth,
+                          subtitle: t.bangumiMirrorSendAuthDesc,
+                          settingKey: 'bangumiMirrorSendAuth',
+                          dataSource: SwitchDataSource.implicit,
+                        ),
+                      ),
+                    ).then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  },
+                ),
+                _CallbackSetting(
+                  title: t.githubMirror,
+                  subtitle:
+                      githubMirrorStore.selected?.name ?? t.mirrorOfficial,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(
+                      App.rootContext,
+                      MirrorManagerPage(
+                        store: githubMirrorStore,
+                        title: t.githubMirror,
+                        description: t.githubMirrorDesc,
+                        addressHint: 'https://cdn.jsdelivr.net/',
+                      ),
+                    ).then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  },
                 ),
               ],
             ),

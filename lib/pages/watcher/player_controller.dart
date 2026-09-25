@@ -19,13 +19,14 @@ import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/audio_service/player_audio_handler.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/foundation/audio_service/taskbar_manager.dart';
-import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/editor/video_clip_editor.dart';
+import 'package:kostori/pages/watcher/player_cache.dart';
+import 'package:kostori/pages/watcher/player_shaders.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/services/download/download_manager.dart';
@@ -95,7 +96,7 @@ abstract class _PlayerController with Store {
 
   late Player player = Player(
     configuration: PlayerConfiguration(
-      bufferSize: 1500 * 1024 * 1024,
+      bufferSize: playerBufferSize,
       logLevel: MPVLogLevel.v,
       protocolWhitelist: const [
         'file',
@@ -215,6 +216,9 @@ abstract class _PlayerController with Store {
   @observable
   String playUrl = ''; // 实际播放的 URL（可能是代理 URL）
   Map<String, String>? videoHeaders; // HTTP headers for video
+
+  /// 投屏模式：投屏期间加载剧集只解析地址、不自动本地播放（由 TV 播放）
+  bool castMode = false;
 
   /// 当前播放的结构化结果（音轨/字幕/清晰度等媒体信息，由源脚本提供）
   @observable
@@ -522,16 +526,17 @@ abstract class _PlayerController with Store {
     }
   }
 
-  Future<void> changeAudioOutType() async {
-    audioOutType = !audioOutType;
-    var pp = player.platform as NativePlayer;
-    if (audioOutType) {
-      await pp.setProperty("ao", "opensles");
-    } else {
-      await pp.setProperty("ao", "audiotrack");
-    }
-    appdata.settings['audioOutType'] = audioOutType;
+  /// 设置音频输出类型（true = Android 低延迟 opensles，false = audiotrack）
+  Future<void> setAudioOutType(bool value) async {
+    audioOutType = value;
+    final pp = player.platform as NativePlayer;
+    await pp.setProperty("ao", value ? "opensles" : "audiotrack");
+    appdata.settings['audioOutType'] = value;
     appdata.saveData();
+  }
+
+  Future<void> changeAudioOutType() async {
+    await setAudioOutType(!audioOutType);
   }
 
   /// 读取 libmpv 可用的音频输出设备列表（桌面端）。
@@ -757,37 +762,11 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> setShader(int type, {bool synchronized = true}) async {
-    var pp = player.platform as NativePlayer;
-    await pp.waitForPlayerInitialization;
-    await pp.waitForVideoControllerInitializationIfAttached;
-    if (type == 2) {
-      await pp.command([
-        'change-list',
-        'glsl-shaders',
-        'set',
-        Utils.buildShadersAbsolutePath(
-          shadersController.shadersDirectory.path,
-          mpvAnime4KShadersLite,
-        ),
-      ]);
-      superResolutionType = 2;
-      return;
-    }
-    if (type == 3) {
-      await pp.command([
-        'change-list',
-        'glsl-shaders',
-        'set',
-        Utils.buildShadersAbsolutePath(
-          shadersController.shadersDirectory.path,
-          mpvAnime4KShaders,
-        ),
-      ]);
-      superResolutionType = 3;
-      return;
-    }
-    await pp.command(['change-list', 'glsl-shaders', 'clr', '']);
-    superResolutionType = 1;
+    superResolutionType = await applySuperResolutionShader(
+      player,
+      shadersController,
+      type,
+    );
   }
 
   void setPlaybackSpeed(double rate) {
@@ -1334,9 +1313,10 @@ class _PlayPauseIndicatorState extends State<_PlayPauseIndicator> {
                     color: Colors.black.withValues(alpha: 0.45),
                     alignment: Alignment.center,
                     child: Icon(
+                      // 与底部播放/暂停按钮一致：播放中显示暂停（可暂停），暂停时显示播放
                       widget.isPlaying
-                          ? Icons.play_arrow_rounded
-                          : Icons.pause_rounded,
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
                       color: Colors.white,
                       size: 34,
                     ),

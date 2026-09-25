@@ -319,30 +319,30 @@ class _WatcherState extends State<Watcher>
   /// 播放下一集（已到最后一集时提示无更多剧集）
   @override
   Future<void> playNextEpisode({bool checkRemainingTime = true}) async {
+    if (epIndex >= _episodeCount(playerController.currentRoad)) {
+      playerController.showCenterHint(
+        message: t.watcherNoMoreEpisodes,
+        success: false,
+        seconds: 3,
+      );
+      PlayLog.info("下一集", "没有更多剧集可播放");
+      return;
+    }
     setState(() {
-      if (epIndex < _episodeCount(playerController.currentRoad)) {
-        try {
-          epIndex++;
-          loadNextEpisode(epIndex);
-          // 提示在播放器组件内部居中（与缓冲覆盖层同位置）
-          playerController.showCenterHint(message: t.watcherPlayingNext);
-        } catch (e) {
-          playerController.showCenterHint(
-            message: t.watcherEpisodeLoadError(error: e.toString()),
-            success: false,
-            seconds: 3,
-          );
-          PlayLog.info("playNextEpisode", "加载剧集时出错");
-        }
-      } else {
-        playerController.showCenterHint(
-          message: t.watcherNoMoreEpisodes,
-          success: false,
-          seconds: 3,
-        );
-        PlayLog.info("下一集", "没有更多剧集可播放");
-      }
+      epIndex++;
     });
+    // 提示在播放器组件内部居中（与缓冲覆盖层同位置）
+    playerController.showCenterHint(message: t.watcherPlayingNext);
+    try {
+      await loadNextEpisode(epIndex);
+    } catch (e) {
+      playerController.showCenterHint(
+        message: t.watcherEpisodeLoadError(error: e.toString()),
+        success: false,
+        seconds: 3,
+      );
+      PlayLog.info("playNextEpisode", "加载剧集时出错");
+    }
   }
 
   /// 加载指定线路的某一集（公开入口）
@@ -574,7 +574,10 @@ class _WatcherState extends State<Watcher>
         );
       }
 
-      time = progressFind.progressInMilli;
+      // 「自动跳转到上次播放位置」关闭时从头播放
+      time = appdata.implicitData['playerAutoResume'] == false
+          ? 0
+          : progressFind.progressInMilli;
 
       // 步骤0：解析视频地址；已下载的本地文件直接用本地路径（离线可播）
       playerController.loadingStep = 0;
@@ -731,6 +734,8 @@ class _WatcherState extends State<Watcher>
               ? (playHeaders ?? const {})
               : const {},
         ),
+        // 投屏模式：只加载不本地播放，避免手机与 TV 双开
+        play: !playerController.castMode,
       );
     } catch (e, s) {
       PlayLog.error("openMedia", "$e\n$s");

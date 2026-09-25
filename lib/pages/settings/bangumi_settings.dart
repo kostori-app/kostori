@@ -10,30 +10,7 @@ class BangumiSettings extends StatefulWidget {
 class _BangumiSettingsState extends State<BangumiSettings> {
   bool get _loggedIn => bangumiLoggedIn;
 
-  String? _userId;
-  DateTime? _expires;
   bool _loadingToken = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTokenStatus();
-  }
-
-  Future<void> _loadTokenStatus() async {
-    if (!bangumiLoggedIn) return;
-    if (mounted) setState(() => _loadingToken = true);
-    final info = await bangumiTokenStatus();
-    if (!mounted) return;
-    setState(() {
-      _loadingToken = false;
-      _userId = info?['user_id']?.toString();
-      final exp = info?['expires'];
-      _expires = exp is num
-          ? DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000)
-          : null;
-    });
-  }
 
   Future<void> _refreshToken() async {
     setState(() => _loadingToken = true);
@@ -43,15 +20,20 @@ class _BangumiSettingsState extends State<BangumiSettings> {
     context.showMessage(
       message: ok ? t.bangumiTokenRefreshSuccess : t.bangumiTokenRefreshFailed,
     );
-    if (ok) await _loadTokenStatus();
   }
 
-  String get _tokenInfoText {
+  String _tokenInfoText(Map<String, dynamic>? info) {
     final parts = <String>[];
-    if (_userId != null) parts.add('${t.bangumiUserId}: $_userId');
-    final exp = _expires;
-    if (exp != null) {
-      final left = exp.difference(DateTime.now());
+    final userId = info?['user_id']?.toString();
+    if (userId != null && userId.isNotEmpty) {
+      parts.add('${t.bangumiUserId}: $userId');
+    }
+    final exp = info?['expires'];
+    final expires = exp is num
+        ? DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000)
+        : null;
+    if (expires != null) {
+      final left = expires.difference(DateTime.now());
       final text = left.isNegative
           ? t.bangumiTokenExpired
           : left.inDays > 0
@@ -133,61 +115,64 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                       title: 'Bangumi OAuth',
                       icon: Icons.key_outlined,
                     ),
-                    ListTile(
-                      title: Text(
-                        _loggedIn ? t.bangumiLoggedIn : t.bangumiNotLoggedIn,
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      subtitle: Text(
-                        _loggedIn ? _tokenInfoText : t.bangumiOAuthHint,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      trailing: _loggedIn
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _loadingToken
-                                    ? const SizedBox(
-                                        width: 32,
-                                        height: 32,
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: PolygonRefreshIndicator(),
+                    ValueListenableBuilder<Map<String, dynamic>?>(
+                      valueListenable: bangumiTokenStatusNotifier,
+                      builder: (context, tokenStatus, _) => ListTile(
+                        title: Text(
+                          _loggedIn ? t.bangumiLoggedIn : t.bangumiNotLoggedIn,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          _loggedIn
+                              ? _tokenInfoText(tokenStatus)
+                              : t.bangumiOAuthHint,
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        trailing: _loggedIn
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _loadingToken
+                                      ? const SizedBox(
+                                          width: 32,
+                                          height: 32,
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: PolygonRefreshIndicator(),
+                                            ),
                                           ),
+                                        )
+                                      : IconButton(
+                                          icon: const Icon(
+                                            Icons.refresh,
+                                            size: 20,
+                                          ),
+                                          tooltip: t.bangumiRefreshToken,
+                                          onPressed: _refreshToken,
                                         ),
-                                      )
-                                    : IconButton(
-                                        icon: const Icon(
-                                          Icons.refresh,
-                                          size: 20,
-                                        ),
-                                        tooltip: t.bangumiRefreshToken,
-                                        onPressed: _refreshToken,
-                                      ),
-                                OutlinedButton(
-                                  onPressed: () {
-                                    bangumiOAuthLogout();
-                                    setState(() {
-                                      _userId = null;
-                                      _expires = null;
-                                    });
-                                  },
-                                  child: Text(t.bangumiOAuthLogout),
-                                ),
-                              ],
-                            )
-                          : FilledButton(
-                              onPressed: () async {
-                                await bangumiOAuthLogin(context);
-                                if (mounted) {
+                                  OutlinedButton(
+                                    onPressed: () {
+                                      bangumiOAuthLogout();
+                                      setState(() {});
+                                    },
+                                    child: Text(t.bangumiOAuthLogout),
+                                  ),
+                                ],
+                              )
+                            : FilledButton(
+                                onPressed: () async {
+                                  await bangumiOAuthLogin(context);
+                                  if (!mounted) return;
                                   setState(() {});
-                                  _loadTokenStatus();
-                                }
-                              },
-                              child: Text(t.bangumiOAuthLogin),
-                            ),
+                                  if (bangumiLoggedIn) {
+                                    await refreshBangumiTokenStatus();
+                                  }
+                                },
+                                child: Text(t.bangumiOAuthLogin),
+                              ),
+                      ),
                     ),
                   ],
                 ),
