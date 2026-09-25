@@ -361,6 +361,14 @@ class _VideoPageState extends State<VideoPage>
       (_panelAnime.episode == null || _panelAnime.episode!.isEmpty) &&
       AnimeSource.find(_panelAnime.sourceKey)?.loadSeries != null;
 
+  /// 当前线路在有效范围内：剧集数据刷新/切换后 currentRoad 可能越界，
+  /// 直接 elementAt 会抛 RangeError 导致整页崩溃
+  int get _safeRoadIndex {
+    final length = _panelAnime.episode?.length ?? 0;
+    if (length == 0 || currentRoad < 0) return 0;
+    return currentRoad >= length ? length - 1 : currentRoad;
+  }
+
   /// 面板内统一的分区标题
   Widget _sectionTitle(String text) {
     return Text(
@@ -501,7 +509,7 @@ class _VideoPageState extends State<VideoPage>
             icon: const Icon(Icons.refresh),
             onPressed: () => playerController.reloadCurrent(),
           ),
-          if (!_isSeries)
+          if (!_isSeries && (_panelAnime.episode?.isNotEmpty ?? false))
             MenuAnchor(
               consumeOutsideTap: true,
               builder: (_, MenuController controller, _) {
@@ -513,7 +521,7 @@ class _VideoPageState extends State<VideoPage>
                     controller.isOpen ? controller.close() : controller.open();
                   },
                   child: Text(
-                    _panelAnime.episode!.keys.elementAt(currentRoad),
+                    _panelAnime.episode!.keys.elementAt(_safeRoadIndex),
                     style: const TextStyle(fontSize: 13),
                   ),
                 );
@@ -522,7 +530,7 @@ class _VideoPageState extends State<VideoPage>
                 _panelAnime.episode!.keys.length,
                 (i) {
                   final title = _panelAnime.episode!.keys.elementAt(i);
-                  final isCurrent = i == currentRoad;
+                  final isCurrent = i == _safeRoadIndex;
                   return MenuItemButton(
                     onPressed: () {
                       setState(() {
@@ -557,8 +565,13 @@ class _VideoPageState extends State<VideoPage>
       return _buildSeriesPlaylistBody();
     }
     var cardList = <Widget>[];
-    var roadList = _panelAnime.episode ?? {};
-    var selectedRoad = roadList.values.elementAt(currentRoad);
+    final roadList = _panelAnime.episode ?? const {};
+    // episode 为空（数据未就绪/刷新中）时退回显示当前播放条目，避免越界崩溃
+    if (roadList.isEmpty) {
+      return _buildSeriesPlaylistBody();
+    }
+    final roadIndex = _safeRoadIndex;
+    var selectedRoad = roadList.values.elementAt(roadIndex);
     final history = providerContainer.read(watcherControllerProvider).history;
 
     int count = 1;
@@ -578,9 +591,9 @@ class _VideoPageState extends State<VideoPage>
             child: InkWell(
               onTap: () async {
                 closeTabBodyAnimated();
-                playerController.currentRoad = currentRoad;
+                playerController.currentRoad = roadIndex;
                 await playerController.pause();
-                playerController.playEpisode(count0, currentRoad);
+                playerController.playEpisode(count0, roadIndex);
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -593,7 +606,7 @@ class _VideoPageState extends State<VideoPage>
                     Row(
                       children: [
                         if (count0 == playerController.currentEpisoded &&
-                            currentRoad ==
+                            roadIndex ==
                                 playerController.currentRoad) ...<Widget>[
                           Image.asset(
                             'assets/img/playing.gif',
@@ -611,8 +624,7 @@ class _VideoPageState extends State<VideoPage>
                               fontSize: 13,
                               color:
                                   (count0 == playerController.currentEpisoded &&
-                                      currentRoad ==
-                                          playerController.currentRoad)
+                                      roadIndex == playerController.currentRoad)
                                   ? Color.lerp(
                                       Theme.of(context).colorScheme.primary,
                                       Colors.white,
