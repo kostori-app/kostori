@@ -512,18 +512,26 @@ abstract class _PlayerController with Store {
       final entry = watcher.seriesAt(newEpisode - 1);
       currentSetName = entry?.title ?? '';
       videoUrl = entry?.id ?? '';
-    } else {
-      currentSetName = AnimeDetails.episodeTitleOf(
-        anime.episode!.values
-            .elementAt(currentRoad)
-            .values
-            .elementAt(newEpisode - 1),
-      );
-      videoUrl = anime.episode!.values
-          .elementAt(currentRoad)
-          .keys
-          .elementAt(newEpisode - 1);
+      return;
     }
+    // 线路/集数可能因源数据刷新而越界，越界时清空而非抛 RangeError
+    final roads = anime.episode!;
+    final index = newEpisode - 1;
+    if (currentRoad < 0 || currentRoad >= roads.length) {
+      currentSetName = '';
+      videoUrl = '';
+      return;
+    }
+    final episodes = roads.values.elementAt(currentRoad);
+    if (index < 0 || index >= episodes.length) {
+      currentSetName = '';
+      videoUrl = '';
+      return;
+    }
+    currentSetName = AnimeDetails.episodeTitleOf(
+      episodes.values.elementAt(index),
+    );
+    videoUrl = episodes.keys.elementAt(index);
   }
 
   /// 设置音频输出类型（true = Android 低延迟 opensles，false = audiotrack）
