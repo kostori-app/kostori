@@ -877,7 +877,13 @@ class Bangumi {
     return episodeInfo;
   }
 
-  Future<List<EpisodeInfo>> getBangumiEpisodeAllByID(int id) async {
+  Future<List<EpisodeInfo>> getBangumiEpisodeAllByID(int id) async =>
+      (await getBangumiEpisodeAllWithTotalByID(id)).$1;
+
+  /// 返回全部剧集与系列总话数（接口的 `total`）。
+  Future<(List<EpisodeInfo>, int?)> getBangumiEpisodeAllWithTotalByID(
+    int id,
+  ) async {
     try {
       var params = <String, dynamic>{'subject_id': id};
       final res = await _dio.request(
@@ -887,14 +893,18 @@ class Bangumi {
       );
 
       final List<dynamic> jsonDataList = res.data['data'] ?? [];
+      final int? total = (res.data['total'] as num?)?.toInt();
       if (res.data['data'] != null) {
-        await manager.addBangumiAllEpInfo(id, res.data['data']);
+        await manager.addBangumiAllEpInfo(id, res.data['data'], total: total);
       }
 
-      return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();
+      return (
+        jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList(),
+        total,
+      );
     } catch (e, s) {
       NetLog.error('bangumiGetBangumiEpisodeAllByID', '$e\n$s');
-      return [];
+      return (<EpisodeInfo>[], null);
     }
   }
 

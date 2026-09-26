@@ -42,6 +42,16 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
         appdata.implicitData['bangumiCalendarPurgedV4'] = true;
         appdata.writeImplicitData();
       }
+      // V5：改用 allEpInfo 判定完结，触发一次全量重新补全
+      if (appdata.implicitData['bangumiCalendarPurgedV5'] != true) {
+        await manager.clearBangumiCalendar();
+        appdata.implicitData['bangumiCalendarSkipIds'] = <int>[];
+        appdata.settings['getCalendarDataTime'] = '';
+        appdata.settings['getBangumiAllEpInfoTime'] = null;
+        appdata.saveData();
+        appdata.implicitData['bangumiCalendarPurgedV5'] = true;
+        appdata.writeImplicitData();
+      }
       await Bangumi.instance.getCalendarData();
       await Bangumi.instance.checkBangumiData();
     }
@@ -57,39 +67,20 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
     final apiIds = allItems.map((item) => item.id).toSet();
 
     // 补全：bangumi_data 表（全量）中日历表缺失的近期条目。
-    // 仅补最近 ~12 个月内开播的（覆盖当季 + 半年番），避免对历史数据大量请求；
-    // 补全条目按需在内存中合成（不再落库，见文件底部），故每次都会走这里。
+    // 窗口取 210 天覆盖半年番（bangumi-data 的 end 对这类番常只标第一季）。
     final supplement = await manager.getAllBangumiDataEntries();
     final existingIds = allItems.map((item) => item.id).toSet();
-    // 仅补全「已开播、近期在播或刚完结」且播放日在目标天内的条目
+    final beginWindow = DateTime.now().subtract(const Duration(days: 210));
     final recentIds = supplement.entries
         .where((e) {
           final begin = DateTime.tryParse(e.value.begin ?? '');
           if (begin == null) return false;
           if (!targetDays.contains(begin.weekday)) return false;
-          // 未放送：开播日在未来（留 1 天余量，避免误伤当天/次日的深夜档首播）
+          // 未放送：开播日在未来（留 1 天余量，避免误伤当天/次日深夜档首播）
           if (begin.isAfter(DateTime.now().add(const Duration(days: 1)))) {
             return false;
           }
-          // 开始时间在最近 ~150 天内（只覆盖当季 + 上一季）：
-          // 旧番的重播/改档条目常被 bangumi-data 写成近期 begin，
-          // 放宽到 12 个月会把这类过期条目也拉来补全
-          if (!begin.isAfter(
-            DateTime.now().subtract(const Duration(days: 150)),
-          )) {
-            return false;
-          }
-          // 在播（end 为空/在未来）或最近 60 天内完结。
-          // 无 end 的条目只有"近期开播"才补：开播已久仍未标 end 的多是
-          // 漏标/已无更新的单集条目（周更在播番本就在 bgm 每周 API 里，
-          // 不需要靠补全进来），避免旧番长期按周重复出现
-          final end = DateTime.tryParse(e.value.end ?? '');
-          if (end == null) {
-            return begin.isAfter(
-              DateTime.now().subtract(const Duration(days: 90)),
-            );
-          }
-          return end.isAfter(DateTime.now().subtract(const Duration(days: 60)));
+          return begin.isAfter(beginWindow);
         })
         .map((e) => e.key);
     // 曾补全失败/脏数据（日期对不上、拿不到条目）的 id 记下来，不再反复请求
@@ -131,11 +122,8 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
           final id = batch[j];
           final basic = supplement[id]!;
           final info = fetched[j];
-          // 拿不到 bgm 条目信息时不再造“占位卡”（无封面/评分，且可能是脏数据）
-          if (info == null) {
-            newSkipIds.add(id);
-            continue;
-          }
+          // 临时失败不记入跳过名单，下次重试
+          if (info == null) continue;
           final begin = DateTime.tryParse(basic.begin ?? '');
           // bangumi-data 的 begin 有时与实际档期不符（如把 2023 旧番标成 2026）。
           // 与 bgm 条目自身首播日相差过大时视为脏数据，跳过补全。
@@ -189,30 +177,38 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
     final shouldFetchEpisodes =
         fetchEpisodes && isFetchEpisodes && fetchEpisodeInfo;
 
-    // data 里没有 end 的条目：不少是「当季实际已播完、但 bangumi-data 漏标 end」。
-    // 用 bangumi_AllEpInfo 里的剧集信息复核是否真的还在播（见下方 skip 判断）。
-    final noEndItems = validItems.where((it) {
+    final now = DateTime.now();
+    final currentWeekInfo = Utils.getISOWeekNumber(now);
+
+    // 缺 end / end 已过的条目优先用 allEpInfo 复核，取不到才回退 end
+    final endCheckItems = validItems.where((it) {
       final end = existenceMap[it.id.toString()]?.end;
-      return end == null || end.isEmpty;
+      if (end == null || end.isEmpty) return true;
+      final endDate = DateTime.tryParse(end);
+      return endDate == null || !endDate.isAfter(now);
     }).toList();
 
     Map<int, List<EpisodeInfo>> allEpisodesMap;
+    Map<int, int> seriesTotalMap;
     if (shouldFetchEpisodes) {
-      allEpisodesMap = await _fetchEpisodesInBatches(validItems);
-    } else if (noEndItems.isNotEmpty && isFetchEpisodes) {
-      // 缺 end 的条目数量少，即使主页（fetchEpisodeInfo=false）也拉取一次：
-      // 否则缓存缺失时，「实际已完结、只是漏标 end」的番无法被 allepinfo 判定剔除。
-      // _fetchEpisodesInBatches 按天节流，当天只拉一次。
-      allEpisodesMap = await _fetchEpisodesInBatches(noEndItems);
-    } else if (noEndItems.isNotEmpty) {
-      allEpisodesMap = await _readCachedEpisodes(noEndItems);
+      final r = await _fetchEpisodesInBatches(validItems);
+      allEpisodesMap = r.$1;
+      seriesTotalMap = r.$2;
+    } else if (endCheckItems.isNotEmpty && isFetchEpisodes) {
+      // 主页（fetchEpisodeInfo=false）也拉一次，按天节流
+      final r = await _fetchEpisodesInBatches(endCheckItems);
+      allEpisodesMap = r.$1;
+      seriesTotalMap = r.$2;
+    } else if (endCheckItems.isNotEmpty) {
+      final r = await _readCachedEpisodes(endCheckItems);
+      allEpisodesMap = r.$1;
+      seriesTotalMap = r.$2;
     } else {
       allEpisodesMap = <int, List<EpisodeInfo>>{};
+      seriesTotalMap = <int, int>{};
     }
 
     final newCalendar = List.generate(7, (_) => <BangumiItem>[]);
-    final now = DateTime.now();
-    final currentWeekInfo = Utils.getISOWeekNumber(now);
 
     for (final item in validItems) {
       final entry = existenceMap[item.id.toString()]!;
@@ -224,24 +220,25 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
         if (parsedTime == null) continue;
         // 未放送：首播日在未来（1 天余量同上），直接跳过
         if (parsedTime.isAfter(now.add(const Duration(days: 1)))) continue;
-        // 非当季 API 来源：按条目自身 air_date + 话数复核是否早已播完，
-        // 避免「他国在播 / 改档重播」的 bangumi-data 条目污染时间表
-        if (!apiIds.contains(item.id) && _isLikelyFinished(item, now)) {
+        final episodes = allEpisodesMap[item.id];
+        final hasEpisodes = episodes != null && episodes.isNotEmpty;
+        // 无剧集信息时才用 air_date + 话数估算，过滤他国重播/旧番
+        if (!hasEpisodes &&
+            !apiIds.contains(item.id) &&
+            _isLikelyFinished(item, now)) {
           continue;
         }
         final weekday = parsedTime.weekday;
-        final episodes = allEpisodesMap[item.id];
 
-        // 有剧集信息时按实际播出判定（可识别 data 漏标 end 的已完结番：
-        // 最终话已播且非本周 → shouldSkip）；判定不出来时回退到 end 字段，
-        // 避免因缓存缺集/日期缺失而误删仍在播的番
+        // 有剧集信息时按实际播出判定，否则回退 end
         EpisodeResult? episodeResult;
-        if (episodes != null && episodes.isNotEmpty) {
+        if (hasEpisodes) {
           episodeResult = await _processEpisodeInfo(
             episodes: episodes,
             now: now,
             currentWeekInfo: currentWeekInfo,
             bangumiItem: item,
+            seriesTotal: seriesTotalMap[item.id] ?? 0,
           );
         }
         episodeResult ??= EpisodeResult.fromEndDate(entry.end);
@@ -269,6 +266,7 @@ Future<EpisodeResult?> _processEpisodeInfo({
   required DateTime now,
   required (int, int) currentWeekInfo,
   required BangumiItem bangumiItem,
+  required int seriesTotal,
 }) async {
   if (episodes == null || episodes.isEmpty) return null;
 
@@ -276,37 +274,22 @@ Future<EpisodeResult?> _processEpisodeInfo({
   final type0Episodes = episodes.where((ep) => ep.type == 0).toList();
   if (type0Episodes.isEmpty) return null;
 
-  final finalEpisode = type0Episodes.last;
   final currentWeekEp = await BangumiUtils.findCurrentWeekEpisode(
     episodes,
     bangumiItem,
     true,
   );
 
-  final currentEp = currentWeekEp.values.first;
-  final airTime = Utils.safeParseDate(currentEp?.airDate);
-  if (airTime == null) return null;
+  final effectiveTotal = seriesTotal > 0
+      ? seriesTotal
+      : bangumiItem.totalEpisodes;
 
-  final airWeek = Utils.getISOWeekNumber(airTime).$2;
-  var isCurrentWeek = currentWeek == airWeek;
-  if (currentWeekEp.keys.first == true && !isCurrentWeek) {
-    if (currentWeek == airWeek + 1) isCurrentWeek = true;
-  }
-
-  final isFinalEpisode =
-      currentEp != null && currentEp.sort == finalEpisode.sort;
-  final maxSort = type0Episodes
-      .map((e) => e.sort)
-      .reduce((a, b) => a > b ? a : b);
-
-  return EpisodeResult(
-    episodeAirdate: currentEp?.airDate,
-    episodeName: currentEp?.name,
-    episodeNameCn: currentEp?.nameCn,
-    episodeEp: currentEp?.sort.toDouble(),
-    isCurrentWeek: isCurrentWeek,
-    isFinalEpisode: isFinalEpisode,
-    hasNextEpisodes: finalEpisode.sort < maxSort,
+  return resolveEpisodeResult(
+    type0Episodes: type0Episodes,
+    currentEpisode: currentWeekEp.values.first,
+    seriesTotal: effectiveTotal,
+    now: now,
+    currentWeek: currentWeek,
   );
 }
 
@@ -344,10 +327,17 @@ DateTime _parseTime(String timeStr) {
   }
 }
 
-Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
-  List<BangumiItem> items,
-) async {
-  final result = <int, List<EpisodeInfo>>{};
+typedef _EpisodeBatch = (Map<int, List<EpisodeInfo>>, Map<int, int>);
+
+/// 系列总话数优先取接口 total，缺失时回退条目字段（仍为 0 则不判定完结）。
+int _resolveSeriesTotal(int? apiTotal, BangumiItem item) {
+  if (apiTotal != null && apiTotal > 0) return apiTotal;
+  return item.totalEpisodes;
+}
+
+Future<_EpisodeBatch> _fetchEpisodesInBatches(List<BangumiItem> items) async {
+  final episodes = <int, List<EpisodeInfo>>{};
+  final totals = <int, int>{};
   const batchSize = 10;
   final nowStr = Utils.formatDate(DateTime.now());
   final needsUpdate = appdata.settings['getBangumiAllEpInfoTime'] != nowStr;
@@ -356,9 +346,9 @@ Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
     for (var i = 0; i < items.length; i += batchSize) {
       final batch = items.sublist(i, (i + batchSize).clamp(0, items.length));
       try {
-        result.addAll(
-          await _fetchBatchEpisodes(batch, needsUpdate: needsUpdate),
-        );
+        final r = await _fetchBatchEpisodes(batch, needsUpdate: needsUpdate);
+        episodes.addAll(r.$1);
+        totals.addAll(r.$2);
       } catch (e, s) {
         Log.error('获取剧集批次${i ~/ batchSize + 1}失败', '$e\n$s');
       }
@@ -366,51 +356,64 @@ Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
     appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
     appdata.saveData();
   } else {
-    result.addAll(await _fetchBatchEpisodes(items, needsUpdate: needsUpdate));
+    final r = await _fetchBatchEpisodes(items, needsUpdate: needsUpdate);
+    episodes.addAll(r.$1);
+    totals.addAll(r.$2);
   }
 
-  return result;
+  return (episodes, totals);
 }
 
-Future<Map<int, List<EpisodeInfo>>> _readCachedEpisodes(
-  List<BangumiItem> items,
-) async {
-  final result = <int, List<EpisodeInfo>>{};
+Future<_EpisodeBatch> _readCachedEpisodes(List<BangumiItem> items) async {
+  final episodes = <int, List<EpisodeInfo>>{};
+  final totals = <int, int>{};
   final manager = providerContainer.read(bangumiManagerProvider);
   for (final item in items) {
     try {
-      final episodes = await manager.allEpInfoFind(item.id);
-      if (episodes.isNotEmpty) result[item.id] = episodes;
+      final (list, apiTotal) = await manager.allEpInfoFindWithTotal(item.id);
+      if (list.isEmpty) continue;
+      episodes[item.id] = list;
+      final total = _resolveSeriesTotal(apiTotal, item);
+      if (total > 0) totals[item.id] = total;
     } catch (_) {}
   }
-  return result;
+  return (episodes, totals);
 }
 
-Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
+Future<_EpisodeBatch> _fetchBatchEpisodes(
   List<BangumiItem> batch, {
   required bool needsUpdate,
 }) async {
-  final result = <int, List<EpisodeInfo>>{};
+  final episodes = <int, List<EpisodeInfo>>{};
+  final totals = <int, int>{};
   final manager = providerContainer.read(bangumiManagerProvider);
   await Future.wait(
     batch.map((item) async {
       try {
-        DebugLog.info(
-          'fetch episodes',
-          'querying id=${item.id}, type=${item.id.runtimeType}',
-        );
-        final episodes = needsUpdate
-            ? await Bangumi.instance.getBangumiEpisodeAllByID(item.id)
-            : await manager.allEpInfoFind(item.id);
-        DebugLog.info('fetch episodes', 'result count=${episodes.length}');
-        if (episodes.isNotEmpty) result[item.id] = episodes;
+        List<EpisodeInfo> list;
+        int? apiTotal;
+        if (needsUpdate) {
+          DebugLog.info(
+            'fetch episodes',
+            'querying id=${item.id}, type=${item.id.runtimeType}',
+          );
+          (list, apiTotal) = await Bangumi.instance
+              .getBangumiEpisodeAllWithTotalByID(item.id);
+        } else {
+          (list, apiTotal) = await manager.allEpInfoFindWithTotal(item.id);
+        }
+        DebugLog.info('fetch episodes', 'result count=${list.length}');
+        if (list.isEmpty) return;
+        episodes[item.id] = list;
+        final total = _resolveSeriesTotal(apiTotal, item);
+        if (total > 0) totals[item.id] = total;
       } catch (e, s) {
         Log.warning('_fetchBatchEpisodes', '${item.id}: $e\n$s');
       }
     }),
   );
 
-  return result;
+  return (episodes, totals);
 }
 
 /// 解析 bangumi 播出时间（支持深夜番 `25:00` 等超过 24 点的时间，

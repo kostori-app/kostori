@@ -769,20 +769,28 @@ class BangumiManager with ChangeNotifier {
 
   // ─── bangumi_AllEpInfo ─────────────────────
 
-  Future<void> addBangumiAllEpInfo(int bangumiId, dynamic data) {
+  /// [total] 为系列总话数（bgm 剧集接口的 total），未知传 null。
+  Future<void> addBangumiAllEpInfo(int bangumiId, dynamic data, {int? total}) {
     return _guard(() async {
+      final payload = (total == null || total <= 0)
+          ? data
+          : <String, dynamic>{'total': total, 'list': data};
       await _db
           .into(_db.bangumiAllEpInfoTable)
           .insertOnConflictUpdate(
             BangumiAllEpInfoTableCompanion(
               id: Value(bangumiId),
-              data: Value(jsonEncode(data)),
+              data: Value(jsonEncode(payload)),
             ),
           );
     });
   }
 
-  Future<List<EpisodeInfo>> allEpInfoFind(int id) {
+  Future<List<EpisodeInfo>> allEpInfoFind(int id) async =>
+      (await allEpInfoFindWithTotal(id)).$1;
+
+  /// 返回缓存的系列总话数（旧缓存为 null）。
+  Future<(List<EpisodeInfo>, int?)> allEpInfoFindWithTotal(int id) {
     return _guard(() async {
       try {
         final row = await (_db.select(
@@ -799,19 +807,27 @@ class BangumiManager with ChangeNotifier {
             'allEpInfoFind',
             'id=$id → row or data is null, returning []',
           );
-          return <EpisodeInfo>[];
+          return (<EpisodeInfo>[], null);
         }
 
         try {
-          final list = jsonDecode(row!.data!) as List;
+          final decoded = jsonDecode(row!.data!);
+          final List rawList;
+          int? total;
+          if (decoded is Map) {
+            total = (decoded['total'] as num?)?.toInt();
+            rawList = (decoded['list'] as List?) ?? const [];
+          } else {
+            rawList = decoded as List;
+          }
           DebugLog.info(
             'allEpInfoFind',
-            'id=$id → decoded ${list.length} episodes',
+            'id=$id → decoded ${rawList.length} episodes, total=$total',
           );
-          return list.map((e) => EpisodeInfo.fromJson(e)).toList();
+          return (rawList.map((e) => EpisodeInfo.fromJson(e)).toList(), total);
         } catch (e, s) {
           DebugLog.error('allEpInfoFind', 'id=$id → jsonDecode failed: $e\n$s');
-          return <EpisodeInfo>[];
+          return (<EpisodeInfo>[], null);
         }
       } catch (e, s) {
         // 数据库损坏（disk image malformed）：只重建损坏的表恢复，
@@ -827,7 +843,7 @@ class BangumiManager with ChangeNotifier {
           await _repairAllEpInfoTable();
         }
         Log.error('allEpInfoFind', '读取失败 id=$id: $e\n$s');
-        return <EpisodeInfo>[];
+        return (<EpisodeInfo>[], null);
       }
     });
   }

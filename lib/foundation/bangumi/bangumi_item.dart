@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:kostori/foundation/bangumi/bangumi_tag.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -286,6 +287,9 @@ class EpisodeResult {
   final bool isFinalEpisode;
   final bool hasNextEpisodes;
 
+  /// 是否已完结（应从时间表剔除），播出后仍保留 [finishGraceDays] 天。
+  final bool isFinished;
+
   const EpisodeResult({
     this.episodeAirdate,
     this.episodeName,
@@ -294,20 +298,80 @@ class EpisodeResult {
     required this.isCurrentWeek,
     required this.isFinalEpisode,
     required this.hasNextEpisodes,
+    required this.isFinished,
   });
 
-  /// fetchEpisodes=false 时根据 end 字段判断是否完结
+  /// 刚完结后仍保留的天数（按自然日）。
+  static const int finishGraceDays = 3;
+
+  /// 完结日是否已超出宽限期。
+  static bool isFinishedDate(DateTime? date, DateTime now) {
+    if (date == null) return false;
+    final day = DateTime(date.year, date.month, date.day);
+    final cutoff = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: finishGraceDays));
+    return day.isBefore(cutoff);
+  }
+
+  /// 无剧集信息时根据 end 字段判断是否完结。
   factory EpisodeResult.fromEndDate(String? endDateStr) {
     final endDate = endDateStr != null ? DateTime.tryParse(endDateStr) : null;
-    final hasEnded = endDate != null && endDate.isBefore(DateTime.now());
+    final hasEnded = isFinishedDate(endDate, DateTime.now());
     return EpisodeResult(
       isCurrentWeek: !hasEnded,
       isFinalEpisode: hasEnded,
       hasNextEpisodes: !hasEnded,
+      isFinished: hasEnded,
     );
   }
 
-  bool get shouldSkip => isFinalEpisode && !hasNextEpisodes && !isCurrentWeek;
+  bool get shouldSkip => isFinished;
+}
+
+/// 根据剧集信息判断当前话与完结状态。[seriesTotal] 为系列总话数（未知传 0）。
+/// bgm 剧集列表常只到已播出的最新一话，故须末话集数达到总话数才算完结。
+EpisodeResult? resolveEpisodeResult({
+  required List<EpisodeInfo> type0Episodes,
+  required EpisodeInfo? currentEpisode,
+  required int seriesTotal,
+  required DateTime now,
+  required int currentWeek,
+}) {
+  if (type0Episodes.isEmpty) return null;
+  final currentEp = currentEpisode;
+  if (currentEp == null) return null;
+
+  final airTime = Utils.safeParseDate(currentEp.airDate);
+  if (airTime == null) return null;
+
+  final finalEpisode = type0Episodes.reduce((a, b) => a.sort >= b.sort ? a : b);
+
+  final airWeek = Utils.getISOWeekNumber(airTime).$2;
+  final isCurrentWeek = currentWeek == airWeek;
+
+  final isFinalEpisode = currentEp.sort == finalEpisode.sort;
+  final finalAirDate = Utils.safeParseDate(finalEpisode.airDate);
+
+  final seriesReachedEnd = seriesTotal > 0 && finalEpisode.sort >= seriesTotal;
+
+  final isFinished =
+      isFinalEpisode &&
+      seriesReachedEnd &&
+      EpisodeResult.isFinishedDate(finalAirDate, now);
+
+  return EpisodeResult(
+    episodeAirdate: currentEp.airDate,
+    episodeName: currentEp.name,
+    episodeNameCn: currentEp.nameCn,
+    episodeEp: currentEp.sort.toDouble(),
+    isCurrentWeek: isCurrentWeek,
+    isFinalEpisode: isFinalEpisode,
+    hasNextEpisodes: currentEp.sort < finalEpisode.sort,
+    isFinished: isFinished,
+  );
 }
 
 class BangumiDataEntry {
