@@ -579,11 +579,8 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
     final currentTimeStr = DateFormat('HH:mm').format(now);
     final currentWeekday = now.weekday;
 
-    DebugLog.info('contentList', bangumiCalendar.length.toString());
-
     return List.generate(7, (weekdayIndex) {
       final bangumiList = bangumiCalendar[weekdayIndex];
-      DebugLog.info('day[$weekdayIndex] count', bangumiList.length.toString());
       if (bangumiList.isEmpty) {
         return Center(
           child: Column(

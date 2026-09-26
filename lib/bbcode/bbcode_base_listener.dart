@@ -211,10 +211,21 @@ class BBCodeBaseListener implements BBCodeListener {
   void exitBgm(BgmContext ctx) {}
 
   @override
+  void enterMusume(MusumeContext ctx) {
+    /// 处理 (musume_07) 类型的表情
+    bbcode.add(BBCodeMusume(id: int.tryParse(ctx.id!.text!) ?? 0));
+  }
+
+  @override
+  void exitMusume(MusumeContext ctx) {}
+
+  @override
   void enterSticker(StickerContext ctx) {
     /// 处理 (=A=) 类型的表情
-    /// ctx.start!.type 为 BBCode.tokens 内的 token 值
-    bbcode.add(BBCodeSticker(id: ctx.start!.type - 11));
+    /// ctx.start!.type 为 BBCode.tokens 内的 token 值。
+    /// musume 规则插在 bgm 与 sticker 之间，sticker 的 token 整体后移 1，
+    /// 故减 12（原为 11）才能保持 1..16 的表情序号。
+    bbcode.add(BBCodeSticker(id: ctx.start!.type - 12));
   }
 
   @override

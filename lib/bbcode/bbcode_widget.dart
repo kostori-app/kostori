@@ -8,7 +8,6 @@ import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -316,7 +315,6 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
-                            DebugLog.info('imageUrl', img);
                             BangumiWidget.showImagePreview(
                               context: context,
                               url: img,
@@ -396,6 +394,44 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                               child: SizedBox(
                                 width: 16,
                                 height: 16,
+                                child: PolygonRefreshIndicator(),
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.broken_image),
+                      ),
+                    ),
+                  ),
+                );
+              } else if (e is BBCodeMusume) {
+                final url =
+                    'https://lain.bgm.tv/img/smiles/musume/musume_${e.id}.gif';
+                return WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: GestureDetector(
+                    onTap: () => BangumiWidget.showImagePreview(
+                      context: context,
+                      url: url,
+                      title: '',
+                      heroTag: url,
+                    ),
+                    // 固定尺寸，加载前后高度一致，避免滚动条抖动
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: Image(
+                        image: CachedImageProvider(url),
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
                                 child: PolygonRefreshIndicator(),
                               ),
                             ),

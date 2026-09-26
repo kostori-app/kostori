@@ -591,7 +591,6 @@ class AnimeTile extends ConsumerWidget {
         anime.sourceKey,
         AnimeActionType.play,
       );
-      DebugLog.info('AnimeTile', 'Cast 成功: ${anime.title} → ${device.name}');
     } catch (e) {
       DebugLog.warning('AnimeTile', 'Cast 失败: $e');
     }

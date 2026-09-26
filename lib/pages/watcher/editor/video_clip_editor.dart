@@ -191,7 +191,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   }
 
   void _initRangeFromDuration(Duration totalDuration) {
-    DebugLog.info('_initRangeFromDuration.totalDuration', '$totalDuration');
     final clipDuration = const Duration(seconds: 60);
     var start = (totalDuration - clipDuration) ~/ 2;
 

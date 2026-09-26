@@ -1216,7 +1216,10 @@ abstract class _PlayerController with Store {
 
   /// 下载当前播放的视频到本地（mp4/m3u8 均走 ffmpeg，转封装 mp4）
   Future<void> downloadCurrentVideo() async {
-    final url = playUrl.isNotEmpty ? playUrl : videoUrl;
+    // 广告过滤时 playUrl 是本地代理地址，不能用来下载；优先用源直链
+    final direct =
+        videoUrl.startsWith('http://') || videoUrl.startsWith('https://');
+    final url = direct ? videoUrl : playUrl;
     if (url.isEmpty || url.startsWith('blob:')) return;
     await DownloadManager.instance.enqueue(
       url: url,

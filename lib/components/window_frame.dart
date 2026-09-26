@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -649,6 +648,5 @@ TransitionBuilder VirtualWindowFrameInit() {
 
 void debug() {
   AnimeSourceManager().reload();
-  DebugLog.info('debug', 'AnimeSourceManager reload success');
   App.rootContext.showMessage(message: t.reloadSuccess);
 }

@@ -10,8 +10,10 @@ import 'package:kostori/database/download_database.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/m3u8_proxy_server.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/services/download/download_keep_alive.dart';
 import 'package:kostori/services/download/download_task.dart';
@@ -681,10 +683,37 @@ class DownloadManager extends ChangeNotifier {
     final finalPath = p.join(taskDir, '${_fileBaseName(task)}.mp4');
 
     try {
-      if (task.isHls) {
-        await _downloadHls(task, cancelToken, taskDir, tmpPath);
-      } else {
-        await _downloadDirect(task, cancelToken, tmpPath);
+      try {
+        if (task.isHls) {
+          await _downloadHls(task, cancelToken, taskDir, tmpPath);
+        } else {
+          await _downloadDirect(task, cancelToken, tmpPath);
+        }
+      } on CloudflareException {
+        // HTTP/1.1 被 CF 拦：改用 HTTP/2 重试（头不变），仍失败回退本地代理
+        try {
+          if (task.isHls) {
+            await _downloadHls(
+              task,
+              cancelToken,
+              taskDir,
+              tmpPath,
+              useHttp2: true,
+            );
+          } else {
+            await _downloadDirect(task, cancelToken, tmpPath, useHttp2: true);
+          }
+        } on FfmpegCancelledException {
+          rethrow;
+        } catch (_) {
+          await _downloadViaFfmpeg(task, cancelToken, tmpPath);
+        }
+      } on DioException catch (e) {
+        // 连接层失败（无 HTTP 响应）：回退本地代理
+        if (e.type == DioExceptionType.cancel || cancelToken.isCancelled) {
+          rethrow;
+        }
+        await _downloadViaFfmpeg(task, cancelToken, tmpPath);
       }
 
       final tmp = File(tmpPath);
@@ -890,6 +919,45 @@ class DownloadManager extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// 403/429/503 视为被 Cloudflare 拦，转成 [CloudflareException] 交给上层兜底。
+  void _throwIfCloudflare(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 403 || status == 429 || status == 503) {
+      throw CloudflareException(e.requestOptions.uri.toString());
+    }
+  }
+
+  /// 回退：借本地 m3u8 代理中转。rhttp 直连被 CF 拒的源，播放走
+  /// [M3u8ProxyServer] 能过；这里让 ffmpeg 只读本地代理，由代理带任务头拉上游。
+  Future<void> _downloadViaFfmpeg(
+    DownloadTask task,
+    FfmpegCancelToken cancelToken,
+    String tmpPath,
+  ) async {
+    await _refreshTaskCookie(task);
+    var input = task.url;
+    var headers = task.headers;
+    if (task.isHls) {
+      input = await M3u8ProxyServer.instance.proxyUrl(task.url, task.headers);
+      headers = const {};
+    }
+    task.progress = 0;
+    notifyListeners();
+    await FfmpegEncoder.download(
+      FfmpegDownloadArgs(
+        inputUrl: input,
+        outputPath: tmpPath,
+        headers: headers,
+        outputFormat: 'mp4',
+        cancelToken: cancelToken,
+        onProgress: (p) {
+          task.progress = p;
+          notifyListeners();
+        },
+      ),
+    );
+  }
+
   /// mp4 直链：AppDio（rhttp/reqwest）流式下载（断点续传 + 取消 + 连接中断重试）。
   ///
   /// 用 `extra['httpVersion11']` 强制 HTTP/1.1：部分 CDN（moedet 等）对
@@ -898,8 +966,9 @@ class DownloadManager extends ChangeNotifier {
   Future<void> _downloadDirect(
     DownloadTask task,
     FfmpegCancelToken cancelToken,
-    String tmpPath,
-  ) async {
+    String tmpPath, {
+    bool useHttp2 = false,
+  }) async {
     final tmp = File(tmpPath);
     const maxAttempts = 5;
     final dio = AppDio();
@@ -950,7 +1019,9 @@ class DownloadManager extends ChangeNotifier {
               headers: headers,
               followRedirects: true,
               receiveTimeout: null,
-              extra: {'httpVersion11': true, 'streaming': true},
+              extra: useHttp2
+                  ? {'streaming': true}
+                  : {'httpVersion11': true, 'streaming': true},
             ),
             cancelToken: dioCancel,
           );
@@ -992,6 +1063,10 @@ class DownloadManager extends ChangeNotifier {
             if (attempt >= maxAttempts) throw _DownloadHttpError(status);
             await Future.delayed(Duration(seconds: attempt * 2));
             continue;
+          }
+          // 403/503：交给上层兜底，不当作永久失效
+          if (status == 403 || status == 503) {
+            throw CloudflareException(task.url);
           }
           // 其余 4xx/5xx 不可通过续传/重试恢复，直接失败不重试
           throw _DownloadHttpError(status);
@@ -1115,8 +1190,9 @@ class DownloadManager extends ChangeNotifier {
     DownloadTask task,
     FfmpegCancelToken cancelToken,
     String taskDir,
-    String tmpPath,
-  ) async {
+    String tmpPath, {
+    bool useHttp2 = false,
+  }) async {
     final dio = AppDio();
     final segDir = p.join(taskDir, 'segments');
     await Directory(segDir).create(recursive: true);
@@ -1131,7 +1207,7 @@ class DownloadManager extends ChangeNotifier {
     task.downloadedBytes = existingBytes;
 
     // 1. 解析 m3u8（含变体选择）
-    final segUrls = await _resolveHlsSegments(dio, task);
+    final segUrls = await _resolveHlsSegments(dio, task, useHttp2: useHttp2);
     task.segTotal = segUrls.length;
     task.segDone = 0;
 
@@ -1168,7 +1244,9 @@ class DownloadManager extends ChangeNotifier {
                     sendTimeout: const Duration(seconds: 30),
                     receiveTimeout: const Duration(seconds: 30),
                     // noLog：分片动辄上千，不逐条记录（失败由下载器统一汇总上报）
-                    extra: const {'httpVersion11': true, 'noLog': true},
+                    extra: useHttp2
+                        ? const {'noLog': true}
+                        : const {'httpVersion11': true, 'noLog': true},
                   ),
                 );
                 final expect =
@@ -1208,6 +1286,7 @@ class DownloadManager extends ChangeNotifier {
                 break;
               } catch (e) {
                 if (e is FfmpegCancelledException) rethrow;
+                if (e is DioException) _throwIfCloudflare(e);
                 if (attempt >= 2) rethrow;
               }
               if (attempt < 2) {
@@ -1225,6 +1304,7 @@ class DownloadManager extends ChangeNotifier {
           task.segDone = completed;
           _updateDownloadProgress(task);
         } catch (e) {
+          if (e is CloudflareException) rethrow;
           errors.add('分片 $i: $e');
         } finally {
           sem.release();
@@ -1314,17 +1394,30 @@ class DownloadManager extends ChangeNotifier {
   }
 
   /// 解析 m3u8：选择最高码率变体，返回分片 URL 列表
-  Future<List<String>> _resolveHlsSegments(Dio dio, DownloadTask task) async {
+  Future<List<String>> _resolveHlsSegments(
+    Dio dio,
+    DownloadTask task, {
+    bool useHttp2 = false,
+  }) async {
     String content;
     String targetUrl = task.url;
-    final root = await dio.get<String>(
-      task.url,
-      options: Options(
-        headers: task.headers,
-        responseType: ResponseType.plain,
-        extra: const {'httpVersion11': true},
-      ),
-    );
+    final Map<String, dynamic> versionExtra = useHttp2
+        ? const {}
+        : const {'httpVersion11': true};
+    Response<String> root;
+    try {
+      root = await dio.get<String>(
+        task.url,
+        options: Options(
+          headers: task.headers,
+          responseType: ResponseType.plain,
+          extra: versionExtra,
+        ),
+      );
+    } on DioException catch (e) {
+      _throwIfCloudflare(e);
+      rethrow;
+    }
     content = root.data ?? '';
 
     if (content.contains('#EXT-X-STREAM-INF')) {
@@ -1346,14 +1439,20 @@ class DownloadManager extends ChangeNotifier {
       }
       if (bestVariant != null) {
         targetUrl = bestVariant;
-        final v = await dio.get<String>(
-          targetUrl,
-          options: Options(
-            headers: task.headers,
-            responseType: ResponseType.plain,
-            extra: const {'httpVersion11': true},
-          ),
-        );
+        Response<String> v;
+        try {
+          v = await dio.get<String>(
+            targetUrl,
+            options: Options(
+              headers: task.headers,
+              responseType: ResponseType.plain,
+              extra: versionExtra,
+            ),
+          );
+        } on DioException catch (e) {
+          _throwIfCloudflare(e);
+          rethrow;
+        }
         content = v.data ?? '';
       }
     }

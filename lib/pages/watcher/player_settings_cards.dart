@@ -364,6 +364,15 @@ class PlayerSettingsCards extends StatelessWidget {
             },
           ),
           const PlayerCommonToggles(),
+          PlayerSwitchCard(
+            icon: Icons.filter_alt_outlined,
+            title: t.m3u8AdFilter,
+            value: appdata.settings['m3u8AdFilterEnabled'] ?? false,
+            onChanged: (v) {
+              appdata.settings['m3u8AdFilterEnabled'] = v;
+              appdata.saveData();
+            },
+          ),
           PlayerPlaybackSpeedCard(
             value: pc.playbackSpeed,
             onChanged: pc.setPlaybackSpeed,

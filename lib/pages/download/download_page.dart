@@ -108,12 +108,13 @@ class _DownloadPageState extends State<DownloadPage>
   void dispose() {
     DownloadManager.instance.removeListener(_onChange);
     // 退出下载页时：全部任务已完成就自动关闭总进度条；
-    // 还有未完成则保留（已落盘，下次进来恢复显示）
+    // 还有未完成则保留（已落盘，下次进来恢复显示）。
+    // dispose 在 element 树锁定阶段，dismissBatch 的通知须延后一帧。
     try {
       final m = DownloadManager.instance;
       if (m.batchTotal > 0 &&
           m.batchDoneView + m.batchFailedView >= m.batchTotal) {
-        m.dismissBatch();
+        WidgetsBinding.instance.addPostFrameCallback((_) => m.dismissBatch());
       }
     } catch (_) {}
     super.dispose();

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/settings.dart';
@@ -63,7 +64,7 @@ class Appdata with Init {
   /// 同步写盘保证设置（如 API Key 固定、服务器地址等）立即落盘，
   /// 原子写避免闪退/强杀时留下损坏的半截 JSON 导致下次启动数据被整体重置。
   void writeImplicitData() {
-    implicitVersion.value++;
+    _bumpImplicitVersion();
     try {
       var file = File(FilePath.join(App.dataPath, 'implicitData.json'));
       var tmp = File('${file.path}.tmp');
@@ -75,6 +76,18 @@ class Appdata with Init {
       }
     } catch (e) {
       Log.error('Appdata', 'writeImplicitData failed: $e');
+    }
+  }
+
+  /// 帧内（构建/清理阶段）同步通知会命中 "widget tree was locked"，
+  /// 此时改为帧结束后再通知。
+  void _bumpImplicitVersion() {
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+      implicitVersion.value++;
+    } else {
+      SchedulerBinding.instance.addPostFrameCallback(
+        (_) => implicitVersion.value++,
+      );
     }
   }
 

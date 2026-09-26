@@ -1,6 +1,7 @@
 // ignore_for_file: file_names
 
 import 'package:antlr4/antlr4.dart';
+
 import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 
 /// This abstract class defines a complete listener for a parse tree produced by
@@ -45,6 +46,14 @@ abstract class BBCodeListener extends ParseTreeListener {
   /// Exit a parse tree produced by [BBCodeParser.bgm].
   /// [ctx] the parse tree
   void exitBgm(BgmContext ctx);
+
+  /// Enter a parse tree produced by [BBCodeParser.musume].
+  /// [ctx] the parse tree
+  void enterMusume(MusumeContext ctx);
+
+  /// Exit a parse tree produced by [BBCodeParser.musume].
+  /// [ctx] the parse tree
+  void exitMusume(MusumeContext ctx);
 
   /// Enter a parse tree produced by [BBCodeParser.sticker].
   /// [ctx] the parse tree

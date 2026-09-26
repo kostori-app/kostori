@@ -219,10 +219,6 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
     try {
       await infoController.queryBangumiEpisodeByID(id);
       if (!mounted) return;
-      DebugLog.info(
-        'queryBangumiEpisodeByID',
-        infoController.allEpisodes.toString(),
-      );
       setState(() {});
     } catch (e) {
       Log.error('queryBangumiEpisodeByID', e.toString());
