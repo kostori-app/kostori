@@ -393,16 +393,11 @@ Future<_EpisodeBatch> _fetchBatchEpisodes(
         List<EpisodeInfo> list;
         int? apiTotal;
         if (needsUpdate) {
-          DebugLog.info(
-            'fetch episodes',
-            'querying id=${item.id}, type=${item.id.runtimeType}',
-          );
           (list, apiTotal) = await Bangumi.instance
               .getBangumiEpisodeAllWithTotalByID(item.id);
         } else {
           (list, apiTotal) = await manager.allEpInfoFindWithTotal(item.id);
         }
-        DebugLog.info('fetch episodes', 'result count=${list.length}');
         if (list.isEmpty) return;
         episodes[item.id] = list;
         final total = _resolveSeriesTotal(apiTotal, item);

@@ -171,6 +171,38 @@ abstract class _PlayerController with Store {
   bool centerHintSuccess = true;
   Timer? _centerHintTimer;
 
+  /// 是否正在加载「自动连播的下一集」：加载覆盖层据此把主文案显示为
+  /// 「正在加载下一集」，加载结束后必须复位为 false，
+  /// 否则后续普通缓冲会一直误显示「正在加载下一集」。
+  @observable
+  bool loadingNextEpisode = false;
+
+  /// 截图进行中的状态文案：在播放器内底部以 showMessage 样式显示，
+  /// 替代原先的整屏加载弹窗（避免遮挡画面、尺寸过大）。
+  @observable
+  String? screenshotStatusMessage;
+
+  /// 截图状态结果：null=进行中，true=成功，false=失败（决定底部提示的图标/颜色）
+  @observable
+  bool? screenshotStatusOk;
+  Timer? _screenshotStatusTimer;
+  bool _screenshotBusy = false;
+
+  /// 在播放器内底部显示一条截图状态，[autoClear] 到期后自动清除。
+  void _setScreenshotStatus(String message, {bool? ok, Duration? autoClear}) {
+    _screenshotStatusTimer?.cancel();
+    _screenshotStatusTimer = null;
+    screenshotStatusMessage = message;
+    screenshotStatusOk = ok;
+    if (autoClear != null) {
+      _screenshotStatusTimer = Timer(autoClear, () {
+        screenshotStatusMessage = null;
+        screenshotStatusOk = null;
+        _screenshotStatusTimer = null;
+      });
+    }
+  }
+
   void showCenterHint({
     required String message,
     bool success = true,
@@ -1079,7 +1111,8 @@ abstract class _PlayerController with Store {
                 Expanded(
                   child: InkWell(
                     onTap: () async {
-                      await pause();
+                      // 已暂停时不再调用 pause，避免重复弹出播放/暂停覆盖层
+                      if (playing) await pause(showIndicator: false);
                       Log.info('image图片路径', image);
                       final file = File(image);
                       final data = await file.readAsBytes();
@@ -1108,11 +1141,11 @@ abstract class _PlayerController with Store {
                 ),
                 InkWell(
                   onTap: () async {
-                    await pause();
+                    if (playing) await pause(showIndicator: false);
                     context.to(() => ImageManipulationPage());
                   },
                   child: Center(
-                    child: SizedBox(height: 20, child: Text(t.editing)),
+                    child: SizedBox(height: 20, child: Text(t.edit)),
                   ),
                 ),
               ],
@@ -1149,54 +1182,82 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> captureAndSaveScreenshot({required BuildContext context}) async {
+    // 截图进行中直接忽略，避免重复触发
+    if (_screenshotBusy) return;
+    _screenshotBusy = true;
     saveAddress = '';
     String? savedPath;
     String? savedFilename;
+    _setScreenshotStatus(t.screenshotInProgress);
 
     try {
-      await runWithLoadingDialog<void>(
-        context,
-        message: t.screenshotInProgress,
-        task: (loading) async {
-          final Uint8List? screenData = await playerController.player
-              .screenshot();
-          if (screenData == null) {
-            Log.error('截图失败', '截图数据为空');
-            return;
-          }
-
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final filename = '${animeTitle}_$timestamp.png';
-
-          loading.setMessage(t.savingImage);
-          final file = await ImageSaver.writeFile(
-            bytes: screenData,
-            filename: filename,
-          );
-          if (file == null) return;
-
-          savedPath = file.path;
-          savedFilename = filename;
-          saveAddress = file.path;
-
-          if (App.isAndroid) {
-            const platform = MethodChannel('kostori/media');
-            await platform.invokeMethod('scanFolder', {
-              'path': file.parent.path,
-            });
-          }
-          await ImageSaver.refreshImageList();
-        },
-      );
-
-      if (savedPath != null && savedFilename != null && context.mounted) {
-        showScreenshotPopup(context, savedPath!, savedFilename!);
-        ImageSaver.showResult(success: true, message: t.screenshotSuccess);
-        Log.info('保存文件成功', savedPath!);
+      final Uint8List? screenData = await playerController.player.screenshot();
+      if (screenData == null) {
+        Log.error('截图失败', '截图数据为空');
+        _setScreenshotStatus(
+          t.screenshotFailed,
+          ok: false,
+          autoClear: const Duration(seconds: 3),
+        );
+        return;
       }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filename = '${animeTitle}_$timestamp.png';
+
+      _setScreenshotStatus(t.savingImage);
+      final file = await ImageSaver.writeFile(
+        bytes: screenData,
+        filename: filename,
+      );
+      if (file == null) {
+        _setScreenshotStatus(
+          t.screenshotFailed,
+          ok: false,
+          autoClear: const Duration(seconds: 3),
+        );
+        return;
+      }
+
+      savedPath = file.path;
+      savedFilename = filename;
+      saveAddress = file.path;
+
+      // 先出成功提示与缩略图：媒体库扫描 / 图片列表刷新放后台执行，
+      // 不阻塞「正在截图」状态的结束，缩短体感耗时
+      _setScreenshotStatus(
+        t.screenshotSuccess,
+        ok: true,
+        autoClear: const Duration(milliseconds: 1500),
+      );
+      if (context.mounted) {
+        showScreenshotPopup(context, savedPath, savedFilename);
+        Log.info('保存文件成功', savedPath);
+      }
+      unawaited(_postProcessScreenshot(file.parent.path));
     } catch (e) {
-      ImageSaver.showResult(success: false, message: t.screenshotFailed);
+      _setScreenshotStatus(
+        t.screenshotFailed,
+        ok: false,
+        autoClear: const Duration(seconds: 3),
+      );
       Log.error('截图失败', '$e');
+    } finally {
+      _screenshotBusy = false;
+    }
+  }
+
+  /// 截图落盘后的后台收尾：通知媒体库扫描 + 刷新「图片操作」页列表。
+  /// 不阻塞截图主流程，否则会明显拖慢「正在截图」的结束时间。
+  Future<void> _postProcessScreenshot(String folderPath) async {
+    try {
+      if (App.isAndroid) {
+        const platform = MethodChannel('kostori/media');
+        await platform.invokeMethod('scanFolder', {'path': folderPath});
+      }
+      await ImageSaver.refreshImageList();
+    } catch (e) {
+      Log.error('截图收尾失败', '$e');
     }
   }
 

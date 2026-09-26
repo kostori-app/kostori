@@ -513,7 +513,15 @@ class FileSelectResult {
 }
 
 class KostoriFolder {
+  /// 会话内缓存已就绪的保存目录：权限状态查询是平台往返，高频截图/保存时
+  /// 每次都查会明显拖慢落盘流程。目录被删/权限变化时回退重新申请。
+  static Directory? _cached;
+
   static Future<Directory?> checkPermissionAndPrepareFolder() async {
+    final cached = _cached;
+    if (cached != null && await cached.exists()) return cached;
+    _cached = null;
+
     Permission permission = Permission.manageExternalStorage;
     var status = await permission.status;
     if (!status.isGranted) {
@@ -539,6 +547,7 @@ class KostoriFolder {
       await folder.create(recursive: true);
       Log.info('创建文件夹成功', folderPath);
     }
+    _cached = folder;
     return folder;
   }
 }

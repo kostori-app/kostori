@@ -453,6 +453,12 @@ class _TimetableState extends State<_Timetable> {
   final itemHeight = 270.0;
   final verticalPadding = 16.0 * 2;
 
+  /// 会话内当日时间表缓存：番剧 tab 的 State 被系统重建（如从后台返回、
+  /// 主视图重建）时直接复用，避免重复执行 loadBangumiCalendar
+  /// （会读库、检查 bangumi-data 版本、拉剧集）。跨天自动失效。
+  static String? _cachedDay;
+  static List<BangumiItem>? _cachedToday;
+
   @override
   void initState() {
     super.initState();
@@ -461,6 +467,12 @@ class _TimetableState extends State<_Timetable> {
   }
 
   Future<void> filterTodayBangumiItems() async {
+    final now = DateTime.now();
+    final dayKey = '${now.year}-${now.month}-${now.day}';
+    if (_cachedDay == dayKey && _cachedToday != null) {
+      if (mounted) setState(() => bangumiCalendar = _cachedToday!);
+      return;
+    }
     try {
       // 与日历页同一 loadBangumiCalendar（含深夜番跨天）；主页仅展示封面标题，
       // fetchEpisodeInfo:false 避免打开主页就批量拉剧集数据（每日同步仍进行）
@@ -471,6 +483,8 @@ class _TimetableState extends State<_Timetable> {
         fetchEpisodeInfo: false,
       );
       final todayItems = calendar[todayWeekday - 1];
+      _cachedDay = dayKey;
+      _cachedToday = todayItems;
 
       if (mounted) {
         setState(() => bangumiCalendar = todayItems);

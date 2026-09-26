@@ -1037,6 +1037,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Loading video'
 	String get loadingVideo => 'Loading video';
 
+	/// en: 'Loading next episode'
+	String get loadingNextEpisode => 'Loading next episode';
+
 	/// en: 'Open Log'
 	String get openLog => 'Open Log';
 
@@ -9647,6 +9650,7 @@ extension on Translations {
 			'playerLoadingImage' => 'Custom Loading Image',
 			'inputImagePath' => 'Enter image path or data: base64 (GIF/PNG/JPG/WebP)',
 			'loadingVideo' => 'Loading video',
+			'loadingNextEpisode' => 'Loading next episode',
 			'openLog' => 'Open Log',
 			'openAnime' => 'Open anime',
 			'sourceNotInstalled' => ({required Object source}) => 'Anime source "${source}" is not installed. Add it in Source settings to open this anime',
@@ -9826,9 +9830,9 @@ extension on Translations {
 			'hotspot' => 'hotspot',
 			'completed' => 'Completed',
 			'mainCharacter' => 'Main character',
-			'supportingCharacter' => 'Supporting character',
 			_ => null,
 		} ?? switch (path) {
+			'supportingCharacter' => 'Supporting character',
 			'cameo' => 'Cameo',
 			'idleCorner' => 'Idle corner',
 			'unknown' => 'Unknown',
@@ -10340,9 +10344,9 @@ extension on Translations {
 			'sampleRate' => 'Sample Rate',
 			'channelCount' => 'Channel Count',
 			'hrChannels' => 'HR Channels',
-			'uriTrack' => 'From URI',
 			_ => null,
 		} ?? switch (path) {
+			'uriTrack' => 'From URI',
 			'channelsCount' => 'Channels Count',
 			'channels' => 'Channels',
 			'fps' => 'FPS',
@@ -10854,9 +10858,9 @@ extension on Translations {
 			'onlineUsersList' => 'Online Users',
 			'noUsersOnline' => 'No users online',
 			'room' => 'Room',
-			'noPasswordSet' => 'No password set',
 			_ => null,
 		} ?? switch (path) {
+			'noPasswordSet' => 'No password set',
 			'passwordProtected' => 'Password protected',
 			'imageLabel' => 'Image',
 			'stickersLabel' => 'Stickers',
@@ -11368,9 +11372,9 @@ extension on Translations {
 			'unrecognizedLink' => 'Unrecognized link',
 			'noKostoriLinkFoundInClipboard' => 'No Kostori link found in clipboard',
 			'qrCodeFeatureOnlyOnMobile' => 'QR code feature only available on mobile',
-			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
 			_ => null,
 		} ?? switch (path) {
+			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
 			'pleaseDragImageFile' => 'Please drag in image file',
 			'imageDownloadFailed' => 'Image download failed',
 			'failedToFetchNetworkImage' => 'Failed to fetch network image',
@@ -11882,9 +11886,9 @@ extension on Translations {
 			'profileTabPersona' => 'Persona',
 			'profileTabPrompt' => 'Prompt',
 			'profileTabSkills' => 'Skills',
-			'profileTabParams' => 'Params',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabParams' => 'Params',
 			'profileTabBasic' => 'Basic',
 			'profileTabExtensions' => 'Extensions',
 			'profileTabMemory' => 'Memory',
@@ -12396,9 +12400,9 @@ extension on Translations {
 			'torrentPeers' => 'Peers',
 			'torrentTrackers' => 'Trackers',
 			'torrentTrackerUrlHint' => 'Tracker list URL',
-			'torrentFetchTrackers' => 'Fetch trackers',
 			_ => null,
 		} ?? switch (path) {
+			'torrentFetchTrackers' => 'Fetch trackers',
 			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',
 			'torrentNodesHint' => 'One DHT node per line, host:port',
 			'torrentTrackersAuto' => 'Auto-append trackers from the URL to new downloads',

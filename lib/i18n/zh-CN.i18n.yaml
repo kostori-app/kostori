@@ -323,6 +323,7 @@ onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer: 一旦操
 playerLoadingImage: 自定义加载图
 inputImagePath: '输入图片路径或 data: base64（支持 GIF/PNG/JPG/WebP 动图）'
 loadingVideo: 正在加载视频
+loadingNextEpisode: 正在加载下一集
 openLog: 打开日志
 openAnime: 打开番剧
 sourceNotInstalled: 番剧源「${source}」未安装，请到源设置中添加后再打开

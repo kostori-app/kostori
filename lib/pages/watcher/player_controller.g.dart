@@ -355,6 +355,64 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$loadingNextEpisodeAtom = Atom(
+    name: '_PlayerController.loadingNextEpisode',
+    context: context,
+  );
+
+  @override
+  bool get loadingNextEpisode {
+    _$loadingNextEpisodeAtom.reportRead();
+    return super.loadingNextEpisode;
+  }
+
+  @override
+  set loadingNextEpisode(bool value) {
+    _$loadingNextEpisodeAtom.reportWrite(value, super.loadingNextEpisode, () {
+      super.loadingNextEpisode = value;
+    });
+  }
+
+  late final _$screenshotStatusMessageAtom = Atom(
+    name: '_PlayerController.screenshotStatusMessage',
+    context: context,
+  );
+
+  @override
+  String? get screenshotStatusMessage {
+    _$screenshotStatusMessageAtom.reportRead();
+    return super.screenshotStatusMessage;
+  }
+
+  @override
+  set screenshotStatusMessage(String? value) {
+    _$screenshotStatusMessageAtom.reportWrite(
+      value,
+      super.screenshotStatusMessage,
+      () {
+        super.screenshotStatusMessage = value;
+      },
+    );
+  }
+
+  late final _$screenshotStatusOkAtom = Atom(
+    name: '_PlayerController.screenshotStatusOk',
+    context: context,
+  );
+
+  @override
+  bool? get screenshotStatusOk {
+    _$screenshotStatusOkAtom.reportRead();
+    return super.screenshotStatusOk;
+  }
+
+  @override
+  set screenshotStatusOk(bool? value) {
+    _$screenshotStatusOkAtom.reportWrite(value, super.screenshotStatusOk, () {
+      super.screenshotStatusOk = value;
+    });
+  }
+
   late final _$bufferAtom = Atom(
     name: '_PlayerController.buffer',
     context: context,
@@ -1079,6 +1137,9 @@ loadFailed: ${loadFailed},
 lastPlayError: ${lastPlayError},
 centerHintMessage: ${centerHintMessage},
 centerHintSuccess: ${centerHintSuccess},
+loadingNextEpisode: ${loadingNextEpisode},
+screenshotStatusMessage: ${screenshotStatusMessage},
+screenshotStatusOk: ${screenshotStatusOk},
 buffer: ${buffer},
 duration: ${duration},
 previewImage: ${previewImage},

@@ -363,6 +363,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playerLoadingImage => '自訂載入圖';
 	@override String get inputImagePath => '輸入圖片路徑或 data: base64（支援 GIF/PNG/JPG/WebP 動圖）';
 	@override String get loadingVideo => '正在載入影片';
+	@override String get loadingNextEpisode => '正在載入下一集';
 	@override String get openLog => '開啟日誌';
 	@override String get openAnime => '開啟動漫';
 	@override String sourceNotInstalled({required Object source}) => '番劇源「${source}」未安裝，請到源設定中新增後再開啟';
@@ -3473,6 +3474,7 @@ extension on TranslationsZhTw {
 			'playerLoadingImage' => '自訂載入圖',
 			'inputImagePath' => '輸入圖片路徑或 data: base64（支援 GIF/PNG/JPG/WebP 動圖）',
 			'loadingVideo' => '正在載入影片',
+			'loadingNextEpisode' => '正在載入下一集',
 			'openLog' => '開啟日誌',
 			'openAnime' => '開啟動漫',
 			'sourceNotInstalled' => ({required Object source}) => '番劇源「${source}」未安裝，請到源設定中新增後再開啟',
@@ -3660,9 +3662,9 @@ extension on TranslationsZhTw {
 			'install' => '安裝',
 			'viewOnGithub' => '在 GitHub 上查看',
 			'noProxyOverrides' => '無代理覆寫',
-			'save' => '儲存',
 			_ => null,
 		} ?? switch (path) {
+			'save' => '儲存',
 			'mirror' => '鏡像',
 			'result' => '結果',
 			'all' => '全部',
@@ -4174,9 +4176,9 @@ extension on TranslationsZhTw {
 			'sampleRate' => '採樣率',
 			'channelCount' => '聲道數',
 			'hrChannels' => 'HR 聲道',
-			'uriTrack' => '由 URI 提供',
 			_ => null,
 		} ?? switch (path) {
+			'uriTrack' => '由 URI 提供',
 			'channelsCount' => '聲道總數',
 			'channels' => '聲道',
 			'fps' => '幀率',
@@ -4688,9 +4690,9 @@ extension on TranslationsZhTw {
 			'onlineUsersList' => '線上使用者',
 			'noUsersOnline' => '無線上使用者',
 			'room' => '房間',
-			'noPasswordSet' => '未設定密碼',
 			_ => null,
 		} ?? switch (path) {
+			'noPasswordSet' => '未設定密碼',
 			'passwordProtected' => '密碼保護',
 			'imageLabel' => '圖片',
 			'stickersLabel' => '貼紙',
@@ -5202,9 +5204,9 @@ extension on TranslationsZhTw {
 			'personNotFound' => 'Person not found',
 			'failedToFetchPersonInfo' => 'Failed to fetch person info',
 			'unrecognizedLink' => 'Unrecognized link',
-			'noKostoriLinkFoundInClipboard' => 'No Kostori link found in clipboard',
 			_ => null,
 		} ?? switch (path) {
+			'noKostoriLinkFoundInClipboard' => 'No Kostori link found in clipboard',
 			'qrCodeFeatureOnlyOnMobile' => 'QR code feature only available on mobile',
 			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
 			'pleaseDragImageFile' => 'Please drag in image file',
@@ -5716,9 +5718,9 @@ extension on TranslationsZhTw {
 			'profileTabPrompt' => '提示詞',
 			'profileTabSkills' => '技能',
 			'profileTabParams' => '參數',
-			'profileTabBasic' => '基礎',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabBasic' => '基礎',
 			'profileTabExtensions' => '擴充',
 			'profileTabMemory' => '記憶',
 			'profileTabRequest' => '請求',
@@ -6230,9 +6232,9 @@ extension on TranslationsZhTw {
 			'torrentTrackers' => 'Tracker 列表',
 			'torrentTrackerUrlHint' => 'Tracker 列表網址',
 			'torrentFetchTrackers' => '取得 Tracker',
-			'torrentTrackersHint' => '每行一個 tracker，播放時自動附加到磁力連結',
 			_ => null,
 		} ?? switch (path) {
+			'torrentTrackersHint' => '每行一個 tracker，播放時自動附加到磁力連結',
 			'torrentNodesHint' => '每行一個 DHT 節點，格式 host:port',
 			'torrentTrackersAuto' => '自動附加 URL 的 trackers 到新的下載',
 			'torrentDhtExplain' => 'DHT 是 BT 標準的「無 tracker 找 peer」網路，通常保持開啟；下面可填自訂引導節點（可選）。',

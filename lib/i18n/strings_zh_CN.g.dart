@@ -364,6 +364,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get playerLoadingImage => '自定义加载图';
 	@override String get inputImagePath => '输入图片路径或 data: base64（支持 GIF/PNG/JPG/WebP 动图）';
 	@override String get loadingVideo => '正在加载视频';
+	@override String get loadingNextEpisode => '正在加载下一集';
 	@override String get openLog => '打开日志';
 	@override String get openAnime => '打开番剧';
 	@override String sourceNotInstalled({required Object source}) => '番剧源「${source}」未安装，请到源设置中添加后再打开';
@@ -3475,6 +3476,7 @@ extension on TranslationsZhCn {
 			'playerLoadingImage' => '自定义加载图',
 			'inputImagePath' => '输入图片路径或 data: base64（支持 GIF/PNG/JPG/WebP 动图）',
 			'loadingVideo' => '正在加载视频',
+			'loadingNextEpisode' => '正在加载下一集',
 			'openLog' => '打开日志',
 			'openAnime' => '打开番剧',
 			'sourceNotInstalled' => ({required Object source}) => '番剧源「${source}」未安装，请到源设置中添加后再打开',
@@ -3661,9 +3663,9 @@ extension on TranslationsZhCn {
 			'debugInfo' => '调试信息',
 			'install' => '安装',
 			'viewOnGithub' => '在 GitHub 上查看',
-			'noProxyOverrides' => '无代理覆写',
 			_ => null,
 		} ?? switch (path) {
+			'noProxyOverrides' => '无代理覆写',
 			'save' => '保存',
 			'mirror' => '镜像',
 			'result' => '结果',
@@ -4175,9 +4177,9 @@ extension on TranslationsZhCn {
 			'channelCount' => '声道数',
 			'hrChannels' => 'HR 声道',
 			'uriTrack' => '由 URI 提供',
-			'channelsCount' => '声道数',
 			_ => null,
 		} ?? switch (path) {
+			'channelsCount' => '声道数',
 			'channels' => '声道',
 			'fps' => 'FPS',
 			'bitrate' => '位元率',
@@ -4689,9 +4691,9 @@ extension on TranslationsZhCn {
 			'noUsersOnline' => '无在线用户',
 			'room' => '房间',
 			'noPasswordSet' => '未设置密码',
-			'passwordProtected' => '密码保护',
 			_ => null,
 		} ?? switch (path) {
+			'passwordProtected' => '密码保护',
 			'imageLabel' => '图片',
 			'stickersLabel' => '贴纸',
 			'pokedYou' => '戳了你一下',
@@ -5203,9 +5205,9 @@ extension on TranslationsZhCn {
 			'personNotFound' => '未找到人物',
 			'failedToFetchPersonInfo' => '获取人物信息失败',
 			'unrecognizedLink' => '无法识别的链接',
-			'noKostoriLinkFoundInClipboard' => '剪贴板中未发现 Kostori 链接',
 			_ => null,
 		} ?? switch (path) {
+			'noKostoriLinkFoundInClipboard' => '剪贴板中未发现 Kostori 链接',
 			'qrCodeFeatureOnlyOnMobile' => '扫码功能仅支持移动端',
 			'unrecognizedKostoriProtocol' => '未识别到 Kostori 协议',
 			'pleaseDragImageFile' => '请拖入图片文件',
@@ -5717,9 +5719,9 @@ extension on TranslationsZhCn {
 			'profileTabPersona' => '人设',
 			'profileTabPrompt' => '提示词',
 			'profileTabSkills' => '技能',
-			'profileTabParams' => '参数',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabParams' => '参数',
 			'profileTabBasic' => '基础',
 			'profileTabExtensions' => '扩展',
 			'profileTabMemory' => '记忆',
@@ -6231,9 +6233,9 @@ extension on TranslationsZhCn {
 			'torrentPeers' => '连接',
 			'torrentTrackers' => 'Tracker 列表',
 			'torrentTrackerUrlHint' => 'Tracker 列表地址',
-			'torrentFetchTrackers' => '获取 Tracker',
 			_ => null,
 		} ?? switch (path) {
+			'torrentFetchTrackers' => '获取 Tracker',
 			'torrentTrackersHint' => '每行一个 tracker，播放时自动附加到磁力链接',
 			'torrentNodesHint' => '每行一个 DHT 节点，格式 host:port',
 			'torrentTrackersAuto' => '自动附加 URL 的 trackers 到新的下载',

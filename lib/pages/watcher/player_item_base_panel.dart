@@ -113,13 +113,10 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                 ),
               ),
             ),
-            // 视频加载信息覆盖层
-            _VideoLoadingOverlay(
-              playerController: playerController,
-              duration: widget.duration,
-            ),
-            // 中央提示（如「正在播放下一集」）：与缓冲覆盖层同一位置，居中于播放器
-            _CenterHintOverlay(playerController: playerController),
+            // 中央加载/缓冲覆盖层
+            _PlayerCenterOverlay(playerController: playerController),
+            // 截图进度提示（底部控制栏上方）
+            _ScreenshotStatusOverlay(playerController: playerController),
             // 快进/快退 HUD（左右滑动时显示）
             Positioned(
               top: playerHudTop(
@@ -259,29 +256,11 @@ class _SeekGradientLayerState extends State<_SeekGradientLayer> {
   }
 }
 
-/// 自定义加载覆盖层：替代 media_kit 默认缓冲转圈。
-/// 居中显示自定义 loading 图片（GIF/动图，从配置读取）+ "正在加载"信息。
-class _VideoLoadingOverlay extends StatelessWidget {
-  const _VideoLoadingOverlay({
-    required this.playerController,
-    required this.duration,
-  });
-
-  final PlayerController playerController;
-  final Duration duration;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: _LoadingInfoCard(playerController: playerController),
-    );
-  }
-}
-
-/// 播放器中央提示（如「正在播放下一集」）：位置对齐缓冲覆盖层（居中于播放器，
-/// 而不是用全局 showCenter 居中到整个页面）。
-class _CenterHintOverlay extends StatelessWidget {
-  const _CenterHintOverlay({required this.playerController});
+/// 播放器中央覆盖层：加载/缓冲信息与少量中央提示（如「没有更多剧集」）
+/// 共用同一张卡片。自动连播下一集不再单独弹提示层，而是把加载主文案
+/// 切为「正在加载下一集」，加载结束自动恢复「正在加载视频」。
+class _PlayerCenterOverlay extends StatelessWidget {
+  const _PlayerCenterOverlay({required this.playerController});
 
   final PlayerController playerController;
 
@@ -289,9 +268,37 @@ class _CenterHintOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Observer(
       builder: (context) {
-        final msg = playerController.centerHintMessage;
-        if (msg == null || msg.isEmpty) return const SizedBox.shrink();
-        final success = playerController.centerHintSuccess;
+        final controller = playerController;
+        final hint = controller.centerHintMessage;
+        final hasHint = hint != null && hint.isNotEmpty;
+        // 真实缓冲状态：media_kit 的 buffering 流实时驱动 isBuffering，
+        // state.buffering 是实时快照；二者同源。
+        // loadFailed 时隐藏（失败后 buffering 快照可能仍为 true）
+        final buffering = controller.isBuffering || controller.playerBuffering;
+        final loading =
+            !controller.loadFailed &&
+            (buffering ||
+                (controller.loadingStep == 0 && controller.isParsing));
+        if (!hasHint && !loading) return const SizedBox.shrink();
+
+        final success = controller.centerHintSuccess;
+        // 有中央提示（无更多剧集/加载失败）时优先显示；
+        // 否则显示加载文案：自动连播下一集时用「正在加载下一集」，
+        // 加载结束后 loadingNextEpisode 复位，恢复「正在加载视频」
+        final message = hasHint
+            ? hint
+            : (controller.loadingNextEpisode
+                  ? t.loadingNextEpisode
+                  : t.loadingVideo);
+        final stepText = switch (controller.loadingStep) {
+          0 => t.loadingStepParse,
+          1 => t.loadingStepInit,
+          2 => t.loadingStepLoad,
+          _ => t.loadingStepBuffer,
+        };
+        // 缓冲/加载中优先用加载动效；仅提示（无缓冲）时用成功/警告动效
+        final showLoadingVisual = buffering || !hasHint;
+
         return IgnorePointer(
           child: Align(
             alignment: Alignment.center,
@@ -304,28 +311,122 @@ class _CenterHintOverlay extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Gif(
-                    image: AssetImage(
-                      success
-                          ? 'assets/img/check.gif'
-                          : 'assets/img/warning.gif',
+                  if (showLoadingVisual)
+                    const _LoadingImage()
+                  else
+                    Gif(
+                      image: AssetImage(
+                        success
+                            ? 'assets/img/check.gif'
+                            : 'assets/img/warning.gif',
+                      ),
+                      height: 80,
+                      fps: 120,
+                      color: success
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                      autostart: Autostart.once,
                     ),
-                    height: 80,
-                    fps: 120,
-                    color: success
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                    autostart: Autostart.once,
-                  ),
                   const SizedBox(height: 10),
                   Text(
-                    msg,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    message,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  // 缓冲步骤：仅在无提示文案时补充显示，合并进同一张卡片
+                  if (loading && !hasHint) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      stepText,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 截图进行中的提示：播放器内底部（控制栏上方），样式与 showMessage 一致。
+class _ScreenshotStatusOverlay extends StatelessWidget {
+  const _ScreenshotStatusOverlay({required this.playerController});
+
+  final PlayerController playerController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Observer(
+      builder: (context) {
+        final message = playerController.screenshotStatusMessage;
+        if (message == null || message.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final cs = Theme.of(context).colorScheme;
+        final ok = playerController.screenshotStatusOk;
+        final accent = ok == false
+            ? const Color(0xFFFF5449)
+            : ok == true
+            ? const Color(0xFF4CAF50)
+            : cs.primary;
+        final icon = ok == false
+            ? Icons.error_outline_rounded
+            : ok == true
+            ? Icons.check_circle_outline_rounded
+            : Icons.photo_camera_outlined;
+        return IgnorePointer(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              // 位于底部控制栏上方，避免与进度条/按钮重合
+              padding: EdgeInsets.only(
+                bottom: playerController.showVideoController ? 96 : 32,
+              ),
+              child: BlurEffect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.sizeOf(context).width - 32,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainer.toOpacity(0.62),
+                    border: Border(left: BorderSide(color: accent, width: 4)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 14,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: Icon(icon, color: accent, size: 18),
+                        ),
+                        Flexible(
+                          child: Text(
+                            message,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurface,
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -381,11 +482,9 @@ class _SeekHUD extends StatelessWidget {
   }
 }
 
-/// 加载信息卡片：居中显示
-class _LoadingInfoCard extends StatelessWidget {
-  const _LoadingInfoCard({required this.playerController});
-
-  final PlayerController playerController;
+/// 加载动效：优先自定义 GIF/动图，无配置时用转圈兜底
+class _LoadingImage extends StatelessWidget {
+  const _LoadingImage();
 
   /// 用户自定义 loading 图片（data:/file:/http/asset gif 均可）
   String? get _customImage {
@@ -396,68 +495,6 @@ class _LoadingInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
-      builder: (context) {
-        // 真实缓冲状态：media_kit 的 buffering 流实时驱动 isBuffering，
-        // state.buffering 是实时快照；二者同源。loading 是历史遗留字段（恒 true）弃用。
-        final buffering =
-            playerController.isBuffering || playerController.playerBuffering;
-        final step = playerController.loadingStep;
-        // 只显示"正在加载"（不显示集名：部分集名过长影响观感）
-        final loadingText = t.loadingVideo;
-
-        // 当前加载步骤文案（只显示一条：正在进行的步骤）
-        final stepText = switch (step) {
-          0 => t.loadingStepParse,
-          1 => t.loadingStepInit,
-          2 => t.loadingStepLoad,
-          _ => t.loadingStepBuffer,
-        };
-
-        // 显示条件：真正在缓冲，或正在解析视频地址。
-        // 不用「未播放且步骤<3」——解析失败或暂停时 step 停留会导致误导。
-        // loadFailed 时隐藏（失败后 buffering 快照可能仍为 true）
-        final showOverlay =
-            !playerController.loadFailed &&
-            (buffering || (step == 0 && playerController.isParsing));
-        if (!showOverlay) return const SizedBox.shrink();
-
-        return Align(
-          alignment: Alignment.center,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.black.toOpacity(0.45),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildLoadingImage(context),
-                const SizedBox(height: 10),
-                Text(
-                  loadingText,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  stepText,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// 加载图片：优先自定义 GIF/动图，无配置时用转圈兜底
-  Widget _buildLoadingImage(BuildContext context) {
     final custom = _customImage;
     if (custom == null) {
       return const SizedBox(

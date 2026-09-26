@@ -35,6 +35,10 @@ class Bangumi {
   /// 短时间内只请求一次，避免重复打 GitHub API（无 token 限流 60/h）
   static DateTime? _lastAutoCheck;
 
+  /// 本次启动是否已自动检查过 bangumi-data 版本：
+  /// 无论间隔多久，同一次启动内只请求一次 releases（手动更新不受限）
+  static bool _autoCheckedThisLaunch = false;
+
   Bangumi._() {
     _dio.interceptors.add(BangumiTokenInterceptor(_dio));
   }
@@ -708,8 +712,10 @@ class Bangumi {
   }
 
   Future<void> checkBangumiData({bool isUpdata = false}) async {
-    // 进程内节流：自动检查（启动 init + 进日历页）1 小时内只请求一次
+    // 自动检查（启动 init + 进日历页 / 主页时间表）本次启动只请求一次；
+    // 手动更新 isUpdata=true 不受此限制。
     if (!isUpdata) {
+      if (_autoCheckedThisLaunch) return;
       final last = _lastAutoCheck;
       if (last != null &&
           DateTime.now().difference(last) < const Duration(hours: 1)) {
@@ -719,6 +725,7 @@ class Bangumi {
       final needsUpdate = appdata.settings['getBangumiDataTime'] != nowStr;
       final enableSkipUpdate = appdata.settings['enableSkipUpdate'] ?? true;
       if (!needsUpdate && enableSkipUpdate) return;
+      _autoCheckedThisLaunch = true;
     }
     _lastAutoCheck = DateTime.now();
     try {

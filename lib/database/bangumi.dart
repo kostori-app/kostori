@@ -797,16 +797,7 @@ class BangumiManager with ChangeNotifier {
           _db.bangumiAllEpInfoTable,
         )..where((t) => t.id.equals(id))).getSingleOrNull();
 
-        DebugLog.info(
-          'allEpInfoFind',
-          'id=$id, row=${row == null ? 'null' : 'found'}, data=${row?.data == null ? 'null' : 'length:${row!.data!.length}'}',
-        );
-
         if (row?.data == null) {
-          DebugLog.info(
-            'allEpInfoFind',
-            'id=$id → row or data is null, returning []',
-          );
           return (<EpisodeInfo>[], null);
         }
 
@@ -820,10 +811,6 @@ class BangumiManager with ChangeNotifier {
           } else {
             rawList = decoded as List;
           }
-          DebugLog.info(
-            'allEpInfoFind',
-            'id=$id → decoded ${rawList.length} episodes, total=$total',
-          );
           return (rawList.map((e) => EpisodeInfo.fromJson(e)).toList(), total);
         } catch (e, s) {
           DebugLog.error('allEpInfoFind', 'id=$id → jsonDecode failed: $e\n$s');

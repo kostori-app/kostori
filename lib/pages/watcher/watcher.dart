@@ -332,8 +332,9 @@ class _WatcherState extends State<Watcher>
     setState(() {
       epIndex++;
     });
-    // 提示在播放器组件内部居中（与缓冲覆盖层同位置）
-    playerController.showCenterHint(message: t.watcherPlayingNext);
+    // 自动连播：加载覆盖层主文案改为「正在加载下一集」（不再是独立的提示层）；
+    // 加载结束（含失败/取消）必须复位，避免后续普通缓冲一直误显示下一集文案
+    playerController.loadingNextEpisode = true;
     try {
       await loadNextEpisode(epIndex);
     } catch (e) {
@@ -343,6 +344,8 @@ class _WatcherState extends State<Watcher>
         seconds: 3,
       );
       PlayLog.info("playNextEpisode", "加载剧集时出错");
+    } finally {
+      playerController.loadingNextEpisode = false;
     }
   }
 

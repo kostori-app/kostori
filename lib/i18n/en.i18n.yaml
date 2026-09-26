@@ -334,6 +334,7 @@ onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer: Once the 
 playerLoadingImage: Custom Loading Image
 inputImagePath: 'Enter image path or data: base64 (GIF/PNG/JPG/WebP)'
 loadingVideo: Loading video
+loadingNextEpisode: Loading next episode
 openLog: Open Log
 openAnime: Open anime
 sourceNotInstalled: Anime source "${source}" is not installed. Add it in Source settings to open this anime
