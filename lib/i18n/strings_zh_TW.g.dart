@@ -41,6 +41,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	// Translations
 	@override String aToAddBToRemoveCToMove({required Object a, required Object b, required Object c}) => '${a} 新增 • ${b} 移除 • ${c} 移動';
 	@override String aToAddBToRemove({required Object a, required Object b}) => '${a} 新增 • ${b} 移除';
+	@override String aToMove({required Object a}) => '${a} 項移動';
 	@override String cUpdates({required Object c}) => '${c} 個更新';
 	@override String get aNewVersionIsAvailableDoYouWantToUpdateNow => '發現新版本，是否立即更新？';
 	@override String get app => '應用';
@@ -3152,6 +3153,7 @@ extension on TranslationsZhTw {
 		return switch (path) {
 			'aToAddBToRemoveCToMove' => ({required Object a, required Object b, required Object c}) => '${a} 新增 • ${b} 移除 • ${c} 移動',
 			'aToAddBToRemove' => ({required Object a, required Object b}) => '${a} 新增 • ${b} 移除',
+			'aToMove' => ({required Object a}) => '${a} 項移動',
 			'cUpdates' => ({required Object c}) => '${c} 個更新',
 			'aNewVersionIsAvailableDoYouWantToUpdateNow' => '發現新版本，是否立即更新？',
 			'app' => '應用',
@@ -3661,9 +3663,9 @@ extension on TranslationsZhTw {
 			'debugInfo' => '調試資訊',
 			'install' => '安裝',
 			'viewOnGithub' => '在 GitHub 上查看',
-			'noProxyOverrides' => '無代理覆寫',
 			_ => null,
 		} ?? switch (path) {
+			'noProxyOverrides' => '無代理覆寫',
 			'save' => '儲存',
 			'mirror' => '鏡像',
 			'result' => '結果',
@@ -4175,9 +4177,9 @@ extension on TranslationsZhTw {
 			'format' => '格式',
 			'sampleRate' => '採樣率',
 			'channelCount' => '聲道數',
-			'hrChannels' => 'HR 聲道',
 			_ => null,
 		} ?? switch (path) {
+			'hrChannels' => 'HR 聲道',
 			'uriTrack' => '由 URI 提供',
 			'channelsCount' => '聲道總數',
 			'channels' => '聲道',
@@ -4689,9 +4691,9 @@ extension on TranslationsZhTw {
 			'membersList' => '成員列表',
 			'onlineUsersList' => '線上使用者',
 			'noUsersOnline' => '無線上使用者',
-			'room' => '房間',
 			_ => null,
 		} ?? switch (path) {
+			'room' => '房間',
 			'noPasswordSet' => '未設定密碼',
 			'passwordProtected' => '密碼保護',
 			'imageLabel' => '圖片',
@@ -5203,9 +5205,9 @@ extension on TranslationsZhTw {
 			'verifyingPersonInfo' => 'Verifying person info...',
 			'personNotFound' => 'Person not found',
 			'failedToFetchPersonInfo' => 'Failed to fetch person info',
-			'unrecognizedLink' => 'Unrecognized link',
 			_ => null,
 		} ?? switch (path) {
+			'unrecognizedLink' => 'Unrecognized link',
 			'noKostoriLinkFoundInClipboard' => 'No Kostori link found in clipboard',
 			'qrCodeFeatureOnlyOnMobile' => 'QR code feature only available on mobile',
 			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
@@ -5717,9 +5719,9 @@ extension on TranslationsZhTw {
 			'profileTabPersona' => '人設',
 			'profileTabPrompt' => '提示詞',
 			'profileTabSkills' => '技能',
-			'profileTabParams' => '參數',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabParams' => '參數',
 			'profileTabBasic' => '基礎',
 			'profileTabExtensions' => '擴充',
 			'profileTabMemory' => '記憶',
@@ -6231,9 +6233,9 @@ extension on TranslationsZhTw {
 			'torrentPeers' => '連線',
 			'torrentTrackers' => 'Tracker 列表',
 			'torrentTrackerUrlHint' => 'Tracker 列表網址',
-			'torrentFetchTrackers' => '取得 Tracker',
 			_ => null,
 		} ?? switch (path) {
+			'torrentFetchTrackers' => '取得 Tracker',
 			'torrentTrackersHint' => '每行一個 tracker，播放時自動附加到磁力連結',
 			'torrentNodesHint' => '每行一個 DHT 節點，格式 host:port',
 			'torrentTrackersAuto' => '自動附加 URL 的 trackers 到新的下載',

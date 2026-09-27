@@ -140,6 +140,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
 
   // 控件显示/隐藏
   void displayVideoController() {
+    if (!mounted) return;
     animationController.forward();
     hideTimer?.cancel();
     startHideTimer();
@@ -147,6 +148,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   }
 
   void hideVideoController() {
+    if (!mounted) return;
     animationController.reverse();
     hideTimer?.cancel();
     ctrl.showControlsDirect(false);
@@ -190,6 +192,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   }
 
   void _onHorizontalDragStart() {
+    if (!mounted) return;
     if (st.showControls) {
       animationController.reverse();
     }
@@ -200,6 +203,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   }
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (!mounted) return;
     final scale = 180000 / MediaQuery.sizeOf(context).width;
     // 基于上次 seekPreview 累积，避免只反映最后一段位移
     final base = st.seekPreview ?? st.position;
@@ -211,10 +215,12 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   }
 
   void _onHorizontalDragEnd() {
-    final target = st.seekPreview ?? st.position;
+    final preview = st.seekPreview;
     // 顺序：play → seek → 恢复同步
     ctrl.play();
-    ctrl.seek(target);
+    if (preview != null) {
+      ctrl.seek(preview);
+    }
     ctrl.startPositionSync();
     ctrl.setShowSeekTime(false);
     displayVideoController();
@@ -336,6 +342,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
             onDoubleTap: _handleDoubleTap,
             onLongPressStart: (_) => c.startSpeedBoost(),
             onLongPressEnd: (_) => c.stopSpeedBoost(),
+            onLongPressCancel: c.stopSpeedBoost,
           ),
         ),
         // 控件层（面板）

@@ -203,15 +203,10 @@ class _FavoriteDialogState extends State<FavoriteDialog> {
   Widget build(BuildContext context) {
     final adding = selectedFolders.where((f) => !_alreadyIn(f)).length;
     final removing = selectedFolders.where(_alreadyIn).length;
-    final moving =
-        widget.sourceFolder != null &&
-            selectedFolders.length > 1 &&
-            selectedFolders.contains(widget.sourceFolder)
-        ? widget.items.length
-        : 0;
-    final counts = widget.sourceFolder == null
-        ? t.aToAddBToRemove(a: '$adding', b: '$removing')
-        : t.aToAddBToRemoveCToMove(a: '$adding', b: '$removing', c: '$moving');
+    final isMove = adding > 0 && removing > 0;
+    final counts = isMove
+        ? t.aToMove(a: '${widget.items.length}')
+        : t.aToAddBToRemove(a: '$adding', b: '$removing');
 
     return ContentDialog(
       title: t.favorite,

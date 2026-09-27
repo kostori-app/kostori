@@ -139,17 +139,11 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   Timer? _posSaveTimer;
   bool _disposed = false;
 
-  /// 媒体打开（open）的 future：seek 必须等它完成，避免大文件打开过程中
-  /// 发起 seek 触发 media_kit/mpv 原生异常导致崩溃。
   Future<void>? _openFuture;
-
-  /// seek 串行化：同一时刻只执行一个 seek，快速连续 seek 只保留最后一个目标，
-  /// 避免大文件上排队堆积大量重量级 seek。
   bool _seekBusy = false;
   Duration? _seekPending;
-
-  /// 用户是否已主动 seek；用于避免恢复进度的异步 seek 覆盖用户操作。
   bool _userSeeked = false;
+  double? _speedHold;
 
   /// 超分辨率 shader（与 watcher 共用 applySuperResolutionShader）
   ShadersController? _shaders;
@@ -365,13 +359,6 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     }
   }
 
-  /// seek 到指定位置。
-  ///
-  /// 大文件 / 快速拖动时连续调用会产生大量重量级 seek，甚至可能在媒体尚未
-  /// open 完成时发起 seek，导致 media_kit 原生层崩溃。这里做了三件事：
-  /// 1. 等 `open` 完成后再 seek；
-  /// 2. 串行化：同一时刻只有一个 seek 在跑，期间的新目标只保留最后一个；
-  /// 3. 目标值裁剪到 [0, duration] 并吞掉销毁 / 失败异常。
   Future<void> seek(Duration target) async {
     final p = _player;
     if (_disposed || p == null) return;
@@ -407,7 +394,6 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     }
   }
 
-  /// 裁剪 seek 目标，避免越界或负数
   Duration _clampSeekTarget(Player p, Duration target) {
     if (target < Duration.zero) return Duration.zero;
     final d = p.state.duration;
@@ -511,21 +497,23 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     } catch (_) {}
   }
 
-  /// 长按倍速（watcher 交互：按住 2x，松开恢复）
+  /// 长按倍速（按住 = 当前倍速 ×2，松开恢复原始倍速）
   void startSpeedBoost() {
     final p = _player;
     if (_disposed || p == null) return;
-    final next = state.speed * 2 > 4 ? 4.0 : state.speed * 2;
+    _speedHold ??= state.speed;
+    final next = (_speedHold! * 2).clamp(0.5, 8.0);
     p.setRate(next);
     _update(state.copyWith(speed: next));
   }
 
   void stopSpeedBoost() {
+    final base = _speedHold;
+    _speedHold = null;
     final p = _player;
-    if (_disposed || p == null) return;
-    final next = (state.speed / 2).clamp(0.5, 4.0);
-    p.setRate(next);
-    _update(state.copyWith(speed: next));
+    if (_disposed || p == null || base == null) return;
+    p.setRate(base);
+    _update(state.copyWith(speed: base));
   }
 
   /// 全屏（对齐 watcher PlayerController.toggleFullScreen）：

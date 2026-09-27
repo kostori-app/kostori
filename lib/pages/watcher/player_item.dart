@@ -567,10 +567,9 @@ class _PlayerItemState extends State<PlayerItem>
                           setState(() {
                             playerController.showPlaySpeed = true;
                           });
-                          // 长按临时 2x：已 >=2 时保持（避免基础倍速被再次翻倍导致卡顿）
                           final base = _speedHold!;
                           playerController.setPlaybackSpeed(
-                            base < 2 ? base * 2 : base,
+                            (base * 2).clamp(0.5, 8.0),
                           );
                         },
                         onLongPressEnd: (_) {

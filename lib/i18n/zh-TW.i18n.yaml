@@ -1,5 +1,6 @@
 aToAddBToRemoveCToMove: ${a} 新增 • ${b} 移除 • ${c} 移動
 aToAddBToRemove: ${a} 新增 • ${b} 移除
+aToMove: ${a} 項移動
 cUpdates: ${c} 個更新
 aNewVersionIsAvailableDoYouWantToUpdateNow: 發現新版本，是否立即更新？
 app: 應用

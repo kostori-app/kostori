@@ -47,6 +47,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: '${a} to add • ${b} to remove'
 	String aToAddBToRemove({required Object a, required Object b}) => '${a} to add • ${b} to remove';
 
+	/// en: '${a} to move'
+	String aToMove({required Object a}) => '${a} to move';
+
 	/// en: '${c} updates'
 	String cUpdates({required Object c}) => '${c} updates';
 
@@ -9320,6 +9323,7 @@ extension on Translations {
 		return switch (path) {
 			'aToAddBToRemoveCToMove' => ({required Object a, required Object b, required Object c}) => '${a} to add • ${b} to remove • ${c} to move',
 			'aToAddBToRemove' => ({required Object a, required Object b}) => '${a} to add • ${b} to remove',
+			'aToMove' => ({required Object a}) => '${a} to move',
 			'cUpdates' => ({required Object c}) => '${c} updates',
 			'aNewVersionIsAvailableDoYouWantToUpdateNow' => 'A new version is available. Do you want to update now?',
 			'app' => 'APP',
@@ -9829,9 +9833,9 @@ extension on Translations {
 			'episodeEN' => ({required Object e, required Object n}) => 'Episode ${e}: ${n}',
 			'hotspot' => 'hotspot',
 			'completed' => 'Completed',
-			'mainCharacter' => 'Main character',
 			_ => null,
 		} ?? switch (path) {
+			'mainCharacter' => 'Main character',
 			'supportingCharacter' => 'Supporting character',
 			'cameo' => 'Cameo',
 			'idleCorner' => 'Idle corner',
@@ -10343,9 +10347,9 @@ extension on Translations {
 			'format' => 'Format',
 			'sampleRate' => 'Sample Rate',
 			'channelCount' => 'Channel Count',
-			'hrChannels' => 'HR Channels',
 			_ => null,
 		} ?? switch (path) {
+			'hrChannels' => 'HR Channels',
 			'uriTrack' => 'From URI',
 			'channelsCount' => 'Channels Count',
 			'channels' => 'Channels',
@@ -10857,9 +10861,9 @@ extension on Translations {
 			'membersList' => 'Members',
 			'onlineUsersList' => 'Online Users',
 			'noUsersOnline' => 'No users online',
-			'room' => 'Room',
 			_ => null,
 		} ?? switch (path) {
+			'room' => 'Room',
 			'noPasswordSet' => 'No password set',
 			'passwordProtected' => 'Password protected',
 			'imageLabel' => 'Image',
@@ -11371,9 +11375,9 @@ extension on Translations {
 			'failedToFetchPersonInfo' => 'Failed to fetch person info',
 			'unrecognizedLink' => 'Unrecognized link',
 			'noKostoriLinkFoundInClipboard' => 'No Kostori link found in clipboard',
-			'qrCodeFeatureOnlyOnMobile' => 'QR code feature only available on mobile',
 			_ => null,
 		} ?? switch (path) {
+			'qrCodeFeatureOnlyOnMobile' => 'QR code feature only available on mobile',
 			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
 			'pleaseDragImageFile' => 'Please drag in image file',
 			'imageDownloadFailed' => 'Image download failed',
@@ -11885,9 +11889,9 @@ extension on Translations {
 			'actionableAdvice' => 'Give actionable advice',
 			'profileTabPersona' => 'Persona',
 			'profileTabPrompt' => 'Prompt',
-			'profileTabSkills' => 'Skills',
 			_ => null,
 		} ?? switch (path) {
+			'profileTabSkills' => 'Skills',
 			'profileTabParams' => 'Params',
 			'profileTabBasic' => 'Basic',
 			'profileTabExtensions' => 'Extensions',
@@ -12399,9 +12403,9 @@ extension on Translations {
 			'torrentNeedMagnet' => 'Please enter a magnet link',
 			'torrentPeers' => 'Peers',
 			'torrentTrackers' => 'Trackers',
-			'torrentTrackerUrlHint' => 'Tracker list URL',
 			_ => null,
 		} ?? switch (path) {
+			'torrentTrackerUrlHint' => 'Tracker list URL',
 			'torrentFetchTrackers' => 'Fetch trackers',
 			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',
 			'torrentNodesHint' => 'One DHT node per line, host:port',
