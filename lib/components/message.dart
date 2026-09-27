@@ -264,24 +264,87 @@ LoadingDialogController showLoadingDialog(
               controller._message = message;
             });
           };
-          return ContentDialog(
-            title: controller._message ?? 'Loading',
-            content:
-                (controller._progress == null
-                        ? const Center(child: PolygonRefreshIndicator(size: 28))
-                        : LinearProgressIndicator(
-                            value: controller._progress,
-                            backgroundColor:
-                                context.colorScheme.surfaceContainer,
-                          ))
-                    .paddingHorizontal(16)
-                    .paddingVertical(16),
-            cancel: allowCancel
-                ? () {
-                    controller.closed = true;
-                    onCancel?.call();
-                  }
-                : null,
+          final cs = Theme.of(context).colorScheme;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 48,
+              vertical: 24,
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 240),
+              child: BlurEffect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? cs.surface.toOpacity(0.6)
+                        : cs.surface.toOpacity(0.78),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.toOpacity(0.09)
+                          : Colors.black.toOpacity(0.07),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (controller._progress == null)
+                          const PolygonRefreshIndicator(size: 26)
+                        else
+                          SizedBox(
+                            width: 180,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: controller._progress,
+                                minHeight: 5,
+                                backgroundColor: cs.surfaceContainer,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                        Text(
+                          controller._message ?? 'Loading',
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: cs.onSurface,
+                            height: 1.3,
+                          ),
+                        ),
+                        if (allowCancel) ...[
+                          const SizedBox(height: 6),
+                          TextButton(
+                            onPressed: () {
+                              controller.closed = true;
+                              onCancel?.call();
+                            },
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              minimumSize: const Size(0, 32),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                            ),
+                            child: Text(t.cancel),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           );
         },
       );
@@ -1160,13 +1223,15 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Positioned.fill(
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          constraints: const BoxConstraints(maxWidth: 220),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(color: Colors.black.toOpacity(0.2), blurRadius: 16),
             ],
@@ -1174,9 +1239,15 @@ class LoadingOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const PolygonRefreshIndicator(size: 50),
-              const SizedBox(height: 16),
-              Text(message),
+              const PolygonRefreshIndicator(size: 30),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13.5),
+              ),
             ],
           ),
         ),

@@ -857,16 +857,9 @@ class _BangumiSearchSheetState extends ConsumerState<_BangumiSearchSheet> {
       isLoading = false;
     });
     if (result.isEmpty) {
-      showCenter(
-        seconds: 3,
-        icon: Gif(
-          image: AssetImage('assets/img/warning.gif'),
-          height: 64,
-          fps: 120,
-          autostart: Autostart.once,
-        ),
+      context.showMessage(
         message: t.noResultsTryOtherKeywords,
-        context: context,
+        level: LogLevel.warning,
       );
     }
   }

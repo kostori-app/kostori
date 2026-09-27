@@ -139,6 +139,18 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   Timer? _posSaveTimer;
   bool _disposed = false;
 
+  /// 媒体打开（open）的 future：seek 必须等它完成，避免大文件打开过程中
+  /// 发起 seek 触发 media_kit/mpv 原生异常导致崩溃。
+  Future<void>? _openFuture;
+
+  /// seek 串行化：同一时刻只执行一个 seek，快速连续 seek 只保留最后一个目标，
+  /// 避免大文件上排队堆积大量重量级 seek。
+  bool _seekBusy = false;
+  Duration? _seekPending;
+
+  /// 用户是否已主动 seek；用于避免恢复进度的异步 seek 覆盖用户操作。
+  bool _userSeeked = false;
+
   /// 超分辨率 shader（与 watcher 共用 applySuperResolutionShader）
   ShadersController? _shaders;
   Future<void>? _shadersReady;
@@ -230,7 +242,9 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
           );
         }),
       );
-      await p.open(Media(filePath), play: true);
+      final open = p.open(Media(filePath), play: true);
+      _openFuture = open;
+      await open;
       await _restorePosition();
       _posSaveTimer?.cancel();
       _posSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
@@ -256,12 +270,12 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       final duration = await p.stream.duration
           .firstWhere((d) => d > Duration.zero)
           .timeout(const Duration(seconds: 5));
-      if (_disposed || !identical(p, _player)) return;
+      if (_disposed || !identical(p, _player) || _userSeeked) return;
       if ((duration - Duration(milliseconds: saved)).abs() <=
           const Duration(seconds: 3)) {
         return;
       }
-      await p.seek(Duration(milliseconds: saved));
+      await seek(Duration(milliseconds: saved));
     } catch (_) {}
   }
 
@@ -329,13 +343,77 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     });
   }
 
-  void play() => player.play();
+  void play() {
+    final p = _player;
+    if (_disposed || p == null) return;
+    p.play();
+  }
 
-  void pause() => player.pause();
+  void pause() {
+    final p = _player;
+    if (_disposed || p == null) return;
+    p.pause();
+  }
 
-  void playOrPause() => state.playing ? player.pause() : player.play();
+  void playOrPause() {
+    final p = _player;
+    if (_disposed || p == null) return;
+    if (state.playing) {
+      p.pause();
+    } else {
+      p.play();
+    }
+  }
 
-  void seek(Duration target) => player.seek(target);
+  /// seek 到指定位置。
+  ///
+  /// 大文件 / 快速拖动时连续调用会产生大量重量级 seek，甚至可能在媒体尚未
+  /// open 完成时发起 seek，导致 media_kit 原生层崩溃。这里做了三件事：
+  /// 1. 等 `open` 完成后再 seek；
+  /// 2. 串行化：同一时刻只有一个 seek 在跑，期间的新目标只保留最后一个；
+  /// 3. 目标值裁剪到 [0, duration] 并吞掉销毁 / 失败异常。
+  Future<void> seek(Duration target) async {
+    final p = _player;
+    if (_disposed || p == null) return;
+    _userSeeked = true;
+    target = _clampSeekTarget(p, target);
+
+    if (_seekBusy) {
+      _seekPending = target;
+      return;
+    }
+    _seekBusy = true;
+    try {
+      final open = _openFuture;
+      if (open != null) {
+        try {
+          await open;
+        } catch (_) {}
+      }
+      Duration? next = target;
+      while (next != null) {
+        if (_disposed || !identical(p, _player)) break;
+        try {
+          await p.seek(next);
+        } catch (_) {
+          break;
+        }
+        next = _seekPending;
+        _seekPending = null;
+      }
+    } finally {
+      _seekBusy = false;
+      _seekPending = null;
+    }
+  }
+
+  /// 裁剪 seek 目标，避免越界或负数
+  Duration _clampSeekTarget(Player p, Duration target) {
+    if (target < Duration.zero) return Duration.zero;
+    final d = p.state.duration;
+    if (d > Duration.zero && target > d) return d;
+    return target;
+  }
 
   /// 相对快进/快退（限制在时长范围内）
   void seekBy(Duration delta) {
@@ -344,7 +422,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
     if (state.duration > Duration.zero && target > state.duration) {
       target = state.duration;
     }
-    player.seek(target);
+    seek(target);
   }
 
   /// 循环切换倍速
@@ -356,7 +434,9 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   }
 
   void setRate(double rate) {
-    player.setRate(rate);
+    final p = _player;
+    if (_disposed || p == null) return;
+    p.setRate(rate);
     _update(state.copyWith(speed: rate));
   }
 
@@ -433,14 +513,18 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
 
   /// 长按倍速（watcher 交互：按住 2x，松开恢复）
   void startSpeedBoost() {
+    final p = _player;
+    if (_disposed || p == null) return;
     final next = state.speed * 2 > 4 ? 4.0 : state.speed * 2;
-    player.setRate(next);
+    p.setRate(next);
     _update(state.copyWith(speed: next));
   }
 
   void stopSpeedBoost() {
+    final p = _player;
+    if (_disposed || p == null) return;
     final next = (state.speed / 2).clamp(0.5, 4.0);
-    player.setRate(next);
+    p.setRate(next);
     _update(state.copyWith(speed: next));
   }
 
@@ -503,16 +587,18 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
 
   /// 恢复进度同步
   void startPositionSync() {
+    final p = _player;
+    if (_disposed || p == null) return;
     stopPositionSync();
-    _posSub = player.stream.position.listen((v) {
+    _posSub = p.stream.position.listen((v) {
       if (_disposed) return;
       _update(state.copyWith(position: v));
     });
-    _durSub = player.stream.duration.listen((v) {
+    _durSub = p.stream.duration.listen((v) {
       if (_disposed) return;
       _update(state.copyWith(duration: v));
     });
-    _bufSub = player.stream.buffer.listen((v) {
+    _bufSub = p.stream.buffer.listen((v) {
       if (_disposed) return;
       _update(state.copyWith(buffer: v));
     });
@@ -532,10 +618,11 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
       final filename = '${base}_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = await ImageSaver.writeFile(bytes: data, filename: filename);
       if (file == null) return;
-      await ImageSaver.refreshImageList();
       App.rootContext.showMessage(
         message: '${t.screenshotSuccess}: ${file.path}',
       );
+      // 图片列表刷新放后台，不阻塞截图结束
+      unawaited(ImageSaver.refreshImageList());
     } catch (_) {
       App.rootContext.showMessage(message: t.screenshotFailed);
     }
@@ -544,6 +631,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   void _disposeInternal() {
     _savePosition();
     _disposed = true;
+    _seekPending = null;
     _hideTimer?.cancel();
     _levelTimer?.cancel();
     _posSaveTimer?.cancel();

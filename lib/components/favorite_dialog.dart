@@ -242,18 +242,7 @@ class _FavoriteDialogState extends State<FavoriteDialog> {
                   final changed = await _apply();
                   if (!mounted) return;
                   if (changed) {
-                    showCenter(
-                      seconds: 1,
-                      icon: Gif(
-                        image: const AssetImage('assets/img/check.gif'),
-                        height: 80,
-                        fps: 120,
-                        color: Theme.of(context).colorScheme.primary,
-                        autostart: Autostart.once,
-                      ),
-                      message: t.operationSuccess,
-                      context: context,
-                    );
+                    context.showMessage(message: t.operationSuccess);
                   }
                   Navigator.of(context).pop(changed);
                 },

@@ -314,18 +314,14 @@ class _PlayerCenterOverlay extends StatelessWidget {
                   if (showLoadingVisual)
                     const _LoadingImage()
                   else
-                    Gif(
-                      image: AssetImage(
-                        success
-                            ? 'assets/img/check.gif'
-                            : 'assets/img/warning.gif',
-                      ),
-                      height: 80,
-                      fps: 120,
+                    Icon(
+                      success
+                          ? Icons.check_circle_rounded
+                          : Icons.error_rounded,
+                      size: 40,
                       color: success
                           ? Theme.of(context).colorScheme.primary
-                          : null,
-                      autostart: Autostart.once,
+                          : const Color(0xFFFF5449),
                     ),
                   const SizedBox(height: 10),
                   Text(

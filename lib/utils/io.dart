@@ -12,8 +12,6 @@ import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.da
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
-import 'package:gif/gif.dart';
-import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -793,20 +791,10 @@ class ImageSaver {
   }
 
   static void showResult({required bool success, String? message}) {
-    final safeContext = App.rootContext;
-    showCenter(
-      seconds: success ? 1 : 3,
-      icon: Gif(
-        image: AssetImage(
-          success ? 'assets/img/check.gif' : 'assets/img/warning.gif',
-        ),
-        height: success ? 80 : 64,
-        fps: 120,
-        color: Theme.of(safeContext).colorScheme.primary,
-        autostart: Autostart.once,
-      ),
-      message: message ?? (success ? '保存成功' : '保存失败'),
-      context: safeContext,
+    // 统一用底部小提示，不再弹居中的大结果覆盖层
+    App.rootContext.showMessage(
+      message: message ?? (success ? t.saveSuccess : t.saveFailed),
+      level: success ? LogLevel.info : LogLevel.error,
     );
   }
 
