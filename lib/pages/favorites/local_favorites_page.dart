@@ -930,8 +930,6 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                   foregroundColor: context.colorScheme.onPrimaryContainer,
                   onTap: updateAnimes,
                 ),
-              ],
-              [
                 SpeedDialChild(
                   child: const Icon(Icons.vertical_align_top),
                   backgroundColor: context.colorScheme.primaryContainer,

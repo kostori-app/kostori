@@ -721,8 +721,6 @@ class _PluginBoardContentState extends State<PluginBoardContent>
                   foregroundColor: cs.onPrimaryContainer,
                   onTap: _refreshList,
                 ),
-              ],
-              [
                 SpeedDialChild(
                   child: Icon(
                     _continuous ? Icons.view_cozy_outlined : Icons.menu,

@@ -539,8 +539,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                       .onPrimaryContainer,
                   onTap: onUpdate,
                 ),
-              ],
-              [
                 SpeedDialChild(
                   child: const Icon(Icons.vertical_align_top),
                   backgroundColor: Theme.of(context)

@@ -76,6 +76,9 @@ class AnimeListState extends State<AnimeList>
 
   final Map<int, List<Anime>> _data = {};
 
+  /// 是否已从 PageStorage 恢复过（依赖变化时不重复恢复）
+  bool _restored = false;
+
   int _page = 1;
   int _generation = 0;
   String? _error;
@@ -119,8 +122,11 @@ class AnimeListState extends State<AnimeList>
       return;
     }
     _maxPage = state['maxPage'];
+    // 先拷贝再清空：state['data'] 与本实例的 _data 可能指向同一对象，
+    // 直接 clear()+addAll(state['data']) 会把自己清空。
+    final data = Map<int, List<Anime>>.from(state['data'] as Map);
     _data.clear();
-    _data.addAll(state['data']);
+    _data.addAll(data);
     _page = state['page'];
     _error = state['error'];
     _loading.clear();
@@ -175,7 +181,13 @@ class AnimeListState extends State<AnimeList>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    restoreState(PageStorage.of(context).readState(context));
+    // 只恢复一次。AnimeFilterScope 等依赖变化会再次触发这里，而 restoreState
+    // 里 `_data.clear(); _data.addAll(state['data'])` 是自引用（state['data'] 就是
+    // 同一个 _data），重复恢复会把已加载数据清空 → 每次筛选都重新请求第 1 页。
+    if (!_restored) {
+      _restored = true;
+      restoreState(PageStorage.of(context).readState(context));
+    }
     widget.refreshHandlerCallback?.call(refresh);
     _scheduleSyncBottomOverlay();
   }
@@ -762,8 +774,6 @@ class AnimeListState extends State<AnimeList>
                           if (_filterEnabled) scrollToTop();
                         },
                       ),
-                    ],
-                    [
                       SpeedDialChild(
                         child: const Icon(Icons.refresh),
                         backgroundColor: Theme.of(context)
@@ -774,8 +784,6 @@ class AnimeListState extends State<AnimeList>
                             .onPrimaryContainer,
                         onTap: refresh,
                       ),
-                    ],
-                    [
                       SpeedDialChild(
                         child: const Icon(Icons.vertical_align_top),
                         backgroundColor: Theme.of(context)
@@ -786,8 +794,6 @@ class AnimeListState extends State<AnimeList>
                             .onPrimaryContainer,
                         onTap: scrollToTop,
                       ),
-                    ],
-                    [
                       SpeedDialChild(
                         child: type == 'paging'
                             ? Icon(Icons.view_cozy_outlined)

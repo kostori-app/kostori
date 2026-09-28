@@ -281,8 +281,6 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
                           .onPrimaryContainer,
                       onTap: () async => await resetBangumiTrend(),
                     ),
-                  ],
-                  [
                     SpeedDialChild(
                       child: const Icon(Icons.vertical_align_top),
                       backgroundColor: Theme.of(context)

@@ -652,8 +652,6 @@ class _ExplorePageState extends State<ExplorePage>
                         onTap: () =>
                             setState(() => _filterEnabled = !_filterEnabled),
                       ),
-                    ],
-                    [
                       SpeedDialChild(
                         child: const Icon(Icons.refresh),
                         backgroundColor: Theme.of(context)
@@ -664,8 +662,6 @@ class _ExplorePageState extends State<ExplorePage>
                             .onPrimaryContainer,
                         onTap: refresh,
                       ),
-                    ],
-                    [
                       SpeedDialChild(
                         child: const Icon(Icons.vertical_align_top),
                         backgroundColor: Theme.of(context)
@@ -686,8 +682,6 @@ class _ExplorePageState extends State<ExplorePage>
                           )?.toTop();
                         },
                       ),
-                    ],
-                    [
                       SpeedDialChild(
                         child:
                             appdata.settings['animeListDisplayMode'] == 'paging'
@@ -711,8 +705,6 @@ class _ExplorePageState extends State<ExplorePage>
                           setState(() {});
                         },
                       ),
-                    ],
-                    [
                       SpeedDialChild(
                         child:
                             appdata.settings.s.exploreHorizontalLayout == true

@@ -234,23 +234,24 @@ class _AnimeFilterBarState extends State<AnimeFilterBar> {
             ),
           ],
           const SizedBox(height: 6),
-          CapsuleOptions(
+          // 多选条件：用独立高亮的胶囊 chip（CapsuleOptions 是单选语义，
+          // 只会高亮其中一项，会让人误以为三者互斥）。
+          CapsuleChipGroup(
             alignment: WrapAlignment.center,
-            scrollable: true,
             children: [
-              CapsuleOption(
+              CapsuleChip(
                 text: t.exploreFilterFavorite,
                 isSelected: f.favoriteOnly,
                 onTap: () =>
                     widget.onChanged(f.copyWith(favoriteOnly: !f.favoriteOnly)),
               ),
-              CapsuleOption(
+              CapsuleChip(
                 text: t.exploreFilterHistory,
                 isSelected: f.historyOnly,
                 onTap: () =>
                     widget.onChanged(f.copyWith(historyOnly: !f.historyOnly)),
               ),
-              CapsuleOption(
+              CapsuleChip(
                 text: t.exploreFilterDownload,
                 isSelected: f.downloadOnly,
                 onTap: () =>
