@@ -3081,6 +3081,9 @@ torrentStopSeed: 完成後停止做種
 torrentSelectFiles: 選擇檔案
 torrentApplySelection: 套用選擇
 torrentDelete: 刪除
+torrentDeleteConfirm: 是否同時刪除已下載的檔案？
+torrentDeleteTaskOnly: 僅刪除任務
+torrentDeleteWithFiles: 刪除任務和檔案
 torrentEmpty: 尚無種子任務
 torrentTab: 種子
 torrentUnlimited: 不限

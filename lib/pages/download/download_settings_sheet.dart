@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -20,16 +21,17 @@ Future<void> showDownloadSettingsSheet(BuildContext context) {
   );
 }
 
-class _DownloadSettingsSheet extends StatefulWidget {
+class _DownloadSettingsSheet extends ConsumerStatefulWidget {
   const _DownloadSettingsSheet();
 
   @override
-  State<_DownloadSettingsSheet> createState() => _DownloadSettingsSheetState();
+  ConsumerState<_DownloadSettingsSheet> createState() =>
+      _DownloadSettingsSheetState();
 }
 
-class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet>
+class _DownloadSettingsSheetState extends ConsumerState<_DownloadSettingsSheet>
     with SingleTickerProviderStateMixin {
-  final _m = TorrentManager.instance;
+  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
 
   /// 下载 / 种子 两个设置页（可左右滑动切换）
   late final TabController _tabCtrl = TabController(length: 2, vsync: this);
@@ -38,22 +40,17 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet>
   void initState() {
     super.initState();
     _m.init();
-    _m.addListener(_onChange);
-  }
-
-  void _onChange() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _m.removeListener(_onChange);
     _tabCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(torrentManagerProvider);
     return Sheet(
       title: t.downloadSettings,
       icon: Icons.settings_outlined,
@@ -203,21 +200,22 @@ class _DownloadSettingsSheetState extends State<_DownloadSettingsSheet>
 }
 
 /// 种子设置：限速 / 做种 / Tracker / DHT。
-class _TorrentSettings extends StatefulWidget {
+class _TorrentSettings extends ConsumerStatefulWidget {
   const _TorrentSettings();
 
   @override
-  State<_TorrentSettings> createState() => _TorrentSettingsState();
+  ConsumerState<_TorrentSettings> createState() => _TorrentSettingsState();
 }
 
-class _TorrentSettingsState extends State<_TorrentSettings> {
-  final _m = TorrentManager.instance;
+class _TorrentSettingsState extends ConsumerState<_TorrentSettings> {
+  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
 
   static const _speeds = [0, 1024, 2048, 5120, 10240, 20480];
   String _speedLabel(int kb) => kb == 0 ? t.torrentUnlimited : '$kb KB/s';
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(torrentManagerProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -278,15 +276,15 @@ class _TorrentSettingsState extends State<_TorrentSettings> {
 }
 
 /// 二级页面：Tracker 列表编辑
-class _TrackerEditorPage extends StatefulWidget {
+class _TrackerEditorPage extends ConsumerStatefulWidget {
   const _TrackerEditorPage();
 
   @override
-  State<_TrackerEditorPage> createState() => _TrackerEditorPageState();
+  ConsumerState<_TrackerEditorPage> createState() => _TrackerEditorPageState();
 }
 
-class _TrackerEditorPageState extends State<_TrackerEditorPage> {
-  final _m = TorrentManager.instance;
+class _TrackerEditorPageState extends ConsumerState<_TrackerEditorPage> {
+  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
   late final TextEditingController _urlCtrl = TextEditingController(
     text: _m.trackerUrl,
   );

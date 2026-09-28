@@ -3040,6 +3040,9 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentSelectFiles => '選擇檔案';
 	@override String get torrentApplySelection => '套用選擇';
 	@override String get torrentDelete => '刪除';
+	@override String get torrentDeleteConfirm => '是否同時刪除已下載的檔案？';
+	@override String get torrentDeleteTaskOnly => '僅刪除任務';
+	@override String get torrentDeleteWithFiles => '刪除任務和檔案';
 	@override String get torrentEmpty => '尚無種子任務';
 	@override String get torrentTab => '種子';
 	@override String get torrentUnlimited => '不限';
@@ -6215,6 +6218,9 @@ extension on TranslationsZhTw {
 			'torrentSelectFiles' => '選擇檔案',
 			'torrentApplySelection' => '套用選擇',
 			'torrentDelete' => '刪除',
+			'torrentDeleteConfirm' => '是否同時刪除已下載的檔案？',
+			'torrentDeleteTaskOnly' => '僅刪除任務',
+			'torrentDeleteWithFiles' => '刪除任務和檔案',
 			'torrentEmpty' => '尚無種子任務',
 			'torrentTab' => '種子',
 			'torrentUnlimited' => '不限',
@@ -6230,11 +6236,11 @@ extension on TranslationsZhTw {
 			'torrentBuffering' => '正在緩衝…',
 			'torrentStop' => '停止',
 			'torrentNeedMagnet' => '請輸入磁力連結',
+			_ => null,
+		} ?? switch (path) {
 			'torrentPeers' => '連線',
 			'torrentTrackers' => 'Tracker 列表',
 			'torrentTrackerUrlHint' => 'Tracker 列表網址',
-			_ => null,
-		} ?? switch (path) {
 			'torrentFetchTrackers' => '取得 Tracker',
 			'torrentTrackersHint' => '每行一個 tracker，播放時自動附加到磁力連結',
 			'torrentNodesHint' => '每行一個 DHT 節點，格式 host:port',

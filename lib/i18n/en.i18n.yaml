@@ -3080,6 +3080,9 @@ torrentStopSeed: Stop seeding when finished
 torrentSelectFiles: Select files
 torrentApplySelection: Apply selection
 torrentDelete: Delete
+torrentDeleteConfirm: Also delete the downloaded files?
+torrentDeleteTaskOnly: Task only
+torrentDeleteWithFiles: Task and files
 torrentEmpty: No torrent tasks
 torrentTab: Torrents
 torrentUnlimited: Unlimited

@@ -203,8 +203,11 @@ class PlayerSuperResolutionCard extends StatelessWidget {
 }
 
 /// 通用功能开关 + 缓存挡位（watcher 与本地播放器共用，新增开关只需改这里）。
+/// 本地播放器可传 [showCache] = false 并用自己的 [PlayerCacheCard]。
 class PlayerCommonToggles extends StatefulWidget {
-  const PlayerCommonToggles({super.key});
+  const PlayerCommonToggles({super.key, this.showCache = true});
+
+  final bool showCache;
 
   @override
   State<PlayerCommonToggles> createState() => _PlayerCommonTogglesState();
@@ -254,40 +257,80 @@ class _PlayerCommonTogglesState extends State<PlayerCommonToggles> {
           key: 'playerVolumeGesture',
         ),
         // 播放器缓存挡位（分段胶囊），修改后需重开播放器生效
-        PlayerSettingCard(
-          icon: Icons.sd_storage_outlined,
-          title: t.playerCache,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        if (widget.showCache)
+          PlayerCacheCard(
+            tierKey: kPlayerCacheTierKey,
+            tiers: playerCacheTiers,
+            current: currentPlayerCacheTier,
+          ),
+      ],
+    );
+  }
+}
+
+/// 播放器缓存挡位卡片：可选独立 [tierKey] / [tiers]，
+/// 本地播放器用它维护自己独立的持久化缓存设置。
+class PlayerCacheCard extends StatefulWidget {
+  const PlayerCacheCard({
+    super.key,
+    required this.tierKey,
+    required this.tiers,
+    this.current,
+  });
+
+  final String tierKey;
+
+  final List<PlayerCacheTier> tiers;
+
+  final PlayerCacheTier? current;
+
+  @override
+  State<PlayerCacheCard> createState() => _PlayerCacheCardState();
+}
+
+class _PlayerCacheCardState extends State<PlayerCacheCard> {
+  PlayerCacheTier get _current {
+    final key = appdata.implicitData[widget.tierKey];
+    for (final tier in widget.tiers) {
+      if (tier.key == key) return tier;
+    }
+    return widget.current ?? widget.tiers.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PlayerSettingCard(
+      icon: Icons.sd_storage_outlined,
+      title: t.playerCache,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CapsuleOptions(
+            alignment: WrapAlignment.start,
+            wrap: true,
             children: [
-              CapsuleOptions(
-                alignment: WrapAlignment.start,
-                wrap: true,
-                children: [
-                  for (final tier in playerCacheTiers)
-                    CapsuleOption(
-                      text: playerCacheTierLabel(tier),
-                      isSelected: currentPlayerCacheTier.key == tier.key,
-                      onTap: () {
-                        appdata.implicitData[kPlayerCacheTierKey] = tier.key;
-                        appdata.writeImplicitData();
-                        setState(() {});
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                t.playerCacheDesc,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+              for (final tier in widget.tiers)
+                CapsuleOption(
+                  text: playerCacheTierLabel(tier),
+                  isSelected: _current.key == tier.key,
+                  onTap: () {
+                    appdata.implicitData[widget.tierKey] = tier.key;
+                    appdata.writeImplicitData();
+                    setState(() {});
+                  },
                 ),
-              ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          Text(
+            t.playerCacheDesc,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

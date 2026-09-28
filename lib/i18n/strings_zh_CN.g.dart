@@ -3041,6 +3041,9 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get torrentSelectFiles => '选择文件';
 	@override String get torrentApplySelection => '应用选择';
 	@override String get torrentDelete => '删除';
+	@override String get torrentDeleteConfirm => '是否同时删除已下载的文件？';
+	@override String get torrentDeleteTaskOnly => '仅删除任务';
+	@override String get torrentDeleteWithFiles => '删除任务和文件';
 	@override String get torrentEmpty => '暂无种子任务';
 	@override String get torrentTab => '种子';
 	@override String get torrentUnlimited => '不限';
@@ -6217,6 +6220,9 @@ extension on TranslationsZhCn {
 			'torrentSelectFiles' => '选择文件',
 			'torrentApplySelection' => '应用选择',
 			'torrentDelete' => '删除',
+			'torrentDeleteConfirm' => '是否同时删除已下载的文件？',
+			'torrentDeleteTaskOnly' => '仅删除任务',
+			'torrentDeleteWithFiles' => '删除任务和文件',
 			'torrentEmpty' => '暂无种子任务',
 			'torrentTab' => '种子',
 			'torrentUnlimited' => '不限',
@@ -6231,11 +6237,11 @@ extension on TranslationsZhCn {
 			'torrentFetchingMeta' => '正在获取元数据…',
 			'torrentBuffering' => '正在缓冲…',
 			'torrentStop' => '停止',
+			_ => null,
+		} ?? switch (path) {
 			'torrentNeedMagnet' => '请输入磁力链接',
 			'torrentPeers' => '连接',
 			'torrentTrackers' => 'Tracker 列表',
-			_ => null,
-		} ?? switch (path) {
 			'torrentTrackerUrlHint' => 'Tracker 列表地址',
 			'torrentFetchTrackers' => '获取 Tracker',
 			'torrentTrackersHint' => '每行一个 tracker，播放时自动附加到磁力链接',

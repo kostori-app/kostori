@@ -398,7 +398,10 @@ class _WatcherState extends State<Watcher>
     String title,
   ) async {
     if (_isSeries) return null;
-    final manager = TorrentManager.instance;
+    final manager = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(torrentManagerProvider.notifier);
     await manager.init();
 
     TorrentJob? jobById(String id) {

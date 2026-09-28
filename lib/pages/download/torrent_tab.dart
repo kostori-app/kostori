@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -89,10 +90,9 @@ Future<void> showAddTorrentSheet(BuildContext context) async {
                   }
                   if (ctx.mounted) Navigator.pop(ctx);
                   App.rootContext.showMessage(message: t.torrentFetchingMeta);
-                  await TorrentManager.instance.add(
-                    magnet,
-                    stopAfter: stopAfter,
-                  );
+                  await ProviderScope.containerOf(context)
+                      .read(torrentManagerProvider.notifier)
+                      .add(magnet, stopAfter: stopAfter);
                 },
                 icon: const Icon(Icons.check),
                 label: Text(t.torrentParse),
@@ -107,11 +107,11 @@ Future<void> showAddTorrentSheet(BuildContext context) async {
 }
 
 /// 下载页「种子」Tab：一个种子 = 一张卡片；点击进详情。
-class TorrentTab extends StatefulWidget {
+class TorrentTab extends ConsumerStatefulWidget {
   const TorrentTab({super.key});
 
   @override
-  State<TorrentTab> createState() => _TorrentTabState();
+  ConsumerState<TorrentTab> createState() => _TorrentTabState();
 }
 
 String _statusLabel(TorrentJobStatus s) {
@@ -138,24 +138,18 @@ String _progressText(TorrentJob job) {
       '${(job.progress * 100).toStringAsFixed(1)}%';
 }
 
-class _TorrentTabState extends State<TorrentTab> {
-  final _m = TorrentManager.instance;
+class _TorrentTabState extends ConsumerState<TorrentTab> {
+  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
   String _filter = 'all';
 
   @override
   void initState() {
     super.initState();
     _m.init();
-    _m.addListener(_onChange);
-  }
-
-  void _onChange() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _m.removeListener(_onChange);
     super.dispose();
   }
 
@@ -199,7 +193,7 @@ class _TorrentTabState extends State<TorrentTab> {
 
   @override
   Widget build(BuildContext context) {
-    final all = _m.jobs;
+    final all = ref.watch(torrentManagerProvider).jobs;
     if (all.isEmpty) {
       return Center(
         child: Column(
@@ -422,7 +416,7 @@ class _TorrentTabState extends State<TorrentTab> {
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.delete_outline),
                       tooltip: t.torrentDelete,
-                      onPressed: () => _m.remove(job),
+                      onPressed: () => _confirmDelete(job),
                     ),
                   ],
                 ),
@@ -445,44 +439,64 @@ class _TorrentTabState extends State<TorrentTab> {
       builder: (_) => _TorrentDetailSheet(job: job),
     );
   }
+
+  /// 删除前询问是否连同已下载文件一起删除
+  void _confirmDelete(TorrentJob job) {
+    ContentDialog.show(
+      context: context,
+      title: t.torrentDelete,
+      content: Text(t.torrentDeleteConfirm),
+      actions: [
+        TextButton(
+          onPressed: () {
+            context.pop();
+            _m.remove(job, deleteFiles: false);
+          },
+          child: Text(t.torrentDeleteTaskOnly),
+        ),
+        FilledButton(
+          onPressed: () {
+            context.pop();
+            _m.remove(job);
+          },
+          child: Text(t.torrentDeleteWithFiles),
+        ),
+      ],
+    );
+  }
 }
 
 /// 种子详情：基本信息 / 内容（可左右滑动切换）
-class _TorrentDetailSheet extends StatefulWidget {
+class _TorrentDetailSheet extends ConsumerStatefulWidget {
   const _TorrentDetailSheet({required this.job});
 
   final TorrentJob job;
 
   @override
-  State<_TorrentDetailSheet> createState() => _TorrentDetailSheetState();
+  ConsumerState<_TorrentDetailSheet> createState() =>
+      _TorrentDetailSheetState();
 }
 
-class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
+class _TorrentDetailSheetState extends ConsumerState<_TorrentDetailSheet>
     with SingleTickerProviderStateMixin {
-  final _m = TorrentManager.instance;
+  TorrentManager get _m => ref.read(torrentManagerProvider.notifier);
 
   /// 0 = 基本信息，1 = 内容（可左右滑动切换）
   late final TabController _tabCtrl = TabController(length: 2, vsync: this);
 
   List<TorrentFileEntry> _files = const [];
 
+  /// 长按范围选择的起点（第一个长按的文件下标）
+  int? _rangeAnchor;
+
   @override
   void initState() {
     super.initState();
-    _m.addListener(_onChange);
     _refreshFiles();
-  }
-
-  void _onChange() {
-    if (mounted) {
-      _refreshFiles();
-      setState(() {});
-    }
   }
 
   @override
   void dispose() {
-    _m.removeListener(_onChange);
     _tabCtrl.dispose();
     super.dispose();
   }
@@ -494,6 +508,8 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
   @override
   Widget build(BuildContext context) {
     final job = widget.job;
+    ref.watch(torrentManagerProvider);
+    _refreshFiles();
     return Sheet(
       title: job.name.isNotEmpty ? job.name : t.torrentFetchingMeta,
       icon: Icons.stream,
@@ -566,9 +582,7 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
       ];
     }
     final all = {for (final f in _files) f.index};
-    final selected = job.selectedFiles.isEmpty
-        ? all
-        : job.selectedFiles.where(all.contains).toSet();
+    final selected = _selectedIndices(job);
     return [
       Padding(
         padding: const EdgeInsets.only(bottom: 6),
@@ -579,10 +593,9 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
               style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
             ),
             const Spacer(),
-            TextButton(
-              onPressed: () => _m.setSelectedFiles(job, const []),
-              child: Text(t.all),
-            ),
+            _selectAction(t.selectAll, () => _setSelection(job, all)),
+            _selectAction(t.selectNone, () => _setSelection(job, <int>{})),
+            _selectAction(t.invertSelection, () => _invertSelection(job)),
           ],
         ),
       ),
@@ -590,20 +603,68 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
     ];
   }
 
-  void _toggleFile(TorrentJob job, int index) {
+  Widget _selectAction(String label, VoidCallback onTap) => TextButton(
+    style: TextButton.styleFrom(
+      minimumSize: Size.zero,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
+    onPressed: onTap,
+    child: Text(label),
+  );
+
+  /// 当前选中下标集合（空 selectedFiles = 全部；[kTorrentNoFile] = 全不选）
+  Set<int> _selectedIndices(TorrentJob job) {
     final all = {for (final f in _files) f.index};
-    final sel =
-        (job.selectedFiles.isEmpty
-                ? {...all}
-                : job.selectedFiles.where(all.contains).toSet())
-            .toSet();
-    if (!sel.remove(index)) sel.add(index);
-    if (sel.isEmpty) return; // 至少保留一个文件
-    if (sel.length == all.length) {
-      _m.setSelectedFiles(job, const []); // 空 = 全部
-    } else {
-      _m.setSelectedFiles(job, sel.toList()..sort());
+    final sel = job.selectedFiles;
+    if (sel.length == 1 && sel.first == kTorrentNoFile) return <int>{};
+    if (sel.isEmpty) return all;
+    return sel.where(all.contains).toSet();
+  }
+
+  void _setSelection(TorrentJob job, Set<int> set) {
+    final all = {for (final f in _files) f.index};
+    if (set.isEmpty) {
+      _m.setSelectedFiles(job, const [kTorrentNoFile]);
+      return;
     }
+    if (set.length >= all.length) {
+      _m.setSelectedFiles(job, const []); // 空 = 全部
+      return;
+    }
+    _m.setSelectedFiles(job, set.toList()..sort());
+  }
+
+  void _invertSelection(TorrentJob job) {
+    final all = {for (final f in _files) f.index};
+    _setSelection(job, all.difference(_selectedIndices(job)));
+  }
+
+  void _toggleFile(TorrentJob job, int index) {
+    _rangeAnchor = null;
+    final sel = _selectedIndices(job).toSet();
+    if (!sel.remove(index)) sel.add(index);
+    _setSelection(job, sel);
+  }
+
+  /// 长按起始文件后再长按结束文件 = 选中两者之间整段
+  void _longPressFile(TorrentJob job, int index) {
+    final anchor = _rangeAnchor;
+    if (anchor == null) {
+      _rangeAnchor = index;
+      _setSelection(job, _selectedIndices(job)..add(index));
+      setState(() {});
+      return;
+    }
+    final lo = anchor < index ? anchor : index;
+    final hi = anchor < index ? index : anchor;
+    final sel = _selectedIndices(job).toSet();
+    for (var i = lo; i <= hi; i++) {
+      sel.add(i);
+    }
+    _rangeAnchor = null;
+    _setSelection(job, sel);
+    setState(() {});
   }
 
   Widget _fileTile(TorrentJob job, TorrentFileEntry f, bool selected) {
@@ -630,6 +691,7 @@ class _TorrentDetailSheetState extends State<_TorrentDetailSheet>
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => _toggleFile(job, f.index),
+          onLongPress: () => _longPressFile(job, f.index),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
             child: Row(

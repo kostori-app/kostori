@@ -238,7 +238,7 @@ void _checkOldConfigs() {
 Future<void> _checkAppUpdates() async {
   AnimeSourceSettings.checkAnimeSourceUpdate();
   // 加载种子任务（供「绑定种子到某一集」的播放路径使用）
-  TorrentManager.instance.init();
+  providerContainer.read(torrentManagerProvider);
   // 加载 BT 资源站配置（<dataPath>/bt_source/*.json）
   BtSources.ensureLoaded();
   // 加载 BT 线路/绑定（download.db）

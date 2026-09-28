@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/services/torrent/indexer/bt_indexer.dart';
@@ -40,7 +41,10 @@ Future<BtLine?> showTorrentResourcePicker(
   BtLine? currentLine,
 }) async {
   await BtSources.ensureLoaded();
-  await TorrentManager.instance.init();
+  await ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(torrentManagerProvider.notifier).init();
   return showModalBottomSheet<BtLine>(
     context: context,
     isScrollControlled: true,
@@ -272,7 +276,11 @@ class _BtLineSheetState extends State<_BtLineSheet> {
 
     // 已有种子任务（按 infohash），用于标出「已添加/已完成」，避免重复下载
     final existing = <String, TorrentJobStatus>{};
-    for (final j in TorrentManager.instance.jobs) {
+    final jobs = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(torrentManagerProvider).jobs;
+    for (final j in jobs) {
       final h = btInfoHashOfMagnet(j.magnet);
       if (h != null) existing[h] = j.status;
     }

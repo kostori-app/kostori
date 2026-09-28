@@ -31,6 +31,29 @@ PlayerCacheTier get currentPlayerCacheTier {
 /// 修改挡位后需重建 Player（重开播放器）才生效。
 int get playerBufferSize => currentPlayerCacheTier.bufferBytes;
 
+/// 本地播放器**独立**的缓存挡位 key（不复用主播放器设置）。
+const String kLocalPlayerCacheTierKey = 'localPlayerCacheTier';
+
+/// 本地播放器缓存挡位：本地文件不需要大缓存，大缓存还会在快速 seek 时
+/// 占用/刷新大量内存导致闪退，因此整体比主播放器小一档。
+const List<PlayerCacheTier> localPlayerCacheTiers = [
+  PlayerCacheTier('low', 64 * 1024 * 1024),
+  PlayerCacheTier('medium', 128 * 1024 * 1024),
+  PlayerCacheTier('high', 256 * 1024 * 1024),
+  PlayerCacheTier('ultra', 512 * 1024 * 1024),
+];
+
+PlayerCacheTier get currentLocalPlayerCacheTier {
+  final key = appdata.implicitData[kLocalPlayerCacheTierKey];
+  for (final tier in localPlayerCacheTiers) {
+    if (tier.key == key) return tier;
+  }
+  return localPlayerCacheTiers[1]; // 默认 128MB
+}
+
+/// 本地播放器缓存字节数。
+int get localPlayerBufferSize => currentLocalPlayerCacheTier.bufferBytes;
+
 String playerCacheTierLabel(PlayerCacheTier tier) => switch (tier.key) {
   'low' => t.cacheLow,
   'medium' => t.cacheMedium,

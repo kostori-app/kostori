@@ -31,13 +31,16 @@ class TorrentJob {
   String? error;
 
   /// 持久化的元数据文件路径（原始 info 字典字节；重启直接加载）
-  final String torrentPath;
+  String torrentPath;
 
   /// 本地保存目录（下载根目录）
   String savePath;
 
-  /// 已选择的文件下标；空表示全部
+  /// 已选择的文件下标；空表示全部，[ -1 ]（kTorrentNoFile）表示一个都不选
   List<int> selectedFiles;
+
+  /// 是否已确定过文件选择（首次拿到元数据时给出默认选择，此后尊重用户设置）
+  bool selectionInitialized;
 
   /// 添加后的停止策略
   TorrentStopPolicy stopAfter;
@@ -60,6 +63,7 @@ class TorrentJob {
     this.hasMetadata = false,
     this.error,
     this.selectedFiles = const [],
+    this.selectionInitialized = true,
     this.stopAfter = TorrentStopPolicy.none,
   });
 
@@ -88,35 +92,43 @@ class TorrentJob {
     'torrentPath': torrentPath,
     'savePath': savePath,
     'selectedFiles': selectedFiles,
+    'selectionInitialized': selectionInitialized,
     'stopAfter': stopAfter.name,
   };
 
-  factory TorrentJob.fromJson(Map<String, dynamic> j) => TorrentJob(
-    id: j['id'] as String,
-    magnet: j['magnet'] as String? ?? '',
-    torrentPath: j['torrentPath'] as String? ?? '',
-    savePath: j['savePath'] as String? ?? '',
-    createdAt: (j['createdAt'] as num?)?.toInt() ?? 0,
-    name: (j['name'] as String?) ?? '',
-    status: TorrentJobStatus.values.firstWhere(
-      (e) => e.name == j['status'],
-      orElse: () => TorrentJobStatus.paused,
-    ),
-    progress: (j['progress'] as num?)?.toDouble() ?? 0,
-    hasMetadata: (j['hasMetadata'] as bool?) ?? false,
-    totalDone: (j['totalDone'] as num?)?.toInt() ?? 0,
-    totalWanted: (j['totalWanted'] as num?)?.toInt() ?? 0,
-    error: j['error'] as String?,
-    selectedFiles:
+  factory TorrentJob.fromJson(Map<String, dynamic> j) {
+    final selected =
         (j['selectedFiles'] as List?)
             ?.map((e) => (e as num).toInt())
             .toList() ??
-        const [],
-    stopAfter: TorrentStopPolicy.values.firstWhere(
-      (e) => e.name == j['stopAfter'],
-      orElse: () => TorrentStopPolicy.none,
-    ),
-  );
+        const <int>[];
+    return TorrentJob(
+      id: j['id'] as String,
+      magnet: j['magnet'] as String? ?? '',
+      torrentPath: j['torrentPath'] as String? ?? '',
+      savePath: j['savePath'] as String? ?? '',
+      createdAt: (j['createdAt'] as num?)?.toInt() ?? 0,
+      name: (j['name'] as String?) ?? '',
+      status: TorrentJobStatus.values.firstWhere(
+        (e) => e.name == j['status'],
+        orElse: () => TorrentJobStatus.paused,
+      ),
+      progress: (j['progress'] as num?)?.toDouble() ?? 0,
+      hasMetadata: (j['hasMetadata'] as bool?) ?? false,
+      totalDone: (j['totalDone'] as num?)?.toInt() ?? 0,
+      totalWanted: (j['totalWanted'] as num?)?.toInt() ?? 0,
+      error: j['error'] as String?,
+      selectedFiles: selected,
+      // 旧任务没有该字段：除「全不选」哨兵（-1）外都视为已初始化，尊重已有选择
+      selectionInitialized:
+          (j['selectionInitialized'] as bool?) ??
+          !(selected.length == 1 && selected.first == -1),
+      stopAfter: TorrentStopPolicy.values.firstWhere(
+        (e) => e.name == j['stopAfter'],
+        orElse: () => TorrentStopPolicy.none,
+      ),
+    );
+  }
 }
 
 /// 供 UI 使用的种子内文件条目。

@@ -6,19 +6,19 @@ import 'package:dtorrent_task_v2/dtorrent_task_v2.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-const String _magnet =
-    'magnet:?xt=urn:btih:97f529aadec5e94ddcc89c841e6fe0f42a8934e6'
-    '&tr=http%3a%2f%2ft.nyaatracker.com%2fannounce'
-    '&tr=http%3a%2f%2ftracker.kamigami.org%3a2710%2fannounce'
-    '&tr=http%3a%2f%2fshare.camoe.cn%3a8080%2fannounce'
-    '&tr=http%3a%2f%2fopentracker.acgnx.se%2fannounce'
-    '&tr=udp%3a%2f%2ftracker.opentrackr.org%3a1337%2fannounce';
+// 私人磁力不入库：通过 --dart-define=TORRENT_MAGNET=... 传入，未提供则跳过。
+const String _magnet = String.fromEnvironment('TORRENT_MAGNET');
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('probe: magnet metadata + correct infohash + download',
-      (tester) async {
+  testWidgets('probe: magnet metadata + correct infohash + download', (
+    tester,
+  ) async {
+    if (_magnet.isEmpty) {
+      print('probe: TORRENT_MAGNET not provided, skipping');
+      return;
+    }
     final dir = Directory.systemTemp.createTempSync('torrent_probe');
 
     final downloader = MetadataDownloader.fromMagnet(_magnet);

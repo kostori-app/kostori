@@ -10,6 +10,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_controller.dart';
+import 'package:kostori/pages/watcher/player_cache.dart';
 import 'package:kostori/pages/watcher/player_hud.dart';
 import 'package:kostori/pages/watcher/player_settings_cards.dart';
 import 'package:kostori/pages/watcher/player_subtitle.dart';
@@ -91,6 +92,11 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
   late final Animation<double> fadeAnimation;
   Timer? hideTimer;
 
+  /// 全屏「更多」右侧面板动画
+  late final AnimationController _moreAnim;
+  late final Animation<Offset> _moreSlide;
+  late final Animation<double> _moreFade;
+
   LocalPlayerController get ctrl =>
       ref.read(localPlayerControllerProvider(widget.filePath).notifier);
 
@@ -116,6 +122,20 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
       parent: animationController,
       curve: Curves.easeInOut,
     );
+    _moreAnim = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    final moreCurved = CurvedAnimation(
+      parent: _moreAnim,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _moreSlide = Tween<Offset>(
+      begin: const Offset(1, 0),
+      end: Offset.zero,
+    ).animate(moreCurved);
+    _moreFade = CurvedAnimation(parent: _moreAnim, curve: Curves.easeInOut);
   }
 
   @override
@@ -134,9 +154,13 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     WidgetsBinding.instance.removeObserver(this);
     hideTimer?.cancel();
     animationController.dispose();
+    _moreAnim.dispose();
     widget.onDispose?.call();
     super.dispose();
   }
+
+  void _openMore() => _moreAnim.forward();
+  void _closeMore() => _moreAnim.reverse();
 
   // 控件显示/隐藏
   void displayVideoController() {
@@ -371,6 +395,8 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         if (state.showBrightness) _buildLevelHUD(state, isBrightness: true),
         if (state.speed != 1.0 && !state.showControls)
           _buildSpeedIndicator(state),
+        // 全屏「更多」从右侧滑出的面板（非全屏用底部 sheet）
+        if (state.fullscreen) _buildMorePanel(state),
       ],
     );
     if (!App.isDesktop) return stack;
@@ -600,43 +626,20 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
-              // 设置面板（倍速/超分/通用开关）
+              // 更多（设置 / 投送 / 播放器详情）：全屏从右侧滑出面板，
+              // 非全屏用底部 sheet
               IconButton(
                 color: Colors.white,
                 icon: const Icon(Icons.more_horiz),
                 tooltip: t.more,
-                onPressed: _showSettingsSheet,
-              ),
-              // 投屏 / 停止投屏（本地文件会临时起局域网 HTTP 流透出去）
-              ValueListenableBuilder<String?>(
-                valueListenable: RemotePlay.instance.castingDeviceName,
-                builder: (context, castingName, _) {
-                  final casting = castingName != null;
-                  return IconButton(
-                    color: Colors.white,
-                    icon: Icon(
-                      casting ? Icons.cast_connected : Icons.cast_outlined,
-                    ),
-                    tooltip: casting ? t.stopCast : t.remoteCast,
-                    onPressed: () {
-                      if (casting) {
-                        RemotePlay.instance.stopCast();
-                        return;
-                      }
-                      ctrl.pause();
-                      RemotePlay.instance.castVideo(widget.filePath);
-                    },
-                  );
+                onPressed: () {
+                  if (state.fullscreen) {
+                    _openMore();
+                  } else {
+                    _showSettingsSheet();
+                  }
                 },
               ),
-              // 播放器详情
-              if (!state.fullscreen)
-                IconButton(
-                  color: Colors.white,
-                  icon: const Icon(Icons.info_outline),
-                  tooltip: t.playerDetails,
-                  onPressed: _showVideoInfo,
-                ),
             ],
           ),
         ),
@@ -644,7 +647,158 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
     );
   }
 
-  /// 本地播放器设置面板：倍速 / 超分辨率 / 通用功能开关（与 watcher 共用卡片组件）
+  /// 「更多」内容：顶部为投送 / 播放器详情，下面是倍速 / 超分 / 通用开关 / 缓存
+  List<Widget> _moreContent(
+    LocalPlayerState state, {
+    VoidCallback? onHostClose,
+  }) {
+    return [
+      // 顶部：图标在上、文字在下
+      Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 12),
+        child: Row(
+          children: [
+            ValueListenableBuilder<String?>(
+              valueListenable: RemotePlay.instance.castingDeviceName,
+              builder: (context, castingName, _) {
+                final casting = castingName != null;
+                return IconTileButton(
+                  icon: const Icon(Icons.cast_outlined),
+                  activeIcon: const Icon(Icons.cast_connected),
+                  isActive: casting,
+                  label: casting ? t.stopCast : t.remoteCast,
+                  onTap: () {
+                    if (casting) {
+                      RemotePlay.instance.stopCast();
+                    } else {
+                      ctrl.pause();
+                      RemotePlay.instance.castVideo(widget.filePath);
+                    }
+                  },
+                );
+              },
+            ),
+            IconTileButton(
+              icon: const Icon(Icons.info_outline),
+              label: t.playerDetails,
+              onTap: () {
+                onHostClose?.call();
+                _closeMore();
+                _showVideoInfo();
+              },
+            ),
+          ],
+        ),
+      ),
+      PlayerPlaybackSpeedCard(value: state.speed, onChanged: ctrl.setRate),
+      PlayerSuperResolutionCard(
+        value: state.superResolutionType,
+        onChanged: ctrl.setSuperResolution,
+      ),
+      const PlayerCommonToggles(showCache: false),
+      // 本地播放器独立缓存挡位（不复用主播放器设置）
+      PlayerCacheCard(
+        tierKey: kLocalPlayerCacheTierKey,
+        tiers: localPlayerCacheTiers,
+        current: currentLocalPlayerCacheTier,
+      ),
+    ];
+  }
+
+  /// 全屏「更多」：从右侧滑出的面板（参考 watcher video_page 的 _buildPanel）
+  Widget _buildMorePanel(LocalPlayerState state) {
+    return AnimatedBuilder(
+      animation: _moreAnim,
+      builder: (context, _) {
+        final v = _moreAnim.value;
+        if (v == 0) return const SizedBox.shrink();
+        return Positioned.fill(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _closeMore,
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.35 * v),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SlideTransition(
+                  position: _moreSlide,
+                  child: FadeTransition(
+                    opacity: _moreFade,
+                    child: _buildMorePanelBody(state),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMorePanelBody(LocalPlayerState state) {
+    final width = (MediaQuery.sizeOf(context).width / 3).clamp(260.0, 420.0);
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Colors.transparent,
+            Colors.black.toOpacity(0.85),
+            Colors.black.toOpacity(0.95),
+          ],
+          stops: const [0.0, 0.3, 1.0],
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 4, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        t.more,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      color: Colors.white,
+                      icon: const Icon(Icons.close),
+                      onPressed: _closeMore,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+                  children: _moreContent(state),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 本地播放器设置面板（非全屏）：倍速 / 超分 / 通用开关 / 投送 / 详情
   void _showSettingsSheet() {
     final provider = localPlayerControllerProvider(widget.filePath);
     showModalBottomSheet(
@@ -657,23 +811,15 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         icon: Icons.more_horiz,
         initialSize: 0.6,
         builder: (ctx, sc) => Consumer(
-          builder: (context, ref, _) {
+          builder: (sheetContext, ref, _) {
             final state = ref.watch(provider);
-            final c = ref.read(provider.notifier);
             return ListView(
               controller: sc,
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              children: [
-                PlayerPlaybackSpeedCard(
-                  value: state.speed,
-                  onChanged: c.setRate,
-                ),
-                PlayerSuperResolutionCard(
-                  value: state.superResolutionType,
-                  onChanged: c.setSuperResolution,
-                ),
-                const PlayerCommonToggles(),
-              ],
+              children: _moreContent(
+                state,
+                onHostClose: () => Navigator.of(sheetContext).pop(),
+              ),
             );
           },
         ),
@@ -702,7 +848,7 @@ class _LocalPlayerViewState extends ConsumerState<LocalPlayerView>
         builder: (_, _) => VideoInfoSheet.fromPlayer(
           player: ctrl.player,
           videoUrl: widget.filePath,
-          logs: const [],
+          logs: ctrl.playerLog,
           playbackOk: st.error.isNotEmpty
               ? false
               : (st.duration > Duration.zero || st.playing ? true : null),

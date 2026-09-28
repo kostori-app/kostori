@@ -9045,6 +9045,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Delete'
 	String get torrentDelete => 'Delete';
 
+	/// en: 'Also delete the downloaded files?'
+	String get torrentDeleteConfirm => 'Also delete the downloaded files?';
+
+	/// en: 'Task only'
+	String get torrentDeleteTaskOnly => 'Task only';
+
+	/// en: 'Task and files'
+	String get torrentDeleteWithFiles => 'Task and files';
+
 	/// en: 'No torrent tasks'
 	String get torrentEmpty => 'No torrent tasks';
 
@@ -12386,6 +12395,9 @@ extension on Translations {
 			'torrentSelectFiles' => 'Select files',
 			'torrentApplySelection' => 'Apply selection',
 			'torrentDelete' => 'Delete',
+			'torrentDeleteConfirm' => 'Also delete the downloaded files?',
+			'torrentDeleteTaskOnly' => 'Task only',
+			'torrentDeleteWithFiles' => 'Task and files',
 			'torrentEmpty' => 'No torrent tasks',
 			'torrentTab' => 'Torrents',
 			'torrentUnlimited' => 'Unlimited',
@@ -12400,11 +12412,11 @@ extension on Translations {
 			'torrentFetchingMeta' => 'Fetching metadata…',
 			'torrentBuffering' => 'Buffering…',
 			'torrentStop' => 'Stop',
+			_ => null,
+		} ?? switch (path) {
 			'torrentNeedMagnet' => 'Please enter a magnet link',
 			'torrentPeers' => 'Peers',
 			'torrentTrackers' => 'Trackers',
-			_ => null,
-		} ?? switch (path) {
 			'torrentTrackerUrlHint' => 'Tracker list URL',
 			'torrentFetchTrackers' => 'Fetch trackers',
 			'torrentTrackersHint' => 'One tracker per line; appended to the magnet automatically',

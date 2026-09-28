@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/download/local_player_page.dart';
 import 'package:kostori/pages/watcher/player_cache.dart';
 import 'package:kostori/pages/watcher/player_shaders.dart';
+import 'package:kostori/pages/watcher/player_video_config.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
@@ -139,6 +142,10 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   Timer? _posSaveTimer;
   bool _disposed = false;
 
+  /// 播放器（mpv）日志，供「播放器详情」展示
+  final List<PlayerLogEntry> playerLog = [];
+  static const _maxPlayerLog = 2000;
+
   Future<void>? _openFuture;
   bool _seekBusy = false;
   Duration? _seekPending;
@@ -175,10 +182,16 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
   Future<void> _init(String filePath) async {
     try {
       final p = Player(
-        configuration: PlayerConfiguration(bufferSize: playerBufferSize),
+        configuration: PlayerConfiguration(
+          bufferSize: localPlayerBufferSize,
+          logLevel: MPVLogLevel.v,
+        ),
       );
       _player = p;
-      _controller = VideoController(p);
+      _controller = VideoController(
+        p,
+        configuration: playerVideoControllerConfiguration(),
+      );
       // 超分辨率 shader 目录准备（异步，不阻塞播放）
       _shaders = ShadersController();
       _shadersReady = _shaders!.copyShadersToExternalDirectory();
@@ -214,6 +227,17 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
         p.stream.error.listen((e) {
           if (_disposed) return;
           _update(state.copyWith(error: e));
+        }),
+      );
+      // mpv 日志：收集给「播放器详情」展示，error/fatal 同时落盘
+      _subs.add(
+        p.stream.log.listen((e) {
+          if (_disposed) return;
+          playerLog.add(PlayerLogEntry(e));
+          if (playerLog.length > _maxPlayerLog) playerLog.removeAt(0);
+          if (e.level == 'error' || e.level == 'fatal') {
+            Log.error('LocalPlayer', e.text);
+          }
         }),
       );
       // 可选字幕/音轨（内封轨道也在这里）与当前选中项
