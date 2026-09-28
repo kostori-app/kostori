@@ -143,12 +143,13 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
     );
   }
 
-  void add() {
-    showDialog(
+  Future<void> add() async {
+    // builder 会随弹窗重建重跑：控制器须在外创建并释放，避免输入框反复换控制器。
+    final controller = TextEditingController();
+    String? error;
+    await showDialog(
       context: App.rootContext,
       builder: (context) {
-        var controller = TextEditingController();
-        String? error;
         return StatefulBuilder(
           builder: (context, setState) {
             return ContentDialog(
@@ -192,6 +193,7 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
         );
       },
     );
+    controller.dispose();
   }
 }
 

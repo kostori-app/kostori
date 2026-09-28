@@ -251,6 +251,12 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get explore => '探索';
 	@override String exploreLoadedDetail({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条';
 	@override String exploreItemsCount({required Object count}) => '共 ${count} 条';
+	@override String get exploreFilter => '筛选';
+	@override String get exploreFilterFavorite => '已收藏';
+	@override String get exploreFilterHistory => '有历史';
+	@override String get exploreFilterDownload => '已下载';
+	@override String get exploreFilterHint => '筛选关键词';
+	@override String get exploreFilterNoResult => '没有符合条件的条目';
 	@override String get hideScrollbarForMasonry => '瀑布流隐藏滚动条';
 	@override String get hideScrollbarForMasonryDesc => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐';
 	@override String get memo => '备忘录';
@@ -1137,6 +1143,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get downloadMigrateToRoot => '移到顶层';
 	@override String get downloadMigrateHere => '迁移到此组';
 	@override String get downloadNoMigrateTarget => '没有可迁移到的分组';
+	@override String get downloadGroupExpand => '展开子组';
+	@override String get downloadGroupCollapse => '折叠子组';
 	@override String get newGroup => '新建分组';
 	@override String get groupName => '分组名称';
 	@override String get groupExists => '分组名称已存在';
@@ -3367,6 +3375,12 @@ extension on TranslationsZhCn {
 			'explore' => '探索',
 			'exploreLoadedDetail' => ({required Object pages, required Object count}) => '已加载 ${pages} 页 · 共 ${count} 条',
 			'exploreItemsCount' => ({required Object count}) => '共 ${count} 条',
+			'exploreFilter' => '筛选',
+			'exploreFilterFavorite' => '已收藏',
+			'exploreFilterHistory' => '有历史',
+			'exploreFilterDownload' => '已下载',
+			'exploreFilterHint' => '筛选关键词',
+			'exploreFilterNoResult' => '没有符合条件的条目',
 			'hideScrollbarForMasonry' => '瀑布流隐藏滚动条',
 			'hideScrollbarForMasonryDesc' => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐',
 			'memo' => '备忘录',
@@ -3661,14 +3675,14 @@ extension on TranslationsZhCn {
 			'hotspot' => '热点',
 			'completed' => '已完成',
 			'mainCharacter' => '主角',
+			_ => null,
+		} ?? switch (path) {
 			'supportingCharacter' => '配角',
 			'cameo' => '客串',
 			'idleCorner' => '闲角',
 			'unknown' => '未知',
 			'debugInfo' => '调试信息',
 			'install' => '安装',
-			_ => null,
-		} ?? switch (path) {
 			'viewOnGithub' => '在 GitHub 上查看',
 			'noProxyOverrides' => '无代理覆写',
 			'save' => '保存',
@@ -4175,14 +4189,14 @@ extension on TranslationsZhCn {
 			'trackFps' => '帧率',
 			'trackBitrate' => '轨道码率',
 			'trackRotate' => '轨道旋转',
+			_ => null,
+		} ?? switch (path) {
 			'trackPar' => '轨道 PAR',
 			'trackAudioChannels' => '轨道音频声道',
 			'format' => '格式',
 			'sampleRate' => '采样率',
 			'channelCount' => '声道数',
 			'hrChannels' => 'HR 声道',
-			_ => null,
-		} ?? switch (path) {
 			'uriTrack' => '由 URI 提供',
 			'channelsCount' => '声道数',
 			'channels' => '声道',
@@ -4299,6 +4313,8 @@ extension on TranslationsZhCn {
 			'downloadMigrateToRoot' => '移到顶层',
 			'downloadMigrateHere' => '迁移到此组',
 			'downloadNoMigrateTarget' => '没有可迁移到的分组',
+			'downloadGroupExpand' => '展开子组',
+			'downloadGroupCollapse' => '折叠子组',
 			'newGroup' => '新建分组',
 			'groupName' => '分组名称',
 			'groupExists' => '分组名称已存在',
@@ -4687,6 +4703,8 @@ extension on TranslationsZhCn {
 			'noAdminsYet' => '暂无管理员',
 			'noBannedMembers' => '暂无封锁成员',
 			'noMembersAvailable' => '暂无可用成员',
+			_ => null,
+		} ?? switch (path) {
 			'accessControl' => '访问控制',
 			'broadcast' => '广播',
 			'addAnnouncement' => '发布公告',
@@ -4695,8 +4713,6 @@ extension on TranslationsZhCn {
 			'onlineUsersList' => '在线成员列表',
 			'noUsersOnline' => '无在线用户',
 			'room' => '房间',
-			_ => null,
-		} ?? switch (path) {
 			'noPasswordSet' => '未设置密码',
 			'passwordProtected' => '密码保护',
 			'imageLabel' => '图片',
@@ -5201,6 +5217,8 @@ extension on TranslationsZhCn {
 			'fetchingBangumiInfo' => '正在获取 Bangumi 信息...',
 			'bangumiEntryNotFound' => '未找到 Bangumi 条目',
 			'failedToFetchBangumiInfo' => '获取 Bangumi 信息失败',
+			_ => null,
+		} ?? switch (path) {
 			'linkFormatErrorCannotParseCharacterId' => '链接格式错误，无法解析角色 ID',
 			'verifyingCharacterInfo' => '正在验证角色信息...',
 			'characterNotFound' => '未找到角色',
@@ -5209,8 +5227,6 @@ extension on TranslationsZhCn {
 			'verifyingPersonInfo' => '正在验证人物信息...',
 			'personNotFound' => '未找到人物',
 			'failedToFetchPersonInfo' => '获取人物信息失败',
-			_ => null,
-		} ?? switch (path) {
 			'unrecognizedLink' => '无法识别的链接',
 			'noKostoriLinkFoundInClipboard' => '剪贴板中未发现 Kostori 链接',
 			'qrCodeFeatureOnlyOnMobile' => '扫码功能仅支持移动端',
@@ -5715,6 +5731,8 @@ extension on TranslationsZhCn {
 			'noProfilesYet' => '暂无档案',
 			'profileSaved' => '档案已保存',
 			'profileCopiedToClipboard' => '档案已复制到剪贴板',
+			_ => null,
+		} ?? switch (path) {
 			'switchedToProfile' => ({required Object name}) => '已切换到 ${name}',
 			'defaultAssistant' => '默认',
 			'conciseReplies' => '简洁回复',
@@ -5723,8 +5741,6 @@ extension on TranslationsZhCn {
 			'actionableAdvice' => '给出可执行建议',
 			'profileTabPersona' => '人设',
 			'profileTabPrompt' => '提示词',
-			_ => null,
-		} ?? switch (path) {
 			'profileTabSkills' => '技能',
 			'profileTabParams' => '参数',
 			'profileTabBasic' => '基础',
@@ -6229,6 +6245,8 @@ extension on TranslationsZhCn {
 			'torrentInfo' => '基本信息',
 			'torrentContent' => '内容',
 			'torrentSavePathLabel' => '保存路径',
+			_ => null,
+		} ?? switch (path) {
 			'torrentInfoHashLabel' => '信息哈希',
 			'torrentProgressLabel' => '进度',
 			'torrentFileDone' => '已下',
@@ -6237,8 +6255,6 @@ extension on TranslationsZhCn {
 			'torrentFetchingMeta' => '正在获取元数据…',
 			'torrentBuffering' => '正在缓冲…',
 			'torrentStop' => '停止',
-			_ => null,
-		} ?? switch (path) {
 			'torrentNeedMagnet' => '请输入磁力链接',
 			'torrentPeers' => '连接',
 			'torrentTrackers' => 'Tracker 列表',

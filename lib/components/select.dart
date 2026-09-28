@@ -583,11 +583,10 @@ class _SlidingSegmentedBarState extends State<SlidingSegmentedBar>
     _lastPosition = position;
     final rect = rects[index];
     final offset = position.pixels;
-    final fullyVisible =
-        rect.left >= offset - 0.5 && rect.right <= offset + viewport + 0.5;
-    // 无变化且选中项可见：不动。触发重新对齐的时机：下标变化、position 被
-    // 重建（离开再回到页面）、或选中项滚出可视区（离屏期间错位）。
-    if (!positionChanged && index == _lastScrolledIndex && fullyVisible) return;
+    // 只有「下标变化」或「position 被重建（离开再回到页面）」时才重新对齐。
+    // 用户手动左右滚动时下标与 position 都没变，此时绝不能把选中项拉回居中，
+    // 否则下载中频繁刷新会不停打断用户浏览其它文件夹（严重的来回居中 bug）。
+    if (!positionChanged && index == _lastScrolledIndex) return;
     if (!settled) return;
     _lastScrolledIndex = index;
     // 居中目标：选中项中心 - 视口一半，贴边时 clamp 自动处理

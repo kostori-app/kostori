@@ -209,6 +209,12 @@ explorePages: 發現頁面
 explore: 發現
 exploreLoadedDetail: "已載入 ${pages} 頁 · 共 ${count} 條"
 exploreItemsCount: "共 ${count} 條"
+exploreFilter: 篩選
+exploreFilterFavorite: 已收藏
+exploreFilterHistory: 有歷史
+exploreFilterDownload: 已下載
+exploreFilterHint: 篩選關鍵字
+exploreFilterNoResult: 沒有符合條件的項目
 hideScrollbarForMasonry: "瀑布流隱藏滾動條"
 hideScrollbarForMasonryDesc: "瀑布流佈局下不顯示右側滾動條，避免滾動條抽搐"
 memo: "備忘錄"
@@ -1148,6 +1154,8 @@ downloadMigrateGroup: 遷移到…
 downloadMigrateToRoot: 移到頂層
 downloadMigrateHere: 遷移到此組
 downloadNoMigrateTarget: 沒有可遷移到的分組
+downloadGroupExpand: 展開子組
+downloadGroupCollapse: 折疊子組
 newGroup: 新增分組
 groupName: 分組名稱
 groupExists: 分組名稱已存在

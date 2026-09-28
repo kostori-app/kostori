@@ -44,6 +44,10 @@ class _DownloadPageState extends State<DownloadPage>
   /// 下载记录 tab 的分组管理入口
   final _recordsKey = GlobalKey<_RecordsTabState>();
 
+  /// 本页所在路由：被播放器/弹层覆盖时 `isCurrent == false`，
+  /// 此时跳过高频进度重建（页面不可见，重建纯属浪费 UI 线程）。
+  ModalRoute<dynamic>? _route;
+
   bool get _isRecordsTab =>
       (_tabCtrl.animation?.value ?? _tabCtrl.index.toDouble()).round() == 1;
 
@@ -59,8 +63,18 @@ class _DownloadPageState extends State<DownloadPage>
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 依赖路由状态：isCurrent 变化会回调这里并触发重建，恢复可见时自动刷新
+    _route = ModalRoute.of(context);
+  }
+
   void _onChange() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    // 被其它路由（播放器/设置弹层等）覆盖时不重建
+    if (_route != null && !_route!.isCurrent) return;
+    setState(() {});
   }
 
   void _setTaskFilter(String value) {
@@ -584,11 +598,30 @@ class _RecordsTabState extends State<_RecordsTab> {
   Timer? _reloadTimer;
   bool _reloading = false;
 
+  /// 记录内容签名：下载进度通知很频繁但记录通常未变，签名相同则跳过 setState，
+  /// 避免频繁重建筛选胶囊并触发自动居中、打断用户浏览其它文件夹。
+  String _signature = '';
+
+  /// 本页所在路由：被上层路由覆盖时跳过自动刷新（省 DB 查询 + 文件 stat）
+  ModalRoute<dynamic>? _route;
+
   @override
   void initState() {
     super.initState();
     DownloadManager.instance.addListener(_scheduleReload);
     _reload();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final prev = _route;
+    final next = ModalRoute.of(context);
+    _route = next;
+    // 从被覆盖状态恢复可见：补一次刷新（覆盖期间跳过了自动刷新）
+    if (prev != null && !prev.isCurrent && (next?.isCurrent ?? true)) {
+      _scheduleReload();
+    }
   }
 
   @override
@@ -598,10 +631,33 @@ class _RecordsTabState extends State<_RecordsTab> {
     super.dispose();
   }
 
-  /// 下载管理器进度通知很频繁：合并为最多每 400ms 刷新一次
+  /// 下载管理器进度通知很频繁：合并为最多每 400ms 刷新一次；
+  /// 页面被覆盖（不可见）时直接跳过，避免无意义的 DB 查询与文件 stat。
   void _scheduleReload() {
+    if (_route != null && !_route!.isCurrent) return;
     _reloadTimer?.cancel();
     _reloadTimer = Timer(const Duration(milliseconds: 400), _reload);
+  }
+
+  /// 记录内容签名：文件路径/时间/标题/集/分组/分辨率相同即视为无变化
+  String _signatureOf(List<Map<String, dynamic>> records) {
+    final buf = StringBuffer();
+    for (final r in records) {
+      buf
+        ..write(r['filePath'])
+        ..write('\u0001')
+        ..write(r['time'])
+        ..write('\u0001')
+        ..write(r['title'])
+        ..write('\u0001')
+        ..write(r['episode'])
+        ..write('\u0001')
+        ..write(r['group'])
+        ..write('\u0001')
+        ..write(r['resolution'])
+        ..write('\u0002');
+    }
+    return buf.toString();
   }
 
   Future<void> _reload() async {
@@ -629,17 +685,19 @@ class _RecordsTabState extends State<_RecordsTab> {
         exists[fp] = e;
         if (e) sizes[fp] = s;
       }
-      if (mounted) {
-        setState(() {
-          _records = records;
-          _exists
-            ..clear()
-            ..addAll(exists);
-          _sizes
-            ..clear()
-            ..addAll(sizes);
-        });
-      }
+      // 记录未变（仅下载进度通知导致的刷新）：不 setState，避免无谓重建
+      final signature = _signatureOf(records);
+      if (!mounted || signature == _signature) return;
+      _signature = signature;
+      setState(() {
+        _records = records;
+        _exists
+          ..clear()
+          ..addAll(exists);
+        _sizes
+          ..clear()
+          ..addAll(sizes);
+      });
     } finally {
       _reloading = false;
     }

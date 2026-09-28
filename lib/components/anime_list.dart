@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kostori/components/anime_filter.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -87,6 +89,17 @@ class AnimeListState extends State<AnimeList>
   String? _nextUrl;
 
   bool showFB = false;
+
+  /// 自身筛选（仅 AnimeList 独立使用、浮动按钮开关时生效）。
+  /// 探索页由外层 [AnimeFilterScope] 下发，优先级更高。
+  bool _filterEnabled = false;
+  AnimeFilter _filter = AnimeFilter.none;
+
+  /// 过滤结果缓存：`_data[page]` / `_flatAnimes()` 在未变化时引用不变，
+  /// 命中同一 (源列表, 条件) 时直接复用，避免滚动/重建时反复 O(n) 过滤。
+  List<Anime>? _filterSrc;
+  AnimeFilter? _filterCacheKey;
+  List<Anime> _filterCacheResult = const [];
 
   final scrollController = ScrollController();
 
@@ -206,7 +219,7 @@ class AnimeListState extends State<AnimeList>
     );
   }
 
-  Widget _buildCompactPageSelector() {
+  Widget _buildCompactPageSelector(int itemCount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -267,7 +280,7 @@ class AnimeListState extends State<AnimeList>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                '${t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString())} · ${t.exploreItemsCount(count: (_data[_page] ?? const []).length)}',
+                '${t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString())} · ${t.exploreItemsCount(count: itemCount)}',
               ),
             ),
           ),
@@ -309,7 +322,7 @@ class AnimeListState extends State<AnimeList>
     ).paddingVertical(8).paddingHorizontal(24);
   }
 
-  Widget _buildFullPageSelector() {
+  Widget _buildFullPageSelector(int itemCount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -406,7 +419,7 @@ class AnimeListState extends State<AnimeList>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString())} · ${t.exploreItemsCount(count: (_data[_page] ?? const []).length)}',
+                    '${t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString())} · ${t.exploreItemsCount(count: itemCount)}',
                   ),
                 ),
               ),
@@ -621,16 +634,62 @@ class AnimeListState extends State<AnimeList>
     return _flatCache;
   }
 
+  /// 生效中的筛选：外层 scope 优先（探索页），否则用自身开关。
+  /// 返回 null 表示不过滤。
+  AnimeFilter? _activeFilterOf(BuildContext context) {
+    final scope = AnimeFilterScope.of(context);
+    if (scope != null) return scope.isActive ? scope : null;
+    if (_filterEnabled && _filter.isActive) return _filter;
+    return null;
+  }
+
+  /// 过滤并在条件/源列表未变时复用上次结果。
+  List<Anime> _applyFilter(List<Anime> src, AnimeFilter? filter) {
+    if (filter == null) return src;
+    if (identical(src, _filterSrc) && filter == _filterCacheKey) {
+      return _filterCacheResult;
+    }
+    final out = src.where(filter.matches).toList();
+    _filterSrc = src;
+    _filterCacheKey = filter;
+    _filterCacheResult = out;
+    return out;
+  }
+
+  /// 筛选用（探索页由外层 scope 下发时不显示，避免重复）。
+  Widget _filterSliver(BuildContext context) {
+    if (AnimeFilterScope.of(context) != null || !_filterEnabled) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    return SliverToBoxAdapter(
+      child: AnimeFilterBar(
+        filter: _filter,
+        onChanged: (f) => setState(() => _filter = f),
+      ),
+    );
+  }
+
+  Widget _noResultSliver(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: EmptyState(message: t.exploreFilterNoResult),
+    );
+  }
+
   /// 屏幕左右下角的信息圆片：左＝页数（圆形图标）、右＝条目（圆角三角形）。
   /// paging / 连续两种模式共用。
-  List<Widget> _overlayChips(BuildContext context, {required bool paging}) {
+  List<Widget> _overlayChips(
+    BuildContext context, {
+    required bool paging,
+    AnimeFilter? filter,
+  }) {
     if (!widget.showLoadedOverlay) return const [];
     final navi = context.findAncestorStateOfType<NaviPaneState>();
     if (navi != null && !navi.overlayShowChip) return const [];
     final int pages = paging ? _page : _data.length;
     final int items = paging
-        ? (_data[_page]?.length ?? 0)
-        : _flatAnimes().length;
+        ? _applyFilter(_data[_page] ?? const [], filter).length
+        : _applyFilter(_flatAnimes(), filter).length;
     final bottom = navOverlayChipBottom(context);
     return [
       Positioned(
@@ -667,12 +726,13 @@ class AnimeListState extends State<AnimeList>
   @override
   Widget build(BuildContext context) {
     var type = appdata.settings['animeListDisplayMode'];
+    final filter = _activeFilterOf(context);
     return Stack(
       children: [
         Positioned.fill(
           child: type == 'paging'
-              ? buildPagingMode(context)
-              : buildContinuousMode(context),
+              ? buildPagingMode(context, filter)
+              : buildContinuousMode(context, filter),
         ),
         Positioned(
           bottom: widget.showLoadedOverlay
@@ -683,6 +743,26 @@ class AnimeListState extends State<AnimeList>
               ? FloatingMenu(
                   controller: scrollController,
                   child: [
+                    [
+                      SpeedDialChild(
+                        child: Icon(
+                          _filterEnabled
+                              ? Icons.filter_alt
+                              : Icons.filter_alt_outlined,
+                        ),
+                        backgroundColor: _filterEnabled
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.primaryContainer,
+                        foregroundColor: _filterEnabled
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                        onTap: () {
+                          setState(() => _filterEnabled = !_filterEnabled);
+                          // 启用后筛选条在列表顶部，滚动到底时看不到：回到顶部
+                          if (_filterEnabled) scrollToTop();
+                        },
+                      ),
+                    ],
                     [
                       SpeedDialChild(
                         child: const Icon(Icons.refresh),
@@ -736,13 +816,17 @@ class AnimeListState extends State<AnimeList>
     );
   }
 
-  Widget buildPagingMode(BuildContext context) {
+  Widget buildPagingMode(BuildContext context, AnimeFilter? filter) {
+    final pageAnimes = _data[_page] ?? const <Anime>[];
+    final visible = _applyFilter(pageAnimes, filter);
+    final showNoResult =
+        filter != null && pageAnimes.isNotEmpty && visible.isEmpty;
     Widget pageSelecto = Container(
       height: 46,
       decoration: BoxDecoration(color: Colors.transparent),
       child: context.width <= changePoint
-          ? _buildCompactPageSelector()
-          : _buildFullPageSelector(),
+          ? _buildCompactPageSelector(visible.length)
+          : _buildFullPageSelector(visible.length),
     );
     // 悬浮主导航会因翻页选择条整体上移，列表底部留白要清过导航栏顶部；
     // 选择条本身仍贴底（抬升在 NaviPane 里按设置做）。
@@ -809,10 +893,14 @@ class AnimeListState extends State<AnimeList>
             slivers: [
               if (widget.leadingSlivers != null) ...widget.leadingSlivers!,
               if (widget.leadingSliver != null) widget.leadingSliver!,
-              SliverGridAnimes(
-                animes: _data[_page] ?? const [],
-                menuBuilder: widget.menuBuilder,
-              ),
+              _filterSliver(context),
+              if (showNoResult)
+                _noResultSliver(context)
+              else
+                SliverGridAnimes(
+                  animes: visible,
+                  menuBuilder: widget.menuBuilder,
+                ),
               if (widget.trailingSliver != null) widget.trailingSliver!,
               SliverPadding(
                 padding: EdgeInsets.only(bottom: contentBottom + 4),
@@ -838,12 +926,12 @@ class AnimeListState extends State<AnimeList>
             ],
           ),
         ),
-        ..._overlayChips(context, paging: true),
+        ..._overlayChips(context, paging: true, filter: filter),
       ],
     );
   }
 
-  Widget buildContinuousMode(BuildContext context) {
+  Widget buildContinuousMode(BuildContext context, AnimeFilter? filter) {
     // 连续模式没有翻页概念，报错时只显示错误与重试，不显示翻页条
     if (_error != null && _data.isEmpty) {
       return Column(
@@ -872,6 +960,8 @@ class AnimeListState extends State<AnimeList>
         ],
       );
     }
+    final flat = _flatAnimes();
+    final filtered = _applyFilter(flat, filter);
     return Stack(
       children: [
         Positioned.fill(
@@ -881,16 +971,24 @@ class AnimeListState extends State<AnimeList>
             slivers: [
               if (widget.leadingSlivers != null) ...widget.leadingSlivers!,
               if (widget.leadingSliver != null) widget.leadingSliver!,
-              SliverGridAnimes(
-                animes: _flatAnimes(),
-                menuBuilder: widget.menuBuilder,
-                onLastItemBuild: () {
-                  if (_error == null &&
-                      (_maxPage == null || _data.length < _maxPage!)) {
-                    _loadPage(_data.length + 1);
-                  }
-                },
-              ),
+              _filterSliver(context),
+              if (filter != null &&
+                  _flatAnimes().isNotEmpty &&
+                  filtered.isEmpty)
+                _noResultSliver(context)
+              else
+                SliverGridAnimes(
+                  animes: filtered,
+                  menuBuilder: widget.menuBuilder,
+                  onLastItemBuild: () {
+                    // 筛选开启时：滑到底不自动翻页（只筛已加载内容）
+                    if (filter != null) return;
+                    if (_error == null &&
+                        (_maxPage == null || _data.length < _maxPage!)) {
+                      _loadPage(_data.length + 1);
+                    }
+                  },
+                ),
               if (_error != null)
                 SliverToBoxAdapter(
                   child: Builder(
@@ -961,7 +1059,7 @@ class AnimeListState extends State<AnimeList>
             ),
           ),
         if (_error == null && _data.isNotEmpty)
-          ..._overlayChips(context, paging: false),
+          ..._overlayChips(context, paging: false, filter: filter),
       ],
     );
   }

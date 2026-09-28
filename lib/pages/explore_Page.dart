@@ -2,8 +2,10 @@
 
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
+import 'package:kostori/components/anime_filter.dart';
 import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/empty_state.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -67,6 +69,10 @@ class _ExplorePageState extends State<ExplorePage>
   bool get horizontalLayout => appdata.settings.s.exploreHorizontalLayout;
 
   double location = 0;
+
+  /// 卡片筛选：开关 + 当前条件（关闭时下发 null，不做任何过滤）
+  bool _filterEnabled = false;
+  AnimeFilter _filter = AnimeFilter.none;
 
   late List<String> sources;
   late Map<String, List<String>> sourcePages;
@@ -266,6 +272,20 @@ class _ExplorePageState extends State<ExplorePage>
     return null;
   }
 
+  /// 筛选条下的上下文说明：源名 · 当前页名（开启筛选后 tab 被隐藏，用它交代范围）。
+  String? _filterContextLabel(
+    String? sourceKey,
+    List<String> pages,
+    TabController? controller,
+  ) {
+    if (sourceKey == null) return null;
+    final sourceName = AnimeSource.find(sourceKey)?.name ?? sourceKey;
+    if (pages.isEmpty) return sourceName;
+    final index = (controller?.index ?? 0).clamp(0, pages.length - 1);
+    final pageName = pages[index].ts(sourceKey);
+    return pageName.isEmpty ? sourceName : '$sourceName · $pageName';
+  }
+
   void _onPageChanged() {
     _scheduleSyncLift();
   }
@@ -451,60 +471,32 @@ class _ExplorePageState extends State<ExplorePage>
     final headerCtrl = headerSource == null
         ? null
         : pageControllers[headerSource];
-    Widget sourceTabBar = BlurEffect(
-      key: _sourceBarKey,
-      child: Container(
-        width: double.infinity,
-        color: cs.surface.toOpacity(0.72),
-        padding: EdgeInsets.fromLTRB(12, 6 + context.padding.top, 12, 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: SlidingSegmentedBar(
-                scrollable: true,
-                selectedIndex: sourceController.index,
-                progress: sourceController.animation,
-                actionButton: TabActionButton(
-                  icon: const Icon(Icons.add),
-                  text: t.add,
-                  dense: true,
-                  onPressed: addPage,
-                ),
-                trackDecoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.toOpacity(0.5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                indicatorDecoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.toOpacity(0.08),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                children: [
-                  for (var i = 0; i < sources.length; i++)
-                    CapsuleOption(
-                      text: AnimeSource.find(sources[i])?.name ?? sources[i],
-                      isSelected: sourceController.index == i,
-                      onTap: () => sourceController.animateTo(i),
-                    ),
-                ],
-              ),
+    final Widget sourceBarContent = _filterEnabled
+        ? AnimeFilterBar(
+            filter: _filter,
+            onChanged: (f) => setState(() => _filter = f),
+            contextLabel: _filterContextLabel(
+              headerSource,
+              headerPages,
+              headerCtrl,
             ),
-            if (headerCtrl != null && headerPages.isNotEmpty) ...[
-              const SizedBox(height: 6),
+            padding: const EdgeInsets.only(top: 2),
+          )
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Align(
-                alignment: Alignment.center,
+                alignment: Alignment.centerLeft,
                 child: SlidingSegmentedBar(
                   scrollable: true,
-                  selectedIndex: headerCtrl.index,
-                  progress: headerCtrl.animation,
+                  selectedIndex: sourceController.index,
+                  progress: sourceController.animation,
+                  actionButton: TabActionButton(
+                    icon: const Icon(Icons.add),
+                    text: t.add,
+                    dense: true,
+                    onPressed: addPage,
+                  ),
                   trackDecoration: BoxDecoration(
                     color: cs.surfaceContainerHighest.toOpacity(0.5),
                     borderRadius: BorderRadius.circular(8),
@@ -521,18 +513,59 @@ class _ExplorePageState extends State<ExplorePage>
                     ],
                   ),
                   children: [
-                    for (var i = 0; i < headerPages.length; i++)
+                    for (var i = 0; i < sources.length; i++)
                       CapsuleOption(
-                        text: headerPages[i].ts(headerSource!),
-                        isSelected: headerCtrl.index == i,
-                        onTap: () => headerCtrl.animateTo(i),
+                        text: AnimeSource.find(sources[i])?.name ?? sources[i],
+                        isSelected: sourceController.index == i,
+                        onTap: () => sourceController.animateTo(i),
                       ),
                   ],
                 ),
               ),
+              if (headerCtrl != null && headerPages.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.center,
+                  child: SlidingSegmentedBar(
+                    scrollable: true,
+                    selectedIndex: headerCtrl.index,
+                    progress: headerCtrl.animation,
+                    trackDecoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.toOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    indicatorDecoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.toOpacity(0.08),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    children: [
+                      for (var i = 0; i < headerPages.length; i++)
+                        CapsuleOption(
+                          text: headerPages[i].ts(headerSource!),
+                          isSelected: headerCtrl.index == i,
+                          onTap: () => headerCtrl.animateTo(i),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
+          );
+
+    Widget sourceTabBar = BlurEffect(
+      key: _sourceBarKey,
+      child: Container(
+        width: double.infinity,
+        color: cs.surface.toOpacity(0.72),
+        padding: EdgeInsets.fromLTRB(12, 6 + context.padding.top, 12, 6),
+        child: sourceBarContent,
       ),
     );
 
@@ -543,28 +576,31 @@ class _ExplorePageState extends State<ExplorePage>
           child: MediaQuery.removePadding(
             context: context,
             removeTop: true,
-            child: ExtendedTabBarView(
-              // 独立的 PageStorageKey：否则其内部 PageController（keepPage=true）
-              // 会和同 bucket 里其它无 key 的滚动视图共用默认标识、互相覆盖，
-              // 导致回到页面时页视图恢复到错误的源（内容与选中的 tab 对不上）
-              key: const PageStorageKey('explore_source_view'),
-              controller: sourceController,
-              // 桌面端不用滚轮/拖动翻源，避免误切
-              physics: tabPagePhysics,
-              children: sources
-                  .map(
-                    (sourceKey) => _SourceExplorePage(
-                      key: ValueKey(sourceKey),
-                      sourceKey: sourceKey,
-                      pages: sourcePages[sourceKey] ?? [],
-                      pageController: pageControllers[sourceKey]!,
-                      onFloatingShow: _showFloating,
-                      onFloatingHide: _hideFloating,
-                      horizontalLayout: horizontalLayout,
-                      topInset: _sourceBarH,
-                    ),
-                  )
-                  .toList(),
+            child: AnimeFilterScope(
+              filter: _filterEnabled ? _filter : null,
+              child: ExtendedTabBarView(
+                // 独立的 PageStorageKey：否则其内部 PageController（keepPage=true）
+                // 会和同 bucket 里其它无 key 的滚动视图共用默认标识、互相覆盖，
+                // 导致回到页面时页视图恢复到错误的源（内容与选中的 tab 对不上）
+                key: const PageStorageKey('explore_source_view'),
+                controller: sourceController,
+                // 桌面端不用滚轮/拖动翻源，避免误切
+                physics: tabPagePhysics,
+                children: sources
+                    .map(
+                      (sourceKey) => _SourceExplorePage(
+                        key: ValueKey(sourceKey),
+                        sourceKey: sourceKey,
+                        pages: sourcePages[sourceKey] ?? [],
+                        pageController: pageControllers[sourceKey]!,
+                        onFloatingShow: _showFloating,
+                        onFloatingHide: _hideFloating,
+                        horizontalLayout: horizontalLayout,
+                        topInset: _sourceBarH,
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
           ),
         ),
@@ -600,6 +636,23 @@ class _ExplorePageState extends State<ExplorePage>
                   direction: SpeedDialDirection.up,
                   childPadding: const EdgeInsets.all(2),
                   childrens: [
+                    [
+                      SpeedDialChild(
+                        child: Icon(
+                          _filterEnabled
+                              ? Icons.filter_alt
+                              : Icons.filter_alt_outlined,
+                        ),
+                        backgroundColor: _filterEnabled
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.primaryContainer,
+                        foregroundColor: _filterEnabled
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                        onTap: () =>
+                            setState(() => _filterEnabled = !_filterEnabled),
+                      ),
+                    ],
                     [
                       SpeedDialChild(
                         child: const Icon(Icons.refresh),
@@ -931,7 +984,21 @@ class _MixedExplorePageState
     reset();
   }
 
-  Iterable<Widget> buildSlivers(BuildContext context, List<Object> data) sync* {
+  /// 筛选是否生效（由 buildContent 在 build 期写入，供 nextPage 判断）
+  bool _filtering = false;
+
+  @override
+  void nextPage() {
+    // 筛选开启时：滑到底不自动翻页（只筛已加载内容）
+    if (_filtering) return;
+    super.nextPage();
+  }
+
+  Iterable<Widget> buildSlivers(
+    BuildContext context,
+    List<Object> data,
+    AnimeFilter? filter,
+  ) sync* {
     List<Anime> cache = [];
     for (var part in data) {
       if (part is ExplorePagePart) {
@@ -940,12 +1007,20 @@ class _MixedExplorePageState
           yield const SliverToBoxAdapter(child: Divider());
           cache.clear();
         }
-        yield* _buildExplorePagePart(part, widget.sourceKey);
+        final animes = AnimeFilter.apply(part.animes, filter);
+        // 筛选后该分区无命中：标题 + 网格整块跳过
+        if (filter != null && animes.isEmpty) continue;
+        yield* _buildExplorePagePart(
+          filter == null
+              ? part
+              : ExplorePagePart(part.title, animes, part.viewMore),
+          widget.sourceKey,
+        );
         yield const SliverToBoxAdapter(child: Divider());
       } else if (part is ExploreGridPart) {
-        cache.addAll(part.animes);
+        cache.addAll(AnimeFilter.apply(part.animes, filter));
       } else {
-        cache.addAll(part as List<Anime>);
+        cache.addAll(AnimeFilter.apply(part as List<Anime>, filter));
       }
     }
     if (cache.isNotEmpty) {
@@ -955,11 +1030,32 @@ class _MixedExplorePageState
 
   @override
   Widget buildContent(BuildContext context, List<Object> data) {
+    final scope = AnimeFilterScope.of(context);
+    final filter = (scope != null && scope.isActive) ? scope : null;
+    _filtering = filter != null;
+    // 条目总数 + 分区数（筛选时统计命中数）
+    var items = 0;
+    for (final part in data) {
+      if (part is ExplorePagePart) {
+        items += AnimeFilter.apply(part.animes, filter).length;
+      } else if (part is ExploreGridPart) {
+        items += AnimeFilter.apply(part.animes, filter).length;
+      } else if (part is List<Anime>) {
+        items += AnimeFilter.apply(part, filter).length;
+      }
+    }
+    final empty = filter != null && items == 0;
     final scroll = SmoothCustomScrollView(
       controller: widget.controller,
       slivers: [
         if (widget.leadingSliver != null) widget.leadingSliver!,
-        ...buildSlivers(context, data),
+        ...buildSlivers(context, data, filter),
+        // 筛选后全部无命中：保留头部（顶部让位）并显示空态
+        if (empty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyState(message: t.exploreFilterNoResult),
+          ),
       ],
     );
     // 结构保持稳定（始终同一 Stack），避免加载指示器出现时重建 scroll
@@ -969,21 +1065,10 @@ class _MixedExplorePageState
     final navi = context.findAncestorStateOfType<NaviPaneState>();
     final navInset =
         navi?.bottomBarHeight ?? MediaQuery.paddingOf(context).bottom;
-    // 条目总数 + 分区数
-    var items = 0;
-    for (final part in data) {
-      if (part is ExplorePagePart) {
-        items += part.animes.length;
-      } else if (part is ExploreGridPart) {
-        items += part.animes.length;
-      } else if (part is List<Anime>) {
-        items += part.length;
-      }
-    }
     return Stack(
       children: [
         scroll,
-        if (showLoader)
+        if (showLoader && !empty)
           Positioned(
             left: 0,
             right: 0,
@@ -1200,20 +1285,35 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
   }
 
   Widget buildPage() {
+    final scope = AnimeFilterScope.of(context);
+    final filter = (scope != null && scope.isActive) ? scope : null;
+    final partSlivers = _buildPage(filter).toList();
+    final empty = filter != null && partSlivers.isEmpty;
     return SmoothCustomScrollView(
       key: const PageStorageKey('scroll'),
       controller: widget.controller,
       slivers: [
         if (widget.leadingSliver != null) widget.leadingSliver!,
-        ..._buildPage(),
+        ...partSlivers,
+        // 筛选后所有分区都无命中：保留头部并显示空态
+        if (empty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyState(message: t.exploreFilterNoResult),
+          ),
       ],
     );
   }
 
-  Iterable<Widget> _buildPage() sync* {
+  Iterable<Widget> _buildPage(AnimeFilter? filter) sync* {
     for (var part in parts!) {
+      final animes = AnimeFilter.apply(part.animes, filter);
+      // 筛选后该分区无命中：标题 + 网格整块跳过
+      if (filter != null && animes.isEmpty) continue;
       yield* _buildExplorePagePart(
-        part,
+        filter == null
+            ? part
+            : ExplorePagePart(part.title, animes, part.viewMore),
         widget.animeSourceKey,
         horizontal: widget.horizontalLayout,
       );

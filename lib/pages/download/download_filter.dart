@@ -153,6 +153,7 @@ class _DownloadGroupPicker extends StatelessWidget {
       builder: (context, sc) => DownloadGroupPickerBody(
         current: current,
         scrollController: sc,
+        onCreateGroup: _createQuickGroup,
         onSelected: (group) {
           Navigator.pop(context);
           onSelected(group);
@@ -160,6 +161,17 @@ class _DownloadGroupPicker extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 快速新建并选中（顶层）：搜索框输入的名称一键创建/选中。
+/// 目录选择器与「移动到文件夹」共用。
+Future<String?> _createQuickGroup(String name) async {
+  final leaf = DownloadManager.sanitizeGroupName(name);
+  if (leaf.isEmpty) return null;
+  if (!DownloadManager.groups().contains(leaf)) {
+    await DownloadManager.createGroup(leaf);
+  }
+  return leaf;
 }
 
 /// 分组选择内容：搜索 + 全部/未分组/顶层/子组筛选 + 层级列表。
@@ -171,6 +183,9 @@ class DownloadGroupPickerBody extends StatefulWidget {
     required this.onSelected,
     this.scrollController,
     this.trailingBuilder,
+    this.onSearchChanged,
+    this.onCreateGroup,
+    this.autoFocusSearch = false,
   });
 
   final String current;
@@ -179,6 +194,16 @@ class DownloadGroupPickerBody extends StatefulWidget {
 
   /// 每个分组尾部的自定义控件（如删除按钮）
   final Widget Function(String group)? trailingBuilder;
+
+  /// 搜索框内容变化回调（供外部新建分组时预填关键词）
+  final ValueChanged<String>? onSearchChanged;
+
+  /// 关键词无匹配时的一键「新建并选择」入口：传入关键词，返回创建/选中的完整
+  /// 分组名（null=失败）。搜索有内容且无同名顶层分组时，列表顶部出现该入口。
+  final Future<String?> Function(String name)? onCreateGroup;
+
+  /// 打开时自动聚焦搜索框（下载目录选择器用：可直接输入序号/名称，省一次点击）
+  final bool autoFocusSearch;
 
   @override
   State<DownloadGroupPickerBody> createState() =>
@@ -191,6 +216,23 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
 
   /// all / ungrouped / root / sub
   String _filter = 'all';
+
+  /// 已展开的父组（默认全部折叠，避免子组多时翻很久才到下一个父组）
+  final Set<String> _expanded = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // 当前选中项是子组时，默认展开其父组，便于看到当前选择
+    final cur = widget.current;
+    if (cur.isNotEmpty && DownloadManager.isSubGroup(cur)) {
+      final parent = cur.substring(
+        0,
+        cur.lastIndexOf(DownloadManager.groupSeparator),
+      );
+      if (parent.isNotEmpty) _expanded.add(parent);
+    }
+  }
 
   @override
   void dispose() {
@@ -218,6 +260,15 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
             '${group.substring(0, group.lastIndexOf(DownloadManager.groupSeparator))}'
       : group;
 
+  /// 是否已存在与关键词同名的顶层分组（存在时无需显示新建入口）
+  bool _hasExactTopLevel(String name) {
+    final k = DownloadManager.sanitizeGroupName(name).toLowerCase();
+    if (k.isEmpty) return false;
+    return DownloadManager.groups().any(
+      (g) => !DownloadManager.isSubGroup(g) && g.toLowerCase() == k,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -228,8 +279,12 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: TextField(
             controller: _searchCtrl,
+            autofocus: widget.autoFocusSearch,
             onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-            onChanged: (v) => setState(() => _keyword = v),
+            onChanged: (v) {
+              setState(() => _keyword = v);
+              widget.onSearchChanged?.call(v);
+            },
             decoration: InputDecoration(
               hintText: t.search,
               isDense: true,
@@ -241,6 +296,7 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
                       onPressed: () {
                         _searchCtrl.clear();
                         setState(() => _keyword = '');
+                        widget.onSearchChanged?.call('');
                       },
                     ),
               border: OutlineInputBorder(
@@ -269,30 +325,67 @@ class _DownloadGroupPickerBodyState extends State<DownloadGroupPickerBody> {
 
   Widget _buildList(ColorScheme cs, List<String> groups) {
     final showUngrouped = _filter == 'all' || _filter == 'ungrouped';
-    if (!showUngrouped && groups.isEmpty) {
+    final keyword = _keyword.trim();
+    final canCreate =
+        widget.onCreateGroup != null &&
+        keyword.isNotEmpty &&
+        !_hasExactTopLevel(keyword);
+    // 仅「全部」且未搜索时启用折叠/展开：避免子组多时翻很久才到下一个父组
+    final collapsible = _filter == 'all' && keyword.isEmpty;
+    if (!showUngrouped && groups.isEmpty && !canCreate) {
       return Center(
         child: Text(t.noData, style: TextStyle(color: cs.onSurfaceVariant)),
+      );
+    }
+    final tiles = <Widget>[
+      if (canCreate)
+        _GroupChoiceTile(
+          label: '${t.newFolder}「$keyword」',
+          selected: false,
+          icon: Icons.create_new_folder_outlined,
+          onTap: () async {
+            final full = await widget.onCreateGroup!(keyword);
+            if (full != null && full.isNotEmpty) widget.onSelected(full);
+          },
+        ),
+      if (showUngrouped)
+        _GroupChoiceTile(
+          label: t.ungrouped,
+          selected: widget.current.isEmpty,
+          onTap: () => widget.onSelected(''),
+        ),
+    ];
+    for (final g in groups) {
+      final isSub = DownloadManager.isSubGroup(g);
+      if (collapsible && isSub) {
+        final parent = g.substring(
+          0,
+          g.lastIndexOf(DownloadManager.groupSeparator),
+        );
+        if (!_expanded.contains(parent)) continue; // 父组折叠：隐藏子组
+      }
+      final canExpand =
+          collapsible && !isSub && DownloadManager.hasSubGroups(g);
+      tiles.add(
+        _GroupChoiceTile(
+          label: _label(g),
+          selected: widget.current == g,
+          isSub: isSub,
+          expanded: canExpand ? _expanded.contains(g) : null,
+          onToggleExpand: canExpand
+              ? () => setState(() {
+                  if (!_expanded.remove(g)) _expanded.add(g);
+                })
+              : null,
+          trailing: widget.trailingBuilder?.call(g),
+          onTap: () => widget.onSelected(g),
+        ),
       );
     }
     return ListView(
       controller: widget.scrollController,
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-      children: [
-        if (showUngrouped)
-          _GroupChoiceTile(
-            label: t.ungrouped,
-            selected: widget.current.isEmpty,
-            onTap: () => widget.onSelected(''),
-          ),
-        for (final g in groups)
-          _GroupChoiceTile(
-            label: _label(g),
-            selected: widget.current == g,
-            isSub: DownloadManager.isSubGroup(g),
-            trailing: widget.trailingBuilder?.call(g),
-            onTap: () => widget.onSelected(g),
-          ),
-      ],
+      children: tiles,
     );
   }
 }
@@ -304,7 +397,10 @@ class _GroupChoiceTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.isSub = false,
+    this.icon,
     this.trailing,
+    this.expanded,
+    this.onToggleExpand,
   });
 
   final String label;
@@ -313,20 +409,53 @@ class _GroupChoiceTile extends StatelessWidget {
 
   final bool isSub;
 
+  /// 自定义前置图标（默认按层级用文件夹/子目录图标）
+  final IconData? icon;
+
   final Widget? trailing;
+
+  /// 非 null 时显示展开/折叠箭头（父组）
+  final bool? expanded;
+
+  /// 展开/折叠回调
+  final VoidCallback? onToggleExpand;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    Widget? tail = trailing;
+    if (onToggleExpand != null) {
+      tail = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: (expanded ?? false)
+                ? t.downloadGroupCollapse
+                : t.downloadGroupExpand,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              (expanded ?? false)
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+              size: 20,
+              color: cs.onSurfaceVariant,
+            ),
+            onPressed: onToggleExpand,
+          ),
+          if (tail != null) tail,
+        ],
+      );
+    }
     return SelectCard(
       selected: selected,
       title: label,
       leading: Icon(
-        isSub ? Icons.subdirectory_arrow_right : Icons.folder_outlined,
+        icon ??
+            (isSub ? Icons.subdirectory_arrow_right : Icons.folder_outlined),
         size: 20,
         color: selected ? cs.onPrimaryContainer : cs.primary,
       ),
-      trailing: trailing,
+      trailing: tail,
       padding: EdgeInsets.only(left: isSub ? 18 : 0, bottom: 6),
       onChanged: (_) => onTap(),
     );

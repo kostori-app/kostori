@@ -6,7 +6,7 @@
 
 - 大多数组件从 barrel 导入：`import 'package:kostori/components/components.dart';`
   （其中 `part` 的文件：appbar、button、message、sheet、menu、flyout、select、select_card、scroll、image、layout、loading、effects、navigation_bar、pop_up_widget、side_bar、selection_menu、favorite_dialog、anime、anime_rating、gesture、code、assistant_avatar、consts；并再导出 `animated.dart`、`qr_code.dart`）
-- 以下为独立文件，**需单独 import**：`anime_list.dart`、`bangumi_widget.dart`(+`bangumi_cards.dart`)、`translation_widget.dart`、`ui_components.dart`、`empty_state.dart`、`watermark.dart`、`custom_markdown_widget.dart`、`grid_speed_dial.dart`、`image_preview_widget.dart`、`character_card_editor.dart`、`qr_clipboard_widget.dart`、`system_status_widget.dart`、`timeline_tree.dart`、`window_frame.dart`、`calendar_screenshot_widget.dart`、`color_pick_page.dart`、`ai_model_card.dart`、`js_ui.dart`、`word_cloud_widget.dart`、`share_widget.dart`、`bean/card/*.dart`
+- 以下为独立文件，**需单独 import**：`anime_list.dart`、`anime_filter.dart`（`AnimeFilter`/`AnimeFilterScope`/`AnimeFilterBar`，卡片筛选）、`bangumi_widget.dart`(+`bangumi_cards.dart`)、`translation_widget.dart`、`ui_components.dart`、`empty_state.dart`、`watermark.dart`、`custom_markdown_widget.dart`、`grid_speed_dial.dart`、`image_preview_widget.dart`、`character_card_editor.dart`、`qr_clipboard_widget.dart`、`system_status_widget.dart`、`timeline_tree.dart`、`window_frame.dart`、`calendar_screenshot_widget.dart`、`color_pick_page.dart`、`ai_model_card.dart`、`js_ui.dart`、`word_cloud_widget.dart`、`share_widget.dart`、`bean/card/*.dart`
 
 ## Material 默认 → 项目组件（重点）
 

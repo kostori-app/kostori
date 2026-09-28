@@ -41,6 +41,15 @@ class _CodeEditorState extends State<CodeEditor> {
     future = _controller.init(context.brightness);
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    horizontalScrollController.dispose();
+    verticalScrollController.dispose();
+    super.dispose();
+  }
+
   void handleTab() {
     var text = _controller.text;
     var start = _controller.selection.start;

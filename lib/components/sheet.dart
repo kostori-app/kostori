@@ -1,6 +1,6 @@
 part of "components.dart";
 
-class Sheet extends StatelessWidget {
+class Sheet extends StatefulWidget {
   final String title;
   final IconData? icon;
   final Widget Function(BuildContext context, ScrollController sc) builder;
@@ -19,10 +19,24 @@ class Sheet extends StatelessWidget {
   });
 
   @override
+  State<Sheet> createState() => _SheetState();
+}
+
+class _SheetState extends State<Sheet> {
+  /// 复用同一个 ScrollController（此前在 build 里新建：键盘避让时弹层每帧重建
+  /// 都会换掉控制器、反复重建 ScrollPosition 并泄漏，导致输入法弹收卡顿）。
+  final ScrollController _sc = ScrollController();
+
+  @override
+  void dispose() {
+    _sc.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final sc = ScrollController();
-    final height = MediaQuery.sizeOf(context).height * initialSize;
+    final height = MediaQuery.sizeOf(context).height * widget.initialSize;
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -33,9 +47,13 @@ class Sheet extends StatelessWidget {
           child: Column(
             children: [
               _SheetHandle(),
-              _SheetHeader(title: title, icon: icon, trailing: headerTrailing),
-              Expanded(child: builder(context, sc)),
-              if (footer != null) footer!,
+              _SheetHeader(
+                title: widget.title,
+                icon: widget.icon,
+                trailing: widget.headerTrailing,
+              ),
+              Expanded(child: widget.builder(context, _sc)),
+              if (widget.footer != null) widget.footer!,
             ],
           ),
         ),

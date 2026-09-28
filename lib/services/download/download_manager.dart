@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/services/download/download_file_writer.dart';
 import 'package:kostori/services/download/download_keep_alive.dart';
 import 'package:kostori/services/download/download_task.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
@@ -96,6 +98,10 @@ class DownloadManager extends ChangeNotifier {
 
   /// 进度通知节流：task.id → 上次 notify 时间
   final Map<String, DateTime> _lastProgressNotify = {};
+
+  /// 全局进度通知节流：把多任务/多来源的通知统一为「200ms 内至多一次」。
+  DateTime? _lastProgressNotifyAll;
+  Timer? _progressNotifyTimer;
 
   /// 下载记录变化（完成/删除/移动/重命名）时触发，供卡片下载角标刷新
   final StreamController<void> _recordsChanged =
@@ -439,32 +445,9 @@ class DownloadManager extends ChangeNotifier {
               t.status == DownloadStatus.failed)
             _taskDirPath(t),
       };
-
-      Future<void> cleanTaskDir(Directory dir) async {
-        await _deleteQuiet(File(p.join(dir.path, 'video.mp4')));
-        final segDir = Directory(p.join(dir.path, 'segments'));
-        if (!await segDir.exists()) return;
-        try {
-          await segDir.delete(recursive: true);
-        } catch (_) {}
-      }
-
-      await for (final entry in root.list()) {
-        if (entry is! Directory) continue;
-        if (keepDirs.contains(entry.path)) continue;
-        final hasSeg = await Directory(p.join(entry.path, 'segments')).exists();
-        final hasVideo = await File(p.join(entry.path, 'video.mp4')).exists();
-        if (hasSeg || hasVideo) {
-          await cleanTaskDir(entry);
-        } else {
-          // 可能是分组目录：递归清理其下的任务目录
-          await for (final sub in entry.list()) {
-            if (sub is! Directory) continue;
-            if (keepDirs.contains(sub.path)) continue;
-            await cleanTaskDir(sub);
-          }
-        }
-      }
+      // 遍历整个下载目录（含分组）可能很多，放后台 isolate，避免启动瞬间卡 UI
+      final rootPath = root.path;
+      await Isolate.run(() => _cleanupOrphanSegmentsSync(rootPath, keepDirs));
     } catch (e) {
       Log.error('DownloadManager.cleanupOrphanSegments', '$e');
     }
@@ -831,11 +814,36 @@ class DownloadManager extends ChangeNotifier {
     });
   }
 
+  /// 全局限流进度通知：200ms 窗口内至多 notifyListeners 一次，避免多任务
+  /// 并发的通知频率叠加、高频重建 UI。
+  void _notifyProgress() {
+    final now = DateTime.now();
+    final last = _lastProgressNotifyAll;
+    if (last == null || now.difference(last).inMilliseconds >= 200) {
+      _lastProgressNotifyAll = now;
+      notifyListeners();
+      return;
+    }
+    _progressNotifyTimer ??= Timer(const Duration(milliseconds: 200), () {
+      _progressNotifyTimer = null;
+      _lastProgressNotifyAll = DateTime.now();
+      notifyListeners();
+    });
+  }
+
   /// 计算并上报下载进度（含速度采样，500ms 间隔平滑）。
   /// 依赖 [DownloadTask.downloadedBytes] 已更新。
   void _updateDownloadProgress(DownloadTask task) {
     _ensureSpeedTick();
     final now = DateTime.now();
+    // 快路径：距上次通知不足 250ms 直接返回（字段已在调用处更新），省去每个
+    // 数据块的采样/保活/通知开销。
+    final lastNotify = _lastProgressNotify[task.id];
+    if (lastNotify != null && now.difference(lastNotify).inMilliseconds < 250) {
+      return;
+    }
+    _lastProgressNotify[task.id] = now;
+    _notifyProgress();
     final lastTime = _speedSampleTime[task.id];
     final lastBytes = _speedSampleBytes[task.id];
     if (lastTime != null && lastBytes != null) {
@@ -849,13 +857,6 @@ class DownloadManager extends ChangeNotifier {
     } else {
       _speedSampleTime[task.id] = now;
       _speedSampleBytes[task.id] = task.downloadedBytes;
-    }
-    // 节流通知：数据块到达非常频繁，逐个 notifyListeners 会拖垮全局 UI
-    final lastNotify = _lastProgressNotify[task.id];
-    if (lastNotify == null ||
-        now.difference(lastNotify).inMilliseconds >= 250) {
-      _lastProgressNotify[task.id] = now;
-      notifyListeners();
     }
     _syncKeepAlive();
   }
@@ -952,9 +953,25 @@ class DownloadManager extends ChangeNotifier {
         cancelToken: cancelToken,
         onProgress: (p) {
           task.progress = p;
-          notifyListeners();
+          _notifyProgress();
         },
       ),
+    );
+  }
+
+  /// 打开写盘 sink：优先后台写盘 isolate，失败则回退 ISOink 直写。
+  Future<DownloadSink> _openSink(
+    DownloadFileWriter? writer,
+    String path, {
+    bool append = false,
+  }) async {
+    if (writer != null) {
+      try {
+        return await writer.open(path, append: append);
+      } catch (_) {}
+    }
+    return DirectDownloadSink(
+      File(path).openWrite(mode: append ? FileMode.append : FileMode.write),
     );
   }
 
@@ -972,6 +989,8 @@ class DownloadManager extends ChangeNotifier {
     final tmp = File(tmpPath);
     const maxAttempts = 5;
     final dio = AppDio();
+    // 后台写盘 isolate（不可用则为 null，走直写兜底）
+    final writer = await DownloadFileWriter.instance();
     // 410 回退标记：续传 Range 被拒时只回退整段重下一次，
     // 避免死循环删进度
     var retriedFull = false;
@@ -1105,14 +1124,14 @@ class DownloadManager extends ChangeNotifier {
           task.totalBytes = expectedFull;
         }
         final stream = res.data!.stream;
-        final sink = tmp.openWrite(mode: FileMode.append);
+        final sink = await _openSink(writer, tmpPath, append: true);
         try {
-          await for (final chunk in stream) {
+          await for (final chunk in stream.timeout(_kDirectStallTimeout)) {
             if (cancelToken.isCancelled) {
               await sink.close();
               throw FfmpegCancelledException();
             }
-            sink.add(chunk);
+            final backpressure = sink.add(chunk);
             received += chunk.length;
             task.downloadedBytes = downloaded + received;
             if (total > 0) {
@@ -1120,7 +1139,9 @@ class DownloadManager extends ChangeNotifier {
                   .clamp(0.0, 1.0);
             }
             _updateDownloadProgress(task);
+            if (backpressure != null) await backpressure;
           }
+          await sink.flush();
           await sink.close();
         } catch (e) {
           try {
@@ -1132,6 +1153,10 @@ class DownloadManager extends ChangeNotifier {
           }
           // 永久性 HTTP 错误（403/404/410 地址失效）不当作断线重试
           if (e is _DownloadHttpError) rethrow;
+          // 连接停滞：主动取消本次请求（释放连接），基于已写入字节续传
+          if (e is TimeoutException && !dioCancel.isCancelled) {
+            dioCancel.cancel();
+          }
           interrupted = true;
         }
         if (interrupted) {
@@ -1194,16 +1219,16 @@ class DownloadManager extends ChangeNotifier {
     bool useHttp2 = false,
   }) async {
     final dio = AppDio();
+    // 后台写盘 isolate（分片落盘同样移出 UI 线程；不可用则为 null 直写兜底）
+    final writer = await DownloadFileWriter.instance();
     final segDir = p.join(taskDir, 'segments');
     await Directory(segDir).create(recursive: true);
     // m3u8 解析与分片同样用任务头：先刷新过期 cookie
     await _refreshTaskCookie(task);
 
-    // 断点续传：已有分片字节计入已下载（避免重复统计）
-    var existingBytes = 0;
-    await for (final f in Directory(segDir).list()) {
-      existingBytes += await File(f.path).length();
-    }
+    // 断点续传：已有分片字节计入已下载（避免重复统计）。
+    // 上千分片逐个 await File.length() 会霸占 UI isolate，改到后台 isolate 统计
+    final existingBytes = await Isolate.run(() => _segDirBytesSync(segDir));
     task.downloadedBytes = existingBytes;
 
     // 1. 解析 m3u8（含变体选择）
@@ -1211,16 +1236,20 @@ class DownloadManager extends ChangeNotifier {
     task.segTotal = segUrls.length;
     task.segDone = 0;
 
-    // 2. 并发下载分片（信号量限流；已存在的跳过实现断点）
-    final sem = _SimpleSemaphore(_segmentConcurrent);
-    final segPaths = List<String>.filled(segUrls.length, '');
+    // 2. 并发下载分片（固定 worker 池；已存在的跳过实现断点）。相比「每分片一个
+    //    Future + 信号量」，worker 池不会一次性创建上千个 Future/闭包。
+    final total = segUrls.length;
+    final segPaths = List<String>.filled(total, '');
     var completed = 0;
     final errors = <String>[];
-    await Future.wait(
-      List.generate(segUrls.length, (i) async {
-        await sem.acquire();
+    var nextIndex = 0;
+    final workerCount = total == 0 ? 0 : _segmentConcurrent.clamp(1, total);
+    Future<void> worker() async {
+      // 取消/无更多分片即退出；每个 worker 串行领取下一个下标
+      while (!cancelToken.isCancelled) {
+        final i = nextIndex++;
+        if (i >= total) return;
         try {
-          if (cancelToken.isCancelled) return;
           final segFile = File(
             p.join(segDir, 'seg_${i.toString().padLeft(6, '0')}.ts'),
           );
@@ -1229,38 +1258,61 @@ class DownloadManager extends ChangeNotifier {
             completed++;
           } else {
             // 分片下载带重试：签名 CDN（如 beeg）偶发 403/断连，重试可缓解。
-            // 流式直写文件：此前整分片先读进内存（List<int> 常驻主 isolate，
-            // 多分片并发时几十 MB + GC，是下载时 UI 卡的主因之一）
+            // 部分 CDN 会把分片连接挂住（不发数据也不断开），rhttp 不认 dio 的
+            // receiveTimeout；对「请求」和「取块」都套 stall 超时主动判停并重试。
             var received = 0;
             for (var attempt = 0; attempt < 3; attempt++) {
+              if (attempt > 0) {
+                await Future.delayed(Duration(seconds: attempt));
+              }
+              if (cancelToken.isCancelled) throw FfmpegCancelledException();
+              final segCancel = CancelToken();
+              // 全局暂停/取消转发到本段请求，保证能及时中断
+              final forward = Timer.periodic(
+                const Duration(milliseconds: 300),
+                (_) {
+                  if (cancelToken.isCancelled && !segCancel.isCancelled) {
+                    segCancel.cancel();
+                  }
+                },
+              );
               try {
-                final resp = await dio.get<ResponseBody>(
-                  segUrls[i],
-                  options: Options(
-                    headers: task.headers,
-                    responseType: ResponseType.stream,
-                    // 分片 hanging 会导致 79/80 卡住不动（Future.wait 永不结束），
-                    // 显式超时让尾部分片失败走重试/报错，而不是静默卡死
-                    sendTimeout: const Duration(seconds: 30),
-                    receiveTimeout: const Duration(seconds: 30),
-                    // noLog：分片动辄上千，不逐条记录（失败由下载器统一汇总上报）
-                    extra: useHttp2
-                        ? const {'noLog': true}
-                        : const {'httpVersion11': true, 'noLog': true},
-                  ),
-                );
+                final resp = await dio
+                    .get<ResponseBody>(
+                      segUrls[i],
+                      options: Options(
+                        headers: task.headers,
+                        responseType: ResponseType.stream,
+                        // 兼容其它 adapter；rhttp 实际靠下面的 .timeout 兜底
+                        sendTimeout: const Duration(seconds: 30),
+                        receiveTimeout: const Duration(seconds: 30),
+                        // noLog：分片动辄上千，不逐条记录（失败由下载器统一汇总上报）
+                        extra: useHttp2
+                            ? const {'noLog': true}
+                            : const {'httpVersion11': true, 'noLog': true},
+                      ),
+                      cancelToken: segCancel,
+                    )
+                    .timeout(_kHlsStallTimeout);
                 final expect =
                     int.tryParse(resp.headers.value('content-length') ?? '') ??
                     -1;
-                final sink = segFile.openWrite();
+                final sink = await _openSink(
+                  writer,
+                  segFile.path,
+                  append: false,
+                );
                 var got = 0;
                 try {
-                  await for (final chunk in resp.data!.stream) {
+                  await for (final chunk in resp.data!.stream.timeout(
+                    _kHlsStallTimeout,
+                  )) {
                     if (cancelToken.isCancelled) {
                       throw FfmpegCancelledException();
                     }
-                    sink.add(chunk);
+                    final backpressure = sink.add(chunk);
                     got += chunk.length;
+                    if (backpressure != null) await backpressure;
                   }
                   await sink.flush();
                 } catch (_) {
@@ -1284,13 +1336,21 @@ class DownloadManager extends ChangeNotifier {
                 if (await segFile.length() != got) continue;
                 received = got;
                 break;
+              } on TimeoutException {
+                segCancel.cancel();
+                if (cancelToken.isCancelled) throw FfmpegCancelledException();
+                // 停滞：前两次直接重试，最后一次抛「中断」类错误，
+                // 让上层 _runTask 自动续传（重跑只会补缺失分片）
+                if (attempt >= 2) {
+                  throw Exception('下载中断：分片 $i 连接停滞超时');
+                }
               } catch (e) {
+                if (cancelToken.isCancelled) throw FfmpegCancelledException();
                 if (e is FfmpegCancelledException) rethrow;
                 if (e is DioException) _throwIfCloudflare(e);
                 if (attempt >= 2) rethrow;
-              }
-              if (attempt < 2) {
-                await Future.delayed(const Duration(seconds: 1));
+              } finally {
+                forward.cancel();
               }
             }
             if (received <= 0) {
@@ -1306,11 +1366,13 @@ class DownloadManager extends ChangeNotifier {
         } catch (e) {
           if (e is CloudflareException) rethrow;
           errors.add('分片 $i: $e');
-        } finally {
-          sem.release();
         }
-      }),
-    );
+      }
+    }
+
+    if (workerCount > 0) {
+      await Future.wait(List.generate(workerCount, (_) => worker()));
+    }
 
     if (cancelToken.isCancelled) throw FfmpegCancelledException();
     if (errors.isNotEmpty) {
@@ -1353,12 +1415,8 @@ class DownloadManager extends ChangeNotifier {
     required String outputPath,
     FfmpegCancelToken? cancelToken,
   }) async {
-    int expected = 0;
-    for (final path in tsPaths) {
-      try {
-        expected += await File(path).length();
-      } catch (_) {}
-    }
+    // 分片可能上千：逐个 await length() 会卡 UI，改到后台 isolate 统计
+    final expected = await Isolate.run(() => _filesTotalBytesSync(tsPaths));
     Timer? timer;
     double last = 0;
     if (expected > 0) {
@@ -1371,7 +1429,7 @@ class DownloadManager extends ChangeNotifier {
           if (p > last + 0.01) {
             last = p;
             task.progress = p;
-            notifyListeners();
+            _notifyProgress();
           }
         } catch (_) {}
       });
@@ -1392,6 +1450,13 @@ class DownloadManager extends ChangeNotifier {
     final v = appdata.implicitData['downloadSegmentConcurrent'] as int?;
     return (v != null && v > 0) ? v : 4;
   }
+
+  /// HLS 分片停滞超时：请求或取块超过该时长即判挂死并重试（rhttp 不认
+  /// dio 的 receiveTimeout，只能主动判停）。
+  static const Duration _kHlsStallTimeout = Duration(seconds: 20);
+
+  /// 直链下载停滞超时：两块数据之间超过该时长即判为断流，走 Range 续传。
+  static const Duration _kDirectStallTimeout = Duration(seconds: 30);
 
   /// 解析 m3u8：选择最高码率变体，返回分片 URL 列表
   Future<List<String>> _resolveHlsSegments(
@@ -2329,30 +2394,67 @@ final downloadsChangedProvider = StreamProvider<void>((ref) {
   return DownloadManager.instance.recordsChanged;
 });
 
-/// 简单信号量：限制并发数量
-class _SimpleSemaphore {
-  final int _max;
-  int _used = 0;
-  final List<Completer<void>> _waiters = [];
+// ── 后台 isolate 使用的顶层工具（只接收可发送的基本类型）────────────────────
 
-  _SimpleSemaphore(this._max);
-
-  Future<void> acquire() async {
-    if (_used < _max) {
-      _used++;
-      return;
+/// 统计分片目录内所有文件的字节数（后台 isolate 执行）。
+int _segDirBytesSync(String dir) {
+  var total = 0;
+  try {
+    for (final f in Directory(dir).listSync()) {
+      if (f is! File) continue;
+      try {
+        total += f.lengthSync();
+      } catch (_) {}
     }
-    final c = Completer<void>();
-    _waiters.add(c);
-    await c.future;
-    _used++;
+  } catch (_) {}
+  return total;
+}
+
+/// 统计一组文件的字节数（后台 isolate 执行）。
+int _filesTotalBytesSync(List<String> paths) {
+  var total = 0;
+  for (final path in paths) {
+    try {
+      total += File(path).lengthSync();
+    } catch (_) {}
+  }
+  return total;
+}
+
+/// 清理非保留任务目录里的 segments 分片与 video.mp4 半成品（后台 isolate 执行）。
+/// 下载根目录下可能有分组子目录，递归一层处理。
+void _cleanupOrphanSegmentsSync(String rootPath, Set<String> keepDirs) {
+  void cleanTaskDir(Directory dir) {
+    try {
+      final video = File(p.join(dir.path, 'video.mp4'));
+      if (video.existsSync()) video.deleteSync();
+    } catch (_) {}
+    final segDir = Directory(p.join(dir.path, 'segments'));
+    if (segDir.existsSync()) {
+      try {
+        segDir.deleteSync(recursive: true);
+      } catch (_) {}
+    }
   }
 
-  void release() {
-    _used--;
-    if (_waiters.isNotEmpty) {
-      final c = _waiters.removeAt(0);
-      c.complete();
+  try {
+    final root = Directory(rootPath);
+    if (!root.existsSync()) return;
+    for (final entry in root.listSync()) {
+      if (entry is! Directory) continue;
+      if (keepDirs.contains(entry.path)) continue;
+      final hasSeg = Directory(p.join(entry.path, 'segments')).existsSync();
+      final hasVideo = File(p.join(entry.path, 'video.mp4')).existsSync();
+      if (hasSeg || hasVideo) {
+        cleanTaskDir(entry);
+      } else {
+        // 可能是分组目录：递归清理其下的任务目录
+        for (final sub in entry.listSync()) {
+          if (sub is! Directory) continue;
+          if (keepDirs.contains(sub.path)) continue;
+          cleanTaskDir(sub);
+        }
+      }
     }
-  }
+  } catch (_) {}
 }

@@ -57,7 +57,8 @@ class M3u8ProxyServer {
             )
             ..write(cleaned)
             ..close();
-        } else if (request.uri.path == '/proxy') {
+        } else if (request.uri.path == '/proxy' ||
+            request.uri.path.startsWith('/proxy/')) {
           // 代理分片 / KEY / init 分片请求
           final segUrl = request.uri.queryParameters['url'];
           if (segUrl != null) {
@@ -163,11 +164,18 @@ class M3u8ProxyServer {
       final resolved = uri.startsWith('http')
           ? uri
           : Uri.parse(basePath).resolve(uri).toString();
+      // 代理地址保留原始文件名/扩展名（如 .m4s/.ts）。
+      // 否则 FFmpeg HLS 解复用器的 test_segment() 无法从 /proxy 路径识别扩展名，
+      // 会报 "not in allowed_segment_extensions" 并拒绝打开播放列表。
+      final pathSegments = Uri.tryParse(resolved)?.pathSegments;
+      final name = (pathSegments != null && pathSegments.isNotEmpty)
+          ? pathSegments.last
+          : '';
       final proxy = Uri(
         scheme: 'http',
         host: '127.0.0.1',
         port: _port,
-        path: '/proxy',
+        path: name.isEmpty ? '/proxy' : '/proxy/$name',
         queryParameters: {'url': resolved},
       );
       return proxy.toString();

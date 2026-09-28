@@ -825,10 +825,10 @@ class _YearActivityHeatmap extends StatefulWidget {
   final bool showNumbers;
   final void Function(DateTime, List<History>) onDayTap;
 
-  static const double cell = 26;
-  static const double gap = 4;
-  static const double gutter = 22;
-  static const double topLabel = 24;
+  static const double cell = 32;
+  static const double gap = 5;
+  static const double gutter = 24;
+  static const double topLabel = 26;
 
   String monthName(BuildContext context, int m) {
     switch (m) {
@@ -1022,12 +1022,21 @@ class _YearActivityHeatmapState extends State<_YearActivityHeatmap> {
           color: colorOf(d),
         ),
         child: showNumbers && count > 0
-            ? Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onPrimary,
+            ? Padding(
+                // 格子里三位数会换行：用 FittedBox 整体缩小适配，保持单行
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '$count',
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onPrimary,
+                    ),
+                  ),
                 ),
               )
             : null,
@@ -1078,7 +1087,7 @@ class _YearActivityHeatmapState extends State<_YearActivityHeatmap> {
                   child: Text(
                     '${r + 1}',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),

@@ -81,6 +81,8 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
   @override
   void dispose() {
     parent?.onChildInactive(id);
+    // 仅释放自己创建的控制器；外部传入的由外部负责
+    if (widget.controller == null) _controller.dispose();
     super.dispose();
   }
 

@@ -221,6 +221,12 @@ explorePages: Explore Pages
 explore: Explore
 exploreLoadedDetail: "Loaded ${pages} pages · ${count} items"
 exploreItemsCount: "${count} items"
+exploreFilter: Filter
+exploreFilterFavorite: Favorited
+exploreFilterHistory: Has history
+exploreFilterDownload: Downloaded
+exploreFilterHint: Filter keyword
+exploreFilterNoResult: No matching items
 hideScrollbarForMasonry: "Hide scrollbar in masonry"
 hideScrollbarForMasonryDesc: "Hide the side scrollbar in masonry layout to avoid jitter"
 memo: "Memos"
@@ -1148,6 +1154,8 @@ downloadMigrateGroup: Move to…
 downloadMigrateToRoot: Move to top level
 downloadMigrateHere: Move into this group
 downloadNoMigrateTarget: No group available
+downloadGroupExpand: Expand subgroups
+downloadGroupCollapse: Collapse subgroups
 newGroup: New Group
 groupName: Group Name
 groupExists: Group name already exists

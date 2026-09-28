@@ -210,6 +210,12 @@ explorePages: 探索页面
 explore: 探索
 exploreLoadedDetail: "已加载 ${pages} 页 · 共 ${count} 条"
 exploreItemsCount: "共 ${count} 条"
+exploreFilter: 筛选
+exploreFilterFavorite: 已收藏
+exploreFilterHistory: 有历史
+exploreFilterDownload: 已下载
+exploreFilterHint: 筛选关键词
+exploreFilterNoResult: 没有符合条件的条目
 hideScrollbarForMasonry: "瀑布流隐藏滚动条"
 hideScrollbarForMasonryDesc: "瀑布流布局下不显示右侧滚动条，避免滚动条抽搐"
 memo: "备忘录"
@@ -1143,6 +1149,8 @@ downloadMigrateGroup: 迁移到…
 downloadMigrateToRoot: 移到顶层
 downloadMigrateHere: 迁移到此组
 downloadNoMigrateTarget: 没有可迁移到的分组
+downloadGroupExpand: 展开子组
+downloadGroupCollapse: 折叠子组
 newGroup: 新建分组
 groupName: 分组名称
 groupExists: 分组名称已存在

@@ -336,6 +336,8 @@ class _AppTabBarState extends State<AppTabBar> {
 
   @override
   void dispose() {
+    _controller.animation?.removeListener(onTabChanged);
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -359,6 +361,7 @@ class _AppTabBarState extends State<AppTabBar> {
   @override
   void didUpdateWidget(covariant AppTabBar oldWidget) {
     if (widget.controller != oldWidget.controller) {
+      _controller.animation?.removeListener(onTabChanged);
       _controller = widget.controller ?? DefaultTabController.of(context);
       _controller.animation!.addListener(onTabChanged);
       initPainter();
@@ -801,59 +804,39 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
     BuildContext context,
     List<String> keywords,
   ) {
-    final scrollController = ScrollController();
-
-    return showDialog(
+    return showDialog<String>(
       context: context,
-      builder: (context) {
-        return Dialog(
-          insetPadding: const EdgeInsets.all(20),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 320,
-              maxHeight: 500, // 根据需求调整
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    t.selectAliasCount(count: keywords.length),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Material(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.transparent,
-                    child: ListView.builder(
-                      controller: scrollController,
-                      shrinkWrap: true,
-                      itemCount: keywords.length,
-                      itemBuilder: (context, index) {
-                        return InkWell(
-                          onTap: () => Navigator.pop(context, keywords[index]),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 16,
-                            ),
-                            child: Text(
-                              keywords[index],
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                        );
-                      },
+      builder: (context) => ContentDialog(
+        title: t.selectAliasCount(count: keywords.length),
+        cancel: () {},
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 360),
+          child: Material(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.transparent,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: keywords.length,
+              itemBuilder: (context, index) {
+                return InkWell(
+                  onTap: () => Navigator.pop(context, keywords[index]),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    child: Text(
+                      keywords[index],
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 

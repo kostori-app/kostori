@@ -92,9 +92,12 @@ class _DownloadGroupSelectSheet extends StatefulWidget {
 }
 
 class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
+  /// 搜索框当前关键字：新建分组时作为默认名称预填
+  String _searchKeyword = '';
+
   /// 新建分组：可选上级分组（顶层 / 某个顶层组），即支持新建子组
   Future<void> _create() async {
-    final ctrl = TextEditingController();
+    final ctrl = TextEditingController(text: _searchKeyword);
     var parent = '';
     final roots = DownloadManager.rootGroups();
     final name = await showDialog<String>(
@@ -122,21 +125,28 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                CapsuleOptions(
-                  alignment: WrapAlignment.start,
-                  children: [
-                    CapsuleOption(
-                      text: t.downloadGroupRoot,
-                      isSelected: parent.isEmpty,
-                      onTap: () => setDlg(() => parent = ''),
+                // wrap 换行展示（不再横向滚动）；上级多时纵向滚动，省去左右滑动
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  child: SingleChildScrollView(
+                    child: CapsuleOptions(
+                      wrap: true,
+                      alignment: WrapAlignment.start,
+                      children: [
+                        CapsuleOption(
+                          text: t.downloadGroupRoot,
+                          isSelected: parent.isEmpty,
+                          onTap: () => setDlg(() => parent = ''),
+                        ),
+                        for (final g in roots)
+                          CapsuleOption(
+                            text: g,
+                            isSelected: parent == g,
+                            onTap: () => setDlg(() => parent = g),
+                          ),
+                      ],
                     ),
-                    for (final g in roots)
-                      CapsuleOption(
-                        text: g,
-                        isSelected: parent == g,
-                        onTap: () => setDlg(() => parent = g),
-                      ),
-                  ],
+                  ),
                 ),
               ],
             ],
@@ -153,15 +163,30 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
     ctrl.dispose();
     final n = name?.trim() ?? '';
     if (n.isEmpty) return;
-    // 两层限制：父只能选顶层；同名时报错
-    final full = DownloadManager.childName(parent, n);
+    // 两层限制：父只能选顶层。名称净化后再判断，避免净化前后不一致
+    final leaf = DownloadManager.sanitizeGroupName(n);
+    if (leaf.isEmpty) return;
+    final full = DownloadManager.childName(parent, leaf);
+    // 同名分组已存在：直接选中该文件夹作为下载目录，而不是报错
     if (DownloadManager.groups().contains(full)) {
-      App.rootContext.showMessage(message: t.groupExists);
+      if (!mounted) return;
+      Navigator.of(context).pop(full);
       return;
     }
     await DownloadManager.createGroup(full);
     if (!mounted) return;
     Navigator.of(context).pop(full);
+  }
+
+  /// 快速新建并选中（顶层）：搜索框输入的名称一键创建/选中，
+  /// 省去打开弹窗、选上级、确认的多步操作。
+  Future<String?> _createQuick(String name) async {
+    final leaf = DownloadManager.sanitizeGroupName(name);
+    if (leaf.isEmpty) return null;
+    if (!DownloadManager.groups().contains(leaf)) {
+      await DownloadManager.createGroup(leaf);
+    }
+    return leaf;
   }
 
   Future<void> _delete(String name) async {
@@ -202,6 +227,9 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
       builder: (context, sc) => DownloadGroupPickerBody(
         current: widget.initial,
         scrollController: sc,
+        onSearchChanged: (v) => _searchKeyword = v,
+        onCreateGroup: _createQuick,
+        autoFocusSearch: true,
         onSelected: (g) => Navigator.of(context).pop(g),
         trailingBuilder: (g) => IconButton(
           tooltip: t.delete,
@@ -792,6 +820,8 @@ class _EpisodeDownloadPickerState extends State<_EpisodeDownloadPicker> {
             child: TextField(
               controller: _titleCtrl,
               onChanged: (v) => _animeTitle = v,
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
               // 不限制行数：完整展示标题，方便手动修改
               maxLines: null,
               minLines: 1,

@@ -2,12 +2,12 @@ part of 'components.dart';
 
 /// 新建收藏文件夹（收藏弹窗与收藏页共用）
 Future<void> showNewFolderDialog() async {
-  return showDialog(
+  // builder 会随弹窗重建重跑：控制器须在外创建，避免输入框反复换控制器（丢焦点/泄漏）。
+  final controller = TextEditingController();
+  String? error;
+  await showDialog(
     context: App.rootContext,
     builder: (context) {
-      final controller = TextEditingController();
-      String? error;
-
       return StatefulBuilder(
         builder: (context, setState) {
           return ContentDialog(
@@ -62,6 +62,7 @@ Future<void> showNewFolderDialog() async {
       );
     },
   );
+  controller.dispose();
 }
 
 /// 收藏时不出现在列表里的特殊文件夹（未分类 / 旧版 default）

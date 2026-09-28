@@ -301,15 +301,16 @@ class FfmpegEncoder {
         }
       }
 
+      // HTTP 协议选项须在 -i 之前，否则对输入无效
+      if (isNetwork) {
+        buf.write('-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 ');
+      }
+
       if (inputSeek) {
         buf.write('-y -ss $startSec -i "$safeInput" -t $durSec -c copy ');
       } else {
         // output seek：读流到目标点再截取。加密 HLS 的 input seek 会失败
         buf.write('-y -i "$safeInput" -ss $startSec -t $durSec -c copy ');
-      }
-
-      if (isNetwork) {
-        buf.write('-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 ');
       }
 
       buf.write('-f mp4 "$safeOutput"');
@@ -381,15 +382,15 @@ class FfmpegEncoder {
       }
     }
 
-    buf.write('-y -i "$safeInput" ');
-
-    // 网络重连
+    // 网络重连（HTTP 协议选项须在 -i 之前，否则对输入无效）
     if (args.reconnect > 0 && isNetwork) {
       buf.write(
         '-reconnect 1 -reconnect_streamed 1 '
         '-reconnect_delay_max ${args.reconnect} ',
       );
     }
+
+    buf.write('-y -i "$safeInput" ');
 
     // 流复制（不重编码），保持原码率
     buf.write('-c copy ');
