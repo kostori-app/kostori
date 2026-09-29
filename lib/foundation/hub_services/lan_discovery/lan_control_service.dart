@@ -12,7 +12,7 @@ class LanControlService {
   static final LanControlService instance = LanControlService._();
 
   HttpServer? _server;
-  final Map<String, WebSocket> _connections = {};
+  final Map<String, HubSocket> _connections = {};
   LanControlServiceState _state = LanControlServiceState.idle;
   String? _lastError;
   Timer? _statusBroadcastTimer;
@@ -22,7 +22,7 @@ class LanControlService {
 
   bool _pinEnabled = false;
   String _pinCode = '';
-  final _pendingPinConnections = <String, WebSocket>{};
+  final _pendingPinConnections = <String, HubSocket>{};
   final _pinAttempts = <String, int>{};
   final _pinTimeouts = <String, Timer>{};
 
@@ -124,13 +124,7 @@ class LanControlService {
       );
       _setState(LanControlServiceState.listening);
 
-      _server!.listen(
-        _handleHttpRequest,
-        onError: (error) {
-          _lastError = '服务器错误: $error';
-          _setState(LanControlServiceState.error);
-        },
-      );
+      _serve();
 
       HubLog.info('LanControlService', 'WebSocket 服务已启动，端口: $port');
       _saveActualPort();
@@ -149,7 +143,7 @@ class LanControlService {
           _port = _server!.port;
           _setState(LanControlServiceState.listening);
 
-          _server!.listen(_handleHttpRequest);
+          _serve();
           HubLog.info('LanControlService', 'WebSocket 服务已在动态端口启动，端口: $_port');
           _saveActualPort();
           return;
@@ -185,7 +179,7 @@ class LanControlService {
     _pinTimeouts.clear();
     _pinAttempts.clear();
 
-    final connections = List<WebSocket>.of(_connections.values);
+    final connections = List<HubSocket>.of(_connections.values);
     _connections.clear();
     for (final ws in connections) {
       try {
@@ -195,7 +189,7 @@ class LanControlService {
       }
     }
 
-    final pendingPin = List<WebSocket>.of(_pendingPinConnections.values);
+    final pendingPin = List<HubSocket>.of(_pendingPinConnections.values);
     _pendingPinConnections.clear();
     for (final ws in pendingPin) {
       try {
@@ -236,22 +230,16 @@ class LanControlService {
     }
   }
 
-  void _handleHttpRequest(HttpRequest request) async {
-    if (WebSocketTransformer.isUpgradeRequest(request)) {
-      try {
-        final ws = await WebSocketTransformer.upgrade(request);
-        _handleWebSocket(ws, request);
-      } catch (e) {
-        HubLog.warning('LanControlService', 'WebSocket 升级失败: $e');
-      }
-    } else {
-      request.response.statusCode = 404;
-      request.response.close();
-    }
+  void _serve() {
+    final handler = webSocketHandler(
+      (WebSocketChannel channel, String? protocol) =>
+          _handleWebSocket(HubSocket(channel)),
+      pingInterval: const Duration(seconds: 30),
+    );
+    shelf_io.serveRequests(_server!, handler);
   }
 
-  void _handleWebSocket(WebSocket ws, HttpRequest request) {
-    ws.pingInterval = const Duration(seconds: 30);
+  void _handleWebSocket(HubSocket ws) {
     _lastAnimeSignature = null;
 
     final deviceId = _generateDeviceId();
@@ -282,7 +270,7 @@ class LanControlService {
     );
   }
 
-  void _registerConnection(String deviceId, WebSocket ws) {
+  void _registerConnection(String deviceId, HubSocket ws) {
     for (final existingWs in _connections.values) {
       existingWs.close();
     }
@@ -313,7 +301,7 @@ class LanControlService {
     },
   );
 
-  void _sendToSocket(WebSocket ws, LanControlMessage message) {
+  void _sendToSocket(HubSocket ws, LanControlMessage message) {
     try {
       ws.add(jsonEncode(message.toJson()));
     } catch (e) {
@@ -321,7 +309,7 @@ class LanControlService {
     }
   }
 
-  void _handlePendingPinMessage(String deviceId, WebSocket ws, dynamic data) {
+  void _handlePendingPinMessage(String deviceId, HubSocket ws, dynamic data) {
     try {
       final json = jsonDecode(data as String) as Map<String, dynamic>;
       final message = LanControlMessage.fromJson(json);

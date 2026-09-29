@@ -61,7 +61,7 @@ class ServerBinder {
   Future<void> bind(
     int preferredPort,
     BindMode mode,
-    void Function(HttpRequest) onRequest,
+    shelf.Handler handler,
   ) async {
     if (isRunning) return;
     _secure = false;
@@ -71,29 +71,29 @@ class ServerBinder {
     }
     switch (mode) {
       case BindMode.ipv4:
-        await _bindV4(_port!, onRequest);
+        await _bindV4(_port!, handler);
       case BindMode.ipv6:
-        await _bindV6(_port!, onRequest);
+        await _bindV6(_port!, handler);
       case BindMode.both:
-        await _bindV4(_port!, onRequest);
-        await _bindV6(_port!, onRequest);
+        await _bindV4(_port!, handler);
+        await _bindV6(_port!, handler);
     }
     HubLog.info('ServerBinder', '✅ 已绑定：${boundAddresses.join(' | ')}');
   }
 
-  Future<void> _bindV4(int port, void Function(HttpRequest) onRequest) async {
+  Future<void> _bindV4(int port, shelf.Handler handler) async {
     _serverV4 = await HttpServer.bind(InternetAddress.anyIPv4, port);
-    _serverV4!.listen(onRequest);
+    shelf_io.serveRequests(_serverV4!, handler);
   }
 
-  Future<void> _bindV6(int port, void Function(HttpRequest) onRequest) async {
+  Future<void> _bindV6(int port, shelf.Handler handler) async {
     try {
       _serverV6 = await HttpServer.bind(
         InternetAddress.anyIPv6,
         port,
         v6Only: true,
       );
-      _serverV6!.listen(onRequest);
+      shelf_io.serveRequests(_serverV6!, handler);
     } catch (e) {
       HubLog.warning('ServerBinder', '⚠️ IPv6 绑定失败：$e');
     }
@@ -111,7 +111,7 @@ class ServerBinder {
   Future<void> bindSecure(
     int preferredPort,
     BindMode mode,
-    void Function(HttpRequest) onRequest, {
+    shelf.Handler handler, {
     required String certificatePath,
     required String privateKeyPath,
     String password = '',
@@ -128,12 +128,12 @@ class ServerBinder {
 
     switch (mode) {
       case BindMode.ipv4:
-        await _bindSecureV4(_port!, onRequest, context);
+        await _bindSecureV4(_port!, handler, context);
       case BindMode.ipv6:
-        await _bindSecureV6(_port!, onRequest, context);
+        await _bindSecureV6(_port!, handler, context);
       case BindMode.both:
-        await _bindSecureV4(_port!, onRequest, context);
-        await _bindSecureV6(_port!, onRequest, context);
+        await _bindSecureV4(_port!, handler, context);
+        await _bindSecureV6(_port!, handler, context);
     }
 
     HubLog.info('ServerBinder', '🔒 HTTPS 已绑定：${boundAddresses.join(' | ')}');
@@ -141,7 +141,7 @@ class ServerBinder {
 
   Future<void> _bindSecureV4(
     int port,
-    void Function(HttpRequest) onRequest,
+    shelf.Handler handler,
     SecurityContext context,
   ) async {
     _serverV4 = await HttpServer.bindSecure(
@@ -149,12 +149,12 @@ class ServerBinder {
       port,
       context,
     );
-    _serverV4!.listen(onRequest);
+    shelf_io.serveRequests(_serverV4!, handler);
   }
 
   Future<void> _bindSecureV6(
     int port,
-    void Function(HttpRequest) onRequest,
+    shelf.Handler handler,
     SecurityContext context,
   ) async {
     try {
@@ -164,7 +164,7 @@ class ServerBinder {
         context,
         v6Only: true,
       );
-      _serverV6!.listen(onRequest);
+      shelf_io.serveRequests(_serverV6!, handler);
     } catch (e) {
       HubLog.warning('ServerBinder', '⚠️ IPv6 HTTPS 绑定失败：$e');
     }

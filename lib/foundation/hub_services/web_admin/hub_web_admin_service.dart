@@ -173,7 +173,7 @@ class HubWebAdminService extends BaseHttpService {
   //  页面
   // ═══════════════════════════════════════════════════════════════
 
-  Future<void> _serveAdminPage(HttpRequest request) async {
+  Future<void> _serveAdminPage(HubRequest request) async {
     String html;
     try {
       html = await rootBundle.loadString('assets/hub_admin.html');
@@ -187,7 +187,7 @@ class HubWebAdminService extends BaseHttpService {
   //  API 实现
   // ═══════════════════════════════════════════════════════════════
 
-  Future<void> _overview(HttpRequest req) async {
+  Future<void> _overview(HubRequest req) async {
     await sendJson(req, {
       'app': 'Kostori',
       'version': App.version,
@@ -201,7 +201,7 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _stats(HttpRequest req) async {
+  Future<void> _stats(HubRequest req) async {
     final rooms = _hub.rooms;
     final clients = _hub.clients;
     final now = DateTime.now();
@@ -305,7 +305,7 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _rooms(HttpRequest req) async {
+  Future<void> _rooms(HubRequest req) async {
     final list = _hub.rooms
         .map(
           (r) => {
@@ -338,7 +338,7 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'count': list.length, 'items': list});
   }
 
-  Future<void> _roomMessages(HttpRequest req) async {
+  Future<void> _roomMessages(HubRequest req) async {
     final roomId = pathParams(req)['roomId'] ?? '';
     final limit = int.tryParse(req.uri.queryParameters['limit'] ?? '') ?? 50;
     final room = _hub.findRoom(roomId);
@@ -363,7 +363,7 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'count': list.length, 'messages': list});
   }
 
-  Future<void> _sendRoomMessage(HttpRequest req) async {
+  Future<void> _sendRoomMessage(HubRequest req) async {
     final roomId = pathParams(req)['roomId'] ?? '';
     final body = await readJson(req);
     if (body == null) {
@@ -413,13 +413,13 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'sent': true});
   }
 
-  Future<void> _deleteRoom(HttpRequest req) async {
+  Future<void> _deleteRoom(HubRequest req) async {
     final roomId = pathParams(req)['roomId'] ?? '';
     final ok = _hub.deleteRoomByAdmin(roomId);
     await sendJson(req, {'deleted': ok});
   }
 
-  Future<void> _clients(HttpRequest req) async {
+  Future<void> _clients(HubRequest req) async {
     final list = _hub.clients
         .map(
           (c) => {
@@ -448,7 +448,7 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'count': list.length, 'items': list});
   }
 
-  Future<void> _muteClient(HttpRequest req) async {
+  Future<void> _muteClient(HubRequest req) async {
     final id = pathParams(req)['id'] ?? '';
     final body = await readJson(req);
     final seconds = (body?['seconds'] as num?)?.toInt() ?? 300;
@@ -456,38 +456,38 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'ok': true});
   }
 
-  Future<void> _unmuteClient(HttpRequest req) async {
+  Future<void> _unmuteClient(HubRequest req) async {
     final id = pathParams(req)['id'] ?? '';
     await _hub.unmuteClient(id);
     await sendJson(req, {'ok': true});
   }
 
-  Future<void> _kickClient(HttpRequest req) async {
+  Future<void> _kickClient(HubRequest req) async {
     final id = pathParams(req)['id'] ?? '';
     await _hub.kickClient(id, operatorName: 'Web 管理');
     await sendJson(req, {'ok': true});
   }
 
-  Future<void> _banClient(HttpRequest req) async {
+  Future<void> _banClient(HubRequest req) async {
     final id = pathParams(req)['id'] ?? '';
     _hub.addToBlacklist(id);
     await sendJson(req, {'ok': true});
   }
 
-  Future<void> _unbanClient(HttpRequest req) async {
+  Future<void> _unbanClient(HubRequest req) async {
     final id = pathParams(req)['id'] ?? '';
     _hub.removeFromBlacklist(id);
     await sendJson(req, {'ok': true});
   }
 
-  Future<void> _setClientAdmin(HttpRequest req) async {
+  Future<void> _setClientAdmin(HubRequest req) async {
     final id = pathParams(req)['id'] ?? '';
     final body = await readJson(req);
     await _hub.setClientGlobalAdmin(id, body?['value'] as bool? ?? true);
     await sendJson(req, {'ok': true});
   }
 
-  Future<void> _logs(HttpRequest req) async {
+  Future<void> _logs(HubRequest req) async {
     final limit = int.tryParse(req.uri.queryParameters['limit'] ?? '') ?? 100;
     final level = req.uri.queryParameters['level'];
     var logs = Log.logs;
@@ -510,7 +510,7 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'count': recent.length, 'logs': list});
   }
 
-  Future<void> _getConfig(HttpRequest req) async {
+  Future<void> _getConfig(HubRequest req) async {
     await sendJson(req, {
       'hubPort': savedHubPort,
       'hubBindMode': savedHubBindMode.name,
@@ -534,7 +534,7 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _setConfig(HttpRequest req) async {
+  Future<void> _setConfig(HubRequest req) async {
     final body = await readJson(req);
     if (body == null) {
       await sendJson(req, {'error': 'Invalid body'}, status: 400);
@@ -596,7 +596,7 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'saved': true, 'changed': changed});
   }
 
-  Future<void> _getAiConfig(HttpRequest req) async {
+  Future<void> _getAiConfig(HubRequest req) async {
     final c = _hub.aiBotConfig;
     await sendJson(req, {
       'enabled': c.enabled,
@@ -614,7 +614,7 @@ class HubWebAdminService extends BaseHttpService {
     });
   }
 
-  Future<void> _setAiConfig(HttpRequest req) async {
+  Future<void> _setAiConfig(HubRequest req) async {
     final body = await readJson(req);
     if (body == null) {
       await sendJson(req, {'error': 'Invalid body'}, status: 400);
@@ -643,7 +643,7 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'saved': true});
   }
 
-  Future<void> _getSubscriptions(HttpRequest req) async {
+  Future<void> _getSubscriptions(HubRequest req) async {
     final m = HubSubscriptionManager.instance;
     final list = m
         .load()
@@ -666,7 +666,7 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'count': list.length, 'items': list});
   }
 
-  Future<void> _addSubscription(HttpRequest req) async {
+  Future<void> _addSubscription(HubRequest req) async {
     final body = await readJson(req);
     if (body == null) {
       await sendJson(req, {'error': 'Invalid body'}, status: 400);
@@ -696,21 +696,21 @@ class HubWebAdminService extends BaseHttpService {
     await sendJson(req, {'created': true, 'id': sub.id});
   }
 
-  Future<void> _deleteSubscription(HttpRequest req) async {
+  Future<void> _deleteSubscription(HubRequest req) async {
     final id = pathParams(req)['id'] ?? '';
     HubSubscriptionManager.instance.delete(id);
     await HubSubscriptionService.instance.stop(id);
     await sendJson(req, {'deleted': true});
   }
 
-  Future<void> _restartHub(HttpRequest req) async {
+  Future<void> _restartHub(HubRequest req) async {
     await sendJson(req, {'restarting': true});
     unawaited(_hub.restart());
   }
 
   // ── 公网 IP 探测 ─────────────────────────────────────────────────────────
 
-  Future<void> _detectPublicIp(HttpRequest req) async {
+  Future<void> _detectPublicIp(HubRequest req) async {
     String? ip;
     // IPv4 优先
     for (final api in const [

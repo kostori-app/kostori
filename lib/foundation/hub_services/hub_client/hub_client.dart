@@ -9,7 +9,7 @@ class HubClient {
 
   // ── WebSocket ────────────────────────────────────────────────────────────
 
-  WebSocket? _socket;
+  HubSocket? _socket;
   int _socketGeneration = 0;
   String? _currentToken;
   bool _shouldReconnect = true;
@@ -131,7 +131,7 @@ class HubClient {
   // ── 管理员工具 ────────────────────────────────────────────────────────────
 
   bool get isConnected =>
-      _socket != null && _socket!.readyState == WebSocket.open;
+      _socket != null && _socket!.readyState == HubSocket.open;
 
   bool isRoomAdminOf(String? roomId) {
     if (roomId == null) return false;
@@ -260,14 +260,25 @@ class HubClient {
   // ── 连接 ──────────────────────────────────────────────────────────────────
 
   /// 建立 WebSocket 连接；wss 时若开启「允许自签名证书」则信任自签名。
-  Future<WebSocket> _connectSocket(String url) async {
+  Future<HubSocket> _connectSocket(String url) async {
     if (!url.startsWith('wss://')) {
-      return WebSocket.connect(url);
+      final channel = IOWebSocketChannel.connect(
+        url,
+        connectTimeout: const Duration(seconds: 10),
+      );
+      await channel.ready;
+      return HubSocket(channel);
     }
     final client = HttpClient()
       ..badCertificateCallback = (cert, host, port) => allowSelfSignedCert;
     try {
-      return await WebSocket.connect(url, customClient: client);
+      final channel = IOWebSocketChannel.connect(
+        url,
+        customClient: client,
+        connectTimeout: const Duration(seconds: 10),
+      );
+      await channel.ready;
+      return HubSocket(channel);
     } finally {
       client.close(force: true);
     }

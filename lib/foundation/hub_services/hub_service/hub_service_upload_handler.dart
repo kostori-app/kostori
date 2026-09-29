@@ -57,11 +57,11 @@ extension HubServiceUploadHandler on HubService {
   }
 
   /// Satori 适配层使用：解析 multipart 请求体中的首个文件
-  _MultipartFile? parseMultipartFile(Uint8List body, String boundary) =>
-      _parseMultipart(body, boundary);
+  Future<_MultipartFile?> parseMultipartFile(Uint8List body, String boundary) =>
+      _parseMultipart(Stream.value(body), boundary);
 
   /// Satori 适配层使用：收集请求体原始字节
-  Future<Uint8List> collectRequestBodyBytes(HttpRequest request) async {
+  Future<Uint8List> collectRequestBodyBytes(HubRequest request) async {
     final builder = BytesBuilder(copy: false);
     await for (final chunk in request) {
       builder.add(chunk);
@@ -89,7 +89,7 @@ extension HubServiceUploadHandler on HubService {
   //  POST /hub/upload
   // ═══════════════════════════════════════════════════════
 
-  Future<void> _handleUpload(HttpRequest request) async {
+  Future<void> _handleUpload(HubRequest request) async {
     try {
       final config = uploadConfig;
 
@@ -120,12 +120,13 @@ extension HubServiceUploadHandler on HubService {
         return;
       }
 
-      // 读取全部 body（流式限界，防止超大请求占用内存）
-      final Uint8List bodyBytes;
+      // 流式解析 multipart，超过上限立即中止，避免超大请求占满内存
+      _MultipartFile? parsed;
       try {
-        bodyBytes = await _collectBytes(
+        parsed = await _parseMultipart(
           request,
-          maxBytes: config.maxSizeBytes + 4096,
+          boundary,
+          maxBytes: config.maxSizeBytes,
         );
       } on _UploadTooLarge {
         final maxMb = (config.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
@@ -134,18 +135,6 @@ extension HubServiceUploadHandler on HubService {
         }, status: HttpStatus.requestEntityTooLarge);
         return;
       }
-
-      // 大小预检：multipart 总长需含 boundary/header 余量
-      if (bodyBytes.length > config.maxSizeBytes + 4096) {
-        final maxMb = (config.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
-        await sendJson(request, {
-          'error': 'File too large (max ${maxMb}MB)',
-        }, status: HttpStatus.requestEntityTooLarge);
-        return;
-      }
-
-      // 解析 multipart
-      final parsed = _parseMultipart(bodyBytes, boundary);
       if (parsed == null || parsed.bytes.isEmpty) {
         await sendJson(request, {
           'error': 'No file found in request',
@@ -159,15 +148,6 @@ extension HubServiceUploadHandler on HubService {
         await sendJson(request, {
           'error': 'Only image uploads are allowed',
         }, status: HttpStatus.unsupportedMediaType);
-        return;
-      }
-
-      // 精确大小检查
-      if (parsed.bytes.length > config.maxSizeBytes) {
-        final maxMb = (config.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
-        await sendJson(request, {
-          'error': 'File too large (max ${maxMb}MB)',
-        }, status: HttpStatus.requestEntityTooLarge);
         return;
       }
 
@@ -228,7 +208,7 @@ extension HubServiceUploadHandler on HubService {
   //  GET /hub/files/<filename>
   // ═══════════════════════════════════════════════════════
 
-  Future<void> _handleServeFile(HttpRequest request) async {
+  Future<void> _handleServeFile(HubRequest request) async {
     final params = request.requestedUri.pathSegments;
     // /hub/files/<filename> → 最后一段
     final filename = params.isNotEmpty ? params.last : '';
@@ -264,14 +244,14 @@ extension HubServiceUploadHandler on HubService {
       )
       ..headers.set('Cache-Control', 'public, max-age=31536000');
 
-    await file.openRead().pipe(request.response);
+    await request.response.addStream(file.openRead());
   }
 
   // ═══════════════════════════════════════════════════════
   //  GET /hub/upload/config
   // ═══════════════════════════════════════════════════════
 
-  Future<void> _handleGetUploadConfig(HttpRequest request) async {
+  Future<void> _handleGetUploadConfig(HubRequest request) async {
     final config = uploadConfig;
     // 只返回客户端需要的信息，不泄露密钥
     await sendJson(request, {
@@ -358,123 +338,40 @@ extension HubServiceUploadHandler on HubService {
   }
 
   // ═══════════════════════════════════════════════════════
-  //  Multipart 解析（二进制安全）
+  //  Multipart 解析（package:mime）
   // ═══════════════════════════════════════════════════════
 
-  /// 从 HttpRequest 收集全部字节，超过上限立即抛错，防止内存耗尽。
-  Future<Uint8List> _collectBytes(
-    HttpRequest request, {
-    int maxBytes = 5 * 1024 * 1024 + 4096,
+  /// 解析 multipart 流，提取第一个带 filename 的 part。
+  /// 文件字节超过 [maxBytes] 立即抛 [_UploadTooLarge]，防止内存耗尽。
+  Future<_MultipartFile?> _parseMultipart(
+    Stream<List<int>> stream,
+    String boundary, {
+    int maxBytes = 5 * 1024 * 1024,
   }) async {
-    final builder = BytesBuilder(copy: false);
-    await for (final chunk in request) {
-      builder.add(chunk);
-      if (builder.length > maxBytes) {
-        throw _UploadTooLarge();
+    final transformer = MimeMultipartTransformer(boundary);
+    await for (final part in stream.transform(transformer)) {
+      final disposition = part.headers['content-disposition'] ?? '';
+      final fnMatch = RegExp(r'filename="([^"]*)"').firstMatch(disposition);
+      if (fnMatch == null) {
+        await part.drain<void>();
+        continue;
       }
-    }
-    return builder.takeBytes();
-  }
-
-  /// 解析 multipart body，提取第一个带 filename 的 part
-  _MultipartFile? _parseMultipart(Uint8List body, String boundary) {
-    final boundaryBytes = utf8.encode('--$boundary');
-    final crlfCrlf = utf8.encode('\r\n\r\n');
-
-    // 只向前搜索，避免对整块 body 做全量扫描
-    var pos = 0;
-    // 1) 找首个 boundary（body 开头）
-    final firstBoundary = _indexOfSequence(body, boundaryBytes, pos);
-    if (firstBoundary < 0) return null;
-    pos = firstBoundary + boundaryBytes.length;
-
-    // 2) 跳过 boundary 后的 \r\n
-    if (pos + 2 <= body.length && body[pos] == 0x0D && body[pos + 1] == 0x0A) {
-      pos += 2;
-    }
-
-    // 3) 逐 part 解析，直到遇到结束 boundary（--boundary--）
-    while (pos < body.length) {
-      // header 与 body 分界
-      final headerEndIdx = _indexOfSequence(body, crlfCrlf, pos);
-      if (headerEndIdx < 0) return null;
-
-      final headerBytes = body.sublist(pos, headerEndIdx);
-      final headerStr = utf8.decode(headerBytes, allowMalformed: true);
-
-      // 该 part 是否带 filename
-      final hasFile = headerStr.contains('filename=');
-
-      // body 数据起点
-      final dataStart = headerEndIdx + 4;
-
-      // 找下一个 boundary
-      final nextBoundary = _indexOfSequence(body, boundaryBytes, dataStart);
-      if (nextBoundary < 0) return null;
-
-      if (hasFile) {
-        final fnMatch = RegExp(r'filename="([^"]*)"').firstMatch(headerStr);
-        final filename = fnMatch?.group(1) ?? 'upload';
-
-        final ctMatch = RegExp(
-          r'Content-Type:\s*(.+)',
-          caseSensitive: false,
-        ).firstMatch(headerStr);
-        final mimeType = ctMatch?.group(1)?.trim() ?? _guessMimeType(filename);
-
-        // data：header 之后到 boundary 前（去掉结尾 \r\n）
-        var dataEnd = nextBoundary;
-        if (dataEnd >= 2 &&
-            body[dataEnd - 2] == 0x0D &&
-            body[dataEnd - 1] == 0x0A) {
-          dataEnd -= 2;
-        }
-
-        if (dataStart >= dataEnd) return null;
-
-        return _MultipartFile(
-          filename: filename,
-          mimeType: mimeType,
-          bytes: Uint8List.sublistView(body, dataStart, dataEnd),
-        );
+      final filename = fnMatch.group(1)?.isNotEmpty == true
+          ? fnMatch.group(1)!
+          : 'upload';
+      final mimeType = part.headers['content-type'] ?? _guessMimeType(filename);
+      final builder = BytesBuilder(copy: false);
+      await for (final chunk in part) {
+        builder.add(chunk);
+        if (builder.length > maxBytes) throw _UploadTooLarge();
       }
-
-      // 无文件的 part（如普通字段），跳到下一个 boundary 后继续
-      pos = nextBoundary + boundaryBytes.length;
-      if (pos + 2 <= body.length &&
-          body[pos] == 0x0D &&
-          body[pos + 1] == 0x0A) {
-        pos += 2;
-      }
+      return _MultipartFile(
+        filename: filename,
+        mimeType: mimeType,
+        bytes: builder.takeBytes(),
+      );
     }
-
     return null;
-  }
-
-  /// 在 data 中从 start 开始搜索 pattern 首次出现位置（Boyer-Moore-Horspool）。
-  /// 找不到返回 -1。
-  int _indexOfSequence(Uint8List data, List<int> pattern, int start) {
-    final n = data.length;
-    final m = pattern.length;
-    if (m == 0 || m > n) return -1;
-
-    // 坏字符跳表
-    final badChar = <int, int>{};
-    for (var i = 0; i < m - 1; i++) {
-      badChar[pattern[i]] = m - 1 - i;
-    }
-
-    var i = start + m - 1;
-    while (i < n) {
-      var k = m - 1;
-      while (k >= 0 && data[i - (m - 1 - k)] == pattern[k]) {
-        k--;
-      }
-      if (k < 0) return i - m + 1;
-      final shift = badChar[data[i]] ?? m;
-      i += shift;
-    }
-    return -1;
   }
 
   // ═══════════════════════════════════════════════════════

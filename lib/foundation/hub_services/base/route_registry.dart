@@ -1,6 +1,6 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-typedef RouteHandler = Future<void> Function(HttpRequest request);
+typedef RouteHandler = Future<void> Function(HubRequest request);
 
 // RouteEntry 加上 doc 字段
 class RouteEntry {

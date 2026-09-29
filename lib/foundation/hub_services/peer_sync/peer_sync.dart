@@ -38,7 +38,7 @@ Future<List<String>> collectLanCandidates(
 /// 连接失败时成员自动回退到服务器的广播通道。
 class HubPeerServer {
   HttpServer? _server;
-  final Set<WebSocket> _peers = {};
+  final Set<HubSocket> _peers = {};
   int? _port;
   bool _disposed = false;
 
@@ -69,34 +69,29 @@ class HubPeerServer {
     }
     _server = server;
     _port = port;
-    _server!.listen(_handleRequest);
-    HubLog.info('HubPeerServer', '✅ 直连服务器已启动：ws://0.0.0.0:$port/peersync');
-  }
 
-  void _handleRequest(HttpRequest request) {
-    if (request.uri.path != '/peersync') {
-      request.response.statusCode = HttpStatus.notFound;
-      request.response.close();
-      return;
-    }
-    WebSocketTransformer.upgrade(request)
-        .then((socket) {
-          _peers.add(socket);
-          HubLog.info('HubPeerServer', '🔗 直连成员接入，当前 ${_peers.length} 个');
-          socket.listen(
-            (_) {},
-            onDone: () {
-              _peers.remove(socket);
-              HubLog.info('HubPeerServer', '🔌 直连成员断开，当前 ${_peers.length} 个');
-            },
-            onError: (_) {
-              _peers.remove(socket);
-            },
-          );
-        })
-        .catchError((e) {
-          HubLog.warning('HubPeerServer', '升级 WebSocket 失败：$e');
-        });
+    final ws = webSocketHandler((WebSocketChannel channel, String? protocol) {
+      final socket = HubSocket(channel);
+      _peers.add(socket);
+      HubLog.info('HubPeerServer', '🔗 直连成员接入，当前 ${_peers.length} 个');
+      socket.listen(
+        (_) {},
+        onDone: () {
+          _peers.remove(socket);
+          HubLog.info('HubPeerServer', '🔌 直连成员断开，当前 ${_peers.length} 个');
+        },
+        onError: (_) {
+          _peers.remove(socket);
+        },
+      );
+    });
+    shelf_io.serveRequests(_server!, (req) {
+      if (req.requestedUri.path != '/peersync') {
+        return shelf.Response.notFound('Not Found');
+      }
+      return ws(req);
+    });
+    HubLog.info('HubPeerServer', '✅ 直连服务器已启动：ws://0.0.0.0:$port/peersync');
   }
 
   /// 向所有直连成员广播一帧同步文本
@@ -127,14 +122,14 @@ class HubPeerServer {
 
 /// 成员侧的直连客户端：尝试直连房主，成功则返回同步帧流，失败返回 null。
 class HubPeerClient {
-  WebSocket? _socket;
+  HubSocket? _socket;
   final _frames = StreamController<String>.broadcast();
   bool _closed = false;
 
   Stream<String> get frames => _frames.stream;
 
   bool get isConnected =>
-      _socket != null && _socket!.readyState == WebSocket.open;
+      _socket != null && _socket!.readyState == HubSocket.open;
 
   /// 依次尝试每个候选地址，首个连通即返回；全部失败返回 null。
   static Future<HubPeerClient?> connect(
@@ -151,9 +146,11 @@ class HubPeerClient {
   }
 
   Future<bool> _tryConnect(String url, Duration timeout) async {
-    WebSocket? socket;
+    HubSocket? socket;
     try {
-      socket = await WebSocket.connect(url).timeout(timeout);
+      final channel = IOWebSocketChannel.connect(url, connectTimeout: timeout);
+      await channel.ready.timeout(timeout);
+      socket = HubSocket(channel);
       _socket = socket;
       socket.listen(
         (data) {

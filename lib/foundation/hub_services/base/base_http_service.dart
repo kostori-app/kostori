@@ -1,9 +1,6 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-typedef WsHandler = Future<void> Function(
-  WebSocket socket,
-  HttpRequest request,
-);
+typedef WsHandler = Future<void> Function(HubSocket socket, HubRequest request);
 
 abstract class BaseHttpService implements BaseService {
   final _binder = ServerBinder();
@@ -166,16 +163,23 @@ abstract class BaseHttpService implements BaseService {
 
   // ── WebSocket ─────────────────────────────────
   final Map<String, WsHandler> _wsRoutes = {};
-  final Map<String, Set<WebSocket>> _wsClients = {};
-  final Map<HttpRequest, Map<String, String>> _paramsStore = {};
+  final Map<String, Set<HubSocket>> _wsClients = {};
 
   void addWs(String path, WsHandler handler) {
     _wsRoutes[path] = handler;
   }
 
-  void _addWsClient(String path, WebSocket socket) {
+  void _addWsClient(String path, HubSocket socket) {
     _wsClients.putIfAbsent(path, () => {}).add(socket);
     socket.done.then((_) => _wsClients[path]?.remove(socket));
+  }
+
+  /// 为某个 WS 路径构建 shelf 处理器（升级时回调我们的 [WsHandler]）
+  shelf.Handler _wsShelfHandler(String path, shelf.Request raw) {
+    final handler = _wsRoutes[path]!;
+    return webSocketHandler((WebSocketChannel channel, String? protocol) {
+      unawaited(handler(HubSocket(channel), HubRequest(raw)));
+    }, pingInterval: pingInterval);
   }
 
   void broadcastWs(String path, dynamic data) {
@@ -191,16 +195,17 @@ abstract class BaseHttpService implements BaseService {
   }
 
   // 对外连接的 WebSocket 客户端
-  final Map<String, WebSocket> _wsConnections = {};
+  final Map<String, HubSocket> _wsConnections = {};
 
   /// 主动连接另一个 WebSocket 服务
-  Future<WebSocket?> connectTo(
+  Future<HubSocket?> connectTo(
     String url, {
     void Function(dynamic data)? onMessage,
     void Function()? onDone,
     void Function(dynamic error)? onError,
     Duration reconnectDelay = const Duration(seconds: 5),
     bool autoReconnect = true,
+    Map<String, dynamic>? headers,
   }) async {
     // 日志中的 URL 去掉 token 等敏感参数
     String safeUrl() {
@@ -219,7 +224,13 @@ abstract class BaseHttpService implements BaseService {
 
     try {
       HubLog.info('$runtimeType', '🔌 连接到 ${safeUrl()}');
-      final socket = await WebSocket.connect(url);
+      final channel = IOWebSocketChannel.connect(
+        url,
+        headers: headers,
+        connectTimeout: const Duration(seconds: 10),
+      );
+      final socket = HubSocket(channel);
+      await channel.ready;
       _wsConnections[url] = socket;
 
       socket.listen(
@@ -243,6 +254,7 @@ abstract class BaseHttpService implements BaseService {
               onError: onError,
               reconnectDelay: reconnectDelay,
               autoReconnect: autoReconnect,
+              headers: headers,
             );
           }
         },
@@ -262,6 +274,7 @@ abstract class BaseHttpService implements BaseService {
           url,
           onMessage: onMessage,
           autoReconnect: autoReconnect,
+          headers: headers,
         );
       }
       return null;
@@ -285,20 +298,14 @@ abstract class BaseHttpService implements BaseService {
   }
 
   // ── 路由参数 ──────────────────────────────────
-  void _injectParams(HttpRequest request, Map<String, String> params) {
-    if (params.isNotEmpty) _paramsStore[request] = params;
-  }
-
-  Map<String, String> pathParams(HttpRequest request) {
-    return _paramsStore.remove(request) ?? {};
-  }
+  Map<String, String> pathParams(HubRequest request) => request.params;
 
   // ── 子类实现 ──────────────────────────────────
   void registerRoutes();
 
   // ── WebSocket 鉴权工具 ────────────────────────
   /// 从 WebSocket 请求中提取 token 并校验
-  bool _validateWsToken(HttpRequest req, {bool admin = false}) {
+  bool _validateWsToken(HubRequest req, {bool admin = false}) {
     final token = req.uri.queryParameters['token'];
     if (token == null) return false;
     return admin
@@ -740,13 +747,24 @@ abstract class BaseHttpService implements BaseService {
   }) => _router.addDelete(path, handler, middlewares: middlewares, doc: doc);
 
   // ── 请求处理 ──────────────────────────────────
-  void _handleRequest(HttpRequest request) async {
+  Future<shelf.Response> _handleRequest(shelf.Request raw) async {
+    final request = HubRequest(raw);
+    final path = raw.requestedUri.path;
+
+    // WebSocket 路由优先（webSocketHandler 内部会校验升级头）
+    if (_wsRoutes.containsKey(path)) {
+      return await _wsShelfHandler(path, raw)(raw);
+    }
+
     try {
-      if (!await Middleware.cors()(request)) return;
-      if (!await Middleware.bodySizeLimit()(request)) return;
+      if (!await Middleware.cors()(request)) {
+        return request.response.toResponse();
+      }
+      if (!await Middleware.bodySizeLimit()(request)) {
+        return request.response.toResponse();
+      }
 
       final method = request.method;
-      final path = request.uri.path;
       final from = request.connectionInfo?.remoteAddress.address ?? '?';
       final watch = Stopwatch()..start();
 
@@ -762,29 +780,7 @@ abstract class BaseHttpService implements BaseService {
             }),
           );
         await request.response.close();
-        return;
-      }
-
-      HubLog.info(
-        '$runtimeType',
-        'isUpgrade=${WebSocketTransformer.isUpgradeRequest(request)}  path=$path',
-      );
-
-      if (WebSocketTransformer.isUpgradeRequest(request)) {
-        final wsHandler = _wsRoutes[path];
-        if (wsHandler == null) {
-          await sendError(
-            request,
-            HttpStatus.notFound,
-            'WS_NOT_FOUND',
-            'WebSocket path $path not found',
-          );
-          return;
-        }
-        HubLog.info('$runtimeType', '⚡ WS $path  (from $from)');
-        final socket = await WebSocketTransformer.upgrade(request);
-        await wsHandler(socket, request);
-        return;
+        return request.response.toResponse();
       }
 
       HubLog.info('$runtimeType', '→ $method $path  (from $from)');
@@ -797,14 +793,16 @@ abstract class BaseHttpService implements BaseService {
           'NOT_FOUND',
           'path $path not found',
         );
-        return;
+        return request.response.toResponse();
       }
 
       for (final middleware in match.entry.middlewares) {
-        if (!await middleware(request)) return;
+        if (!await middleware(request)) {
+          return request.response.toResponse();
+        }
       }
 
-      _injectParams(request, match.params);
+      request.params = match.params;
       await match.entry.handler(request);
 
       watch.stop();
@@ -812,6 +810,7 @@ abstract class BaseHttpService implements BaseService {
         '$runtimeType',
         '← $method $path  ${watch.elapsedMilliseconds}ms',
       );
+      return request.response.toResponse();
     } catch (e, stack) {
       HubLog.error('$runtimeType', '❌ $e\n$stack');
       try {
@@ -822,12 +821,13 @@ abstract class BaseHttpService implements BaseService {
           e.toString(),
         );
       } catch (_) {}
+      return request.response.toResponse();
     }
   }
 
   // ── 响应工具 ──────────────────────────────────
   Future<void> sendJson(
-    HttpRequest req,
+    HubRequest req,
     Map<String, dynamic> data, {
     int status = HttpStatus.ok,
   }) async {
@@ -842,7 +842,7 @@ abstract class BaseHttpService implements BaseService {
 
   /// 发送 HTML 页面
   Future<void> sendHtml(
-    HttpRequest req,
+    HubRequest req,
     String html, {
     int status = HttpStatus.ok,
   }) async {
@@ -856,7 +856,7 @@ abstract class BaseHttpService implements BaseService {
   }
 
   Future<void> sendBytes(
-    HttpRequest req,
+    HubRequest req,
     List<int> bytes,
     ContentType contentType,
   ) async {
@@ -869,13 +869,13 @@ abstract class BaseHttpService implements BaseService {
   }
 
   Future<void> sendImage(
-    HttpRequest req,
+    HubRequest req,
     Uint8List bytes, {
     String format = 'png',
   }) => sendBytes(req, bytes, ContentType('image', format));
 
   Future<void> sendFile(
-    HttpRequest req,
+    HubRequest req,
     List<int> bytes,
     String filename, {
     String mimeType = 'application/octet-stream',
@@ -890,7 +890,7 @@ abstract class BaseHttpService implements BaseService {
   }
 
   Future<void> sendAuto(
-    HttpRequest req,
+    HubRequest req,
     Map<String, dynamic> data, {
     int status = HttpStatus.ok,
     String? htmlBody,
@@ -910,7 +910,7 @@ abstract class BaseHttpService implements BaseService {
   }
 
   Future<void> sendError(
-    HttpRequest req,
+    HubRequest req,
     int status,
     String error,
     String message,
@@ -923,7 +923,7 @@ abstract class BaseHttpService implements BaseService {
   }, status: status);
 
   // ── 请求体解析 ────────────────────────────────
-  Future<Map<String, dynamic>?> readJson(HttpRequest req) async {
+  Future<Map<String, dynamic>?> readJson(HubRequest req) async {
     try {
       final body = await utf8.decoder.bind(req).join();
       return jsonDecode(body) as Map<String, dynamic>;
@@ -938,7 +938,7 @@ abstract class BaseHttpService implements BaseService {
     }
   }
 
-  Future<String> readBody(HttpRequest req) => utf8.decoder.bind(req).join();
+  Future<String> readBody(HubRequest req) => utf8.decoder.bind(req).join();
 
   // ── 静态文件 ──────────────────────────────────
   void serveStatic(String urlPrefix, String dirPath) {

@@ -4,10 +4,10 @@ part of 'package:kostori/foundation/hub_services/services.dart';
 //  订阅运行时（HubSubscriptionService）
 //  ═══════════════════════════════════════════════════════════════════════════
 //  按订阅配置启动独立监听器 / 反向连接：
-//   - ws forward：HttpServer 监听并升级为 WebSocket，token 鉴权 + 心跳，事件广播
+//   - ws forward：监听并升级为 WebSocket，token 鉴权 + 心跳，事件广播
 //   - ws reverse：主动连接目标 WS，握手带 token + 心跳，事件推送
 //   - webhook：向目标 URL POST 事件，Bearer token 鉴权头 + 心跳
-//   - http：HttpServer 监听，token 鉴权，提供 /hello /health /message
+//   - http：监听，token 鉴权，提供 /hello /health /message
 //  事件统一由 [dispatch] 分发。
 
 class HubSubscriptionService {
@@ -81,10 +81,10 @@ class _SubRuntime {
   Timer? _heartbeat;
 
   /// ws-forward：已连接的客户端
-  final Set<WebSocket> _clients = {};
+  final Set<HubSocket> _clients = {};
 
   /// ws-reverse：出站 socket
-  WebSocket? _outSocket;
+  HubSocket? _outSocket;
 
   /// http：监听服务器
   HttpServer? _httpServer;
@@ -120,6 +120,19 @@ class _SubRuntime {
     }
   }
 
+  shelf.Response _json(int status, Map<String, dynamic> data) => shelf.Response(
+    status,
+    body: jsonEncode(data),
+    headers: {'content-type': 'application/json'},
+  );
+
+  bool _isWsUpgrade(shelf.Request req) {
+    final upgrade = req.headers['upgrade'];
+    final connection = req.headers['connection'];
+    return upgrade?.toLowerCase() == 'websocket' &&
+        (connection?.toLowerCase().contains('upgrade') ?? false);
+  }
+
   // ── ws forward：Hub 作为 WS 服务端监听 ────────────────────────────────────
   Future<void> _startWsForward() async {
     final port = sub.listenPort ?? 0;
@@ -128,57 +141,58 @@ class _SubRuntime {
         : InternetAddress.anyIPv4.address;
     final server = await HttpServer.bind(host, port);
     _httpServer = server;
-    server.listen((request) async {
-      try {
-        if (!WebSocketTransformer.isUpgradeRequest(request)) {
-          await _sendJson(request, {
-            'code': HttpStatus.badRequest,
-            'error': 'WS_ONLY',
-            'message': '仅支持 WebSocket 连接',
-          });
-          return;
-        }
-        // token 校验：优先 ?token= 查询参数
-        final queryToken = request.uri.queryParameters['token'];
-        if (sub.token?.isNotEmpty == true && queryToken != sub.token) {
-          request.response
-            ..statusCode = HttpStatus.unauthorized
-            ..close();
-          return;
-        }
-        final socket = await WebSocketTransformer.upgrade(request);
-        _clients.add(socket);
-        socket.done.whenComplete(() => _clients.remove(socket));
-        // 监听认证消息（若未在 query 传 token）
-        if (sub.token?.isNotEmpty == true && queryToken != null) {
-          return;
-        }
-        socket.listen(
-          (data) {
-            try {
-              final map = data is String ? jsonDecode(data) : data;
-              if (map is Map && map['type'] == 'auth') {
-                final t = map['token']?.toString();
-                if (sub.token?.isNotEmpty == true && t != sub.token) {
-                  socket.add(
-                    jsonEncode({'type': 'error', 'message': 'Unauthorized'}),
-                  );
-                  socket.close(WebSocketStatus.policyViolation, 'Unauthorized');
-                } else {
-                  socket.add(jsonEncode({'type': 'auth_ok'}));
-                }
-              }
-            } catch (_) {}
-          },
-          onDone: () => _clients.remove(socket),
-          onError: (_) => _clients.remove(socket),
-        );
-      } catch (_) {}
-    });
+    shelf_io.serveRequests(server, _wsForwardHandler);
     HubLog.info(
       'HubSubscription',
       '✅ WS 正向订阅监听：ws://${sub.summary} （${sub.note}）',
     );
+  }
+
+  FutureOr<shelf.Response> _wsForwardHandler(shelf.Request req) {
+    if (!_isWsUpgrade(req)) {
+      return _json(HttpStatus.badRequest, {
+        'code': HttpStatus.badRequest,
+        'error': 'WS_ONLY',
+        'message': '仅支持 WebSocket 连接',
+      });
+    }
+    final queryToken = req.requestedUri.queryParameters['token'];
+    if (sub.token?.isNotEmpty == true && queryToken != sub.token) {
+      return shelf.Response(HttpStatus.unauthorized);
+    }
+    final authenticatedByQuery =
+        sub.token?.isNotEmpty == true && queryToken != null;
+    final handler = webSocketHandler((
+      WebSocketChannel channel,
+      String? protocol,
+    ) {
+      final socket = HubSocket(channel);
+      _clients.add(socket);
+      socket.done.whenComplete(() => _clients.remove(socket));
+      if (authenticatedByQuery) return;
+      // 监听认证消息（token 未通过 query 传入时）
+      socket.listen(
+        (data) {
+          try {
+            final map = data is String ? jsonDecode(data) : data;
+            if (map is Map && map['type'] == 'auth') {
+              final t = map['token']?.toString();
+              if (sub.token?.isNotEmpty == true && t != sub.token) {
+                socket.add(
+                  jsonEncode({'type': 'error', 'message': 'Unauthorized'}),
+                );
+                socket.close(WebSocketStatus.policyViolation, 'Unauthorized');
+              } else {
+                socket.add(jsonEncode({'type': 'auth_ok'}));
+              }
+            }
+          } catch (_) {}
+        },
+        onDone: () => _clients.remove(socket),
+        onError: (_) => _clients.remove(socket),
+      );
+    });
+    return handler(req);
   }
 
   // ── ws reverse：Hub 作为客户端连接目标 ────────────────────────────────────
@@ -194,11 +208,16 @@ class _SubRuntime {
   Future<void> _connectWsReverse(String url) async {
     if (_closed) return;
     try {
-      final socket = await WebSocket.connect(url);
+      final channel = IOWebSocketChannel.connect(
+        url,
+        connectTimeout: const Duration(seconds: 10),
+      );
+      await channel.ready;
       if (_closed) {
-        await socket.close();
+        await channel.sink.close();
         return;
       }
+      final socket = HubSocket(channel);
       _outSocket = socket;
       _reconnectAttempts = 0;
       error = null;
@@ -266,45 +285,35 @@ class _SubRuntime {
         : InternetAddress.anyIPv4.address;
     final server = await HttpServer.bind(host, port);
     _httpServer = server;
-    server.listen((request) async {
-      try {
-        if (!_authOk(request)) {
-          request.response
-            ..statusCode = HttpStatus.unauthorized
-            ..headers.contentType = ContentType.json
-            ..write(jsonEncode({'error': 'Unauthorized'}));
-          await request.response.close();
-          return;
-        }
-        final path = request.uri.path;
-        if (path == '/hello') {
-          await _sendJson(request, {
-            'message': 'Hello from Kostori Hub',
-            'note': sub.note,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-        } else if (path == '/health') {
-          await _sendJson(request, {
-            'status': 'ok',
-            'note': sub.note,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-        } else if (path == '/message' && request.method == 'POST') {
-          final body = await utf8.decoder.bind(request).join();
-          HubLog.info('HubSubscription', '📨 HTTP 收到消息（${sub.note}）：$body');
-          await _sendJson(request, {
-            'ok': true,
-            'received': body,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-        } else {
-          request.response
-            ..statusCode = HttpStatus.notFound
-            ..headers.contentType = ContentType.json
-            ..write(jsonEncode({'error': 'Not Found'}));
-          await request.response.close();
-        }
-      } catch (_) {}
+    shelf_io.serveRequests(server, (req) async {
+      if (!_authOk(req)) {
+        return _json(HttpStatus.unauthorized, {'error': 'Unauthorized'});
+      }
+      final path = req.requestedUri.path;
+      if (path == '/hello') {
+        return _json(HttpStatus.ok, {
+          'message': 'Hello from Kostori Hub',
+          'note': sub.note,
+          'timestamp': DateTime.now().toIso8601String(),
+        });
+      }
+      if (path == '/health') {
+        return _json(HttpStatus.ok, {
+          'status': 'ok',
+          'note': sub.note,
+          'timestamp': DateTime.now().toIso8601String(),
+        });
+      }
+      if (path == '/message' && req.method == 'POST') {
+        final body = await req.readAsString();
+        HubLog.info('HubSubscription', '📨 HTTP 收到消息（${sub.note}）：$body');
+        return _json(HttpStatus.ok, {
+          'ok': true,
+          'received': body,
+          'timestamp': DateTime.now().toIso8601String(),
+        });
+      }
+      return _json(HttpStatus.notFound, {'error': 'Not Found'});
     });
     HubLog.info(
       'HubSubscription',
@@ -312,24 +321,14 @@ class _SubRuntime {
     );
   }
 
-  bool _authOk(HttpRequest request) {
+  bool _authOk(shelf.Request req) {
     if (sub.token?.isEmpty != false) return true;
-    final header = request.headers.value('authorization');
+    final header = req.headers['authorization'];
     if (header != null) {
       return header == 'Bearer ${sub.token}' || header == sub.token;
     }
-    final query = request.uri.queryParameters['token'];
+    final query = req.requestedUri.queryParameters['token'];
     return query != null && query == sub.token;
-  }
-
-  Future<void> _sendJson(HttpRequest request, Map<String, dynamic> data) async {
-    final bytes = utf8.encode(jsonEncode(data));
-    request.response
-      ..statusCode = HttpStatus.ok
-      ..headers.contentType = ContentType.json
-      ..headers.set('Content-Length', bytes.length.toString())
-      ..add(bytes);
-    await request.response.close();
   }
 
   // ── 心跳 ──────────────────────────────────────────────────────────────────

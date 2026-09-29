@@ -1,6 +1,6 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-typedef MiddlewareHandler = Future<bool> Function(HttpRequest request);
+typedef MiddlewareHandler = Future<bool> Function(HubRequest request);
 
 class Middleware {
   // ─────────────────────────────────────────
@@ -9,7 +9,7 @@ class Middleware {
 
   /// 从 Authorization header 或 query 参数取 Key 校验
   static MiddlewareHandler auth({bool admin = false}) {
-    return (HttpRequest request) async {
+    return (HubRequest request) async {
       final header = request.headers.value('Authorization');
       final bearerToken = header != null && header.startsWith('Bearer ')
           ? header.substring(7)
@@ -51,7 +51,7 @@ class Middleware {
   // ─────────────────────────────────────────
 
   static MiddlewareHandler localBypass(MiddlewareHandler next) {
-    return (HttpRequest request) async {
+    return (HubRequest request) async {
       final ip = request.connectionInfo?.remoteAddress.address ?? '';
       final isLocal =
           ip == '127.0.0.1' || ip == '::1' || ip == '0:0:0:0:0:0:0:1';
@@ -75,7 +75,7 @@ class Middleware {
   }) {
     final counts = <String, List<DateTime>>{};
 
-    return (HttpRequest request) async {
+    return (HubRequest request) async {
       final ip = request.connectionInfo?.remoteAddress.address ?? 'unknown';
       final now = DateTime.now();
       final windowStart = now.subtract(window);
@@ -114,7 +114,7 @@ class Middleware {
     String allowMethods = 'GET, POST, PUT, DELETE, OPTIONS',
     String allowHeaders = 'Content-Type, Authorization',
   }) {
-    return (HttpRequest request) async {
+    return (HubRequest request) async {
       request.response.headers
         ..set('Access-Control-Allow-Origin', allowOrigin)
         ..set('Access-Control-Allow-Methods', allowMethods)
@@ -140,7 +140,7 @@ class Middleware {
         : const HubUploadConfig();
     final maxBytes = config.maxSizeBytes;
 
-    return (HttpRequest request) async {
+    return (HubRequest request) async {
       final contentLength = request.contentLength;
 
       if (contentLength != -1 && contentLength > maxBytes) {
@@ -166,7 +166,7 @@ class Middleware {
   // ─────────────────────────────────────────
 
   static MiddlewareHandler ipWhitelist(List<String> allowedIps) {
-    return (HttpRequest request) async {
+    return (HubRequest request) async {
       final ip = request.connectionInfo?.remoteAddress.address ?? '';
 
       // 本地永远放行

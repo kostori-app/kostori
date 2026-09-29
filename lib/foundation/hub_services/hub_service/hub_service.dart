@@ -503,14 +503,14 @@ class HubService extends BaseHttpService {
   }
 
   /// 已建立的 WS 机器人连接（url -> socket）
-  final Map<String, WebSocket> _wsBotSockets = {};
+  final Map<String, HubSocket> _wsBotSockets = {};
 
   /// 通过 WS 正向连接推送给机器人。
   /// 惰性建立连接：发送前若无连接则连上并握手，发送后保留连接复用。
   Future<void> _wsBotSend(HubWsBotConnection bot, String body) async {
     try {
       var socket = _wsBotSockets[bot.url];
-      if (socket == null || socket.readyState != WebSocket.open) {
+      if (socket == null || socket.readyState != HubSocket.open) {
         socket = await connectTo(bot.url);
         if (socket == null) return;
         _wsBotSockets[bot.url] = socket;

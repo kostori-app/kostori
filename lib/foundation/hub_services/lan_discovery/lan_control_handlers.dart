@@ -5,7 +5,7 @@ class LanControlClient {
 
   static final LanControlClient instance = LanControlClient._();
 
-  WebSocket? _socket;
+  HubSocket? _socket;
   String? _serverUrl;
   LanControlServiceState _state = LanControlServiceState.idle;
   Timer? _reconnectTimer;
@@ -35,11 +35,16 @@ class LanControlClient {
     _connectedDevice = device;
 
     try {
-      _socket = await WebSocket.connect(_serverUrl!).timeout(
+      final channel = IOWebSocketChannel.connect(
+        _serverUrl!,
+        pingInterval: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 5),
+      );
+      await channel.ready.timeout(
         const Duration(seconds: 5),
         onTimeout: () => throw TimeoutException('连接超时'),
       );
-      _socket!.pingInterval = const Duration(seconds: 30);
+      _socket = HubSocket(channel);
       _reconnectAttempts = 0;
       _helloCompleter = Completer<bool>();
       _socket!.listen(
@@ -128,7 +133,7 @@ class LanControlClient {
     }
     _pendingRequests.clear();
 
-    if (_socket != null && _socket!.readyState == WebSocket.open) {
+    if (_socket != null && _socket!.readyState == HubSocket.open) {
       final msg = LanControlMessage(
         type: LanControlMessageType.disconnect,
         requestId: LanControlMessage.generateRequestId(),
@@ -241,7 +246,7 @@ class LanControlClient {
       _onErrorListeners.remove(listener);
 
   Future<void> _send(LanControlMessage message) async {
-    if (_socket == null || _socket!.readyState != WebSocket.open) {
+    if (_socket == null || _socket!.readyState != HubSocket.open) {
       throw StateError('未连接到服务器，无法发送消息');
     }
     _socket!.add(jsonEncode(message.toJson()));

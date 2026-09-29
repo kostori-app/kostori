@@ -4,7 +4,7 @@
 // 参考 https://satori.chat/zh-CN/protocol/
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-/// Satori WebSocket Gateway opcode
+/// Satori HubSocket Gateway opcode
 class SatoriOpcode {
   static const int event = 0;
   static const int ping = 1;
@@ -16,7 +16,7 @@ class SatoriOpcode {
 
 /// Satori 适配层（单例）。在 HubService 启动时 attach，负责：
 /// - 注册 REST 方法路由（POST /v1/:method）
-/// - 注册 Gateway WebSocket（/v1/events）
+/// - 注册 Gateway HubSocket（/v1/events）
 /// - 桥接 Hub 房间消息 / 系统事件 → Satori Event，维护全局 sn 支持断线续传
 class SatoriServer {
   SatoriServer._();
@@ -36,7 +36,7 @@ class SatoriServer {
   static const int _maxBuffer = 5000;
 
   /// 已鉴权的 Satori 网关连接 → 该连接绑定的 bot 档案
-  final Map<WebSocket, SatoriBotProfile> _clients = {};
+  final Map<HubSocket, SatoriBotProfile> _clients = {};
 
   /// 默认身份（未用专属令牌连接时的回退，向后兼容旧版）
   SatoriBotProfile get _defaultProfile {
@@ -102,7 +102,7 @@ class SatoriServer {
   }
 
   /// Satori REST 鉴权：接受专属 bot 令牌或用户/管理层 Key。
-  Future<bool> _satoriAuth(HttpRequest request) async {
+  Future<bool> _satoriAuth(HubRequest request) async {
     final header = request.headers.value('Authorization');
     final bearerToken = header != null && header.startsWith('Bearer ')
         ? header.substring(7)
@@ -130,9 +130,9 @@ class SatoriServer {
     return true;
   }
 
-  // ── Gateway WebSocket ───────────────────────────────────
+  // ── Gateway HubSocket ───────────────────────────────────
 
-  Future<void> _handleGateway(WebSocket socket, HttpRequest request) async {
+  Future<void> _handleGateway(HubSocket socket, HubRequest request) async {
     bool authorized = false;
     SatoriBotProfile? profile;
     await for (final raw in socket) {
@@ -470,7 +470,7 @@ class SatoriServer {
 
   // ── REST 方法分发 ───────────────────────────────────────
 
-  Future<void> _handleRest(HttpRequest request) async {
+  Future<void> _handleRest(HubRequest request) async {
     final segments = request.uri.pathSegments;
     final name = segments.isNotEmpty ? segments.last : '';
     final hub = _hub;
@@ -491,7 +491,7 @@ class SatoriServer {
   }
 
   /// 从 REST 请求头解析调用方 bot 档案（Koishi 会带 Satori-User-ID）。
-  SatoriBotProfile _profileFromRequest(HttpRequest request) {
+  SatoriBotProfile _profileFromRequest(HubRequest request) {
     final userId = request.headers.value('Satori-User-ID');
     if (userId != null && userId.isNotEmpty) {
       final byId = SatoriBotProfileStore.instance.findById(userId);
@@ -503,7 +503,7 @@ class SatoriServer {
   Future<Object?> _invoke(
     String name,
     Map<String, dynamic> body,
-    HttpRequest request,
+    HubRequest request,
   ) async {
     final hub = _hub;
     if (hub == null) throw StateError('satori not enabled');
@@ -863,7 +863,7 @@ class SatoriServer {
 
   // ── 响应工具 ────────────────────────────────────────────
 
-  Future<Map<String, dynamic>?> _readJsonBody(HttpRequest request) async {
+  Future<Map<String, dynamic>?> _readJsonBody(HubRequest request) async {
     try {
       final body = await utf8.decoder.bind(request).join();
       if (body.isEmpty) return {};
@@ -875,7 +875,7 @@ class SatoriServer {
   }
 
   Future<void> _sendJson(
-    HttpRequest request,
+    HubRequest request,
     Map<String, dynamic> data, {
     int status = 200,
   }) async {
@@ -889,7 +889,7 @@ class SatoriServer {
   }
 
   Future<void> _sendJsonValue(
-    HttpRequest request,
+    HubRequest request,
     Object? value, {
     int status = 200,
   }) async {
@@ -904,7 +904,7 @@ class SatoriServer {
 
   // ── upload.create：复用 Hub 上传能力 ────────────────────
 
-  Future<Object?> _handleSatoriUpload(HttpRequest request) async {
+  Future<Object?> _handleSatoriUpload(HubRequest request) async {
     final hub = _hub!;
     final contentType = request.headers.contentType;
     if (contentType == null ||
@@ -917,7 +917,7 @@ class SatoriServer {
       throw StateError('missing boundary');
     }
     final body = await hub.collectRequestBodyBytes(request);
-    final parsed = hub.parseMultipartFile(body, boundary);
+    final parsed = await hub.parseMultipartFile(body, boundary);
     if (parsed == null) throw StateError('no file found');
     final url = await hub.storeUploadedFile(parsed);
     return {parsed.filename: url};

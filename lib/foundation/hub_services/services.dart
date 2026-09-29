@@ -25,6 +25,12 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/hub_services/hub_keep_alive.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:mime/mime.dart';
+import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:shelf_web_socket/shelf_web_socket.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
@@ -48,6 +54,8 @@ part 'base/api_key_manager.dart';
 part 'base/base_http_service.dart';
 
 part 'base/base_service.dart';
+
+part 'base/hub_http.dart';
 
 part 'base/docs_html.dart';
 

@@ -1,11 +1,11 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-// ── HubClientInfo（服务端专用，保留 WebSocket）──────────
+// ── HubClientInfo（服务端专用，保留 HubSocket）──────────
 
 class HubClientInfo {
   final String userId;
   String? displayName;
-  final WebSocket? connection;
+  final HubSocket? connection;
   final DateTime connectedAt;
   String? avatarUrl;
   String? biography;
