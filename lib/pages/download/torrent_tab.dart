@@ -442,21 +442,22 @@ class _TorrentTabState extends ConsumerState<TorrentTab> {
 
   /// 删除前询问是否连同已下载文件一起删除
   void _confirmDelete(TorrentJob job) {
+    final navigator = Navigator.of(App.rootContext, rootNavigator: true);
     ContentDialog.show(
-      context: context,
+      context: App.rootContext,
       title: t.torrentDelete,
       content: Text(t.torrentDeleteConfirm),
       actions: [
         TextButton(
           onPressed: () {
-            context.pop();
+            navigator.pop();
             _m.remove(job, deleteFiles: false);
           },
           child: Text(t.torrentDeleteTaskOnly),
         ),
         FilledButton(
           onPressed: () {
-            context.pop();
+            navigator.pop();
             _m.remove(job);
           },
           child: Text(t.torrentDeleteWithFiles),
