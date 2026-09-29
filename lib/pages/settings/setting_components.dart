@@ -776,6 +776,182 @@ class __AnimeSourceCallbackSettingState
   }
 }
 
+/// 番源设置里的 `order` 类型：由源的 `loader` 动态提供条目，用户拖拽排序，
+/// 结果按顺序存为 id 数组（写入 `source.data['settings'][key]`）。
+class _AnimeSourceOrderSetting extends StatelessWidget {
+  const _AnimeSourceOrderSetting({required this.setting, required this.source});
+
+  final MapEntry<String, Map<String, dynamic>> setting;
+
+  final AnimeSource source;
+
+  String get settingKey => setting.key;
+
+  String get title => (setting.value['title'] ?? settingKey).toString();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(title.ts(source.key)),
+      trailing: const Icon(Icons.arrow_right),
+      onTap: () => showPopUpWidget(
+        App.rootContext,
+        _AnimeSourceOrderPage(setting: setting, source: source),
+      ),
+    );
+  }
+}
+
+class _AnimeSourceOrderPage extends StatefulWidget {
+  const _AnimeSourceOrderPage({required this.setting, required this.source});
+
+  final MapEntry<String, Map<String, dynamic>> setting;
+
+  final AnimeSource source;
+
+  @override
+  State<_AnimeSourceOrderPage> createState() => _AnimeSourceOrderPageState();
+}
+
+class _AnimeSourceOrderPageState extends State<_AnimeSourceOrderPage> {
+  String get key => widget.setting.key;
+
+  bool loading = true;
+
+  String? error;
+
+  List<Map<String, dynamic>> items = [];
+
+  static String idOf(Map item) =>
+      (item['id'] ?? item['value'] ?? item['key'] ?? '').toString();
+
+  static String nameOf(Map item) =>
+      (item['name'] ?? item['text'] ?? item['title'] ?? item['id'] ?? '')
+          .toString();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final loader = widget.setting.value['loader'];
+      dynamic res;
+      if (loader is JSAutoFreeFunction) {
+        res = loader([]);
+        if (res is Future) res = await res;
+      } else if (loader is Function) {
+        res = loader();
+        if (res is Future) res = await res;
+      } else {
+        throw "缺少 loader 函数";
+      }
+      if (res is! List) {
+        throw "loader 必须返回数组";
+      }
+      final parsed = <Map<String, dynamic>>[];
+      for (final e in res) {
+        if (e is Map) {
+          parsed.add(Map<String, dynamic>.from(e));
+        } else if (e != null) {
+          parsed.add({'id': e.toString(), 'name': e.toString()});
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        items = parsed;
+        loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        error = e.toString();
+        loading = false;
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> _orderedItems() {
+    final stored = widget.source.data['settings']?[key];
+    final ids = stored is List
+        ? stored.map((e) => e.toString()).toList()
+        : <String>[];
+    final byId = {for (final e in items) idOf(e): e};
+    final ordered = <Map<String, dynamic>>[];
+    for (final id in ids) {
+      final e = byId.remove(id);
+      if (e != null) ordered.add(e);
+    }
+    ordered.addAll(items.where((e) => byId.containsKey(idOf(e))));
+    return ordered;
+  }
+
+  void _save(List<Map<String, dynamic>> ordered) {
+    final settings = widget.source.data['settings'] ??= {};
+    settings[key] = ordered.map(idOf).toList();
+    widget.source.saveData();
+  }
+
+  void _reset() {
+    final settings = widget.source.data['settings'] ??= {};
+    settings.remove(key);
+    widget.source.saveData();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget body;
+    if (loading) {
+      body = const Center(child: ListLoadingIndicator());
+    } else if (error != null) {
+      body = NetworkError(message: error!, retry: _load);
+    } else if (items.isEmpty) {
+      body = EmptyState(message: t.noData);
+    } else {
+      final ordered = _orderedItems();
+      body = SettingReorderableList<Map<String, dynamic>>(
+        items: ordered,
+        itemHeight: 56,
+        itemKey: (e) => ValueKey(idOf(e)),
+        itemBuilder: (e) => ListTile(
+          title: Text(nameOf(e)),
+          trailing: const Icon(Icons.drag_handle),
+        ),
+        onReorder: (reorderFunc) {
+          setState(() {
+            _save(List.from(reorderFunc(ordered)));
+          });
+        },
+      );
+    }
+    return PopUpWidgetScaffold(
+      title: (widget.setting.value['title'] ?? key).toString().ts(
+        widget.source.key,
+      ),
+      tailing: [
+        IconButton(
+          onPressed: _load,
+          tooltip: t.refresh,
+          icon: const Icon(Icons.refresh),
+        ),
+        IconButton(
+          onPressed: _reset,
+          tooltip: t.reset,
+          icon: const Icon(Icons.restart_alt),
+        ),
+      ],
+      body: body,
+    );
+  }
+}
+
 class _SettingPartTitle extends StatelessWidget {
   const _SettingPartTitle({
     required this.title,

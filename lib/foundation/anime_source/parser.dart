@@ -210,7 +210,13 @@ class AnimeSourceParser {
 
     if (_checkExists("init")) {
       Future.delayed(const Duration(milliseconds: 50), () {
-        JsEngine().runCode("AnimeSource.sources.$_key.init()");
+        // reload 可能已清空注册表，此时 key 不存在，直接跳过
+        if (!_checkExists("init")) return;
+        try {
+          JsEngine().runCode("AnimeSource.sources.$_key.init()");
+        } catch (e, s) {
+          SourceLog.error("AnimeSource", "init failed for $_key: $e\n$s");
+        }
       });
     }
 

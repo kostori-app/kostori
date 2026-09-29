@@ -1963,12 +1963,14 @@ class _SliverGridAnimes extends StatelessWidget {
   Widget build(BuildContext context) {
     // 水平布局模式
     if (horizontal) {
-      const height = 240.0;
+      final scale = ((appdata.settings['animeTileScale'] as num?) ?? 1.0)
+          .toDouble();
+      final height = 240.0 * scale;
       // 按显示模式决定横向卡片宽度：
       // brief/masonry 竖卡，detailed 宽卡，poster 横卡
       final mode = displayMode;
       final double width = switch (mode) {
-        'detailed' => 380.0,
+        'detailed' => 380.0 * scale,
         'poster' => height * 1.25,
         _ => height * 0.68,
       };

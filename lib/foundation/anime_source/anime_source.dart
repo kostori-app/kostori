@@ -75,6 +75,7 @@ class AnimeSourceManager with ChangeNotifier, Init {
         }
       }
     }
+    syncExplorePages();
   }
 
   Future reload() async {
@@ -82,6 +83,74 @@ class AnimeSourceManager with ChangeNotifier, Init {
     JsEngine().runCode("AnimeSource.sources = {};");
     await doInit();
     notifyListeners();
+  }
+
+  /// 已见探索页记录（源 key → 页面标题列表），用于区分「新增页」与「用户隐藏页」。
+  static const _knownPagesKey = 'known_explore_pages';
+
+  /// 把每个源当前声明的探索页合并进 [SettingsData.explorePagesV2]。
+  ///
+  /// 首次运行补全所有缺失页，之后只补新出现的页；用户手动隐藏的页不会被加回。
+  void syncExplorePages() {
+    final knownRaw = appdata.implicitData[_knownPagesKey];
+    final known = <String, List<String>>{};
+    if (knownRaw is Map) {
+      knownRaw.forEach((k, v) {
+        if (v is List) {
+          known[k.toString()] = v.map((e) => e.toString()).toList();
+        }
+      });
+    }
+
+    final rawMap = appdata.settings.s.explorePagesV2;
+    final pagesMap = rawMap.map(
+      (k, v) => MapEntry(k, List<String>.from(v as List)),
+    );
+
+    var settingsChanged = false;
+    var knownChanged = false;
+
+    for (final source in _sources) {
+      final current = source.explorePages.map((e) => e.title).toList();
+      if (current.isEmpty) continue;
+
+      final previous = known[source.key];
+      final visible = pagesMap[source.key] ?? <String>[];
+      final visibleSet = visible.toSet();
+
+      final additions = <String>[];
+      for (final title in current) {
+        if (visibleSet.contains(title)) continue;
+        final isNew = previous == null || !previous.contains(title);
+        if (isNew) additions.add(title);
+      }
+
+      if (additions.isNotEmpty) {
+        pagesMap[source.key] = [...visible, ...additions];
+        settingsChanged = true;
+      }
+
+      final sameAsKnown =
+          previous != null &&
+          previous.length == current.length &&
+          List.generate(
+            current.length,
+            (i) => previous[i] == current[i],
+          ).every((e) => e);
+      if (!sameAsKnown) {
+        known[source.key] = current;
+        knownChanged = true;
+      }
+    }
+
+    if (settingsChanged) {
+      appdata.settings.update((s) => s.copyWith(explorePagesV2: pagesMap));
+      appdata.saveData();
+    }
+    if (knownChanged) {
+      appdata.implicitData[_knownPagesKey] = known;
+      appdata.writeImplicitData();
+    }
   }
 
   void add(AnimeSource source) {

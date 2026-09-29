@@ -2558,6 +2558,8 @@ class _AnimeSourceDetailPageState extends State<_AnimeSourceDetailPage> {
             setting: item,
             sourceKey: source.key,
           );
+        } else if (type == "order") {
+          yield _AnimeSourceOrderSetting(setting: item, source: source);
         }
       } catch (e, s) {
         SourceLog.error("animeSourcePage", "Failed to build a setting\n$e\n$s");

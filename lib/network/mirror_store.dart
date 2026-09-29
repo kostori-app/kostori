@@ -96,21 +96,47 @@ class MirrorStore {
 final bangumiMirrorStore = MirrorStore('bangumiMirrors', 'bangumiMirror');
 final githubMirrorStore = MirrorStore('githubMirrors', 'githubMirror');
 
-/// 会被镜像替换的官方 Bangumi 接口主机
-const _bangumiMirrorableHosts = {'api.bgm.tv', 'next.bgm.tv'};
+/// Bangumi p1 接口镜像（next.bgm.tv）：与主接口镜像分开维护。
+final bangumiP1MirrorStore = MirrorStore('bangumiP1Mirrors', 'bangumiP1Mirror');
 
-/// 把官方 Bangumi 接口地址改写为当前选中的镜像地址（保留 path 与 query）。
-String applyBangumiMirror(String url) {
-  final mirror = bangumiMirrorStore.selectedUrl;
+/// Bangumi 图片镜像：与接口镜像分开维护（图片镜像通常只反代 lain.bgm.tv）。
+final bangumiImageMirrorStore = MirrorStore(
+  'bangumiImageMirrors',
+  'bangumiImageMirror',
+);
+
+/// 会被镜像替换的官方 Bangumi 主接口主机（v0，api.bgm.tv）
+const _bangumiMirrorableHosts = {'api.bgm.tv'};
+
+/// 会被镜像替换的 Bangumi p1 接口主机（next.bgm.tv）
+const _bangumiP1MirrorableHosts = {'next.bgm.tv'};
+
+/// 会被镜像替换的 Bangumi 图片主机（封面、剧照等）
+const _bangumiImageMirrorableHosts = {'lain.bgm.tv'};
+
+String _applyMirror(String url, MirrorStore store, Set<String> hosts) {
+  final mirror = store.selectedUrl;
   if (mirror.isEmpty) return url;
   final uri = Uri.tryParse(url);
-  if (uri == null || !_bangumiMirrorableHosts.contains(uri.host)) return url;
+  if (uri == null || !hosts.contains(uri.host)) return url;
   final base = mirror.endsWith('/')
       ? mirror.substring(0, mirror.length - 1)
       : mirror;
   final path = uri.path.isEmpty ? '/' : uri.path;
   return '$base$path${uri.hasQuery ? '?${uri.query}' : ''}';
 }
+
+/// 把官方 Bangumi 主接口（api.bgm.tv）地址改写为当前选中的镜像地址。
+String applyBangumiMirror(String url) =>
+    _applyMirror(url, bangumiMirrorStore, _bangumiMirrorableHosts);
+
+/// 把 Bangumi p1 接口（next.bgm.tv）地址改写为当前选中的 p1 镜像地址。
+String applyBangumiP1Mirror(String url) =>
+    _applyMirror(url, bangumiP1MirrorStore, _bangumiP1MirrorableHosts);
+
+/// 把 Bangumi 图片地址改写为当前选中的图片镜像地址（保留 path 与 query）。
+String applyBangumiImageMirror(String url) =>
+    _applyMirror(url, bangumiImageMirrorStore, _bangumiImageMirrorableHosts);
 
 /// 前缀式/替换式镜像可加速的 GitHub 主机（真正的前缀代理对 API 与文件下载都有效）。
 const _githubHosts = {
@@ -139,8 +165,9 @@ bool _scopeCanServe(MirrorScope scope, {required bool needApi}) =>
     (needApi ? scope == MirrorScope.api : scope == MirrorScope.site);
 
 /// 按「用途」标签挑选可承接该请求的镜像：优先当前选中的（若其用途匹配），
-/// 否则取第一个用途匹配的；都不匹配则不走镜像。
+/// 否则取第一个用途匹配的；都不匹配或显式选择「官方」时则不走镜像。
 MirrorEntry? _effectiveGithubMirror({required bool needApi}) {
+  if (githubMirrorStore.selectedUrl.isEmpty) return null;
   final selected = githubMirrorStore.selected;
   if (selected != null && _scopeCanServe(selected.scope, needApi: needApi)) {
     return selected;

@@ -74,6 +74,45 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                   },
                 ),
                 _CallbackSetting(
+                  title: t.bangumiP1Mirror,
+                  subtitle:
+                      bangumiP1MirrorStore.selected?.name ?? t.mirrorOfficial,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(
+                      App.rootContext,
+                      MirrorManagerPage(
+                        store: bangumiP1MirrorStore,
+                        title: t.bangumiP1Mirror,
+                        description: t.bangumiP1MirrorDesc,
+                        addressHint: 'https://next.bgm.tv',
+                      ),
+                    ).then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  },
+                ),
+                _CallbackSetting(
+                  title: t.bangumiImageMirror,
+                  subtitle:
+                      bangumiImageMirrorStore.selected?.name ??
+                      t.mirrorOfficial,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(
+                      App.rootContext,
+                      MirrorManagerPage(
+                        store: bangumiImageMirrorStore,
+                        title: t.bangumiImageMirror,
+                        description: t.bangumiImageMirrorDesc,
+                        addressHint: 'https://lain.bgm.tv',
+                      ),
+                    ).then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  },
+                ),
+                _CallbackSetting(
                   title: t.githubMirror,
                   subtitle:
                       githubMirrorStore.selected?.name ?? t.mirrorOfficial,

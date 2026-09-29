@@ -736,6 +736,10 @@ bangumiMirror: Bangumi 镜像
 bangumiMirrorDesc: 通过第三方镜像加速访问 Bangumi 接口
 bangumiMirrorSendAuth: 镜像使用鉴权
 bangumiMirrorSendAuthDesc: 关闭时不向镜像发送登录令牌等凭证（更安全）
+bangumiImageMirror: Bangumi 图片镜像
+bangumiImageMirrorDesc: 通过第三方镜像加速访问 Bangumi 图片（lain.bgm.tv）
+bangumiP1Mirror: Bangumi p1 接口镜像
+bangumiP1MirrorDesc: 通过第三方镜像加速访问 Bangumi p1 接口（next.bgm.tv）
 networkMirror: 镜像设置
 githubMirror: GitHub 镜像
 githubMirrorDesc: 支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）

@@ -777,6 +777,10 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get bangumiMirrorDesc => '通过第三方镜像加速访问 Bangumi 接口';
 	@override String get bangumiMirrorSendAuth => '镜像使用鉴权';
 	@override String get bangumiMirrorSendAuthDesc => '关闭时不向镜像发送登录令牌等凭证（更安全）';
+	@override String get bangumiImageMirror => 'Bangumi 图片镜像';
+	@override String get bangumiImageMirrorDesc => '通过第三方镜像加速访问 Bangumi 图片（lain.bgm.tv）';
+	@override String get bangumiP1Mirror => 'Bangumi p1 接口镜像';
+	@override String get bangumiP1MirrorDesc => '通过第三方镜像加速访问 Bangumi p1 接口（next.bgm.tv）';
 	@override String get networkMirror => '镜像设置';
 	@override String get githubMirror => 'GitHub 镜像';
 	@override String get githubMirrorDesc => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）';
@@ -3942,6 +3946,10 @@ extension on TranslationsZhCn {
 			'bangumiMirrorDesc' => '通过第三方镜像加速访问 Bangumi 接口',
 			'bangumiMirrorSendAuth' => '镜像使用鉴权',
 			'bangumiMirrorSendAuthDesc' => '关闭时不向镜像发送登录令牌等凭证（更安全）',
+			'bangumiImageMirror' => 'Bangumi 图片镜像',
+			'bangumiImageMirrorDesc' => '通过第三方镜像加速访问 Bangumi 图片（lain.bgm.tv）',
+			'bangumiP1Mirror' => 'Bangumi p1 接口镜像',
+			'bangumiP1MirrorDesc' => '通过第三方镜像加速访问 Bangumi p1 接口（next.bgm.tv）',
 			'networkMirror' => '镜像设置',
 			'githubMirror' => 'GitHub 镜像',
 			'githubMirrorDesc' => '支持前缀式镜像与 jsDelivr（如 https://cdn.jsdelivr.net/）',
@@ -4224,12 +4232,12 @@ extension on TranslationsZhCn {
 			'pagePM' => ({required Object p, required Object m}) => '第 ${p} / ${m} 页',
 			'first' => '首页',
 			'last' => '末页',
+			_ => null,
+		} ?? switch (path) {
 			'invalidPage' => '无效页码',
 			'unknownError' => '未知错误',
 			'disableLengthLimitation' => '禁用长度限制',
 			'disableLengthLimitationDesc' => '单条日志放宽到 2 万字符；内存总量与文件大小仍有限制（防止日志占用大量内存）',
-			_ => null,
-		} ?? switch (path) {
 			'updateLog' => '更新日志',
 			'liked' => '喜欢',
 			'rating' => '评分',
@@ -4738,12 +4746,12 @@ extension on TranslationsZhCn {
 			'publicBaseUrlHint' => '上传图片的外网可访问地址（公网 IPv4/IPv6 或域名时填写）；留空则使用连接地址',
 			'publicIpDetected' => '已探测到公网 IP',
 			'publicIpDetectFailed' => '公网 IP 探测失败',
+			_ => null,
+		} ?? switch (path) {
 			'notConfiguredWillUseServerOrBase64' => '未配置 · 将使用服务器或 Base64',
 			'imageTooLargeToSend' => '图片太大，无法发送',
 			'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
 			'stopTheServerToChangeUploadMode' => '停止服务器以修改上传模式',
-			_ => null,
-		} ?? switch (path) {
 			'enableClientOss' => '启用客户端 OSS',
 			'uploadImagesDirectlyFromClientToOss' => '从客户端直接上传图片到 OSS',
 			'ossNotConfigured' => 'OSS 未配置',
@@ -5252,12 +5260,12 @@ extension on TranslationsZhCn {
 			'tapToShare' => '点击分享',
 			'noConfigurationsFound' => '未找到配置',
 			'noData' => '没有数据',
+			_ => null,
+		} ?? switch (path) {
 			'loginWithPasswordIsDisabled' => '密码登录已禁用',
 			'cannotBeEmpty' => '不能为空',
 			'invalidCookies' => '无效的 Cookies',
 			'webviewIsNotAvailable' => 'Webview 不可用',
-			_ => null,
-		} ?? switch (path) {
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
 			'translationErrorRegionNotSupported' => 'AI 翻译源不支持当前网络地区，请更换翻译源或使用其他地区的网络',
@@ -5766,12 +5774,12 @@ extension on TranslationsZhCn {
 			'headers' => '请求头（JSON）',
 			'noSkillsYet' => '暂无技能',
 			'skillName' => '技能名称',
+			_ => null,
+		} ?? switch (path) {
 			'skillKey' => '技能 Key',
 			'builtin' => '内置',
 			'skillMarkdownHint' => '技能支持 Markdown 格式',
 			'sendMessage' => '发送消息',
-			_ => null,
-		} ?? switch (path) {
 			'contextAutoCompressed' => '上下文过长，已自动压缩',
 			'chatGreeting' => '今天有什么可以帮你？',
 			'chatStart1' => '总结这段文本',
@@ -6280,12 +6288,12 @@ extension on TranslationsZhCn {
 			'torrentSourceHashRegex' => '哈希正则',
 			'torrentSourceMagnetTemplate' => '磁力模板（{hash}）',
 			'torrentSourceDateRegex' => '时间正则',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceJsonPath' => 'JSON 路径',
 			'torrentSourceTitleField' => '标题字段',
 			'torrentSourceMagnetField' => '磁力字段',
 			'torrentSourceHashField' => '哈希字段',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceSizeField' => '体积字段',
 			'torrentSourceGroupField' => '分组字段',
 			'torrentSourceDateField' => '时间字段',

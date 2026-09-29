@@ -747,6 +747,10 @@ bangumiMirror: Bangumi mirror
 bangumiMirrorDesc: Accelerate Bangumi API access via a third-party mirror
 bangumiMirrorSendAuth: Send auth to mirror
 bangumiMirrorSendAuthDesc: When off, login tokens/credentials are not sent to the mirror (safer)
+bangumiImageMirror: Bangumi image mirror
+bangumiImageMirrorDesc: Accelerate Bangumi images (lain.bgm.tv) via a third-party mirror
+bangumiP1Mirror: Bangumi p1 API mirror
+bangumiP1MirrorDesc: Accelerate Bangumi p1 API (next.bgm.tv) via a third-party mirror
 networkMirror: Mirrors
 githubMirror: GitHub mirror
 githubMirrorDesc: Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)

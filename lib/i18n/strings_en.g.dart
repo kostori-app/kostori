@@ -2276,6 +2276,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'When off, login tokens/credentials are not sent to the mirror (safer)'
 	String get bangumiMirrorSendAuthDesc => 'When off, login tokens/credentials are not sent to the mirror (safer)';
 
+	/// en: 'Bangumi image mirror'
+	String get bangumiImageMirror => 'Bangumi image mirror';
+
+	/// en: 'Accelerate Bangumi images (lain.bgm.tv) via a third-party mirror'
+	String get bangumiImageMirrorDesc => 'Accelerate Bangumi images (lain.bgm.tv) via a third-party mirror';
+
+	/// en: 'Bangumi p1 API mirror'
+	String get bangumiP1Mirror => 'Bangumi p1 API mirror';
+
+	/// en: 'Accelerate Bangumi p1 API (next.bgm.tv) via a third-party mirror'
+	String get bangumiP1MirrorDesc => 'Accelerate Bangumi p1 API (next.bgm.tv) via a third-party mirror';
+
 	/// en: 'Mirrors'
 	String get networkMirror => 'Mirrors';
 
@@ -10218,6 +10230,10 @@ extension on Translations {
 			'bangumiMirrorDesc' => 'Accelerate Bangumi API access via a third-party mirror',
 			'bangumiMirrorSendAuth' => 'Send auth to mirror',
 			'bangumiMirrorSendAuthDesc' => 'When off, login tokens/credentials are not sent to the mirror (safer)',
+			'bangumiImageMirror' => 'Bangumi image mirror',
+			'bangumiImageMirrorDesc' => 'Accelerate Bangumi images (lain.bgm.tv) via a third-party mirror',
+			'bangumiP1Mirror' => 'Bangumi p1 API mirror',
+			'bangumiP1MirrorDesc' => 'Accelerate Bangumi p1 API (next.bgm.tv) via a third-party mirror',
 			'networkMirror' => 'Mirrors',
 			'githubMirror' => 'GitHub mirror',
 			'githubMirrorDesc' => 'Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)',
@@ -10493,12 +10509,12 @@ extension on Translations {
 			'pagePM' => ({required Object p, required Object m}) => 'Page ${p} / ${m}',
 			'first' => 'First',
 			'last' => 'Last',
+			_ => null,
+		} ?? switch (path) {
 			'invalidPage' => 'Invalid page',
 			'unknownError' => 'Unknown error',
 			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => 'Disable Length Limitation',
-			_ => null,
-		} ?? switch (path) {
 			'disableLengthLimitationDesc' => 'Raises a single log up to 20k characters; the in-memory budget and file size stay capped to keep memory in check.',
 			'updateLog' => 'Update log',
 			'liked' => 'Liked',
@@ -11007,12 +11023,12 @@ extension on Translations {
 			'publicBaseUrl' => 'Public Base URL',
 			'publicBaseUrlHint' => 'External base address for uploaded images (public IPv4/IPv6 or domain); leave empty to use connection address',
 			'publicIpDetected' => 'Public IP detected',
+			_ => null,
+		} ?? switch (path) {
 			'publicIpDetectFailed' => 'Failed to detect public IP',
 			'notConfiguredWillUseServerOrBase64' => 'Not configured · will use server or base64',
 			'imageTooLargeToSend' => 'Image too large to send',
 			'pleaseConfigureServerUploadOrClientOss' => 'Please configure server upload or client OSS.',
-			_ => null,
-		} ?? switch (path) {
 			'stopTheServerToChangeUploadMode' => 'Stop the server to change upload mode',
 			'enableClientOss' => 'Enable Client OSS',
 			'uploadImagesDirectlyFromClientToOss' => 'Upload images directly from client to OSS',
@@ -11521,12 +11537,12 @@ extension on Translations {
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
 			'noConfigurationsFound' => 'No configurations found',
+			_ => null,
+		} ?? switch (path) {
 			'noData' => 'No data',
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
 			'cannotBeEmpty' => 'Cannot be empty',
 			'invalidCookies' => 'Invalid cookies',
-			_ => null,
-		} ?? switch (path) {
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
 			'translationFailedPleaseTryAgainLater' => 'Translation failed, please try again later',
@@ -12035,12 +12051,12 @@ extension on Translations {
 			'headers' => 'Headers (JSON)',
 			'noSkillsYet' => 'No skills yet',
 			'skillName' => 'Skill Name',
+			_ => null,
+		} ?? switch (path) {
 			'skillKey' => 'Skill Key',
 			'builtin' => 'Built-in',
 			'skillMarkdownHint' => 'Skills support Markdown',
 			'sendMessage' => 'Send message',
-			_ => null,
-		} ?? switch (path) {
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
 			'chatGreeting' => 'How can I help you today?',
 			'chatStart1' => 'Summarize this text',
@@ -12549,12 +12565,12 @@ extension on Translations {
 			'torrentSourceHashRegex' => 'Hash regex',
 			'torrentSourceMagnetTemplate' => 'Magnet template ({hash})',
 			'torrentSourceDateRegex' => 'Date regex',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceJsonPath' => 'JSON path',
 			'torrentSourceTitleField' => 'Title field',
 			'torrentSourceMagnetField' => 'Magnet field',
 			'torrentSourceHashField' => 'Hash field',
-			_ => null,
-		} ?? switch (path) {
 			'torrentSourceSizeField' => 'Size field',
 			'torrentSourceGroupField' => 'Group field',
 			'torrentSourceDateField' => 'Date field',

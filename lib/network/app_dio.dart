@@ -546,24 +546,44 @@ class WebdavRHttpAdapter extends RHttpAdapter {
   }
 }
 
-/// 把 Bangumi 官方接口主机（api.bgm.tv / next.bgm.tv）改写为用户选中的镜像，
-/// 其余请求原样放行。镜像地址在「网络设置」里维护。
+/// 把 Bangumi 官方接口主机（api.bgm.tv）、p1 接口主机（next.bgm.tv）、图片主机
+/// （lain.bgm.tv）分别改写为用户对应选中的镜像，其余请求原样放行。三个镜像在
+/// 「网络设置」里分别维护。
 class BangumiMirrorInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final original = options.uri.toString();
+    // 图片：只用图片镜像（通常只反代 lain.bgm.tv）
+    final imageMirrored = applyBangumiImageMirror(original);
+    if (imageMirrored != original) {
+      options.path = imageMirrored;
+      handler.next(options);
+      return;
+    }
+    // p1 接口：用 p1 镜像
+    final p1Mirrored = applyBangumiP1Mirror(original);
+    if (p1Mirrored != original) {
+      options.path = p1Mirrored;
+      _stripAuthFromMirror(options);
+      handler.next(options);
+      return;
+    }
+    // 主接口：用主接口镜像
     final mirrored = applyBangumiMirror(original);
     if (mirrored != original) {
       options.path = mirrored;
-      // 默认不把登录鉴权/凭证交给镜像；仅当用户显式开启时才带上
-      if (!bangumiMirrorSendAuth) {
-        options.headers.remove('authorization');
-        options.headers.remove('Authorization');
-        options.headers.remove('cookie');
-        options.headers.remove('Cookie');
-      }
+      _stripAuthFromMirror(options);
     }
     handler.next(options);
+  }
+
+  /// 默认不把登录鉴权/凭证交给镜像；仅当用户显式开启时才带上
+  void _stripAuthFromMirror(RequestOptions options) {
+    if (bangumiMirrorSendAuth) return;
+    options.headers.remove('authorization');
+    options.headers.remove('Authorization');
+    options.headers.remove('cookie');
+    options.headers.remove('Cookie');
   }
 }
 
