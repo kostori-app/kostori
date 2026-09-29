@@ -4,11 +4,8 @@ import 'package:kostori/components/boot_splash.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/app_theme.dart';
 
-String _hex(Color c) =>
-    '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
-
 void main() {
-  testWidgets('启动页渲染图标与版本号', (tester) async {
+  testWidgets('启动页渲染 logo 与版本号', (tester) async {
     await tester.pumpWidget(const BootSplash());
     await tester.pump();
 
@@ -26,8 +23,6 @@ void main() {
       brightness: Brightness.light,
       amoled: false,
     ).colorScheme.surface;
-    // ignore: avoid_print
-    print('light surface = ${_hex(expected)}');
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
     expect(scaffold.backgroundColor, expected);
   });

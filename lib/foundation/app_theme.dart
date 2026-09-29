@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/utils.dart';
 
-/// 外观设置里的主题色名 → Material 种子色。
-///
-/// 正式界面（main.dart 的 MyApp）与启动页（components/boot_splash.dart）共用，
-/// 保证启动页底色与正式界面的 surface 来自同一套色板，交棒时不会出现底色跳变。
+/// 外观设置里的主题色名 → Material 种子色，启动页与正式界面共用。
 Color resolveSeedColor(String? colorName, {String? customColor}) {
   return switch (colorName?.toLowerCase()) {
     'teal' => Colors.teal,

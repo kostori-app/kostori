@@ -32,7 +32,7 @@ import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
-/// 启动完成标记：init() 结束后置为 true，[BootGate] 据此把启动页换成正式界面
+/// init() 结束后置为 true，[BootGate] 据此切换到正式界面
 final bootReady = ValueNotifier(false);
 
 /// 启动失败标记：init() 抛错时记录，[BootGate] 据此显示错误页而非永久启动页
@@ -61,7 +61,6 @@ void _installErrorWidget() {
   };
 }
 
-/// 执行初始化；失败则置 [bootError]，避免卡死在启动页
 Future<void> _boot() async {
   if (_booting) return;
   _booting = true;
@@ -80,7 +79,6 @@ Future<void> _boot() async {
     (e) => Log.error("refreshCustomProviders", e),
   );
 
-  // 初始化完成，启动页交棒给正式界面
   bootReady.value = true;
   // 延迟触发个人页插件的“启动自动签到”（等 JS 引擎/首帧就绪）
   Future<void>.delayed(const Duration(seconds: 3), () async {
@@ -137,8 +135,7 @@ void main(List<String> args) {
         WebViewResolver.registerMainIsolateHandler();
         JsEngine.registerWorkerBridgeHandler();
 
-        // 提前挂载启动页：首帧之前系统只显示纯白的启动窗口，
-        // 而 init() 通常要 1~3 秒（数据库/脚本引擎/资源源/下载任务）
+        // init() 要 1~3 秒，提前挂载启动页避免这段时间只有系统白屏
         runApp(const BootGate());
 
         await _boot();
@@ -150,10 +147,7 @@ void main(List<String> args) {
   });
 }
 
-/// 启动门闩：init() 期间显示 [BootSplash]，完成后淡入切换到正式界面。
-///
-/// 底色与正式界面一致（两者都用 [buildAppTheme]），所以切换时只是内容淡入，
-/// 不会出现白屏闪烁。
+/// 启动门闩：init() 期间显示 [BootSplash]，完成后淡入切换到 [MyApp]。
 class BootGate extends StatelessWidget {
   const BootGate({super.key});
 
@@ -285,7 +279,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Color? tertiary,
     Brightness brightness,
   ) {
-    // AMOLED 只对深色主题生效：system 模式且系统为深色时也应生效
     final amoled = (brightness == Brightness.dark && appdata.settings.s.amoled);
     return buildAppTheme(
       primary: primary,

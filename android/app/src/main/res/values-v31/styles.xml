@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+ 的系统闪屏：显式指定底色与应用图标，
-         避免默认的纯白背景 + 图标一闪而过 -->
+    <!-- Android 12+ 系统闪屏：显式指定底色与应用图标 -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>

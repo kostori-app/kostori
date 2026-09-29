@@ -6,17 +6,13 @@ import 'package:kostori/foundation/app_theme.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 
-/// 启动页：在 `init()`（数据库、脚本引擎、资源源、下载任务…）完成前占位。
-///
-/// 移动端首帧之前系统只显示纯白的启动窗口，而 `init()` 通常要 1~3 秒，
-/// 这段时间用户只能看到白屏。这里提前绘制一个带品牌信息的启动页，
-/// 并复用正式界面的色板（[buildAppTheme]），交棒给 `MyApp` 时不会闪白。
+/// 启动页：在 `init()` 完成前占位。首帧之前系统只有纯白启动窗口，
+/// 而 `init()` 通常要 1~3 秒；底色复用 [buildAppTheme] 保持与正式界面一致。
 class BootSplash extends StatelessWidget {
   const BootSplash({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 监听 settings：appdata 载入后启动页会立刻跟随用户的浅色/深色主题
     return ListenableBuilder(
       listenable: appdata.settings,
       builder: (context, _) {
@@ -25,8 +21,6 @@ class BootSplash extends StatelessWidget {
           s.color,
           customColor: appdata.implicitData['customColor'],
         );
-        // AMOLED 只对深色主题生效（与 MyApp 的判定保持一致）
-        final amoled = s.amoled;
         return MaterialApp(
           title: "kostori",
           debugShowCheckedModeBanner: false,
@@ -43,7 +37,7 @@ class BootSplash extends StatelessWidget {
           darkTheme: buildAppTheme(
             primary: primary(),
             brightness: Brightness.dark,
-            amoled: amoled,
+            amoled: s.amoled,
           ),
           home: const _BootSplashBody(),
         );
@@ -78,7 +72,6 @@ class _BootSplashBodyState extends State<_BootSplashBody>
       vsync: this,
       duration: const Duration(milliseconds: 450),
     )..forward();
-    // 呼吸缩放：初始化期间画面静止，用轻微的律动表示仍在加载
     _pulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -117,7 +110,6 @@ class _BootSplashBodyState extends State<_BootSplashBody>
         backgroundColor: colorScheme.surface,
         body: Stack(
           children: [
-            // 顶部到底部极淡的品牌色渐变，避免整屏死板的纯色
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -147,7 +139,7 @@ class _BootSplashBodyState extends State<_BootSplashBody>
                         width: 200,
                         height: 132,
                         child: Image(
-                          // 启动页只需要约 200px 宽，避免解码 1024px 原图
+                          // 展示宽度 200px，避免解码 1024px 原图
                           image: ResizeImage(
                             const AssetImage("images/app_logo.png"),
                             width: 400,
