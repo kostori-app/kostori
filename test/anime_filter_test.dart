@@ -45,8 +45,39 @@ void main() {
     expect(const AnimeFilter().isActive, isFalse);
     expect(const AnimeFilter(keyword: '   ').isActive, isFalse);
     expect(const AnimeFilter(keyword: 'x').isActive, isTrue);
-    expect(const AnimeFilter(favoriteOnly: true).isActive, isTrue);
-    expect(const AnimeFilter(historyOnly: true).isActive, isTrue);
-    expect(const AnimeFilter(downloadOnly: true).isActive, isTrue);
+    expect(const AnimeFilter(favorite: AnimeFilterMode.only).isActive, isTrue);
+    expect(
+      const AnimeFilter(history: AnimeFilterMode.exclude).isActive,
+      isTrue,
+    );
+    expect(const AnimeFilter(download: AnimeFilterMode.only).isActive, isTrue);
+    expect(const AnimeFilter(subtitle: AnimeFilterMode.only).isActive, isTrue);
+  });
+
+  test('三态条件：only / exclude 分别要求有 / 没有对应字段', () {
+    final withSubtitle = _anime(id: '1', subtitle: '副标题');
+    final withoutSubtitle = _anime(id: '2');
+
+    expect(
+      const AnimeFilter(subtitle: AnimeFilterMode.only).matches(withSubtitle),
+      isTrue,
+    );
+    expect(
+      const AnimeFilter(subtitle: AnimeFilterMode.only)
+          .matches(withoutSubtitle),
+      isFalse,
+    );
+    expect(
+      const AnimeFilter(subtitle: AnimeFilterMode.exclude)
+          .matches(withoutSubtitle),
+      isTrue,
+    );
+    expect(
+      const AnimeFilter(subtitle: AnimeFilterMode.exclude)
+          .matches(withSubtitle),
+      isFalse,
+    );
+    // any 不过滤
+    expect(const AnimeFilter().matches(withoutSubtitle), isTrue);
   });
 }

@@ -677,6 +677,7 @@ class AnimeListState extends State<AnimeList>
       child: AnimeFilterBar(
         filter: _filter,
         onChanged: (f) => setState(() => _filter = f),
+        onExit: () => setState(() => _filterEnabled = false),
       ),
     );
   }
@@ -784,6 +785,8 @@ class AnimeListState extends State<AnimeList>
                             .onPrimaryContainer,
                         onTap: refresh,
                       ),
+                    ],
+                    [
                       SpeedDialChild(
                         child: const Icon(Icons.vertical_align_top),
                         backgroundColor: Theme.of(context)

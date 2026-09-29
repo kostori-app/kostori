@@ -255,8 +255,21 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get exploreFilterFavorite => '已收藏';
 	@override String get exploreFilterHistory => '有历史';
 	@override String get exploreFilterDownload => '已下载';
+	@override String get exploreFilterNoFavorite => '未收藏';
+	@override String get exploreFilterNoHistory => '无历史';
+	@override String get exploreFilterNoDownload => '未下载';
+	@override String get exploreFilterSubtitle => '副标题';
+	@override String get exploreFilterHasSubtitle => '有副标题';
+	@override String get exploreFilterNoSubtitle => '无副标题';
+	@override String get exploreFilterTags => '标签';
+	@override String get exploreFilterHasTags => '有标签';
+	@override String get exploreFilterNoTags => '无标签';
+	@override String get exploreFilterDescription => '简介';
+	@override String get exploreFilterHasDescription => '有简介';
+	@override String get exploreFilterNoDescription => '无简介';
 	@override String get exploreFilterHint => '筛选关键词';
 	@override String get exploreFilterNoResult => '没有符合条件的条目';
+	@override String get exploreFilterExit => '退出筛选';
 	@override String get hideScrollbarForMasonry => '瀑布流隐藏滚动条';
 	@override String get hideScrollbarForMasonryDesc => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐';
 	@override String get memo => '备忘录';
@@ -3379,8 +3392,21 @@ extension on TranslationsZhCn {
 			'exploreFilterFavorite' => '已收藏',
 			'exploreFilterHistory' => '有历史',
 			'exploreFilterDownload' => '已下载',
+			'exploreFilterNoFavorite' => '未收藏',
+			'exploreFilterNoHistory' => '无历史',
+			'exploreFilterNoDownload' => '未下载',
+			'exploreFilterSubtitle' => '副标题',
+			'exploreFilterHasSubtitle' => '有副标题',
+			'exploreFilterNoSubtitle' => '无副标题',
+			'exploreFilterTags' => '标签',
+			'exploreFilterHasTags' => '有标签',
+			'exploreFilterNoTags' => '无标签',
+			'exploreFilterDescription' => '简介',
+			'exploreFilterHasDescription' => '有简介',
+			'exploreFilterNoDescription' => '无简介',
 			'exploreFilterHint' => '筛选关键词',
 			'exploreFilterNoResult' => '没有符合条件的条目',
+			'exploreFilterExit' => '退出筛选',
 			'hideScrollbarForMasonry' => '瀑布流隐藏滚动条',
 			'hideScrollbarForMasonryDesc' => '瀑布流布局下不显示右侧滚动条，避免滚动条抽搐',
 			'memo' => '备忘录',
@@ -3662,6 +3688,8 @@ extension on TranslationsZhCn {
 			'onHold' => '搁置',
 			'dropped' => '抛弃',
 			'todayRecommendation' => '今日推荐',
+			_ => null,
+		} ?? switch (path) {
 			'tTotalCount' => ({required Object t}) => '共 ${t} 项',
 			'introduction' => '简介',
 			'latestComments' => '最新评论',
@@ -3675,8 +3703,6 @@ extension on TranslationsZhCn {
 			'hotspot' => '热点',
 			'completed' => '已完成',
 			'mainCharacter' => '主角',
-			_ => null,
-		} ?? switch (path) {
 			'supportingCharacter' => '配角',
 			'cameo' => '客串',
 			'idleCorner' => '闲角',
@@ -4176,6 +4202,8 @@ extension on TranslationsZhCn {
 			'alpha' => '透明度',
 			'trackId' => '轨道 ID',
 			'trackTitle' => '轨道标题',
+			_ => null,
+		} ?? switch (path) {
 			'trackLanguage' => '轨道语言',
 			'trackImage' => '轨道图像',
 			'trackAlbumArt' => '轨道专辑封面',
@@ -4189,8 +4217,6 @@ extension on TranslationsZhCn {
 			'trackFps' => '帧率',
 			'trackBitrate' => '轨道码率',
 			'trackRotate' => '轨道旋转',
-			_ => null,
-		} ?? switch (path) {
 			'trackPar' => '轨道 PAR',
 			'trackAudioChannels' => '轨道音频声道',
 			'format' => '格式',
@@ -4690,6 +4716,8 @@ extension on TranslationsZhCn {
 			'allowSelfSignedCertHint' => '通过 WSS 连接时信任自签名证书',
 			'directMessage' => '私聊',
 			'noAnnouncementsYet' => '暂无公告',
+			_ => null,
+		} ?? switch (path) {
 			'enterAnnouncementText' => '输入公告内容...',
 			'welcomeMessage' => '欢迎消息',
 			'noWelcomeMessage' => '暂无欢迎消息',
@@ -4703,8 +4731,6 @@ extension on TranslationsZhCn {
 			'noAdminsYet' => '暂无管理员',
 			'noBannedMembers' => '暂无封锁成员',
 			'noMembersAvailable' => '暂无可用成员',
-			_ => null,
-		} ?? switch (path) {
 			'accessControl' => '访问控制',
 			'broadcast' => '广播',
 			'addAnnouncement' => '发布公告',
@@ -5204,6 +5230,8 @@ extension on TranslationsZhCn {
 			'pleaseAddSomeSources' => '请添加一些数据源',
 			'manage' => '管理',
 			'importPersona' => '导入角色配置',
+			_ => null,
+		} ?? switch (path) {
 			'newPersona' => '新建角色配置',
 			'notConfigured' => '未配置',
 			'enabled' => '已启用',
@@ -5217,8 +5245,6 @@ extension on TranslationsZhCn {
 			'fetchingBangumiInfo' => '正在获取 Bangumi 信息...',
 			'bangumiEntryNotFound' => '未找到 Bangumi 条目',
 			'failedToFetchBangumiInfo' => '获取 Bangumi 信息失败',
-			_ => null,
-		} ?? switch (path) {
 			'linkFormatErrorCannotParseCharacterId' => '链接格式错误，无法解析角色 ID',
 			'verifyingCharacterInfo' => '正在验证角色信息...',
 			'characterNotFound' => '未找到角色',
@@ -5718,6 +5744,8 @@ extension on TranslationsZhCn {
 			'askUser' => '询问用户',
 			'askUserInputHint' => '输入回答（可留空）',
 			'profilePersona' => '人设',
+			_ => null,
+		} ?? switch (path) {
 			'profileTone' => '语气',
 			'profilePromptFragments' => '提示片段（每行一条）',
 			'profileKnowledge' => '知识（每行一条）',
@@ -5731,8 +5759,6 @@ extension on TranslationsZhCn {
 			'noProfilesYet' => '暂无档案',
 			'profileSaved' => '档案已保存',
 			'profileCopiedToClipboard' => '档案已复制到剪贴板',
-			_ => null,
-		} ?? switch (path) {
 			'switchedToProfile' => ({required Object name}) => '已切换到 ${name}',
 			'defaultAssistant' => '默认',
 			'conciseReplies' => '简洁回复',
@@ -6232,6 +6258,8 @@ extension on TranslationsZhCn {
 			'torrentLsd' => '局域网发现(LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',
 			'torrentEncrypt' => '强制加密连接',
+			_ => null,
+		} ?? switch (path) {
 			'torrentStopSeed' => '完成后停止做种',
 			'torrentSelectFiles' => '选择文件',
 			'torrentApplySelection' => '应用选择',
@@ -6245,8 +6273,6 @@ extension on TranslationsZhCn {
 			'torrentInfo' => '基本信息',
 			'torrentContent' => '内容',
 			'torrentSavePathLabel' => '保存路径',
-			_ => null,
-		} ?? switch (path) {
 			'torrentInfoHashLabel' => '信息哈希',
 			'torrentProgressLabel' => '进度',
 			'torrentFileDone' => '已下',

@@ -710,11 +710,50 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Downloaded'
 	String get exploreFilterDownload => 'Downloaded';
 
+	/// en: 'Not favorited'
+	String get exploreFilterNoFavorite => 'Not favorited';
+
+	/// en: 'No history'
+	String get exploreFilterNoHistory => 'No history';
+
+	/// en: 'Not downloaded'
+	String get exploreFilterNoDownload => 'Not downloaded';
+
+	/// en: 'Subtitle'
+	String get exploreFilterSubtitle => 'Subtitle';
+
+	/// en: 'Has subtitle'
+	String get exploreFilterHasSubtitle => 'Has subtitle';
+
+	/// en: 'No subtitle'
+	String get exploreFilterNoSubtitle => 'No subtitle';
+
+	/// en: 'Tags'
+	String get exploreFilterTags => 'Tags';
+
+	/// en: 'Has tags'
+	String get exploreFilterHasTags => 'Has tags';
+
+	/// en: 'No tags'
+	String get exploreFilterNoTags => 'No tags';
+
+	/// en: 'Description'
+	String get exploreFilterDescription => 'Description';
+
+	/// en: 'Has description'
+	String get exploreFilterHasDescription => 'Has description';
+
+	/// en: 'No description'
+	String get exploreFilterNoDescription => 'No description';
+
 	/// en: 'Filter keyword'
 	String get exploreFilterHint => 'Filter keyword';
 
 	/// en: 'No matching items'
 	String get exploreFilterNoResult => 'No matching items';
+
+	/// en: 'Exit filter'
+	String get exploreFilterExit => 'Exit filter';
 
 	/// en: 'Hide scrollbar in masonry'
 	String get hideScrollbarForMasonry => 'Hide scrollbar in masonry';
@@ -9577,8 +9616,21 @@ extension on Translations {
 			'exploreFilterFavorite' => 'Favorited',
 			'exploreFilterHistory' => 'Has history',
 			'exploreFilterDownload' => 'Downloaded',
+			'exploreFilterNoFavorite' => 'Not favorited',
+			'exploreFilterNoHistory' => 'No history',
+			'exploreFilterNoDownload' => 'Not downloaded',
+			'exploreFilterSubtitle' => 'Subtitle',
+			'exploreFilterHasSubtitle' => 'Has subtitle',
+			'exploreFilterNoSubtitle' => 'No subtitle',
+			'exploreFilterTags' => 'Tags',
+			'exploreFilterHasTags' => 'Has tags',
+			'exploreFilterNoTags' => 'No tags',
+			'exploreFilterDescription' => 'Description',
+			'exploreFilterHasDescription' => 'Has description',
+			'exploreFilterNoDescription' => 'No description',
 			'exploreFilterHint' => 'Filter keyword',
 			'exploreFilterNoResult' => 'No matching items',
+			'exploreFilterExit' => 'Exit filter',
 			'hideScrollbarForMasonry' => 'Hide scrollbar in masonry',
 			'hideScrollbarForMasonryDesc' => 'Hide the side scrollbar in masonry layout to avoid jitter',
 			'memo' => 'Memos',
@@ -9853,6 +9905,8 @@ extension on Translations {
 			'mainContent' => 'Main Content',
 			'switchh' => 'Switch',
 			'failedToLoadPleaseTryAgain' => 'Failed to load, please try again.',
+			_ => null,
+		} ?? switch (path) {
 			'failedToOpen' => 'Failed to open',
 			'doing' => 'doing',
 			'collect' => 'collect',
@@ -9866,8 +9920,6 @@ extension on Translations {
 			'linkedItems' => 'Linked Items',
 			'timeS' => ({required Object s}) => 'Time: ${s}',
 			'broadcastTimeA' => ({required Object a}) => 'Broadcast Time: ${a}',
-			_ => null,
-		} ?? switch (path) {
 			'profileInformation' => 'Profile Information',
 			'characterIntroduction' => 'Character Introduction',
 			'voiceActorC' => ({required Object c}) => 'Voice Actor: ${c}',
@@ -10367,6 +10419,8 @@ extension on Translations {
 			'averageBpp' => 'Average Bpp',
 			'alpha' => 'Alpha',
 			'trackId' => 'Track ID',
+			_ => null,
+		} ?? switch (path) {
 			'trackTitle' => 'Track Title',
 			'trackLanguage' => 'Track Language',
 			'trackImage' => 'Track Image',
@@ -10380,8 +10434,6 @@ extension on Translations {
 			'trackSampleRate' => 'Track Sample Rate',
 			'trackFps' => 'Track FPS',
 			'trackBitrate' => 'Track Bitrate',
-			_ => null,
-		} ?? switch (path) {
 			'trackRotate' => 'Track Rotate',
 			'trackPar' => 'Track PAR',
 			'trackAudioChannels' => 'Track Audio Channels',
@@ -10881,6 +10933,8 @@ extension on Translations {
 			'allowSelfSignedCert' => 'Allow Self-signed Certificate',
 			'allowSelfSignedCertHint' => 'Trust self-signed certificates when connecting over WSS',
 			'directMessage' => 'Direct Message',
+			_ => null,
+		} ?? switch (path) {
 			'noAnnouncementsYet' => 'No announcements yet',
 			'enterAnnouncementText' => 'Enter announcement text...',
 			'welcomeMessage' => 'Welcome Message',
@@ -10894,8 +10948,6 @@ extension on Translations {
 			'enterPasswordToChange' => 'Enter password (leave empty to remove)',
 			'noAdminsYet' => 'No admins yet',
 			'noBannedMembers' => 'No banned members',
-			_ => null,
-		} ?? switch (path) {
 			'noMembersAvailable' => 'No members available',
 			'accessControl' => 'Access Control',
 			'broadcast' => 'Broadcast',
@@ -11395,6 +11447,8 @@ extension on Translations {
 			'noSearchSources' => 'No search sources',
 			'importPersona' => 'Import Persona',
 			'newPersona' => 'New Persona',
+			_ => null,
+		} ?? switch (path) {
 			'notConfigured' => 'Not configured',
 			'enabled' => 'Enabled',
 			'required' => 'Required',
@@ -11408,8 +11462,6 @@ extension on Translations {
 			'failedToFetchBangumiInfo' => 'Failed to fetch Bangumi info',
 			'linkFormatErrorCannotParseCharacterId' => 'Link format error, cannot parse character ID',
 			'verifyingCharacterInfo' => 'Verifying character info...',
-			_ => null,
-		} ?? switch (path) {
 			'characterNotFound' => 'Character not found',
 			'failedToFetchCharacterInfo' => 'Failed to fetch character info',
 			'linkFormatErrorCannotParsePersonId' => 'Link format error, cannot parse person ID',
@@ -11909,6 +11961,8 @@ extension on Translations {
 			'askUser' => 'Ask the user',
 			'askUserInputHint' => 'Type an answer (optional)',
 			'profilePersona' => 'Persona',
+			_ => null,
+		} ?? switch (path) {
 			'profileTone' => 'Tone',
 			'profilePromptFragments' => 'Prompt Fragments (one per line)',
 			'profileKnowledge' => 'Knowledge (one per line)',
@@ -11922,8 +11976,6 @@ extension on Translations {
 			'noProfilesYet' => 'No profiles yet',
 			'profileSaved' => 'Profile saved',
 			'profileCopiedToClipboard' => 'Profile copied to clipboard',
-			_ => null,
-		} ?? switch (path) {
 			'switchedToProfile' => ({required Object name}) => 'Switched to ${name}',
 			'defaultAssistant' => 'Default',
 			'conciseReplies' => 'Concise replies',
@@ -12423,6 +12475,8 @@ extension on Translations {
 			'torrentLsd' => 'Local peer discovery (LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',
 			'torrentEncrypt' => 'Force encryption',
+			_ => null,
+		} ?? switch (path) {
 			'torrentStopSeed' => 'Stop seeding when finished',
 			'torrentSelectFiles' => 'Select files',
 			'torrentApplySelection' => 'Apply selection',
@@ -12436,8 +12490,6 @@ extension on Translations {
 			'torrentInfo' => 'Info',
 			'torrentContent' => 'Content',
 			'torrentSavePathLabel' => 'Save path',
-			_ => null,
-		} ?? switch (path) {
 			'torrentInfoHashLabel' => 'Info hash',
 			'torrentProgressLabel' => 'Progress',
 			'torrentFileDone' => 'Downloaded',

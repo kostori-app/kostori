@@ -225,8 +225,21 @@ exploreFilter: Filter
 exploreFilterFavorite: Favorited
 exploreFilterHistory: Has history
 exploreFilterDownload: Downloaded
+exploreFilterNoFavorite: Not favorited
+exploreFilterNoHistory: No history
+exploreFilterNoDownload: Not downloaded
+exploreFilterSubtitle: Subtitle
+exploreFilterHasSubtitle: Has subtitle
+exploreFilterNoSubtitle: No subtitle
+exploreFilterTags: Tags
+exploreFilterHasTags: Has tags
+exploreFilterNoTags: No tags
+exploreFilterDescription: Description
+exploreFilterHasDescription: Has description
+exploreFilterNoDescription: No description
 exploreFilterHint: Filter keyword
 exploreFilterNoResult: No matching items
+exploreFilterExit: Exit filter
 hideScrollbarForMasonry: "Hide scrollbar in masonry"
 hideScrollbarForMasonryDesc: "Hide the side scrollbar in masonry layout to avoid jitter"
 memo: "Memos"

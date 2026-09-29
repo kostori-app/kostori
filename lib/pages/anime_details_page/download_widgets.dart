@@ -229,7 +229,6 @@ class _DownloadGroupSelectSheetState extends State<_DownloadGroupSelectSheet> {
         scrollController: sc,
         onSearchChanged: (v) => _searchKeyword = v,
         onCreateGroup: _createQuick,
-        autoFocusSearch: true,
         onSelected: (g) => Navigator.of(context).pop(g),
         trailingBuilder: (g) => IconButton(
           tooltip: t.delete,

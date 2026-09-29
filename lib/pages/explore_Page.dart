@@ -475,6 +475,7 @@ class _ExplorePageState extends State<ExplorePage>
         ? AnimeFilterBar(
             filter: _filter,
             onChanged: (f) => setState(() => _filter = f),
+            onExit: () => setState(() => _filterEnabled = false),
             contextLabel: _filterContextLabel(
               headerSource,
               headerPages,
@@ -682,6 +683,8 @@ class _ExplorePageState extends State<ExplorePage>
                           )?.toTop();
                         },
                       ),
+                    ],
+                    [
                       SpeedDialChild(
                         child:
                             appdata.settings['animeListDisplayMode'] == 'paging'

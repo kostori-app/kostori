@@ -360,6 +360,7 @@ class CapsuleChip extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.onLongPress,
+    this.selectedColor,
   });
 
   final String text;
@@ -368,6 +369,9 @@ class CapsuleChip extends StatelessWidget {
 
   /// 长按回调（例如查看该选项的说明）
   final VoidCallback? onLongPress;
+
+  /// 选中时的文字/图标着色（默认主题色；可用于「排除」等特殊语义）
+  final Color? selectedColor;
 
   @override
   Widget build(BuildContext context) {
@@ -400,7 +404,9 @@ class CapsuleChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? cs.primary : cs.onSurfaceVariant,
+                color: isSelected
+                    ? (selectedColor ?? cs.primary)
+                    : cs.onSurfaceVariant,
               ),
             ),
           ),
