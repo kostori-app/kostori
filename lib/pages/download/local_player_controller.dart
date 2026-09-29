@@ -260,6 +260,7 @@ class LocalPlayerController extends Notifier<LocalPlayerState> {
           );
         }),
       );
+      await applyAndroidHwdecCodecs(p);
       final open = p.open(Media(filePath), play: true);
       _openFuture = open;
       await open;

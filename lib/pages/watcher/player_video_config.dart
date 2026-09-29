@@ -1,5 +1,25 @@
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+
+/// Android 上 AV1 的 MediaCodec 直通解码需要有 Surface，而 player 建好、
+/// 开始 open 时 Video widget 还没挂载、surface 为空，mpv 会报
+/// 「av1_mediacodec: Both surface and native_window are NULL」后再回落。
+/// 把 av1 从硬解白名单剔除，避免这次无效探测与报错（AV1 仍可用 dav1d 软解）。
+const String _kHwdecCodecsWithoutAv1 =
+    'h264,vc1,hevc,vp8,vp9,prores,prores_raw,ffv1,dpx,apv';
+
+/// 在 open 媒体前调用：Android 下限制硬解编码列表（去掉 av1）。
+Future<void> applyAndroidHwdecCodecs(Player player) async {
+  if (!App.isAndroid) return;
+  final platform = player.platform;
+  if (platform is NativePlayer) {
+    try {
+      await platform.setProperty('hwdec-codecs', _kHwdecCodecsWithoutAv1);
+    } catch (_) {}
+  }
+}
 
 /// 本地播放器视频配置：与 watcher 播放器**实际生效**的配置一致。
 ///

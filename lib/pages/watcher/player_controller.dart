@@ -27,6 +27,7 @@ import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.da
 import 'package:kostori/pages/watcher/editor/video_clip_editor.dart';
 import 'package:kostori/pages/watcher/player_cache.dart';
 import 'package:kostori/pages/watcher/player_shaders.dart';
+import 'package:kostori/pages/watcher/player_video_config.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/services/download/download_manager.dart';
@@ -694,6 +695,7 @@ abstract class _PlayerController with Store {
         androidAttachSurfaceAfterVideoParameters: false,
       ),
     );
+    await applyAndroidHwdecCodecs(player);
 
     // 记录播放器内部日志
     playerLog.clear();
