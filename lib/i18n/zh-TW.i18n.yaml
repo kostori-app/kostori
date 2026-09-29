@@ -818,6 +818,25 @@ vtRenderer: 渲染方式
 vtGpuContext: GPU 上下文
 vtHwAccelHint: 播放器啟動時會逐個嘗試硬體解碼驅動（d3d11-egl / dxva2 / cuda…），失敗會打 error 日誌，這是正常探測過程，請以「實際解碼方式」為準
 vtLogNoiseHint: 部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的無害提示，不影響播放
+mpvFilename: 檔案名稱
+mpvMediaTitle: 媒體標題
+mpvFileFormat: 檔案格式
+mpvFileSize: 檔案大小
+mpvDuration: 時長
+mpvDemuxer: 解復用器
+mpvVideoCodec: 視訊編碼
+mpvVideoFormat: 視訊格式
+mpvWidth: 寬度
+mpvHeight: 高度
+mpvContainerFps: 容器幀率
+mpvEstimatedFps: 估算幀率
+mpvVideoBitrate: 視訊位元率
+mpvHwdecInterop: 硬解互操作
+mpvGpuApi: GPU API
+mpvAudioCodec: 音訊編碼
+mpvTrackCount: 軌道數
+mpvFrameDropCount: 掉幀數
+mpvDecoderFrameDropCount: 解碼掉幀數
 downloadMainTitle: 主標題（番劇名）
 downloadIgnoreEpisodeTitle: 不使用集標題
 downloadIgnoreEpisodeTitleDesc: 部分集標題無意義（如 1 / video），開啟後用集號命名檔案

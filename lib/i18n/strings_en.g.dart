@@ -2525,6 +2525,63 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Some errors (e.g. property not found _setProperty(osc, 1)) are harmless init notices'
 	String get vtLogNoiseHint => 'Some errors (e.g. property not found _setProperty(osc, 1)) are harmless init notices';
 
+	/// en: 'Filename'
+	String get mpvFilename => 'Filename';
+
+	/// en: 'Media title'
+	String get mpvMediaTitle => 'Media title';
+
+	/// en: 'File format'
+	String get mpvFileFormat => 'File format';
+
+	/// en: 'File size'
+	String get mpvFileSize => 'File size';
+
+	/// en: 'Duration'
+	String get mpvDuration => 'Duration';
+
+	/// en: 'Demuxer'
+	String get mpvDemuxer => 'Demuxer';
+
+	/// en: 'Video codec'
+	String get mpvVideoCodec => 'Video codec';
+
+	/// en: 'Video format'
+	String get mpvVideoFormat => 'Video format';
+
+	/// en: 'Width'
+	String get mpvWidth => 'Width';
+
+	/// en: 'Height'
+	String get mpvHeight => 'Height';
+
+	/// en: 'Container FPS'
+	String get mpvContainerFps => 'Container FPS';
+
+	/// en: 'Estimated FPS'
+	String get mpvEstimatedFps => 'Estimated FPS';
+
+	/// en: 'Video bitrate'
+	String get mpvVideoBitrate => 'Video bitrate';
+
+	/// en: 'HW interop'
+	String get mpvHwdecInterop => 'HW interop';
+
+	/// en: 'GPU API'
+	String get mpvGpuApi => 'GPU API';
+
+	/// en: 'Audio codec'
+	String get mpvAudioCodec => 'Audio codec';
+
+	/// en: 'Track count'
+	String get mpvTrackCount => 'Track count';
+
+	/// en: 'Dropped frames'
+	String get mpvFrameDropCount => 'Dropped frames';
+
+	/// en: 'Decoder dropped frames'
+	String get mpvDecoderFrameDropCount => 'Decoder dropped frames';
+
 	/// en: 'Main title (Anime name)'
 	String get downloadMainTitle => 'Main title (Anime name)';
 
@@ -10235,6 +10292,25 @@ extension on Translations {
 			'vtGpuContext' => 'GPU context',
 			'vtHwAccelHint' => 'The player probes hwdec drivers one by one at startup (d3d11-egl / dxva2 / cuda…); failures are logged as errors. Trust the "Active decoder" row',
 			'vtLogNoiseHint' => 'Some errors (e.g. property not found _setProperty(osc, 1)) are harmless init notices',
+			'mpvFilename' => 'Filename',
+			'mpvMediaTitle' => 'Media title',
+			'mpvFileFormat' => 'File format',
+			'mpvFileSize' => 'File size',
+			'mpvDuration' => 'Duration',
+			'mpvDemuxer' => 'Demuxer',
+			'mpvVideoCodec' => 'Video codec',
+			'mpvVideoFormat' => 'Video format',
+			'mpvWidth' => 'Width',
+			'mpvHeight' => 'Height',
+			'mpvContainerFps' => 'Container FPS',
+			'mpvEstimatedFps' => 'Estimated FPS',
+			'mpvVideoBitrate' => 'Video bitrate',
+			'mpvHwdecInterop' => 'HW interop',
+			'mpvGpuApi' => 'GPU API',
+			'mpvAudioCodec' => 'Audio codec',
+			'mpvTrackCount' => 'Track count',
+			'mpvFrameDropCount' => 'Dropped frames',
+			'mpvDecoderFrameDropCount' => 'Decoder dropped frames',
 			'downloadMainTitle' => 'Main title (Anime name)',
 			'downloadIgnoreEpisodeTitle' => 'Ignore episode titles',
 			'downloadIgnoreEpisodeTitleDesc' => 'Some episode titles are meaningless (e.g. 1 / video); when on, use episode numbers for file names',
@@ -10412,6 +10488,8 @@ extension on Translations {
 			'disableLengthLimitationDesc' => 'Raises a single log up to 20k characters; the in-memory budget and file size stay capped to keep memory in check.',
 			'updateLog' => 'Update log',
 			'liked' => 'Liked',
+			_ => null,
+		} ?? switch (path) {
 			'rating' => 'Rating',
 			'pixelFormat' => 'Pixel Format',
 			'hwPixelFormat' => 'HW Pixel Format',
@@ -10431,8 +10509,6 @@ extension on Translations {
 			'rotate' => 'Rotate',
 			'stereoIn' => 'Stereo In',
 			'averageBpp' => 'Average Bpp',
-			_ => null,
-		} ?? switch (path) {
 			'alpha' => 'Alpha',
 			'trackId' => 'Track ID',
 			'trackTitle' => 'Track Title',
@@ -10926,6 +11002,8 @@ extension on Translations {
 			'stopTheServerToChangeUploadMode' => 'Stop the server to change upload mode',
 			'enableClientOss' => 'Enable Client OSS',
 			'uploadImagesDirectlyFromClientToOss' => 'Upload images directly from client to OSS',
+			_ => null,
+		} ?? switch (path) {
 			'ossNotConfigured' => 'OSS not configured',
 			'dropToSendImage' => 'Drop to send image',
 			'longPressImageToSave' => 'Long press image to save',
@@ -10945,8 +11023,6 @@ extension on Translations {
 			'enterBio' => 'Enter bio',
 			'autoReconnect' => 'Auto Reconnect',
 			'allowSelfSignedCert' => 'Allow Self-signed Certificate',
-			_ => null,
-		} ?? switch (path) {
 			'allowSelfSignedCertHint' => 'Trust self-signed certificates when connecting over WSS',
 			'directMessage' => 'Direct Message',
 			'noAnnouncementsYet' => 'No announcements yet',
@@ -11440,6 +11516,8 @@ extension on Translations {
 			'webviewIsNotAvailable' => 'Webview is not available',
 			'sources' => 'Sources',
 			'translationFailedPleaseTryAgainLater' => 'Translation failed, please try again later',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'The AI translation provider does not support your current region. Please switch provider or use a different network',
 			'translationErrorModelNotSupported' => 'The configured model is not supported by this provider. Please change it in AI settings',
 			'translationErrorApiKeyInvalid' => 'The API key is invalid or lacks permission. Please check it in AI settings',
@@ -11459,8 +11537,6 @@ extension on Translations {
 			'noStickersYet' => 'No stickers yet',
 			'removeSticker' => 'Remove sticker',
 			'noSearchSources' => 'No search sources',
-			_ => null,
-		} ?? switch (path) {
 			'importPersona' => 'Import Persona',
 			'newPersona' => 'New Persona',
 			'notConfigured' => 'Not configured',
@@ -11954,6 +12030,8 @@ extension on Translations {
 			'contextAutoCompressed' => 'Context too long, auto-compressed',
 			'chatGreeting' => 'How can I help you today?',
 			'chatStart1' => 'Summarize this text',
+			_ => null,
+		} ?? switch (path) {
 			'chatStart2' => 'Write a poem',
 			'chatStart3' => 'Explain a concept',
 			'chatStart4' => 'Translate this',
@@ -11973,8 +12051,6 @@ extension on Translations {
 			'profileIcon' => 'Icon',
 			'profileIconUpload' => 'Upload image',
 			'askUser' => 'Ask the user',
-			_ => null,
-		} ?? switch (path) {
 			'askUserInputHint' => 'Type an answer (optional)',
 			'profilePersona' => 'Persona',
 			'profileTone' => 'Tone',
@@ -12468,6 +12544,8 @@ extension on Translations {
 			'torrentSourceSizeField' => 'Size field',
 			'torrentSourceGroupField' => 'Group field',
 			'torrentSourceDateField' => 'Date field',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourcesEmpty' => 'No BT sources yet. Tap "Import" at the bottom-right, or drop .json files into the directory below',
 			'torrentSourceExample' => 'Fill example',
 			'torrentMagnetHint' => 'Paste magnet link',
@@ -12487,8 +12565,6 @@ extension on Translations {
 			'torrentSaveDir' => 'Save directory',
 			'torrentDownloadLimit' => 'Download limit',
 			'torrentUploadLimit' => 'Upload limit',
-			_ => null,
-		} ?? switch (path) {
 			'torrentDht' => 'DHT',
 			'torrentLsd' => 'Local peer discovery (LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',

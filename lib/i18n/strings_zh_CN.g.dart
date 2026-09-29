@@ -860,6 +860,25 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtGpuContext => 'GPU 上下文';
 	@override String get vtHwAccelHint => '播放器启动时会逐个尝试硬件解码驱动（d3d11-egl / dxva2 / cuda…），失败的会打 error 日志，这是正常探测过程，请以「实际解码方式」为准';
 	@override String get vtLogNoiseHint => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的无害提示，不影响播放';
+	@override String get mpvFilename => '文件名';
+	@override String get mpvMediaTitle => '媒体标题';
+	@override String get mpvFileFormat => '文件格式';
+	@override String get mpvFileSize => '文件大小';
+	@override String get mpvDuration => '时长';
+	@override String get mpvDemuxer => '解复用器';
+	@override String get mpvVideoCodec => '视频编码';
+	@override String get mpvVideoFormat => '视频格式';
+	@override String get mpvWidth => '宽度';
+	@override String get mpvHeight => '高度';
+	@override String get mpvContainerFps => '容器帧率';
+	@override String get mpvEstimatedFps => '估算帧率';
+	@override String get mpvVideoBitrate => '视频码率';
+	@override String get mpvHwdecInterop => '硬解互操作';
+	@override String get mpvGpuApi => 'GPU API';
+	@override String get mpvAudioCodec => '音频编码';
+	@override String get mpvTrackCount => '轨道数';
+	@override String get mpvFrameDropCount => '丢帧数';
+	@override String get mpvDecoderFrameDropCount => '解码丢帧数';
 	@override String get downloadMainTitle => '主标题（番剧名）';
 	@override String get downloadIgnoreEpisodeTitle => '不使用集标题';
 	@override String get downloadIgnoreEpisodeTitleDesc => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件';
@@ -4003,6 +4022,25 @@ extension on TranslationsZhCn {
 			'vtGpuContext' => 'GPU 上下文',
 			'vtHwAccelHint' => '播放器启动时会逐个尝试硬件解码驱动（d3d11-egl / dxva2 / cuda…），失败的会打 error 日志，这是正常探测过程，请以「实际解码方式」为准',
 			'vtLogNoiseHint' => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的无害提示，不影响播放',
+			'mpvFilename' => '文件名',
+			'mpvMediaTitle' => '媒体标题',
+			'mpvFileFormat' => '文件格式',
+			'mpvFileSize' => '文件大小',
+			'mpvDuration' => '时长',
+			'mpvDemuxer' => '解复用器',
+			'mpvVideoCodec' => '视频编码',
+			'mpvVideoFormat' => '视频格式',
+			'mpvWidth' => '宽度',
+			'mpvHeight' => '高度',
+			'mpvContainerFps' => '容器帧率',
+			'mpvEstimatedFps' => '估算帧率',
+			'mpvVideoBitrate' => '视频码率',
+			'mpvHwdecInterop' => '硬解互操作',
+			'mpvGpuApi' => 'GPU API',
+			'mpvAudioCodec' => '音频编码',
+			'mpvTrackCount' => '轨道数',
+			'mpvFrameDropCount' => '丢帧数',
+			'mpvDecoderFrameDropCount' => '解码丢帧数',
 			'downloadMainTitle' => '主标题（番剧名）',
 			'downloadIgnoreEpisodeTitle' => '不使用集标题',
 			'downloadIgnoreEpisodeTitleDesc' => '部分集标题无意义（如 1 / 视频），开启后用集号命名文件',
@@ -4187,6 +4225,8 @@ extension on TranslationsZhCn {
 			'updateLog' => '更新日志',
 			'liked' => '喜欢',
 			'rating' => '评分',
+			_ => null,
+		} ?? switch (path) {
 			'pixelFormat' => '像素格式',
 			'hwPixelFormat' => '硬件像素格式',
 			'resolution' => '分辨率',
@@ -4206,8 +4246,6 @@ extension on TranslationsZhCn {
 			'stereoIn' => '立体声输入',
 			'averageBpp' => '平均 Bpp',
 			'alpha' => '透明度',
-			_ => null,
-		} ?? switch (path) {
 			'trackId' => '轨道 ID',
 			'trackTitle' => '轨道标题',
 			'trackLanguage' => '轨道语言',
@@ -4701,6 +4739,8 @@ extension on TranslationsZhCn {
 			'enableClientOss' => '启用客户端 OSS',
 			'uploadImagesDirectlyFromClientToOss' => '从客户端直接上传图片到 OSS',
 			'ossNotConfigured' => 'OSS 未配置',
+			_ => null,
+		} ?? switch (path) {
 			'dropToSendImage' => '拖放以发送图片',
 			'longPressImageToSave' => '长按图片以保存',
 			'pleaseEnterAValidUrl' => '请输入以 http:// 或 https:// 开头的有效 URL',
@@ -4720,8 +4760,6 @@ extension on TranslationsZhCn {
 			'autoReconnect' => '自动重连',
 			'allowSelfSignedCert' => '允许自签名证书',
 			'allowSelfSignedCertHint' => '通过 WSS 连接时信任自签名证书',
-			_ => null,
-		} ?? switch (path) {
 			'directMessage' => '私聊',
 			'noAnnouncementsYet' => '暂无公告',
 			'enterAnnouncementText' => '输入公告内容...',
@@ -5215,6 +5253,8 @@ extension on TranslationsZhCn {
 			'sources' => '数据源',
 			'translationFailedPleaseTryAgainLater' => '翻译失败，请稍后重试',
 			'translationErrorRegionNotSupported' => 'AI 翻译源不支持当前网络地区，请更换翻译源或使用其他地区的网络',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorModelNotSupported' => '当前配置的模型不被该服务商支持，请到 AI 设置更换模型',
 			'translationErrorApiKeyInvalid' => 'API Key 无效或无权限，请检查 AI 设置中的密钥',
 			'translationErrorRateLimited' => '请求过于频繁或额度不足，请稍后再试',
@@ -5234,8 +5274,6 @@ extension on TranslationsZhCn {
 			'removeSticker' => '移除贴纸',
 			'noSearchSources' => '没有搜索源',
 			'pleaseAddSomeSources' => '请添加一些数据源',
-			_ => null,
-		} ?? switch (path) {
 			'manage' => '管理',
 			'importPersona' => '导入角色配置',
 			'newPersona' => '新建角色配置',
@@ -5729,6 +5767,8 @@ extension on TranslationsZhCn {
 			'contextAutoCompressed' => '上下文过长，已自动压缩',
 			'chatGreeting' => '今天有什么可以帮你？',
 			'chatStart1' => '总结这段文本',
+			_ => null,
+		} ?? switch (path) {
 			'chatStart2' => '写一首诗',
 			'chatStart3' => '解释一个概念',
 			'chatStart4' => '翻译这段内容',
@@ -5748,8 +5788,6 @@ extension on TranslationsZhCn {
 			'profileIcon' => '图标',
 			'profileIconUpload' => '上传图片',
 			'askUser' => '询问用户',
-			_ => null,
-		} ?? switch (path) {
 			'askUserInputHint' => '输入回答（可留空）',
 			'profilePersona' => '人设',
 			'profileTone' => '语气',
@@ -6243,6 +6281,8 @@ extension on TranslationsZhCn {
 			'torrentSourceSizeField' => '体积字段',
 			'torrentSourceGroupField' => '分组字段',
 			'torrentSourceDateField' => '时间字段',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourcesEmpty' => '还没有 BT 资源站：点右下角「导入」，或把 .json 配置文件放进下面目录',
 			'torrentSourceExample' => '填入示例',
 			'torrentMagnetHint' => '粘贴磁力链接',
@@ -6262,8 +6302,6 @@ extension on TranslationsZhCn {
 			'torrentSaveDir' => '保存目录',
 			'torrentDownloadLimit' => '下载限速',
 			'torrentUploadLimit' => '上传限速',
-			_ => null,
-		} ?? switch (path) {
 			'torrentDht' => 'DHT 网络',
 			'torrentLsd' => '局域网发现(LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',

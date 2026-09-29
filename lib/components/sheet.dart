@@ -679,6 +679,45 @@ Map<String, Object?> _compact(Map<String, Object?> map) {
   };
 }
 
+/// mpv 调试属性的本地化名称；未覆盖的保留原始键名（便于排查）。
+String _mpvPropertyLabel(String property) => switch (property) {
+  'filename' => t.mpvFilename,
+  'media-title' => t.mpvMediaTitle,
+  'file-format' => t.mpvFileFormat,
+  'file-size' => t.mpvFileSize,
+  'duration' => t.mpvDuration,
+  'demuxer' => t.mpvDemuxer,
+  'video-codec' => t.mpvVideoCodec,
+  'video-format' => t.mpvVideoFormat,
+  'width' => t.mpvWidth,
+  'height' => t.mpvHeight,
+  'container-fps' => t.mpvContainerFps,
+  'estimated-vf-fps' => t.mpvEstimatedFps,
+  'video-bitrate' => t.mpvVideoBitrate,
+  'video-params/pixelformat' => t.pixelFormat,
+  'video-params/aspect' => t.aspect,
+  'video-params/colormatrix' => t.colormatrix,
+  'video-params/primaries' => t.primaries,
+  'video-params/gamma' => t.gamma,
+  'video-params/hw-pixelformat' => t.hwPixelFormat,
+  'hwdec' => t.vtHwAccelRequested,
+  'hwdec-current' => t.vtHwAccelCurrent,
+  'hwdec-interop' => t.mpvHwdecInterop,
+  'hw-pixelformat' => t.hwPixelFormat,
+  'vo' => t.vtRenderer,
+  'gpu-api' => t.mpvGpuApi,
+  'gpu-context' => t.vtGpuContext,
+  'audio-codec' => t.mpvAudioCodec,
+  'audio-params/format' => t.format,
+  'audio-params/samplerate' => t.sampleRate,
+  'audio-params/channel-count' => t.channelCount,
+  'audio-bitrate' => t.audioBitrate,
+  'track-list/count' => t.mpvTrackCount,
+  'frame-drop-count' => t.mpvFrameDropCount,
+  'decoder-frame-drop-count' => t.mpvDecoderFrameDropCount,
+  _ => property,
+};
+
 class MediaInfoWidget extends StatelessWidget {
   final VideoParams? videoParams;
   final AudioParams? audioParams;
@@ -1225,7 +1264,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
             rows: _mpvProperties.isEmpty
                 ? [MapEntry(t.vtMediaPropertiesHint, '')]
                 : _mpvProperties.entries
-                      .map((e) => MapEntry(e.key, e.value))
+                      .map((e) => MapEntry(_mpvPropertyLabel(e.key), e.value))
                       .toList(),
           ),
         ],

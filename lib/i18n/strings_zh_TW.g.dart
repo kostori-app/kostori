@@ -859,6 +859,25 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get vtGpuContext => 'GPU 上下文';
 	@override String get vtHwAccelHint => '播放器啟動時會逐個嘗試硬體解碼驅動（d3d11-egl / dxva2 / cuda…），失敗會打 error 日誌，這是正常探測過程，請以「實際解碼方式」為準';
 	@override String get vtLogNoiseHint => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的無害提示，不影響播放';
+	@override String get mpvFilename => '檔案名稱';
+	@override String get mpvMediaTitle => '媒體標題';
+	@override String get mpvFileFormat => '檔案格式';
+	@override String get mpvFileSize => '檔案大小';
+	@override String get mpvDuration => '時長';
+	@override String get mpvDemuxer => '解復用器';
+	@override String get mpvVideoCodec => '視訊編碼';
+	@override String get mpvVideoFormat => '視訊格式';
+	@override String get mpvWidth => '寬度';
+	@override String get mpvHeight => '高度';
+	@override String get mpvContainerFps => '容器幀率';
+	@override String get mpvEstimatedFps => '估算幀率';
+	@override String get mpvVideoBitrate => '視訊位元率';
+	@override String get mpvHwdecInterop => '硬解互操作';
+	@override String get mpvGpuApi => 'GPU API';
+	@override String get mpvAudioCodec => '音訊編碼';
+	@override String get mpvTrackCount => '軌道數';
+	@override String get mpvFrameDropCount => '掉幀數';
+	@override String get mpvDecoderFrameDropCount => '解碼掉幀數';
 	@override String get downloadMainTitle => '主標題（番劇名）';
 	@override String get downloadIgnoreEpisodeTitle => '不使用集標題';
 	@override String get downloadIgnoreEpisodeTitleDesc => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案';
@@ -4001,6 +4020,25 @@ extension on TranslationsZhTw {
 			'vtGpuContext' => 'GPU 上下文',
 			'vtHwAccelHint' => '播放器啟動時會逐個嘗試硬體解碼驅動（d3d11-egl / dxva2 / cuda…），失敗會打 error 日誌，這是正常探測過程，請以「實際解碼方式」為準',
 			'vtLogNoiseHint' => '部分 error（如 property not found _setProperty(osc, 1)）是播放器初始化的無害提示，不影響播放',
+			'mpvFilename' => '檔案名稱',
+			'mpvMediaTitle' => '媒體標題',
+			'mpvFileFormat' => '檔案格式',
+			'mpvFileSize' => '檔案大小',
+			'mpvDuration' => '時長',
+			'mpvDemuxer' => '解復用器',
+			'mpvVideoCodec' => '視訊編碼',
+			'mpvVideoFormat' => '視訊格式',
+			'mpvWidth' => '寬度',
+			'mpvHeight' => '高度',
+			'mpvContainerFps' => '容器幀率',
+			'mpvEstimatedFps' => '估算幀率',
+			'mpvVideoBitrate' => '視訊位元率',
+			'mpvHwdecInterop' => '硬解互操作',
+			'mpvGpuApi' => 'GPU API',
+			'mpvAudioCodec' => '音訊編碼',
+			'mpvTrackCount' => '軌道數',
+			'mpvFrameDropCount' => '掉幀數',
+			'mpvDecoderFrameDropCount' => '解碼掉幀數',
 			'downloadMainTitle' => '主標題（番劇名）',
 			'downloadIgnoreEpisodeTitle' => '不使用集標題',
 			'downloadIgnoreEpisodeTitleDesc' => '部分集標題無意義（如 1 / video），開啟後用集號命名檔案',
@@ -4186,6 +4224,8 @@ extension on TranslationsZhTw {
 			'disableLengthLimitationDesc' => '單條日誌放寬到 2 萬字元；記憶體總量與檔案大小仍有限制（避免日誌佔用大量記憶體）',
 			'updateLog' => '更新日誌',
 			'liked' => '喜歡',
+			_ => null,
+		} ?? switch (path) {
 			'rating' => '評分',
 			'pixelFormat' => '像素格式',
 			'hwPixelFormat' => '硬體像素格式',
@@ -4205,8 +4245,6 @@ extension on TranslationsZhTw {
 			'rotate' => '旋轉',
 			'stereoIn' => '立體聲輸入',
 			'averageBpp' => '平均 Bpp',
-			_ => null,
-		} ?? switch (path) {
 			'alpha' => '透明度',
 			'trackId' => '軌道 ID',
 			'trackTitle' => '軌道標題',
@@ -4700,6 +4738,8 @@ extension on TranslationsZhTw {
 			'stopTheServerToChangeUploadMode' => '停止伺服器以更改上傳模式',
 			'enableClientOss' => '啟用用戶端 OSS',
 			'uploadImagesDirectlyFromClientToOss' => '直接從用戶端上傳圖片到 OSS',
+			_ => null,
+		} ?? switch (path) {
 			'ossNotConfigured' => 'OSS 未設定',
 			'dropToSendImage' => '拖放以發送圖片',
 			'longPressImageToSave' => '長按圖片儲存',
@@ -4719,8 +4759,6 @@ extension on TranslationsZhTw {
 			'enterBio' => '輸入個人簡介',
 			'autoReconnect' => '自動重連',
 			'allowSelfSignedCert' => '允許自簽憑證',
-			_ => null,
-		} ?? switch (path) {
 			'allowSelfSignedCertHint' => '透過 WSS 連線時信任自簽憑證',
 			'directMessage' => '私聊訊息',
 			'noAnnouncementsYet' => '暫無公告',
@@ -5214,6 +5252,8 @@ extension on TranslationsZhTw {
 			'webviewIsNotAvailable' => 'Webview 不可用',
 			'sources' => '資料源',
 			'translationFailedPleaseTryAgainLater' => '翻譯失敗，請稍後重試',
+			_ => null,
+		} ?? switch (path) {
 			'translationErrorRegionNotSupported' => 'AI 翻譯來源不支援目前所在地區，請更換翻譯來源或改用其他地區的網路',
 			'translationErrorModelNotSupported' => '目前設定的模型不受該服務商支援，請到 AI 設定更換模型',
 			'translationErrorApiKeyInvalid' => 'API Key 無效或無權限，請檢查 AI 設定中的金鑰',
@@ -5233,8 +5273,6 @@ extension on TranslationsZhTw {
 			'noStickersYet' => '還沒有貼紙',
 			'removeSticker' => '移除貼紙',
 			'noSearchSources' => '沒有搜尋源',
-			_ => null,
-		} ?? switch (path) {
 			'pleaseAddSomeSources' => '請新增一些資料源',
 			'manage' => '管理',
 			'importPersona' => '導入角色配置',
@@ -5728,6 +5766,8 @@ extension on TranslationsZhTw {
 			'chatGreeting' => '今天有什麼可以幫你？',
 			'chatStart1' => '總結這段文字',
 			'chatStart2' => '寫一首詩',
+			_ => null,
+		} ?? switch (path) {
 			'chatStart3' => '解釋一個概念',
 			'chatStart4' => '翻譯這段內容',
 			'importSkills' => '匯入技能',
@@ -5747,8 +5787,6 @@ extension on TranslationsZhTw {
 			'profileIconUpload' => '上傳圖片',
 			'askUser' => '詢問使用者',
 			'askUserInputHint' => '輸入回答（可留空）',
-			_ => null,
-		} ?? switch (path) {
 			'profilePersona' => '人設',
 			'profileTone' => '語氣',
 			'profilePromptFragments' => '提示片段（每行一條）',
@@ -6242,6 +6280,8 @@ extension on TranslationsZhTw {
 			'torrentSourceGroupField' => '分組欄位',
 			'torrentSourceDateField' => '時間欄位',
 			'torrentSourcesEmpty' => '還沒有 BT 資源站：點右下角「匯入」，或把 .json 設定檔放進下面目錄',
+			_ => null,
+		} ?? switch (path) {
 			'torrentSourceExample' => '填入示例',
 			'torrentMagnetHint' => '貼上磁力連結',
 			'torrentPlay' => '播放',
@@ -6261,8 +6301,6 @@ extension on TranslationsZhTw {
 			'torrentDownloadLimit' => '下載限速',
 			'torrentUploadLimit' => '上傳限速',
 			'torrentDht' => 'DHT 網路',
-			_ => null,
-		} ?? switch (path) {
 			'torrentLsd' => '區域網路探索(LSD)',
 			'torrentUpnp' => 'UPnP/NAT-PMP',
 			'torrentEncrypt' => '強制加密連線',
