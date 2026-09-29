@@ -124,8 +124,14 @@ class HubSocket extends Stream<dynamic> {
   Future<void> close([int? code, String? reason]) async {
     if (_closed) return;
     _closed = true;
+    // package:web_socket 只接受 1000 或 3000-4999 的 close code，
+    // dart:io 允许的 1001/1008 等需映射到应用区间，否则会抛异常
+    final safeCode =
+        (code == null || code == 1000 || (code >= 3000 && code <= 4999))
+        ? code
+        : code + 3000;
     try {
-      await _channel.sink.close(code, reason);
+      await _channel.sink.close(safeCode, reason);
     } catch (_) {}
   }
 
