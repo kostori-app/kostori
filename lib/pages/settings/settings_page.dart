@@ -114,6 +114,7 @@ part 'explore_settings.dart';
 part 'local_favorites.dart';
 
 part 'network.dart';
+part 'bangumi_mirror_manager.dart';
 
 part 'player_settings.dart';
 

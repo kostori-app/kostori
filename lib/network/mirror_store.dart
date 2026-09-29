@@ -93,17 +93,137 @@ class MirrorStore {
   }
 }
 
-final bangumiMirrorStore = MirrorStore('bangumiMirrors', 'bangumiMirror');
 final githubMirrorStore = MirrorStore('githubMirrors', 'githubMirror');
 
-/// Bangumi p1 接口镜像（next.bgm.tv）：与主接口镜像分开维护。
-final bangumiP1MirrorStore = MirrorStore('bangumiP1Mirrors', 'bangumiP1Mirror');
+/// Bangumi 镜像类型：v0 主接口 / p1 接口 / 图片。
+enum BangumiMirrorType {
+  v0,
+  p1,
+  img;
 
-/// Bangumi 图片镜像：与接口镜像分开维护（图片镜像通常只反代 lain.bgm.tv）。
-final bangumiImageMirrorStore = MirrorStore(
-  'bangumiImageMirrors',
-  'bangumiImageMirror',
+  String get value => name;
+
+  static BangumiMirrorType parse(String? v) => switch (v) {
+    'p1' => BangumiMirrorType.p1,
+    'img' => BangumiMirrorType.img,
+    _ => BangumiMirrorType.v0,
+  };
+
+  /// 该类型当前选中镜像在 implicitData 里的键。
+  String get selectedKey => switch (this) {
+    BangumiMirrorType.v0 => 'bangumiMirror',
+    BangumiMirrorType.p1 => 'bangumiP1Mirror',
+    BangumiMirrorType.img => 'bangumiImageMirror',
+  };
+}
+
+/// 一条 Bangumi 镜像（名称 + 地址 + 类型标签）。
+class BangumiMirrorEntry {
+  final String name;
+  final String url;
+  final BangumiMirrorType type;
+
+  const BangumiMirrorEntry({
+    required this.name,
+    required this.url,
+    required this.type,
+  });
+
+  factory BangumiMirrorEntry.fromJson(Map json) => BangumiMirrorEntry(
+    name: json['name']?.toString() ?? '',
+    url: normalizeMirrorUrl(json['url']?.toString() ?? ''),
+    type: BangumiMirrorType.parse(json['type']?.toString()),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'url': normalizeMirrorUrl(url),
+    'type': type.value,
+  };
+}
+
+/// 统一存放三类 Bangumi 镜像（每条带 type 标签）。
+const _bangumiMirrorListKey = 'bangumiMirrors';
+
+/// 把旧的 p1 / 图片独立列表合并进统一列表（存在旧键时执行一次）。
+void _migrateBangumiMirrors() {
+  final p1 = appdata.implicitData['bangumiP1Mirrors'];
+  final img = appdata.implicitData['bangumiImageMirrors'];
+  if (p1 == null && img == null) return;
+
+  final merged = <Map<String, dynamic>>[];
+  final existing = appdata.implicitData[_bangumiMirrorListKey];
+  if (existing is List) {
+    for (final e in existing.whereType<Map>()) {
+      final url = normalizeMirrorUrl(e['url']?.toString() ?? '');
+      if (url.isEmpty) continue;
+      merged.add({
+        'name': e['name']?.toString() ?? '',
+        'url': url,
+        'type': BangumiMirrorType.parse(e['type']?.toString()).value,
+      });
+    }
+  }
+  void addAll(dynamic raw, BangumiMirrorType type) {
+    if (raw is! List) return;
+    for (final e in raw.whereType<Map>()) {
+      final url = normalizeMirrorUrl(e['url']?.toString() ?? '');
+      if (url.isEmpty) continue;
+      final dup = merged.any((m) => m['type'] == type.value && m['url'] == url);
+      if (dup) continue;
+      merged.add({
+        'name': e['name']?.toString() ?? '',
+        'url': url,
+        'type': type.value,
+      });
+    }
+  }
+
+  addAll(p1, BangumiMirrorType.p1);
+  addAll(img, BangumiMirrorType.img);
+
+  appdata.implicitData[_bangumiMirrorListKey] = merged;
+  appdata.implicitData.remove('bangumiP1Mirrors');
+  appdata.implicitData.remove('bangumiImageMirrors');
+  appdata.writeImplicitData();
+}
+
+List<BangumiMirrorEntry> bangumiMirrorEntries() {
+  _migrateBangumiMirrors();
+  final raw = appdata.implicitData[_bangumiMirrorListKey];
+  if (raw is! List) return [];
+  return raw
+      .whereType<Map>()
+      .map(BangumiMirrorEntry.fromJson)
+      .where((e) => e.url.isNotEmpty)
+      .toList();
+}
+
+void saveBangumiMirrorEntries(List<BangumiMirrorEntry> list) {
+  appdata.implicitData[_bangumiMirrorListKey] = list
+      .map((e) => e.toJson())
+      .toList();
+  appdata.writeImplicitData();
+}
+
+/// 某类型当前选中的镜像地址；空字符串表示官方（不使用镜像）。
+String bangumiMirrorSelectedUrl(BangumiMirrorType type) => normalizeMirrorUrl(
+  (appdata.implicitData[type.selectedKey] as String?) ?? '',
 );
+
+void selectBangumiMirror(BangumiMirrorType type, String url) {
+  appdata.implicitData[type.selectedKey] = normalizeMirrorUrl(url);
+  appdata.writeImplicitData();
+}
+
+BangumiMirrorEntry? selectedBangumiMirror(BangumiMirrorType type) {
+  final url = bangumiMirrorSelectedUrl(type);
+  if (url.isEmpty) return null;
+  for (final e in bangumiMirrorEntries()) {
+    if (e.type == type && e.url == url) return e;
+  }
+  return null;
+}
 
 /// 会被镜像替换的官方 Bangumi 主接口主机（v0，api.bgm.tv）
 const _bangumiMirrorableHosts = {'api.bgm.tv'};
@@ -114,8 +234,7 @@ const _bangumiP1MirrorableHosts = {'next.bgm.tv'};
 /// 会被镜像替换的 Bangumi 图片主机（封面、剧照等）
 const _bangumiImageMirrorableHosts = {'lain.bgm.tv'};
 
-String _applyMirror(String url, MirrorStore store, Set<String> hosts) {
-  final mirror = store.selectedUrl;
+String _applyMirror(String url, String mirror, Set<String> hosts) {
   if (mirror.isEmpty) return url;
   final uri = Uri.tryParse(url);
   if (uri == null || !hosts.contains(uri.host)) return url;
@@ -127,16 +246,25 @@ String _applyMirror(String url, MirrorStore store, Set<String> hosts) {
 }
 
 /// 把官方 Bangumi 主接口（api.bgm.tv）地址改写为当前选中的镜像地址。
-String applyBangumiMirror(String url) =>
-    _applyMirror(url, bangumiMirrorStore, _bangumiMirrorableHosts);
+String applyBangumiMirror(String url) => _applyMirror(
+  url,
+  bangumiMirrorSelectedUrl(BangumiMirrorType.v0),
+  _bangumiMirrorableHosts,
+);
 
 /// 把 Bangumi p1 接口（next.bgm.tv）地址改写为当前选中的 p1 镜像地址。
-String applyBangumiP1Mirror(String url) =>
-    _applyMirror(url, bangumiP1MirrorStore, _bangumiP1MirrorableHosts);
+String applyBangumiP1Mirror(String url) => _applyMirror(
+  url,
+  bangumiMirrorSelectedUrl(BangumiMirrorType.p1),
+  _bangumiP1MirrorableHosts,
+);
 
 /// 把 Bangumi 图片地址改写为当前选中的图片镜像地址（保留 path 与 query）。
-String applyBangumiImageMirror(String url) =>
-    _applyMirror(url, bangumiImageMirrorStore, _bangumiImageMirrorableHosts);
+String applyBangumiImageMirror(String url) => _applyMirror(
+  url,
+  bangumiMirrorSelectedUrl(BangumiMirrorType.img),
+  _bangumiImageMirrorableHosts,
+);
 
 /// 前缀式/替换式镜像可加速的 GitHub 主机（真正的前缀代理对 API 与文件下载都有效）。
 const _githubHosts = {

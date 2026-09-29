@@ -8,6 +8,20 @@ class NetworkSettings extends StatefulWidget {
 }
 
 class _NetworkSettingsState extends State<NetworkSettings> {
+  String _bangumiMirrorSummary() {
+    final parts = <String>[];
+    for (final type in BangumiMirrorType.values) {
+      final label = switch (type) {
+        BangumiMirrorType.v0 => t.bangumiMirrorV0,
+        BangumiMirrorType.p1 => t.bangumiMirrorP1,
+        BangumiMirrorType.img => t.bangumiMirrorImage,
+      };
+      final selected = selectedBangumiMirror(type);
+      parts.add('$label: ${selected?.name ?? t.mirrorOfficial}');
+    }
+    return parts.join('  ·  ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -50,63 +64,12 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                 ),
                 _CallbackSetting(
                   title: t.bangumiMirror,
-                  subtitle:
-                      bangumiMirrorStore.selected?.name ?? t.mirrorOfficial,
+                  subtitle: _bangumiMirrorSummary(),
                   actionTitle: t.manage,
                   callback: () {
                     showPopUpWidget(
                       App.rootContext,
-                      MirrorManagerPage(
-                        store: bangumiMirrorStore,
-                        title: t.bangumiMirror,
-                        description: t.bangumiMirrorDesc,
-                        addressHint: 'https://api.bgmapi.com',
-                        footer: _SwitchSetting(
-                          title: t.bangumiMirrorSendAuth,
-                          subtitle: t.bangumiMirrorSendAuthDesc,
-                          settingKey: 'bangumiMirrorSendAuth',
-                          dataSource: SwitchDataSource.implicit,
-                        ),
-                      ),
-                    ).then((_) {
-                      if (mounted) setState(() {});
-                    });
-                  },
-                ),
-                _CallbackSetting(
-                  title: t.bangumiP1Mirror,
-                  subtitle:
-                      bangumiP1MirrorStore.selected?.name ?? t.mirrorOfficial,
-                  actionTitle: t.manage,
-                  callback: () {
-                    showPopUpWidget(
-                      App.rootContext,
-                      MirrorManagerPage(
-                        store: bangumiP1MirrorStore,
-                        title: t.bangumiP1Mirror,
-                        description: t.bangumiP1MirrorDesc,
-                        addressHint: 'https://next.bgm.tv',
-                      ),
-                    ).then((_) {
-                      if (mounted) setState(() {});
-                    });
-                  },
-                ),
-                _CallbackSetting(
-                  title: t.bangumiImageMirror,
-                  subtitle:
-                      bangumiImageMirrorStore.selected?.name ??
-                      t.mirrorOfficial,
-                  actionTitle: t.manage,
-                  callback: () {
-                    showPopUpWidget(
-                      App.rootContext,
-                      MirrorManagerPage(
-                        store: bangumiImageMirrorStore,
-                        title: t.bangumiImageMirror,
-                        description: t.bangumiImageMirrorDesc,
-                        addressHint: 'https://lain.bgm.tv',
-                      ),
+                      const BangumiMirrorManagerPage(),
                     ).then((_) {
                       if (mounted) setState(() {});
                     });

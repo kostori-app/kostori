@@ -2276,17 +2276,17 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'When off, login tokens/credentials are not sent to the mirror (safer)'
 	String get bangumiMirrorSendAuthDesc => 'When off, login tokens/credentials are not sent to the mirror (safer)';
 
-	/// en: 'Bangumi image mirror'
-	String get bangumiImageMirror => 'Bangumi image mirror';
+	/// en: 'v0 API'
+	String get bangumiMirrorV0 => 'v0 API';
 
-	/// en: 'Accelerate Bangumi images (lain.bgm.tv) via a third-party mirror'
-	String get bangumiImageMirrorDesc => 'Accelerate Bangumi images (lain.bgm.tv) via a third-party mirror';
+	/// en: 'p1 API'
+	String get bangumiMirrorP1 => 'p1 API';
 
-	/// en: 'Bangumi p1 API mirror'
-	String get bangumiP1Mirror => 'Bangumi p1 API mirror';
+	/// en: 'Images'
+	String get bangumiMirrorImage => 'Images';
 
-	/// en: 'Accelerate Bangumi p1 API (next.bgm.tv) via a third-party mirror'
-	String get bangumiP1MirrorDesc => 'Accelerate Bangumi p1 API (next.bgm.tv) via a third-party mirror';
+	/// en: 'Type'
+	String get bangumiMirrorType => 'Type';
 
 	/// en: 'Mirrors'
 	String get networkMirror => 'Mirrors';
@@ -10230,10 +10230,10 @@ extension on Translations {
 			'bangumiMirrorDesc' => 'Accelerate Bangumi API access via a third-party mirror',
 			'bangumiMirrorSendAuth' => 'Send auth to mirror',
 			'bangumiMirrorSendAuthDesc' => 'When off, login tokens/credentials are not sent to the mirror (safer)',
-			'bangumiImageMirror' => 'Bangumi image mirror',
-			'bangumiImageMirrorDesc' => 'Accelerate Bangumi images (lain.bgm.tv) via a third-party mirror',
-			'bangumiP1Mirror' => 'Bangumi p1 API mirror',
-			'bangumiP1MirrorDesc' => 'Accelerate Bangumi p1 API (next.bgm.tv) via a third-party mirror',
+			'bangumiMirrorV0' => 'v0 API',
+			'bangumiMirrorP1' => 'p1 API',
+			'bangumiMirrorImage' => 'Images',
+			'bangumiMirrorType' => 'Type',
 			'networkMirror' => 'Mirrors',
 			'githubMirror' => 'GitHub mirror',
 			'githubMirrorDesc' => 'Supports prefix mirrors and jsDelivr (e.g. https://cdn.jsdelivr.net/)',

@@ -90,8 +90,10 @@ class Log {
 
   /// 隐私敏感字段识别正则（key=value / key: value / "key":"value" / Bearer xxxx）
   static final RegExp _sensitivePattern = RegExp(
-    r'(?:^|["\s,;])'
-    r'(token|password|passwd|secret|apikey|api[_ -]?key|access[_ -]?key'
+    r'(?:^|["\s,;&?])'
+    r'(token|access[_ -]?token|refresh[_ -]?token|id[_ -]?token'
+    r'|password|passwd|secret|client[_ -]?secret|app[_ -]?secret'
+    r'|apikey|api[_ -]?key|access[_ -]?key'
     r'|access[_ -]?key[_ -]?secret|authorization|bearer|auth|auth[_ -]?key'
     r'|private[_ -]?key|session|session[_ -]?id|cookie|set[-_]cookie|x[-_]api[-_]key)'
     r'["\s]*[:=]["\s]*([^\s,;&"\x27]+)',
