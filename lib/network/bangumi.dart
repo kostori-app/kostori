@@ -549,7 +549,6 @@ class Bangumi {
     List<BangumiItem> bangumiReviewsSubjects = [];
     try {
       final res = await _dio.request(
-        // 日志关联条目（原实现误用了检查更新用的 GitHub 接口）
         Api.formatUrl(Api.bangumiReviewsSubjectsByIDNext, [id]),
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );

@@ -195,9 +195,8 @@ class MyLogInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     // 计时：概要模式用
     options.extra['__logStartMs'] = DateTime.now().millisecondsSinceEpoch;
-    // 默认超时必须在日志开关判断之前套用：否则 NetLog 关闭（默认）时
-    // 普通 API 请求没有 receive/send 超时，服务端挂起会导致请求永久不返回。
-    // 流式/noLog（下载分片）/bytes 请求由调用方自行管理超时，不覆盖。
+    // 默认超时须在日志开关判断前套用，否则默认（NetLog 关闭）时超时失效；
+    // 流式 / noLog / bytes 请求由调用方自行管理超时，不覆盖。
     if (options.extra['noLog'] != true &&
         options.extra['streaming'] != true &&
         options.responseType != ResponseType.bytes) {

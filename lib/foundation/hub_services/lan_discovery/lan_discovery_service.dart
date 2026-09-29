@@ -307,7 +307,6 @@ class LanDiscoveryService {
   }
 
   Future<void> _bindSocket() async {
-    // 重绑前先停掉旧接收轮询：否则每次重绑都会多留一个永久轮询同一 socket
     _receiveTimer?.cancel();
     _receiveTimer = null;
     _socket?.close();

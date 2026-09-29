@@ -612,7 +612,6 @@ CREATE TABLE IF NOT EXISTS memos (
 )
 ''';
 
-/// 进度表按 historyId 的查询/更新很频繁（watch 每秒写），补索引避免全表扫描
 const String _createProgressIndexSql =
     'CREATE INDEX IF NOT EXISTS progress_history_idx ON progress(historyId)';
 
@@ -1089,7 +1088,6 @@ class HistoryManager with ChangeNotifier {
             await (_db.delete(
               _db.historyTable,
             )..where((t) => t.id.equals(h.id))).go();
-            // 级联删除进度记录，避免残留孤儿（与单条 remove 一致）
             await (_db.delete(_db.progressTable)..where(
                   (t) => t.historyId.equals(h.id) & t.type.equals(h.type.value),
                 ))

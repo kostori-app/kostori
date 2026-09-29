@@ -85,7 +85,6 @@ class AiSessions extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// AI 模型配置表
 class AiModels extends Table {
   TextColumn get modelId => text()();
 
@@ -387,7 +386,6 @@ class AiDatabase extends _$AiDatabase {
   /// 缓存类表（模型目录 `ai_models`、服务商校验统计 `ai_provider_stats`）
   /// 不导出：它们由各端自己查询/覆盖，混在一起反而会互相污染。
   Future<Map<String, dynamic>> exportMergeData() async => {
-    // 导出为明文（跨设备使用）；落库时是密文（见各 DAO）
     'apiKeys': [
       for (final r in await select(aiApiKeys).get())
         {...r.toJson(), 'apiKey': SecretVault.decrypt(r.apiKey)},

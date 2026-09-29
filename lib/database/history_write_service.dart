@@ -14,13 +14,10 @@ class HistoryWriteService {
   static bool _started = false;
   static bool _paused = false;
 
-  /// isolate 尚未就绪时暂存消息，拿到 SendPort 后按序补发（否则首次写入丢失）
   static final List<Map<String, dynamic>> _pending = [];
 
-  /// pause 的确认：isolate 队列串行，处理到 pause 时之前的写入已全部完成
   static Completer<void>? _pauseCompleter;
 
-  /// close 的确认（导出/整库替换前需确保连接真正释放）
   static Completer<void>? _closeCompleter;
 
   static void _sendOrQueue(Map<String, dynamic> m) {
@@ -32,7 +29,7 @@ class HistoryWriteService {
     }
   }
 
-  /// 暂停写入并等待在途写入落盘（导出/备份前调用，保证复制的文件一致）
+  /// 暂停写入并返回一个在途写入落盘后才完成的 Future（导出/备份前等待）
   static Future<void> pause() {
     _ensure();
     _paused = true;
@@ -52,7 +49,6 @@ class HistoryWriteService {
     Isolate.spawn(_entry, [rp.sendPort, App.dataPath]).then(
       (_) {},
       onError: (Object e) {
-        // 启动失败：复位以便下次重试，并唤醒可能在等待 pause 的调用方
         _started = false;
         _send = null;
         debugPrint('HistoryWriteService isolate 启动失败: $e');
@@ -63,7 +59,6 @@ class HistoryWriteService {
     rp.listen((msg) {
       if (msg is SendPort) {
         _send = msg;
-        // 补发在 isolate 启动期间暂存的消息，保持先后顺序
         for (final m in _pending) {
           msg.send(m);
         }
@@ -192,7 +187,6 @@ class HistoryWriteService {
               await manager.close();
               mainSend.send(['ack', 'close']);
             case 'pause':
-              // 队列串行：执行到此说明之前的写入都已落盘，回 ack 即可
               mainSend.send(['ack', 'pause']);
           }
         } catch (e) {

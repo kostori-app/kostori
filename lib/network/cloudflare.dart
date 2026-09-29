@@ -459,8 +459,6 @@ Future<void> _saveCookies(Uri uri, Map<String, String> cookies) async {
 
   final rootUri = Uri(scheme: uri.scheme, host: uri.host, path: '/');
 
-  // 先删旧再写新：必须 await，否则 delete 可能晚于 insert 执行，
-  // 把刚保存的 cf_clearance 又删掉
   await SingleInstanceCookieJar.instance!.delete(
     Uri.parse("https://$host/"),
     'cf_clearance',

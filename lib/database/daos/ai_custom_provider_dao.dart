@@ -4,7 +4,6 @@ import 'package:kostori/foundation/secret_vault.dart';
 
 part 'ai_custom_provider_dao.g.dart';
 
-/// apiKey 落库前加密、读出后解密（与 [AiApiKeyDao] 一致）。
 AiCustomProvider _plainRow(AiCustomProvider r) => r.apiKey == null
     ? r
     : r.copyWith(apiKey: Value(SecretVault.decrypt(r.apiKey!)));

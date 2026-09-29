@@ -91,7 +91,6 @@ class _SubRuntime {
 
   bool _closed = false;
 
-  /// ws-reverse 断线重连（带退避）
   Timer? _reconnectTimer;
   int _reconnectAttempts = 0;
 

@@ -446,8 +446,6 @@ class DownloadManager extends ChangeNotifier {
             t,
       ];
       final keepDirs = <String>{for (final t in resumable) _taskDirPath(t)};
-      // 目录名以 `_<任务id>` 结尾；标题格式变更会让 _taskDirPath 算出旧路径，
-      // 用 id 后缀兜底，避免误删可续传的分片
       final keepIds = <String>{for (final t in resumable) t.id};
       // 遍历整个下载目录（含分组）可能很多，放后台 isolate，避免启动瞬间卡 UI
       final rootPath = root.path;
@@ -669,8 +667,7 @@ class DownloadManager extends ChangeNotifier {
     _syncKeepAlive(force: true);
 
     try {
-      // 仅 WiFi：非 WiFi 网络时等待。取消时进入下方统一 catch/finally，
-      // 保证 _runningIds/_cancelTokens 一定被清理（否则并发位永久泄漏）
+      // 取消/异常统一走下方 finally 清理并发槽与取消令牌
       await _waitForWifiIfNeeded(cancelToken);
 
       // 每个任务一个目录（含分组子目录）：mp4 断点临时文件 / m3u8 分片都在目录内
@@ -2208,8 +2205,6 @@ class DownloadManager extends ChangeNotifier {
         await newDir.parent.create(recursive: true);
         await oldDir.rename(newDir.path);
       } catch (e) {
-        // 目录没搬成功就回滚分组名，保持元数据与磁盘一致，
-        // 否则任务/记录会指向一个从未存在的目录
         Log.error('DownloadManager.renameGroup', '重命名目录失败: $e');
         _saveGroups(originalGroups);
         return;
@@ -2455,8 +2450,6 @@ void _cleanupOrphanSegmentsSync(
   Set<String> keepDirs,
   Set<String> keepIds,
 ) {
-  // 路径精确匹配，或目录名以 `_<任务id>` 结尾（标题格式变更后路径已变，
-  // 但 id 后缀稳定），都视为需要保留
   bool isKeep(String path) {
     if (keepDirs.contains(path)) return true;
     final base = p.basename(path);

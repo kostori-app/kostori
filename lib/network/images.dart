@@ -496,8 +496,6 @@ class _StreamWrapper<T> {
         }
       }
     } catch (e) {
-      // 底层流出错也要正常收尾：否则条目永久卡在 _loadingImages，
-      // 后续订阅者会一直挂起
       for (var controller in controllers) {
         if (!controller.isClosed) {
           controller.addError(e);

@@ -194,7 +194,6 @@ class TorrentManager extends Notifier<TorrentState> {
   String _lastSyncSig = '';
   static int _jobIdSeq = 0;
 
-  /// 毫秒时间戳 + 自增序号：同毫秒内连续添加也不会撞 id
   static String _newJobId() =>
       '${DateTime.now().millisecondsSinceEpoch}_${_jobIdSeq++}';
   Future<void> _writeChain = Future.value();
@@ -280,9 +279,8 @@ class TorrentManager extends Notifier<TorrentState> {
             ..sort();
       if (list.isNotEmpty) setTrackers(list);
     } catch (_) {
-      // 失败静默：tracker 列表是可选增强，不影响本地下载
+      // ignore: empty_catches
     } finally {
-      // 任何路径都要释放 socket/连接池，否则每次失败都泄漏一个 HttpClient
       client.close(force: true);
     }
   }
@@ -1113,7 +1111,6 @@ class TorrentManager extends Notifier<TorrentState> {
   }
 
   // ── 轮询同步 ──────────────────────────────────────────────────────────────
-  /// 生成可比较的状态摘要：无变化时跳过 emit，避免每秒无谓重建所有 watcher
   String _syncSignature() {
     final b = StringBuffer();
     for (final job in _jobs) {

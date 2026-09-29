@@ -90,7 +90,6 @@ class SearchHistoryManager with ChangeNotifier {
     try {
       await between?.call();
     } finally {
-      // 即使 between 抛错也要恢复可用连接，否则后续 add/watch 会打到已关闭的库
       _db = _SearchHistoryDb();
       isInitialized = true;
       notifyListeners();

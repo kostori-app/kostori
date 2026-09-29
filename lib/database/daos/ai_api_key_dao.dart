@@ -6,8 +6,6 @@ import 'package:kostori/foundation/secret_vault.dart';
 
 part 'ai_api_key_dao.g.dart';
 
-/// apiKey 落库前加密、读出后解密：调用方拿到的始终是明文，
-/// 磁盘/备份中始终是密文（导出场景在 ai_database 里显式解密为明文）。
 AiApiKey _plainRow(AiApiKey r) =>
     r.copyWith(apiKey: SecretVault.decrypt(r.apiKey));
 

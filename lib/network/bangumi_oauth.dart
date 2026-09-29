@@ -112,8 +112,6 @@ Future<bool> bangumiRefreshToken() async {
         await refreshBangumiTokenStatus();
         return true;
       }
-      // 仅在明确返回 OAuth 错误（refresh_token 失效/被撤销）时登出；
-      // 其它响应（限流/网关错误页等非预期 body）保留登录态，避免误登出
       final err = json['error']?.toString() ?? '';
       if (err.isNotEmpty) {
         Log.warning('BangumiOAuth', '刷新token被拒绝 error=$err');
@@ -128,7 +126,6 @@ Future<bool> bangumiRefreshToken() async {
       Log.warning('BangumiOAuth', '刷新token响应缺少 access_token，保留登录态');
       return false;
     }
-    // 非 JSON 响应（错误页/网关错误/限流）：不清除令牌
     Log.warning('BangumiOAuth', '刷新token异常响应 status=${res.statusCode}');
     return false;
   } catch (e) {
